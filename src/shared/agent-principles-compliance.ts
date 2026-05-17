@@ -80,6 +80,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeCapabilitySnapshot can be included in RuntimeContextManifest so model, workspace, flags, and tool scaffold state become explicit context assembly inputs.',
       'RunService and CodeAgentRunService pass RuntimeCapabilitySnapshot into run_start pre-step verification for model/workspace capability checks.',
       'CapabilityRegistry projects runtime capability snapshots into explicit capability entries with status, visibility, access type, approval requirement, and runtime gate.',
+      'AiConfigStatus carries CapabilityRegistry so existing model/settings consumers can read the shared capability status without rebuilding local capability semantics.',
       'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
@@ -104,6 +105,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     nextVerification: [
       'Keep capability registry tests blocking disabled or unconfigured capabilities from becoming model-visible.',
+      'Keep AiConfigStatus tests verifying shared registry rows are returned through the existing settings status boundary.',
       'Keep tests that task-bound execution manifests include product principles, task state, Task.md when present, and relevant Task Records.',
       'Require any future provider-visible execution boundary to use RuntimeContextAssemblyGate and pass full source/file metadata.',
     ],

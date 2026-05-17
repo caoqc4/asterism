@@ -6,6 +6,8 @@ import keytar from 'keytar';
 import type { AiConfigInput, AiConfigStatus, AiProvider, AiProviderKeysInput, FeatureFlags } from '../../shared/types/settings.js';
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
+import { buildCapabilityRegistry } from '../../shared/capability-registry.js';
+import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-snapshot.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { readEnvBoolean, readEnvValue } from '../config/env.js';
 import { evaluateAgentExecutorLifecycleServiceAvailability } from '../domain/run/agent-executor-lifecycle-service-factory.js';
@@ -119,7 +121,7 @@ export class AiConfigService {
     const configuredProviders = await this.getConfiguredProviders();
     const activeKey = await this.resolveKeyForProvider(config.aiProvider);
 
-    return {
+    const status: AiConfigStatus = {
       configured: Boolean(activeKey),
       apiKeyStored: Boolean(await this.getProviderKey(config.aiProvider) ?? await this.getLegacyKey()),
       apiKeySource: envApiKey ? 'env' : (await this.getLegacyKey()) ? 'keychain' : null,
@@ -137,6 +139,7 @@ export class AiConfigService {
       executorLifecycleAvailability: evaluateAgentExecutorLifecycleServiceAvailability(),
       toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({ policy: DEFAULT_TOOL_SCAFFOLD_POLICY }),
     };
+    return withCapabilityRegistry(status);
   }
 
   async setConfig(input: AiConfigInput): Promise<AiConfigStatus> {
@@ -160,7 +163,7 @@ export class AiConfigService {
     const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
     const activeKey = await this.resolveKeyForProvider(provider);
 
-    return {
+    const status: AiConfigStatus = {
       configured: Boolean(activeKey),
       apiKeyStored: Boolean(await this.getProviderKey(provider)),
       apiKeySource: envApiKey ? 'env' : (await this.getLegacyKey()) ? 'keychain' : null,
@@ -178,6 +181,7 @@ export class AiConfigService {
       executorLifecycleAvailability: evaluateAgentExecutorLifecycleServiceAvailability(),
       toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({ policy: DEFAULT_TOOL_SCAFFOLD_POLICY }),
     };
+    return withCapabilityRegistry(status);
   }
 
   private async saveProviderKeys(keys: AiProviderKeysInput): Promise<void> {
@@ -207,4 +211,13 @@ export class AiConfigService {
       featureFlags: config.featureFlags,
     };
   }
+}
+
+function withCapabilityRegistry(status: AiConfigStatus): AiConfigStatus {
+  return {
+    ...status,
+    capabilityRegistry: buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: status }),
+    }),
+  };
 }

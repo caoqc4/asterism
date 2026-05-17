@@ -453,6 +453,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Risky local command/write tools use confirmation checkpoints.',
       'RuntimeCapabilitySnapshot captures model availability, workspace verification checks, feature flags, and tool scaffold exposure for runtime consumers.',
       'CapabilityRegistry projects runtime capability snapshots into stable capability entries with status, visibility, access type, approval requirement, and runtime gate.',
+      'AiConfigStatus now carries CapabilityRegistry so Model, Settings, RightPanel, and future capability pages can consume the same structured capability data.',
       'Runtime pre-step verification uses CapabilityRegistry checks for model execution and workspace verification readiness instead of reading ad hoc snapshot fields directly.',
       'pre_step verification blocks model-required or workspace-verification-required execution when the caller omits RuntimeCapabilitySnapshot.',
       'RunService and CodeAgentRunService provide RuntimeCapabilitySnapshot before model or workspace-sensitive execution.',
@@ -467,7 +468,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'External Access, Skills, MCP, and browser/operator capability rows are represented as deferred hidden entries until those product surfaces provide structured status.',
     ],
     nextImplementation: [
-      'Map Settings, Model, External Access, Skills, MCP, sandbox, and browser/operator surfaces into CapabilityRegistry instead of page-local capability assumptions.',
+      'Map External Access, Skills, MCP, sandbox backend probe details, and browser/operator surfaces into concrete CapabilityRegistry rows instead of deferred hidden rows.',
       'Require RuntimeCapabilitySnapshot from any future entry point where model, external access, workspace checks, or tool exposure changes execution permission.',
     ],
   },

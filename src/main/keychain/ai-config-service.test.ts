@@ -46,6 +46,15 @@ describe('AiConfigService', () => {
     expect(status.provider).toBe('anthropic');
     expect(status.apiKeyStored).toBe(false);
     expect(status.codeAgentModelProducerEnabled).toBe(false);
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'model.provider')).toMatchObject({
+      status: 'unconfigured',
+      visibility: 'policy_gated',
+      requiredGate: 'runtime_context_assembly',
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
+      status: 'unknown',
+      visibility: 'hidden',
+    });
     expect(status.executorLifecycleAvailability).toMatchObject({
       automaticStartAllowed: false,
       controlMode: 'dry_run_planned',
@@ -141,6 +150,14 @@ describe('AiConfigService', () => {
       'computer_use',
       'creator_connector',
     ]);
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'workspace.checks')).toMatchObject({
+      status: 'available',
+      requiredGate: 'runtime_pre_step',
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_tools.model_visible')).toMatchObject({
+      status: 'available',
+      visibility: 'model_visible',
+    });
   });
 
   it('uses environment API keys without storing them in Keychain', async () => {
@@ -164,6 +181,11 @@ describe('AiConfigService', () => {
     expect(status.apiKeyStored).toBe(false);
     expect(status.apiKeySource).toBe('env');
     expect(status.codeAgentModelProducerEnabled).toBe(true);
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'model.code_agent_producer')).toMatchObject({
+      status: 'available',
+      visibility: 'policy_gated',
+      requiresApproval: true,
+    });
     expect(runtimeConfig.apiKey).toBe('env-secret');
     expect(runtimeConfig.provider).toBe('fal-openrouter');
     expect(runtimeConfig.workspaceRoot).toBe('/tmp/taskplane-workspace');

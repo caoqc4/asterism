@@ -139,7 +139,9 @@ capability snapshot into explicit capability entries for model provider, Code
 Agent model producer, workspace, verification checks, scheduler, sandbox coding
 agent, self-check, model-visible tools, checkpointed tools, and deferred
 External Access / Skills / MCP / browser capability rows. Disabled or
-unconfigured capabilities remain hidden from model-visible exposure.
+unconfigured capabilities remain hidden from model-visible exposure. The
+existing AI config status boundary now returns this registry so current and
+future capability-facing UI can consume one shared data model.
 
 ## Package C: Search, Retrieval, And Reference Index
 

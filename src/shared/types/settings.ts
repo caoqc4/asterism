@@ -1,6 +1,7 @@
 import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
 import type { AgentExecutorLifecycleServiceAvailability } from '../agent-executor-lifecycle-diagnostics.js';
 import type { AgentToolScaffoldFamilySummary } from '../agent-tool-scaffold.js';
+import type { CapabilityRegistryEntry } from '../capability-registry.js';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google' | 'deepseek' | 'groq' | 'fal-openrouter' | 'openai-compatible' | 'replicate';
 export type AiCommunicationStyle = 'concise' | 'balanced' | 'detailed';
@@ -72,4 +73,5 @@ export type AiConfigStatus = {
   sandboxBackendStatus?: AgentSandboxBackendStatus | null;
   executorLifecycleAvailability?: AgentExecutorLifecycleServiceAvailability | null;
   toolScaffoldSummaries?: AgentToolScaffoldFamilySummary[];
+  capabilityRegistry?: CapabilityRegistryEntry[];
 };
