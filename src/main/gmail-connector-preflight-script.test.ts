@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest';
 const preflightEnvKeys = [
   'TASKPLANE_ENV_FILE',
   'TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN',
+  'TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_ID',
+  'TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_SECRET',
   'TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCOUNT',
   'TASKPLANE_EXTERNAL_ACCESS_GMAIL_QUERY',
   'TASKPLANE_EXTERNAL_ACCESS_GMAIL_MAX_RESULTS',
@@ -54,6 +56,8 @@ describe('gmail connector preflight script', () => {
       expect(result.status).toBe(0);
       expect(output).toContain('Gmail connector preflight');
       expect(output).toContain('accessToken=<set>');
+      expect(output).toContain('oauthClientId=<empty>');
+      expect(output).toContain('oauthClientSecret=<empty>');
       expect(output).toContain('account=shell@example.com');
       expect(output).toContain('query=newer_than:1d');
       expect(output).toContain('maxResults=3');
@@ -67,7 +71,7 @@ describe('gmail connector preflight script', () => {
     }
   });
 
-  it('skips when Gmail token is missing or max results are unsafe', () => {
+  it('skips when Gmail credentials are missing or max results are unsafe', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-gmail-preflight-test-'));
     const envFilePath = path.join(tempRoot, '.env');
     fs.writeFileSync(envFilePath, 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_MAX_RESULTS=100\n');
@@ -82,9 +86,39 @@ describe('gmail connector preflight script', () => {
 
       expect(result.status).toBe(0);
       expect(output).toContain('status=skip');
-      expect(output).toContain('TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN is empty.');
+      expect(output).toContain('Configure either TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN or TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_ID.');
       expect(output).toContain('TASKPLANE_EXTERNAL_ACCESS_GMAIL_MAX_RESULTS must be between 1 and 25.');
       expect(output).toContain('No Gmail request or task memory write was performed.');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('reports OAuth configuration without printing OAuth secrets', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-gmail-preflight-test-'));
+    const envFilePath = path.join(tempRoot, '.env');
+    fs.writeFileSync(envFilePath, [
+      'TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_ID=oauth-client-id-secret',
+      'TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_SECRET=oauth-client-secret-value',
+      'TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCOUNT=oauth@example.com',
+    ].join('\n'));
+
+    try {
+      const result = spawnSync(process.execPath, ['scripts/gmail-connector-preflight.mjs'], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        env: sanitizedEnv(envFilePath),
+      });
+      const output = `${result.stdout}${result.stderr}`;
+
+      expect(result.status).toBe(0);
+      expect(output).toContain('accessToken=<empty>');
+      expect(output).toContain('oauthClientId=<set>');
+      expect(output).toContain('oauthClientSecret=<set>');
+      expect(output).toContain('status=ready');
+      expect(output).toContain('stored OAuth refresh token');
+      expect(output).not.toContain('oauth-client-id-secret');
+      expect(output).not.toContain('oauth-client-secret-value');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

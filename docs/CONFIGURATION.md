@@ -144,8 +144,9 @@ npm run accept:external-access:gmail-preflight
 ```
 
 The preflight reports whether the token, account label, query, and result limit
-are configured. It prints `<set>` for the token and does not call Gmail or write
-task memory.
+are configured. It prints `<set>` for tokens and OAuth client secrets, accepts
+either the static access-token path or the OAuth client-id path, and does not
+call Gmail, inspect keychain refresh tokens, or write task memory.
 
 The planned production OAuth path is documented in
 `docs/plans/2026-05-17-gmail-oauth-design.md`. The intended direction is a

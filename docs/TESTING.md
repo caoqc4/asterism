@@ -113,7 +113,9 @@ npm run accept:external-access:gmail-preflight
 ```
 
 This command validates the environment shape, hides the OAuth token value, and
-does not call Gmail or write task memory.
+does not call Gmail or write task memory. It accepts either the current static
+access-token path or the future OAuth client-id path, redacts access tokens and
+OAuth client secrets, and does not inspect keychain refresh tokens.
 
 Release readiness preflight:
 
