@@ -276,7 +276,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without performing automatic writes.',
       'TaskMemoryWriteProposal preserves existing Task.md content on update proposals and appends only the smallest missing memory note.',
       'TaskMemoryWriteProposal turns structured Task.md reference paths into concrete Important Files entries before falling back to generic pending-memory notes.',
-      'TaskMemoryWriteApplyPlan turns a confirmed TaskMemoryWriteProposal into a create/update TaskFile input, while blocking unsafe updates without an existing file id.',
+      'TaskMemoryWriteApplyPlan turns a confirmed TaskMemoryWriteProposal into a create/update TaskFile input, normalizes memory paths, and blocks target/path mismatches or unsafe updates without an existing file id.',
       'RunDetailRecord carries taskMemoryWriteProposals next to taskMemoryGuidance so runtime detail reads can reuse the same missing-memory write plan.',
       'RightPanel can surface pending RunDetail taskMemoryWriteProposals through the existing task-file proposal confirmation card and apply the shared TaskMemoryWriteApplyPlan after user confirmation.',
       'Run start pre-step verification consumes pending TaskMemoryGuidanceState, so new execution cannot bypass unresolved task-memory writes.',

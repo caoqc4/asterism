@@ -171,7 +171,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without automatically changing task memory.',
       'TaskMemoryWriteProposal preserves existing Task.md content and appends the smallest missing memory note instead of replacing the recovery file.',
       'TaskMemoryWriteProposal writes concrete Important Files entries when pending Task.md guidance carries reference paths.',
-      'TaskMemoryWriteApplyPlan converts confirmed proposals into create/update TaskFile inputs and blocks Task.md updates that lack an existing file id.',
+      'TaskMemoryWriteApplyPlan converts confirmed proposals into create/update TaskFile inputs, normalizes memory paths, blocks target/path mismatches, and blocks Task.md updates that lack an existing file id.',
       'RunDetailRecord exposes taskMemoryWriteProposals derived from pending TaskMemoryGuidanceState, so runtime consumers can route the missing memory write without recomputing it.',
       'RightPanel routes pending taskMemoryWriteProposals through its existing confirmed task-file proposal card and applies TaskMemoryWriteApplyPlan only after user confirmation.',
       'TaskMemoryGuidanceState distinguishes unresolved task-memory guidance from completed Task.md or Task Record writes.',

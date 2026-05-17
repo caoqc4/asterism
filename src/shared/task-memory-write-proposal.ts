@@ -90,10 +90,35 @@ export function buildTaskMemoryWriteApplyPlan(params: {
 }): TaskMemoryWriteApplyPlan {
   const taskId = params.taskId.trim();
   const proposal = params.proposal;
+  const path = normalizeTaskMemoryPath(proposal.path);
   if (!taskId) {
     return {
       proposal,
       reason: 'Task memory write proposal requires taskId.',
+      status: 'blocked',
+    };
+  }
+
+  if (!path) {
+    return {
+      proposal,
+      reason: 'Task memory write proposal requires a path.',
+      status: 'blocked',
+    };
+  }
+
+  if (proposal.target === 'task_md' && !isTaskMdPath(path)) {
+    return {
+      proposal,
+      reason: 'Task.md memory proposal must write to Task.md.',
+      status: 'blocked',
+    };
+  }
+
+  if (proposal.target === 'task_record' && !isTaskRecordPath(path)) {
+    return {
+      proposal,
+      reason: 'Task Record memory proposal must write under Task Records/.',
       status: 'blocked',
     };
   }
@@ -123,8 +148,8 @@ export function buildTaskMemoryWriteApplyPlan(params: {
     action: 'create',
     input: {
       taskId,
-      name: fileNameFromPath(proposal.path),
-      path: proposal.path,
+      name: fileNameFromPath(path),
+      path,
       kind: 'file',
       content: proposal.contentTemplate,
     },

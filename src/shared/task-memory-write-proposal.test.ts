@@ -172,4 +172,72 @@ describe('task memory write proposal', () => {
       status: 'blocked',
     });
   });
+
+  it('blocks confirmed write plans when the proposal target and path disagree', () => {
+    expect(buildTaskMemoryWriteApplyPlan({
+      proposal: {
+        contentTemplate: '# Task',
+        operation: 'create',
+        path: ' ',
+        reason: '需要补 Task.md。',
+        target: 'task_md',
+        title: '创建 Task.md',
+      },
+      taskId: 'task_1',
+    })).toMatchObject({
+      reason: 'Task memory write proposal requires a path.',
+      status: 'blocked',
+    });
+
+    expect(buildTaskMemoryWriteApplyPlan({
+      proposal: {
+        contentTemplate: '# Task',
+        operation: 'create',
+        path: 'notes.md',
+        reason: '需要补 Task.md。',
+        target: 'task_md',
+        title: '创建 Task.md',
+      },
+      taskId: 'task_1',
+    })).toMatchObject({
+      reason: 'Task.md memory proposal must write to Task.md.',
+      status: 'blocked',
+    });
+
+    expect(buildTaskMemoryWriteApplyPlan({
+      proposal: {
+        contentTemplate: '# Task Record',
+        operation: 'create',
+        path: 'AI Outputs/memory.md',
+        reason: '需要补任务记录。',
+        target: 'task_record',
+        title: '创建任务记录',
+      },
+      taskId: 'task_1',
+    })).toMatchObject({
+      reason: 'Task Record memory proposal must write under Task Records/.',
+      status: 'blocked',
+    });
+  });
+
+  it('normalizes task memory create paths before building write input', () => {
+    expect(buildTaskMemoryWriteApplyPlan({
+      proposal: {
+        contentTemplate: '# Task Record',
+        operation: 'create',
+        path: ' Task Records\\handoff.md ',
+        reason: '需要补任务记录。',
+        target: 'task_record',
+        title: '创建任务记录',
+      },
+      taskId: 'task_1',
+    })).toMatchObject({
+      action: 'create',
+      input: {
+        name: 'handoff.md',
+        path: 'Task Records/handoff.md',
+      },
+      status: 'ready',
+    });
+  });
 });
