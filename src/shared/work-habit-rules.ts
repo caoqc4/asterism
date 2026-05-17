@@ -130,6 +130,16 @@ export function createWorkHabitProposalInList(
 
   const id = `habit_proposal_${stableHabitKey(rule, input.scope, input.scopeLabel)}`;
   const examples = input.examples?.trim() || '运行时识别的跨任务偏好候选';
+  const equivalent = habits.find((habit) => (
+    habit.scope === input.scope
+    && habit.scopeLabel.trim() === input.scopeLabel.trim()
+    && normalizeRule(habit.rule) === normalizeRule(rule)
+  ));
+
+  if (equivalent && equivalent.id !== id) {
+    return habits;
+  }
+
   const existing = habits.find((habit) => habit.id === id);
 
   if (existing) {
@@ -271,6 +281,28 @@ export function recordSopTemplateHabitInList(
     lastAppliedAt: now,
     applicationCount: 1,
   };
+
+  const duplicate = habits.find((habit) => (
+    habit.id !== id
+    && habit.source === 'sop'
+    && habit.status !== 'disabled'
+    && (
+      normalizeRule(habit.rule) === normalizeRule(nextHabit.rule)
+      || normalizeRule(habit.examples) === normalizeRule(examples)
+    )
+  ));
+
+  if (duplicate) {
+    return habits.map((habit) => habit.id === duplicate.id
+      ? {
+          ...habit,
+          examples: habit.examples || examples,
+          lastAppliedAt: now,
+          applicationCount: habit.applicationCount + 1,
+          status: 'confirmed' as WorkHabitStatus,
+        }
+      : habit);
+  }
 
   return habits.some((habit) => habit.id === id)
     ? habits.map((habit) => habit.id === id

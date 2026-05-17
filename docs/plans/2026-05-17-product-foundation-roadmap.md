@@ -397,7 +397,10 @@ brainstorming stays out of durable cross-task memory. All cross-task learning
 surfaces require confirmation before they affect future execution.
 `WorkHabitService` now consumes the boundary before retained Work Habit
 proposal and SOP-template writes, so task-specific corrections are rejected at
-the service boundary instead of relying on UI or prompt discipline.
+the service boundary instead of relying on UI or prompt discipline. Equivalent
+confirmed Work Habits are not duplicated into new pending proposals, and
+SOP-template habit writes now deduplicate equivalent reusable step shapes across
+tasks before adding another retained learning item.
 
 ## Package G: Brief And Attention System
 

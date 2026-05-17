@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createWorkHabitProposalInList,
   findWorkHabitConflict,
+  recordSopTemplateHabitInList,
   recordWorkHabitApplicationsInList,
   selectApplicableWorkHabits,
 } from './work-habit-rules.js';
@@ -129,6 +130,45 @@ describe('work habit rules', () => {
       scope: 'task_type',
       scopeLabel: '外部沟通',
       applicationCount: 1,
+    });
+  });
+
+  it('does not create a duplicate proposal when the same confirmed habit already exists', () => {
+    const habits = createWorkHabitProposalInList([baseHabit], {
+      rule: baseHabit.rule,
+      scope: baseHabit.scope,
+      scopeLabel: baseHabit.scopeLabel,
+      examples: '运行时再次观察到同一规则',
+    }, '2026-05-14T00:00:00.000Z');
+
+    expect(habits).toHaveLength(1);
+    expect(habits[0]).toMatchObject({
+      id: 'habit_1',
+      status: 'confirmed',
+      applicationCount: 2,
+    });
+  });
+
+  it('deduplicates SOP habits by equivalent step shape across tasks', () => {
+    const first = recordSopTemplateHabitInList([], {
+      taskId: 'task_release',
+      taskTitle: 'Release',
+      steps: ['检查上下文', '执行验证', '记录收尾'],
+    }, '2026-05-14T00:00:00.000Z');
+
+    const second = recordSopTemplateHabitInList(first, {
+      taskId: 'task_launch',
+      taskTitle: 'Launch',
+      steps: ['检查上下文', '执行验证', '记录收尾'],
+    }, '2026-05-15T00:00:00.000Z');
+
+    expect(second).toHaveLength(1);
+    expect(second[0]).toMatchObject({
+      id: 'habit_sop_task_release',
+      source: 'sop',
+      status: 'confirmed',
+      applicationCount: 2,
+      lastAppliedAt: '2026-05-15T00:00:00.000Z',
     });
   });
 });
