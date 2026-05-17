@@ -824,6 +824,54 @@ describe('App redesign v1', () => {
     expect(screen.getByText('先质检，再确认')).toBeTruthy();
   });
 
+  it('renders Brief attention count and inclusion reasons from shared projection data', async () => {
+    const task = buildTask({
+      id: 'task_attention',
+      title: '证据复核任务',
+      state: 'running',
+      summary: '需要复核新材料。',
+    });
+    const homeBrief = buildBriefData([task], []);
+    homeBrief.briefAttention = {
+      items: [{
+        actionId: 'source-context:task_attention',
+        taskId: task.id,
+        lane: 'review_evidence',
+        reason: 'New or important evidence may change the next action.',
+      }],
+      totalCount: 7,
+      displayedCount: 1,
+      displayLimit: 1,
+      truncated: true,
+      summary: 'Brief shows 1 of 7 attention items; Tasks owns the full queue.',
+    };
+    homeBrief.briefFocusTasks = [{
+      id: task.id,
+      title: task.title,
+      lane: 'continue',
+      whyNow: '共享优先队列提示有新证据需要复核。',
+      action: '查看材料',
+      sourceActionId: 'source-context:task_attention',
+      rank: 1,
+      attentionLane: 'review_evidence',
+      attentionReason: 'New or important evidence may change the next action.',
+      state: 'running',
+      status: 'running',
+      parentTaskId: null,
+      parentTitle: null,
+    }];
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+
+    render(<App />);
+
+    expect(await screen.findByText('证据复核任务')).toBeTruthy();
+    expect(screen.getByText(/显示前 1\/7 件/)).toBeTruthy();
+    expect(screen.getByText(/Brief 只做今日注意力摘要/)).toBeTruthy();
+    expect(screen.getByText(/入选依据：有新的来源或产出可能影响下一步/)).toBeTruthy();
+
+    expect(harness.api.getHomeBrief).toHaveBeenCalled();
+  });
+
   it('clarifies Model configuration stays local and separate from task memory', async () => {
     const user = userEvent.setup();
     render(<App />);
