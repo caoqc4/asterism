@@ -84,6 +84,16 @@ describe('agent principles compliance matrix', () => {
     expect(text).not.toContain('Add shared SubtaskStartEvaluation');
   });
 
+  it('keeps next verification items as preservation constraints rather than current implementation tasks', () => {
+    const currentLikeItems = AGENT_PRINCIPLES_COMPLIANCE
+      .flatMap((item) => item.nextVerification)
+      .filter((action) => !(
+        /future|^Keep\b|^Require\b|when .*becomes|if .*return|connector|subagent|deferred/i.test(action)
+      ));
+
+    expect(currentLikeItems).toEqual([]);
+  });
+
   it('records the runtime entrypoint gate protocol as a product execution constraint', () => {
     const item = AGENT_PRINCIPLES_COMPLIANCE.find((entry) => entry.section === 'Runtime Entrypoint Gate Protocol');
     const text = JSON.stringify(item);

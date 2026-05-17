@@ -248,8 +248,8 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Subtask draft evaluation exists for project decomposition draft generation and confirmed project child creation, while service-level capture and hierarchy guards cover generic child-title and invalid parent ownership mistakes; future child-task paths must preserve that common confirmation boundary.',
     ],
     nextVerification: [
-      'Route remaining project state transitions through project verification.',
-      'Route every child-task creation path through a shared confirmation boundary backed by runtime-subtask-evaluator or runtime-task-capture-evaluator.',
+      'Keep future project state transitions on project verification when they affect project readiness.',
+      'Keep future child-task creation paths on a shared confirmation boundary backed by runtime-subtask-evaluator or runtime-task-capture-evaluator.',
     ],
   },
   {
@@ -523,8 +523,8 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Automatic context clearing is consumed by the retained RightPanel task-chat surface; future background schedulers must reuse the same readiness verdict instead of adding a second clearing rule.',
     ],
     nextVerification: [
-      'When UI state work is allowed, keep new task context transitions on the RightPanel reducer or a parent runtime context store backed by RuntimeContextSnapshot and RuntimeHandoff.',
-      'Route any new task lifecycle boundary through TaskMemoryCoverageEvaluation without adding extra UI steps.',
+      'Keep future UI state work on the RightPanel reducer or a parent runtime context store backed by RuntimeContextSnapshot and RuntimeHandoff.',
+      'Keep future task lifecycle boundaries on TaskMemoryCoverageEvaluation without adding extra UI steps.',
       'Keep RightPanel automatic clearing and any future scheduler on AutoContextClearReadiness rather than reintroducing fixed-round clearing.',
     ],
   },
