@@ -330,6 +330,9 @@ policy as never, safe-read-only, or manual-only. API key state only reports the
 source class (`env`/`keychain`/missing) and never exposes secret values.
 Provider spend, sandbox, browser, and external-service checks remain manual or
 explicitly opted in.
+`AiConfigService` now attaches this report to `AiConfigStatus`, so existing
+settings/model/capability service consumers can read one shared safety
+projection without a new UI or IPC boundary.
 
 ## Package F: Work Habits, SOPs, And Method Library
 

@@ -7,6 +7,7 @@ import type { AiConfigInput, AiConfigStatus, AiProvider, AiProviderKeysInput, Fe
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
 import { buildCapabilityRegistry } from '../../shared/capability-registry.js';
+import { buildConfigurationSafetyReport } from '../../shared/configuration-safety-report.js';
 import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-snapshot.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { readEnvBoolean, readEnvValue } from '../config/env.js';
@@ -214,10 +215,14 @@ export class AiConfigService {
 }
 
 function withCapabilityRegistry(status: AiConfigStatus): AiConfigStatus {
-  return {
+  const statusWithRegistry = {
     ...status,
     capabilityRegistry: buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: status }),
     }),
+  };
+  return {
+    ...statusWithRegistry,
+    configurationSafetyReport: buildConfigurationSafetyReport(statusWithRegistry),
   };
 }

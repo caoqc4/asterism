@@ -55,6 +55,13 @@ describe('AiConfigService', () => {
       status: 'unknown',
       visibility: 'hidden',
     });
+    expect(status.configurationSafetyReport).toMatchObject({
+      secretExposureSafe: true,
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'model.api_key')).toMatchObject({
+      state: 'missing',
+      exposesSecretValue: false,
+    });
     expect(status.executorLifecycleAvailability).toMatchObject({
       automaticStartAllowed: false,
       controlMode: 'dry_run_planned',
@@ -157,6 +164,14 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_tools.model_visible')).toMatchObject({
       status: 'available',
       visibility: 'model_visible',
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'model.api_key')).toMatchObject({
+      state: 'configured',
+      exposesSecretValue: false,
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
+      startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
     });
   });
 

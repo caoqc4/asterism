@@ -88,6 +88,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'CapabilityRegistry can accept product-surface status for External Access, Skills, MCP, and browser/operator capabilities without making those surfaces model-visible by default.',
       'ConfigurationSafetyReport normalizes AiConfigStatus and CapabilityRegistry into safety-facing configuration states without exposing API key values.',
       'ConfigurationSafetyReport marks provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in.',
+      'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus so existing settings/model/capability service consumers share one safety projection.',
       'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
@@ -112,7 +113,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
       'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
       'External Access still needs service-backed structured status before it stops being deferred in AiConfigStatus; Skills, MCP, and browser/operator have scaffold fallback but still need richer product-surface status.',
-      'ConfigurationSafetyReport exists as a data projection; retained capability/settings pages still need to consume it when UI work resumes.',
+      'ConfigurationSafetyReport is exposed through AiConfigStatus; retained capability/settings pages can consume it when UI work resumes.',
     ],
     nextVerification: [
       'Keep capability registry tests blocking disabled or unconfigured capabilities from becoming model-visible.',
