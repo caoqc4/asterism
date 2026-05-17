@@ -874,12 +874,41 @@ describe('App redesign v1', () => {
 
   it('clarifies Model configuration stays local and separate from task memory', async () => {
     const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      configurationSafetyReport: {
+        secretExposureSafe: true,
+        blockedReasons: [],
+        summary: 'configured=2 / approvalRequired=0 / blocked=0',
+        surfaces: [
+          {
+            id: 'model.provider',
+            state: 'configured',
+            reason: 'Provider configured: fal-openrouter / google/gemini-2.5-flash.',
+            requiresApproval: false,
+            startupProbePolicy: 'safe_read_only',
+            exposesSecretValue: false,
+          },
+          {
+            id: 'model.api_key',
+            state: 'configured',
+            reason: 'API key source is keychain; secret value is not exposed.',
+            requiresApproval: false,
+            startupProbePolicy: 'never',
+            exposesSecretValue: false,
+          },
+        ],
+      },
+    }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Model/ }));
 
     expect(await screen.findByText(/Provider 密钥保存在本机系统钥匙串/)).toBeTruthy();
     expect(screen.getByText(/不会写入任务记忆/)).toBeTruthy();
+    expect(screen.getByText('模型配置边界')).toBeTruthy();
+    expect(screen.getByText('model.provider')).toBeTruthy();
+    expect(screen.getByText('model.api_key')).toBeTruthy();
+    expect(screen.getByText(/secret value is not exposed/)).toBeTruthy();
   });
 
   it('renders structured External Access connector status from runtime config', async () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { ConfigurationSafetyState, ConfigurationSafetySurface } from '@shared/configuration-safety-report';
 import type { AiConfigStatus, AiProvider } from '@shared/types/settings';
 
 interface ModelDef {
@@ -19,6 +20,14 @@ interface ProviderSection {
 }
 
 type KeyField = 'falOpenRouter' | 'anthropic' | 'openai' | 'google' | 'deepseek' | 'groq' | 'customKey';
+
+const SAFETY_STATE_LABELS: Record<ConfigurationSafetyState, string> = {
+  configured: '已配置',
+  missing: '缺失',
+  disabled_by_flag: '已关闭',
+  disabled_by_policy: '策略关闭',
+  approval_required: '需确认',
+};
 
 const PROVIDERS: ProviderSection[] = [
   {
@@ -174,6 +183,9 @@ export function ModelPage() {
   }
 
   const configuredProviders = new Set(status?.configuredProviders ?? []);
+  const modelSafetySurfaces = status?.configurationSafetyReport?.surfaces
+    .filter((surface) => surface.id === 'model.provider' || surface.id === 'model.api_key')
+    ?? [];
 
   return (
     <div className="model-page">
@@ -182,6 +194,8 @@ export function ModelPage() {
         <p className="model-page-subtitle">配置 AI Provider 密钥，选择默认使用的模型。</p>
         <p className="model-page-boundary">Provider 密钥保存在本机系统钥匙串；模型选择只影响后续 AI 调用，不会写入任务记忆。</p>
       </div>
+
+      <ModelConfigurationSafety surfaces={modelSafetySurfaces} />
 
       {PROVIDERS.map((section) => {
         const isConfigured = configuredProviders.has(section.provider);
@@ -285,4 +299,46 @@ export function ModelPage() {
       </div>
     </div>
   );
+}
+
+function ModelConfigurationSafety({ surfaces }: { surfaces: ConfigurationSafetySurface[] }) {
+  if (surfaces.length === 0) {
+    return (
+      <section className="settings-section model-safety-section">
+        <div className="settings-section-title">模型配置边界</div>
+        <p className="settings-hint">模型安全报告尚未生成；Model 页不会主动探测外部服务或读取密钥明文。</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="settings-section model-safety-section">
+      <div className="settings-section-title">模型配置边界</div>
+      <div className="settings-safety-list">
+        {surfaces.map((surface) => (
+          <div key={surface.id} className="settings-safety-row">
+            <div className="settings-safety-main">
+              <span className={`settings-safety-state ${surface.state}`}>
+                {SAFETY_STATE_LABELS[surface.state]}
+              </span>
+              <span className="settings-safety-id">{surface.id}</span>
+            </div>
+            <div className="settings-safety-detail">
+              <span>{surface.reason}</span>
+              <span>
+                探测：{probePolicyLabel(surface.startupProbePolicy)}
+                {surface.requiresApproval ? ' · 需用户确认' : ''}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function probePolicyLabel(policy: ConfigurationSafetySurface['startupProbePolicy']): string {
+  if (policy === 'manual_only') return '仅手动';
+  if (policy === 'safe_read_only') return '安全只读';
+  return '不自动';
 }
