@@ -520,6 +520,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'AiConfigService feeds External Access zero-connector product-surface status into CapabilityRegistry, so External Access is a structured disabled capability instead of an unconnected deferred row.',
       'ExternalAccessStatusService provides a read-only connector status boundary, and AiConfigService feeds that status into CapabilityRegistry and ConfigurationSafetyReport.',
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
+      'LocalInboxConnectorAdapter is the first concrete read-only connector adapter: it is opt-in by environment variable, reads only supported local inbox files, and still produces ConnectorSourceIngestionPlan previews instead of direct SourceContext writes.',
       'Settings and Model consume ConfigurationSafetyReport as read-only configuration safety boundaries with secret exposure, manual-probe, approval-required, and blocked capability states.',
       'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
       'ConfigurationSafetyReport includes Skills and MCP safety surfaces from CapabilityRegistry, and the Skills/MCP pages consume those rows as read-only capability safety strips.',
@@ -529,12 +530,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
-      'External Access now has a structured connector status service and adapter contract; future real connector services still need concrete provider adapters, persistence wiring, and connector-backed smoke coverage.',
+      'External Access now has a structured connector status service, adapter contract, and opt-in local inbox adapter; future network provider connectors still need concrete provider adapters, persistence wiring, and connector-backed smoke coverage.',
       'Sandbox coding capability remains hidden until both the feature flag and backend readiness support the capability.',
       'ConfigurationSafetyReport is exposed through AiConfigStatus and consumed by Settings, Model, External Access, Skills, and MCP; retained capability pages can reuse the same safety projection.',
     ],
     nextImplementation: [
-      'Connect future real External Access provider adapters to ExternalAccessStatusService, and connect richer Skills, MCP, and browser/operator pages or services to the existing CapabilityRegistry product-surface status input.',
+      'Connect future network External Access provider adapters to ExternalAccessStatusService, and connect richer Skills, MCP, and browser/operator pages or services to the existing CapabilityRegistry product-surface status input.',
       'Keep ConfigurationSafetyReport on AiConfigStatus when future settings or capability pages render safety state.',
       'Require RuntimeCapabilitySnapshot from any future entry point where model, external access, workspace checks, or tool exposure changes execution permission.',
     ],

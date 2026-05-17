@@ -159,15 +159,20 @@ single product-surface status input instead of a hard-coded empty row.
 `ExternalAccessStatusService` also defines the minimal read-only connector
 adapter contract: adapters report status, and connected adapters can preview
 evidence that is normalized through `ConnectorSourceIngestionPlan` before any
-future persistence path can create source contexts. The service also supports a
-local fixture status input for packaged acceptance, allowing External Access,
+future persistence path can create source contexts. `LocalInboxConnectorAdapter`
+is the first concrete opt-in adapter: when
+`TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR` points to a local inbox directory,
+it reads only supported top-level `.json`, `.md`, and `.txt` evidence files and
+returns ingestion previews through the same plan path. The service also supports
+a local fixture status input for packaged acceptance, allowing External Access,
 CapabilityRegistry, and ConfigurationSafetyReport to be smoke-tested in a
 connected state without live provider credentials.
 
-Connector ingestion remains deferred, but the source-memory boundary now has a
-shared `ConnectorSourceIngestionPlan`. Future connector services must normalize
-connector id, external id, captured time, duplicate status, sensitivity, and
-credibility through that plan before creating `SourceContext` records. This
+Network connector ingestion remains deferred, but the source-memory boundary now
+has a shared `ConnectorSourceIngestionPlan`. Future connector services must
+normalize connector id, external id, captured time, duplicate status,
+sensitivity, and credibility through that plan before creating `SourceContext`
+records. This
 keeps connector evidence on the same source-quality and task-memory path rather
 than creating a connector-specific shortcut.
 

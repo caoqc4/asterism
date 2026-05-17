@@ -10,6 +10,7 @@ import {
   type ConnectorSourceIngestionPlan,
 } from '../../../shared/connector-source-ingestion.js';
 import { readEnvValue } from '../../config/env.js';
+import { LocalInboxConnectorAdapter } from './local-inbox-connector-adapter.js';
 
 export type ExternalAccessStatusReader = () => ExternalAccessStatus | Promise<ExternalAccessStatus>;
 
@@ -21,6 +22,7 @@ export type ExternalAccessConnectorAdapter = {
 };
 
 export const EXTERNAL_ACCESS_FIXTURE_ENV = 'TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON';
+export const EXTERNAL_ACCESS_LOCAL_INBOX_DIR_ENV = 'TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR';
 
 const CONNECTOR_KINDS = new Set<ExternalAccessConnectorRecord['kind']>([
   'email',
@@ -64,7 +66,11 @@ export function readExternalAccessFixtureStatus(raw = readEnvValue(EXTERNAL_ACCE
 }
 
 export function createExternalAccessStatusService(): ExternalAccessStatusService {
-  return new ExternalAccessStatusService(() => readExternalAccessFixtureStatus());
+  const localInboxDir = readEnvValue(EXTERNAL_ACCESS_LOCAL_INBOX_DIR_ENV);
+  return new ExternalAccessStatusService(
+    () => readExternalAccessFixtureStatus(),
+    localInboxDir ? [new LocalInboxConnectorAdapter(localInboxDir)] : [],
+  );
 }
 
 export class ExternalAccessStatusService {

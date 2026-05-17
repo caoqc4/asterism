@@ -115,6 +115,13 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('Approved Decision checkpoint resume passes through pending TaskMemoryGuidanceState checks');
   });
 
+  it('tracks the opt-in local inbox connector on the guarded source-ingestion path', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('LocalInboxConnectorAdapter');
+    expect(text).toContain('ConnectorSourceIngestionPlan previews instead of direct SourceContext writes');
+  });
+
   it('classifies next work without promoting future or UI-only gaps into current tasks', () => {
     expect(classifyRuntimeLifecycleNextAction(
       'Keep future context entry points on the RightPanel reducer.',
