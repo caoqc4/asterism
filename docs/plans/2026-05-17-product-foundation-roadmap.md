@@ -438,6 +438,9 @@ continue next step, review evidence, external signal, and recent outcome. The
 projection preserves total count, displayed count, truncation, and display
 limit so Brief can remain a capped attention summary while Tasks owns the full
 queue.
+`HomeBriefData` now exposes that attention summary beside `recommendedActions`,
+so the current Brief layout can stay stable while future UI can show richer
+attention explanations from the shared projection.
 
 ## Recommended Execution Order
 

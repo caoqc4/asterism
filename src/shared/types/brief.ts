@@ -1,6 +1,7 @@
 import type { ArtifactRecord } from './artifact.js';
 import type { BlockerRecord } from './blocker.js';
 import type { BriefSnapshotRecord } from './brief-snapshot.js';
+import type { BriefAttentionLane } from '../brief-attention-boundary.js';
 import type { ProcessTemplateKind } from './process-template.js';
 import type { ResponsibilityKind } from './responsibility.js';
 import type { SchedulerStatus } from './scheduler.js';
@@ -161,6 +162,22 @@ export type BriefProcessTemplateCandidate = {
   notes: string[];
 };
 
+export type HomeBriefAttentionItem = {
+  actionId: string;
+  taskId: string | null;
+  lane: BriefAttentionLane;
+  reason: string;
+};
+
+export type HomeBriefAttentionSummary = {
+  items: HomeBriefAttentionItem[];
+  totalCount: number;
+  displayedCount: number;
+  displayLimit: number | null;
+  truncated: boolean;
+  summary: string;
+};
+
 export type HomeBriefData = {
   activeTaskCount: number;
   pendingDecisionCount: number;
@@ -195,6 +212,7 @@ export type HomeBriefData = {
   priorityLane?: PriorityLane;
   priorityHeadline?: string;
   priorityLede?: string;
+  briefAttention?: HomeBriefAttentionSummary;
 };
 
 export type ResponsibilitySummarySlice = {

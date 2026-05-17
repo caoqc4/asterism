@@ -346,6 +346,19 @@ describe('HomeBriefService', () => {
       'next-step:task_missing',
       'waiting:task_waiting',
     ]);
+    expect(homeData.briefAttention).toMatchObject({
+      totalCount: 5,
+      displayedCount: 5,
+      displayLimit: 5,
+      truncated: false,
+    });
+    expect(homeData.briefAttention?.items.map((item) => [item.actionId, item.lane])).toEqual([
+      ['decision:decision_1', 'unblock_or_decide'],
+      ['risk:task_risk', 'unblock_or_decide'],
+      ['artifact:artifact_1', 'review_evidence'],
+      ['next-step:task_missing', 'continue_next_step'],
+      ['waiting:task_waiting', 'continue_next_step'],
+    ]);
     expect(homeData.recommendedActions.map((action) => action.lane)).toEqual([
       'unblock_or_decide',
       'escalate_now',

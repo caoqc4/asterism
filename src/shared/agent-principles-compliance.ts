@@ -77,6 +77,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'TASKPLANE_AGENT_PRINCIPLES is injected into chat, decomposition, and working context flows.',
       'BriefAttentionBoundary keeps Brief as a capped attention projection over shared priority ordering, not an independent task-management surface.',
+      'HomeBriefData exposes BriefAttentionBoundary lanes and reasons beside recommendedActions while retaining the existing Brief layout contract.',
       'buildAgentWorkingContext and buildRuntimeContextManifest project task state, sources with freshness metadata, artifacts, files, timeline, and work habits.',
       'RuntimeCapabilitySnapshot can be included in RuntimeContextManifest so model, workspace, flags, and tool scaffold state become explicit context assembly inputs.',
       'RuntimeCapabilitySnapshot preserves full tool scaffold family summaries for capability registry consumers.',

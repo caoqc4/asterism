@@ -6,6 +6,7 @@ import { SchedulerService } from '../../scheduler/scheduler-service.js';
 import type {
   HomeActivityRecord,
   HomeBriefData,
+  HomeBriefAttentionSummary,
   HomeSourceContextRecord,
   HomeTaskSliceRecord,
   HomeTaskResumePreviewRecord,
@@ -46,8 +47,10 @@ import { parseTimelinePayload } from '../../../shared/working-context/timeline.j
 import { isUnconfirmedPanelCaptureRecord } from '../../../shared/panel-capture.js';
 import {
   projectPriorityAttention,
+  type PriorityAttentionProjection,
   type PriorityRecommendationTaskSignal,
 } from '../../../shared/priority-recommendation-ranking.js';
+import { projectBriefAttention } from '../../../shared/brief-attention-boundary.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -131,7 +134,7 @@ function formatRunVerificationResumeSummary(verification: RunVerificationRecord)
   return `${prefix}：${verification.label}，${verification.detail}`;
 }
 
-function buildRecommendedActions(params: {
+function buildRecommendedActionProjection(params: {
   activeTasks: HomeBriefData['recentTasks'];
   highRiskTasks: HomeBriefData['highRiskTasks'];
   pendingDecisions: HomeBriefData['pendingDecisions'];
@@ -143,7 +146,7 @@ function buildRecommendedActions(params: {
   nearCompletionTasks: HomeTaskSliceRecord[];
   recentSourceContexts: HomeBriefData['recentSourceContexts'];
   recentArtifacts: HomeBriefData['recentArtifacts'];
-}): RecommendedAction[] {
+}): PriorityAttentionProjection<InternalRecommendedAction> {
   const actions: InternalRecommendedAction[] = [];
   const taskById = new Map(params.activeTasks.map((task) => [task.id, task]));
   const blockedTaskIds = new Set<string>();
@@ -507,8 +510,31 @@ function buildRecommendedActions(params: {
     candidates: actions,
     taskById: taskById as Map<string, PriorityRecommendationTaskSignal>,
     displayLimit: 5,
-  }).items
-    .map(({ order: _order, ...action }) => action);
+  });
+}
+
+function stripRecommendationOrder(action: InternalRecommendedAction): RecommendedAction {
+  const { order: _order, ...recommendedAction } = action;
+  return recommendedAction;
+}
+
+function toHomeBriefAttentionSummary(
+  projection: PriorityAttentionProjection<InternalRecommendedAction>,
+): HomeBriefAttentionSummary {
+  const attention = projectBriefAttention(projection);
+  return {
+    items: attention.items.map((item) => ({
+      actionId: item.candidate.id,
+      taskId: item.candidate.taskId,
+      lane: item.lane,
+      reason: item.reason,
+    })),
+    totalCount: attention.totalCount,
+    displayedCount: attention.displayedCount,
+    displayLimit: attention.displayLimit,
+    truncated: attention.truncated,
+    summary: attention.summary,
+  };
 }
 
 function classifyPriorityLane(params: {
@@ -1661,7 +1687,7 @@ export class HomeBriefService {
       laneByTaskId,
       runVerificationSummaryByRunId,
     });
-    const recommendedActions = buildRecommendedActions({
+    const recommendedActionProjection = buildRecommendedActionProjection({
       activeTasks: activeTasks.slice(0, 10),
       highRiskTasks,
       pendingDecisions: pendingDecisions.slice(0, 5),
@@ -1674,6 +1700,8 @@ export class HomeBriefService {
       recentSourceContexts,
       recentArtifacts: workflowRecentArtifacts,
     });
+    const recommendedActions = recommendedActionProjection.items.map(stripRecommendationOrder);
+    const briefAttention = toHomeBriefAttentionSummary(recommendedActionProjection);
 
     const blockerReevaluationTaskIds = recentSourceContexts
       .filter((sourceContext) =>
@@ -1755,6 +1783,7 @@ export class HomeBriefService {
       nearCompletionTasks: nearCompletionTasks.slice(0, 5),
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
+      briefAttention,
       recentArtifacts: workflowRecentArtifacts,
       recentSourceContexts,
       recentTaskResumes,
