@@ -92,13 +92,16 @@ npm run accept:product-surfaces:mac
 
 This is a supplemental product-surface smoke, not the full UI surface list. It
 covers External Access empty/safety state, External Access fixture-connected
-state, Decisions judgment-center resolution, and task file open/save persistence
-in the packaged app. Brief recovery is
+state, External Access opt-in local-inbox connector state, Decisions
+judgment-center resolution, and task file open/save persistence in the packaged
+app. Brief recovery is
 covered by `accept:packaged-recovery:mac`, and task-dynamics replay rendering is
 covered by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 The External Access fixture uses `TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON` only
 inside the smoke process, so it does not contact live providers or change the
-default no-connector state.
+default no-connector state. The local-inbox smoke uses
+`TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR` with a temporary directory and only
+checks read-only connector status projection.
 
 Release readiness preflight:
 
