@@ -178,6 +178,32 @@ export type HomeBriefAttentionSummary = {
   summary: string;
 };
 
+export type BriefFocusLane =
+  | 'escalate'
+  | 'unblock'
+  | 'continue'
+  | 'clarify'
+  | 'steady';
+
+export type BriefFocusStatus =
+  | 'running'
+  | 'waiting'
+  | 'blocked'
+  | 'clarify'
+  | 'progressing';
+
+export type HomeBriefFocusTask = {
+  id: string;
+  title: string;
+  lane: BriefFocusLane;
+  whyNow: string;
+  action: string;
+  state?: HomeTaskSliceRecord['state'];
+  status?: BriefFocusStatus;
+  parentTaskId?: string | null;
+  parentTitle?: string | null;
+};
+
 export type HomeBriefData = {
   activeTaskCount: number;
   pendingDecisionCount: number;
@@ -213,6 +239,7 @@ export type HomeBriefData = {
   priorityHeadline?: string;
   priorityLede?: string;
   briefAttention?: HomeBriefAttentionSummary;
+  briefFocusTasks?: HomeBriefFocusTask[];
 };
 
 export type ResponsibilitySummarySlice = {

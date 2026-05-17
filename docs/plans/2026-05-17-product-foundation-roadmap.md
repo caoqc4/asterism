@@ -441,6 +441,10 @@ queue.
 `HomeBriefData` now exposes that attention summary beside `recommendedActions`,
 so the current Brief layout can stay stable while future UI can show richer
 attention explanations from the shared projection.
+`BriefFocusProjection` also projects the visible Brief task-card list from the
+same recommended actions, including de-duplication, parent/child filtering, and
+the five-item cap before the renderer sees it. This keeps Brief from owning a
+second task-selection rule while preserving the current layout.
 `BriefExecutor` also consumes the attention summary, so scheduled/fallback
 briefs preserve the rule that Brief is a capped attention summary and Tasks
 owns the full queue.

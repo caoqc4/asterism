@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import type { HomeBriefData } from '@shared/types/brief';
+import { projectBriefFocusTasksFromHomeData } from '@shared/brief-focus-projection';
+import type {
+  BriefFocusLane,
+  HomeBriefData,
+  HomeBriefFocusTask,
+} from '@shared/types/brief';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import { guardTaskStateTransition } from '../lib/runtimeActionGuards';
 import {
@@ -7,19 +12,8 @@ import {
   recordBriefRecommendationSnapshot,
 } from '../lib/briefRecommendationRecords';
 
-type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
-
-interface FocusTask {
-  id: string;
-  title: string;
-  lane: Lane;
-  whyNow: string;
-  action: string;
-  state?: HomeBriefData['recentTasks'][number]['state'];
-  status?: 'running' | 'waiting' | 'blocked' | 'clarify' | 'progressing';
-  parentTaskId?: string | null;
-  parentTitle?: string | null;
-}
+type Lane = BriefFocusLane;
+type FocusTask = HomeBriefFocusTask;
 
 interface ExternalSignal {
   id: string;
@@ -53,50 +47,6 @@ interface BriefPageProps {
   onOpenPanel: (taskId: string, draftPrompt?: string) => void;
 }
 
-function laneFromPriorityLane(lane: string | undefined): Lane {
-  if (lane === 'escalate_now') return 'escalate';
-  if (lane === 'unblock_or_decide') return 'unblock';
-  if (lane === 'continue_or_review') return 'continue';
-  if (lane === 'clarify') return 'clarify';
-  return 'steady';
-}
-
-function statusFromBriefTask(task: HomeBriefData['recentTasks'][number] | undefined): FocusTask['status'] {
-  if (!task) return undefined;
-  if (task.state === 'running') return 'running';
-  if (task.state === 'waiting_external') return 'waiting';
-  if (task.activeBlocker || task.activeDependency) return 'blocked';
-  if (task.state === 'captured') return 'clarify';
-  if (task.state === 'planned' || task.state === 'triaged') return 'progressing';
-  return undefined;
-}
-
-function statusFromRecommendedAction(action: HomeBriefData['recommendedActions'][number]): FocusTask['status'] {
-  if (action.id.startsWith('blocker:') || action.id.startsWith('source-context:blocker:')) return 'blocked';
-  if (action.id.startsWith('waiting:')) return 'waiting';
-  if (action.id.startsWith('next-step:') || action.id.startsWith('source-context:next-step:')) return 'clarify';
-  if (
-    action.id.startsWith('task-dependency:')
-    || action.id.startsWith('artifact:')
-    || action.id.startsWith('source-context:')
-    || action.id.startsWith('completion-ready:')
-    || action.id.startsWith('near-completion:')
-  ) {
-    return 'progressing';
-  }
-  return undefined;
-}
-
-function actionLabelFromStatus(
-  status: FocusTask['status'],
-  fallback: string,
-): string {
-  if (status === 'running') return '查看 Run';
-  if (status === 'waiting') return '起草跟进';
-  if (status === 'blocked') return '解除阻塞';
-  return fallback;
-}
-
 function actionPromptFromTask(task: FocusTask): string | undefined {
   if (task.status === 'waiting') {
     return `请基于当前任务状态，帮我起草一条跟进等待项的消息，并说明是否应该继续等待或升级处理。\n\n任务：${task.title}\n为什么现在：${task.whyNow}`;
@@ -124,67 +74,8 @@ function focusStatusTone(task: FocusTask): Lane {
   return 'continue';
 }
 
-function titleFromRecommendedAction(action: HomeBriefData['recommendedActions'][number]): string {
-  const [, title] = action.label.split('：');
-  return title?.trim() || action.taskId || action.id;
-}
-
 function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
-  const titleById = new Map<string, string>();
-  for (const task of data.recentTasks) {
-    titleById.set(task.id, task.title);
-  }
-  for (const action of data.recommendedActions) {
-    if (action.taskId && !titleById.has(action.taskId)) {
-      titleById.set(action.taskId, titleFromRecommendedAction(action));
-    }
-  }
-
-  const seen = new Set<string>();
-  const candidates = data.recommendedActions
-    .filter((a) => {
-      if (!a.taskId || seen.has(a.taskId)) return false;
-      seen.add(a.taskId);
-      return true;
-    })
-    .map((a) => {
-      const task = data.recentTasks.find((t) => t.id === a.taskId);
-      const status = statusFromBriefTask(task) ?? statusFromRecommendedAction(a);
-      const parentTaskId = task?.parentTaskId ?? null;
-      return {
-        id: a.taskId!,
-        title: task?.title ?? titleById.get(a.taskId!) ?? titleFromRecommendedAction(a),
-        lane: laneFromPriorityLane(a.lane),
-        whyNow: a.reason,
-        action: actionLabelFromStatus(status, a.label),
-        state: task?.state,
-        status,
-        parentTaskId,
-        parentTitle: parentTaskId ? titleById.get(parentTaskId) ?? null : null,
-      };
-    });
-
-  const visibleChildParentIds = new Set(
-    candidates
-      .map((task) => task.parentTaskId)
-      .filter((parentTaskId): parentTaskId is string => Boolean(parentTaskId)),
-  );
-
-  return candidates
-    .filter((task) => {
-      const record = data.recentTasks.find((candidate) => candidate.id === task.id);
-      const isProjectParentWithVisibleChild =
-        !task.parentTaskId &&
-        (record?.childTaskIds ?? []).length > 0 &&
-        visibleChildParentIds.has(task.id);
-
-      if (!isProjectParentWithVisibleChild) {
-        return true;
-      }
-
-      return task.lane === 'escalate' || task.lane === 'unblock';
-    })
-    .slice(0, 5);
+  return data.briefFocusTasks ?? projectBriefFocusTasksFromHomeData(data);
 }
 
 export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPageProps) {

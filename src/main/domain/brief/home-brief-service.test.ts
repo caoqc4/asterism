@@ -359,6 +359,12 @@ describe('HomeBriefService', () => {
       ['next-step:task_missing', 'continue_next_step'],
       ['waiting:task_waiting', 'continue_next_step'],
     ]);
+    expect(homeData.briefFocusTasks?.map((task) => [task.id, task.lane, task.status])).toEqual([
+      ['task_1', 'unblock', undefined],
+      ['task_risk', 'escalate', 'running'],
+      ['task_missing', 'clarify', 'progressing'],
+      ['task_waiting', 'clarify', 'waiting'],
+    ]);
     expect(homeData.recommendedActions.map((action) => action.lane)).toEqual([
       'unblock_or_decide',
       'escalate_now',

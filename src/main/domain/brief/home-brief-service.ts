@@ -51,6 +51,7 @@ import {
   type PriorityRecommendationTaskSignal,
 } from '../../../shared/priority-recommendation-ranking.js';
 import { projectBriefAttention } from '../../../shared/brief-attention-boundary.js';
+import { projectBriefFocusTasks } from '../../../shared/brief-focus-projection.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -1236,6 +1237,10 @@ export class HomeBriefService {
       id: task.id,
       title: task.title,
       summary: task.summary,
+      taskType: task.taskType,
+      taskFacets: task.taskFacets,
+      parentTaskId: task.parentTaskId,
+      childTaskIds: task.childTaskIds,
       state: task.state,
       nextStep: task.nextStep,
       waitingReason: task.waitingReason,
@@ -1702,6 +1707,12 @@ export class HomeBriefService {
     });
     const recommendedActions = recommendedActionProjection.items.map(stripRecommendationOrder);
     const briefAttention = toHomeBriefAttentionSummary(recommendedActionProjection);
+    const activeTaskSlices = activeTasks.map((task) => this.toHomeTaskSlice(task));
+    const recentTasks = workflowTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task));
+    const briefFocusTasks = projectBriefFocusTasks({
+      tasks: activeTaskSlices,
+      recommendedActions,
+    });
 
     const blockerReevaluationTaskIds = recentSourceContexts
       .filter((sourceContext) =>
@@ -1770,7 +1781,7 @@ export class HomeBriefService {
       missingNextStepTaskCount: missingNextStepTasks.length,
       completionReadyTaskCount: completionReadyTasks.length,
       nearCompletionTaskCount: nearCompletionTasks.length,
-      recentTasks: workflowTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      recentTasks,
       waitingTasks: waitingTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       blockerTasks: blockerTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       dependencyTasks: dependencyTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
@@ -1784,6 +1795,7 @@ export class HomeBriefService {
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
       briefAttention,
+      briefFocusTasks,
       recentArtifacts: workflowRecentArtifacts,
       recentSourceContexts,
       recentTaskResumes,
