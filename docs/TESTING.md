@@ -43,6 +43,16 @@ npm run build
 npm run smoke:build
 ```
 
+Read-only local data diagnostics:
+
+```bash
+npm run diagnostics:canonical-data
+```
+
+This checks the local SQLite database against the canonical data contract. Use
+`node scripts/canonical-data-diagnostics.mjs --db /path/to/taskplane.db` after
+`npm run build:main` to inspect a specific database.
+
 For a single Vitest file:
 
 ```bash
