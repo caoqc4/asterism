@@ -164,6 +164,9 @@ future path: it exchanges the stored refresh token for a short-lived access
 token on demand, avoids persisting access tokens, and keeps token response
 bodies out of error messages. It is still not wired into default connector
 status or UI actions.
+`GmailConnectorAdapter` can accept an access-token provider for the future OAuth
+path. Status reads still do not refresh tokens or call Gmail; the provider is
+called only when task-bound source ingestion lists Gmail evidence.
 
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does

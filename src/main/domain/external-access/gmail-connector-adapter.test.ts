@@ -34,6 +34,24 @@ describe('GmailConnectorAdapter', () => {
     await expect(adapter.listEvidence()).resolves.toEqual([]);
   });
 
+  it('reports OAuth-backed Gmail as configured without refreshing during status reads', async () => {
+    const accessTokenProvider = vi.fn().mockResolvedValue('short-lived-token');
+    const adapter = new GmailConnectorAdapter({
+      accessToken: null,
+      accountLabel: 'user@example.com',
+      accessTokenProvider,
+      credentialConfigured: true,
+    });
+
+    await expect(adapter.getStatus()).resolves.toMatchObject({
+      id: 'gmail',
+      kind: 'email',
+      accountLabel: 'user@example.com',
+      status: 'connected',
+    });
+    expect(accessTokenProvider).not.toHaveBeenCalled();
+  });
+
   it('normalizes Gmail metadata and snippets through the connector ingestion plan', async () => {
     const fetchImpl = vi.fn()
       .mockResolvedValueOnce(jsonResponse({
@@ -97,6 +115,47 @@ describe('GmailConnectorAdapter', () => {
     ]);
     expect(plans[0].sourceContext.content).toContain('From: customer@example.com');
     expect(plans[0].sourceContext.content).toContain('Snippet: Can you confirm');
+  });
+
+  it('refreshes an OAuth-backed access token only during task-bound evidence listing', async () => {
+    const accessTokenProvider = vi.fn().mockResolvedValue('short-lived-token');
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({
+        messages: [{ id: 'message_2', threadId: 'thread_2' }],
+      }))
+      .mockResolvedValueOnce(jsonResponse({
+        id: 'message_2',
+        snippet: 'Please review the invoice decision.',
+        payload: {
+          headers: [
+            { name: 'Subject', value: 'Invoice decision' },
+            { name: 'From', value: 'finance@example.com' },
+            { name: 'Date', value: 'Sun, 17 May 2026 10:30:00 +0800' },
+          ],
+        },
+      }));
+    const service = new ExternalAccessStatusService(undefined, [
+      new GmailConnectorAdapter({
+        accessToken: null,
+        accessTokenProvider,
+        credentialConfigured: true,
+        maxResults: 1,
+        apiBaseUrl: 'https://gmail.test/gmail/v1',
+        fetchImpl: fetchImpl as never,
+      }),
+    ]);
+
+    const plans = await service.planSourceIngestion({ taskId: 'task_2' });
+
+    expect(accessTokenProvider).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer short-lived-token',
+    });
+    expect(plans[0].sourceContext).toMatchObject({
+      taskId: 'task_2',
+      title: 'Invoice decision',
+      uri: 'gmail://message/message_2',
+    });
   });
 });
 

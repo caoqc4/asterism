@@ -14,6 +14,8 @@ type FetchLike = typeof fetch;
 
 export type GmailConnectorAdapterOptions = {
   accessToken: string | null;
+  accessTokenProvider?: (() => string | null | Promise<string | null>) | null;
+  credentialConfigured?: boolean | (() => boolean | Promise<boolean>);
   accountLabel?: string | null;
   query?: string | null;
   maxResults?: number | null;
@@ -45,7 +47,10 @@ export class GmailConnectorAdapter implements ExternalAccessConnectorAdapter {
   }
 
   async getStatus(): Promise<ExternalAccessConnectorRecord> {
-    if (!this.options.accessToken?.trim()) {
+    const hasStaticAccessToken = Boolean(this.options.accessToken?.trim());
+    const hasCredential = hasStaticAccessToken || await this.hasConfiguredCredential();
+
+    if (!hasCredential) {
       return {
         id: 'gmail',
         label: 'Gmail',
@@ -60,14 +65,14 @@ export class GmailConnectorAdapter implements ExternalAccessConnectorAdapter {
       id: 'gmail',
       label: 'Gmail',
       kind: 'email',
-      accountLabel: this.options.accountLabel?.trim() || 'OAuth token configured',
+      accountLabel: this.options.accountLabel?.trim() || (hasStaticAccessToken ? 'OAuth token configured' : 'OAuth refresh token configured'),
       status: 'connected',
       lastSyncAt: null,
     };
   }
 
   async listEvidence(): Promise<ExternalAccessConnectorEvidence[]> {
-    const accessToken = this.options.accessToken?.trim();
+    const accessToken = await this.resolveAccessToken();
     if (!accessToken) return [];
 
     const messages = await this.listMessages(accessToken);
@@ -80,6 +85,18 @@ export class GmailConnectorAdapter implements ExternalAccessConnectorAdapter {
     }
 
     return evidence;
+  }
+
+  private async resolveAccessToken(): Promise<string | null> {
+    const staticToken = this.options.accessToken?.trim();
+    if (staticToken) return staticToken;
+    const provided = await this.options.accessTokenProvider?.();
+    return typeof provided === 'string' && provided.trim() ? provided.trim() : null;
+  }
+
+  private async hasConfiguredCredential(): Promise<boolean> {
+    if (typeof this.options.credentialConfigured === 'function') return Boolean(await this.options.credentialConfigured());
+    return Boolean(this.options.credentialConfigured);
   }
 
   private async listMessages(accessToken: string): Promise<Array<{ id: string; threadId: string | null }>> {
