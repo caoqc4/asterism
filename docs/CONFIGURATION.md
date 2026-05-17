@@ -114,6 +114,29 @@ deliberately validating approved sandbox patch promotion against a disposable
 workspace. When enabled, approving a ready `workspace.staged_patch` Decision can
 write the reviewed files after promotion preflight passes.
 
+### External Access: Gmail
+
+Gmail is the first network connector target for External Access. The current
+slice is read-only and environment-gated:
+
+```bash
+TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN=ya29...
+TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCOUNT=user@example.com
+TASKPLANE_EXTERNAL_ACCESS_GMAIL_QUERY=newer_than:7d
+TASKPLANE_EXTERNAL_ACCESS_GMAIL_MAX_RESULTS=10
+```
+
+The connector expects an OAuth access token with the minimum read-only Gmail
+scope needed for message listing and metadata reads. Taskplane does not create
+or refresh OAuth tokens yet, does not send email, does not modify labels, and
+does not import full email bodies in this slice.
+
+AI config/status reads only project the configured connector state. Gmail API
+network calls are limited to task-bound source-ingestion planning, where message
+metadata and snippets are normalized through `ConnectorSourceIngestionPlan`.
+Gmail evidence is marked sensitive by default, so it requires review before it
+can become task source material.
+
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does
 not run it during startup or AI config status reads. A ready backend status is

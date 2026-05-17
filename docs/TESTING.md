@@ -102,6 +102,9 @@ inside the smoke process, so it does not contact live providers or change the
 default no-connector state. The local-inbox smoke uses
 `TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR` with a temporary directory and only
 checks read-only connector status projection.
+Gmail connector tests use an injected fetch implementation and do not contact
+Google. Live Gmail OAuth/token validation remains manual until a concrete OAuth
+flow is selected.
 
 Release readiness preflight:
 

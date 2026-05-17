@@ -153,9 +153,9 @@ MCP, and browser/operator to appear as explicit hidden/unconfigured reserved
 rows instead of generic deferred rows before their product pages expose richer
 status. `ExternalAccessStatusService` now provides an explicit connector status
 boundary, and `AiConfigService` feeds that status into CapabilityRegistry and
-ConfigurationSafetyReport. External Access is still read-only and connector
-network integration remains deferred, but real connector services now have a
-single product-surface status input instead of a hard-coded empty row.
+ConfigurationSafetyReport. External Access is still read-only; concrete
+connector services now have a single product-surface status input instead of a
+hard-coded empty row.
 `ExternalAccessStatusService` also defines the minimal read-only connector
 adapter contract: adapters report status, and connected adapters can preview
 evidence that is normalized through `ConnectorSourceIngestionPlan` before any
@@ -167,9 +167,16 @@ returns ingestion previews through the same plan path. The service also supports
 a local fixture status input for packaged acceptance, allowing External Access,
 CapabilityRegistry, and ConfigurationSafetyReport to be smoke-tested in a
 connected state without live provider credentials.
+`GmailConnectorAdapter` is the first network connector slice. It is opt-in by
+`TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN`, projects a configured Gmail
+connector without startup network probing, and only calls Gmail during
+task-bound source-ingestion planning. It reads message metadata/snippets through
+the shared connector evidence path, marks Gmail evidence sensitive by default,
+and still leaves OAuth token creation/refresh plus live smoke validation as
+manual future work.
 
-Network connector ingestion remains deferred, but the source-memory boundary now
-has a shared `ConnectorSourceIngestionPlan`. Future connector services must
+Broader network connector ingestion remains deferred, but the source-memory
+boundary now has a shared `ConnectorSourceIngestionPlan`. Future connector services must
 normalize connector id, external id, captured time, duplicate status,
 sensitivity, and credibility through that plan before creating `SourceContext`
 records. This

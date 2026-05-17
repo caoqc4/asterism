@@ -119,6 +119,7 @@ describe('runtime lifecycle coverage matrix', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
     expect(text).toContain('LocalInboxConnectorAdapter');
+    expect(text).toContain('GmailConnectorAdapter');
     expect(text).toContain('ConnectorSourceIngestionPlan previews instead of direct SourceContext writes');
   });
 

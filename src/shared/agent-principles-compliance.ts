@@ -98,7 +98,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AiConfigService feeds External Access zero-connector product-surface status into CapabilityRegistry, so External Access is reported as a structured disabled capability rather than a deferred unknown row.',
       'ExternalAccessStatusService provides a read-only connector status boundary, and AiConfigService feeds that status into CapabilityRegistry and ConfigurationSafetyReport.',
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
-      'LocalInboxConnectorAdapter provides an opt-in read-only connector implementation that keeps local inbox evidence on the same ConnectorSourceIngestionPlan path and never writes SourceContext records directly.',
+      'LocalInboxConnectorAdapter and GmailConnectorAdapter provide opt-in read-only connector implementations that keep evidence on the same ConnectorSourceIngestionPlan path and never write SourceContext records directly.',
       'Settings and Model consume ConfigurationSafetyReport as read-only safety boundaries for configured, approval-required, blocked, manual-probe, and secret-exposure-safe states.',
       'External Access consumes AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without live connector probes.',
       'ConfigurationSafetyReport includes Skills and MCP safety surfaces from CapabilityRegistry, and the retained Skills/MCP pages consume those rows as read-only safety strips instead of implicit model-visible tools.',
@@ -125,8 +125,8 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs; future provider-visible execution boundaries must use the same gate.',
       'RuntimeContextManifest now consumes TaskMemoryRetrieval; future provider-visible execution boundaries must not rebuild their own task-memory read order.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
-      'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; the opt-in local inbox adapter uses it, and future network provider connectors must call it before persistence.',
-      'External Access has a structured connector status service, adapter contract, and opt-in local inbox adapter; future network provider connectors still need concrete provider adapters, persistence wiring, and connector-backed smoke coverage.',
+      'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; the opt-in local inbox and Gmail adapters use it, and future provider connectors must call it before persistence.',
+      'External Access has a structured connector status service, adapter contract, opt-in local inbox adapter, and first Gmail network adapter; OAuth token creation/refresh, persistence wiring, and live connector smoke coverage remain future work.',
       'ConfigurationSafetyReport is consumed by Settings, Model, External Access, Skills, and MCP; remaining capability pages can reuse the same safety projection when their UI work resumes.',
     ],
     nextVerification: [
@@ -400,10 +400,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SourceMaterialQualityEvaluation scores traceability, credibility, duplication, and sensitivity before source material is included in runtime context.',
       'RuntimeContextManifest combines source freshness and quality decisions into source-context inclusion metadata.',
       'SourceContext records, creation inputs, Agent working context, and Agent source_context.create can carry explicit credibility, duplicate, and sensitive-data signals.',
-      'ConnectorSourceIngestionPlan routes local-inbox and future network connector evidence through the same source-quality evaluator before persistence.',
+      'ConnectorSourceIngestionPlan routes local-inbox, Gmail, and future connector evidence through the same source-quality evaluator before persistence.',
     ],
     gaps: [
-      'Source material quality checks are shared and represented in context manifests; local-inbox and future network connector services must use ConnectorSourceIngestionPlan to populate explicit credibility, duplicate, and sensitivity signals consistently.',
+      'Source material quality checks are shared and represented in context manifests; local-inbox, Gmail, and future connector services must use ConnectorSourceIngestionPlan to populate explicit credibility, duplicate, and sensitivity signals consistently.',
       'Source inclusion metadata is data-level only; retained UI surfaces do not yet expose full source-quality explanations.',
     ],
     nextVerification: [

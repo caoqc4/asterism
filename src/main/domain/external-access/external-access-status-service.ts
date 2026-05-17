@@ -10,6 +10,7 @@ import {
   type ConnectorSourceIngestionPlan,
 } from '../../../shared/connector-source-ingestion.js';
 import { readEnvValue } from '../../config/env.js';
+import { GmailConnectorAdapter } from './gmail-connector-adapter.js';
 import { LocalInboxConnectorAdapter } from './local-inbox-connector-adapter.js';
 
 export type ExternalAccessStatusReader = () => ExternalAccessStatus | Promise<ExternalAccessStatus>;
@@ -23,6 +24,10 @@ export type ExternalAccessConnectorAdapter = {
 
 export const EXTERNAL_ACCESS_FIXTURE_ENV = 'TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON';
 export const EXTERNAL_ACCESS_LOCAL_INBOX_DIR_ENV = 'TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR';
+export const EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN';
+export const EXTERNAL_ACCESS_GMAIL_ACCOUNT_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCOUNT';
+export const EXTERNAL_ACCESS_GMAIL_QUERY_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_QUERY';
+export const EXTERNAL_ACCESS_GMAIL_MAX_RESULTS_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_MAX_RESULTS';
 
 const CONNECTOR_KINDS = new Set<ExternalAccessConnectorRecord['kind']>([
   'email',
@@ -67,9 +72,23 @@ export function readExternalAccessFixtureStatus(raw = readEnvValue(EXTERNAL_ACCE
 
 export function createExternalAccessStatusService(): ExternalAccessStatusService {
   const localInboxDir = readEnvValue(EXTERNAL_ACCESS_LOCAL_INBOX_DIR_ENV);
+  const gmailAccessToken = readEnvValue(EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN_ENV);
+  const gmailAccount = readEnvValue(EXTERNAL_ACCESS_GMAIL_ACCOUNT_ENV);
+  const gmailQuery = readEnvValue(EXTERNAL_ACCESS_GMAIL_QUERY_ENV);
+  const gmailMaxResults = readPositiveIntegerEnv(EXTERNAL_ACCESS_GMAIL_MAX_RESULTS_ENV);
+  const adapters: ExternalAccessConnectorAdapter[] = [];
+  if (localInboxDir) adapters.push(new LocalInboxConnectorAdapter(localInboxDir));
+  if (gmailAccessToken) {
+    adapters.push(new GmailConnectorAdapter({
+      accessToken: gmailAccessToken,
+      accountLabel: gmailAccount,
+      query: gmailQuery,
+      maxResults: gmailMaxResults,
+    }));
+  }
   return new ExternalAccessStatusService(
     () => readExternalAccessFixtureStatus(),
-    localInboxDir ? [new LocalInboxConnectorAdapter(localInboxDir)] : [],
+    adapters,
   );
 }
 
@@ -145,4 +164,11 @@ function normalizeFixtureSource(value: unknown): ExternalAccessConnectorRecord |
     lastSyncAt: typeof record.lastSyncAt === 'string' ? record.lastSyncAt : null,
     errorReason: typeof record.errorReason === 'string' ? record.errorReason : null,
   };
+}
+
+function readPositiveIntegerEnv(key: string): number | null {
+  const raw = readEnvValue(key);
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : null;
 }

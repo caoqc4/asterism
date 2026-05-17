@@ -75,9 +75,9 @@ Next work should move to a concrete product surface instead of continuing
 runtime deepening in isolation. Recommended order:
 
 1. External Access connector growth: the first opt-in read-only local inbox
-   adapter is connected through the existing capability and source-ingestion
-   boundaries; add network provider adapters and connector-backed smoke coverage
-   only when a concrete provider workflow is selected.
+   adapter and Gmail network connector slice are connected through the existing
+   capability and source-ingestion boundaries; add OAuth token creation/refresh
+   and connector-backed live smoke coverage only when that workflow is selected.
 2. Skills/MCP capability pages: reuse `ConfigurationSafetyReport` and
    `CapabilityRegistry` without changing settled Tasks-page layout. The first
    read-only safety strip is in place; future work should connect real
