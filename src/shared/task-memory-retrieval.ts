@@ -283,11 +283,17 @@ function rankEntity(
   if (entity.entityType === 'blocker' && entity.importanceSignals.includes('active')) {
     reasons.push('active_blocker');
     score += 70;
+  } else if (entity.entityType === 'blocker' && entity.importanceSignals.includes('resolved')) {
+    reasons.push('resolved_blocker');
+    score -= 220;
   }
 
   if (entity.entityType === 'dependency' && entity.importanceSignals.includes('active')) {
     reasons.push('active_dependency');
     score += 60;
+  } else if (entity.entityType === 'dependency' && entity.importanceSignals.includes('resolved')) {
+    reasons.push('resolved_dependency');
+    score -= 220;
   }
 
   if (entity.entityType === 'source_context' && entity.importanceSignals.includes('key_source')) {

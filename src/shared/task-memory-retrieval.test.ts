@@ -79,6 +79,34 @@ describe('task memory retrieval', () => {
     expect(results.find((item) => item.entity.id === 'file_record_other')).toBeUndefined();
   });
 
+  it('demotes resolved blockers and dependencies below current recovery records', () => {
+    const results = retrieveTaskExecutionMemory({
+      currentTask: task(),
+      taskFiles: [
+        taskFile({ id: 'file_task_md', name: 'Task.md', path: 'Task.md' }),
+        taskFile({ id: 'file_record_current', name: 'Current record', path: 'Task Records/current.md' }),
+      ],
+      blockers: [blocker({ id: 'blocker_resolved', status: 'resolved' })],
+      dependencies: [dependency({ id: 'dependency_resolved', status: 'resolved' })],
+      sourceContexts: [sourceContext({ id: 'source_current', uri: 'https://example.com' })],
+    });
+
+    expect(results.slice(0, 4).map((item) => item.entity.id)).toEqual([
+      'task_1',
+      'file_task_md',
+      'file_record_current',
+      'source_current',
+    ]);
+    expect(results.find((item) => item.entity.id === 'blocker_resolved')).toMatchObject({
+      decision: 'include',
+      reasons: expect.arrayContaining(['resolved_blocker']),
+    });
+    expect(results.find((item) => item.entity.id === 'dependency_resolved')).toMatchObject({
+      decision: 'include',
+      reasons: expect.arrayContaining(['resolved_dependency']),
+    });
+  });
+
   it('excludes archived or duplicate sources by default while keeping reasons', () => {
     const results = retrieveTaskExecutionMemory({
       currentTask: task(),
