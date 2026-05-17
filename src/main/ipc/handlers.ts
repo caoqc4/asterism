@@ -22,6 +22,7 @@ import type {
 } from '../../shared/types/process-template.js';
 import type { CreateCodeAgentRunInput, CreateRunInput } from '../../shared/types/run.js';
 import type { AiConfigInput, FeatureFlags } from '../../shared/types/settings.js';
+import type { GmailOAuthConnectInput, GmailOAuthDisconnectInput } from '../../shared/types/external-access-control.js';
 import type { OperatorStartedRunRequest } from '../../shared/types/operator-started-run.js';
 import type { CreateManualArtifactInput, UpdateArtifactInput } from '../../shared/types/artifact.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from '../../shared/types/task-file.js';
@@ -66,6 +67,7 @@ import { normalizeCreateManualArtifactInput } from '../../shared/runtime-surface
 import { evaluateRuntimeSubtaskDraft } from '../../shared/runtime-subtask-evaluator.js';
 import { evaluateRuntimeAction } from '../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../shared/runtime-verification.js';
+import { GmailOAuthControlService } from '../domain/external-access/gmail-oauth-control-service.js';
 
 const PING_CHANNEL = 'app:ping';
 
@@ -241,6 +243,18 @@ export function registerIpcHandlers(): void {
       ...status,
       producerBackendReadiness,
     };
+  });
+
+  ipcMain.handle('externalAccess:gmailOAuthConnect', async (_event, input: GmailOAuthConnectInput) => {
+    const result = await new GmailOAuthControlService().connect(input);
+    if (result.status === 'connected') emitAppEvent('settings.changed');
+    return result;
+  });
+
+  ipcMain.handle('externalAccess:gmailOAuthDisconnect', async (_event, input: GmailOAuthDisconnectInput) => {
+    const result = await new GmailOAuthControlService().disconnect(input);
+    if (result.status === 'disconnected') emitAppEvent('settings.changed');
+    return result;
   });
 
   ipcMain.handle('task:list', async () => {

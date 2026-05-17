@@ -6,6 +6,8 @@ const {
   getLanguageModelMock,
   handleMock,
   emitAppEventMock,
+  gmailOAuthConnectMock,
+  gmailOAuthDisconnectMock,
   probeLocalContainerSandboxBackendMock,
   servicesMock,
 } = vi.hoisted(() => ({
@@ -14,6 +16,8 @@ const {
   getLanguageModelMock: vi.fn(),
   handleMock: vi.fn(),
   emitAppEventMock: vi.fn(),
+  gmailOAuthConnectMock: vi.fn(),
+  gmailOAuthDisconnectMock: vi.fn(),
   probeLocalContainerSandboxBackendMock: vi.fn(),
   servicesMock: {
     aiConfigService: {
@@ -155,6 +159,15 @@ vi.mock('../domain/run/local-container-sandboxed-coding-producer-execution-servi
   }),
 }));
 
+vi.mock('../domain/external-access/gmail-oauth-control-service.js', () => ({
+  GmailOAuthControlService: vi.fn().mockImplementation(function MockGmailOAuthControlService() {
+    return {
+      connect: gmailOAuthConnectMock,
+      disconnect: gmailOAuthDisconnectMock,
+    };
+  }),
+}));
+
 import { registerIpcHandlers } from './handlers.js';
 
 function getRegisteredHandler<TArgs extends unknown[], TResult>(channel: string) {
@@ -187,6 +200,8 @@ describe('registerIpcHandlers', () => {
     generateTextMock.mockResolvedValue({ text: 'AI response' });
     handleMock.mockClear();
     emitAppEventMock.mockClear();
+    gmailOAuthConnectMock.mockReset();
+    gmailOAuthDisconnectMock.mockReset();
     probeLocalContainerSandboxBackendMock.mockReset();
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
     delete process.env.TASKPLANE_CODE_AGENT_CONTEXT_FILES;
@@ -444,6 +459,46 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.schedulerService.stop).not.toHaveBeenCalled();
     expect(emitAppEventMock).toHaveBeenCalledWith('settings.changed');
     expect(result.featureFlags.enableScheduler).toBe(true);
+  });
+
+  it('connects Gmail OAuth through explicit External Access IPC and emits settings.changed only when connected', async () => {
+    gmailOAuthConnectMock.mockResolvedValue({
+      status: 'connected',
+      connectorId: 'gmail',
+      openedAuthorizationUrl: true,
+      accountLabel: 'user@example.com',
+      redirectUri: 'http://127.0.0.1:40000/oauth/gmail/callback',
+      errorReason: null,
+    });
+    const handler = getRegisteredHandler<[{ confirmed: boolean }], Awaited<ReturnType<typeof gmailOAuthConnectMock>>>(
+      'externalAccess:gmailOAuthConnect',
+    );
+
+    const result = await handler({}, { confirmed: true });
+
+    expect(gmailOAuthConnectMock).toHaveBeenCalledWith({ confirmed: true });
+    expect(result.status).toBe('connected');
+    expect(emitAppEventMock).toHaveBeenCalledWith('settings.changed');
+  });
+
+  it('disconnects Gmail OAuth through explicit External Access IPC and emits settings.changed only when disconnected', async () => {
+    gmailOAuthDisconnectMock.mockResolvedValue({
+      status: 'disconnected',
+      connectorId: 'gmail',
+      hadRefreshToken: true,
+      revoked: true,
+      localTokenCleared: true,
+      errorReason: null,
+    });
+    const handler = getRegisteredHandler<[{ confirmed: boolean }], Awaited<ReturnType<typeof gmailOAuthDisconnectMock>>>(
+      'externalAccess:gmailOAuthDisconnect',
+    );
+
+    const result = await handler({}, { confirmed: true });
+
+    expect(gmailOAuthDisconnectMock).toHaveBeenCalledWith({ confirmed: true });
+    expect(result.status).toBe('disconnected');
+    expect(emitAppEventMock).toHaveBeenCalledWith('settings.changed');
   });
 
   it('applies saved AI behavior preferences to chat prompts', async () => {

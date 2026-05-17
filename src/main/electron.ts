@@ -8,5 +8,5 @@ declare global {
 const require = createRequire(import.meta.url);
 const electron = globalThis.__TASKPLANE_ELECTRON__ ?? (require('electron') as typeof import('electron'));
 
-export const { app, BrowserWindow, contextBridge, ipcMain, ipcRenderer } = electron;
+export const { app, BrowserWindow, contextBridge, ipcMain, ipcRenderer, shell } = electron;
 export type { IpcRendererEvent } from 'electron';

@@ -234,6 +234,8 @@ describe('preload bridge', () => {
     await api.getAiConfigStatus();
     await api.setAiConfig(aiInput);
     await api.probeSandboxBackend();
+    await api.connectGmailOAuth?.({ confirmed: true });
+    await api.disconnectGmailOAuth?.({ confirmed: true });
     await api.listTasks();
     await api.getTaskHierarchyConsistency();
     await api.getTaskHierarchyManualReviewPolicy();
@@ -297,6 +299,8 @@ describe('preload bridge', () => {
       ['settings:getAiConfigStatus'],
       ['settings:setAiConfig', aiInput],
       ['settings:probeSandboxBackend'],
+      ['externalAccess:gmailOAuthConnect', { confirmed: true }],
+      ['externalAccess:gmailOAuthDisconnect', { confirmed: true }],
       ['task:list'],
       ['task:getHierarchyConsistency'],
       ['task:getHierarchyManualReviewPolicy'],

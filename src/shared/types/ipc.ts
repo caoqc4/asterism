@@ -87,6 +87,12 @@ import type {
   UpdateProcessTemplateInput,
 } from './process-template.js';
 import type { OperatorStartedRunRequest } from './operator-started-run.js';
+import type {
+  GmailOAuthConnectInput,
+  GmailOAuthConnectResult,
+  GmailOAuthDisconnectInput,
+  GmailOAuthDisconnectResult,
+} from './external-access-control.js';
 import type { CreateCodeAgentRunInput, CreateRunInput, RunDetailRecord, RunRecord } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
@@ -130,6 +136,8 @@ export type ElectronApi = {
   getAiConfigStatus: () => Promise<AiConfigStatus>;
   setAiConfig: (input: AiConfigInput) => Promise<AiConfigStatus>;
   probeSandboxBackend?: () => Promise<AgentSandboxBackendStatus>;
+  connectGmailOAuth?: (input: GmailOAuthConnectInput) => Promise<GmailOAuthConnectResult>;
+  disconnectGmailOAuth?: (input: GmailOAuthDisconnectInput) => Promise<GmailOAuthDisconnectResult>;
   listTasks: () => Promise<TaskListItemRecord[]>;
   getTaskHierarchyConsistency: () => Promise<TaskHierarchyConsistencyEvaluation>;
   getTaskHierarchyManualReviewPolicy: () => Promise<TaskHierarchyManualReviewPolicy>;

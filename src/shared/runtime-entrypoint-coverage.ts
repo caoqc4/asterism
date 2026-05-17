@@ -655,6 +655,25 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     notes: 'The probe returns backend status and producer readiness through explicit settings IPC; it does not start runs, mutate tasks, or persist scheduler decisions.',
   },
   {
+    id: 'externalAccess.gmailOAuthCredential',
+    owner: 'IPC externalAccess:gmailOAuthConnect / externalAccess:gmailOAuthDisconnect',
+    kind: 'product_configuration',
+    description: 'Connect or disconnect Gmail OAuth credentials through explicit External Access configuration actions.',
+    ipcChannels: [
+      'externalAccess:gmailOAuthConnect',
+      'externalAccess:gmailOAuthDisconnect',
+    ],
+    requiredGates: [
+      'simplicity_check',
+      'product_config_boundary',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'product_config_boundary',
+    ],
+    notes: 'Both actions require explicit confirmation. Connect opens the system browser and waits for a loopback callback before storing a refresh token; disconnect revokes when possible and always clears the local refresh token.',
+  },
+  {
     id: 'workHabit.preferenceMemory',
     owner: 'WorkHabitService',
     kind: 'preference_memory',

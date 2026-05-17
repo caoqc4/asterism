@@ -192,6 +192,18 @@ stored keychain refresh token as configured Gmail status without network
 probing. The refresh token is exchanged only during task-bound source-ingestion
 planning. The actual browser authorization and token-capture flow is still a
 future slice.
+Main-process Gmail OAuth connect/disconnect entrypoints now exist behind
+explicit confirmation:
+
+- `externalAccess:gmailOAuthConnect` opens the system browser, waits for the
+  local loopback callback, and emits `settings.changed` only after the refresh
+  token is stored.
+- `externalAccess:gmailOAuthDisconnect` revokes when possible, clears the local
+  keychain refresh token, and emits `settings.changed` after local credentials
+  are cleared.
+
+These entrypoints are not wired to visible UI controls yet. They do not mutate
+tasks, write task memory, or start background Gmail sync.
 
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does
