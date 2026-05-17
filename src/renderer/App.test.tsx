@@ -2564,9 +2564,11 @@ describe('App redesign v1', () => {
     expect(screen.getByLabelText('任务动态关键脉络')).toBeTruthy();
     expect(screen.getByText('关键脉络')).toBeTruthy();
     expect(screen.getByText('任务状态变化')).toBeTruthy();
+    expect(screen.getAllByText('任务事件').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('任务信息已更新').length).toBeGreaterThan(0);
     expect(screen.getByText(/1 条执行记录/)).toBeTruthy();
-    expect(await screen.findByText(/整理反馈/)).toBeTruthy();
-    expect(screen.getByText('任务信息已更新')).toBeTruthy();
+    expect((await screen.findAllByText(/整理反馈/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('任务信息已更新').length).toBeGreaterThan(0);
 
     await user.click(await screen.findByRole('button', { name: /合同盖章跟进/ }));
     expect(await screen.findByText(/等待法务确认盖章版本/)).toBeTruthy();

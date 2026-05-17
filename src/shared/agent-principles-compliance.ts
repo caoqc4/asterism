@@ -451,6 +451,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'runtime-event-record formats completion-criteria, dependency, blocker, and source-context payloads into readable task dynamics instead of exposing raw event names or JSON.',
       'RunService.getDetail exposes optional runtimeEvents and runtimeReplayGroups with task-bound timeline and Task Record context on RunDetailRecord for Run-side data consumers.',
       'Tasks task dynamics consumes RuntimeEventRecord projection and replay groups instead of raw task timeline only.',
+      'Tasks task dynamics renders replay groups with source labels, time spans, related-task counts, and representative event titles before the flat event timeline.',
       'Tasks task dynamics loads selected Run details and feeds Run steps into RuntimeEventRecord so execution steps remain visible in the same task-bound audit stream.',
       'RightPanel context refresh, context switch confirmation/dismissal, phase closeout, and task file proposal writes persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage file/source/artifact actions and project decomposition confirmation persist panel.* timeline events for the same RuntimeEventRecord audit projection.',

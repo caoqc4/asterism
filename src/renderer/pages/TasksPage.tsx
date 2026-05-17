@@ -3395,6 +3395,7 @@ function TaskTimelineView({
   const ordered = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const groupedEvents = groupRuntimeEventsByDate(ordered);
   const replayGroups = groupRuntimeEventsForReplay(ordered);
+  const eventById = new Map(ordered.map((event) => [event.id, event]));
   const scopeCopy = parentTask
     ? `当前显示子任务动态；父任务「${parentTask.title}」保留项目层汇总。任务动态由任务事件、执行、任务记录和拍板项统一投影。`
     : task.type === 'project'
@@ -3434,19 +3435,39 @@ function TaskTimelineView({
                 <section className="task-timeline-day">
                   <div className="task-timeline-date">关键脉络</div>
                   <div className="task-timeline-day-items">
-                    {replayGroups.slice(0, 5).map((group) => (
-                      <div key={group.id} className="task-timeline-item">
-                        <span className={`task-timeline-marker ${runtimeReplayGroupTone(group)}`} />
-                        <span className="task-timeline-time">{formatIsoTime(group.updatedAt)}</span>
-                        <div className="task-timeline-content">
-                          <div className="task-timeline-title-row">
-                            <strong>{group.title}</strong>
-                            <span>{formatRuntimeReplayGroupScope(group)}</span>
+                    {replayGroups.slice(0, 5).map((group) => {
+                      const groupEvents = group.eventIds
+                        .map((eventId) => eventById.get(eventId))
+                        .filter((event): event is RuntimeEventRecord => Boolean(event));
+                      return (
+                        <div key={group.id} className="task-timeline-item">
+                          <span className={`task-timeline-marker ${runtimeReplayGroupTone(group)}`} />
+                          <span className="task-timeline-time">{formatRuntimeReplayGroupTimeRange(group)}</span>
+                          <div className="task-timeline-content">
+                            <div className="task-timeline-title-row">
+                              <strong>{group.title}</strong>
+                              <span>{formatRuntimeReplayGroupScope(group)}</span>
+                            </div>
+                            <div className="task-replay-meta" aria-label="脉络来源">
+                              {formatRuntimeReplayGroupSourceLabels(group).map((label) => (
+                                <span key={label}>{label}</span>
+                              ))}
+                            </div>
+                            <p>{group.summary ?? '相关任务动态已归并到同一条脉络。'}</p>
+                            {groupEvents.length > 0 && (
+                              <ul className="task-replay-events">
+                                {groupEvents.slice(0, 3).map((event) => (
+                                  <li key={event.id}>{event.title}</li>
+                                ))}
+                                {groupEvents.length > 3 && (
+                                  <li>{`另有 ${groupEvents.length - 3} 条动态`}</li>
+                                )}
+                              </ul>
+                            )}
                           </div>
-                          <p>{group.summary ?? '相关任务动态已归并到同一条脉络。'}</p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               </div>
@@ -3489,6 +3510,26 @@ function formatRuntimeReplayGroupScope(group: RuntimeReplayGroup): string {
     group.relatedTaskIds.length > 0 ? `${group.relatedTaskIds.length} 个关联任务` : null,
   ].filter(Boolean);
   return parts.join(' · ');
+}
+
+function formatRuntimeReplayGroupTimeRange(group: RuntimeReplayGroup): string {
+  const start = formatIsoTime(group.startedAt);
+  const end = formatIsoTime(group.updatedAt);
+  return start === end ? end : `${start}-${end}`;
+}
+
+function formatRuntimeReplayGroupSourceLabels(group: RuntimeReplayGroup): string[] {
+  const labels = group.sourceTypes.map(formatRuntimeEventSourceType);
+  return Array.from(new Set(labels));
+}
+
+function formatRuntimeEventSourceType(sourceType: RuntimeEventRecord['sourceType']): string {
+  if (sourceType === 'run') return 'Run';
+  if (sourceType === 'run_step') return 'Run Step';
+  if (sourceType === 'task_record') return '任务记录';
+  if (sourceType === 'decision') return '拍板';
+  if (sourceType === 'runtime_projection') return '运行时';
+  return '任务事件';
 }
 
 function formatRuntimeReplayGroupKind(kind: RuntimeReplayGroup['kind']): string {

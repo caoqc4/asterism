@@ -473,6 +473,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Run detail exposes runtime events and replay groups that include the run, run steps, task timeline events, and Task Records for the same task.',
       'RuntimeEventRecord formats completion-criteria, dependency, blocker, and source-context timeline payloads into readable task dynamics.',
       'groupRuntimeEventsForReplay creates shared replay-oriented stories, and Tasks task dynamics renders those groups before the flat timeline.',
+      'Tasks task dynamics renders replay groups with source labels, time spans, related-task counts, and representative event titles before the flat event timeline.',
       'Tasks task dynamics loads selected Run details and projects Run steps into the same visible task-dynamics stream as task timeline, Task Records, and Decisions.',
       'Task A to task B handoff replay is covered by relatedTaskId/relatedTaskIds projection tests.',
     ],
