@@ -159,6 +159,11 @@ keychain account `external_access_gmail_refresh_token` for future OAuth refresh
 tokens. That store is not yet connected to Gmail network reads; the existing
 environment access-token path remains the only live Gmail connector path until
 the refresh service is implemented.
+`GmailOAuthService` now provides the local token-refresh primitive for that
+future path: it exchanges the stored refresh token for a short-lived access
+token on demand, avoids persisting access tokens, and keeps token response
+bodies out of error messages. It is still not wired into default connector
+status or UI actions.
 
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does
