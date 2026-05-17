@@ -95,6 +95,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'ConfigurationSafetyReport normalizes AiConfigStatus and CapabilityRegistry into safety-facing configuration states without exposing API key values.',
       'ConfigurationSafetyReport marks provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus so existing settings/model/capability service consumers share one safety projection.',
+      'AiConfigService feeds External Access zero-connector product-surface status into CapabilityRegistry, so External Access is reported as a structured disabled capability rather than a deferred unknown row.',
       'Settings consumes ConfigurationSafetyReport as a read-only safety boundary for configured, approval-required, blocked, manual-probe, and secret-exposure-safe states.',
       'External Access consumes AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without live connector probes.',
       'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
@@ -121,7 +122,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeContextManifest now consumes TaskMemoryRetrieval; future provider-visible execution boundaries must not rebuild their own task-memory read order.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
       'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; future real connector services must call it before persistence.',
-      'External Access still needs service-backed structured status before it stops being deferred in AiConfigStatus; Skills, MCP, and browser/operator have scaffold fallback but still need richer product-surface status.',
+      'External Access has minimal zero-connector structured status; future real connector services still need to report connected, pending, and error counts through the same product-surface input.',
       'ConfigurationSafetyReport is consumed by Settings and External Access; remaining capability pages can reuse it when their UI work resumes.',
     ],
     nextVerification: [

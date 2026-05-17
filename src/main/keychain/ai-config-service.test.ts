@@ -52,14 +52,22 @@ describe('AiConfigService', () => {
       requiredGate: 'runtime_context_assembly',
     });
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
-      status: 'unknown',
+      status: 'disabled',
       visibility: 'hidden',
+      summary: 'connected=0 / pending=0 / errors=0',
+      missingReason: 'No external access connector is connected.',
     });
     expect(status.configurationSafetyReport).toMatchObject({
       secretExposureSafe: true,
     });
     expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'model.api_key')).toMatchObject({
       state: 'missing',
+      exposesSecretValue: false,
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'external_access.connectors')).toMatchObject({
+      state: 'disabled_by_flag',
+      reason: 'No external access connector is connected.',
+      startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
     });
     expect(status.executorLifecycleAvailability).toMatchObject({

@@ -6,7 +6,7 @@ import keytar from 'keytar';
 import type { AiConfigInput, AiConfigStatus, AiProvider, AiProviderKeysInput, FeatureFlags } from '../../shared/types/settings.js';
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
-import { buildCapabilityRegistry } from '../../shared/capability-registry.js';
+import { buildCapabilityRegistry, type CapabilityProductSurfaceStatus } from '../../shared/capability-registry.js';
 import { buildConfigurationSafetyReport } from '../../shared/configuration-safety-report.js';
 import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-snapshot.js';
 import { AppConfigService } from '../config/app-config-service.js';
@@ -33,6 +33,11 @@ const DEFAULT_TOOL_SCAFFOLD_POLICY = {
 };
 const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
 const CODE_AGENT_CHECK_SCRIPTS = ['test', 'lint'] as const;
+const EMPTY_EXTERNAL_ACCESS_SURFACE_STATUS = {
+  connectedCount: 0,
+  pendingCount: 0,
+  errorCount: 0,
+} satisfies NonNullable<CapabilityProductSurfaceStatus['externalAccess']>;
 
 export type RuntimeAiConfig = {
   provider: AiProvider;
@@ -67,6 +72,12 @@ function detectCodeAgentWorkspaceChecks(
   } catch {
     return unavailable('package.json could not be read or parsed.');
   }
+}
+
+function buildCapabilityProductSurfaceStatus(): CapabilityProductSurfaceStatus {
+  return {
+    externalAccess: EMPTY_EXTERNAL_ACCESS_SURFACE_STATUS,
+  };
 }
 
 export class AiConfigService {
@@ -219,6 +230,7 @@ function withCapabilityRegistry(status: AiConfigStatus): AiConfigStatus {
     ...status,
     capabilityRegistry: buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: status }),
+      productSurfaces: buildCapabilityProductSurfaceStatus(),
     }),
   };
   return {

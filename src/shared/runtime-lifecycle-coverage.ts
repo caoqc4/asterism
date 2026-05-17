@@ -513,6 +513,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'ConfigurationSafetyReport projects AiConfigStatus and CapabilityRegistry into configured, missing, disabled, approval-required, and manual-probe safety states without exposing secret values.',
       'ConfigurationSafetyReport keeps provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in rather than startup side effects.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus, so retained settings/capability service consumers can read the shared safety projection without a separate UI path.',
+      'AiConfigService feeds External Access zero-connector product-surface status into CapabilityRegistry, so External Access is a structured disabled capability instead of an unconnected deferred row.',
       'Settings consumes ConfigurationSafetyReport as a read-only configuration safety boundary with secret exposure, manual-probe, approval-required, and blocked capability states.',
       'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
     ],
@@ -521,12 +522,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
-      'External Access remains a deferred hidden row until a connector service exposes structured status; Skills, MCP, and browser/operator can already fall back to tool scaffold reserved status.',
+      'External Access now has minimal structured zero-connector status; future real connector services still need to report connected, pending, and error counts through the same product-surface input.',
       'Sandbox coding capability remains hidden until both the feature flag and backend readiness support the capability.',
       'ConfigurationSafetyReport is exposed through AiConfigStatus and consumed by Settings and External Access; other retained capability pages can reuse the same report when their UI work resumes.',
     ],
     nextImplementation: [
-      'Connect External Access and richer Skills, MCP, and browser/operator pages or services to the existing CapabilityRegistry product-surface status input.',
+      'Connect future real External Access services and richer Skills, MCP, and browser/operator pages or services to the existing CapabilityRegistry product-surface status input.',
       'Keep ConfigurationSafetyReport on AiConfigStatus when future settings or capability pages render safety state.',
       'Require RuntimeCapabilitySnapshot from any future entry point where model, external access, workspace checks, or tool exposure changes execution permission.',
     ],
