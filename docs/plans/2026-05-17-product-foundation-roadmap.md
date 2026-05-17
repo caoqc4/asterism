@@ -316,6 +316,17 @@ Acceptance criteria:
 - dangerous capability probes do not run at startup;
 - blocked actions explain the exact missing config or approval.
 
+Initial implementation: `ConfigurationSafetyReport` projects existing
+`AiConfigStatus` plus `CapabilityRegistry` into safety-facing surfaces for
+model provider, API key presence, workspace root, scheduler, sandbox coding,
+sandbox patch promotion, External Access, and browser/operator. It normalizes
+states into configured, missing, disabled-by-flag, disabled-by-policy, and
+approval-required; records whether approval is needed; and marks startup probe
+policy as never, safe-read-only, or manual-only. API key state only reports the
+source class (`env`/`keychain`/missing) and never exposes secret values.
+Provider spend, sandbox, browser, and external-service checks remain manual or
+explicitly opted in.
+
 ## Package F: Work Habits, SOPs, And Method Library
 
 Goal: make cross-task learning useful without turning one-off facts into rules.
