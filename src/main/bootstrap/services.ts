@@ -96,6 +96,7 @@ const externalAccessStatusService = createExternalAccessStatusService();
 const externalAccessSourceIngestionService = new ExternalAccessSourceIngestionService(
   externalAccessStatusService,
   taskService,
+  taskService,
 );
 const agentToolRegistry = new AgentToolRegistry(
   artifactRepository,

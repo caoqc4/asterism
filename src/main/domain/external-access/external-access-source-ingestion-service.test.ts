@@ -157,4 +157,39 @@ describe('ExternalAccessSourceIngestionService', () => {
     });
     expect(writer.createSourceContext).not.toHaveBeenCalled();
   });
+
+  it('skips selected plans that already exist in task source-context memory', async () => {
+    const plan = planConnectorSourceIngestion({
+      taskId: 'task_1',
+      connectorId: 'gmail',
+      connectorName: 'Gmail',
+      externalId: 'message_1',
+      title: '客户确认邮件',
+      uri: 'gmail://message/message_1',
+      capturedAt: '2026-05-17T09:00:00.000Z',
+    });
+    const writer = { createSourceContext: vi.fn() };
+    const service = new ExternalAccessSourceIngestionService(
+      { planSourceIngestion: vi.fn().mockResolvedValue([plan]) },
+      writer,
+      {
+        getDetail: vi.fn().mockResolvedValue({
+          sourceContexts: [sourceRecord({
+            id: 'source_existing',
+            batchId: plan.sourceContext.batchId,
+          })],
+        }),
+      },
+    );
+
+    await expect(service.commit({
+      taskId: 'task_1',
+      planIds: [plan.planId],
+      confirmed: true,
+    })).resolves.toMatchObject({
+      created: [],
+      skippedPlanIds: [plan.planId],
+    });
+    expect(writer.createSourceContext).not.toHaveBeenCalled();
+  });
 });
