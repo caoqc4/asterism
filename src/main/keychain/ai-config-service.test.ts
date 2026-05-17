@@ -57,6 +57,13 @@ describe('AiConfigService', () => {
       summary: 'connected=0 / pending=0 / errors=0',
       missingReason: 'No external access connector is connected.',
     });
+    expect(status.externalAccessStatus).toEqual({
+      sources: [],
+      connectedCount: 0,
+      pendingCount: 0,
+      errorCount: 0,
+      updatedAt: null,
+    });
     expect(status.configurationSafetyReport).toMatchObject({
       secretExposureSafe: true,
     });
@@ -87,6 +94,50 @@ describe('AiConfigService', () => {
       providerNativeExposedIds: [],
       reservedCount: 1,
       textPromptExposedIds: [],
+    });
+  });
+
+  it('feeds External Access connector status into capability and safety projections', async () => {
+    getPasswordMock.mockResolvedValue(null);
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { ExternalAccessStatusService } = await import('../domain/external-access/external-access-status-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const service = new AiConfigService(
+      new AppConfigService(() => tempRoot),
+      new ExternalAccessStatusService(() => ({
+        sources: [{
+          id: 'gmail',
+          label: 'Gmail',
+          kind: 'email',
+          accountLabel: 'user@example.com',
+          status: 'connected',
+          lastSyncAt: '2026-05-17T09:00:00.000Z',
+        }],
+        connectedCount: 1,
+        pendingCount: 0,
+        errorCount: 0,
+        updatedAt: '2026-05-17T09:00:00.000Z',
+      })),
+    );
+
+    const status = await service.getStatus();
+
+    expect(status.externalAccessStatus).toMatchObject({
+      connectedCount: 1,
+      sources: [{ id: 'gmail', status: 'connected' }],
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
+      status: 'available',
+      configured: true,
+      summary: 'connected=1 / pending=0 / errors=0',
+      visibility: 'hidden',
+      access: 'read_only',
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'external_access.connectors')).toMatchObject({
+      state: 'approval_required',
+      requiresApproval: true,
+      startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
     });
   });
 

@@ -8,9 +8,11 @@ import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provi
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
 import { buildCapabilityRegistry, type CapabilityProductSurfaceStatus } from '../../shared/capability-registry.js';
 import { buildConfigurationSafetyReport } from '../../shared/configuration-safety-report.js';
+import { emptyExternalAccessStatus, externalAccessStatusForCapability, type ExternalAccessStatus } from '../../shared/external-access-status.js';
 import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-snapshot.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { readEnvBoolean, readEnvValue } from '../config/env.js';
+import { ExternalAccessStatusService } from '../domain/external-access/external-access-status-service.js';
 import { evaluateAgentExecutorLifecycleServiceAvailability } from '../domain/run/agent-executor-lifecycle-service-factory.js';
 
 const SERVICE_NAME = 'taskplane';
@@ -33,11 +35,6 @@ const DEFAULT_TOOL_SCAFFOLD_POLICY = {
 };
 const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
 const CODE_AGENT_CHECK_SCRIPTS = ['test', 'lint'] as const;
-const EMPTY_EXTERNAL_ACCESS_SURFACE_STATUS = {
-  connectedCount: 0,
-  pendingCount: 0,
-  errorCount: 0,
-} satisfies NonNullable<CapabilityProductSurfaceStatus['externalAccess']>;
 
 export type RuntimeAiConfig = {
   provider: AiProvider;
@@ -74,14 +71,17 @@ function detectCodeAgentWorkspaceChecks(
   }
 }
 
-function buildCapabilityProductSurfaceStatus(): CapabilityProductSurfaceStatus {
+function buildCapabilityProductSurfaceStatus(externalAccessStatus: ExternalAccessStatus | undefined): CapabilityProductSurfaceStatus {
   return {
-    externalAccess: EMPTY_EXTERNAL_ACCESS_SURFACE_STATUS,
+    externalAccess: externalAccessStatusForCapability(externalAccessStatus ?? emptyExternalAccessStatus()),
   };
 }
 
 export class AiConfigService {
-  constructor(private readonly appConfigService: AppConfigService) {}
+  constructor(
+    private readonly appConfigService: AppConfigService,
+    private readonly externalAccessStatusService = new ExternalAccessStatusService(),
+  ) {}
 
   /* ─── Per-provider key storage ─── */
 
@@ -132,6 +132,7 @@ export class AiConfigService {
     const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
     const configuredProviders = await this.getConfiguredProviders();
     const activeKey = await this.resolveKeyForProvider(config.aiProvider);
+    const externalAccessStatus = await this.externalAccessStatusService.getStatus();
 
     const status: AiConfigStatus = {
       configured: Boolean(activeKey),
@@ -150,6 +151,7 @@ export class AiConfigService {
       sandboxBackendStatus: buildAgentSandboxBackendStatus(null),
       executorLifecycleAvailability: evaluateAgentExecutorLifecycleServiceAvailability(),
       toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({ policy: DEFAULT_TOOL_SCAFFOLD_POLICY }),
+      externalAccessStatus,
     };
     return withCapabilityRegistry(status);
   }
@@ -174,6 +176,7 @@ export class AiConfigService {
     const configuredProviders = await this.getConfiguredProviders();
     const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
     const activeKey = await this.resolveKeyForProvider(provider);
+    const externalAccessStatus = await this.externalAccessStatusService.getStatus();
 
     const status: AiConfigStatus = {
       configured: Boolean(activeKey),
@@ -192,6 +195,7 @@ export class AiConfigService {
       sandboxBackendStatus: buildAgentSandboxBackendStatus(null),
       executorLifecycleAvailability: evaluateAgentExecutorLifecycleServiceAvailability(),
       toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({ policy: DEFAULT_TOOL_SCAFFOLD_POLICY }),
+      externalAccessStatus,
     };
     return withCapabilityRegistry(status);
   }
@@ -230,7 +234,7 @@ function withCapabilityRegistry(status: AiConfigStatus): AiConfigStatus {
     ...status,
     capabilityRegistry: buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: status }),
-      productSurfaces: buildCapabilityProductSurfaceStatus(),
+      productSurfaces: buildCapabilityProductSurfaceStatus(status.externalAccessStatus),
     }),
   };
   return {

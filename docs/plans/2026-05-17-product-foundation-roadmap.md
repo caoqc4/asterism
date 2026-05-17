@@ -149,7 +149,11 @@ deferred rows once their pages or services expose structured status. The
 runtime snapshot also preserves tool scaffold family summaries, allowing Skills,
 MCP, and browser/operator to appear as explicit hidden/unconfigured reserved
 rows instead of generic deferred rows before their product pages expose richer
-status. External Access remains deferred until connector status is available.
+status. `ExternalAccessStatusService` now provides an explicit connector status
+boundary, and `AiConfigService` feeds that status into CapabilityRegistry and
+ConfigurationSafetyReport. External Access is still read-only and connector
+network integration remains deferred, but real connector services now have a
+single product-surface status input instead of a hard-coded empty row.
 
 Connector ingestion remains deferred, but the source-memory boundary now has a
 shared `ConnectorSourceIngestionPlan`. Future connector services must normalize
