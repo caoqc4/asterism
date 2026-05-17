@@ -168,6 +168,19 @@ status or UI actions.
 path. Status reads still do not refresh tokens or call Gmail; the provider is
 called only when task-bound source ingestion lists Gmail evidence.
 
+OAuth refresh-token wiring can be enabled for local development with:
+
+```bash
+TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_ID=your-desktop-oauth-client-id
+TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_SECRET=
+```
+
+When no static access token is configured, the connector factory can project a
+stored keychain refresh token as configured Gmail status without network
+probing. The refresh token is exchanged only during task-bound source-ingestion
+planning. The actual browser authorization and token-capture flow is still a
+future slice.
+
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does
 not run it during startup or AI config status reads. A ready backend status is

@@ -11,6 +11,8 @@ import {
 } from '../../../shared/connector-source-ingestion.js';
 import { readEnvValue } from '../../config/env.js';
 import { GmailConnectorAdapter } from './gmail-connector-adapter.js';
+import { GmailOAuthService } from './gmail-oauth-service.js';
+import { GmailOAuthTokenStore } from './gmail-oauth-token-store.js';
 import { LocalInboxConnectorAdapter } from './local-inbox-connector-adapter.js';
 
 export type ExternalAccessStatusReader = () => ExternalAccessStatus | Promise<ExternalAccessStatus>;
@@ -28,6 +30,8 @@ export const EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN_ENV = 'TASKPLANE_EXTERNAL_ACCESS
 export const EXTERNAL_ACCESS_GMAIL_ACCOUNT_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCOUNT';
 export const EXTERNAL_ACCESS_GMAIL_QUERY_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_QUERY';
 export const EXTERNAL_ACCESS_GMAIL_MAX_RESULTS_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_MAX_RESULTS';
+export const EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_ID_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_ID';
+export const EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_SECRET_ENV = 'TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_SECRET';
 
 const CONNECTOR_KINDS = new Set<ExternalAccessConnectorRecord['kind']>([
   'email',
@@ -76,11 +80,28 @@ export function createExternalAccessStatusService(): ExternalAccessStatusService
   const gmailAccount = readEnvValue(EXTERNAL_ACCESS_GMAIL_ACCOUNT_ENV);
   const gmailQuery = readEnvValue(EXTERNAL_ACCESS_GMAIL_QUERY_ENV);
   const gmailMaxResults = readPositiveIntegerEnv(EXTERNAL_ACCESS_GMAIL_MAX_RESULTS_ENV);
+  const gmailOAuthClientId = readEnvValue(EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_ID_ENV);
+  const gmailOAuthClientSecret = readEnvValue(EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_SECRET_ENV);
   const adapters: ExternalAccessConnectorAdapter[] = [];
   if (localInboxDir) adapters.push(new LocalInboxConnectorAdapter(localInboxDir));
   if (gmailAccessToken) {
     adapters.push(new GmailConnectorAdapter({
       accessToken: gmailAccessToken,
+      accountLabel: gmailAccount,
+      query: gmailQuery,
+      maxResults: gmailMaxResults,
+    }));
+  } else if (gmailOAuthClientId) {
+    const tokenStore = new GmailOAuthTokenStore();
+    const oauthService = new GmailOAuthService({
+      clientId: gmailOAuthClientId,
+      clientSecret: gmailOAuthClientSecret,
+      tokenStore,
+    });
+    adapters.push(new GmailConnectorAdapter({
+      accessToken: null,
+      accessTokenProvider: async () => (await oauthService.refreshAccessToken()).accessToken,
+      credentialConfigured: () => tokenStore.hasRefreshToken(),
       accountLabel: gmailAccount,
       query: gmailQuery,
       maxResults: gmailMaxResults,
