@@ -276,19 +276,25 @@ describe('local smoke script default boundaries', () => {
     expect(scripts['accept:packaged-recovery:mac']).toBe(
       'npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:context-learning:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
     );
+    expect(scripts['accept:product-surfaces:mac']).toBe(
+      'npm run smoke:external-access:mac && npm run smoke:decisions-center:mac && npm run smoke:task-files:mac',
+    );
     expect(scripts['smoke:release:mac']).not.toContain('smoke:home-recovery:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:project-decomposition:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:context-learning:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:code-agent-ui:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:run-decision-recovery:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:settings-config:mac');
+    expect(scripts['smoke:release:mac']).not.toContain('smoke:external-access:mac');
+    expect(scripts['smoke:release:mac']).not.toContain('smoke:decisions-center:mac');
+    expect(scripts['smoke:release:mac']).not.toContain('smoke:task-files:mac');
   });
 
   it('keeps alpha local acceptance non-live and explicit', () => {
     const scripts = readPackageScripts();
 
     expect(scripts['accept:alpha-local']).toBe(
-      'npm run verify && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:release:mac-preflight',
+      'npm run verify && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:product-surfaces:mac && npm run accept:release:mac-preflight',
     );
 
     expect(scripts['accept:alpha-local']).not.toContain('accept:provider-native-live');
