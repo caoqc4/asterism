@@ -125,8 +125,8 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs; future provider-visible execution boundaries must use the same gate.',
       'RuntimeContextManifest now consumes TaskMemoryRetrieval; future provider-visible execution boundaries must not rebuild their own task-memory read order.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
-      'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; future real connector services must call it before persistence.',
-      'External Access has a structured connector status service and adapter contract; future real connector services still need concrete provider adapters, persistence wiring, and connector-backed smoke coverage.',
+      'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; the opt-in local inbox adapter uses it, and future network provider connectors must call it before persistence.',
+      'External Access has a structured connector status service, adapter contract, and opt-in local inbox adapter; future network provider connectors still need concrete provider adapters, persistence wiring, and connector-backed smoke coverage.',
       'ConfigurationSafetyReport is consumed by Settings, Model, External Access, Skills, and MCP; remaining capability pages can reuse the same safety projection when their UI work resumes.',
     ],
     nextVerification: [
@@ -400,14 +400,14 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SourceMaterialQualityEvaluation scores traceability, credibility, duplication, and sensitivity before source material is included in runtime context.',
       'RuntimeContextManifest combines source freshness and quality decisions into source-context inclusion metadata.',
       'SourceContext records, creation inputs, Agent working context, and Agent source_context.create can carry explicit credibility, duplicate, and sensitive-data signals.',
-      'ConnectorSourceIngestionPlan routes future connector evidence through the same source-quality evaluator before persistence.',
+      'ConnectorSourceIngestionPlan routes local-inbox and future network connector evidence through the same source-quality evaluator before persistence.',
     ],
     gaps: [
-      'Source material quality checks are shared and represented in context manifests; future connector services must use ConnectorSourceIngestionPlan to populate explicit credibility, duplicate, and sensitivity signals consistently.',
+      'Source material quality checks are shared and represented in context manifests; local-inbox and future network connector services must use ConnectorSourceIngestionPlan to populate explicit credibility, duplicate, and sensitivity signals consistently.',
       'Source inclusion metadata is data-level only; retained UI surfaces do not yet expose full source-quality explanations.',
     ],
     nextVerification: [
-      'Pass explicit credibility, duplicate, and sensitivity signals from future connector ingestion paths through ConnectorSourceIngestionPlan into SourceMaterialQualityEvaluation.',
+      'Pass explicit credibility, duplicate, and sensitivity signals from connector ingestion paths through ConnectorSourceIngestionPlan into SourceMaterialQualityEvaluation.',
     ],
   },
   {

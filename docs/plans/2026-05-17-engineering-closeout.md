@@ -43,6 +43,9 @@ Result: passed. `diagnostics:canonical-data:optional` reported
 database. The full alpha gate passed through verify, canonical diagnostics,
 agent/runtime acceptance, packaged release smoke, packaged recovery smoke,
 supplemental product-surface smoke, and release preflight.
+After adding the opt-in local inbox connector, `accept:product-surfaces:mac`
+was rerun and passed the External Access empty, fixture-connected, local-inbox,
+Decisions, and task-file packaged checks.
 
 The release preflight completed with `status=not-ready` because the local
 machine does not have Developer ID signing or Apple notarization credentials
@@ -51,6 +54,8 @@ provider request, Docker probe, or workspace mutation was performed.
 
 Recent closeout commits:
 
+- `d233fd2` Add local inbox packaged smoke.
+- `317024e` Add opt-in local inbox connector.
 - `46ce057` Make canonical diagnostics optional in alpha gate.
 - `6066449` Bind memory write IPC channels to surface coverage.
 - `8fbe6dc` Check memory write IPC handler coverage.
