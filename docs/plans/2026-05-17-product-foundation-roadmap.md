@@ -208,6 +208,17 @@ Acceptance criteria:
 - retrieval results carry inclusion/exclusion reasons;
 - no large new search UI is required in this package.
 
+Initial implementation: `TaskMemoryRetrieval` defines a deterministic local
+search index and execution-memory retrieval order across task state, Task.md,
+Task Records, task dynamics, Decisions, source contexts, artifacts, task files,
+blockers, dependencies, Work Habits, and applied process templates. The first
+ranking pass keeps current task state and Task.md ahead of pending Decisions,
+active blockers/dependencies, current Task Records, key sources, artifacts, and
+support files. Results carry include/caution/exclude decisions plus reasons;
+archived or duplicate sources are excluded by default, sensitive sources are
+included with caution, unrelated records are excluded unless the query matches,
+and selected files can surface with caution without making them authoritative.
+
 ## Package D: Data Model, Migration, And Repair
 
 Goal: make canonical data fields authoritative and legacy compatibility bounded.

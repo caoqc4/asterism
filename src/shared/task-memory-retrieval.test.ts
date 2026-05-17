@@ -1,0 +1,308 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  buildTaskMemorySearchIndex,
+  retrieveTaskExecutionMemory,
+} from './task-memory-retrieval.js';
+import type { ArtifactRecord } from './types/artifact.js';
+import type { BlockerRecord } from './types/blocker.js';
+import type { DecisionRecord } from './types/decision.js';
+import type { AppliedProcessTemplateRecord } from './types/process-template.js';
+import type { SourceContextRecord } from './types/source-context.js';
+import type { TaskFileRecord } from './types/task-file.js';
+import type { TaskRecord } from './types/task.js';
+import type { WorkHabitRecord } from './types/work-habit.js';
+
+describe('task memory retrieval', () => {
+  it('builds a deterministic searchable index across task memory surfaces', () => {
+    const index = buildTaskMemorySearchIndex({
+      currentTask: task(),
+      taskFiles: [
+        taskFile({ id: 'file_task_md', name: 'Task.md', path: 'Task.md' }),
+        taskFile({ id: 'file_record', name: 'handoff.md', path: 'Task Records/handoff.md' }),
+        taskFile({ id: 'file_support', name: 'notes.md', path: 'notes.md' }),
+      ],
+      sourceContexts: [sourceContext({ id: 'source_key', isKey: true, uri: 'https://example.com' })],
+      artifacts: [artifact()],
+      decisions: [decision()],
+      blockers: [blocker()],
+      workHabits: [workHabit()],
+      processTemplates: [processTemplate()],
+    });
+
+    expect(index.map((item) => item.entityType)).toEqual([
+      'task_state',
+      'task_md',
+      'task_record',
+      'task_file',
+      'source_context',
+      'artifact',
+      'decision',
+      'blocker',
+      'work_habit',
+      'process_template',
+    ]);
+    expect(index.find((item) => item.id === 'source_key')).toMatchObject({
+      quality: expect.objectContaining({ decision: 'include', reason: 'key_source' }),
+      importanceSignals: expect.arrayContaining(['key_source']),
+    });
+  });
+
+  it('prioritizes current task recovery memory, pending decisions, blockers, and key sources', () => {
+    const results = retrieveTaskExecutionMemory({
+      currentTask: task(),
+      taskFiles: [
+        taskFile({ id: 'file_record_other', taskId: 'task_other', name: 'Other record', path: 'Task Records/other.md' }),
+        taskFile({ id: 'file_task_md', name: 'Task.md', path: 'Task.md' }),
+        taskFile({ id: 'file_record_current', name: 'Current record', path: 'Task Records/current.md' }),
+      ],
+      decisions: [decision({ id: 'decision_pending', status: 'pending' })],
+      blockers: [blocker({ id: 'blocker_active', status: 'active' })],
+      sourceContexts: [sourceContext({ id: 'source_key', isKey: true, uri: 'https://example.com' })],
+      maxResults: 5,
+    });
+
+    expect(results.map((item) => item.entity.id)).toEqual([
+      'task_1',
+      'file_task_md',
+      'decision_pending',
+      'blocker_active',
+      'file_record_current',
+    ]);
+    expect(results.find((item) => item.entity.id === 'file_record_other')).toBeUndefined();
+  });
+
+  it('excludes archived or duplicate sources by default while keeping reasons', () => {
+    const results = retrieveTaskExecutionMemory({
+      currentTask: task(),
+      sourceContexts: [
+        sourceContext({ id: 'source_archived', status: 'archived', uri: 'https://old.example.com' }),
+        sourceContext({ id: 'source_duplicate', isDuplicate: true, uri: 'https://dup.example.com' }),
+        sourceContext({ id: 'source_sensitive', containsSensitiveData: true, uri: 'https://secret.example.com' }),
+      ],
+    });
+
+    expect(results.find((item) => item.entity.id === 'source_archived')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['source_quality:archived']),
+    });
+    expect(results.find((item) => item.entity.id === 'source_duplicate')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['source_quality:duplicate']),
+    });
+    expect(results.find((item) => item.entity.id === 'source_sensitive')).toMatchObject({
+      decision: 'caution',
+      reasons: expect.arrayContaining(['source_quality:sensitive']),
+    });
+  });
+
+  it('allows explicit selected files to surface with caution when otherwise weak', () => {
+    const results = retrieveTaskExecutionMemory({
+      currentTask: task(),
+      taskFiles: [
+        taskFile({
+          id: 'file_other',
+          taskId: 'task_other',
+          name: 'Other task notes',
+          path: 'notes.md',
+        }),
+      ],
+      selectedFileIds: ['file_other'],
+    });
+
+    expect(results.find((item) => item.entity.id === 'file_other')).toMatchObject({
+      decision: 'caution',
+      reasons: expect.arrayContaining(['different_task', 'selected']),
+    });
+  });
+
+  it('keeps unconfirmed work habits and inactive process templates out of execution context', () => {
+    const results = retrieveTaskExecutionMemory({
+      currentTask: task(),
+      workHabits: [workHabit({ id: 'habit_pending', status: 'pending' })],
+      processTemplates: [processTemplate({ bindingId: 'template_removed', bindingStatus: 'removed' })],
+    });
+
+    expect(results.find((item) => item.entity.id === 'habit_pending')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['unconfirmed_work_habit']),
+    });
+    expect(results.find((item) => item.entity.id === 'template_removed')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['inactive_process_template']),
+    });
+  });
+
+  it('boosts exact query matches without letting unrelated records outrank current task state', () => {
+    const results = retrieveTaskExecutionMemory({
+      currentTask: task(),
+      taskFiles: [
+        taskFile({ id: 'file_current', name: 'Acceptance Notes', path: 'Task Records/acceptance.md' }),
+        taskFile({ id: 'file_other', taskId: 'task_other', name: 'Acceptance Notes', path: 'Task Records/other.md' }),
+      ],
+      query: 'Acceptance Notes',
+    });
+
+    expect(results.slice(0, 3).map((item) => item.entity.id)).toEqual([
+      'task_1',
+      'file_current',
+      'file_other',
+    ]);
+    expect(results.find((item) => item.entity.id === 'file_other')).toMatchObject({
+      decision: 'include',
+      reasons: expect.arrayContaining(['query_match']),
+    });
+  });
+});
+
+function task(partial: Partial<TaskRecord> = {}): TaskRecord {
+  return {
+    id: 'task_1',
+    title: 'Build retrieval foundation',
+    summary: 'Create deterministic task memory retrieval.',
+    taskType: 'project',
+    taskFacets: ['project'],
+    parentTaskId: null,
+    childTaskIds: [],
+    state: 'running',
+    nextStep: 'Read Task.md and recent task records.',
+    waitingReason: null,
+    riskLevel: 'none',
+    riskNote: null,
+    createdAt: '2026-05-01T00:00:00.000Z',
+    updatedAt: '2026-05-17T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function taskFile(partial: Partial<TaskFileRecord> = {}): TaskFileRecord {
+  return {
+    id: 'file_1',
+    taskId: 'task_1',
+    name: 'Task.md',
+    path: 'Task.md',
+    kind: 'file',
+    content: 'Task recovery context',
+    createdAt: '2026-05-01T00:00:00.000Z',
+    updatedAt: '2026-05-16T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function sourceContext(partial: Partial<SourceContextRecord> = {}): SourceContextRecord {
+  return {
+    id: 'source_1',
+    taskId: 'task_1',
+    title: 'Source',
+    kind: 'link',
+    isKey: false,
+    uri: 'https://example.com/source',
+    content: 'Evidence source',
+    note: 'Traceable source',
+    status: 'active',
+    capturedAt: '2026-05-15T00:00:00.000Z',
+    runId: null,
+    batchId: null,
+    sourceRole: 'raw',
+    credibility: 'unknown',
+    isDuplicate: false,
+    containsSensitiveData: false,
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    archivedAt: null,
+    ...partial,
+  };
+}
+
+function artifact(partial: Partial<ArtifactRecord> = {}): ArtifactRecord {
+  return {
+    id: 'artifact_1',
+    taskId: 'task_1',
+    sourceType: 'run',
+    sourceId: 'run_1',
+    kind: 'run_output',
+    title: 'Run output',
+    content: 'Generated output',
+    createdAt: '2026-05-16T00:00:00.000Z',
+    updatedAt: '2026-05-16T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function decision(partial: Partial<DecisionRecord> = {}): DecisionRecord {
+  return {
+    id: 'decision_1',
+    taskId: 'task_1',
+    title: 'Choose retrieval policy',
+    status: 'pending',
+    scope: 'task',
+    kind: 'direction_choice',
+    sourceType: 'manual',
+    sourceId: null,
+    sourceLabel: null,
+    context: { whyNow: 'Execution needs read order.' },
+    options: [],
+    recommendation: { label: 'Use deterministic retrieval', reason: 'Smallest reliable step.' },
+    createdAt: '2026-05-16T00:00:00.000Z',
+    updatedAt: '2026-05-16T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function blocker(partial: Partial<BlockerRecord> = {}): BlockerRecord {
+  return {
+    id: 'blocker_1',
+    taskId: 'task_1',
+    title: 'Missing source policy',
+    kind: 'document_or_material',
+    detail: 'Need a source inclusion policy.',
+    owner: null,
+    responsibility: null,
+    responsibilityLabel: null,
+    sourceContextId: null,
+    status: 'active',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-16T00:00:00.000Z',
+    resolvedAt: null,
+    ...partial,
+  };
+}
+
+function workHabit(partial: Partial<WorkHabitRecord> = {}): WorkHabitRecord {
+  return {
+    id: 'habit_1',
+    rule: 'Prefer deterministic retrieval before embeddings.',
+    source: 'manual',
+    scope: 'global',
+    scopeLabel: 'All tasks',
+    status: 'confirmed',
+    examples: 'Use exact paths first.',
+    createdAt: '2026-05-01T00:00:00.000Z',
+    lastAppliedAt: null,
+    applicationCount: 0,
+    ...partial,
+  };
+}
+
+function processTemplate(partial: Partial<AppliedProcessTemplateRecord> = {}): AppliedProcessTemplateRecord {
+  return {
+    id: 'template_1',
+    bindingId: 'template_binding_1',
+    taskId: 'task_1',
+    title: 'Runtime quality loop',
+    summary: 'Read memory, execute, record.',
+    content: '1. Read memory\n2. Execute\n3. Record',
+    kind: 'workflow',
+    tags: ['runtime'],
+    status: 'active',
+    createdAt: '2026-05-01T00:00:00.000Z',
+    updatedAt: '2026-05-01T00:00:00.000Z',
+    archivedAt: null,
+    bindingStatus: 'active',
+    bindingNote: null,
+    boundAt: '2026-05-02T00:00:00.000Z',
+    bindingUpdatedAt: '2026-05-02T00:00:00.000Z',
+    removedAt: null,
+    ...partial,
+  };
+}
