@@ -1,4 +1,8 @@
 import type { TaskListItemRecord, TaskState } from './types/task.js';
+import {
+  isLikelyDuplicateTaskTitle,
+  normalizeTaskTitle,
+} from './task-title-identity.js';
 
 export type RuntimeTaskCaptureIssueCode =
   | 'missing_title'
@@ -29,30 +33,6 @@ const CLOSED_STATES = new Set<TaskState>(['completed', 'archived']);
 const GENERIC_CAPTURE_TITLE_PATTERN = /^(下一步|后续任务|继续|推进|处理|实现|优化|调整|检查|评估|设计|开发|修复|完成|todo|task)$/i;
 const GENERIC_CHILD_TITLE_PATTERN = /^(拆解下一步|实现调整|验收回归|下一步|后续任务|执行任务|实现任务|验收任务)(：|:|\s|$)/i;
 
-function normalizeTitle(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[：:，,。.、\s_-]+/g, '');
-}
-
-function titleSimilarity(a: string, b: string): number {
-  const left = new Set(Array.from(a));
-  const right = new Set(Array.from(b));
-  if (left.size === 0 || right.size === 0) return 0;
-  let intersection = 0;
-  for (const token of left) {
-    if (right.has(token)) intersection += 1;
-  }
-  return intersection / new Set([...left, ...right]).size;
-}
-
-function isLikelyDuplicateTitle(a: string, b: string): boolean {
-  if (a === b) return true;
-  if (Math.min(a.length, b.length) < 4) return false;
-  return titleSimilarity(a, b) >= 0.9;
-}
-
 function isOpenTask(task: ExistingTask): boolean {
   return !CLOSED_STATES.has(task.state);
 }
@@ -78,29 +58,13 @@ export function evaluateRuntimeTaskCapture(params: {
     }));
   }
 
-  const normalizedTitle = normalizeTitle(title);
+  const normalizedTitle = normalizeTaskTitle(title);
   const targetParentTaskId = params.parentTaskId ?? null;
   if (normalizedTitle) {
     const parentTask = targetParentTaskId
       ? (params.existingTasks ?? []).find((task) => task.id === targetParentTaskId) ?? null
       : null;
-    const normalizedParentTitle = parentTask ? normalizeTitle(parentTask.title) : '';
-
-    const duplicate = (params.existingTasks ?? [])
-      .filter(isOpenTask)
-      .find((task) => (
-        isLikelyDuplicateTitle(normalizeTitle(task.title), normalizedTitle)
-        && (task.parentTaskId ?? null) === targetParentTaskId
-      ));
-
-    if (duplicate) {
-      issues.push(issue({
-        code: 'duplicate_open_task',
-        message: `已有未完成任务「${duplicate.title}」，不应重复捕获同名任务。`,
-        matchedTaskId: duplicate.id,
-        matchedTaskTitle: duplicate.title,
-      }));
-    }
+    const normalizedParentTitle = parentTask ? normalizeTaskTitle(parentTask.title) : '';
 
     if (!summary && GENERIC_CAPTURE_TITLE_PATTERN.test(title)) {
       issues.push(issue({
@@ -124,6 +88,22 @@ export function evaluateRuntimeTaskCapture(params: {
         message: `子任务标题与父任务「${parentTask?.title ?? '当前父任务'}」相同，缺少独立边界。`,
         matchedTaskId: parentTask?.id,
         matchedTaskTitle: parentTask?.title,
+      }));
+    }
+
+    const duplicate = (params.existingTasks ?? [])
+      .filter(isOpenTask)
+      .find((task) => (
+        isLikelyDuplicateTaskTitle(task.title, title)
+        && (task.parentTaskId ?? null) === targetParentTaskId
+      ));
+
+    if (duplicate) {
+      issues.push(issue({
+        code: 'duplicate_open_task',
+        message: `已有未完成任务「${duplicate.title}」，不应重复捕获同名任务。`,
+        matchedTaskId: duplicate.id,
+        matchedTaskTitle: duplicate.title,
       }));
     }
   }

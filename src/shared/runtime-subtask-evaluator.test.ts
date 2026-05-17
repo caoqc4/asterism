@@ -173,6 +173,38 @@ describe('runtime subtask evaluator', () => {
     ]));
   });
 
+  it('blocks child drafts that duplicate an existing child through generic modifiers', () => {
+    const parent = task({ id: 'project_1', title: '开发小程序', type: 'project' });
+    const existingChild = task({
+      id: 'child_1',
+      title: '小程序需求分析与功能设计',
+      parentTaskId: parent.id,
+      state: 'completed',
+    });
+
+    const result = evaluateRuntimeSubtaskDraft({
+      parentTask: parent,
+      existingTasks: [parent, existingChild],
+      proposedSubtasks: [
+        {
+          title: '微信小程序需求与功能分析设计',
+          summary: '再次整理小程序需求和功能边界。',
+          acceptanceCriteria: '需求和功能边界被确认。',
+          dependency: null,
+          rationale: '看起来像新的需求分析阶段。',
+        },
+      ],
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'duplicate_title',
+        message: '已有任务「小程序需求分析与功能设计」，不应重复创建同名子任务。',
+      }),
+    ]));
+  });
+
   it('allows related but distinct child drafts', () => {
     const parent = task({ id: 'project_1', title: '开发小程序', type: 'project' });
 

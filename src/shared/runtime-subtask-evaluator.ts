@@ -1,6 +1,10 @@
 import type { ProjectSubtaskDraft } from './types/ipc.js';
 import type { TaskHierarchyNode } from './task-hierarchy.js';
 import { effectiveParentTaskId } from './task-hierarchy.js';
+import {
+  isLikelyDuplicateTaskTitle,
+  normalizeTaskTitle,
+} from './task-title-identity.js';
 
 export type RuntimeSubtaskDraftIssueSeverity =
   | 'error'
@@ -32,30 +36,6 @@ export type RuntimeSubtaskDraftEvaluation = {
 
 const GENERIC_PHASE_TEMPLATE_PATTERN = /^(拆解下一步|实现调整|验收回归|下一步|后续任务|执行任务|实现任务|验收任务)(：|:|\s|$)/i;
 const GENERIC_ACCEPTANCE_PATTERN = /^(完成后能明确验收。?|完成即可。?|待确认。?|验收通过。?|done|complete)$/i;
-
-function normalizeTitle(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[：:，,。.、\s_-]+/g, '');
-}
-
-function titleSimilarity(a: string, b: string): number {
-  const left = new Set(Array.from(a));
-  const right = new Set(Array.from(b));
-  if (left.size === 0 || right.size === 0) return 0;
-  let intersection = 0;
-  for (const token of left) {
-    if (right.has(token)) intersection += 1;
-  }
-  return intersection / new Set([...left, ...right]).size;
-}
-
-function isLikelyDuplicateTitle(a: string, b: string): boolean {
-  if (a === b) return true;
-  if (Math.min(a.length, b.length) < 4) return false;
-  return titleSimilarity(a, b) >= 0.9;
-}
 
 function textHasMeaning(value: string | null | undefined): boolean {
   return Boolean(value?.trim());
@@ -111,15 +91,15 @@ export function evaluateRuntimeSubtaskDraft(params: {
   const existingTitles = existingTasks
     .filter((task) => task.id !== params.parentTask.id)
     .map((task) => ({
-      normalizedTitle: normalizeTitle(task.title),
+      normalizedTitle: normalizeTaskTitle(task.title),
       title: task.title,
     }));
-  const parentTitle = normalizeTitle(params.parentTask.title);
+  const parentTitle = normalizeTaskTitle(params.parentTask.title);
   const draftTitles = new Set<string>();
 
   params.proposedSubtasks.forEach((subtask) => {
     const title = subtask.title.trim();
-    const normalizedTitle = normalizeTitle(title);
+    const normalizedTitle = normalizeTaskTitle(title);
     draftTitles.add(normalizedTitle);
 
     if (!normalizedTitle) {
@@ -127,13 +107,13 @@ export function evaluateRuntimeSubtaskDraft(params: {
       return;
     }
 
-    const firstSeen = seenDraftTitles.find((item) => isLikelyDuplicateTitle(item.normalizedTitle, normalizedTitle));
+    const firstSeen = seenDraftTitles.find((item) => isLikelyDuplicateTaskTitle(item.title, title));
     if (firstSeen) {
       issues.push(issue('error', 'duplicate_title', title, `草稿中存在重复子任务：「${firstSeen.title}」和「${title}」。`));
     }
     seenDraftTitles.push({ normalizedTitle, title });
 
-    const existingTitle = existingTitles.find((item) => isLikelyDuplicateTitle(item.normalizedTitle, normalizedTitle))?.title;
+    const existingTitle = existingTitles.find((item) => isLikelyDuplicateTaskTitle(item.title, title))?.title;
     if (existingTitle) {
       issues.push(issue('error', 'duplicate_title', title, `已有任务「${existingTitle}」，不应重复创建同名子任务。`));
     }
@@ -146,7 +126,7 @@ export function evaluateRuntimeSubtaskDraft(params: {
       issues.push(issue('error', 'too_close_to_parent', title, '子任务标题与父任务过于接近，缺少独立边界。'));
     }
 
-    if (!textHasMeaning(subtask.summary) || normalizeTitle(subtask.summary) === normalizedTitle) {
+    if (!textHasMeaning(subtask.summary) || normalizeTaskTitle(subtask.summary) === normalizedTitle) {
       issues.push(issue('error', 'missing_summary', title, '子任务需要说明独立目标或交付物，不能只重复标题。'));
     }
 
@@ -158,7 +138,7 @@ export function evaluateRuntimeSubtaskDraft(params: {
   params.proposedSubtasks.forEach((subtask) => {
     const dependency = subtask.dependency?.trim();
     if (!dependency) return;
-    const dependencyKey = normalizeTitle(dependency);
+    const dependencyKey = normalizeTaskTitle(dependency);
     const knownDraft = Array.from(draftTitles).some((title) => dependencyKey.includes(title) || title.includes(dependencyKey));
     const knownExisting = existingTitles.some((item) => dependencyKey.includes(item.normalizedTitle) || item.normalizedTitle.includes(dependencyKey));
     if (!knownDraft && !knownExisting) {

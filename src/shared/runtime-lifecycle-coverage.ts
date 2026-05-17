@@ -19,6 +19,19 @@ export type RuntimeLifecycleCoverageItem = {
   nextImplementation: string[];
 };
 
+export type RuntimeLifecycleNextActionTiming =
+  | 'current_candidate'
+  | 'preservation_constraint'
+  | 'deferred_surface';
+
+export type RuntimeLifecycleNextAction = {
+  phase: string;
+  priority: RuntimeLifecycleCoveragePriority;
+  scope: RuntimeLifecycleCoverageItem['scope'];
+  timing: RuntimeLifecycleNextActionTiming;
+  action: string;
+};
+
 export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
   {
     phase: 'task_intake_and_capture',
@@ -38,6 +51,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskService.create enforces the same task-capture evaluator at the service boundary before repository persistence.',
       'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',
       'runtime-task-capture-evaluator blocks near-duplicate compact titles in the same parent scope when word order changes but the title identity is effectively the same.',
+      'Task title identity now adds a conservative action-and-object signature, so generic modifiers such as "一个/微信/任务" do not hide duplicate task captures or child drafts.',
       'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task capture remains global-only, and project child creation uses the subtask draft evaluator.',
       'Runtime surface routing preserves explicit Decision kind, scope, and sourceType even when a title contains approval, external-write, or completion keywords.',
     ],
@@ -47,11 +61,10 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Current retained creation entry points are covered by intake, closeout, service-boundary capture checks, or subtask draft gates; future creation entry points must declare which gate owns them before writing tasks.',
-      'Service-level guards now block duplicate and near-duplicate open-task captures, generic title-only candidates, generic phase-template titles, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains intentionally conservative.',
+      'Service-level guards now block duplicate and near-duplicate open-task captures, generic title-only candidates, generic phase-template titles, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains intentionally conservative and should not use embeddings until needed.',
     ],
     nextImplementation: [
       'Route future creation entry points through shared intake checks, closeout gating, or the stricter child-task evaluator according to context.',
-      'Extend duplicate detection beyond exact normalized titles when enough semantic context is available.',
     ],
   },
   {
@@ -429,6 +442,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'CanonicalDataDiagnostics can mechanically report missing canonical fields, orphan task references, and missing task-scoped Decision bindings without mutating records.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
       'runtime-subtask-evaluator blocks near-duplicate child drafts and existing child titles when compact titles only change word order.',
+      'runtime-subtask-evaluator uses shared task title identity, so generic modifiers cannot create another child draft with the same action and object as an existing child.',
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator, so existing children block another decomposition round before a new draft appears.',
       'Project decomposition generation now detects existing children from the full task list, including children linked only by parentTaskId.',
     ],
@@ -521,5 +535,51 @@ export function summarizeRuntimeLifecycleCoverage(): Record<RuntimeLifecycleCove
     implemented: 0,
     partial: 0,
     missing: 0,
+  });
+}
+
+export function classifyRuntimeLifecycleNextAction(action: string): RuntimeLifecycleNextActionTiming {
+  const normalized = action.trim();
+  if (
+    /UI work|External Access|connector .*service|connector source ingestion|connector ingestion service|Run-side|subagent|deferred|later|until|when .*resumes|if .*return|not active/i.test(normalized)
+  ) {
+    return 'deferred_surface';
+  }
+  if (
+    /future|^Keep\b|^Require\b|^Route any new\b|new .*must|must .*future/i.test(normalized)
+  ) {
+    return 'preservation_constraint';
+  }
+  return 'current_candidate';
+}
+
+export function listRuntimeLifecycleNextActions(
+  coverage: RuntimeLifecycleCoverageItem[] = RUNTIME_LIFECYCLE_COVERAGE,
+): RuntimeLifecycleNextAction[] {
+  return coverage.flatMap((item) =>
+    item.nextImplementation.map((action) => ({
+      phase: item.phase,
+      priority: item.priority,
+      scope: item.scope,
+      timing: classifyRuntimeLifecycleNextAction(action),
+      action,
+    })),
+  ).sort((left, right) => {
+    const priorityOrder: Record<RuntimeLifecycleCoveragePriority, number> = {
+      p0: 0,
+      p1: 1,
+      p2: 2,
+    };
+    const timingOrder: Record<RuntimeLifecycleNextActionTiming, number> = {
+      current_candidate: 0,
+      preservation_constraint: 1,
+      deferred_surface: 2,
+    };
+    return (
+      priorityOrder[left.priority] - priorityOrder[right.priority]
+      || timingOrder[left.timing] - timingOrder[right.timing]
+      || left.phase.localeCompare(right.phase)
+      || left.action.localeCompare(right.action)
+    );
   });
 }

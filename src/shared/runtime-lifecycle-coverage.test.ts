@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   RUNTIME_LIFECYCLE_COVERAGE,
+  classifyRuntimeLifecycleNextAction,
+  listRuntimeLifecycleNextActions,
   summarizeRuntimeLifecycleCoverage,
 } from './runtime-lifecycle-coverage.js';
 
@@ -111,5 +113,35 @@ describe('runtime lifecycle coverage matrix', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
     expect(text).toContain('Approved Decision checkpoint resume passes through pending TaskMemoryGuidanceState checks');
+  });
+
+  it('classifies next work without promoting future or UI-only gaps into current tasks', () => {
+    expect(classifyRuntimeLifecycleNextAction(
+      'Keep future context entry points on the RightPanel reducer.',
+    )).toBe('preservation_constraint');
+    expect(classifyRuntimeLifecycleNextAction(
+      'Require any future connector ingestion service to use ConnectorSourceIngestionPlan.',
+    )).toBe('deferred_surface');
+    expect(classifyRuntimeLifecycleNextAction(
+      'Keep legacy WorkbenchPage retired; new runtime behavior must land in retained surfaces.',
+    )).toBe('preservation_constraint');
+    expect(classifyRuntimeLifecycleNextAction(
+      'Extend duplicate detection beyond exact normalized titles when enough semantic context is available.',
+    )).toBe('current_candidate');
+  });
+
+  it('lists next actions by priority and timing for continuation planning', () => {
+    const actions = listRuntimeLifecycleNextActions();
+
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions[0]?.priority).toBe('p0');
+    expect(actions.some((action) => action.timing === 'preservation_constraint')).toBe(true);
+    expect(actions.some((action) => action.timing === 'deferred_surface')).toBe(true);
+    expect(actions.some((action) => (
+      action.timing === 'current_candidate'
+      && /duplicate detection/.test(action.action)
+    ))).toBe(false);
+    expect(actions.find((action) => action.action.includes('ConnectorSourceIngestionPlan'))?.timing)
+      .toBe('deferred_surface');
   });
 });

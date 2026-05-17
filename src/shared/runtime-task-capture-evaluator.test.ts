@@ -60,6 +60,22 @@ describe('runtime task capture evaluator', () => {
     });
   });
 
+  it('blocks duplicate open tasks when generic modifiers hide the same action and object', () => {
+    expect(evaluateRuntimeTaskCapture({
+      title: '开发一个微信小程序',
+      summary: '实现同一个小程序目标。',
+      existingTasks: [task({ id: 'task_1', title: '开发小程序' })],
+    })).toMatchObject({
+      allowed: false,
+      issues: [
+        {
+          code: 'duplicate_open_task',
+          matchedTaskId: 'task_1',
+        },
+      ],
+    });
+  });
+
   it('does not treat related but distinct titles as duplicates', () => {
     expect(evaluateRuntimeTaskCapture({
       title: '小程序测试',
@@ -147,11 +163,11 @@ describe('runtime task capture evaluator', () => {
       ],
     })).toMatchObject({
       allowed: false,
-      issues: [
-        {
+      issues: expect.arrayContaining([
+        expect.objectContaining({
           code: 'generic_phase_template',
-        },
-      ],
+        }),
+      ]),
     });
   });
 
