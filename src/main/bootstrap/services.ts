@@ -21,6 +21,8 @@ import { WorkHabitRepository } from '../db/repositories/work-habit-repository.js
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { WorkHabitService } from '../domain/context/work-habit-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
+import { ExternalAccessSourceIngestionService } from '../domain/external-access/external-access-source-ingestion-service.js';
+import { createExternalAccessStatusService } from '../domain/external-access/external-access-status-service.js';
 import { AgentSessionStore } from '../domain/run/agent-session-store.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
 import { BrowserEvidencePersister } from '../domain/run/browser-evidence-persister.js';
@@ -89,6 +91,11 @@ const taskService = new TaskService(
   taskDependencyRepository,
   completionCriteriaRepository,
   taskFileRepository,
+);
+const externalAccessStatusService = createExternalAccessStatusService();
+const externalAccessSourceIngestionService = new ExternalAccessSourceIngestionService(
+  externalAccessStatusService,
+  taskService,
 );
 const agentToolRegistry = new AgentToolRegistry(
   artifactRepository,
@@ -209,6 +216,8 @@ const services = {
   browserEvidencePersister,
   homeBriefService,
   aiConfigService,
+  externalAccessStatusService,
+  externalAccessSourceIngestionService,
   schedulerService,
 };
 

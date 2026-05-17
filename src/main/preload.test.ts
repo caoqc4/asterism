@@ -236,6 +236,12 @@ describe('preload bridge', () => {
     await api.probeSandboxBackend();
     await api.connectGmailOAuth?.({ confirmed: true });
     await api.disconnectGmailOAuth?.({ confirmed: true });
+    await api.previewExternalAccessSourceIngestion?.({ taskId: 'task_1' });
+    await api.commitExternalAccessSourceIngestion?.({
+      taskId: 'task_1',
+      planIds: ['connector:gmail:message_1'],
+      confirmed: true,
+    });
     await api.listTasks();
     await api.getTaskHierarchyConsistency();
     await api.getTaskHierarchyManualReviewPolicy();
@@ -301,6 +307,12 @@ describe('preload bridge', () => {
       ['settings:probeSandboxBackend'],
       ['externalAccess:gmailOAuthConnect', { confirmed: true }],
       ['externalAccess:gmailOAuthDisconnect', { confirmed: true }],
+      ['externalAccess:sourceIngestionPreview', { taskId: 'task_1' }],
+      ['externalAccess:sourceIngestionCommit', {
+        taskId: 'task_1',
+        planIds: ['connector:gmail:message_1'],
+        confirmed: true,
+      }],
       ['task:list'],
       ['task:getHierarchyConsistency'],
       ['task:getHierarchyManualReviewPolicy'],

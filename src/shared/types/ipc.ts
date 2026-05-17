@@ -93,6 +93,12 @@ import type {
   GmailOAuthDisconnectInput,
   GmailOAuthDisconnectResult,
 } from './external-access-control.js';
+import type {
+  ExternalAccessSourceIngestionCommitInput,
+  ExternalAccessSourceIngestionCommitResult,
+  ExternalAccessSourceIngestionPreview,
+  ExternalAccessSourceIngestionPreviewInput,
+} from './external-access-source-ingestion.js';
 import type { CreateCodeAgentRunInput, CreateRunInput, RunDetailRecord, RunRecord } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
@@ -138,6 +144,12 @@ export type ElectronApi = {
   probeSandboxBackend?: () => Promise<AgentSandboxBackendStatus>;
   connectGmailOAuth?: (input: GmailOAuthConnectInput) => Promise<GmailOAuthConnectResult>;
   disconnectGmailOAuth?: (input: GmailOAuthDisconnectInput) => Promise<GmailOAuthDisconnectResult>;
+  previewExternalAccessSourceIngestion?: (
+    input: ExternalAccessSourceIngestionPreviewInput,
+  ) => Promise<ExternalAccessSourceIngestionPreview>;
+  commitExternalAccessSourceIngestion?: (
+    input: ExternalAccessSourceIngestionCommitInput,
+  ) => Promise<ExternalAccessSourceIngestionCommitResult>;
   listTasks: () => Promise<TaskListItemRecord[]>;
   getTaskHierarchyConsistency: () => Promise<TaskHierarchyConsistencyEvaluation>;
   getTaskHierarchyManualReviewPolicy: () => Promise<TaskHierarchyManualReviewPolicy>;

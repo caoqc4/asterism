@@ -584,10 +584,27 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     notes: 'This is the service/IPC minimum for task-bound durable resource writes. Renderer panel flows and Agent tool writes may add post_step verification when they have durable-change recovery context.',
   },
   {
+    id: 'externalAccess.sourceIngestionPreview',
+    owner: 'ExternalAccessSourceIngestionService.preview',
+    kind: 'capability_probe',
+    description: 'Task-bound External Access evidence preview before any source-context write.',
+    ipcChannels: ['externalAccess:sourceIngestionPreview'],
+    requiredGates: [
+      'simplicity_check',
+      'capability_probe_boundary',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'capability_probe_boundary',
+    ],
+    notes: 'Preview may ask connected adapters for task-bound evidence but must not write task memory or emit task-change events.',
+  },
+  {
     id: 'externalAccess.sourceIngestionCommit',
     owner: 'ExternalAccessSourceIngestionService.commit',
     kind: 'durable_write',
     description: 'Confirmed External Access evidence ingestion into task-bound Source Context memory.',
+    ipcChannels: ['externalAccess:sourceIngestionCommit'],
     requiredGates: [
       'simplicity_check',
       'task_mutation',

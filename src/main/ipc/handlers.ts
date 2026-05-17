@@ -23,6 +23,10 @@ import type {
 import type { CreateCodeAgentRunInput, CreateRunInput } from '../../shared/types/run.js';
 import type { AiConfigInput, FeatureFlags } from '../../shared/types/settings.js';
 import type { GmailOAuthConnectInput, GmailOAuthDisconnectInput } from '../../shared/types/external-access-control.js';
+import type {
+  ExternalAccessSourceIngestionCommitInput,
+  ExternalAccessSourceIngestionPreviewInput,
+} from '../../shared/types/external-access-source-ingestion.js';
 import type { OperatorStartedRunRequest } from '../../shared/types/operator-started-run.js';
 import type { CreateManualArtifactInput, UpdateArtifactInput } from '../../shared/types/artifact.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from '../../shared/types/task-file.js';
@@ -254,6 +258,24 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('externalAccess:gmailOAuthDisconnect', async (_event, input: GmailOAuthDisconnectInput) => {
     const result = await new GmailOAuthControlService().disconnect(input);
     if (result.status === 'disconnected') emitAppEvent('settings.changed');
+    return result;
+  });
+
+  ipcMain.handle('externalAccess:sourceIngestionPreview', async (
+    _event,
+    input: ExternalAccessSourceIngestionPreviewInput,
+  ) => {
+    return getServices().externalAccessSourceIngestionService.preview(input);
+  });
+
+  ipcMain.handle('externalAccess:sourceIngestionCommit', async (
+    _event,
+    input: ExternalAccessSourceIngestionCommitInput,
+  ) => {
+    const result = await getServices().externalAccessSourceIngestionService.commit(input);
+    if (result.created.length > 0) {
+      emitAppEvent('task.changed', result.taskId);
+    }
     return result;
   });
 

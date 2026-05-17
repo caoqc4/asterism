@@ -84,6 +84,10 @@ const {
     homeBriefService: {
       getHomeData: vi.fn(),
     },
+    externalAccessSourceIngestionService: {
+      preview: vi.fn(),
+      commit: vi.fn(),
+    },
     runService: {
       list: vi.fn(),
       getDetail: vi.fn(),
@@ -499,6 +503,67 @@ describe('registerIpcHandlers', () => {
     expect(gmailOAuthDisconnectMock).toHaveBeenCalledWith({ confirmed: true });
     expect(result.status).toBe('disconnected');
     expect(emitAppEventMock).toHaveBeenCalledWith('settings.changed');
+  });
+
+  it('previews External Access source ingestion without emitting task change events', async () => {
+    servicesMock.externalAccessSourceIngestionService.preview.mockResolvedValue({
+      taskId: 'task_1',
+      plans: [],
+      createCount: 0,
+      reviewCount: 0,
+      skipCount: 0,
+    });
+    const handler = getRegisteredHandler<
+      [{ taskId: string }],
+      Awaited<ReturnType<typeof servicesMock.externalAccessSourceIngestionService.preview>>
+    >('externalAccess:sourceIngestionPreview');
+
+    const result = await handler({}, { taskId: 'task_1' });
+
+    expect(servicesMock.externalAccessSourceIngestionService.preview).toHaveBeenCalledWith({
+      taskId: 'task_1',
+    });
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+    expect(result.createCount).toBe(0);
+  });
+
+  it('commits confirmed External Access source ingestion and emits task.changed when memory was written', async () => {
+    servicesMock.externalAccessSourceIngestionService.commit.mockResolvedValue({
+      taskId: 'task_1',
+      created: [{
+        id: 'source_context_1',
+        taskId: 'task_1',
+        title: '客户确认邮件',
+        kind: 'doc',
+        isKey: false,
+        uri: 'gmail://message/message_1',
+        content: null,
+        note: null,
+        status: 'active',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        archivedAt: null,
+      }],
+      skippedPlanIds: [],
+    });
+    const handler = getRegisteredHandler<
+      [{ taskId: string; planIds: string[]; confirmed: boolean }],
+      Awaited<ReturnType<typeof servicesMock.externalAccessSourceIngestionService.commit>>
+    >('externalAccess:sourceIngestionCommit');
+
+    const result = await handler({}, {
+      taskId: 'task_1',
+      planIds: ['connector:gmail:message_1'],
+      confirmed: true,
+    });
+
+    expect(servicesMock.externalAccessSourceIngestionService.commit).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      planIds: ['connector:gmail:message_1'],
+      confirmed: true,
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+    expect(result.created).toHaveLength(1);
   });
 
   it('applies saved AI behavior preferences to chat prompts', async () => {
