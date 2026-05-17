@@ -121,6 +121,7 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('LocalInboxConnectorAdapter');
     expect(text).toContain('GmailConnectorAdapter');
     expect(text).toContain('Gmail OAuth now has a service-layer credential path');
+    expect(text).toContain('disconnect revokes and clears local credentials');
     expect(text).toContain('without opening a browser or changing UI');
     expect(text).toContain('ConnectorSourceIngestionPlan previews instead of direct SourceContext writes');
   });
