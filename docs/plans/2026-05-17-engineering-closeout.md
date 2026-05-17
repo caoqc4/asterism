@@ -6,28 +6,55 @@ Updated: 2026-05-17
 
 This closeout covers the recent runtime deepening, task-memory framework, Decisions judgment center, task dynamics replay, Brief alignment, Capability/External Access foundation, packaged recovery smokes, and the local alpha acceptance gate.
 
+Stage decision: the retained runtime and task-memory foundation work can close
+for this phase. Remaining items are mostly future-entrypoint, future-connector,
+or future-UI constraints; continuing to add runtime abstractions without a new
+product surface would increase maintenance cost without improving the current
+user workflow.
+
 ## What Is Now Covered
 
 - Runtime gates are the shared entry path for current and future execution starts.
 - Task memory has a dedicated specification and is referenced by the agent operating principles.
 - Context clearing is treated as a runtime decision based on task-memory sufficiency, not a fixed five-turn rule.
+- Task-memory write surfaces are classified through one policy matrix, and retained memory-write IPC channels are bound to that coverage.
+- Canonical data diagnostics are part of local alpha acceptance without failing fresh environments that do not yet have a local SQLite database.
 - Brief and Tasks share priority ordering behavior.
 - Decisions is positioned as a judgment center, not a duplicate task list.
 - Task dynamics has structured replay data and a task-centered timeline UI.
 - External Access has a safe empty state and explicit authorization boundaries.
-- Packaged app smoke coverage now includes External Access, Decisions, and task file open/save.
+- Packaged app smoke coverage includes Brief recovery, task dynamics replay UI, External Access, Decisions, and task file open/save.
+- Capability safety is projected through `ConfigurationSafetyReport`; Settings and External Access consume it, while Skills/MCP can reuse the same projection when their UI work resumes.
 
 ## Verification
 
 Verified on 2026-05-17:
 
 ```bash
-npm run accept:product-surfaces:mac
 npm run verify
+npm run diagnostics:canonical-data:optional
+npm run accept:agent-local
+npm run accept:product-surfaces:mac
 npm run accept:alpha-local
 ```
 
-Result: passed. The release preflight completed with `status=not-ready` because the local machine does not have Developer ID signing or Apple notarization credentials configured; no signing, notarization, upload, or Apple network request was performed.
+Result: passed. `diagnostics:canonical-data:optional` reported
+`issues=0 / manualReview=0 / readOnly=0 / safeAutoRepair=0` against the local
+database. The full alpha gate passed through verify, canonical diagnostics,
+agent/runtime acceptance, packaged release smoke, packaged recovery smoke,
+supplemental product-surface smoke, and release preflight.
+
+The release preflight completed with `status=not-ready` because the local
+machine does not have Developer ID signing or Apple notarization credentials
+configured; no signing, notarization, upload, Apple network request, live
+provider request, Docker probe, or workspace mutation was performed.
+
+Recent closeout commits:
+
+- `46ce057` Make canonical diagnostics optional in alpha gate.
+- `6066449` Bind memory write IPC channels to surface coverage.
+- `8fbe6dc` Check memory write IPC handler coverage.
+- `07289a2` Clarify packaged surface smoke coverage.
 
 ## Known Limits
 
@@ -35,9 +62,29 @@ Result: passed. The release preflight completed with `status=not-ready` because 
 - Live model-provider execution remains credentials-gated.
 - Docker/local-container sandbox mutation remains host-capability-gated.
 - Real external connectors are not smoke-tested until connector integrations exist.
+- Future runtime entrypoints still need to register with the existing runtime gate, memory-surface, and capability registries before they count as retained behavior.
 
-## Follow-Up Candidates
+## Product Continuation
 
-- Add connector-backed External Access smoke when at least one connector is implemented.
-- Add a live-provider acceptance run in a credentialed CI or release-candidate environment.
-- Keep future execution entry points on the runtime gate path before adding UI-specific shortcuts.
+Next work should move to a concrete product surface instead of continuing
+runtime deepening in isolation. Recommended order:
+
+1. External Access real connector foundation: connect the first real read-only
+   connector through the existing capability and source-ingestion boundaries,
+   then add connector-backed smoke coverage.
+2. Skills/MCP capability pages: reuse `ConfigurationSafetyReport` and
+   `CapabilityRegistry` without changing settled Tasks-page layout.
+3. Retrieval/search foundation: make growing task memory easier to find and
+   reuse before adding more automation.
+4. Decisions batch handling or richer navigation: only if a real multi-decision
+   workflow appears.
+
+Future product work should keep these constraints:
+
+- new execution entrypoints must use `RuntimeEntrypointCoverage`;
+- new durable information writes must use `MemorySurfaceWriteCoverage`;
+- new source ingestion must use `ConnectorSourceIngestionPlan`;
+- new capability surfaces must reuse `CapabilityRegistry` and
+  `ConfigurationSafetyReport`;
+- settled Tasks-page layout and interactions should stay unchanged unless a
+  product feature explicitly requires data wiring into existing components.
