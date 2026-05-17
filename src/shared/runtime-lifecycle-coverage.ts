@@ -444,7 +444,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'CanonicalDataContract documents authoritative fields, write/read authority, legacy fallback conditions, and repair routes for task hierarchy, task files, sources, artifacts, Decisions, run events, task dynamics, Work Habits, and process templates.',
       'CanonicalDataContract keeps hierarchy and source-context legacy fallbacks read-only and only allowed when canonical fields are missing, while artifact classification has no folder-name fallback.',
       'CanonicalDataDiagnostics can mechanically report missing canonical fields, orphan task references, and missing task-scoped Decision bindings without mutating records.',
-      'CanonicalDataWriteValidation checks write-boundary fields separately from full canonical records, and retained task-file, source-context, artifact, and Decision create/update paths now reject unknown or read-only legacy fields before repository persistence.',
+      'CanonicalDataWriteValidation checks write-boundary fields separately from full canonical records, and retained task-file, source-context, artifact, Decision, Work Habit, and process-template create/update paths now reject unknown or read-only legacy fields before repository persistence.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
       'runtime-subtask-evaluator blocks near-duplicate child drafts and existing child titles when compact titles only change word order.',
       'runtime-subtask-evaluator uses shared task title identity, so generic modifiers cannot create another child draft with the same action and object as an existing child.',

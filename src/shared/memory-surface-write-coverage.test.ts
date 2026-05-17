@@ -70,6 +70,7 @@ describe('memory surface write coverage', () => {
         || surface === 'ai_output'
         || surface === 'artifact'
         || surface === 'decision'
+        || surface === 'work_habit'
       )));
 
     expect(structuredMemoryEntrypoints.length).toBeGreaterThan(0);

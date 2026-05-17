@@ -47,4 +47,19 @@ describe('ProcessTemplateRepository integration', () => {
     expect(archived.status).toBe('archived');
     expect(activeAfterArchive).toHaveLength(0);
   });
+
+  it('rejects non-canonical process template write fields', async () => {
+    await expect(repository.create({
+      title: 'Outreach skill',
+      content: '1. Review sources',
+      kind: 'skill',
+      legacyTemplateFolder: 'SOPs/',
+    } as Parameters<ProcessTemplateRepository['create']>[0])).rejects.toThrow(/legacyTemplateFolder/);
+
+    await expect(repository.update({
+      id: 'process_template_1',
+      title: 'Updated',
+      bindingId: 'task_binding_1',
+    } as Parameters<ProcessTemplateRepository['update']>[0])).rejects.toThrow(/bindingId/);
+  });
 });

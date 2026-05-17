@@ -1,6 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 
 import type { WorkHabitRecord } from '../../../shared/types/work-habit.js';
+import { assertCanonicalWriteInput } from '../../../shared/canonical-data-contract.js';
 import { workHabits } from '../schema.js';
 import { initDatabase } from '../client.js';
 import { nowIso } from './repository-utils.js';
@@ -30,6 +31,15 @@ export class WorkHabitRepository {
   async replaceAll(habits: WorkHabitRecord[]): Promise<WorkHabitRecord[]> {
     const db = initDatabase();
     const timestamp = nowIso();
+
+    for (const habit of habits) {
+      assertCanonicalWriteInput({
+        domain: 'work_habit',
+        input: habit as Record<string, unknown>,
+        allowedFields: ['id', 'rule', 'source', 'scope', 'scopeLabel', 'status', 'examples', 'createdAt', 'lastAppliedAt', 'applicationCount'],
+        requiredFields: ['id', 'rule', 'source', 'scope', 'scopeLabel', 'status', 'createdAt'],
+      });
+    }
 
     await db.delete(workHabits);
     if (habits.length) {

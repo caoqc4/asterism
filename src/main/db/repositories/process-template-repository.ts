@@ -5,6 +5,7 @@ import type {
   ProcessTemplateRecord,
   UpdateProcessTemplateInput,
 } from '../../../shared/types/process-template.js';
+import { assertCanonicalWriteInput } from '../../../shared/canonical-data-contract.js';
 import { processTemplates } from '../schema.js';
 import { initDatabase } from '../client.js';
 import { generateId, normalizeValue, nowIso, parseTags } from './repository-utils.js';
@@ -41,6 +42,12 @@ export class ProcessTemplateRepository {
   }
 
   async create(input: CreateProcessTemplateInput): Promise<ProcessTemplateRecord> {
+    assertCanonicalWriteInput({
+      domain: 'process_template',
+      input: input as Record<string, unknown>,
+      allowedFields: ['title', 'summary', 'content', 'kind', 'tags'],
+      requiredFields: ['title', 'content', 'kind'],
+    });
     const db = initDatabase();
     const timestamp = nowIso();
     const id = generateId('process_template');
@@ -63,6 +70,12 @@ export class ProcessTemplateRepository {
   }
 
   async update(input: UpdateProcessTemplateInput): Promise<ProcessTemplateRecord> {
+    assertCanonicalWriteInput({
+      domain: 'process_template',
+      input: input as Record<string, unknown>,
+      allowedFields: ['id', 'title', 'summary', 'content', 'kind', 'tags'],
+      requiredFields: ['id'],
+    });
     const db = initDatabase();
     const [current] = await db
       .select()

@@ -218,7 +218,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'preference_boundary',
     surfaces: ['work_habit'],
     writePolicies: ['work_habit_proposal'],
-    guards: ['work_habit_proposal', 'simplicity_check'],
+    guards: ['work_habit_proposal', 'canonical_write_validation', 'simplicity_check'],
     note: 'Cross-task rules are proposed and confirmed separately from single-task memory.',
   },
 ];
