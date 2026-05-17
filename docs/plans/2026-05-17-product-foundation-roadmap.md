@@ -157,7 +157,10 @@ single product-surface status input instead of a hard-coded empty row.
 `ExternalAccessStatusService` also defines the minimal read-only connector
 adapter contract: adapters report status, and connected adapters can preview
 evidence that is normalized through `ConnectorSourceIngestionPlan` before any
-future persistence path can create source contexts.
+future persistence path can create source contexts. The service also supports a
+local fixture status input for packaged acceptance, allowing External Access,
+CapabilityRegistry, and ConfigurationSafetyReport to be smoke-tested in a
+connected state without live provider credentials.
 
 Connector ingestion remains deferred, but the source-memory boundary now has a
 shared `ConnectorSourceIngestionPlan`. Future connector services must normalize

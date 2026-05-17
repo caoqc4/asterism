@@ -14,7 +14,7 @@ This matrix keeps local alpha acceptance grounded in first principles: protect t
 | Model-producer preflight | Verifies live-provider/Docker/workspace mutation gates before real execution | `npm run accept:sandbox-coding:model-producer-preflight` | Covered, environment-gated |
 | macOS packaged runtime | Builds packaged app and checks config, database schema, task-dynamics replay UI, packaged boot | `npm run smoke:release:mac` | Covered |
 | Packaged recovery paths | Brief recovery, project decomposition, work habits, code-agent UI, run/decision recovery, settings config | `npm run accept:packaged-recovery:mac` | Covered |
-| Supplemental product surface smoke | External Access empty/safety state, Decisions judgment center, task file open/save | `npm run accept:product-surfaces:mac` | Added |
+| Supplemental product surface smoke | External Access empty/safety/fixture-connected state, Decisions judgment center, task file open/save | `npm run accept:product-surfaces:mac` | Added |
 | Release readiness | Developer ID, notarization, artifact upload/network checks | `npm run accept:release:mac-preflight` | Covered, expected `not-ready` without credentials |
 | Live provider execution | Real model-provider task execution | Provider-native live acceptance commands | Optional, requires credentials |
 | Docker/local sandbox mutation | Real local-container sandbox execution | `TASKPLANE_ENABLE_LOCAL_CONTAINER_SANDBOX=true` preflight/live commands | Optional, requires Docker and explicit env |
@@ -40,7 +40,7 @@ not own every UI surface: Brief recovery is protected by
 `accept:packaged-recovery:mac`, and task-dynamics replay rendering is protected
 by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 
-- External Access: verifies the no-connector state still communicates authorization boundaries and keeps connection actions disabled.
+- External Access: verifies the no-connector state still communicates authorization boundaries and keeps connection actions disabled; a fixture-connected smoke verifies the structured connector status path reaches the packaged page, CapabilityRegistry, and ConfigurationSafetyReport without live external providers.
 - Decisions: verifies pending decisions render as a judgment center and can be resolved through the packaged UI.
 - Task files: verifies the task file explorer opens a persisted task file, classifies it as a normal file, saves through the packaged UI, and persists to SQLite.
 

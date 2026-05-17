@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { CapabilityRegistryEntry } from '@shared/capability-registry';
 import type { ConfigurationSafetySurface } from '@shared/configuration-safety-report';
+import type { ExternalAccessConnectorRecord } from '@shared/external-access-status';
 import type { AiConfigStatus } from '@shared/types/settings';
 
 type SourceStatus = 'connected' | 'error' | 'pending';
@@ -14,7 +15,7 @@ interface ConnectedSource {
   lastSync: string;
 }
 
-type SourceType = 'email' | 'calendar' | 'github' | 'notion' | 'slack' | 'linear' | 'jira';
+type SourceType = 'email' | 'calendar' | 'github' | 'notion' | 'slack' | 'linear' | 'jira' | 'other';
 
 const SOURCE_BADGES: Record<SourceType, string> = {
   email: 'EMAIL',
@@ -24,6 +25,7 @@ const SOURCE_BADGES: Record<SourceType, string> = {
   slack: 'CHAT',
   linear: 'ISSUE',
   jira: 'TICKET',
+  other: 'SRC',
 };
 
 const AVAILABLE_SOURCES: Array<{ type: SourceType; label: string; desc: string }> = [
@@ -52,6 +54,9 @@ export function ConnectionsPage() {
     .find((surface) => surface.id === 'external_access.connectors') ?? null;
   const externalCapability = configStatus?.capabilityRegistry
     ?.find((entry) => entry.id === 'external_access.connectors') ?? null;
+  const externalStatusSources = (configStatus?.externalAccessStatus?.sources ?? []).map(connectorToConnectedSource);
+  const statusSourceIds = new Set(externalStatusSources.map((source) => source.id));
+  const displayedSources = externalStatusSources.length > 0 ? externalStatusSources : sources;
 
   return (
     <div className="connections-page">
@@ -71,7 +76,7 @@ export function ConnectionsPage() {
         </div>
 
         <div className="ctx-list">
-          {sources.map((src) => (
+          {displayedSources.map((src) => (
             <div key={src.id} className="ctx-source-row">
               <span className="ctx-source-icon">{SOURCE_BADGES[src.type]}</span>
               <div className="ctx-source-info">
@@ -91,17 +96,30 @@ export function ConnectionsPage() {
                     {src.lastSync}
                   </span>
                 )}
+                {src.status === 'pending' && (
+                  <span className="status-pill">
+                    <span className="dot waiting" style={{ width: 5, height: 5 }} />
+                    待授权
+                  </span>
+                )}
               </div>
               <span className="ctx-source-sync muted">
                 {src.status === 'connected' ? `同步于 ${src.lastSync}` : ''}
               </span>
               <div className="ctx-source-actions">
                 {src.status === 'error' && <button className="btn sm">重新授权</button>}
-                <button className="btn sm ghost" onClick={() => disconnectSource(src.id)}>断开</button>
+                <button
+                  className="btn sm ghost"
+                  disabled={statusSourceIds.has(src.id)}
+                  onClick={() => disconnectSource(src.id)}
+                  title={statusSourceIds.has(src.id) ? '由连接器状态管理' : '断开'}
+                >
+                  断开
+                </button>
               </div>
             </div>
           ))}
-          {sources.length === 0 && (
+          {displayedSources.length === 0 && (
             <div className="ctx-empty">
               <p>尚未连接任何来源。</p>
               <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
@@ -137,6 +155,33 @@ export function ConnectionsPage() {
       </section>
     </div>
   );
+}
+
+function connectorToConnectedSource(source: ExternalAccessConnectorRecord): ConnectedSource {
+  return {
+    id: source.id,
+    type: sourceTypeFromConnectorKind(source.kind),
+    label: source.label,
+    account: source.accountLabel ?? '未指定账号',
+    status: source.status,
+    lastSync: source.errorReason ?? formatConnectorTime(source.lastSyncAt) ?? '待同步',
+  };
+}
+
+function sourceTypeFromConnectorKind(kind: ExternalAccessConnectorRecord['kind']): SourceType {
+  return kind;
+}
+
+function formatConnectorTime(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function ExternalAccessSafetyStrip({

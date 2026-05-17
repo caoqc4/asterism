@@ -834,6 +834,62 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/不会写入任务记忆/)).toBeTruthy();
   });
 
+  it('renders structured External Access connector status from runtime config', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      externalAccessStatus: {
+        sources: [{
+          id: 'gmail_fixture',
+          label: 'Gmail',
+          kind: 'email',
+          accountLabel: 'user@example.com',
+          status: 'connected',
+          lastSyncAt: '2026-05-17T09:30:00.000Z',
+        }],
+        connectedCount: 1,
+        pendingCount: 0,
+        errorCount: 0,
+        updatedAt: '2026-05-17T10:00:00.000Z',
+      },
+      capabilityRegistry: [{
+        id: 'external_access.connectors',
+        label: 'External Access',
+        family: 'external_access',
+        status: 'available',
+        configured: true,
+        missingReason: null,
+        visibility: 'hidden',
+        access: 'read_only',
+        requiresApproval: true,
+        requiredGate: 'runtime_entrypoint_coverage',
+        summary: 'connected=1 / pending=0 / errors=0',
+      }],
+      configurationSafetyReport: {
+        secretExposureSafe: true,
+        blockedReasons: [],
+        summary: 'configured=1 / approvalRequired=1 / blocked=0',
+        surfaces: [{
+          id: 'external_access.connectors',
+          state: 'approval_required',
+          reason: 'connected=1 / pending=0 / errors=0',
+          requiresApproval: true,
+          startupProbePolicy: 'manual_only',
+          exposesSecretValue: false,
+        }],
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /External Access/ }));
+
+    expect(await screen.findByText('Gmail')).toBeTruthy();
+    expect(screen.getByText('user@example.com')).toBeTruthy();
+    expect(screen.getByText('已连接')).toBeTruthy();
+    expect(screen.queryByText('尚未连接任何来源。')).toBeNull();
+    expect(screen.getByText('可用')).toBeTruthy();
+    expect(screen.getByText('connected=1 / pending=0 / errors=0')).toBeTruthy();
+  });
+
   it('keeps task management available before AI setup', async () => {
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValueOnce(buildAiStatus({ configured: false }));
     render(<App />);

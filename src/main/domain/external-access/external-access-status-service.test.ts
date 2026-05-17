@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ExternalAccessStatusService } from './external-access-status-service.js';
+import { ExternalAccessStatusService, readExternalAccessFixtureStatus } from './external-access-status-service.js';
 
 describe('ExternalAccessStatusService', () => {
   it('returns an explicit empty status by default', async () => {
@@ -126,5 +126,45 @@ describe('ExternalAccessStatusService', () => {
         },
       },
     ]);
+  });
+
+  it('reads a local fixture connector status without calling external providers', () => {
+    const status = readExternalAccessFixtureStatus(JSON.stringify({
+      updatedAt: '2026-05-17T10:00:00.000Z',
+      sources: [{
+        id: 'gmail_fixture',
+        label: 'Gmail',
+        kind: 'email',
+        accountLabel: 'user@example.com',
+        status: 'connected',
+        lastSyncAt: '2026-05-17T09:30:00.000Z',
+      }],
+    }));
+
+    expect(status).toMatchObject({
+      connectedCount: 1,
+      pendingCount: 0,
+      errorCount: 0,
+      updatedAt: '2026-05-17T10:00:00.000Z',
+      sources: [{
+        id: 'gmail_fixture',
+        label: 'Gmail',
+        kind: 'email',
+        accountLabel: 'user@example.com',
+        status: 'connected',
+      }],
+    });
+  });
+
+  it('reports invalid local fixture configuration as connector error state', () => {
+    expect(readExternalAccessFixtureStatus('{not json')).toMatchObject({
+      connectedCount: 0,
+      pendingCount: 0,
+      errorCount: 1,
+      sources: [{
+        id: 'external_access_fixture',
+        status: 'error',
+      }],
+    });
   });
 });

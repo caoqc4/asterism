@@ -277,7 +277,7 @@ describe('local smoke script default boundaries', () => {
       'npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:context-learning:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
     );
     expect(scripts['accept:product-surfaces:mac']).toBe(
-      'npm run smoke:external-access:mac && npm run smoke:decisions-center:mac && npm run smoke:task-files:mac',
+      'npm run smoke:external-access:mac && npm run smoke:external-access-connected:mac && npm run smoke:decisions-center:mac && npm run smoke:task-files:mac',
     );
     expect(scripts['smoke:release:mac']).not.toContain('smoke:home-recovery:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:project-decomposition:mac');

@@ -22,6 +22,7 @@ describe('AiConfigService', () => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
     fs.mkdirSync(tempRoot, { recursive: true });
     delete process.env.TASKPLANE_AI_API_KEY;
+    delete process.env.TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON;
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
     getPasswordMock.mockReset();
     setPasswordMock.mockReset();
@@ -30,6 +31,7 @@ describe('AiConfigService', () => {
   afterEach(() => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
     delete process.env.TASKPLANE_AI_API_KEY;
+    delete process.env.TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON;
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
   });
 
@@ -138,6 +140,33 @@ describe('AiConfigService', () => {
       requiresApproval: true,
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
+    });
+  });
+
+  it('can project a local External Access fixture through the default service', async () => {
+    getPasswordMock.mockResolvedValue(null);
+    process.env.TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON = JSON.stringify({
+      sources: [{
+        id: 'gmail_fixture',
+        label: 'Gmail',
+        kind: 'email',
+        accountLabel: 'user@example.com',
+        status: 'connected',
+      }],
+    });
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const service = new AiConfigService(new AppConfigService(() => tempRoot));
+
+    const status = await service.getStatus();
+
+    expect(status.externalAccessStatus).toMatchObject({
+      connectedCount: 1,
+      sources: [{ id: 'gmail_fixture', status: 'connected' }],
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
+      status: 'available',
+      summary: 'connected=1 / pending=0 / errors=0',
     });
   });
 

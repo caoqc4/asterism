@@ -12,7 +12,7 @@ import { emptyExternalAccessStatus, externalAccessStatusForCapability, type Exte
 import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-snapshot.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { readEnvBoolean, readEnvValue } from '../config/env.js';
-import { ExternalAccessStatusService } from '../domain/external-access/external-access-status-service.js';
+import { createExternalAccessStatusService, ExternalAccessStatusService } from '../domain/external-access/external-access-status-service.js';
 import { evaluateAgentExecutorLifecycleServiceAvailability } from '../domain/run/agent-executor-lifecycle-service-factory.js';
 
 const SERVICE_NAME = 'taskplane';
@@ -80,7 +80,7 @@ function buildCapabilityProductSurfaceStatus(externalAccessStatus: ExternalAcces
 export class AiConfigService {
   constructor(
     private readonly appConfigService: AppConfigService,
-    private readonly externalAccessStatusService = new ExternalAccessStatusService(),
+    private readonly externalAccessStatusService = createExternalAccessStatusService(),
   ) {}
 
   /* ─── Per-provider key storage ─── */
