@@ -2786,6 +2786,40 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('任务信息已更新')).toBeNull();
   });
 
+  it('renders completion checks as quality-gate replay groups in task dynamics', async () => {
+    const task = buildTask({
+      id: 'task_quality_replay',
+      title: '阶段收尾检查',
+      summary: '验证阶段收尾记录是否可回放。',
+    });
+    harness.tasks.unshift(task);
+    harness.details[task.id] = {
+      ...buildTaskDetail(task),
+      timeline: [{
+        id: 'timeline_quality_check',
+        taskId: task.id,
+        type: 'task.completion_check',
+        payload: JSON.stringify({
+          action: 'quality_check',
+          reason: '阶段收尾质量检查已完成，准备进入下一项任务。',
+        }),
+        createdAt: now,
+      }],
+    };
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: /阶段收尾检查/ }));
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
+
+    expect(screen.getByLabelText('任务动态关键脉络')).toBeTruthy();
+    expect(screen.getByText('质量检查')).toBeTruthy();
+    expect(screen.getByText(/1 条动态 · 质量/)).toBeTruthy();
+    expect(screen.getAllByText(/阶段收尾质量检查已完成/).length).toBeGreaterThan(0);
+  });
+
   it('opens timeline tasks inside Tasks instead of the legacy workbench', async () => {
     const user = userEvent.setup();
     render(<App />);
