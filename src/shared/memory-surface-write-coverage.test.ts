@@ -87,4 +87,33 @@ describe('memory surface write coverage', () => {
     const ids = memorySurfaceWriteEntrypoints().map((entrypoint) => entrypoint.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it('binds retained memory-write IPC channels to the surface coverage matrix', () => {
+    const coveredChannels = memorySurfaceWriteEntrypoints()
+      .flatMap((entrypoint) => entrypoint.ipcChannels ?? [])
+      .sort();
+
+    expect(coveredChannels).toEqual([
+      'artifact:createManual',
+      'artifact:delete',
+      'artifact:update',
+      'decision:act',
+      'decision:create',
+      'sourceContext:archive',
+      'sourceContext:create',
+      'sourceContext:update',
+      'taskFile:create',
+      'taskFile:delete',
+      'taskFile:update',
+      'workHabit:createManual',
+      'workHabit:delete',
+      'workHabit:importLegacy',
+      'workHabit:propose',
+      'workHabit:recordApplications',
+      'workHabit:recordCompletionOverride',
+      'workHabit:recordSopTemplate',
+      'workHabit:resolveConflict',
+      'workHabit:update',
+    ]);
+  });
 });

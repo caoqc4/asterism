@@ -43,6 +43,7 @@ export type MemorySurfaceWriteEntrypoint = {
   id: string;
   owner: MemorySurfaceWriteEntrypointOwner;
   kind: MemorySurfaceWriteEntrypointKind;
+  ipcChannels?: string[];
   surfaces: RuntimeSurfaceKind[];
   writePolicies: MemorySurfaceWritePolicy[];
   guards: MemorySurfaceGuard[];
@@ -144,6 +145,11 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     id: 'task_service.task_file_boundary',
     owner: 'TaskService',
     kind: 'service_boundary',
+    ipcChannels: [
+      'taskFile:create',
+      'taskFile:delete',
+      'taskFile:update',
+    ],
     surfaces: ['task_state', 'task_record', 'task_file'],
     writePolicies: ['dedicated_evaluator', 'ordinary_file_writer'],
     guards: ['runtime_surface_routing', 'canonical_write_validation', 'task_mutation', 'reserved_task_memory_path_block', 'simplicity_check'],
@@ -153,6 +159,11 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     id: 'task_service.source_context_boundary',
     owner: 'TaskService',
     kind: 'service_boundary',
+    ipcChannels: [
+      'sourceContext:archive',
+      'sourceContext:create',
+      'sourceContext:update',
+    ],
     surfaces: ['source_material', 'ai_output'],
     writePolicies: ['explicit_source_capture'],
     guards: ['runtime_surface_routing', 'canonical_write_validation', 'source_quality_metadata', 'task_mutation', 'simplicity_check'],
@@ -162,6 +173,11 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     id: 'task_service.manual_artifact_boundary',
     owner: 'TaskService',
     kind: 'service_boundary',
+    ipcChannels: [
+      'artifact:createManual',
+      'artifact:delete',
+      'artifact:update',
+    ],
     surfaces: ['artifact'],
     writePolicies: ['artifact_writer'],
     guards: ['canonical_write_validation', 'artifact_writer', 'task_mutation', 'simplicity_check'],
@@ -207,6 +223,10 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     id: 'decision.service.create_or_act',
     owner: 'DecisionService',
     kind: 'decision_boundary',
+    ipcChannels: [
+      'decision:act',
+      'decision:create',
+    ],
     surfaces: ['decision'],
     writePolicies: ['decision_service'],
     guards: ['canonical_write_validation', 'decision_action', 'pre_step', 'post_step', 'simplicity_check'],
@@ -216,6 +236,17 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     id: 'work_habit.service.proposal',
     owner: 'WorkHabitService',
     kind: 'preference_boundary',
+    ipcChannels: [
+      'workHabit:createManual',
+      'workHabit:delete',
+      'workHabit:importLegacy',
+      'workHabit:propose',
+      'workHabit:recordApplications',
+      'workHabit:recordCompletionOverride',
+      'workHabit:recordSopTemplate',
+      'workHabit:resolveConflict',
+      'workHabit:update',
+    ],
     surfaces: ['work_habit'],
     writePolicies: ['work_habit_proposal'],
     guards: ['work_habit_proposal', 'canonical_write_validation', 'simplicity_check'],
@@ -226,6 +257,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
 export function memorySurfaceWriteEntrypoints(): MemorySurfaceWriteEntrypoint[] {
   return MEMORY_SURFACE_WRITE_ENTRYPOINTS.map((entrypoint) => ({
     ...entrypoint,
+    ipcChannels: entrypoint.ipcChannels ? [...entrypoint.ipcChannels] : undefined,
     surfaces: [...entrypoint.surfaces],
     writePolicies: [...entrypoint.writePolicies],
     guards: [...entrypoint.guards],
