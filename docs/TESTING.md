@@ -24,6 +24,16 @@ This runs:
 
 Run this before opening a pull request or pushing a meaningful change.
 
+For local alpha readiness on macOS, run the broader acceptance gate:
+
+```bash
+npm run accept:alpha-local
+```
+
+This includes `verify`, local agent/runtime gates, packaged release smoke,
+packaged recovery smoke, product-surface packaged smoke, and the read-only macOS
+release preflight.
+
 ## Focused Test Commands
 
 ```bash
@@ -59,6 +69,15 @@ Targeted packaged recovery/config coverage:
 ```bash
 npm run accept:packaged-recovery:mac
 ```
+
+Targeted packaged product-surface coverage:
+
+```bash
+npm run accept:product-surfaces:mac
+```
+
+This covers External Access empty/safety state, Decisions judgment-center
+resolution, and task file open/save persistence in the packaged app.
 
 Release readiness preflight:
 
@@ -112,6 +131,8 @@ For package/build changes:
 For local-first recovery or config surfaces:
 
 - run `npm run accept:packaged-recovery:mac` after producing a packaged app.
+- run `npm run accept:product-surfaces:mac` when External Access, Decisions, or
+  task-file surfaces may be affected.
 
 ## CI
 
