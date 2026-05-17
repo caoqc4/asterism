@@ -49,10 +49,34 @@ export type CapabilityRegistryEntry = {
   summary: string;
 };
 
+export type CapabilityProductSurfaceStatus = {
+  externalAccess?: {
+    connectedCount: number;
+    pendingCount?: number;
+    errorCount?: number;
+  } | null;
+  skills?: {
+    enabledCount: number;
+    readyCount: number;
+    needsConfigCount?: number;
+  } | null;
+  mcp?: {
+    connectedServerCount: number;
+    toolCount: number;
+    errorCount?: number;
+  } | null;
+  browser?: {
+    available: boolean;
+    reason?: string | null;
+  } | null;
+};
+
 export function buildCapabilityRegistry(params: {
   snapshot?: RuntimeCapabilitySnapshot | null;
+  productSurfaces?: CapabilityProductSurfaceStatus | null;
 }): CapabilityRegistryEntry[] {
   const snapshot = params.snapshot ?? null;
+  const productSurfaces = params.productSurfaces ?? null;
   const modelConfigured = Boolean(snapshot?.model.configured);
   const workspaceConfigured = Boolean(snapshot?.workspace.rootConfigured);
   const sandboxFlagAvailable = snapshot?.flags.sandboxCodingAgent === 'available';
@@ -182,10 +206,10 @@ export function buildCapabilityRegistry(params: {
       requiredGate: 'decision_checkpoint',
       summary: `checkpointTools=${checkpointToolCount}`,
     },
-    deferredCapability('external_access.connectors', 'External Access', 'external_access'),
-    deferredCapability('skills.catalogue', 'Skills', 'skill'),
-    deferredCapability('mcp.servers', 'MCP Servers', 'mcp'),
-    deferredCapability('browser.operator', 'Browser Operator', 'browser'),
+    externalAccessCapability(productSurfaces?.externalAccess ?? null),
+    skillsCapability(productSurfaces?.skills ?? null),
+    mcpCapability(productSurfaces?.mcp ?? null),
+    browserCapability(productSurfaces?.browser ?? null),
   ];
 }
 
@@ -253,5 +277,84 @@ function deferredCapability(
     requiresApproval: true,
     requiredGate: 'runtime_entrypoint_coverage',
     summary: 'Deferred until the product surface exposes structured status.',
+  };
+}
+
+function externalAccessCapability(
+  status: NonNullable<CapabilityProductSurfaceStatus['externalAccess']> | null,
+): CapabilityRegistryEntry {
+  if (!status) return deferredCapability('external_access.connectors', 'External Access', 'external_access');
+  const connected = status.connectedCount > 0;
+  return {
+    id: 'external_access.connectors',
+    label: 'External Access',
+    family: 'external_access',
+    status: connected ? 'available' : 'disabled',
+    configured: connected,
+    missingReason: connected ? null : 'No external access connector is connected.',
+    visibility: 'hidden',
+    access: 'read_only',
+    requiresApproval: true,
+    requiredGate: 'runtime_entrypoint_coverage',
+    summary: `connected=${status.connectedCount} / pending=${status.pendingCount ?? 0} / errors=${status.errorCount ?? 0}`,
+  };
+}
+
+function skillsCapability(
+  status: NonNullable<CapabilityProductSurfaceStatus['skills']> | null,
+): CapabilityRegistryEntry {
+  if (!status) return deferredCapability('skills.catalogue', 'Skills', 'skill');
+  const enabled = status.enabledCount > 0 && status.readyCount > 0;
+  return {
+    id: 'skills.catalogue',
+    label: 'Skills',
+    family: 'skill',
+    status: enabled ? 'available' : status.needsConfigCount ? 'unconfigured' : 'disabled',
+    configured: enabled,
+    missingReason: enabled ? null : 'No ready skill is enabled.',
+    visibility: enabled ? 'policy_gated' : 'hidden',
+    access: 'mixed',
+    requiresApproval: true,
+    requiredGate: 'runtime_entrypoint_coverage',
+    summary: `enabled=${status.enabledCount} / ready=${status.readyCount} / needsConfig=${status.needsConfigCount ?? 0}`,
+  };
+}
+
+function mcpCapability(
+  status: NonNullable<CapabilityProductSurfaceStatus['mcp']> | null,
+): CapabilityRegistryEntry {
+  if (!status) return deferredCapability('mcp.servers', 'MCP Servers', 'mcp');
+  const connected = status.connectedServerCount > 0 && status.toolCount > 0;
+  return {
+    id: 'mcp.servers',
+    label: 'MCP Servers',
+    family: 'mcp',
+    status: connected ? 'available' : status.errorCount ? 'unconfigured' : 'disabled',
+    configured: connected,
+    missingReason: connected ? null : 'No connected MCP server exposes tools.',
+    visibility: connected ? 'policy_gated' : 'hidden',
+    access: 'mixed',
+    requiresApproval: true,
+    requiredGate: 'runtime_entrypoint_coverage',
+    summary: `connectedServers=${status.connectedServerCount} / tools=${status.toolCount} / errors=${status.errorCount ?? 0}`,
+  };
+}
+
+function browserCapability(
+  status: NonNullable<CapabilityProductSurfaceStatus['browser']> | null,
+): CapabilityRegistryEntry {
+  if (!status) return deferredCapability('browser.operator', 'Browser Operator', 'browser');
+  return {
+    id: 'browser.operator',
+    label: 'Browser Operator',
+    family: 'browser',
+    status: status.available ? 'available' : 'disabled',
+    configured: status.available,
+    missingReason: status.available ? null : status.reason ?? 'Browser operator is not available.',
+    visibility: status.available ? 'policy_gated' : 'hidden',
+    access: 'mutating',
+    requiresApproval: true,
+    requiredGate: 'runtime_pre_step',
+    summary: status.reason ?? `browser=${status.available ? 'available' : 'disabled'}`,
   };
 }

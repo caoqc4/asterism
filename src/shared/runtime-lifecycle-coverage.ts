@@ -466,11 +466,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
-      'External Access, Skills, MCP, and browser/operator capability rows are represented as deferred hidden entries until those product surfaces provide structured status.',
+      'External Access, Skills, MCP, and browser/operator capability rows accept optional product-surface status input and remain deferred hidden entries until status is supplied.',
       'Sandbox coding capability remains hidden until both the feature flag and backend readiness support the capability.',
     ],
     nextImplementation: [
-      'Map External Access, Skills, MCP, sandbox backend probe details, and browser/operator surfaces into concrete CapabilityRegistry rows instead of deferred hidden rows.',
+      'Connect External Access, Skills, MCP, and browser/operator pages or services to the existing CapabilityRegistry product-surface status input.',
       'Require RuntimeCapabilitySnapshot from any future entry point where model, external access, workspace checks, or tool exposure changes execution permission.',
     ],
   },

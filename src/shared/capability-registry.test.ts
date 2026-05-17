@@ -137,6 +137,72 @@ describe('capability registry', () => {
       summary: 'Sandbox producer backend ready.',
     });
   });
+
+  it('can promote product surface statuses out of deferred capability rows', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus() }),
+      productSurfaces: {
+        externalAccess: { connectedCount: 2, pendingCount: 1, errorCount: 0 },
+        skills: { enabledCount: 3, readyCount: 2, needsConfigCount: 1 },
+        mcp: { connectedServerCount: 1, toolCount: 4, errorCount: 0 },
+        browser: { available: true, reason: 'Browser automation configured.' },
+      },
+    });
+
+    expect(registry.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
+      status: 'available',
+      configured: true,
+      visibility: 'hidden',
+      access: 'read_only',
+      summary: 'connected=2 / pending=1 / errors=0',
+    });
+    expect(registry.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'available',
+      visibility: 'policy_gated',
+      summary: 'enabled=3 / ready=2 / needsConfig=1',
+    });
+    expect(registry.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
+      status: 'available',
+      visibility: 'policy_gated',
+      summary: 'connectedServers=1 / tools=4 / errors=0',
+    });
+    expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
+      status: 'available',
+      visibility: 'policy_gated',
+      requiredGate: 'runtime_pre_step',
+      summary: 'Browser automation configured.',
+    });
+  });
+
+  it('keeps product surfaces hidden when they are not connected or ready', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus() }),
+      productSurfaces: {
+        externalAccess: { connectedCount: 0, errorCount: 1 },
+        skills: { enabledCount: 1, readyCount: 0, needsConfigCount: 1 },
+        mcp: { connectedServerCount: 1, toolCount: 0, errorCount: 1 },
+        browser: { available: false, reason: 'Browser plugin unavailable.' },
+      },
+    });
+
+    expect(registry.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
+      status: 'disabled',
+      visibility: 'hidden',
+    });
+    expect(registry.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'unconfigured',
+      visibility: 'hidden',
+    });
+    expect(registry.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
+      status: 'unconfigured',
+      visibility: 'hidden',
+    });
+    expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
+      status: 'disabled',
+      visibility: 'hidden',
+      missingReason: 'Browser plugin unavailable.',
+    });
+  });
 });
 
 function aiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {

@@ -143,7 +143,9 @@ unconfigured capabilities remain hidden from model-visible exposure. The
 existing AI config status boundary now returns this registry so current and
 future capability-facing UI can consume one shared data model. Sandbox coding
 availability is based on feature flag plus backend probe/readiness, not the
-feature flag alone.
+feature flag alone. External Access, Skills, MCP, and browser/operator rows now
+have an optional product-surface status input so they can be promoted from
+deferred rows once their pages or services expose structured status.
 
 ## Package C: Search, Retrieval, And Reference Index
 

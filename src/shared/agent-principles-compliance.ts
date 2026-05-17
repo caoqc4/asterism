@@ -82,6 +82,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'CapabilityRegistry projects runtime capability snapshots into explicit capability entries with status, visibility, access type, approval requirement, and runtime gate.',
       'AiConfigStatus carries CapabilityRegistry so existing model/settings consumers can read the shared capability status without rebuilding local capability semantics.',
       'Sandbox coding capability now depends on sandbox backend probe/readiness in RuntimeCapabilitySnapshot, not just the feature flag.',
+      'CapabilityRegistry can accept product-surface status for External Access, Skills, MCP, and browser/operator capabilities without making those surfaces model-visible by default.',
       'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
@@ -102,7 +103,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs; future provider-visible execution boundaries must use the same gate.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
       'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
-      'External Access, Skills, MCP, and browser/operator capability rows are intentionally hidden/deferred until their product surfaces expose structured registry status.',
+      'External Access, Skills, MCP, and browser/operator rows have a shared status input shape, but current pages still need service-backed structured status before they stop being deferred in AiConfigStatus.',
     ],
     nextVerification: [
       'Keep capability registry tests blocking disabled or unconfigured capabilities from becoming model-visible.',
