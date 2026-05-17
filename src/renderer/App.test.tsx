@@ -802,6 +802,7 @@ describe('App redesign v1', () => {
   });
 
   it('renders the redesigned navigation zones and keeps the external signal hint visible', async () => {
+    const user = userEvent.setup();
     render(<App />);
 
     expect(await screen.findByRole('button', { name: /Brief/ })).toBeTruthy();
@@ -816,6 +817,11 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText(/入选依据/).length).toBeGreaterThan(0);
     expect(screen.getByText('暂无外部信号。')).toBeTruthy();
     expect(screen.getByText(/等待你确认是否长成任务/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /External Access/ }));
+    expect(await screen.findByText('连接器状态')).toBeTruthy();
+    expect(screen.getByText('仅手动')).toBeTruthy();
+    expect(screen.getByText('先质检，再确认')).toBeTruthy();
   });
 
   it('clarifies Model configuration stays local and separate from task memory', async () => {

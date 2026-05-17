@@ -96,6 +96,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'ConfigurationSafetyReport marks provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus so existing settings/model/capability service consumers share one safety projection.',
       'Settings consumes ConfigurationSafetyReport as a read-only safety boundary for configured, approval-required, blocked, manual-probe, and secret-exposure-safe states.',
+      'External Access consumes AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without live connector probes.',
       'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
@@ -121,7 +122,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
       'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; future real connector services must call it before persistence.',
       'External Access still needs service-backed structured status before it stops being deferred in AiConfigStatus; Skills, MCP, and browser/operator have scaffold fallback but still need richer product-surface status.',
-      'ConfigurationSafetyReport is consumed by Settings; retained non-settings capability pages can reuse it when their UI work resumes.',
+      'ConfigurationSafetyReport is consumed by Settings and External Access; remaining capability pages can reuse it when their UI work resumes.',
     ],
     nextVerification: [
       'Keep capability registry tests blocking disabled or unconfigured capabilities from becoming model-visible.',

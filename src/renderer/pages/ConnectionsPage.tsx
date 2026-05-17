@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { CapabilityRegistryEntry } from '@shared/capability-registry';
+import type { ConfigurationSafetySurface } from '@shared/configuration-safety-report';
+import type { AiConfigStatus } from '@shared/types/settings';
 
 type SourceStatus = 'connected' | 'error' | 'pending';
 
@@ -35,10 +38,20 @@ const AVAILABLE_SOURCES: Array<{ type: SourceType; label: string; desc: string }
 
 export function ConnectionsPage() {
   const [sources, setSources] = useState<ConnectedSource[]>([]);
+  const [configStatus, setConfigStatus] = useState<AiConfigStatus | null>(null);
+
+  useEffect(() => {
+    window.api?.getAiConfigStatus().then(setConfigStatus).catch(() => {});
+  }, []);
 
   function disconnectSource(id: string) {
     setSources((prev) => prev.filter((s) => s.id !== id));
   }
+
+  const externalSafety = configStatus?.configurationSafetyReport?.surfaces
+    .find((surface) => surface.id === 'external_access.connectors') ?? null;
+  const externalCapability = configStatus?.capabilityRegistry
+    ?.find((entry) => entry.id === 'external_access.connectors') ?? null;
 
   return (
     <div className="connections-page">
@@ -100,6 +113,7 @@ export function ConnectionsPage() {
         <div className="connections-boundary-note">
           未授权的来源不会进入 AI 上下文；只有连接成功且产生新信号时，外部信息才会出现在 Brief 和任务上下文里。
         </div>
+        <ExternalAccessSafetyStrip safety={externalSafety} capability={externalCapability} />
       </section>
 
       {/* Available to connect */}
@@ -123,4 +137,49 @@ export function ConnectionsPage() {
       </section>
     </div>
   );
+}
+
+function ExternalAccessSafetyStrip({
+  capability,
+  safety,
+}: {
+  capability: CapabilityRegistryEntry | null;
+  safety: ConfigurationSafetySurface | null;
+}) {
+  return (
+    <div className="connections-safety-strip">
+      <div className="connections-safety-item">
+        <span>连接器状态</span>
+        <strong>{capabilityStatusLabel(capability)}</strong>
+      </div>
+      <div className="connections-safety-item">
+        <span>探测策略</span>
+        <strong>{probePolicyLabel(safety?.startupProbePolicy)}</strong>
+      </div>
+      <div className="connections-safety-item">
+        <span>入库边界</span>
+        <strong>先质检，再确认</strong>
+      </div>
+      <p>
+        {safety?.reason
+          ?? capability?.missingReason
+          ?? 'External Access 还没有接入结构化连接器状态；不会自动读取外部数据。'}
+      </p>
+    </div>
+  );
+}
+
+function capabilityStatusLabel(capability: CapabilityRegistryEntry | null): string {
+  if (!capability) return '未接入';
+  if (capability.status === 'available') return '可用';
+  if (capability.status === 'unconfigured') return '未连接';
+  if (capability.status === 'disabled') return '已关闭';
+  return '未知';
+}
+
+function probePolicyLabel(policy: ConfigurationSafetySurface['startupProbePolicy'] | undefined): string {
+  if (policy === 'manual_only') return '仅手动';
+  if (policy === 'safe_read_only') return '安全只读';
+  if (policy === 'never') return '不自动';
+  return '仅手动';
 }

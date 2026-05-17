@@ -514,6 +514,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'ConfigurationSafetyReport keeps provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in rather than startup side effects.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus, so retained settings/capability service consumers can read the shared safety projection without a separate UI path.',
       'Settings consumes ConfigurationSafetyReport as a read-only configuration safety boundary with secret exposure, manual-probe, approval-required, and blocked capability states.',
+      'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
     ],
     outOfAgentPrinciplesScope: [
       'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',
@@ -522,7 +523,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
       'External Access remains a deferred hidden row until a connector service exposes structured status; Skills, MCP, and browser/operator can already fall back to tool scaffold reserved status.',
       'Sandbox coding capability remains hidden until both the feature flag and backend readiness support the capability.',
-      'ConfigurationSafetyReport is exposed through AiConfigStatus and consumed by Settings; other retained capability pages can reuse the same report when their UI work resumes.',
+      'ConfigurationSafetyReport is exposed through AiConfigStatus and consumed by Settings and External Access; other retained capability pages can reuse the same report when their UI work resumes.',
     ],
     nextImplementation: [
       'Connect External Access and richer Skills, MCP, and browser/operator pages or services to the existing CapabilityRegistry product-surface status input.',
