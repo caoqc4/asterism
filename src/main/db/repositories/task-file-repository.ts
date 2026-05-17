@@ -6,6 +6,7 @@ import type {
   TaskFileRecord,
   UpdateTaskFileInput,
 } from '../../../shared/types/task-file.js';
+import { assertCanonicalWriteInput } from '../../../shared/canonical-data-contract.js';
 import { normalizeCreateTaskFileInput } from '../../../shared/runtime-surface-routing.js';
 import { taskFiles } from '../schema.js';
 import { initDatabase } from '../client.js';
@@ -52,6 +53,12 @@ export class TaskFileRepository {
     const timestamp = nowIso();
     const id = generateId('task_file');
     const normalizedInput = normalizeCreateTaskFileInput(input);
+    assertCanonicalWriteInput({
+      domain: 'task_file',
+      input: normalizedInput as Record<string, unknown>,
+      allowedFields: ['taskId', 'name', 'path', 'kind', 'content'],
+      requiredFields: ['taskId', 'name', 'kind'],
+    });
 
     await db.insert(taskFiles).values({
       id,
@@ -69,6 +76,12 @@ export class TaskFileRepository {
   }
 
   async update(input: UpdateTaskFileInput): Promise<TaskFileRecord> {
+    assertCanonicalWriteInput({
+      domain: 'task_file',
+      input: input as Record<string, unknown>,
+      allowedFields: ['id', 'name', 'path', 'content'],
+      requiredFields: ['id'],
+    });
     const db = initDatabase();
     const [current] = await db
       .select()

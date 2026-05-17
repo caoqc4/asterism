@@ -443,6 +443,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'CanonicalDataContract documents authoritative fields, write/read authority, legacy fallback conditions, and repair routes for task hierarchy, task files, sources, artifacts, Decisions, run events, task dynamics, Work Habits, and process templates.',
       'CanonicalDataContract keeps hierarchy and source-context legacy fallbacks read-only and only allowed when canonical fields are missing, while artifact classification has no folder-name fallback.',
       'CanonicalDataDiagnostics can mechanically report missing canonical fields, orphan task references, and missing task-scoped Decision bindings without mutating records.',
+      'CanonicalDataWriteValidation checks write-boundary fields separately from full canonical records, and retained task-file and Decision create/update paths now reject unknown or read-only legacy fields before repository persistence.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
       'runtime-subtask-evaluator blocks near-duplicate child drafts and existing child titles when compact titles only change word order.',
       'runtime-subtask-evaluator uses shared task title identity, so generic modifiers cannot create another child draft with the same action and object as an existing child.',
@@ -454,13 +455,13 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Renderer-local hierarchy attributes remain as a read-only legacy missing-field fallback only for records that still lack persisted hierarchy fields.',
-      'CanonicalDataContract now has read-only mechanical diagnostics; future repository and service writes still need to consume it where write-time validation is useful.',
+      'CanonicalDataContract now has read-only mechanical diagnostics and write-boundary validation for retained task-file and Decision writes; future repository and service writes should consume it where write-time validation is useful.',
       'Project progress and child ordering are data-authoritative for retained workflows; deleting the compatibility fallback should wait until old missing-field records are no longer supported.',
       'Future child-task creation paths must keep using TaskService capture checks and stricter project child-draft evaluation when they create project children.',
     ],
     nextImplementation: [
       'Keep the compatibility fallback covered until a later schema/support window removes old missing-field records.',
-      'Use CanonicalDataDiagnostics as the checklist for future migration diagnostics and repository write validation.',
+      'Use CanonicalDataDiagnostics and CanonicalDataWriteValidation as the checklist for future migration diagnostics and repository write validation.',
       'Keep hierarchy repair actions in Decisions unless a stronger task-structure maintenance workflow appears.',
     ],
   },

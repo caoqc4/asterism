@@ -12,6 +12,7 @@ import type {
   DecisionSourceType,
   DecisionStatus,
 } from '../../../shared/types/decision.js';
+import { assertCanonicalWriteInput } from '../../../shared/canonical-data-contract.js';
 import { normalizeCreateDecisionInput } from '../../../shared/runtime-surface-routing.js';
 import { decisionRequests, timelineEvents } from '../schema.js';
 import { initDatabase } from '../client.js';
@@ -73,6 +74,12 @@ export class DecisionRepository {
     const timestamp = nowIso();
     const id = generateId('decision');
     const normalizedInput = normalizeCreateDecisionInput(input);
+    assertCanonicalWriteInput({
+      domain: 'decision',
+      input: normalizedInput as Record<string, unknown>,
+      allowedFields: ['taskId', 'title', 'scope', 'kind', 'sourceType', 'sourceId', 'sourceLabel', 'context', 'options', 'recommendation'],
+      requiredFields: ['title', 'scope', 'kind', 'sourceType'],
+    });
     const taskId = normalizedInput.taskId ?? '';
 
     await db.insert(decisionRequests).values({

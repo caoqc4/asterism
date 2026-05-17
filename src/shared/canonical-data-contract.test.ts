@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CANONICAL_DATA_CONTRACTS,
+  assertCanonicalWriteInput,
   canonicalFieldsForDomain,
   contractForCanonicalDomain,
   evaluateCanonicalDataDiagnostics,
+  evaluateCanonicalWriteInput,
   isLegacyFallbackAllowed,
   legacyFallbacksForDomain,
 } from './canonical-data-contract.js';
@@ -101,6 +103,93 @@ describe('canonical data contract', () => {
     expect(contractForCanonicalDomain('decision').repairRoute).toBe('decision_manual_review');
     expect(contractForCanonicalDomain('task_hierarchy').repairRoute).toBe('decision_manual_review');
     expect(contractForCanonicalDomain('task_file').repairRoute).toBe('read_only_diagnostic');
+  });
+
+  it('keeps decision source labels in the canonical contract', () => {
+    expect(canonicalFieldsForDomain('decision')).toEqual(expect.arrayContaining([
+      'sourceType',
+      'sourceId',
+      'sourceLabel',
+    ]));
+  });
+
+  it('validates write-boundary fields without treating every canonical field as caller-writable', () => {
+    const valid = evaluateCanonicalWriteInput({
+      domain: 'task_file',
+      input: {
+        taskId: 'task_1',
+        name: 'Task.md',
+        kind: 'file',
+        content: '# Task',
+      },
+      allowedFields: ['taskId', 'name', 'path', 'kind', 'content'],
+      requiredFields: ['taskId', 'name', 'kind'],
+    });
+
+    expect(valid.allowed).toBe(true);
+    expect(valid.summary).toContain('allowed=yes');
+
+    const invalid = evaluateCanonicalWriteInput({
+      domain: 'task_file',
+      input: {
+        id: 'caller_supplied',
+        taskId: 'task_1',
+        name: '',
+        kind: 'file',
+        artifactFolder: 'Artifacts/',
+      },
+      allowedFields: ['taskId', 'name', 'path', 'kind', 'content'],
+      requiredFields: ['taskId', 'name', 'kind'],
+    });
+
+    expect(invalid.allowed).toBe(false);
+    expect(invalid.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'unknown_write_field',
+        field: 'id',
+      }),
+      expect.objectContaining({
+        code: 'unknown_write_field',
+        field: 'artifactFolder',
+      }),
+      expect.objectContaining({
+        code: 'missing_required_write_field',
+        field: 'name',
+      }),
+    ]));
+  });
+
+  it('blocks writes to read-only legacy fallback fields', () => {
+    const invalid = evaluateCanonicalWriteInput({
+      domain: 'task_hierarchy',
+      input: {
+        'renderer.localTaskAttributes.parentTaskId': 'legacy_parent',
+        parentTaskId: 'task_parent',
+      },
+      allowedFields: ['parentTaskId', 'childTaskIds', 'taskType', 'taskFacets'],
+      requiredFields: ['parentTaskId'],
+    });
+
+    expect(invalid.allowed).toBe(false);
+    expect(invalid.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'legacy_fallback_write',
+        field: 'renderer.localTaskAttributes.parentTaskId',
+        repairRoute: 'decision_manual_review',
+      }),
+    ]));
+  });
+
+  it('throws a concise error for invalid canonical writes', () => {
+    expect(() => assertCanonicalWriteInput({
+      domain: 'decision',
+      input: {
+        title: 'Approve deployment',
+        legacyStatus: 'pending',
+      },
+      allowedFields: ['taskId', 'title', 'scope', 'kind', 'sourceType', 'sourceId', 'sourceLabel', 'context', 'options', 'recommendation'],
+      requiredFields: ['title', 'scope', 'kind', 'sourceType'],
+    })).toThrow(/legacyStatus/);
   });
 
   it('diagnoses missing canonical fields and orphan task-bound records', () => {

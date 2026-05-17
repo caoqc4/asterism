@@ -44,6 +44,11 @@ export type CanonicalDataDiagnosticIssueCode =
   | 'orphan_task_reference'
   | 'missing_task_binding';
 
+export type CanonicalDataWriteIssueCode =
+  | 'unknown_write_field'
+  | 'legacy_fallback_write'
+  | 'missing_required_write_field';
+
 export type CanonicalDataDiagnosticSeverity = 'info' | 'warning' | 'error';
 
 export type CanonicalDataDiagnosticIssue = {
@@ -56,11 +61,26 @@ export type CanonicalDataDiagnosticIssue = {
   message: string;
 };
 
+export type CanonicalDataWriteIssue = {
+  code: CanonicalDataWriteIssueCode;
+  domain: CanonicalDomain;
+  field: string;
+  severity: CanonicalDataDiagnosticSeverity;
+  repairRoute: RepairRoute;
+  message: string;
+};
+
 export type CanonicalDataDiagnosticEvaluation = {
   issues: CanonicalDataDiagnosticIssue[];
   safeAutoRepairCount: number;
   manualReviewCount: number;
   readOnlyDiagnosticCount: number;
+  summary: string;
+};
+
+export type CanonicalDataWriteValidation = {
+  allowed: boolean;
+  issues: CanonicalDataWriteIssue[];
   summary: string;
 };
 
@@ -212,6 +232,7 @@ export const CANONICAL_DATA_CONTRACTS: CanonicalDataContract[] = [
       'kind',
       'sourceType',
       'sourceId',
+      'sourceLabel',
       'context',
       'options',
       'recommendation',
@@ -307,6 +328,64 @@ export function isLegacyFallbackAllowed(params: {
   if (!rule || rule.mode === 'not_allowed') return false;
   if (rule.mode === 'read_only_when_canonical_missing') return !params.canonicalFieldPresent;
   return true;
+}
+
+export function evaluateCanonicalWriteInput(params: {
+  domain: CanonicalDomain;
+  input: Record<string, unknown>;
+  allowedFields: string[];
+  requiredFields?: string[];
+}): CanonicalDataWriteValidation {
+  const contract = contractForCanonicalDomain(params.domain);
+  const canonicalFields = new Set(contract.canonicalFields);
+  const allowedFields = new Set(params.allowedFields);
+  const legacyFields = new Set(contract.legacyFallbacks.map((rule) => rule.legacyField));
+  const issues: CanonicalDataWriteIssue[] = [];
+
+  for (const field of Object.keys(params.input)) {
+    if (allowedFields.has(field)) continue;
+    const legacyWrite = legacyFields.has(field);
+    issues.push({
+      code: legacyWrite ? 'legacy_fallback_write' : 'unknown_write_field',
+      domain: params.domain,
+      field,
+      severity: legacyWrite ? 'error' : canonicalFields.has(field) ? 'warning' : 'error',
+      repairRoute: legacyWrite ? 'decision_manual_review' : contract.repairRoute,
+      message: legacyWrite
+        ? `${params.domain} write attempted to persist legacy fallback field ${field}; legacy fallbacks are read-only.`
+        : `${params.domain} write field ${field} is not part of this write boundary.`,
+    });
+  }
+
+  for (const field of params.requiredFields ?? []) {
+    if (hasValue(params.input[field])) continue;
+    issues.push({
+      code: 'missing_required_write_field',
+      domain: params.domain,
+      field,
+      severity: 'error',
+      repairRoute: contract.repairRoute,
+      message: `${params.domain} write is missing required canonical field ${field}.`,
+    });
+  }
+
+  return {
+    allowed: issues.length === 0,
+    issues,
+    summary: `canonicalWrite ${params.domain} allowed=${issues.length === 0 ? 'yes' : 'no'} / issues=${issues.length}`,
+  };
+}
+
+export function assertCanonicalWriteInput(params: {
+  domain: CanonicalDomain;
+  input: Record<string, unknown>;
+  allowedFields: string[];
+  requiredFields?: string[];
+}): void {
+  const validation = evaluateCanonicalWriteInput(params);
+  if (!validation.allowed) {
+    throw new Error(validation.issues.map((issue) => issue.message).join(' '));
+  }
 }
 
 export function evaluateCanonicalDataDiagnostics(
@@ -414,6 +493,12 @@ function taskScopedDecisionBindingIssues(
 function stringField(record: CanonicalDataDiagnosticRecord, field: string): string | null {
   const value = record[field];
   return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function hasValue(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  return true;
 }
 
 function recordId(record: CanonicalDataDiagnosticRecord, index: number): string {
