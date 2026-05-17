@@ -173,7 +173,11 @@ connector without startup network probing, and only calls Gmail during
 task-bound source-ingestion planning. It reads message metadata/snippets through
 the shared connector evidence path, marks Gmail evidence sensitive by default,
 and still leaves OAuth token creation/refresh plus live smoke validation as
-manual future work.
+manual future work. The next OAuth path is scoped in
+`docs/plans/2026-05-17-gmail-oauth-design.md`: use desktop installed-app OAuth,
+store only refresh tokens in keychain, keep access tokens short-lived, preserve
+network-free connector status reads, and continue to require task-bound
+source-ingestion review before Gmail evidence becomes task memory.
 
 Broader network connector ingestion remains deferred, but the source-memory
 boundary now has a shared `ConnectorSourceIngestionPlan`. Future connector services must

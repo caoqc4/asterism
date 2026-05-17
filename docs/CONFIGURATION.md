@@ -147,6 +147,14 @@ The preflight reports whether the token, account label, query, and result limit
 are configured. It prints `<set>` for the token and does not call Gmail or write
 task memory.
 
+The planned production OAuth path is documented in
+`docs/plans/2026-05-17-gmail-oauth-design.md`. The intended direction is a
+desktop installed-app OAuth flow with system-browser authorization, loopback
+callback, refresh-token storage in keychain, access tokens kept short-lived, and
+continued task-bound connector ingestion. Gmail OAuth remains out of the default
+local acceptance gate until that flow is implemented and guarded by mocked and
+explicitly opted-in live validation.
+
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does
 not run it during startup or AI config status reads. A ready backend status is
