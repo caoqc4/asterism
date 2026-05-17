@@ -117,6 +117,19 @@ does not call Gmail or write task memory. It accepts either the current static
 access-token path or the future OAuth client-id path, redacts access tokens and
 OAuth client secrets, and does not inspect keychain refresh tokens.
 
+Mocked Gmail OAuth control flow:
+
+```bash
+npm run accept:external-access:gmail-oauth-local
+```
+
+This command covers the local OAuth control chain without real Google
+credentials: connect/disconnect confirmation boundaries, authorization-session
+composition, loopback callback handling, token refresh/disconnect behavior, IPC,
+preload exposure, and the External Access page controls. It does not contact
+Google, does not open a real browser in tests, and is not part of the default
+local alpha gate.
+
 Release readiness preflight:
 
 ```bash

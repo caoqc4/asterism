@@ -298,11 +298,24 @@ describe('local smoke script default boundaries', () => {
     );
 
     expect(scripts['accept:alpha-local']).not.toContain('accept:provider-native-live');
+    expect(scripts['accept:alpha-local']).not.toContain('accept:external-access:gmail-oauth-local');
     expect(scripts['accept:alpha-local']).not.toContain('model-producer-live');
     expect(scripts['accept:alpha-local']).not.toContain('model-producer-preview-smoke');
     expect(scripts['accept:alpha-local']).not.toContain('producer-preview-smoke');
     expect(scripts['accept:alpha-local']).not.toContain('backend-preflight');
     expect(scripts['accept:alpha-local']).not.toContain('dist:mac ');
+  });
+
+  it('keeps mocked Gmail OAuth acceptance local and non-live', () => {
+    const scripts = readPackageScripts();
+
+    expect(scripts['accept:external-access:gmail-oauth-local']).toContain('gmail-oauth-control-service.test.ts');
+    expect(scripts['accept:external-access:gmail-oauth-local']).toContain('external-access-gmail-oauth-factory.test.ts');
+    expect(scripts['accept:external-access:gmail-oauth-local']).toContain('src/renderer/App.test.tsx -t');
+    expect(scripts['accept:external-access:gmail-oauth-local']).not.toContain('provider-native-live');
+    expect(scripts['accept:external-access:gmail-oauth-local']).not.toContain('smoke:external-access');
+    expect(scripts['accept:external-access:gmail-oauth-local']).not.toContain('dist:mac');
+    expect(scripts['accept:external-access:gmail-oauth-local']).not.toContain('playwright');
   });
 
   it('keeps optional canonical diagnostics read-only for fresh local alpha environments', () => {
