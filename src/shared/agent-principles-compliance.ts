@@ -202,6 +202,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     priority: 'p0',
     implementedBy: [
       'Project drafts include title, summary, acceptance criteria, dependency, and rationale.',
+      'CanonicalDataContract documents canonical task hierarchy fields, legacy fallback boundaries, and repair routes before migration or repair behavior is changed.',
       'Phase closeout now prefers handoff to existing child tasks instead of generating generic follow-up tasks.',
       'Task closeout evaluation can hand off to an existing successor when no child is available, and new follow-up proposals require evidence and confirmation instead of being created during closeout.',
       'runtime-subtask-evaluator blocks duplicate, near-duplicate, generic, parent-overlapping, or underspecified subtask drafts before confirmed child creation.',
@@ -218,6 +219,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Project-level verification now guards project completion transitions; future non-completion project state transitions must consume the same verifier when they affect project readiness.',
+      'CanonicalDataContract is declarative coverage; future repository and service write paths should consume it where field authority validation becomes mechanical.',
       'Subtask draft evaluation exists for project decomposition draft generation and confirmed project child creation, while service-level capture and hierarchy guards cover generic child-title and invalid parent ownership mistakes; future child-task paths must preserve that common confirmation boundary.',
     ],
     nextVerification: [

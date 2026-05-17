@@ -257,6 +257,17 @@ Acceptance criteria:
 - compatibility fallback is read-only and documented;
 - unsafe repairs produce explicit Decisions instead of silent mutation.
 
+Initial implementation: `CanonicalDataContract` lists authoritative fields,
+write/read authority, legacy fallback rules, and repair routes for task state,
+task hierarchy, task files, source contexts, artifacts, Decisions, run events,
+task dynamics, Work Habits, and process templates. Hierarchy fallback is now
+documented as read-only and only allowed while persisted `parentTaskId` /
+`childTaskIds` fields are genuinely missing; title-pattern hierarchy inference
+is also bounded to that legacy case. Artifact classification has no folder-name
+fallback, source-context keyword classification is below explicit `sourceRole`,
+and ambiguous hierarchy/decision repairs route to Decisions rather than silent
+mutation.
+
 ## Package E: Configuration, Safety, And Auditability
 
 Goal: keep local-first power features understandable and safe.
