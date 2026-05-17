@@ -24,7 +24,7 @@ user workflow.
 - Task dynamics has structured replay data and a task-centered timeline UI.
 - External Access has a safe empty state and explicit authorization boundaries.
 - Packaged app smoke coverage includes Brief recovery, task dynamics replay UI, External Access, Decisions, and task file open/save.
-- Capability safety is projected through `ConfigurationSafetyReport`; Settings, External Access, Skills, and MCP consume the shared projection.
+- Capability safety is projected through `ConfigurationSafetyReport`; Settings, Model, External Access, Skills, and MCP consume the shared projection.
 
 ## Verification
 
