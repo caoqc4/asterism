@@ -544,6 +544,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
       'DecisionJudgmentProjection prefers explicit Decision context impact, reversibility, and recommendation reason before generic judgment labels.',
+      'DecisionJudgmentProjection standardizes sourceTarget and routeHint for task, run, agent checkpoint, tool, external access, workspace, system, manual, and global decisions.',
       'DecisionService.listJudgments exposes the pending judgment-center projection at the domain boundary.',
       'Decisions page action results summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
       'DecisionJudgmentProjection attaches grouped pending-decision context by task/source, and the Decisions page shows same-source pending counts and effect detail inside the judgment card.',
@@ -551,6 +552,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Decisions page now shows grouped pending-decision context; batch approve/defer/cancel remains intentionally deferred until a real multi-decision workflow appears.',
+      'Decision sourceTarget routing is data-ready; richer Run/checkpoint navigation remains a future UI concern.',
     ],
     nextVerification: [
       'Keep grouped Decisions read-only unless a concrete multi-decision workflow requires batch actions.',

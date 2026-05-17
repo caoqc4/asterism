@@ -21,6 +21,25 @@ export type DecisionJudgmentOption = {
   risk?: string;
 };
 
+export type DecisionJudgmentSourceKind =
+  | 'task'
+  | 'run'
+  | 'agent_checkpoint'
+  | 'tool'
+  | 'external_access'
+  | 'workspace'
+  | 'system'
+  | 'manual'
+  | 'global';
+
+export type DecisionJudgmentSourceTarget = {
+  kind: DecisionJudgmentSourceKind;
+  id: string | null;
+  label: string;
+  taskId: string | null;
+  routeHint: 'open_task' | 'open_run' | 'resume_checkpoint' | 'review_source' | 'none';
+};
+
 export type DecisionJudgmentProjection = {
   id: string;
   taskId: string;
@@ -29,6 +48,7 @@ export type DecisionJudgmentProjection = {
   taskStateLabel: string;
   taskSignal: string;
   sourceLabel: string;
+  sourceTarget: DecisionJudgmentSourceTarget;
   typeLabel: string;
   updatedLabel: string;
   lane: string;
@@ -63,6 +83,7 @@ export function projectDecisionJudgment(
   const isAgentCheckpoint = decision.sourceType === 'agent_checkpoint';
   const category = classifyDecisionJudgment(decision, task);
   const taskTitle = task?.title ?? decision.sourceLabel ?? decision.sourceId ?? '全局事项';
+  const sourceTarget = buildDecisionSourceTarget(decision, task);
   const fallbackOptions = isAgentCheckpoint
     ? [
         { label: '恢复执行', desc: '确认当前检查点，让 Agent 按当前上下文继续推进；这不会授予后续同类动作的长期权限。' },
@@ -91,7 +112,8 @@ export function projectDecisionJudgment(
     taskTitle,
     taskStateLabel: task ? formatTaskState(task.state) : '未关联到当前任务',
     taskSignal: buildTaskSignal(task),
-    sourceLabel: decision.sourceLabel ?? decision.sourceId ?? taskTitle,
+    sourceLabel: sourceTarget.label,
+    sourceTarget,
     typeLabel: formatDecisionType(decision.sourceType),
     updatedLabel: `更新 ${formatDecisionDate(decision.updatedAt)}`,
     lane: 'continue',
@@ -124,6 +146,91 @@ export function projectDecisionJudgment(
       effectDetail: '这条决策需要用户拍板后才能继续。',
       decisionIds: [decision.id],
     },
+  };
+}
+
+function buildDecisionSourceTarget(
+  decision: DecisionRecord,
+  task: TaskListItemRecord | null,
+): DecisionJudgmentSourceTarget {
+  const taskId = decision.taskId ?? task?.id ?? null;
+
+  if (decision.sourceType === 'agent_checkpoint') {
+    return {
+      kind: 'agent_checkpoint',
+      id: decision.sourceId ?? null,
+      label: decision.sourceLabel ?? decision.sourceId ?? 'Agent 检查点',
+      taskId,
+      routeHint: 'resume_checkpoint',
+    };
+  }
+
+  if (decision.sourceType === 'run') {
+    return {
+      kind: 'run',
+      id: decision.sourceId ?? null,
+      label: decision.sourceLabel ?? decision.sourceId ?? '执行记录',
+      taskId,
+      routeHint: decision.sourceId ? 'open_run' : taskId ? 'open_task' : 'none',
+    };
+  }
+
+  if (decision.sourceType === 'tool') {
+    return {
+      kind: 'tool',
+      id: decision.sourceId ?? null,
+      label: decision.sourceLabel ?? decision.sourceId ?? '工具调用',
+      taskId,
+      routeHint: taskId ? 'open_task' : 'none',
+    };
+  }
+
+  if (decision.sourceType === 'external_access' || decision.scope === 'external_access') {
+    return {
+      kind: 'external_access',
+      id: decision.sourceId ?? null,
+      label: decision.sourceLabel ?? '外部访问',
+      taskId,
+      routeHint: 'review_source',
+    };
+  }
+
+  if (decision.sourceType === 'workspace' || decision.scope === 'workspace') {
+    return {
+      kind: 'workspace',
+      id: decision.sourceId ?? null,
+      label: decision.sourceLabel ?? decision.sourceId ?? '工作区操作',
+      taskId,
+      routeHint: taskId ? 'open_task' : 'review_source',
+    };
+  }
+
+  if (decision.sourceType === 'system' || decision.scope === 'system') {
+    return {
+      kind: 'system',
+      id: decision.sourceId ?? null,
+      label: decision.sourceLabel ?? '系统事项',
+      taskId,
+      routeHint: taskId ? 'open_task' : 'none',
+    };
+  }
+
+  if (taskId) {
+    return {
+      kind: 'task',
+      id: taskId,
+      label: decision.sourceLabel ?? task?.title ?? decision.title,
+      taskId,
+      routeHint: 'open_task',
+    };
+  }
+
+  return {
+    kind: decision.sourceType === 'manual' ? 'manual' : 'global',
+    id: decision.sourceId ?? null,
+    label: decision.sourceLabel ?? decision.sourceId ?? '全局拍板',
+    taskId: null,
+    routeHint: 'none',
   };
 }
 

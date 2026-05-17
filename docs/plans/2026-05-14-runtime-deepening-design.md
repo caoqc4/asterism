@@ -578,6 +578,12 @@ Deliverables:
 - link decisions back to task/run/checkpoint
 - defer batch actions unless users actually need to approve or defer multiple related decisions at once
 
+Current implementation note: `DecisionJudgmentProjection` now exposes a
+standard `sourceTarget` with kind, id, task binding, and route hint for task,
+run, Agent checkpoint, tool, external access, workspace, system, manual, and
+global decisions. This keeps Decisions as a judgment center and prevents pages
+or runtime consumers from inferring source routing from display labels.
+
 ### Package F: Data Model Migration Cleanup
 
 Finish moving task structure out of renderer-only attributes.

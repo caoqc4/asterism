@@ -302,6 +302,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
       'DecisionJudgmentProjection now prefers explicit Decision context impact, reversibility, and recommendation reason before falling back to generic judgment labels.',
+      'DecisionJudgmentProjection standardizes sourceTarget for task, run, agent checkpoint, tool, external access, workspace, system, manual, and global decisions so judgment-center consumers do not guess source routing from labels.',
       'DecisionService.listJudgments exposes the judgment-center projection from the domain boundary so the renderer does not have to rebuild pending-decision semantics from raw decisions and tasks.',
       'Decisions page action results now summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
       'DecisionJudgmentProjection now attaches grouped pending-decision context by task/source, and the Decisions page shows same-source pending counts and effect detail inside the judgment card.',
@@ -313,6 +314,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Decisions page now shows grouped pending-decision context; richer batch handling can still be added later if a real multi-approve workflow appears.',
+      'Run and checkpoint source targets are now explicit in data; richer navigation can consume routeHint later without changing the judgment semantics.',
     ],
     nextImplementation: [
       'Keep grouped Decisions read-only until there is a clear user need for batch approve/defer/cancel.',
