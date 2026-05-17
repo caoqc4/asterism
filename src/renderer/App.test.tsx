@@ -2198,7 +2198,7 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText('Agent 暂停').length).toBeGreaterThan(0);
     expect(screen.getAllByText('风险确认').length).toBeGreaterThan(0);
     expect(screen.getAllByText('推进中').length).toBeGreaterThan(0);
-    expect(screen.getByText('Agent 检查点')).toBeTruthy();
+    expect(screen.getAllByText('Agent 检查点').length).toBeGreaterThan(0);
     expect(screen.getByText('需要复核')).toBeTruthy();
     expect(screen.getAllByText('高影响').length).toBeGreaterThan(0);
     expect(screen.getByText('需谨慎恢复')).toBeTruthy();

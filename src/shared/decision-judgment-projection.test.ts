@@ -61,6 +61,9 @@ describe('decision judgment projection', () => {
         routeHint: 'resume_checkpoint',
         taskId: 'task_1',
       },
+      sourceKindLabel: 'Agent 检查点',
+      sourceActionLabel: '查看任务上下文',
+      boundaryLabel: '批准后仅恢复当前检查点，不授予长期权限',
     });
     expect(projected.options.map((option) => option.label)).toEqual(['恢复执行', '暂停等待', '取消本次执行']);
     expect(projected.context.whyNow).toContain('执行检查点暂停');
@@ -82,6 +85,9 @@ describe('decision judgment projection', () => {
         label: 'Slack 发布',
         routeHint: 'review_source',
       },
+      sourceKindLabel: '外部访问',
+      sourceActionLabel: '查看来源任务',
+      boundaryLabel: '批准后仅记录本次授权范围',
       impactLabel: '高影响',
       reversibilityLabel: '需留痕',
     });
@@ -168,18 +174,21 @@ describe('decision judgment projection', () => {
       routeHint: 'open_run',
     });
 
-    expect(projectDecisionJudgment(decision({
+    const globalProjection = projectDecisionJudgment(decision({
       taskId: null,
       scope: 'global',
       sourceType: null,
       sourceLabel: null,
       title: '确认全局策略',
-    }), null).sourceTarget).toEqual({
+    }), null);
+    expect(globalProjection.sourceTarget).toEqual({
       kind: 'global',
       id: null,
       label: '全局拍板',
       taskId: null,
       routeHint: 'none',
     });
+    expect(globalProjection.sourceKindLabel).toBe('全局事项');
+    expect(globalProjection.sourceActionLabel).toBeNull();
   });
 });

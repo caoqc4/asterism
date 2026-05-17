@@ -323,10 +323,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
       'DecisionJudgmentProjection now prefers explicit Decision context impact, reversibility, and recommendation reason before falling back to generic judgment labels.',
       'DecisionJudgmentProjection standardizes sourceTarget for task, run, agent checkpoint, tool, external access, workspace, system, manual, and global decisions so judgment-center consumers do not guess source routing from labels.',
+      'DecisionJudgmentProjection exposes source kind, source action, and approval boundary labels, and Decisions page expanded cards show the judgment object plus approval boundary instead of relying on raw titles.',
       'DecisionService.listJudgments exposes the judgment-center projection from the domain boundary so the renderer does not have to rebuild pending-decision semantics from raw decisions and tasks.',
       'Decisions page action results now summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
       'DecisionJudgmentProjection now attaches grouped pending-decision context by task/source, and the Decisions page shows same-source pending counts and effect detail inside the judgment card.',
       'Decisions page keeps failed action attempts visible with retry feedback and disables duplicate actions while a decision action is pending.',
+      'Decisions page search now includes source labels, source kind, boundary, recommendation, and context text so judgment-center filtering follows the actual decision context.',
     ],
     outOfAgentPrinciplesScope: [
       'The Decisions page must behave like a judgment center, not only a list of task statuses.',

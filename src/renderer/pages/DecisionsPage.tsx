@@ -177,7 +177,17 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const searchedDecisions = normalizedQuery
-    ? decisions.filter((d) => `${d.title} ${d.taskTitle}`.toLowerCase().includes(normalizedQuery))
+    ? decisions.filter((d) => [
+        d.title,
+        d.taskTitle,
+        d.sourceLabel,
+        d.sourceKindLabel,
+        d.typeLabel,
+        d.boundaryLabel,
+        d.context.whyNow,
+        d.context.ifDeferred,
+        d.recommendation,
+      ].join(' ').toLowerCase().includes(normalizedQuery))
     : decisions;
   const visibleDecisions = filterKey === 'all'
     ? searchedDecisions
@@ -546,6 +556,7 @@ function DecisionCard({ acting, decision: d, onToggle, onDecide, onOpenPanel, on
             <span className={`dec-category ${d.category.tone}`}>{d.category.label}</span>
             <span className={`tag lane-${d.lane}`} style={{ fontSize: 10 }}>{d.taskTitle}</span>
             <span className="tag captured" style={{ fontSize: 10 }}>{d.taskStateLabel}</span>
+            <span className="tag captured" style={{ fontSize: 10 }}>{d.sourceKindLabel}</span>
             <span className="tag captured" style={{ fontSize: 10 }}>{d.typeLabel}</span>
             <span className={`dec-clarity ${d.recommendationClarity}`}>
               {d.recommendationClarity === 'clear' ? '推荐路径清晰' : '需要复核'}
@@ -596,6 +607,10 @@ function DecisionCard({ acting, decision: d, onToggle, onDecide, onOpenPanel, on
                 <span>来源</span>
                 <strong>{d.sourceLabel}</strong>
               </div>
+              <div>
+                <span>边界</span>
+                <strong>{d.boundaryLabel}</strong>
+              </div>
             </div>
           </div>
           <div className="dec-context">
@@ -610,6 +625,10 @@ function DecisionCard({ acting, decision: d, onToggle, onDecide, onOpenPanel, on
             <div className="dec-context-item">
               <span className="dec-context-label">任务信号</span>
               <span className="dec-context-text">{d.taskSignal}</span>
+            </div>
+            <div className="dec-context-item">
+              <span className="dec-context-label">判断对象</span>
+              <span className="dec-context-text">{d.sourceKindLabel}：{d.sourceLabel}</span>
             </div>
           </div>
 
@@ -651,7 +670,7 @@ function DecisionCard({ acting, decision: d, onToggle, onDecide, onOpenPanel, on
             <div className="dec-actions">
               <button className="btn sm ghost" onClick={onOpenPanel}>修改后批准</button>
               <button className="btn sm ghost" onClick={onOpenPanel}>要求补充信息</button>
-              <button className="btn sm ghost" onClick={onOpenTask}>查看任务</button>
+              <button className="btn sm ghost" onClick={onOpenTask}>{d.sourceActionLabel ?? '查看任务'}</button>
             </div>
           )}
         </div>

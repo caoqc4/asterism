@@ -553,10 +553,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
       'DecisionJudgmentProjection prefers explicit Decision context impact, reversibility, and recommendation reason before generic judgment labels.',
       'DecisionJudgmentProjection standardizes sourceTarget and routeHint for task, run, agent checkpoint, tool, external access, workspace, system, manual, and global decisions.',
+      'DecisionJudgmentProjection exposes source kind, source action, and approval boundary labels so the Decisions page can explain what is being judged without inferring from display text.',
       'DecisionService.listJudgments exposes the pending judgment-center projection at the domain boundary.',
       'Decisions page action results summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
       'DecisionJudgmentProjection attaches grouped pending-decision context by task/source, and the Decisions page shows same-source pending counts and effect detail inside the judgment card.',
       'Decisions page keeps failed action attempts visible with retry feedback and disables duplicate actions while a decision action is pending.',
+      'Decisions page expanded cards show judgment object and approval boundary, and search includes source, boundary, recommendation, and context fields.',
     ],
     gaps: [
       'Decisions page now shows grouped pending-decision context; batch approve/defer/cancel remains intentionally deferred until a real multi-decision workflow appears.',

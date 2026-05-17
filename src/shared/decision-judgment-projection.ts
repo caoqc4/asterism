@@ -49,7 +49,10 @@ export type DecisionJudgmentProjection = {
   taskSignal: string;
   sourceLabel: string;
   sourceTarget: DecisionJudgmentSourceTarget;
+  sourceKindLabel: string;
+  sourceActionLabel: string | null;
   typeLabel: string;
+  boundaryLabel: string;
   updatedLabel: string;
   lane: string;
   urgency: 'today' | 'week';
@@ -114,7 +117,10 @@ export function projectDecisionJudgment(
     taskSignal: buildTaskSignal(task),
     sourceLabel: sourceTarget.label,
     sourceTarget,
+    sourceKindLabel: formatDecisionSourceKind(sourceTarget.kind),
+    sourceActionLabel: sourceActionLabelFor(sourceTarget),
     typeLabel: formatDecisionType(decision.sourceType),
+    boundaryLabel: boundaryLabelFor(category, sourceTarget),
     updatedLabel: `更新 ${formatDecisionDate(decision.updatedAt)}`,
     lane: 'continue',
     urgency: isAgentCheckpoint ? 'today' : 'week',
@@ -385,6 +391,41 @@ function formatDecisionType(sourceType: DecisionRecord['sourceType']): string {
   if (sourceType === 'tool') return '工具调用';
   if (sourceType === 'system') return '系统事项';
   return '人工决策';
+}
+
+function formatDecisionSourceKind(kind: DecisionJudgmentSourceKind): string {
+  const labels: Record<DecisionJudgmentSourceKind, string> = {
+    task: '任务上下文',
+    run: '执行记录',
+    agent_checkpoint: 'Agent 检查点',
+    tool: '工具调用',
+    external_access: '外部访问',
+    workspace: '工作区',
+    system: '系统事项',
+    manual: '人工录入',
+    global: '全局事项',
+  };
+  return labels[kind];
+}
+
+function sourceActionLabelFor(sourceTarget: DecisionJudgmentSourceTarget): string | null {
+  if (!sourceTarget.taskId) return null;
+  if (sourceTarget.routeHint === 'resume_checkpoint') return '查看任务上下文';
+  if (sourceTarget.routeHint === 'open_run') return '查看关联任务';
+  if (sourceTarget.routeHint === 'review_source') return '查看来源任务';
+  if (sourceTarget.routeHint === 'open_task') return '查看任务';
+  return null;
+}
+
+function boundaryLabelFor(
+  category: DecisionCategory,
+  sourceTarget: DecisionJudgmentSourceTarget,
+): string {
+  if (category.key === 'agent') return '批准后仅恢复当前检查点，不授予长期权限';
+  if (category.key === 'risk') return '批准后仅记录本次授权范围';
+  if (category.key === 'completion') return '批准后可作为完成验收依据';
+  if (sourceTarget.kind === 'global') return '只影响当前全局拍板事项';
+  return '批准后只影响当前任务方向';
 }
 
 function formatDecisionDate(value: string): string {
