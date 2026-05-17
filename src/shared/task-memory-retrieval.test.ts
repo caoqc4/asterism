@@ -10,7 +10,8 @@ import type { DecisionRecord } from './types/decision.js';
 import type { AppliedProcessTemplateRecord } from './types/process-template.js';
 import type { SourceContextRecord } from './types/source-context.js';
 import type { TaskFileRecord } from './types/task-file.js';
-import type { TaskRecord } from './types/task.js';
+import type { TaskDependencyRecord } from './types/task-dependency.js';
+import type { TaskRecord, TimelineEventRecord } from './types/task.js';
 import type { WorkHabitRecord } from './types/work-habit.js';
 
 describe('task memory retrieval', () => {
@@ -26,6 +27,8 @@ describe('task memory retrieval', () => {
       artifacts: [artifact()],
       decisions: [decision()],
       blockers: [blocker()],
+      dependencies: [dependency()],
+      timeline: [timelineEvent()],
       workHabits: [workHabit()],
       processTemplates: [processTemplate()],
     });
@@ -39,6 +42,8 @@ describe('task memory retrieval', () => {
       'artifact',
       'decision',
       'blocker',
+      'dependency',
+      'task_dynamic',
       'work_habit',
       'process_template',
     ]);
@@ -58,8 +63,9 @@ describe('task memory retrieval', () => {
       ],
       decisions: [decision({ id: 'decision_pending', status: 'pending' })],
       blockers: [blocker({ id: 'blocker_active', status: 'active' })],
+      dependencies: [dependency({ id: 'dependency_active', status: 'active' })],
       sourceContexts: [sourceContext({ id: 'source_key', isKey: true, uri: 'https://example.com' })],
-      maxResults: 5,
+      maxResults: 6,
     });
 
     expect(results.map((item) => item.entity.id)).toEqual([
@@ -67,6 +73,7 @@ describe('task memory retrieval', () => {
       'file_task_md',
       'decision_pending',
       'blocker_active',
+      'dependency_active',
       'file_record_current',
     ]);
     expect(results.find((item) => item.entity.id === 'file_record_other')).toBeUndefined();
@@ -264,6 +271,32 @@ function blocker(partial: Partial<BlockerRecord> = {}): BlockerRecord {
     createdAt: '2026-05-15T00:00:00.000Z',
     updatedAt: '2026-05-16T00:00:00.000Z',
     resolvedAt: null,
+    ...partial,
+  };
+}
+
+function dependency(partial: Partial<TaskDependencyRecord> = {}): TaskDependencyRecord {
+  return {
+    id: 'dependency_1',
+    taskId: 'task_1',
+    blockedByTaskId: 'task_upstream',
+    blockedByTaskTitle: 'Upstream task',
+    reason: 'Need upstream API contract.',
+    status: 'active',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-16T00:00:00.000Z',
+    resolvedAt: null,
+    ...partial,
+  };
+}
+
+function timelineEvent(partial: Partial<TimelineEventRecord> = {}): TimelineEventRecord {
+  return {
+    id: 'timeline_1',
+    taskId: 'task_1',
+    type: 'status_changed',
+    payload: 'Task changed from planned to running.',
+    createdAt: '2026-05-16T00:00:00.000Z',
     ...partial,
   };
 }
