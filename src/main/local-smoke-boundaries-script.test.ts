@@ -294,7 +294,7 @@ describe('local smoke script default boundaries', () => {
     const scripts = readPackageScripts();
 
     expect(scripts['accept:alpha-local']).toBe(
-      'npm run verify && npm run diagnostics:canonical-data && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:product-surfaces:mac && npm run accept:release:mac-preflight',
+      'npm run verify && npm run diagnostics:canonical-data:optional && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:product-surfaces:mac && npm run accept:release:mac-preflight',
     );
 
     expect(scripts['accept:alpha-local']).not.toContain('accept:provider-native-live');
@@ -303,6 +303,18 @@ describe('local smoke script default boundaries', () => {
     expect(scripts['accept:alpha-local']).not.toContain('producer-preview-smoke');
     expect(scripts['accept:alpha-local']).not.toContain('backend-preflight');
     expect(scripts['accept:alpha-local']).not.toContain('dist:mac ');
+  });
+
+  it('keeps optional canonical diagnostics read-only for fresh local alpha environments', () => {
+    const scripts = readPackageScripts();
+
+    expect(scripts['diagnostics:canonical-data']).toBe(
+      'npm run build:main && node scripts/canonical-data-diagnostics.mjs',
+    );
+    expect(scripts['diagnostics:canonical-data:optional']).toBe(
+      'npm run build:main && node scripts/canonical-data-diagnostics.mjs --allow-missing',
+    );
+    expect(scripts['diagnostics:canonical-data:optional']).not.toContain('--db ');
   });
 
   it('keeps sandbox producer preview smoke skipped without Docker or AI by default', () => {

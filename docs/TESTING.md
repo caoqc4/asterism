@@ -31,9 +31,9 @@ npm run accept:alpha-local
 ```
 
 This includes `verify`, read-only canonical data diagnostics against the local
-SQLite database, local agent/runtime gates, packaged release smoke, packaged
-recovery smoke, product-surface packaged smoke, and the read-only macOS release
-preflight.
+SQLite database when one exists, local agent/runtime gates, packaged release
+smoke, packaged recovery smoke, product-surface packaged smoke, and the
+read-only macOS release preflight.
 
 ## Focused Test Commands
 
@@ -53,6 +53,9 @@ npm run diagnostics:canonical-data
 This checks the local SQLite database against the canonical data contract. Use
 `node scripts/canonical-data-diagnostics.mjs --db /path/to/taskplane.db` after
 `npm run build:main` to inspect a specific database.
+`npm run diagnostics:canonical-data:optional` is the same read-only check but
+skips successfully when no local database exists, which keeps fresh local alpha
+environments reproducible.
 
 For a single Vitest file:
 

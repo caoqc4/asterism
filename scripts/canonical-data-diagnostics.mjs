@@ -10,6 +10,7 @@ const userDataDbPath = process.env.TASKPLANE_USER_DATA_DIR
   ? path.join(process.env.TASKPLANE_USER_DATA_DIR, 'taskplane.db')
   : null;
 const dbPath = readArgValue('--db') ?? userDataDbPath ?? defaultDbPath;
+const allowMissing = process.argv.includes('--allow-missing');
 const evaluatorPath = path.join(root, 'dist-electron/shared/canonical-data-contract.js');
 
 function readArgValue(name) {
@@ -29,6 +30,10 @@ if (!fs.existsSync(evaluatorPath)) {
 }
 
 if (!dbPath || !fs.existsSync(dbPath)) {
+  if (allowMissing) {
+    console.log(`canonicalDataDiagnostics skipped: missing Taskplane database ${dbPath}`);
+    process.exit(0);
+  }
   fail(`Missing Taskplane database: ${dbPath}`);
 }
 
