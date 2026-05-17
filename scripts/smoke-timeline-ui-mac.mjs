@@ -7,8 +7,8 @@ import { _electron as electron } from 'playwright';
 
 const root = process.cwd();
 const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
-const userDataPath = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-timeline-ui-smoke-'));
-const smokePath = path.join(userDataPath, 'timeline-ui-smoke.log');
+const userDataPath = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-task-dynamics-ui-smoke-'));
+const smokePath = path.join(userDataPath, 'task-dynamics-ui-smoke.log');
 const dbPath = path.join(userDataPath, 'taskplane.db');
 const timeoutMs = 20_000;
 const pollMs = 250;
@@ -42,13 +42,13 @@ async function waitFor(condition, description) {
   throw new Error(`Timed out waiting for ${description}.`);
 }
 
-function seedTimelineFixture() {
+function seedTaskDynamicsFixture() {
   const database = new Database(dbPath, {
     fileMustExist: true,
   });
 
   try {
-    const taskId = 'task_packaged_timeline_ui_smoke';
+    const taskId = 'task_packaged_task_dynamics_ui_smoke';
 
     database.transaction(() => {
       database
@@ -61,63 +61,36 @@ function seedTimelineFixture() {
         `)
         .run(
           taskId,
-          'Timeline packaged UI fixture',
-          'Seeded by packaged Timeline UI smoke.',
+          'Packaged task dynamics fixture',
+          'Seeded by packaged task dynamics smoke.',
           'running',
-          'Review packaged Timeline grouping.',
+          'Review packaged task dynamics replay grouping.',
           null,
           'none',
           null,
-          '2026-04-30T08:00:00.000Z',
+          '2026-05-01T08:00:00.000Z',
           '2026-05-01T12:00:00.000Z',
         );
 
       database
         .prepare(`
-          INSERT INTO tasks (
-            id, title, summary, state, next_step, waiting_reason,
-            risk_level, risk_note, created_at, updated_at
+          INSERT INTO completion_criteria (
+            id, task_id, text, verification_responsibility,
+            verification_responsibility_label, status, created_at, updated_at, satisfied_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         .run(
-          'task_packaged_timeline_upstream',
-          'Packaged Timeline upstream fixture',
-          'Upstream task for packaged Timeline dependency smoke.',
-          'running',
-          'Finish upstream Timeline input.',
+          'criteria_packaged_task_dynamics',
+          taskId,
+          'Packaged task dynamics fixture accepted',
+          'unknown',
           null,
-          'none',
-          null,
-          '2026-04-30T07:00:00.000Z',
-          '2026-05-01T10:20:00.000Z',
+          'satisfied',
+          '2026-05-01T08:10:00.000Z',
+          '2026-05-01T08:30:00.000Z',
+          '2026-05-01T08:30:00.000Z',
         );
-
-      database
-        .prepare(`
-          INSERT INTO tasks (
-            id, title, summary, state, next_step, waiting_reason,
-            risk_level, risk_note, created_at, updated_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
-        .run(
-          'task_packaged_home_closeout_evidence',
-          'Packaged Home closeout evidence fixture',
-          'Near-closeout task for packaged Home closeout evidence return smoke.',
-          'running',
-          'Review completed run evidence before final closeout.',
-          null,
-          'none',
-          null,
-          '2026-04-30T06:00:00.000Z',
-          '2026-05-01T09:20:00.000Z',
-        );
-
-      const insertTimeline = database.prepare(`
-        INSERT INTO timeline_events (id, task_id, type, payload, created_at)
-        VALUES (?, ?, ?, ?, ?)
-      `);
 
       database
         .prepare(`
@@ -128,37 +101,38 @@ function seedTimelineFixture() {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         .run(
-          'run_packaged_ui_1',
+          'run_packaged_task_dynamics',
           taskId,
           'summarize',
           'completed',
-          'Packaged Timeline UI smoke run.',
-          'Packaged Timeline UI smoke completed.',
+          'Packaged task dynamics smoke run.',
+          'Packaged task dynamics smoke completed.',
           'system',
           null,
-          '2026-05-01T11:50:00.000Z',
+          '2026-05-01T11:45:00.000Z',
           '2026-05-01T12:00:00.000Z',
         );
 
       database
         .prepare(`
-          INSERT INTO runs (
-            id, task_id, type, status, instructions, output, output_source,
-            failure_reason, created_at, updated_at
+          INSERT INTO run_steps (
+            id, run_id, step_index, kind, status, title, input, output, error,
+            created_at, updated_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         .run(
-          'run_packaged_home_closeout_evidence',
-          'task_packaged_home_closeout_evidence',
-          'summarize',
+          'run_step_packaged_task_dynamics',
+          'run_packaged_task_dynamics',
+          1,
+          'summary',
           'completed',
-          'Packaged Home closeout evidence smoke run.',
-          'Packaged Home closeout evidence completed.',
-          'system',
+          'Packaged task dynamics step',
           null,
-          '2026-05-01T09:05:00.000Z',
-          '2026-05-01T09:15:00.000Z',
+          'Packaged task dynamics step completed.',
+          null,
+          '2026-05-01T11:50:00.000Z',
+          '2026-05-01T11:55:00.000Z',
         );
 
       database
@@ -170,13 +144,13 @@ function seedTimelineFixture() {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         .run(
-          'decision_packaged_ui_1',
+          'decision_packaged_task_dynamics',
           taskId,
-          'Approve packaged Timeline UI smoke',
+          'Approve packaged task dynamics smoke',
           'approved',
           'run',
-          'run_packaged_ui_1',
-          'Packaged Timeline UI smoke',
+          'run_packaged_task_dynamics',
+          'Packaged task dynamics smoke',
           '2026-05-01T11:20:00.000Z',
           '2026-05-01T11:30:00.000Z',
         );
@@ -190,14 +164,14 @@ function seedTimelineFixture() {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         .run(
-          'source_packaged_ui_1',
+          'source_packaged_task_dynamics',
           taskId,
-          'Packaged Timeline notes',
+          'Packaged task dynamics notes',
           'note',
           'true',
           null,
-          'Source context seeded by packaged Timeline UI smoke.',
-          'Verify Timeline object action focuses this material.',
+          'Source context seeded by packaged task dynamics smoke.',
+          'Verify task dynamics source context projection.',
           'active',
           '2026-05-01T10:55:00.000Z',
           '2026-05-01T11:00:00.000Z',
@@ -213,234 +187,56 @@ function seedTimelineFixture() {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         .run(
-          'artifact_packaged_ui_1',
+          'artifact_packaged_task_dynamics',
           taskId,
           'run',
-          'run_packaged_ui_1',
+          'run_packaged_task_dynamics',
           'markdown',
-          'Packaged Timeline smoke report',
-          '# Packaged Timeline smoke report\n\nGenerated by packaged Timeline UI smoke.',
-          '2026-04-30T09:00:00.000Z',
-          '2026-04-30T09:00:00.000Z',
+          'Packaged task dynamics report',
+          '# Packaged task dynamics report',
+          '2026-05-01T12:01:00.000Z',
+          '2026-05-01T12:01:00.000Z',
         );
 
-      database
-        .prepare(`
-          INSERT INTO blockers (
-            id, task_id, title, kind, detail, owner, responsibility,
-            responsibility_label, source_context_id, status, created_at,
-            updated_at, resolved_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
-        .run(
-          'blocker_packaged_ui_1',
-          taskId,
-          'Packaged Timeline launch blocker',
-          'approval',
-          'Need release owner approval before continuing.',
-          'Release owner',
-          'external',
-          'Release owner signs off',
-          'source_packaged_ui_1',
-          'active',
-          '2026-05-01T10:25:00.000Z',
-          '2026-05-01T10:35:00.000Z',
-          null,
-        );
-
-      database
-        .prepare(`
-          INSERT INTO task_dependencies (
-            id, task_id, blocked_by_task_id, reason, status,
-            created_at, updated_at, resolved_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `)
-        .run(
-          'dependency_packaged_ui_1',
-          taskId,
-          'task_packaged_timeline_upstream',
-          'Need upstream Timeline fixture to finish first.',
-          'active',
-          '2026-05-01T10:10:00.000Z',
-          '2026-05-01T10:20:00.000Z',
-          null,
-        );
-
-      database
-        .prepare(`
-          INSERT INTO completion_criteria (
-            id, task_id, text, verification_responsibility,
-            verification_responsibility_label, status, created_at, updated_at,
-            satisfied_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
-        .run(
-          'criteria_packaged_ui_1',
-          taskId,
-          'Packaged Timeline closeout accepted',
-          'self',
-          'Owner confirmed packaged Timeline closeout',
-          'satisfied',
-          '2026-05-01T09:30:00.000Z',
-          '2026-05-01T09:45:00.000Z',
-          '2026-05-01T09:45:00.000Z',
-        );
-
-      const insertCriteria = database.prepare(`
-        INSERT INTO completion_criteria (
-          id, task_id, text, verification_responsibility,
-          verification_responsibility_label, status, created_at, updated_at,
-          satisfied_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      const insertTimeline = database.prepare(`
+        INSERT INTO timeline_events (id, task_id, type, payload, created_at)
+        VALUES (?, ?, ?, ?, ?)
       `);
 
-      insertCriteria.run(
-        'criteria_packaged_home_closeout_done',
-        'task_packaged_home_closeout_evidence',
-        'Packaged Home evidence reviewed',
-        'self',
-        'Owner reviewed packaged Home evidence',
-        'satisfied',
-        '2026-05-01T08:45:00.000Z',
-        '2026-05-01T09:10:00.000Z',
-        '2026-05-01T09:10:00.000Z',
-      );
-
-      insertCriteria.run(
-        'criteria_packaged_home_closeout_open',
-        'task_packaged_home_closeout_evidence',
-        'Packaged Home closeout approved',
-        'external',
-        'Release owner approval',
-        'open',
-        '2026-05-01T08:50:00.000Z',
-        '2026-05-01T08:50:00.000Z',
-        null,
-      );
-
       insertTimeline.run(
-        'timeline_packaged_ui_run',
+        'timeline_packaged_task_dynamics_created',
         taskId,
-        'task.run_completed',
-        JSON.stringify({ runId: 'run_packaged_ui_1', nextState: 'planned' }),
-        '2026-05-01T12:00:00.000Z',
+        'task.created',
+        JSON.stringify({ title: 'Packaged task dynamics fixture' }),
+        '2026-05-01T08:00:00.000Z',
       );
       insertTimeline.run(
-        'timeline_packaged_ui_decision',
+        'timeline_packaged_task_dynamics_criteria',
         taskId,
-        'task.decision_approved',
-        JSON.stringify({
-          decisionId: 'decision_packaged_ui_1',
-          decisionTitle: 'Approve packaged Timeline UI smoke',
-        }),
-        '2026-05-01T11:30:00.000Z',
+        'completion_criteria.satisfied',
+        JSON.stringify({ text: 'Packaged task dynamics fixture accepted' }),
+        '2026-05-01T08:30:00.000Z',
       );
       insertTimeline.run(
-        'timeline_packaged_ui_source',
+        'timeline_packaged_task_dynamics_source',
         taskId,
         'source_context.updated',
-        JSON.stringify({
-          sourceContextId: 'source_packaged_ui_1',
-          title: 'Packaged Timeline notes',
-        }),
+        JSON.stringify({ sourceContextId: 'source_packaged_task_dynamics', title: 'Packaged task dynamics notes' }),
         '2026-05-01T11:00:00.000Z',
       );
       insertTimeline.run(
-        'timeline_packaged_ui_next_step',
+        'timeline_packaged_task_dynamics_decision',
         taskId,
-        'task.next_step_changed',
-        JSON.stringify({
-          from: null,
-          to: '审阅 packaged Timeline UI smoke 结果。',
-        }),
-        '2026-05-01T10:45:00.000Z',
+        'task.decision_approved',
+        JSON.stringify({ title: 'Approve packaged task dynamics smoke', decisionId: 'decision_packaged_task_dynamics' }),
+        '2026-05-01T11:30:00.000Z',
       );
       insertTimeline.run(
-        'timeline_packaged_ui_waiting',
+        'timeline_packaged_task_dynamics_run',
         taskId,
-        'task.waiting_changed',
-        JSON.stringify({
-          from: null,
-          to: '等待 packaged Timeline UI smoke 复核。',
-        }),
-        '2026-05-01T10:40:00.000Z',
-      );
-      insertTimeline.run(
-        'timeline_packaged_ui_risk',
-        taskId,
-        'task.risk_changed',
-        JSON.stringify({
-          from: { level: 'medium', note: 'Timeline smoke risk under review' },
-          to: { level: 'high', note: 'Packaged Timeline smoke risk' },
-        }),
-        '2026-05-01T10:38:00.000Z',
-      );
-      insertTimeline.run(
-        'timeline_packaged_ui_blocker',
-        taskId,
-        'blocker.updated',
-        JSON.stringify({
-          blockerId: 'blocker_packaged_ui_1',
-          title: 'Packaged Timeline launch blocker',
-          owner: 'Release owner',
-          sourceContextId: 'source_packaged_ui_1',
-        }),
-        '2026-05-01T10:35:00.000Z',
-      );
-      insertTimeline.run(
-        'timeline_packaged_ui_task_update',
-        taskId,
-        'task.updated',
-        JSON.stringify({ summary: 'Lower priority packaged field update' }),
-        '2026-05-01T10:30:00.000Z',
-      );
-      insertTimeline.run(
-        'timeline_packaged_ui_dependency',
-        taskId,
-        'task_dependency.updated',
-        JSON.stringify({
-          dependencyId: 'dependency_packaged_ui_1',
-          blockedByTaskId: 'task_packaged_timeline_upstream',
-          blockedByTaskTitle: 'Packaged Timeline upstream fixture',
-          reason: 'Need upstream Timeline fixture to finish first.',
-        }),
-        '2026-05-01T10:20:00.000Z',
-      );
-      insertTimeline.run(
-        'timeline_packaged_ui_completion_ready',
-        taskId,
-        'completion_criteria.satisfied',
-        JSON.stringify({ text: 'Packaged Timeline closeout accepted' }),
-        '2026-05-01T09:45:00.000Z',
-      );
-      insertTimeline.run(
-        'timeline_packaged_ui_artifact',
-        taskId,
-        'artifact.created',
-        JSON.stringify({
-          sourceType: 'run',
-          sourceId: 'run_packaged_ui_1',
-          title: 'Packaged Timeline smoke report',
-        }),
-        '2026-04-30T09:00:00.000Z',
-      );
-      insertTimeline.run(
-        'timeline_packaged_ui_completion',
-        taskId,
-        'completion_criteria.satisfied',
-        JSON.stringify({ text: 'Packaged Timeline fixture accepted' }),
-        '2026-04-30T08:30:00.000Z',
-      );
-      insertTimeline.run(
-        'timeline_packaged_ui_created',
-        taskId,
-        'task.created',
-        JSON.stringify({ title: 'Timeline packaged UI fixture' }),
-        '2026-04-30T08:00:00.000Z',
+        'task.run_completed',
+        JSON.stringify({ title: 'Packaged task dynamics smoke run', runId: 'run_packaged_task_dynamics' }),
+        '2026-05-01T12:00:00.000Z',
       );
     })();
   } finally {
@@ -448,304 +244,32 @@ function seedTimelineFixture() {
   }
 }
 
-async function assertTimelineUi(page) {
-  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
-  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
-  await page.getByText('工作台').waitFor();
-  await page.getByRole('button', { name: '执行' }).waitFor();
-  await page.getByRole('button', { name: '来源' }).waitFor();
-  await page.getByRole('button', { name: '产物' }).waitFor();
-  await page.getByRole('button', { name: '活动' }).waitFor();
-  await page.getByText('完成标准', { exact: true }).waitFor();
-  await page.getByText('1/1', { exact: true }).waitFor();
-
-  await page.getByText('自检查记录').waitFor();
-  await page.getByText(/Step 检查当前采用轻量规则引擎/).waitFor();
-  await page.getByText(/对照执行状态、结果记录和已确认工作习惯/).waitFor();
-  await page.getByText(/失败自动修正上限/).waitFor();
-  await page.getByText(/Run 检查与完成确认按 AI 行为偏好触发/).waitFor();
-  await page.getByText(/Run #1 · 已完成/).click();
-  await page.getByText('Packaged Timeline UI smoke completed.').waitFor();
-
-  await page.getByRole('button', { name: '来源' }).click();
-  await page.getByText('Packaged Timeline notes', { exact: true }).waitFor();
-  await page.getByText('关键来源', { exact: true }).waitFor();
-  await page.getByText(/AI 上下文优先读取最多 3 条关键来源/).waitFor();
-
-  await page.getByRole('button', { name: '产物' }).click();
-  await page.getByText('工作文件夹产物').waitFor();
-  await page.getByText(/任务产出的持久存储/).waitFor();
-
-  await page.getByRole('button', { name: '活动' }).click();
-  await page.getByText('活动记录').waitFor();
-  await page.getByText(/P1 是阻塞或失败/).waitFor();
-  await page.getByText(/P2 是等待、决策和完成检查/).waitFor();
-  await page.getByRole('button', { name: /P2 需关注/ }).waitFor();
-  await page.getByRole('button', { name: /P3 记录/ }).waitFor();
-  await page.getByText('task › decision_approved').waitFor();
-  await page.getByText(/上下文已更新/).waitFor();
-  await page.getByText('blocker › updated').waitFor();
-}
-
-async function openTaskFromTaskList(page, title) {
+async function openTaskFromDirectory(page, title) {
   await page.getByRole('button', { name: 'Tasks' }).click();
-  await page
-    .locator('.task-row', { hasText: title })
-    .dblclick();
+  await page.getByRole('button', { name: '任务目录' }).click();
+  await page.locator('.task-row', { hasText: title }).click();
 }
 
-async function assertTaskTimelineFollowUpActions(page) {
-  await page
-    .locator('.timeline-item', { hasText: '决策已获批准：Approve packaged Timeline UI smoke。' })
-    .getByRole('button', { name: '继续推进' })
-    .click();
-  await page.getByLabel('Next Step').waitFor();
+async function assertTaskDynamicsUi(page) {
+  await openTaskFromDirectory(page, 'Packaged task dynamics fixture');
+  await page.getByRole('heading', { name: 'Packaged task dynamics fixture' }).waitFor();
+  await page.getByRole('button', { name: '任务管理' }).waitFor();
+  await page.getByRole('button', { name: '任务动态' }).waitFor();
+  await page.getByText('任务摘要：Seeded by packaged task dynamics smoke.').waitFor();
+  await page.getByText('1/1', { exact: true }).first().waitFor();
+  await page.getByText('Packaged task dynamics fixture accepted').waitFor();
 
-  let nextStep = await page.getByLabel('Next Step').inputValue();
-  if (nextStep !== '已获批准，继续推进：Approve packaged Timeline UI smoke') {
-    throw new Error(`Packaged Timeline decision follow-up filled the wrong next step: ${nextStep}`);
-  }
-
-  await page
-    .locator('.timeline-item', { hasText: '等待原因从“未填写”调整为“等待 packaged Timeline UI smoke 复核。”' })
-    .getByRole('button', { name: '补清等待条件' })
-    .click();
-
-  nextStep = await page.getByLabel('Next Step').inputValue();
-  if (nextStep !== '跟进并确认是否解除等待：等待 packaged Timeline UI smoke 复核。') {
-    throw new Error(`Packaged Timeline waiting follow-up filled the wrong next step: ${nextStep}`);
-  }
-
-  await page
-    .locator('.timeline-item', { hasText: '生成产物：Packaged Timeline smoke report。' })
-    .getByRole('button', { name: '基于产物继续推进' })
-    .click();
-
-  nextStep = await page.getByLabel('Next Step').inputValue();
-  if (nextStep !== '基于产物继续推进：Packaged Timeline smoke report') {
-    throw new Error(`Packaged Timeline artifact follow-up filled the wrong next step: ${nextStep}`);
-  }
-}
-
-async function assertTaskTimelineContextFollowUpActions(page) {
-  await page
-    .locator('.timeline-item', { hasText: '风险从 medium（Timeline smoke risk under review）调整为 high（Packaged Timeline smoke risk）' })
-    .getByRole('button', { name: '优先处理风险' })
-    .click();
-
-  await page.getByLabel('Risk Note').waitFor();
-  let riskNote = await page.getByLabel('Risk Note').inputValue();
-  if (riskNote !== 'Packaged Timeline smoke risk') {
-    throw new Error(`Packaged Timeline risk follow-up filled the wrong risk note: ${riskNote}`);
-  }
-
-  await page
-    .locator('.timeline-item', { hasText: '阻塞项更新：Packaged Timeline launch blocker。' })
-    .getByRole('button', { name: '先解阻塞' })
-    .click();
-
-  await page.getByText('Edit Blocker').waitFor();
-  await page.locator('label', { hasText: '阻塞项标题' }).locator('input').waitFor();
-  const blockerTitle = await page.locator('label', { hasText: '阻塞项标题' }).locator('input').inputValue();
-  if (blockerTitle !== 'Packaged Timeline launch blocker') {
-    throw new Error(`Packaged Timeline blocker follow-up focused the wrong blocker: ${blockerTitle}`);
-  }
-
-  await page
-    .locator('.timeline-item', { hasText: '任务依赖更新：Packaged Timeline upstream fixture。' })
-    .getByRole('button', { name: '先解阻塞' })
-    .click();
-
-  await page.getByText('Edit Dependency').waitFor();
-  const dependencyReason = await page.locator('label', { hasText: '依赖说明' }).locator('textarea').inputValue();
-  if (dependencyReason !== 'Need upstream Timeline fixture to finish first.') {
-    throw new Error(`Packaged Timeline dependency follow-up focused the wrong dependency: ${dependencyReason}`);
-  }
-
-  const nextStep = await page.getByLabel('Next Step').inputValue();
-  if (nextStep !== '优先推动上游任务“Packaged Timeline upstream fixture”，并确认是否解除依赖。') {
-    throw new Error(`Packaged Timeline dependency follow-up filled the wrong next step: ${nextStep}`);
-  }
-}
-
-async function assertTaskTimelineObjectActions(page) {
-  await page.getByRole('button', { name: '查看 Run' }).first().click();
-  await page.getByRole('heading', { name: 'summarize / completed' }).waitFor();
-  await page.getByText('Packaged Timeline UI smoke completed.').waitFor();
-
-  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
-  await page.getByRole('button', { name: '展开全部 (13)' }).click();
-
-  await page.getByRole('button', { name: '查看 Decision' }).first().click();
-  await page.getByRole('heading', { name: '待拍板事项' }).waitFor();
-  await page.getByRole('heading', { name: 'Approve packaged Timeline UI smoke' }).waitFor();
-
-  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
-  await page.getByRole('button', { name: '展开全部 (13)' }).click();
-
-  await page.getByRole('button', { name: '查看来源' }).first().click();
-  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
-  await page.getByRole('heading', { name: 'Source Context' }).waitFor();
-  await page.getByText('Edit Material').waitFor();
-  await page.locator('label', { hasText: '来源标题' }).locator('input').waitFor();
-  const sourceTitle = await page.locator('label', { hasText: '来源标题' }).locator('input').inputValue();
-
-  if (sourceTitle !== 'Packaged Timeline notes') {
-    throw new Error(`Packaged Timeline source action focused the wrong material: ${sourceTitle}`);
-  }
-}
-
-async function assertRelatedRunTimelineUi(page) {
-  await page.getByRole('button', { name: /runs/i }).click();
-  await page.getByRole('heading', { name: '执行记录' }).waitFor();
-  await page.getByText('Related Task Timeline').waitFor();
-  await page.locator('.timeline-date-heading', { hasText: '2026-05-01' }).first().waitFor();
-  await page.getByText('执行记录').first().waitFor();
-  await page.getByText('产物').first().waitFor();
-  await page.getByText('任务字段').first().waitFor();
-  await page.getByText('关键事件').first().waitFor();
-  await page.getByText('解释事件').first().waitFor();
-  await page.getByText('执行完成，任务恢复到 planned。').waitFor();
-  await page.getByText('生成产物：Packaged Timeline smoke report。').waitFor();
-  await page.getByText('下一步从“未填写”调整为“审阅 packaged Timeline UI smoke 结果。”').waitFor();
-}
-
-async function assertRelatedDecisionTimelineUi(page) {
-  await page.getByRole('button', { name: /decisions/i }).click();
-  await page.getByRole('heading', { name: '待拍板事项' }).waitFor();
-  await page.getByText('Related Task Timeline').waitFor();
-  await page.locator('.timeline-date-heading', { hasText: '2026-05-01' }).first().waitFor();
-  await page.getByText('决策').first().waitFor();
-  await page.getByText('等待项').first().waitFor();
-  await page.getByText('任务字段').first().waitFor();
-  await page.getByText('关键事件').first().waitFor();
-  await page.getByText('解释事件').first().waitFor();
-  await page.getByText('决策已获批准：Approve packaged Timeline UI smoke。').waitFor();
-  await page.getByText('等待原因从“未填写”调整为“等待 packaged Timeline UI smoke 复核。”').waitFor();
-  await page.getByText('下一步从“未填写”调整为“审阅 packaged Timeline UI smoke 结果。”').waitFor();
-}
-
-async function assertDependencyReturnAndResolution(page) {
-  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
-  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
-
-  await page
-    .locator('.timeline-item', { hasText: 'Packaged Timeline upstream fixture' })
-    .getByRole('button', { name: '打开上游任务' })
-    .first()
-    .click();
-  await page.getByRole('heading', { name: 'Packaged Timeline upstream fixture' }).waitFor();
-
-  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
-  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
-
-  await page
-    .locator('.timeline-item', { hasText: 'Packaged Timeline upstream fixture' })
-    .getByRole('button', { name: '解除依赖' })
-    .first()
-    .click();
-  await page.getByText('当前任务还没有 active dependency。').waitFor();
-  await page.getByText('暂无任务依赖').waitFor();
-  await page.getByText('任务依赖解除：Packaged Timeline upstream fixture。').waitFor();
-
-  await page
-    .locator('.timeline-item', { hasText: 'Packaged Timeline launch blocker' })
-    .getByRole('button', { name: '解除阻塞' })
-    .first()
-    .click();
-  await page.getByText('暂无当前阻塞项').waitFor();
-  await page.getByRole('button', { name: '最终收尾判断' }).waitFor();
-}
-
-async function assertCloseoutTransition(page) {
-  await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).click();
-  await page.getByText('状态：completed').waitFor();
-  await page.getByText('最近状态从 running 变更为 completed。', { exact: true }).waitFor();
-}
-
-async function assertHomeCloseoutEvidenceReturn(page) {
-  await page.getByRole('button', { name: 'Brief' }).click();
-
-  const closeoutSection = page.locator('section.timeline-list').filter({ hasText: 'Closeout Tasks' });
-  await closeoutSection
-    .locator('.task-card', { hasText: 'Timeline packaged UI fixture' })
-    .waitFor();
-  await closeoutSection
-    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
-    .waitFor();
-  await closeoutSection
-    .getByText('当前收尾证据：执行完成 · summarize')
-    .waitFor();
-
-  await closeoutSection
-    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
-    .getByRole('button', { name: '查看收尾证据' })
-    .click();
-  await page.getByRole('heading', { name: 'summarize / completed' }).waitFor();
-  await page.getByText('Packaged Home closeout evidence completed.').waitFor();
-
-  await page.getByRole('button', { name: 'Brief' }).click();
-  await closeoutSection
-    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
-    .waitFor();
-
-  await closeoutSection
-    .locator('.task-card', { hasText: 'Timeline packaged UI fixture' })
-    .getByRole('button', { name: /Timeline packaged UI fixture/i })
-    .click();
-  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
-  await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).waitFor();
-}
-
-async function assertHomeCloseoutAfterCompletion(page) {
-  await page.getByRole('button', { name: 'Brief' }).click();
-
-  const closeoutSection = page.locator('section.timeline-list').filter({ hasText: 'Closeout Tasks' });
-  await closeoutSection
-    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
-    .waitFor();
-
-  const completedTaskCardCount = await closeoutSection
-    .locator('.task-card', { hasText: 'Timeline packaged UI fixture' })
-    .count();
-  if (completedTaskCardCount !== 0) {
-    throw new Error('Completed packaged closeout task remained in Home Closeout Tasks.');
-  }
-
-  await closeoutSection
-    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
-    .getByRole('button', { name: /Packaged Home closeout evidence fixture/i })
-    .click();
-  await page.getByRole('heading', { name: 'Packaged Home closeout evidence fixture' }).waitFor();
-
-  const nextStep = await page.getByLabel('Next Step').inputValue();
-  if (nextStep !== '优先补齐最后一条完成标准，并判断“Packaged Home closeout evidence fixture”是否可以收尾。') {
-    throw new Error(`Home closeout handoff filled the wrong near-closeout next step: ${nextStep}`);
-  }
-}
-
-async function assertHomeCloseoutEmptyAfterCompletingRemainingTask(page) {
-  await page
-    .locator('.timeline-item', { hasText: 'Packaged Home closeout approved' })
-    .getByRole('button', { name: '标记已满足' })
-    .click();
-  await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).waitFor();
-  await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).click();
-  await page.getByText('状态：completed').waitFor();
-
-  await page.getByRole('button', { name: 'Brief' }).click();
-
-  const closeoutSection = page.locator('section.timeline-list').filter({ hasText: 'Closeout Tasks' });
-  await closeoutSection.getByText('当前没有接近完成或已满足完成标准的任务。').waitFor();
-
-  const closeoutCardCount = await closeoutSection.locator('.task-card').count();
-  if (closeoutCardCount !== 0) {
-    throw new Error('Home Closeout Tasks still showed task cards after all closeout candidates were completed.');
-  }
+  await page.getByRole('button', { name: '任务动态' }).click();
+  await page.getByLabel('任务动态关键脉络').waitFor();
+  await page.getByText('关键脉络', { exact: true }).waitFor();
+  await page.getByText('执行与恢复').first().waitFor();
+  await page.getByText('拍板事项').first().waitFor();
+  await page.getByText('Run 已完成').first().waitFor();
+  await page.getByText('决策已批准：Approve packaged task dynamics smoke').first().waitFor();
 }
 
 if (process.platform !== 'darwin') {
-  fail('macOS packaged Timeline UI smoke requires macOS.');
+  fail('macOS packaged task dynamics UI smoke requires macOS.');
 }
 
 if (!fs.existsSync(executablePath)) {
@@ -768,22 +292,22 @@ try {
   });
 
   await waitFor(() => fs.existsSync(dbPath) && fs.statSync(dbPath).size > 0, 'packaged app database');
-  seedTimelineFixture();
+  seedTaskDynamicsFixture();
 
   const page = await app.firstWindow({ timeout: timeoutMs });
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await assertTimelineUi(page);
+  await assertTaskDynamicsUi(page);
 
   await app.close();
   cleanup();
-  console.log('macOS packaged Timeline UI smoke check passed.');
+  console.log('macOS packaged task dynamics UI smoke check passed.');
 } catch (error) {
   if (app) {
     await app.close().catch(() => {});
   }
 
   fail(
-    error instanceof Error ? error.message : 'macOS packaged Timeline UI smoke check failed.',
+    error instanceof Error ? error.message : 'macOS packaged task dynamics UI smoke check failed.',
     error instanceof Error ? error.stack : null,
   );
 }
