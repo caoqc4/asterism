@@ -364,4 +364,32 @@ describe('runtime event record projection', () => {
       eventIds: ['run_step:step-memory'],
     });
   });
+
+  it('groups completion checks as quality gates instead of generic task state', () => {
+    const events = projectRuntimeEvents({
+      timeline: [{
+        id: 'timeline-completion-check',
+        taskId: 'task-1',
+        type: 'task.completion_check',
+        payload: JSON.stringify({
+          reason: '完成标准已核对。',
+          runVerificationDetail: 'Run 验证通过。',
+        }),
+        createdAt: '2026-05-14T08:00:00.000Z',
+      }],
+    });
+
+    const group = groupRuntimeEventsForReplay(events)[0];
+
+    expect(events[0]).toMatchObject({
+      title: '任务完成检查',
+      detail: '完成标准已核对。 · Run 验证通过。',
+      priority: 'p2',
+    });
+    expect(group).toMatchObject({
+      kind: 'quality_gate',
+      title: '质量检查',
+      summary: '完成标准已核对。 · Run 验证通过。',
+    });
+  });
 });

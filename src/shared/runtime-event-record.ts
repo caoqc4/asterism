@@ -26,6 +26,7 @@ export type RuntimeReplayGroupKind =
   | 'project_structure'
   | 'execution_recovery'
   | 'decision'
+  | 'quality_gate'
   | 'durable_record'
   | 'source_context'
   | 'task_state'
@@ -181,6 +182,18 @@ function classifyRuntimeReplayEvent(event: RuntimeEventRecord): {
       kind: 'decision',
       summary: '需要用户判断或已经完成判断的事项。',
       title: '拍板事项',
+    };
+  }
+
+  if (
+    event.type === 'task.completion_check'
+    || /completion check|完成检查|质量检查|验收检查/i.test(`${event.title} ${event.detail ?? ''}`)
+  ) {
+    return {
+      bucket: 'quality_gate',
+      kind: 'quality_gate',
+      summary: '完成、验收或阶段收尾前的质量检查记录。',
+      title: '质量检查',
     };
   }
 

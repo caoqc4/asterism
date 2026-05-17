@@ -196,6 +196,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RightPanel does not expose task capture inside an active task context, and follow-up task proposals remain behind the shared closeout evaluator for future task-context creation entry points.',
       'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events for task-to-task replay.',
+      'RuntimeEventRecord replay grouping separates completion checks into quality_gate groups, so phase closeout and verification records do not collapse into generic task-state changes.',
       'TaskService recordTimelineEvent now guards panel.* task dynamic writes with task_mutation before appending timeline events.',
       'RuntimeEntrypointCoverage keeps retained execution, planning, assistance, resume, capability-probe, context-transition, task-capture, task-metadata, ordinary task-transition, running/completion transition, completion-check records, project-decomposition, decision-draft, decision-write, decision-action, agent-tool, product-configuration, preference-memory, method-library, and durable-write entrypoints explicit with required runtime gates.',
       'RuntimeEntrypointCoverage also defines kind-level gate baselines so future entrypoints cannot register below their class minimum without a failing regression test.',
@@ -209,6 +210,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the smallest matching pre_step, post_step, and subtask_start gates.',
       'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained task-dynamics surfaces must reuse the same projection.',
+      'Task dynamics replay grouping now has explicit handoff, project structure, execution recovery, decision, quality gate, durable record, source context, task state, and general groups.',
       'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',
     ],
     nextImplementation: [

@@ -3497,6 +3497,7 @@ function formatRuntimeReplayGroupKind(kind: RuntimeReplayGroup['kind']): string 
     case 'project_structure': return '结构';
     case 'execution_recovery': return '执行';
     case 'decision': return '拍板';
+    case 'quality_gate': return '质量';
     case 'durable_record': return '记录';
     case 'source_context': return '上下文';
     case 'task_state': return '状态';
@@ -3506,7 +3507,7 @@ function formatRuntimeReplayGroupKind(kind: RuntimeReplayGroup['kind']): string 
 
 function runtimeReplayGroupTone(group: RuntimeReplayGroup): 'risk' | 'wait' | 'running' | '' {
   if (group.priority === 'p1') return 'risk';
-  if (group.kind === 'decision' || group.priority === 'p2') return 'wait';
+  if (group.kind === 'decision' || group.kind === 'quality_gate' || group.priority === 'p2') return 'wait';
   if (group.kind === 'execution_recovery') return 'running';
   return '';
 }

@@ -541,6 +541,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Checkpointed risky tools create Decisions and resume only after approval.',
       'Decision effect summaries feed project verification for pending, approved, deferred, and cancelled decisions.',
       'Decision effect grouping organizes related decision effects by task first and source when no task is bound.',
+      'RuntimeEventRecord replay grouping separates task completion checks into quality_gate groups so closeout verification remains visible as a quality gate.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
       'DecisionJudgmentProjection prefers explicit Decision context impact, reversibility, and recommendation reason before generic judgment labels.',
