@@ -244,6 +244,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'runtime-surface-routing classifies files, source materials, AI output, artifacts, decisions, work habits, and run steps.',
       'MemorySurfacePolicy maps each runtime surface to a stable memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
       'MemorySurfaceWriteCoverage registers retained write entrypoints for Task.md, Task Records, task files, source contexts, AI output, artifacts, run steps, Decisions, and Work Habit proposals.',
+      'MemorySurfaceWriteCoverage marks structured task-file, source-context, artifact, and Decision writes with canonical_write_validation so future write surfaces cannot claim coverage while bypassing canonical field checks.',
       'Task file, source context, artifact, Decision, and Work Habit creation paths use shared normalization.',
       'Tasks file projections keep ordinary task files separate from artifacts while preserving Task.md, Task Records, AI output, source material, and artifact classes.',
       'Tasks source-context file projections use shared source-context routing before deciding whether a source appears as Task Record, AI output, or source material.',

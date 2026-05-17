@@ -24,6 +24,7 @@ export type MemorySurfaceWriteEntrypointKind =
 
 export type MemorySurfaceGuard =
   | 'runtime_surface_routing'
+  | 'canonical_write_validation'
   | 'task_mutation'
   | 'pre_step'
   | 'post_step'
@@ -73,7 +74,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'renderer_file_action',
     surfaces: ['task_file'],
     writePolicies: ['ordinary_file_writer'],
-    guards: ['reserved_task_memory_path_block', 'pre_step', 'post_step', 'simplicity_check'],
+    guards: ['canonical_write_validation', 'reserved_task_memory_path_block', 'pre_step', 'post_step', 'simplicity_check'],
     note: 'Ordinary file actions cannot create reserved Task.md or Task Records memory paths.',
   },
   {
@@ -82,7 +83,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'renderer_file_action',
     surfaces: ['source_material', 'ai_output'],
     writePolicies: ['explicit_source_capture'],
-    guards: ['runtime_surface_routing', 'source_quality_metadata', 'pre_step', 'post_step', 'simplicity_check'],
+    guards: ['runtime_surface_routing', 'canonical_write_validation', 'source_quality_metadata', 'pre_step', 'post_step', 'simplicity_check'],
     note: 'Source-context actions use explicit source roles and quality metadata when known.',
   },
   {
@@ -91,7 +92,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'renderer_artifact_action',
     surfaces: ['artifact'],
     writePolicies: ['artifact_writer'],
-    guards: ['artifact_writer', 'pre_step', 'post_step', 'simplicity_check'],
+    guards: ['canonical_write_validation', 'artifact_writer', 'pre_step', 'post_step', 'simplicity_check'],
     note: 'Artifacts require explicit artifact creation or artifact metadata; paths alone are not enough.',
   },
   {
@@ -136,7 +137,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'renderer_file_action',
     surfaces: ['task_file'],
     writePolicies: ['ordinary_file_writer'],
-    guards: ['runtime_surface_routing', 'pre_step', 'post_step', 'simplicity_check'],
+    guards: ['runtime_surface_routing', 'canonical_write_validation', 'pre_step', 'post_step', 'simplicity_check'],
     note: 'Task file proposals use routing before writing ordinary task files.',
   },
   {
@@ -145,7 +146,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'service_boundary',
     surfaces: ['task_state', 'task_record', 'task_file'],
     writePolicies: ['dedicated_evaluator', 'ordinary_file_writer'],
-    guards: ['runtime_surface_routing', 'task_mutation', 'reserved_task_memory_path_block', 'simplicity_check'],
+    guards: ['runtime_surface_routing', 'canonical_write_validation', 'task_mutation', 'reserved_task_memory_path_block', 'simplicity_check'],
     note: 'Main-process task-file writes remain guarded even when renderer callers already checked the action.',
   },
   {
@@ -154,7 +155,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'service_boundary',
     surfaces: ['source_material', 'ai_output'],
     writePolicies: ['explicit_source_capture'],
-    guards: ['runtime_surface_routing', 'source_quality_metadata', 'task_mutation', 'simplicity_check'],
+    guards: ['runtime_surface_routing', 'canonical_write_validation', 'source_quality_metadata', 'task_mutation', 'simplicity_check'],
     note: 'Source-context persistence keeps explicit source roles and quality metadata at the service boundary.',
   },
   {
@@ -163,7 +164,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'service_boundary',
     surfaces: ['artifact'],
     writePolicies: ['artifact_writer'],
-    guards: ['artifact_writer', 'task_mutation', 'simplicity_check'],
+    guards: ['canonical_write_validation', 'artifact_writer', 'task_mutation', 'simplicity_check'],
     note: 'Manual artifact persistence cannot be reached through ordinary task-file classification.',
   },
   {
@@ -172,7 +173,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'agent_tool',
     surfaces: ['source_material', 'ai_output'],
     writePolicies: ['explicit_source_capture'],
-    guards: ['runtime_surface_routing', 'source_quality_metadata', 'pre_step', 'post_step', 'simplicity_check'],
+    guards: ['runtime_surface_routing', 'canonical_write_validation', 'source_quality_metadata', 'pre_step', 'post_step', 'simplicity_check'],
     note: 'Agent-created source contexts must declare source role and quality signals instead of relying on title guesses.',
   },
   {
@@ -181,7 +182,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'agent_tool',
     surfaces: ['artifact'],
     writePolicies: ['artifact_writer'],
-    guards: ['artifact_writer', 'pre_step', 'post_step', 'simplicity_check'],
+    guards: ['canonical_write_validation', 'artifact_writer', 'pre_step', 'post_step', 'simplicity_check'],
     note: 'Agent artifact notes write to the artifact surface and only recommend Task.md references through guidance.',
   },
   {
@@ -190,7 +191,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'run_output',
     surfaces: ['artifact', 'run_step'],
     writePolicies: ['artifact_writer', 'run_step_writer'],
-    guards: ['artifact_writer', 'run_step_recovery_guidance', 'post_step', 'simplicity_check'],
+    guards: ['canonical_write_validation', 'artifact_writer', 'run_step_recovery_guidance', 'post_step', 'simplicity_check'],
     note: 'Run output stores the generated output artifact and records recovery guidance as run-step memory.',
   },
   {
@@ -199,7 +200,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'evidence_writer',
     surfaces: ['artifact', 'run_step'],
     writePolicies: ['artifact_writer', 'run_step_writer'],
-    guards: ['artifact_writer', 'run_step_recovery_guidance', 'post_step', 'simplicity_check'],
+    guards: ['canonical_write_validation', 'artifact_writer', 'run_step_recovery_guidance', 'post_step', 'simplicity_check'],
     note: 'Patch and browser evidence persist as artifacts, with recovery guidance kept as auditable run-step memory.',
   },
   {
@@ -208,7 +209,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     kind: 'decision_boundary',
     surfaces: ['decision'],
     writePolicies: ['decision_service'],
-    guards: ['decision_action', 'pre_step', 'post_step', 'simplicity_check'],
+    guards: ['canonical_write_validation', 'decision_action', 'pre_step', 'post_step', 'simplicity_check'],
     note: 'Decision creation and actions stay in the judgment boundary instead of being folded into task files.',
   },
   {

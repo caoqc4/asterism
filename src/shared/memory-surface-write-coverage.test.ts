@@ -62,6 +62,22 @@ describe('memory surface write coverage', () => {
     }
   });
 
+  it('keeps canonical data validation on structured memory-surface writes', () => {
+    const structuredMemoryEntrypoints = memorySurfaceWriteEntrypoints()
+      .filter((entrypoint) => entrypoint.surfaces.some((surface) => (
+        surface === 'task_file'
+        || surface === 'source_material'
+        || surface === 'ai_output'
+        || surface === 'artifact'
+        || surface === 'decision'
+      )));
+
+    expect(structuredMemoryEntrypoints.length).toBeGreaterThan(0);
+    for (const entrypoint of structuredMemoryEntrypoints) {
+      expect(entrypoint.guards).toContain('canonical_write_validation');
+    }
+  });
+
   it('keeps discussion-only content out of write coverage', () => {
     expect(memorySurfaceWriteEntrypoints().some((entrypoint) => entrypoint.surfaces.includes('discussion'))).toBe(false);
   });
