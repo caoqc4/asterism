@@ -141,6 +141,7 @@ describe('runtime lifecycle coverage matrix', () => {
       action.timing === 'current_candidate'
       && /duplicate detection/.test(action.action)
     ))).toBe(false);
+    expect(actions.filter((action) => action.timing === 'current_candidate')).toEqual([]);
     expect(actions.find((action) => action.action.includes('ConnectorSourceIngestionPlan'))?.timing)
       .toBe('deferred_surface');
   });
