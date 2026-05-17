@@ -97,6 +97,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can attach inclusion decisions and reasons to source context items.',
       'SourceMaterialQualityEvaluation classifies traceability, credibility, duplication, and sensitivity; RuntimeContextManifest combines it with freshness before including source context content.',
       'SourceContext records and creation inputs can now carry explicit credibility, duplicate, and sensitive-data signals, and Agent source_context.create can pass those signals into runtime context assembly.',
+      'ConnectorSourceIngestionPlan normalizes future connector evidence into SourceContext input with connector trace, capturedAt, duplicate, sensitivity, credibility, and source-quality decisions before persistence.',
       'AgentWorkingContext retains source uri metadata so source-quality traceability checks can use original source locations when available.',
       'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can attach selected-file relevance reasons.',
       'RuntimeContextAssemblyGate distinguishes provider-visible task execution from hidden non-model runtime entries.',
@@ -117,10 +118,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points must also pass full context metadata.',
       'RuntimeContextManifest consumes TaskMemoryRetrieval for retained context assembly paths; future provider-visible entry points must keep using this manifest instead of rebuilding read-order lists.',
-      'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
+      'Explicit source quality signals exist for retained source contexts and a connector ingestion plan exists; future real connector services still need to call that plan before persistence.',
     ],
     nextImplementation: [
       'Require any future provider-visible execution entry point to pass full source and selected-file metadata into RuntimeContextManifest before model/provider execution.',
+      'Require any future connector ingestion service to use ConnectorSourceIngestionPlan before creating SourceContext records.',
     ],
   },
   {
@@ -232,6 +234,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Tasks source-context file projections use shared source-context routing before deciding whether a source appears as Task Record, AI output, or source material.',
       'Source-context routing preserves explicit sourceRole before applying task-record-like title or note heuristics.',
       'SourceContextMemoryMetadata normalizes source role, credibility, duplicate, and sensitive-data signals before source-context creation or update reaches persistence.',
+      'ConnectorSourceIngestionPlan preserves connector identity, external id, capturedAt, and source-quality review decisions before future connector evidence can become task memory.',
       'Memory-surface regression tests cover AI output vs source material, artifact vs ordinary file, Task Record vs source capture, and reserved Task.md / Task Records paths.',
       'Memory-surface write coverage tests require each retained write entrypoint to declare surfaces, write policies, guards, and the simplicity boundary.',
       'TaskRecordWorthinessEvaluation centralizes when handoff, closeout, correction, option rationale, failure review, context archive, external signal, or durable state changes deserve Task Records.',
@@ -278,11 +281,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance, preserved as structured reference metadata, and can be persisted through the reusable confirmed-write plan; automatic persistence remains intentionally disabled.',
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
       'MemorySurfaceWriteCoverage is an explicit regression registry; future durable write paths must add their surface, write policy, and guard coverage instead of relying on path or title inference.',
-      'SourceContextMemoryMetadata covers retained source-context creation and update paths; future connector ingestion still needs to pass connector-specific credibility and duplication signals when available.',
+      'SourceContextMemoryMetadata covers retained source-context creation and update paths; future connector ingestion has a shared planning contract but still needs real service wiring.',
       'WorkHabitService consumes CrossTaskLearningBoundary for retained proposal/SOP paths; future learning writers should use the same service boundary.',
     ],
     nextImplementation: [
       'Require future durable information write paths to be registered in MemorySurfaceWriteCoverage before treating the write surface as retained behavior.',
+      'Keep future connector source ingestion on ConnectorSourceIngestionPlan plus source-context write guards rather than writing SourceContext records directly.',
       'Connect any future TasksPage task-memory proposal confirmation controls to TaskMemoryWriteApplyPlan instead of rebuilding write inputs locally.',
       'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
       'Keep any future background scheduler or non-panel clearing entry point wired to AutoContextClearReadiness instead of adding a second clearing rule.',

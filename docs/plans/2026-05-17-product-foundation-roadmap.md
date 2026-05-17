@@ -151,6 +151,13 @@ MCP, and browser/operator to appear as explicit hidden/unconfigured reserved
 rows instead of generic deferred rows before their product pages expose richer
 status. External Access remains deferred until connector status is available.
 
+Connector ingestion remains deferred, but the source-memory boundary now has a
+shared `ConnectorSourceIngestionPlan`. Future connector services must normalize
+connector id, external id, captured time, duplicate status, sensitivity, and
+credibility through that plan before creating `SourceContext` records. This
+keeps connector evidence on the same source-quality and task-memory path rather
+than creating a connector-specific shortcut.
+
 ## Package C: Search, Retrieval, And Reference Index
 
 Goal: make task memory findable without relying on chat context length.

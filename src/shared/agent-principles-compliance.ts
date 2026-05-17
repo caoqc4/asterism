@@ -100,6 +100,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can carry source inclusion decisions and reasons.',
       'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can carry selected-file relevance reasons.',
       'SourceContext records and creation inputs can carry explicit credibility, duplicate, and sensitive-data signals for source-quality evaluation.',
+      'ConnectorSourceIngestionPlan defines the required pre-persistence contract for future connector evidence: connector trace, capturedAt, duplicate, sensitivity, credibility, and quality decision.',
       'buildRuntimeContextAssemblyPolicy evaluates product principles, task state, Task.md, Task Records, selected file, structured signals, and work habits against the required read order.',
       'RuntimeContextAssemblyGate requires read-order assembly for provider-visible task execution and explicitly exempts hidden non-model entries.',
       'RunOrchestrator blocks ordinary model execution when required runtime context inputs are missing.',
@@ -114,7 +115,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs; future provider-visible execution boundaries must use the same gate.',
       'RuntimeContextManifest now consumes TaskMemoryRetrieval; future provider-visible execution boundaries must not rebuild their own task-memory read order.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
-      'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
+      'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; future real connector services must call it before persistence.',
       'External Access still needs service-backed structured status before it stops being deferred in AiConfigStatus; Skills, MCP, and browser/operator have scaffold fallback but still need richer product-surface status.',
       'ConfigurationSafetyReport is exposed through AiConfigStatus; retained capability/settings pages can consume it when UI work resumes.',
     ],
@@ -125,6 +126,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Keep tests that task-bound execution manifests include product principles, task state, Task.md when present, and relevant Task Records.',
       'Keep task-memory retrieval tests covering read-order priority, exclusion reasons, selected-file caution, and query boosting.',
       'Require any future provider-visible execution boundary to use RuntimeContextAssemblyGate and pass full source/file metadata.',
+      'Require any future connector ingestion service to use ConnectorSourceIngestionPlan before creating SourceContext records.',
     ],
   },
   {
@@ -169,13 +171,14 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
       'Memory-surface write coverage tests keep recovery memory behind dedicated evaluators, source/AI output behind explicit source capture, and artifacts behind artifact writers.',
       'Source-context metadata tests keep unknown credibility explicit, detect sensitive content, preserve existing sensitivity flags, and keep generated task records in digest role.',
+      'Connector source ingestion tests keep future connector evidence behind trace, capturedAt, duplicate, sensitivity, and credibility planning.',
     ],
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance through structured fields, and TaskRepository update timeline changed-field metadata; remaining retained durable writes outside durable tools must pass changed fields and reference metadata consistently.',
       'TaskRecordWorthinessEvaluation is consumed by current retained Task Record writers, including RightPanel context-refresh/phase-closeout, TasksPage manual records, completion handoff, project decomposition self-check, and AgentToolRegistry recovery guidance; future Task Record writers must keep using the same evaluator.',
       'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
       'MemorySurfaceWriteCoverage is an explicit registry, so future durable writers must be added there before they count as covered.',
-      'Future connector ingestion paths still need connector-specific credibility and duplication signals; the retained source-context boundary now has the fields and normalization needed to accept them.',
+      'Future connector ingestion services still need to be wired, but the retained source-context boundary now has a shared ingestion plan for connector-specific credibility and duplication signals.',
       'Retained Work Habit proposal and SOP-template writes consume CrossTaskLearningBoundary; future learning writers should keep using that service boundary.',
     ],
     nextVerification: [
@@ -384,13 +387,14 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SourceMaterialQualityEvaluation scores traceability, credibility, duplication, and sensitivity before source material is included in runtime context.',
       'RuntimeContextManifest combines source freshness and quality decisions into source-context inclusion metadata.',
       'SourceContext records, creation inputs, Agent working context, and Agent source_context.create can carry explicit credibility, duplicate, and sensitive-data signals.',
+      'ConnectorSourceIngestionPlan routes future connector evidence through the same source-quality evaluator before persistence.',
     ],
     gaps: [
-      'Source material quality checks are shared and represented in context manifests, but future connector ingestion paths still need to populate explicit credibility, duplicate, and sensitivity signals consistently.',
+      'Source material quality checks are shared and represented in context manifests; future connector services must use ConnectorSourceIngestionPlan to populate explicit credibility, duplicate, and sensitivity signals consistently.',
       'Source inclusion metadata is data-level only; retained UI surfaces do not yet expose full source-quality explanations.',
     ],
     nextVerification: [
-      'Pass explicit credibility, duplicate, and sensitivity signals from future connector ingestion paths into SourceMaterialQualityEvaluation.',
+      'Pass explicit credibility, duplicate, and sensitivity signals from future connector ingestion paths through ConnectorSourceIngestionPlan into SourceMaterialQualityEvaluation.',
     ],
   },
   {
