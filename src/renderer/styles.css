@@ -2431,6 +2431,79 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.5;
 }
+.settings-safety-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.settings-safety-summary span {
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg-sunk);
+  color: var(--ink-3);
+  font-size: 11px;
+  font-family: var(--mono);
+}
+.settings-safety-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings-safety-row {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-elev);
+}
+.settings-safety-main {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+.settings-safety-state {
+  min-width: 46px;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg-sunk);
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.settings-safety-state.configured {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: var(--green-line);
+}
+.settings-safety-state.approval_required {
+  color: var(--amber);
+  background: var(--amber-soft);
+  border-color: var(--amber-line);
+}
+.settings-safety-state.missing,
+.settings-safety-state.disabled_by_flag,
+.settings-safety-state.disabled_by_policy {
+  color: var(--ink-4);
+  background: var(--bg-sunk);
+  border-color: var(--line);
+}
+.settings-safety-id {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.settings-safety-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--ink-4);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
 
 .toggle {
   width: 36px;

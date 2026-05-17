@@ -2379,6 +2379,39 @@ describe('App redesign v1', () => {
 
   it('saves AI behavior preferences as dedicated feature flags', async () => {
     const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      configurationSafetyReport: {
+        secretExposureSafe: true,
+        blockedReasons: ['workspace.root: Workspace root is missing.'],
+        summary: 'configured=2 / approvalRequired=1 / blocked=1',
+        surfaces: [
+          {
+            id: 'model.api_key',
+            state: 'configured',
+            reason: 'API key source is keychain; secret value is not exposed.',
+            requiresApproval: false,
+            startupProbePolicy: 'never',
+            exposesSecretValue: false,
+          },
+          {
+            id: 'sandbox.patch_promotion',
+            state: 'approval_required',
+            reason: 'Sandbox patch promotion apply is enabled but still requires explicit approval.',
+            requiresApproval: true,
+            startupProbePolicy: 'manual_only',
+            exposesSecretValue: false,
+          },
+          {
+            id: 'workspace.root',
+            state: 'missing',
+            reason: 'Workspace root is missing.',
+            requiresApproval: true,
+            startupProbePolicy: 'safe_read_only',
+            exposesSecretValue: false,
+          },
+        ],
+      },
+    }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Settings/ }));
@@ -2394,6 +2427,11 @@ describe('App redesign v1', () => {
     expect(screen.getByText('确认阈值')).toBeTruthy();
     expect(screen.getByText(/低：更少打断/)).toBeTruthy();
     expect(screen.getByText(/高：不确定结论也更常请你拍板/)).toBeTruthy();
+    expect(screen.getByText('配置安全边界')).toBeTruthy();
+    expect(screen.getByText('密钥不外显')).toBeTruthy();
+    expect(screen.getByText('sandbox.patch_promotion')).toBeTruthy();
+    expect(screen.getByText(/探测：仅手动 · 需用户确认/)).toBeTruthy();
+    expect(screen.getByText(/当前不会自动启用受阻能力/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '详细' }));
     await user.click(screen.getByRole('button', { name: '高' }));
     const switches = await screen.findAllByRole('switch');

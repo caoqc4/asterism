@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { AiCommunicationStyle, AiConfigStatus, AiConfirmationThreshold } from '@shared/types/settings';
+import type { ConfigurationSafetyReport, ConfigurationSafetyState } from '@shared/configuration-safety-report';
 import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS, SELF_CHECK_RETRY_LIMIT } from '@shared/settings-defaults';
 
 const COMMUNICATION_STYLE_LABELS: Record<AiCommunicationStyle, string> = {
@@ -12,6 +13,14 @@ const CONFIRMATION_THRESHOLD_LABELS: Record<AiConfirmationThreshold, string> = {
   low: '低',
   normal: '标准',
   high: '高',
+};
+
+const SAFETY_STATE_LABELS: Record<ConfigurationSafetyState, string> = {
+  configured: '已配置',
+  missing: '缺失',
+  disabled_by_flag: '已关闭',
+  disabled_by_policy: '策略关闭',
+  approval_required: '需确认',
 };
 
 export function SettingsPage() {
@@ -175,6 +184,8 @@ export function SettingsPage() {
         </p>
       </section>
 
+      <ConfigurationSafetySection report={status?.configurationSafetyReport ?? null} />
+
       {/* Save */}
       <div className="settings-footer">
         <button
@@ -186,6 +197,60 @@ export function SettingsPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+function ConfigurationSafetySection({ report }: { report: ConfigurationSafetyReport | null }) {
+  if (!report) {
+    return (
+      <section className="settings-section">
+        <div className="settings-section-title">配置安全边界</div>
+        <p className="settings-hint">安全报告尚未生成；Settings 不会主动探测外部服务或读取密钥明文。</p>
+      </section>
+    );
+  }
+
+  const configuredCount = report.surfaces.filter((surface) => surface.state === 'configured').length;
+  const approvalCount = report.surfaces.filter((surface) => surface.state === 'approval_required').length;
+
+  return (
+    <section className="settings-section">
+      <div className="settings-section-title">配置安全边界</div>
+      <div className="settings-safety-summary">
+        <span>已配置 {configuredCount}</span>
+        <span>需确认 {approvalCount}</span>
+        <span>受阻 {report.blockedReasons.length}</span>
+        <span>{report.secretExposureSafe ? '密钥不外显' : '需检查密钥展示'}</span>
+      </div>
+      <div className="settings-safety-list">
+        {report.surfaces.map((surface) => (
+          <div key={surface.id} className="settings-safety-row">
+            <div className="settings-safety-main">
+              <span className={`settings-safety-state ${surface.state}`}>
+                {SAFETY_STATE_LABELS[surface.state]}
+              </span>
+              <span className="settings-safety-id">{surface.id}</span>
+            </div>
+            <div className="settings-safety-detail">
+              <span>{surface.reason}</span>
+              <span>
+                探测：{surface.startupProbePolicy === 'never'
+                  ? '不自动'
+                  : surface.startupProbePolicy === 'manual_only'
+                    ? '仅手动'
+                    : '安全只读'}
+                {surface.requiresApproval ? ' · 需用户确认' : ''}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      {report.blockedReasons.length > 0 && (
+        <p className="settings-hint" style={{ marginTop: 8 }}>
+          当前不会自动启用受阻能力；需要在对应页面配置或手动确认后才会进入运行时。
+        </p>
+      )}
+    </section>
   );
 }
 
