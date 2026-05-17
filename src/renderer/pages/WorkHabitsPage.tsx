@@ -141,7 +141,6 @@ export function WorkHabitsPage() {
           <div className="ctx-learning-output-note">
             待确认规则只作为提议展示，不会自动改变后续执行流程。显著流程、步骤顺序和工具选择必须提议确认；SOP 模板只由你主动保存。停用、删除和覆盖已有规则都由你主动操作。只在 Step/Run/Task 完成、你编辑 AI 产物、或会话压缩前提取学习信号，不做持续行为监控。
           </div>
-          <div className="ctx-learning-output-note">待确认规则只作为提议展示，不会自动改变后续执行流程。</div>
           <div className="ctx-habit-stats">
             <span>来源分布</span>
             <span>提议确认 {habits.filter((habit) => habit.source === 'proposal').length}</span>

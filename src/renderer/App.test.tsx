@@ -3954,7 +3954,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Work Habits/ }));
 
     expect(await screen.findByText(/与已确认规则冲突/)).toBeTruthy();
-    expect(screen.getByText('待确认规则只作为提议展示，不会自动改变后续执行流程。')).toBeTruthy();
+    expect(screen.getByText(/待确认规则只作为提议展示，不会自动改变后续执行流程/)).toBeTruthy();
     expect(screen.getByText(/显著流程、步骤顺序和工具选择必须提议确认/)).toBeTruthy();
     expect(screen.getByText(/SOP 模板只由你主动保存/)).toBeTruthy();
     expect(screen.getByText(/停用、删除和覆盖已有规则都由你主动操作/)).toBeTruthy();
