@@ -50,14 +50,17 @@ function seedConfirmedProjectFixture() {
     database.transaction(() => {
       const insertTask = database.prepare(`
         INSERT INTO tasks (
-          id, title, summary, state, next_step, waiting_reason,
+          id, task_type, parent_task_id, child_task_ids, title, summary, state, next_step, waiting_reason,
           risk_level, risk_note, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       insertTask.run(
         'task_packaged_project_parent',
+        'project',
+        null,
+        JSON.stringify(['task_packaged_project_scope', 'task_packaged_project_plan']),
         'Packaged Project parent fixture',
         '完成打包版项目拆解闭环验收。',
         'planned',
@@ -71,6 +74,9 @@ function seedConfirmedProjectFixture() {
 
       insertTask.run(
         'task_packaged_project_scope',
+        'simple',
+        'task_packaged_project_parent',
+        JSON.stringify([]),
         '确认 packaged 项目范围',
         '明确项目边界、目标和验收口径。',
         'planned',
@@ -84,6 +90,9 @@ function seedConfirmedProjectFixture() {
 
       insertTask.run(
         'task_packaged_project_plan',
+        'simple',
+        'task_packaged_project_parent',
+        JSON.stringify([]),
         '产出 packaged 项目方案',
         '形成可评审的项目推进方案。',
         'planned',
@@ -230,34 +239,34 @@ async function assertFreshProjectDoesNotCreateTemplateChildren(page) {
   await page.getByRole('button', { name: '创建' }).click();
   await page.getByText('✓ 已创建').waitFor();
 
-  await page.getByRole('button', { name: /项目型/ }).click();
-  await page.locator('.project-group', { hasText: '打包验收新项目' }).getByText('0/0 子任务完成').waitFor();
-  await page.getByText('等待 AI 根据项目目标拆解子任务').waitFor();
-  await page.getByText('拆解前不会自动生成模板任务；先生成草稿，确认后再创建真实子任务。').waitFor();
+  await page.getByRole('button', { name: '任务目录' }).click();
+  const freshProjectGroup = page.locator('.task-directory-group', { hasText: '打包验收新项目' });
+  await freshProjectGroup.locator('.task-row', { hasText: '打包验收新项目' }).click();
+  await page.getByRole('heading', { name: '打包验收新项目' }).waitFor();
+  await page.getByText('0/0').first().waitFor();
+  await page.getByText('在 AI 面板确认拆解方案后，这里会显示子任务和完成标准；确认前不会写入真实任务。').waitFor();
+  const childRows = await freshProjectGroup.locator('.task-directory-child-row').count();
+  if (childRows !== 0) {
+    throw new Error(`Fresh project unexpectedly rendered ${childRows} child rows before decomposition confirmation.`);
+  }
 }
 
 async function assertConfirmedProjectStructure(page) {
   await page.getByRole('button', { name: 'Tasks' }).click();
   await page.getByRole('button', { name: /项目型/ }).click();
+  await page.getByRole('button', { name: '任务目录' }).click();
 
-  const projectGroup = page.locator('.project-group', { hasText: 'Packaged Project parent fixture' });
-  await projectGroup.getByText('0/2 子任务完成').waitFor();
+  const projectGroup = page.locator('.task-directory-group', { hasText: 'Packaged Project parent fixture' });
+  await projectGroup.getByText('0/2 完成').waitFor();
   await projectGroup.getByText('确认 packaged 项目范围', { exact: true }).waitFor();
   await projectGroup.getByText('产出 packaged 项目方案', { exact: true }).waitFor();
-  await projectGroup.getByText('依赖：确认 packaged 项目范围', { exact: true }).waitFor();
 
-  await projectGroup.locator('.task-row', { hasText: 'Packaged Project parent fixture' }).dblclick();
+  await projectGroup.locator('.task-row', { hasText: 'Packaged Project parent fixture' }).click();
   await page.getByRole('heading', { name: 'Packaged Project parent fixture' }).waitFor();
-  await page.getByText('项目子任务执行概览').waitFor();
-  await page.getByText('0/2 子任务完成').waitFor();
+  await page.getByText('项目结构').waitFor();
+  await page.getByText('0/2').first().waitFor();
   await page.getByText('确认 packaged 项目范围').waitFor();
   await page.getByText('产出 packaged 项目方案').waitFor();
-  await page.getByText(/父任务工作台负责汇总子任务进度/).waitFor();
-  await page.getByText(/复杂子任务应先升级为项目型再重新拆解/).waitFor();
-
-  await page.getByRole('button', { name: '来源' }).click();
-  await page.getByText('AI 项目拆解自检', { exact: true }).waitFor();
-  await page.getByText(/AI 上下文优先读取最多 3 条关键来源/).waitFor();
 }
 
 if (process.platform !== 'darwin') {

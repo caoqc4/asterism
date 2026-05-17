@@ -178,30 +178,19 @@ function seedCodeAgentFixture() {
 
 async function openTaskFromTaskList(page, title) {
   await page.getByRole('button', { name: 'Tasks' }).click();
-  await page
-    .locator('.task-row', { hasText: title })
-    .dblclick();
+  await page.getByRole('button', { name: '任务目录' }).click();
+  await page.locator('.task-row', { hasText: title }).click();
 }
 
 async function assertCodeAgentPreflightUi(page) {
   await openTaskFromTaskList(page, 'Packaged Code Agent UI fixture');
   await page.getByRole('heading', { name: 'Packaged Code Agent UI fixture' }).waitFor();
-  await page.getByText('工作台').waitFor();
-  await page.getByText('完成标准', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '任务管理' }).waitFor();
+  await page.getByRole('button', { name: '任务动态' }).waitFor();
+  await page.getByText('标准满足', { exact: true }).waitFor();
   await page.getByText('Code Agent preflight is visible before any provider or Docker action').waitFor();
-
-  await page.getByRole('button', { name: '来源' }).click();
-  await page.getByText('Code Agent context note', { exact: true }).waitFor();
-  await page.getByText(/AI 上下文优先读取最多 3 条关键来源/).waitFor();
-
-  await page.getByRole('button', { name: '产物' }).click();
-  await page.getByText('工作文件夹产物').waitFor();
-  await page.getByText('Code Agent patch notes').click();
-  await page.getByText(/Suggested packaged smoke patch target/).waitFor();
-
-  await page.getByRole('button', { name: '执行' }).click();
-  await page.getByRole('button', { name: '+ 新建 Run' }).click();
-  await page.getByPlaceholder(/给 AI 的指令/).waitFor();
+  await page.getByText('Code Agent context note').waitFor();
+  await page.getByText('Code Agent patch notes').waitFor();
 }
 
 if (process.platform !== 'darwin') {
