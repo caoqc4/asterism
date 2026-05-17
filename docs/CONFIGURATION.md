@@ -137,6 +137,16 @@ metadata and snippets are normalized through `ConnectorSourceIngestionPlan`.
 Gmail evidence is marked sensitive by default, so it requires review before it
 can become task source material.
 
+Use this read-only preflight before testing a Gmail token:
+
+```bash
+npm run accept:external-access:gmail-preflight
+```
+
+The preflight reports whether the token, account label, query, and result limit
+are configured. It prints `<set>` for the token and does not call Gmail or write
+task memory.
+
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does
 not run it during startup or AI config status reads. A ready backend status is

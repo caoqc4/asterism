@@ -51,6 +51,7 @@
     "accept:provider-native-live:run": "vitest run --config vitest.live.config.ts scripts/provider-native-run-live.test.ts",
     "accept:alpha-local": "npm run verify && npm run diagnostics:canonical-data:optional && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:product-surfaces:mac && npm run accept:release:mac-preflight",
     "accept:release:mac-preflight": "vitest run src/main/release-mac-preflight-script.test.ts && npm run release:mac:preflight",
+    "accept:external-access:gmail-preflight": "vitest run src/main/gmail-connector-preflight-script.test.ts && node scripts/gmail-connector-preflight.mjs",
     "accept:packaged-recovery:mac": "npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:context-learning:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac",
     "accept:product-surfaces:mac": "npm run smoke:external-access:mac && npm run smoke:external-access-connected:mac && npm run smoke:external-access-local-inbox:mac && npm run smoke:decisions-center:mac && npm run smoke:task-files:mac",
     "real-use:paths": "node scripts/real-use-paths.mjs",

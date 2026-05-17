@@ -106,6 +106,15 @@ Gmail connector tests use an injected fetch implementation and do not contact
 Google. Live Gmail OAuth/token validation remains manual until a concrete OAuth
 flow is selected.
 
+Gmail connector local preflight:
+
+```bash
+npm run accept:external-access:gmail-preflight
+```
+
+This command validates the environment shape, hides the OAuth token value, and
+does not call Gmail or write task memory.
+
 Release readiness preflight:
 
 ```bash
