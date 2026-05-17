@@ -61,6 +61,14 @@ function buildHomeBriefData(): HomeBriefData {
     ],
     recentActivity: [],
     recentBriefSnapshots: [],
+    briefAttention: {
+      items: [],
+      totalCount: 0,
+      displayedCount: 0,
+      displayLimit: 5,
+      truncated: false,
+      summary: 'Brief shows 0 attention items using the shared priority order.',
+    },
     priorityLane: 'unblock_or_decide',
     priorityHeadline: '当前有 1 条任务需要先解阻塞或拍板',
     priorityLede: '当前最值得先处理的是解阻塞与拍板条件。',
@@ -112,6 +120,27 @@ describe('buildFallbackBrief', () => {
             lane: 'continue_or_review',
           },
         ],
+        briefAttention: {
+          items: [
+            {
+              actionId: 'action_escalate',
+              taskId: 'task_resume_brief',
+              lane: 'unblock_or_decide',
+              reason: 'Needs a decision, unblock, risk review, or dependency check before work can continue.',
+            },
+            {
+              actionId: 'action_continue',
+              taskId: 'task_resume_brief',
+              lane: 'review_evidence',
+              reason: 'New or important evidence may change the next action.',
+            },
+          ],
+          totalCount: 6,
+          displayedCount: 2,
+          displayLimit: 2,
+          truncated: true,
+          summary: 'Brief shows 2 of 6 attention items; Tasks owns the full queue.',
+        },
         recentActivity: [
           {
             id: 'run_lane',
@@ -131,6 +160,10 @@ describe('buildFallbackBrief', () => {
 
     expect(brief).toContain('立即升级：');
     expect(brief).toContain('继续推进/复核：');
+    expect(brief).toContain('Brief 注意力边界：');
+    expect(brief).toContain('Brief shows 2 of 6 attention items; Tasks owns the full queue.');
+    expect(brief).toContain('display=2/6 limit=2 truncated=yes');
+    expect(brief).toContain('action_escalate | lane=unblock_or_decide');
     expect(brief).toContain('优先升级阻塞项');
     expect(brief).toContain('run:draft [completed] | task=Resume task');
   });

@@ -50,6 +50,12 @@ function formatRecommendedAction(
   }`;
 }
 
+function formatBriefAttentionLine(
+  item: NonNullable<HomeBriefData['briefAttention']>['items'][number],
+): string {
+  return `- ${item.actionId} | lane=${item.lane} | task=${item.taskId ?? 'none'} | reason=${item.reason}`;
+}
+
 function formatRecentActivityLine(
   sourceType: string,
   title: string,
@@ -203,6 +209,13 @@ export function buildFallbackBrief(
           ),
       ).join('\n')
     : '- 当前没有推荐动作';
+  const attentionLines = homeData.briefAttention?.items.length
+    ? [
+        `- ${homeData.briefAttention.summary}`,
+        `- display=${homeData.briefAttention.displayedCount}/${homeData.briefAttention.totalCount} limit=${homeData.briefAttention.displayLimit ?? 'none'} truncated=${homeData.briefAttention.truncated ? 'yes' : 'no'}`,
+        ...homeData.briefAttention.items.map(formatBriefAttentionLine),
+      ].join('\n')
+    : '- 当前没有独立注意力投影';
   const activityLaneLines = homeData.recentActivity.length
     ? formatLaneSection(
         homeData.recentActivity,
@@ -245,6 +258,9 @@ export function buildFallbackBrief(
     '',
     '推荐动作：',
     recommendedActionLines,
+    '',
+    'Brief 注意力边界：',
+    attentionLines,
     '',
     '任务恢复预览：',
     resumePreviewLines,
@@ -347,6 +363,15 @@ function buildPrompt(
               action.responsibilitySummary,
             ),
         )
+      : ['- 无']),
+    '',
+    'Brief 注意力边界：',
+    ...(homeData.briefAttention?.items.length
+      ? [
+          homeData.briefAttention.summary,
+          `display=${homeData.briefAttention.displayedCount}/${homeData.briefAttention.totalCount} limit=${homeData.briefAttention.displayLimit ?? 'none'} truncated=${homeData.briefAttention.truncated ? 'yes' : 'no'}`,
+          ...homeData.briefAttention.items.map(formatBriefAttentionLine),
+        ]
       : ['- 无']),
     '',
     '任务恢复预览：',

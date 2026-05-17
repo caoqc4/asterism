@@ -134,6 +134,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'PriorityAttentionProjection now centralizes shared ordering plus optional display limits, so Tasks can consume the full ordered queue while Brief consumes the same order as a capped summary.',
       'BriefAttentionBoundary consumes PriorityAttentionProjection and adds Brief-specific inclusion lanes, explanation reasons, and explicit display-limit metadata without adding a second sorter.',
       'HomeBriefData now carries the BriefAttentionBoundary summary next to recommendedActions, so retained Brief consumers can read attention lanes without changing the current layout.',
+      'BriefExecutor consumes HomeBriefData.briefAttention so scheduled or fallback briefs preserve the attention-summary boundary and display-limit explanation.',
     ],
     outOfAgentPrinciplesScope: [
       'Brief and priority queue design are product attention mechanics, not Agent execution rules.',
@@ -142,6 +143,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Priority ranking has a shared projection with display-limit metadata, but traceable user-facing ranking reasons are still limited to each recommendation reason.',
       'BriefAttentionBoundary is exposed through HomeBriefData; richer UI explanations can consume it later without adding another sorter.',
+      'BriefPage still performs lightweight display shaping for task cards; future Brief UI/data work should keep inclusion and de-duplication in shared/domain projections rather than adding page-local ordering rules.',
       'Brief vs Tasks ordering and display-limit behavior has shared coverage tests; broader end-to-end page projection tests can still be added when UI work resumes.',
     ],
     nextImplementation: [

@@ -441,6 +441,9 @@ queue.
 `HomeBriefData` now exposes that attention summary beside `recommendedActions`,
 so the current Brief layout can stay stable while future UI can show richer
 attention explanations from the shared projection.
+`BriefExecutor` also consumes the attention summary, so scheduled/fallback
+briefs preserve the rule that Brief is a capped attention summary and Tasks
+owns the full queue.
 
 ## Recommended Execution Order
 
