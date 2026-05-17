@@ -3,7 +3,7 @@
   "productName": "Taskplane",
   "version": "0.1.0",
   "private": true,
-  "description": "A local-first desktop workbench for tasks, decisions, runs, and briefs.",
+  "description": "A local-first desktop app for tasks, decisions, runs, and briefs.",
   "author": "Taskplane contributors",
   "license": "MIT",
   "type": "module",

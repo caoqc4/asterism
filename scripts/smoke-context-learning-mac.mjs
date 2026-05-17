@@ -88,7 +88,7 @@ function seedWorkHabitFixture() {
         'project',
         '项目',
         'confirmed',
-        '从任务工作台提取并保存的 SOP 模板。',
+        '从任务管理页提取并保存的 SOP 模板。',
         '2026-05-04T08:40:00.000Z',
         '2026-05-04T08:45:00.000Z',
         1,
