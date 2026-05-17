@@ -84,11 +84,47 @@ describe('configuration safety report', () => {
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
     });
+    expect(report.surfaces.find((surface) => surface.id === 'skills.catalogue')).toMatchObject({
+      startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
+      startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
+    });
     expect(report.surfaces.find((surface) => surface.id === 'browser.operator')).toMatchObject({
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
     });
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.coding_agent')).toMatchObject({
+      startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
+    });
+  });
+
+  it('keeps Skills and MCP safety states aligned with capability registry rows', () => {
+    const base = aiStatus();
+    const status = {
+      ...base,
+      capabilityRegistry: buildCapabilityRegistry({
+        snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: base }),
+        productSurfaces: {
+          skills: { enabledCount: 2, readyCount: 1, needsConfigCount: 1 },
+          mcp: { connectedServerCount: 1, toolCount: 3, errorCount: 0 },
+        },
+      }),
+    };
+    const report = buildConfigurationSafetyReport(status);
+
+    expect(report.surfaces.find((surface) => surface.id === 'skills.catalogue')).toMatchObject({
+      state: 'approval_required',
+      requiresApproval: true,
+      startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
+      state: 'approval_required',
+      requiresApproval: true,
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
     });

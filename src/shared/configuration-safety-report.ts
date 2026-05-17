@@ -16,6 +16,8 @@ export type ConfigurationSafetySurfaceId =
   | 'sandbox.coding_agent'
   | 'sandbox.patch_promotion'
   | 'external_access.connectors'
+  | 'skills.catalogue'
+  | 'mcp.servers'
   | 'browser.operator';
 
 export type ConfigurationSafetySurface = {
@@ -89,6 +91,16 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
       id: 'external_access.connectors',
       startupProbePolicy: 'manual_only',
       disabledReason: 'External access connectors are not connected or are not exposed through structured status.',
+    }),
+    surfaceFromCapability('skills.catalogue', registry, {
+      id: 'skills.catalogue',
+      startupProbePolicy: 'manual_only',
+      disabledReason: 'Skills are not enabled or are not exposed through structured status.',
+    }),
+    surfaceFromCapability('mcp.servers', registry, {
+      id: 'mcp.servers',
+      startupProbePolicy: 'manual_only',
+      disabledReason: 'MCP servers are not connected or are not exposed through structured status.',
     }),
     surfaceFromCapability('browser.operator', registry, {
       id: 'browser.operator',
