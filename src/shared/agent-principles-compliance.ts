@@ -104,10 +104,11 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SourceContextMemoryMetadata normalizes source role, credibility, duplicate, and sensitive-data signals before source-context creation or update reaches persistence.',
       'OperatorStartedRunService keeps browser evidence and local QA outside provider-visible context assembly only while providerCall=no and modelExposure=hidden.',
       'TaskMemoryRetrieval provides deterministic execution-memory ranking with include/caution/exclude reasons across task state, Task.md, Task Records, Decisions, sources, artifacts, task files, Work Habits, and process templates.',
+      'RuntimeContextManifest consumes TaskMemoryRetrieval and formats its compact read-order summary for provider-visible step context.',
     ],
     gaps: [
       'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs; future provider-visible execution boundaries must use the same gate.',
-      'TaskMemoryRetrieval exists as a shared projection; Run and RightPanel context assembly still need to consume it directly before the read-order path is fully unified.',
+      'RuntimeContextManifest now consumes TaskMemoryRetrieval; future provider-visible execution boundaries must not rebuild their own task-memory read order.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
       'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
       'External Access still needs service-backed structured status before it stops being deferred in AiConfigStatus; Skills, MCP, and browser/operator have scaffold fallback but still need richer product-surface status.',

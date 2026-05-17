@@ -218,6 +218,10 @@ support files. Results carry include/caution/exclude decisions plus reasons;
 archived or duplicate sources are excluded by default, sensitive sources are
 included with caution, unrelated records are excluded unless the query matches,
 and selected files can surface with caution without making them authoritative.
+`RuntimeContextManifest` now consumes this retrieval projection directly and
+emits a compact `memory_retrieval` summary for provider-visible step context,
+so retained Run / RightPanel execution paths share the same read-order signal
+instead of rebuilding local lists.
 
 ## Package D: Data Model, Migration, And Repair
 

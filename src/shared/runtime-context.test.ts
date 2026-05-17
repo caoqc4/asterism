@@ -151,6 +151,26 @@ describe('runtime context manifest', () => {
     );
   });
 
+  it('attaches deterministic task memory retrieval to task-bound manifests', () => {
+    const manifest = buildRuntimeContextManifest({
+      applicableWorkHabits: ['先做事实核对'],
+      selectedFile: { path: 'Task.md', kind: 'file', contentPreview: '# Task' },
+      workingContext: buildWorkingContext(),
+    });
+
+    expect(manifest.memoryRetrieval).toMatchObject({
+      totalCount: 7,
+      includedCount: 7,
+      cautionCount: 0,
+      excludedCount: 0,
+    });
+    expect(manifest.memoryRetrieval?.topResults.map((item) => item.kind)).toContain('task_state');
+    expect(manifest.memoryRetrieval?.topResults.map((item) => item.kind)).toContain('task_md');
+    expect(manifest.memoryRetrieval?.topResults.map((item) => item.kind)).toContain('work_habit');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('memory_retrieval:total=7');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('task_md/Task.md/include');
+  });
+
   it('preserves source quality metadata from agent working context sources', () => {
     const workingContext = buildWorkingContext();
     workingContext.sources = [

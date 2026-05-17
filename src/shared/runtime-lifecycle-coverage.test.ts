@@ -59,8 +59,10 @@ describe('runtime lifecycle coverage matrix', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
     expect(text).toContain('RuntimeContextAssemblyGate distinguishes provider-visible task execution');
+    expect(text).toContain('RuntimeContextManifest now consumes TaskMemoryRetrieval');
     expect(text).toContain('providerCall=no and modelExposure=hidden');
     expect(text).not.toContain('not every execution entry point blocks on it yet');
+    expect(text).not.toContain('TaskMemoryRetrieval is a shared data projection; current Run and RightPanel context assembly still need to consume it');
   });
 
   it('tracks pending-memory checks for task switching', () => {

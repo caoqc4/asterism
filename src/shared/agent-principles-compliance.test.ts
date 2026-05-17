@@ -64,8 +64,10 @@ describe('agent principles compliance matrix', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 
     expect(text).toContain('RuntimeContextAssemblyGate requires read-order assembly');
+    expect(text).toContain('RuntimeContextManifest consumes TaskMemoryRetrieval');
     expect(text).not.toContain('Add RuntimeContextAssemblyPolicy');
     expect(text).not.toContain('not yet for every execution boundary');
+    expect(text).not.toContain('still need to consume it directly');
   });
 
   it('does not keep completed Task.md evaluator work as a future task', () => {

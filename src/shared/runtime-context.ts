@@ -12,9 +12,15 @@ import {
   type SourceMaterialQualityEvaluation,
   type SourceMaterialQualityReason,
 } from './source-material-quality-evaluator.js';
+import { retrieveTaskExecutionMemory, type TaskMemoryRetrievalResult } from './task-memory-retrieval.js';
 import { isTaskMdPath, isTaskRecordPath } from './task-memory-path.js';
-import type { SourceContextCredibility, SourceContextRole, SourceContextStatus } from './types/source-context.js';
-import type { TaskState } from './types/task.js';
+import type {
+  SourceContextCredibility,
+  SourceContextKind,
+  SourceContextRole,
+  SourceContextStatus,
+} from './types/source-context.js';
+import type { TaskRiskLevel, TaskState } from './types/task.js';
 
 export type RuntimeContextManifestItemKind =
   | 'task_state'
@@ -57,8 +63,26 @@ export type RuntimeContextSnapshot = {
 export type RuntimeContextManifest = {
   activeSurface: 'global' | 'task';
   items: RuntimeContextManifestItem[];
+  memoryRetrieval?: RuntimeContextMemoryRetrievalSummary | null;
   summary: string;
   userFacingSummary: string;
+};
+
+export type RuntimeContextMemoryRetrievalSummary = {
+  totalCount: number;
+  includedCount: number;
+  cautionCount: number;
+  excludedCount: number;
+  topResults: RuntimeContextMemoryRetrievalItem[];
+};
+
+export type RuntimeContextMemoryRetrievalItem = {
+  id: string;
+  kind: TaskMemoryRetrievalResult['entity']['entityType'];
+  decision: TaskMemoryRetrievalResult['decision'];
+  reasons: string[];
+  score: number;
+  title: string;
 };
 
 export type RuntimeContextAssemblyRequirementKind =
@@ -95,6 +119,11 @@ type RuntimeContextManifestTask = {
   title: string;
   state?: TaskState | null;
   summary?: string | null;
+  nextStep?: string | null;
+  riskLevel?: TaskRiskLevel | null;
+  riskNote?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 type RuntimeContextSelectedFile = {
@@ -107,6 +136,10 @@ type RuntimeContextTaskFile = {
   path: string;
   kind?: string | null;
   contentPreview?: string | null;
+  id?: string | null;
+  taskId?: string | null;
+  name?: string | null;
+  updatedAt?: string | null;
 };
 
 type RuntimeContextSourceContext = {
@@ -352,6 +385,96 @@ export function buildRuntimeContextManifest(params: {
     );
   }
 
+  const memoryRetrieval = task
+    ? summarizeRuntimeContextMemoryRetrieval(retrieveTaskExecutionMemory({
+        currentTask: {
+          id: task.id,
+          title: task.title,
+          summary: task.summary ?? null,
+          state: task.state ?? 'captured',
+          nextStep: task.nextStep ?? workingContext?.task.nextStep ?? null,
+          waitingReason: null,
+          riskLevel: task.riskLevel ?? workingContext?.task.riskLevel ?? 'none',
+          riskNote: task.riskNote ?? workingContext?.task.riskNote ?? null,
+          parentTaskId: null,
+          childTaskIds: [],
+          createdAt: task.createdAt ?? '',
+          updatedAt: task.updatedAt ?? '',
+        },
+        artifacts: workingContext?.artifacts.map((artifact, index) => ({
+          id: `artifact:${artifact.title}:${index}`,
+          taskId: task.id,
+          title: artifact.title,
+          kind: artifact.kind === 'patch' || artifact.kind === 'browser_evidence' || artifact.kind === 'run_output'
+            ? artifact.kind
+            : 'note',
+          sourceType: artifact.sourceType === 'manual' ? 'manual' : 'run',
+          sourceId: artifact.title,
+          content: artifact.contentPreview ?? '',
+          createdAt: artifact.updatedAt,
+          updatedAt: artifact.updatedAt,
+        })) ?? [],
+        blockers: workingContext?.blockers.map((blocker, index) => ({
+          id: `blocker:${index}`,
+          taskId: task.id,
+          title: blocker.title,
+          kind: 'other',
+          detail: blocker.detail,
+          owner: blocker.owner,
+          responsibility: null,
+          responsibilityLabel: null,
+          sourceContextId: null,
+          status: 'active',
+          createdAt: '',
+          updatedAt: '',
+          resolvedAt: null,
+        })) ?? [],
+        dependencies: workingContext?.dependencies.map((dependency, index) => ({
+          id: `dependency:${index}`,
+          taskId: task.id,
+          blockedByTaskId: dependency.title,
+          blockedByTaskTitle: dependency.title,
+          reason: dependency.detail,
+          status: 'active',
+          createdAt: '',
+          updatedAt: '',
+          resolvedAt: null,
+        })) ?? [],
+        processTemplates: workingContext?.processTemplates.map((template) => ({
+          id: template.id,
+          bindingId: template.id,
+          taskId: task.id,
+          title: template.title,
+          summary: template.summary,
+          content: template.summary ?? '',
+          kind: template.kind === 'skill' || template.kind === 'workflow' || template.kind === 'sop' || template.kind === 'checklist'
+            ? template.kind
+            : 'workflow',
+          tags: [],
+          status: 'active',
+          createdAt: '',
+          updatedAt: '',
+          archivedAt: null,
+          bindingStatus: 'active',
+          bindingNote: null,
+          boundAt: '',
+          bindingUpdatedAt: '',
+          removedAt: null,
+        })) ?? [],
+        sourceContexts: runtimeSourceContextsForRetrieval({ taskId: task.id, workingContext, sourceContexts: params.sourceContexts }),
+        taskFiles: runtimeTaskFilesForRetrieval({ taskId: task.id, workingContext, taskFiles: params.taskFiles }),
+        timeline: workingContext?.recentTimeline.map((event, index) => ({
+          id: `timeline:${event.type}:${event.createdAt}:${index}`,
+          taskId: task.id,
+          type: event.type,
+          payload: event.summary,
+          createdAt: event.createdAt,
+        })) ?? [],
+        workHabits: runtimeWorkHabitsForRetrieval(params.applicableWorkHabits ?? []),
+        selectedFileIds: params.selectedFile?.path ? [params.selectedFile.path] : [],
+      }))
+    : null;
+
   for (const habit of params.applicableWorkHabits ?? []) {
     const label = habit.trim();
     if (!label) continue;
@@ -377,6 +500,7 @@ export function buildRuntimeContextManifest(params: {
   return {
     activeSurface,
     items,
+    memoryRetrieval,
     summary: formatRuntimeContextManifestSummary({ activeSurface, items, task }),
     userFacingSummary: formatRuntimeContextManifestUserSummary({ activeSurface, items, task }),
   };
@@ -481,13 +605,114 @@ export function buildRuntimeContextAssemblyPolicy(params: {
 export function formatRuntimeContextManifestForStep(manifest: RuntimeContextManifest): string {
   return [
     manifest.summary,
+    manifest.memoryRetrieval
+      ? `memory_retrieval:total=${manifest.memoryRetrieval.totalCount}:included=${manifest.memoryRetrieval.includedCount}:caution=${manifest.memoryRetrieval.cautionCount}:excluded=${manifest.memoryRetrieval.excludedCount}:top=${manifest.memoryRetrieval.topResults.map((item) => `${item.kind}/${item.id}/${item.decision}/${item.reasons.join('+')}`).join('|')}`
+      : null,
     ...manifest.items.map((item) => [
       `${item.kind}:${item.id}:${item.label}:content=${item.contentIncluded ? 'yes' : 'no'}`,
       item.inclusionDecision ? `include=${item.inclusionDecision}` : null,
       item.inclusionReason ? `reason=${item.inclusionReason}` : null,
       item.note ? `note=${item.note}` : null,
     ].filter(Boolean).join(':')),
-  ].join('\n');
+  ].filter(Boolean).join('\n');
+}
+
+function summarizeRuntimeContextMemoryRetrieval(
+  results: TaskMemoryRetrievalResult[],
+): RuntimeContextMemoryRetrievalSummary {
+  return {
+    totalCount: results.length,
+    includedCount: results.filter((result) => result.decision === 'include').length,
+    cautionCount: results.filter((result) => result.decision === 'caution').length,
+    excludedCount: results.filter((result) => result.decision === 'exclude').length,
+    topResults: results.slice(0, 8).map((result) => ({
+      id: result.entity.id,
+      kind: result.entity.entityType,
+      decision: result.decision,
+      reasons: result.reasons,
+      score: result.score,
+      title: result.entity.title,
+    })),
+  };
+}
+
+function runtimeTaskFilesForRetrieval(params: {
+  taskId: string;
+  workingContext: AgentWorkingContext | null;
+  taskFiles?: RuntimeContextTaskFile[];
+}) {
+  const files = params.workingContext?.taskFiles ?? params.taskFiles ?? [];
+  return files.map((file, index) => ({
+    id: ('id' in file ? file.id : null) ?? file.path ?? `task_file:${index}`,
+    taskId: ('taskId' in file ? file.taskId : null) ?? params.taskId,
+    name: ('name' in file ? file.name : null) ?? file.path.split('/').pop() ?? file.path,
+    path: file.path,
+    kind: file.kind === 'folder' ? 'folder' as const : 'file' as const,
+    content: file.contentPreview ?? '',
+    createdAt: file.updatedAt ?? '',
+    updatedAt: file.updatedAt ?? '',
+  }));
+}
+
+function runtimeSourceContextsForRetrieval(params: {
+  taskId: string;
+  workingContext: AgentWorkingContext | null;
+  sourceContexts?: RuntimeContextSourceContext[];
+}) {
+  const sources = params.workingContext?.sources ?? params.sourceContexts ?? [];
+  return sources.map((source, index) => ({
+    id: source.id ?? `source:${source.title}:${index}`,
+    taskId: params.taskId,
+    title: source.title,
+    kind: runtimeSourceContextKind(source.kind),
+    isKey: Boolean(source.isKey),
+    uri: source.uri ?? null,
+    content: source.contentPreview ?? null,
+    note: source.note ?? null,
+    status: source.status === 'archived' ? 'archived' as const : 'active' as const,
+    capturedAt: source.capturedAt ?? undefined,
+    runId: source.runId ?? null,
+    batchId: null,
+    sourceRole: source.sourceRole ?? undefined,
+    credibility: source.credibility ?? null,
+    isDuplicate: source.isDuplicate,
+    containsSensitiveData: source.containsSensitiveData,
+    createdAt: source.createdAt ?? '',
+    updatedAt: source.updatedAt ?? '',
+    archivedAt: source.status === 'archived' ? source.updatedAt ?? null : null,
+  }));
+}
+
+function runtimeSourceContextKind(kind: string | null | undefined): SourceContextKind {
+  if (
+    kind === 'link' ||
+    kind === 'doc' ||
+    kind === 'issue' ||
+    kind === 'pr' ||
+    kind === 'website_list' ||
+    kind === 'note'
+  ) {
+    return kind;
+  }
+  return 'note';
+}
+
+function runtimeWorkHabitsForRetrieval(habits: string[]) {
+  return habits
+    .map((habit) => habit.trim())
+    .filter(Boolean)
+    .map((habit, index) => ({
+      id: `work_habit:${index}`,
+      rule: habit,
+      source: 'manual' as const,
+      scope: 'global' as const,
+      scopeLabel: 'global',
+      status: 'confirmed' as const,
+      examples: '',
+      createdAt: '',
+      lastAppliedAt: null,
+      applicationCount: 0,
+    }));
 }
 
 function formatRuntimeContextManifestSummary(params: {

@@ -108,6 +108,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryRetrieval defines a deterministic local search index and execution-memory read order before any semantic search UI or embedding work.',
       'TaskMemoryRetrieval ranks current task state and Task.md ahead of pending Decisions, blockers, dependencies, Task Records, source contexts, artifacts, task files, Work Habits, and process templates.',
       'TaskMemoryRetrieval attaches include/caution/exclude decisions and reasons, excluding archived or duplicate sources by default and surfacing selected files with caution when they are otherwise weak.',
+      'RuntimeContextManifest now consumes TaskMemoryRetrieval and emits a compact memory_retrieval line for provider-visible step context.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must explain why context was included or excluded, not only what Agent should read.',
@@ -115,11 +116,10 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points must also pass full context metadata.',
-      'TaskMemoryRetrieval is a shared data projection; current Run and RightPanel context assembly still need to consume it instead of maintaining their own read-order lists.',
+      'RuntimeContextManifest consumes TaskMemoryRetrieval for retained context assembly paths; future provider-visible entry points must keep using this manifest instead of rebuilding read-order lists.',
       'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
     ],
     nextImplementation: [
-      'Wire Run and RightPanel task-bound context assembly to TaskMemoryRetrieval once the deterministic read-order projection is stable.',
       'Require any future provider-visible execution entry point to pass full source and selected-file metadata into RuntimeContextManifest before model/provider execution.',
     ],
   },
