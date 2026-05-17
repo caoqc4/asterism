@@ -165,8 +165,11 @@ future path: it exchanges the stored refresh token for a short-lived access
 token on demand, avoids persisting access tokens, and keeps token response
 bodies out of error messages. It also creates desktop authorization URLs with
 PKCE/state and can exchange an authorization code for tokens while storing only
-the refresh token. It is still not wired into UI actions, and there is not yet a
-loopback callback listener.
+the refresh token. `createGmailOAuthLoopbackListener` provides the local
+loopback callback receiver for that future browser flow: it listens on
+`127.0.0.1` with an ephemeral port, validates state, captures only the OAuth
+code, returns a close-browser page, and closes itself. These pieces are still
+not wired into UI actions.
 `GmailConnectorAdapter` can accept an access-token provider for the future OAuth
 path. Status reads still do not refresh tokens or call Gmail; the provider is
 called only when task-bound source ingestion lists Gmail evidence.
