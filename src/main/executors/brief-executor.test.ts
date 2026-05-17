@@ -79,6 +79,7 @@ function buildHomeBriefData(): HomeBriefData {
       lastRunSweepAt: null,
     },
     processTemplateCandidates: [],
+    briefFocusTasks: [],
   };
 }
 
@@ -96,6 +97,8 @@ describe('buildFallbackBrief', () => {
     expect(brief).toContain('method=Launch workflow');
     expect(brief).toContain('推荐动作：');
     expect(brief).toContain('当前没有推荐动作');
+    expect(brief).toContain('Brief 焦点任务：');
+    expect(brief).toContain('当前没有 Brief 焦点任务');
   });
 
   it('groups recommended actions and recent activity by priority lane wording', () => {
@@ -166,6 +169,36 @@ describe('buildFallbackBrief', () => {
     expect(brief).toContain('action_escalate | lane=unblock_or_decide');
     expect(brief).toContain('优先升级阻塞项');
     expect(brief).toContain('run:draft [completed] | task=Resume task');
+  });
+
+  it('uses the same brief focus task projection as the visible Brief surface', () => {
+    const brief = buildFallbackBrief(
+      {
+        ...buildHomeBriefData(),
+        briefFocusTasks: [
+          {
+            id: 'task_focus_1',
+            title: '先处理发布阻塞',
+            lane: 'unblock',
+            status: 'blocked',
+            state: 'running',
+            parentTaskId: 'task_parent',
+            parentTitle: '发布项目',
+            whyNow: '当前阻塞影响上线。',
+            action: '解除阻塞',
+          },
+        ],
+      },
+      'startup',
+    );
+
+    expect(brief).toContain('Brief 焦点任务：');
+    expect(brief).toContain('先处理发布阻塞');
+    expect(brief).toContain('lane=unblock');
+    expect(brief).toContain('status=blocked');
+    expect(brief).toContain('parent=发布项目');
+    expect(brief).toContain('why=当前阻塞影响上线。');
+    expect(brief).toContain('action=解除阻塞');
   });
 
   it('labels brief source context as recent source material with key priority', () => {

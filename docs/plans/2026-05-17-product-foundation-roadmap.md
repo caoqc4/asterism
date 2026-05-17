@@ -452,9 +452,10 @@ attention explanations from the shared projection.
 same recommended actions, including de-duplication, parent/child filtering, and
 the five-item cap before the renderer sees it. This keeps Brief from owning a
 second task-selection rule while preserving the current layout.
-`BriefExecutor` also consumes the attention summary, so scheduled/fallback
-briefs preserve the rule that Brief is a capped attention summary and Tasks
-owns the full queue.
+`BriefExecutor` also consumes the focus-task projection and attention summary,
+so scheduled/fallback briefs preserve the same visible focus list while keeping
+the rule that Brief is a capped attention summary and Tasks owns the full
+queue.
 
 ## Recommended Execution Order
 

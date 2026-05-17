@@ -56,6 +56,22 @@ function formatBriefAttentionLine(
   return `- ${item.actionId} | lane=${item.lane} | task=${item.taskId ?? 'none'} | reason=${item.reason}`;
 }
 
+function formatBriefFocusTaskLine(
+  task: NonNullable<HomeBriefData['briefFocusTasks']>[number],
+): string {
+  const parts = [
+    `- ${task.title}`,
+    `lane=${task.lane}`,
+    task.status ? `status=${task.status}` : null,
+    task.state ? `state=${task.state}` : null,
+    task.parentTitle ? `parent=${task.parentTitle}` : null,
+    `why=${task.whyNow}`,
+    `action=${task.action}`,
+  ];
+
+  return parts.filter(Boolean).join(' | ');
+}
+
 function formatRecentActivityLine(
   sourceType: string,
   title: string,
@@ -209,6 +225,9 @@ export function buildFallbackBrief(
           ),
       ).join('\n')
     : '- 当前没有推荐动作';
+  const focusTaskLines = homeData.briefFocusTasks?.length
+    ? homeData.briefFocusTasks.map((task) => formatBriefFocusTaskLine(task)).join('\n')
+    : '- 当前没有 Brief 焦点任务';
   const attentionLines = homeData.briefAttention?.items.length
     ? [
         `- ${homeData.briefAttention.summary}`,
@@ -258,6 +277,9 @@ export function buildFallbackBrief(
     '',
     '推荐动作：',
     recommendedActionLines,
+    '',
+    'Brief 焦点任务：',
+    focusTaskLines,
     '',
     'Brief 注意力边界：',
     attentionLines,
@@ -363,6 +385,11 @@ function buildPrompt(
               action.responsibilitySummary,
             ),
         )
+      : ['- 无']),
+    '',
+    'Brief 焦点任务：',
+    ...(homeData.briefFocusTasks?.length
+      ? homeData.briefFocusTasks.map((task) => formatBriefFocusTaskLine(task))
       : ['- 无']),
     '',
     'Brief 注意力边界：',
