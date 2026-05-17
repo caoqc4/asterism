@@ -140,6 +140,75 @@ describe('GmailOAuthService', () => {
     expect((error as Error).message).toBe('Gmail OAuth token refresh failed: 400 Bad Request');
     expect((error as Error).message).not.toContain('refresh-token-secret');
   });
+
+  it('revokes and clears the stored refresh token on disconnect', async () => {
+    const tokenStore = tokenStoreWithRefreshToken('refresh-token-secret');
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+    const service = new GmailOAuthService({
+      clientId: 'client-id-1',
+      tokenStore,
+      revokeEndpoint: 'https://oauth.test/revoke',
+      fetchImpl: fetchImpl as never,
+    });
+
+    await expect(service.disconnect()).resolves.toEqual({
+      hadRefreshToken: true,
+      revoked: true,
+      localTokenCleared: true,
+      errorReason: null,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0][0]).toBe('https://oauth.test/revoke');
+    expect(String(fetchImpl.mock.calls[0][1].body)).toContain('token=refresh-token-secret');
+    expect(tokenStore.deleteRefreshToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the stored refresh token even when revoke fails without leaking token values', async () => {
+    const tokenStore = tokenStoreWithRefreshToken('refresh-token-secret');
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: 'invalid_token',
+      error_description: 'refresh-token-secret leaked here',
+    }), {
+      status: 400,
+      statusText: 'Bad Request',
+      headers: { 'content-type': 'application/json' },
+    }));
+    const service = new GmailOAuthService({
+      clientId: 'client-id-1',
+      tokenStore,
+      fetchImpl: fetchImpl as never,
+    });
+
+    const result = await service.disconnect();
+
+    expect(result).toMatchObject({
+      hadRefreshToken: true,
+      revoked: false,
+      localTokenCleared: true,
+      errorReason: 'Gmail OAuth token revoke failed: 400 Bad Request',
+    });
+    expect(result.errorReason).not.toContain('refresh-token-secret');
+    expect(tokenStore.deleteRefreshToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats disconnect without a refresh token as local cleanup only', async () => {
+    const tokenStore = tokenStoreWithRefreshToken(null);
+    const fetchImpl = vi.fn();
+    const service = new GmailOAuthService({
+      clientId: 'client-id-1',
+      tokenStore,
+      fetchImpl: fetchImpl as never,
+    });
+
+    await expect(service.disconnect()).resolves.toEqual({
+      hadRefreshToken: false,
+      revoked: false,
+      localTokenCleared: true,
+      errorReason: null,
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(tokenStore.deleteRefreshToken).toHaveBeenCalledTimes(1);
+  });
 });
 
 function tokenStoreWithRefreshToken(refreshToken: string | null): GmailOAuthTokenStore {

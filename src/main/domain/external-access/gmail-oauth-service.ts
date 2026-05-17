@@ -4,6 +4,7 @@ import type { GmailOAuthTokenStore } from './gmail-oauth-token-store.js';
 
 const GOOGLE_OAUTH_AUTHORIZATION_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_OAUTH_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+const GOOGLE_OAUTH_REVOKE_ENDPOINT = 'https://oauth2.googleapis.com/revoke';
 const DEFAULT_GMAIL_OAUTH_SCOPE = 'https://www.googleapis.com/auth/gmail.metadata';
 
 type FetchLike = typeof fetch;
@@ -14,6 +15,7 @@ export type GmailOAuthServiceOptions = {
   tokenStore: GmailOAuthTokenStore;
   authorizationEndpoint?: string;
   tokenEndpoint?: string;
+  revokeEndpoint?: string;
   fetchImpl?: FetchLike;
   randomBytesImpl?: (size: number) => Buffer;
 };
@@ -44,6 +46,13 @@ export type GmailOAuthCodeExchangeInput = {
   redirectUri: string;
 };
 
+export type GmailOAuthDisconnectResult = {
+  hadRefreshToken: boolean;
+  revoked: boolean;
+  localTokenCleared: boolean;
+  errorReason: string | null;
+};
+
 type TokenResponse = {
   access_token?: unknown;
   expires_in?: unknown;
@@ -56,12 +65,14 @@ export class GmailOAuthService {
   private readonly fetchImpl: FetchLike;
   private readonly authorizationEndpoint: string;
   private readonly tokenEndpoint: string;
+  private readonly revokeEndpoint: string;
   private readonly randomBytesImpl: (size: number) => Buffer;
 
   constructor(private readonly options: GmailOAuthServiceOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.authorizationEndpoint = options.authorizationEndpoint ?? GOOGLE_OAUTH_AUTHORIZATION_ENDPOINT;
     this.tokenEndpoint = options.tokenEndpoint ?? GOOGLE_OAUTH_TOKEN_ENDPOINT;
+    this.revokeEndpoint = options.revokeEndpoint ?? GOOGLE_OAUTH_REVOKE_ENDPOINT;
     this.randomBytesImpl = options.randomBytesImpl ?? randomBytes;
   }
 
@@ -137,6 +148,36 @@ export class GmailOAuthService {
     return tokenFromPayload(payload, 'Gmail OAuth token refresh did not return an access token.');
   }
 
+  async disconnect(): Promise<GmailOAuthDisconnectResult> {
+    const refreshToken = await this.options.tokenStore.getRefreshToken();
+    if (!refreshToken) {
+      await this.options.tokenStore.deleteRefreshToken();
+      return {
+        hadRefreshToken: false,
+        revoked: false,
+        localTokenCleared: true,
+        errorReason: null,
+      };
+    }
+
+    let revoked = false;
+    let errorReason: string | null = null;
+    try {
+      revoked = await this.revokeToken(refreshToken);
+    } catch (error) {
+      errorReason = error instanceof Error ? error.message : 'Gmail OAuth revoke failed.';
+    } finally {
+      await this.options.tokenStore.deleteRefreshToken();
+    }
+
+    return {
+      hadRefreshToken: true,
+      revoked,
+      localTokenCleared: true,
+      errorReason,
+    };
+  }
+
   private async postTokenRequest(body: URLSearchParams, errorPrefix: string): Promise<TokenResponse> {
     const response = await this.fetchImpl(this.tokenEndpoint, {
       method: 'POST',
@@ -152,6 +193,23 @@ export class GmailOAuthService {
     }
 
     return await response.json() as TokenResponse;
+  }
+
+  private async revokeToken(token: string): Promise<boolean> {
+    const response = await this.fetchImpl(this.revokeEndpoint, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ token }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gmail OAuth token revoke failed: ${response.status} ${response.statusText}`.trim());
+    }
+
+    return true;
   }
 
   private requireClientId(): string {

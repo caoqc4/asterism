@@ -173,6 +173,9 @@ not wired into UI actions. `createGmailOAuthAuthorizationSession` composes those
 pieces into a browser-flow session for future callers: it returns the
 authorization URL and completes only after the loopback callback is received and
 the code exchange stores the refresh token.
+`GmailOAuthService.disconnect()` provides the future disconnect primitive: it
+revokes the stored refresh token when one exists, always deletes the local
+keychain refresh token, and keeps revoke response bodies out of surfaced errors.
 `GmailConnectorAdapter` can accept an access-token provider for the future OAuth
 path. Status reads still do not refresh tokens or call Gmail; the provider is
 called only when task-bound source ingestion lists Gmail evidence.
