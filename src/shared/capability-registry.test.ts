@@ -203,6 +203,97 @@ describe('capability registry', () => {
       missingReason: 'Browser plugin unavailable.',
     });
   });
+
+  it('uses scaffold summaries for reserved skill, mcp, and browser capability rows', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({
+        aiStatus: aiStatus({
+          toolScaffoldSummaries: [
+            toolSummary(),
+            toolSummary({
+              family: 'skill',
+              descriptorIds: ['skill.prompt_shape'],
+              implementedCount: 0,
+              reservedCount: 1,
+              checkpointRequiredIds: [],
+              modelVisibleIds: [],
+              summary: 'skill scaffold reserved',
+            }),
+            toolSummary({
+              family: 'mcp',
+              descriptorIds: ['mcp.safe_read'],
+              implementedCount: 0,
+              reservedCount: 1,
+              checkpointRequiredIds: [],
+              credentialGatedIds: ['mcp.safe_read'],
+              modelVisibleIds: [],
+              summary: 'mcp scaffold reserved',
+            }),
+            toolSummary({
+              family: 'browser_playwright',
+              descriptorIds: ['browser.readonly_evidence', 'browser.controlled_interaction'],
+              implementedCount: 0,
+              reservedCount: 2,
+              checkpointRequiredIds: [],
+              credentialGatedIds: ['browser.readonly_evidence'],
+              localVerificationRequiredIds: ['browser.readonly_evidence'],
+              modelVisibleIds: [],
+              summary: 'browser scaffold reserved',
+            }),
+          ],
+        }),
+      }),
+    });
+
+    expect(registry.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'unconfigured',
+      configured: false,
+      visibility: 'hidden',
+      summary: 'skill scaffold reserved',
+    });
+    expect(registry.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
+      status: 'unconfigured',
+      configured: false,
+      visibility: 'hidden',
+      requiresApproval: true,
+      summary: 'mcp scaffold reserved',
+    });
+    expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
+      status: 'unconfigured',
+      configured: false,
+      visibility: 'hidden',
+      requiresApproval: true,
+      requiredGate: 'runtime_pre_step',
+      summary: 'browser scaffold reserved',
+    });
+  });
+
+  it('does not mark implemented scaffold families available unless they are model-visible', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({
+        aiStatus: aiStatus({
+          toolScaffoldSummaries: [
+            toolSummary(),
+            toolSummary({
+              family: 'skill',
+              descriptorIds: ['skill.local_only'],
+              implementedCount: 1,
+              reservedCount: 0,
+              modelVisibleIds: [],
+              summary: 'skill implemented but hidden',
+            }),
+          ],
+        }),
+      }),
+    });
+
+    expect(registry.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'disabled',
+      configured: false,
+      visibility: 'hidden',
+      summary: 'skill implemented but hidden',
+    });
+  });
 });
 
 function aiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
@@ -231,7 +322,9 @@ function aiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
   };
 }
 
-function toolSummary(): AgentToolScaffoldFamilySummary {
+function toolSummary(
+  partial: Partial<AgentToolScaffoldFamilySummary> = {},
+): AgentToolScaffoldFamilySummary {
   return {
     family: 'task_domain',
     descriptorIds: ['task.inspect_context', 'task.update'],
@@ -246,5 +339,6 @@ function toolSummary(): AgentToolScaffoldFamilySummary {
     localVerificationRequiredIds: [],
     modelVisibleIds: ['task.inspect_context'],
     summary: 'task tools',
+    ...partial,
   };
 }

@@ -1,3 +1,4 @@
+import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { RuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 
 export type CapabilityRegistryStatus =
@@ -207,9 +208,9 @@ export function buildCapabilityRegistry(params: {
       summary: `checkpointTools=${checkpointToolCount}`,
     },
     externalAccessCapability(productSurfaces?.externalAccess ?? null),
-    skillsCapability(productSurfaces?.skills ?? null),
-    mcpCapability(productSurfaces?.mcp ?? null),
-    browserCapability(productSurfaces?.browser ?? null),
+    skillsCapability(productSurfaces?.skills ?? null, findToolFamily(snapshot, 'skill')),
+    mcpCapability(productSurfaces?.mcp ?? null, findToolFamily(snapshot, 'mcp')),
+    browserCapability(productSurfaces?.browser ?? null, findToolFamily(snapshot, 'browser_playwright')),
   ];
 }
 
@@ -280,6 +281,13 @@ function deferredCapability(
   };
 }
 
+function findToolFamily(
+  snapshot: RuntimeCapabilitySnapshot | null,
+  family: AgentToolScaffoldFamilySummary['family'],
+): AgentToolScaffoldFamilySummary | null {
+  return snapshot?.tools.summaries.find((summary) => summary.family === family) ?? null;
+}
+
 function externalAccessCapability(
   status: NonNullable<CapabilityProductSurfaceStatus['externalAccess']> | null,
 ): CapabilityRegistryEntry {
@@ -302,8 +310,18 @@ function externalAccessCapability(
 
 function skillsCapability(
   status: NonNullable<CapabilityProductSurfaceStatus['skills']> | null,
+  scaffold: AgentToolScaffoldFamilySummary | null,
 ): CapabilityRegistryEntry {
-  if (!status) return deferredCapability('skills.catalogue', 'Skills', 'skill');
+  if (!status) {
+    return toolScaffoldCapability({
+      id: 'skills.catalogue',
+      label: 'Skills',
+      family: 'skill',
+      scaffold,
+      access: 'mixed',
+      requiredGate: 'runtime_entrypoint_coverage',
+    });
+  }
   const enabled = status.enabledCount > 0 && status.readyCount > 0;
   return {
     id: 'skills.catalogue',
@@ -322,8 +340,18 @@ function skillsCapability(
 
 function mcpCapability(
   status: NonNullable<CapabilityProductSurfaceStatus['mcp']> | null,
+  scaffold: AgentToolScaffoldFamilySummary | null,
 ): CapabilityRegistryEntry {
-  if (!status) return deferredCapability('mcp.servers', 'MCP Servers', 'mcp');
+  if (!status) {
+    return toolScaffoldCapability({
+      id: 'mcp.servers',
+      label: 'MCP Servers',
+      family: 'mcp',
+      scaffold,
+      access: 'mixed',
+      requiredGate: 'runtime_entrypoint_coverage',
+    });
+  }
   const connected = status.connectedServerCount > 0 && status.toolCount > 0;
   return {
     id: 'mcp.servers',
@@ -342,8 +370,18 @@ function mcpCapability(
 
 function browserCapability(
   status: NonNullable<CapabilityProductSurfaceStatus['browser']> | null,
+  scaffold: AgentToolScaffoldFamilySummary | null,
 ): CapabilityRegistryEntry {
-  if (!status) return deferredCapability('browser.operator', 'Browser Operator', 'browser');
+  if (!status) {
+    return toolScaffoldCapability({
+      id: 'browser.operator',
+      label: 'Browser Operator',
+      family: 'browser',
+      scaffold,
+      access: 'mutating',
+      requiredGate: 'runtime_pre_step',
+    });
+  }
   return {
     id: 'browser.operator',
     label: 'Browser Operator',
@@ -356,5 +394,34 @@ function browserCapability(
     requiresApproval: true,
     requiredGate: 'runtime_pre_step',
     summary: status.reason ?? `browser=${status.available ? 'available' : 'disabled'}`,
+  };
+}
+
+function toolScaffoldCapability(params: {
+  id: string;
+  label: string;
+  family: CapabilityRegistryEntry['family'];
+  scaffold: AgentToolScaffoldFamilySummary | null;
+  access: CapabilityAccess;
+  requiredGate: CapabilityRuntimeGate;
+}): CapabilityRegistryEntry {
+  if (!params.scaffold) {
+    return deferredCapability(params.id, params.label, params.family);
+  }
+  const modelVisible = params.scaffold.modelVisibleIds.length > 0;
+  const hasReserved = params.scaffold.reservedCount > 0;
+  const configured = modelVisible;
+  return {
+    id: params.id,
+    label: params.label,
+    family: params.family,
+    status: configured ? 'available' : hasReserved ? 'unconfigured' : 'disabled',
+    configured,
+    missingReason: configured ? null : 'Capability family is not configured for model-visible use.',
+    visibility: modelVisible ? 'model_visible' : 'hidden',
+    access: params.access,
+    requiresApproval: params.scaffold.checkpointRequiredIds.length > 0 || params.scaffold.credentialGatedIds.length > 0,
+    requiredGate: params.requiredGate,
+    summary: params.scaffold.summary,
   };
 }

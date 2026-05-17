@@ -77,6 +77,10 @@ describe('runtime capability snapshot', () => {
         modelVisibleCount: 1,
         checkpointRequiredCount: 1,
         families: ['task_domain'],
+        summaries: [expect.objectContaining({
+          family: 'task_domain',
+          modelVisibleIds: ['task.inspect_context'],
+        })],
       },
     });
     expect(snapshot.summary).toContain('model=configured');

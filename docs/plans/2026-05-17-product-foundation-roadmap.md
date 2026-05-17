@@ -145,7 +145,11 @@ future capability-facing UI can consume one shared data model. Sandbox coding
 availability is based on feature flag plus backend probe/readiness, not the
 feature flag alone. External Access, Skills, MCP, and browser/operator rows now
 have an optional product-surface status input so they can be promoted from
-deferred rows once their pages or services expose structured status.
+deferred rows once their pages or services expose structured status. The
+runtime snapshot also preserves tool scaffold family summaries, allowing Skills,
+MCP, and browser/operator to appear as explicit hidden/unconfigured reserved
+rows instead of generic deferred rows before their product pages expose richer
+status. External Access remains deferred until connector status is available.
 
 ## Package C: Search, Retrieval, And Reference Index
 

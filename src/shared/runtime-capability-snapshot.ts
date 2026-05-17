@@ -1,4 +1,4 @@
-import type { AgentToolScaffoldFamily } from './agent-tool-scaffold.js';
+import type { AgentToolScaffoldFamily, AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AiConfigStatus } from './types/settings.js';
 
 export type RuntimeCapabilityStatus = 'available' | 'disabled' | 'unknown';
@@ -32,6 +32,7 @@ export type RuntimeCapabilitySnapshot = {
     modelVisibleCount: number;
     checkpointRequiredCount: number;
     families: AgentToolScaffoldFamily[];
+    summaries: AgentToolScaffoldFamilySummary[];
   };
   summary: string;
 };
@@ -81,6 +82,7 @@ export function buildRuntimeCapabilitySnapshot(params: {
       modelVisibleCount,
       checkpointRequiredCount,
       families: toolSummaries.map((family) => family.family),
+      summaries: toolSummaries.map((family) => ({ ...family })),
     },
     summary: '',
   };
