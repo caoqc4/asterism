@@ -80,6 +80,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'HomeBriefData exposes BriefAttentionBoundary lanes and reasons beside recommendedActions while retaining the existing Brief layout contract.',
       'BriefFocusProjection keeps Brief task-card inclusion, de-duplication, and parent/child filtering in shared projection data instead of page-local ordering logic.',
       'BriefExecutor consumes HomeBriefData.briefFocusTasks and briefAttention so generated or fallback briefs preserve the same visible focus list, display-limit, and attention-boundary wording.',
+      'BriefProcessTemplateSelector includes HomeBriefData.briefFocusTasks when deciding whether method templates should influence a generated brief.',
       'buildAgentWorkingContext and buildRuntimeContextManifest project task state, sources with freshness metadata, artifacts, files, timeline, and work habits.',
       'RuntimeCapabilitySnapshot can be included in RuntimeContextManifest so model, workspace, flags, and tool scaffold state become explicit context assembly inputs.',
       'RuntimeCapabilitySnapshot preserves full tool scaffold family summaries for capability registry consumers.',

@@ -31,8 +31,9 @@ function buildHomeData(): HomeBriefData {
     recentSourceContexts: [],
     recentTaskResumes: [],
     recentActivity: [],
-    recentBriefSnapshots: [],
-    schedulerStatus: {
+      recentBriefSnapshots: [],
+      briefFocusTasks: [],
+      schedulerStatus: {
       enabled: true,
       running: true,
       lastBriefAt: null,
@@ -97,6 +98,16 @@ describe('BriefProcessTemplateSelector', () => {
           notes: ['Use for risky work'],
         },
       ],
+      briefFocusTasks: [
+        {
+          id: 'task_1',
+          title: 'Task 1',
+          lane: 'escalate',
+          status: 'blocked',
+          whyNow: '当前阻塞影响发布。',
+          action: '解除阻塞',
+        },
+      ],
     };
 
     const result = await selector.select(
@@ -116,6 +127,11 @@ describe('BriefProcessTemplateSelector', () => {
     expect(generateObjectMock).toHaveBeenCalledWith(
       expect.objectContaining({
         prompt: expect.stringContaining('当前优先级语义：稳态推进。组织输出时优先围绕现有下一步平稳推进。'),
+      }),
+    );
+    expect(generateObjectMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('Brief 焦点任务：Task 1 [lane=escalate status=blocked] (当前阻塞影响发布。)'),
       }),
     );
     expect(result).toEqual({

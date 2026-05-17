@@ -138,6 +138,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'HomeBriefData now carries the BriefAttentionBoundary summary next to recommendedActions, so retained Brief consumers can read attention lanes without changing the current layout.',
       'BriefFocusProjection turns recommended actions into the capped Brief task-card list with shared de-duplication, parent/child filtering, and display-limit behavior before the page renders it.',
       'BriefExecutor consumes HomeBriefData.briefFocusTasks and briefAttention so scheduled or fallback briefs preserve the visible focus list, attention-summary boundary, and display-limit explanation.',
+      'BriefProcessTemplateSelector uses the same HomeBriefData.briefFocusTasks when selecting method templates for generated briefs.',
     ],
     outOfAgentPrinciplesScope: [
       'Brief and priority queue design are product attention mechanics, not Agent execution rules.',

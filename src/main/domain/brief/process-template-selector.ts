@@ -24,6 +24,13 @@ function buildSelectionPrompt(
   templates: BriefProcessTemplateCandidate[],
 ): string {
   const lane = homeData.priorityLane ?? 'steady';
+  const focusTaskLines = homeData.briefFocusTasks?.length
+    ? homeData.briefFocusTasks
+        .map((task) =>
+          `${task.title} [lane=${task.lane}${task.status ? ` status=${task.status}` : ''}] (${task.whyNow})`,
+        )
+        .join(' | ')
+    : '无';
   const templateLines = templates
     .map(
       (item) =>
@@ -49,6 +56,7 @@ function buildSelectionPrompt(
     `最近动态：${homeData.recentActivity
       .map((event) => `${event.sourceType}:${event.title}[${event.status}]`)
       .join(' | ') || '无'}`,
+    `Brief 焦点任务：${focusTaskLines}`,
     `推荐动作：${homeData.recommendedActions
       .map((action) => `${action.label} (${action.reason})`)
       .join(' | ') || '无'}`,

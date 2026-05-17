@@ -456,6 +456,10 @@ second task-selection rule while preserving the current layout.
 so scheduled/fallback briefs preserve the same visible focus list while keeping
 the rule that Brief is a capped attention summary and Tasks owns the full
 queue.
+`BriefProcessTemplateSelector` uses that same focus-task projection when
+deciding whether method templates should influence a generated brief, so method
+selection follows the visible attention surface instead of a separate hidden
+task list.
 
 ## Recommended Execution Order
 
