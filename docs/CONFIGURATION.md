@@ -154,6 +154,11 @@ callback, refresh-token storage in keychain, access tokens kept short-lived, and
 continued task-bound connector ingestion. Gmail OAuth remains out of the default
 local acceptance gate until that flow is implemented and guarded by mocked and
 explicitly opted-in live validation.
+The first credential foundation is `GmailOAuthTokenStore`, which reserves the
+keychain account `external_access_gmail_refresh_token` for future OAuth refresh
+tokens. That store is not yet connected to Gmail network reads; the existing
+environment access-token path remains the only live Gmail connector path until
+the refresh service is implemented.
 
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does
