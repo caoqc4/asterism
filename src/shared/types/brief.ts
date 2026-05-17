@@ -198,6 +198,10 @@ export type HomeBriefFocusTask = {
   lane: BriefFocusLane;
   whyNow: string;
   action: string;
+  sourceActionId?: string;
+  rank?: number;
+  attentionLane?: BriefAttentionLane;
+  attentionReason?: string;
   state?: HomeTaskSliceRecord['state'];
   status?: BriefFocusStatus;
   parentTaskId?: string | null;

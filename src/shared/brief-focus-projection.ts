@@ -7,6 +7,10 @@ import type {
   PriorityLane,
   RecommendedAction,
 } from './types/brief.js';
+import {
+  briefAttentionLaneForCandidate,
+  briefAttentionReasonForCandidate,
+} from './brief-attention-boundary.js';
 
 export type BriefFocusProjectionInput = {
   tasks: HomeTaskSliceRecord[];
@@ -84,17 +88,28 @@ export function projectBriefFocusTasks({
       seen.add(action.taskId);
       return true;
     })
-    .map((action) => {
+    .map((action, index) => {
       const taskId = action.taskId!;
       const task = taskById.get(taskId);
       const status = statusFromBriefTask(task) ?? statusFromRecommendedAction(action);
       const parentTaskId = task?.parentTaskId ?? null;
+      const priorityCandidate = {
+        id: action.id,
+        taskId: action.taskId,
+        lane: action.lane ?? 'steady',
+        priority: action.priority,
+        order: index,
+      };
       return {
         id: taskId,
         title: task?.title ?? titleById.get(taskId) ?? titleFromRecommendedAction(action),
         lane: laneFromPriorityLane(action.lane),
         whyNow: action.reason,
         action: actionLabelFromStatus(status, action.label),
+        sourceActionId: action.id,
+        rank: index + 1,
+        attentionLane: briefAttentionLaneForCandidate(priorityCandidate),
+        attentionReason: briefAttentionReasonForCandidate(priorityCandidate),
         state: task?.state,
         status,
         parentTaskId,

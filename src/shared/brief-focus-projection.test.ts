@@ -22,10 +22,17 @@ describe('brief focus projection', () => {
     });
 
     expect(focusTasks.map((item) => item.id)).toEqual(['task_1', 'task_2']);
+    expect(focusTasks[0]).toMatchObject({
+      sourceActionId: 'next-step:task_1',
+      rank: 1,
+      attentionLane: 'continue_next_step',
+    });
     expect(focusTasks[1]).toMatchObject({
       id: 'task_2',
       status: 'waiting',
       action: '起草跟进',
+      rank: 2,
+      attentionReason: expect.stringContaining('Shared priority order'),
     });
   });
 

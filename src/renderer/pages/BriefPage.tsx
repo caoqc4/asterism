@@ -78,6 +78,25 @@ function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
   return data.briefFocusTasks ?? projectBriefFocusTasksFromHomeData(data);
 }
 
+function briefDisplaySummary(data: HomeBriefData | null, visibleCount: number): string {
+  const attention = data?.briefAttention;
+  if (!attention) {
+    return `显示 ${visibleCount} 件；与 Tasks 共用优先处理信号，拖拽只调整今日顺序。`;
+  }
+  const prefix = attention.truncated
+    ? `显示前 ${attention.displayedCount}/${attention.totalCount} 件`
+    : `显示 ${attention.displayedCount} 件`;
+  return `${prefix}；与 Tasks 共用同一排序，Brief 只做今日注意力摘要。`;
+}
+
+function focusAttentionLabel(task: FocusTask): string {
+  if (task.attentionLane === 'unblock_or_decide') return '需要先解除阻塞、拍板或确认依赖。';
+  if (task.attentionLane === 'review_evidence') return '有新的来源或产出可能影响下一步。';
+  if (task.attentionLane === 'external_signal') return '外部信号需要确认后才进入任务上下文。';
+  if (task.attentionLane === 'recent_outcome') return '近期结果或接近完成状态需要复核。';
+  return '这是共享优先队列中的下一项可行动任务。';
+}
+
 export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPageProps) {
   const [tasks, setTasks] = useState<FocusTask[]>([]);
   const [signals, setSignals] = useState<ExternalSignal[]>([]);
@@ -252,7 +271,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       <div className="brief-section">
         <div className="brief-section-label">内部信息</div>
         <div className="brief-section-note">
-          按 Tasks 的优先处理信号排列；这里不是单独看板，拖拽只调整今日顺序。
+          {briefDisplaySummary(briefData, tasks.length)}
         </div>
         <div className="focus-list">
           {orderAdjusted && (
@@ -500,6 +519,10 @@ function FocusCard({
           <div className="focus-parent">所属项目：{task.parentTitle}</div>
         )}
         <div className={whyNowClass}>{task.whyNow}</div>
+        <div className="focus-explain">
+          {typeof task.rank === 'number' && <span>#{task.rank}</span>}
+          <span>入选依据：{focusAttentionLabel(task)}</span>
+        </div>
       </div>
 
       {/* Actions */}

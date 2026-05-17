@@ -812,8 +812,8 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
-    expect(screen.getByText(/按 Tasks 的优先处理信号排列/)).toBeTruthy();
-    expect(screen.getByText(/这里不是单独看板/)).toBeTruthy();
+    expect(screen.getByText(/与 Tasks 共用/)).toBeTruthy();
+    expect(screen.getAllByText(/入选依据/).length).toBeGreaterThan(0);
     expect(screen.getByText('暂无外部信号。')).toBeTruthy();
     expect(screen.getByText(/等待你确认是否长成任务/)).toBeTruthy();
   });
