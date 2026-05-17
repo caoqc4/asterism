@@ -82,6 +82,23 @@ describe('WorkHabitService learning boundary', () => {
     });
   });
 
+  it('does not duplicate equivalent manually created habits through the service boundary', async () => {
+    const service = new WorkHabitService(new FakeWorkHabitRepository() as never);
+
+    await service.createManual({
+      rule: '董事会材料发出前先更新现金流页',
+      scope: 'task_type',
+      scopeLabel: '董事会材料',
+    });
+    const habits = await service.createManual({
+      rule: '董事会材料发出前先更新现金流页',
+      scope: 'task_type',
+      scopeLabel: '董事会材料',
+    });
+
+    expect(habits.filter((habit) => habit.rule.includes('董事会材料发出前'))).toHaveLength(1);
+  });
+
   it('persists conflicting proposals so the retained conflict resolver can decide', async () => {
     const repository = new FakeWorkHabitRepository([workHabit({
       id: 'habit_confirmed',

@@ -102,6 +102,16 @@ export function createManualWorkHabitInList(
 ): WorkHabitRecord[] {
   const rule = input.rule.trim();
   if (!rule) return habits;
+  const scopeLabel = input.scopeLabel.trim() || scopeFallbackLabel(input.scope);
+  const equivalent = habits.find((habit) => (
+    habit.scope === input.scope
+    && habit.scopeLabel.trim() === scopeLabel
+    && normalizeRule(habit.rule) === normalizeRule(rule)
+  ));
+
+  if (equivalent) {
+    return habits;
+  }
 
   return [
     {
@@ -109,7 +119,7 @@ export function createManualWorkHabitInList(
       rule,
       source: 'manual',
       scope: input.scope,
-      scopeLabel: input.scopeLabel.trim() || scopeFallbackLabel(input.scope),
+      scopeLabel,
       status: 'confirmed',
       examples: input.examples?.trim() || '用户手动创建',
       createdAt: now,

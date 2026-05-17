@@ -94,6 +94,21 @@ describe('work habit conflict handling', () => {
     expect(loadWorkHabits()[0]?.source).toBe('manual');
   });
 
+  it('does not duplicate equivalent user-authored habits in the same scope', () => {
+    createManualWorkHabit({
+      rule: '董事会材料发出前先更新现金流页',
+      scope: 'task_type',
+      scopeLabel: '董事会材料',
+    });
+    const habits = createManualWorkHabit({
+      rule: ' 董事会材料发出前先更新现金流页 ',
+      scope: 'task_type',
+      scopeLabel: '董事会材料',
+    });
+
+    expect(habits.filter((habit) => habit.rule.includes('董事会材料发出前'))).toHaveLength(1);
+  });
+
   it('selects applicable habits by project, task type, then global priority', () => {
     saveWorkHabits([
       buildHabit({

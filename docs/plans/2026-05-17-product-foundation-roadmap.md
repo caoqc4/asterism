@@ -417,8 +417,9 @@ surfaces require confirmation before they affect future execution.
 proposal and SOP-template writes, so task-specific corrections are rejected at
 the service boundary instead of relying on UI or prompt discipline. Equivalent
 confirmed Work Habits are not duplicated into new pending proposals, and
-SOP-template habit writes now deduplicate equivalent reusable step shapes across
-tasks before adding another retained learning item.
+manual habit creation also reuses the shared dedupe rule for equivalent scope /
+rule pairs. SOP-template habit writes now deduplicate equivalent reusable step
+shapes across tasks before adding another retained learning item.
 
 ## Package G: Brief And Attention System
 
