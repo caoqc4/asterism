@@ -4,6 +4,69 @@ import type { GmailOAuthTokenStore } from './gmail-oauth-token-store.js';
 import { GmailOAuthService } from './gmail-oauth-service.js';
 
 describe('GmailOAuthService', () => {
+  it('creates a desktop authorization URL with PKCE and state', () => {
+    const service = new GmailOAuthService({
+      clientId: 'client-id-1',
+      tokenStore: tokenStoreWithRefreshToken(null),
+      authorizationEndpoint: 'https://oauth.test/auth',
+      randomBytesImpl: (size) => Buffer.alloc(size, 1),
+    });
+
+    const request = service.createAuthorizationRequest({
+      redirectUri: 'http://127.0.0.1:49152/oauth/gmail/callback',
+      scope: ['https://www.googleapis.com/auth/gmail.metadata'],
+    });
+    const url = new URL(request.authorizationUrl);
+
+    expect(url.origin + url.pathname).toBe('https://oauth.test/auth');
+    expect(url.searchParams.get('client_id')).toBe('client-id-1');
+    expect(url.searchParams.get('redirect_uri')).toBe('http://127.0.0.1:49152/oauth/gmail/callback');
+    expect(url.searchParams.get('response_type')).toBe('code');
+    expect(url.searchParams.get('access_type')).toBe('offline');
+    expect(url.searchParams.get('include_granted_scopes')).toBe('true');
+    expect(url.searchParams.get('prompt')).toBe('consent');
+    expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(url.searchParams.get('scope')).toBe('https://www.googleapis.com/auth/gmail.metadata');
+    expect(url.searchParams.get('state')).toBe(request.state);
+    expect(request.codeVerifier).not.toContain('=');
+    expect(request.state).not.toContain('=');
+  });
+
+  it('exchanges an authorization code and persists only the returned refresh token', async () => {
+    const tokenStore = tokenStoreWithRefreshToken(null);
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({
+      access_token: 'access-token-short-lived',
+      expires_in: 3600,
+      refresh_token: 'refresh-token-secret',
+      scope: 'https://www.googleapis.com/auth/gmail.metadata',
+      token_type: 'Bearer',
+    }));
+    const service = new GmailOAuthService({
+      clientId: 'client-id-1',
+      tokenStore,
+      tokenEndpoint: 'https://oauth.test/token',
+      fetchImpl: fetchImpl as never,
+    });
+
+    const token = await service.exchangeAuthorizationCode({
+      code: 'code-1',
+      codeVerifier: 'verifier-1',
+      redirectUri: 'http://127.0.0.1:49152/oauth/gmail/callback',
+    });
+
+    expect(token).toMatchObject({
+      accessToken: 'access-token-short-lived',
+      refreshToken: 'refresh-token-secret',
+      expiresIn: 3600,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [, init] = fetchImpl.mock.calls[0];
+    expect(String(init.body)).toContain('grant_type=authorization_code');
+    expect(String(init.body)).toContain('code=code-1');
+    expect(String(init.body)).toContain('code_verifier=verifier-1');
+    expect(tokenStore.setRefreshToken).toHaveBeenCalledWith('refresh-token-secret');
+  });
+
   it('refreshes an access token without persisting the access token', async () => {
     const tokenStore = tokenStoreWithRefreshToken('refresh-token-secret');
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({
@@ -25,6 +88,7 @@ describe('GmailOAuthService', () => {
     expect(token).toEqual({
       accessToken: 'access-token-short-lived',
       expiresIn: 3600,
+      refreshToken: null,
       scope: 'https://www.googleapis.com/auth/gmail.metadata',
       tokenType: 'Bearer',
     });

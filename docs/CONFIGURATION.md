@@ -163,8 +163,10 @@ the refresh service is implemented.
 `GmailOAuthService` now provides the local token-refresh primitive for that
 future path: it exchanges the stored refresh token for a short-lived access
 token on demand, avoids persisting access tokens, and keeps token response
-bodies out of error messages. It is still not wired into default connector
-status or UI actions.
+bodies out of error messages. It also creates desktop authorization URLs with
+PKCE/state and can exchange an authorization code for tokens while storing only
+the refresh token. It is still not wired into UI actions, and there is not yet a
+loopback callback listener.
 `GmailConnectorAdapter` can accept an access-token provider for the future OAuth
 path. Status reads still do not refresh tokens or call Gmail; the provider is
 called only when task-bound source ingestion lists Gmail evidence.
