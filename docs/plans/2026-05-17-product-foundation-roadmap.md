@@ -154,6 +154,10 @@ boundary, and `AiConfigService` feeds that status into CapabilityRegistry and
 ConfigurationSafetyReport. External Access is still read-only and connector
 network integration remains deferred, but real connector services now have a
 single product-surface status input instead of a hard-coded empty row.
+`ExternalAccessStatusService` also defines the minimal read-only connector
+adapter contract: adapters report status, and connected adapters can preview
+evidence that is normalized through `ConnectorSourceIngestionPlan` before any
+future persistence path can create source contexts.
 
 Connector ingestion remains deferred, but the source-memory boundary now has a
 shared `ConnectorSourceIngestionPlan`. Future connector services must normalize

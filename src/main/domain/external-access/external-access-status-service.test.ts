@@ -36,4 +36,95 @@ describe('ExternalAccessStatusService', () => {
       sources: [{ label: 'Gmail' }],
     });
   });
+
+  it('aggregates read-only connector adapter status records', async () => {
+    const service = new ExternalAccessStatusService(
+      () => ({
+        sources: [{
+          id: 'manual',
+          label: 'Manual Import',
+          kind: 'other',
+          status: 'pending',
+        }],
+        connectedCount: 0,
+        pendingCount: 1,
+        errorCount: 0,
+        updatedAt: '2026-05-17T08:00:00.000Z',
+      }),
+      [{
+        getStatus: () => ({
+          id: 'gmail',
+          label: 'Gmail',
+          kind: 'email',
+          accountLabel: 'user@example.com',
+          status: 'connected',
+          lastSyncAt: '2026-05-17T09:00:00.000Z',
+        }),
+      }],
+    );
+
+    await expect(service.getStatus()).resolves.toMatchObject({
+      connectedCount: 1,
+      pendingCount: 1,
+      errorCount: 0,
+      sources: [
+        { id: 'manual', status: 'pending' },
+        { id: 'gmail', status: 'connected' },
+      ],
+    });
+  });
+
+  it('plans connected adapter evidence through ConnectorSourceIngestionPlan', async () => {
+    const service = new ExternalAccessStatusService(
+      undefined,
+      [
+        {
+          getStatus: () => ({
+            id: 'gmail',
+            label: 'Gmail',
+            kind: 'email',
+            status: 'connected',
+          }),
+          listEvidence: () => [{
+            externalId: 'message_1',
+            title: '客户确认邮件',
+            kind: 'doc',
+            uri: 'gmail://message/message_1',
+            capturedAt: '2026-05-17T09:00:00.000Z',
+            credibility: 'verified',
+            note: '客户确认了发布时间。',
+          }],
+        },
+        {
+          getStatus: () => ({
+            id: 'slack',
+            label: 'Slack',
+            kind: 'slack',
+            status: 'pending',
+          }),
+          listEvidence: () => [{
+            title: 'Pending connector evidence should not be planned',
+            capturedAt: '2026-05-17T09:00:00.000Z',
+          }],
+        },
+      ],
+    );
+
+    await expect(service.planSourceIngestion({ taskId: 'task_1' })).resolves.toMatchObject([
+      {
+        decision: 'create',
+        trace: {
+          connectorId: 'gmail',
+          connectorName: 'Gmail',
+          externalId: 'message_1',
+        },
+        sourceContext: {
+          taskId: 'task_1',
+          title: '客户确认邮件',
+          batchId: 'connector:gmail:message_1',
+          sourceRole: 'raw',
+        },
+      },
+    ]);
+  });
 });
