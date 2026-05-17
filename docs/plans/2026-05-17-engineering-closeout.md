@@ -76,9 +76,14 @@ runtime deepening in isolation. Recommended order:
    `CapabilityRegistry` without changing settled Tasks-page layout. The first
    read-only safety strip is in place; future work should connect real
    structured Skills/MCP status when those services exist.
-3. Retrieval/search foundation: make growing task memory easier to find and
-   reuse before adding more automation.
-4. Decisions batch handling or richer navigation: only if a real multi-decision
+3. Retrieval/search growth: the deterministic execution-memory index is in
+   place; add broader search UI or semantic retrieval only when a concrete
+   lookup workflow needs it.
+4. Work Habits / method library growth: the retained boundaries now prevent
+   task-specific facts from becoming global habits and dedupe equivalent
+   manual/proposed/SOP memory; add richer method-library surfaces only when a
+   real reuse workflow appears.
+5. Decisions batch handling or richer navigation: only if a real multi-decision
    workflow appears.
 
 Future product work should keep these constraints:
