@@ -41,13 +41,53 @@ const AVAILABLE_SOURCES: Array<{ type: SourceType; label: string; desc: string }
 export function ConnectionsPage() {
   const [sources, setSources] = useState<ConnectedSource[]>([]);
   const [configStatus, setConfigStatus] = useState<AiConfigStatus | null>(null);
+  const [gmailBusy, setGmailBusy] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    window.api?.getAiConfigStatus().then(setConfigStatus).catch(() => {});
+    reloadConfigStatus();
   }, []);
+
+  function reloadConfigStatus() {
+    window.api?.getAiConfigStatus().then(setConfigStatus).catch(() => {});
+  }
 
   function disconnectSource(id: string) {
     setSources((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  async function connectGmail() {
+    if (gmailBusy || !window.api?.connectGmailOAuth) return;
+    const confirmed = window.confirm('将打开浏览器授权 Gmail。授权后 Taskplane 只会在任务需要时读取邮件元数据，并在入库前要求确认。是否继续？');
+    if (!confirmed) return;
+    setGmailBusy(true);
+    setActionMessage(null);
+    try {
+      const result = await window.api.connectGmailOAuth({ confirmed: true });
+      setActionMessage(result.status === 'connected'
+        ? 'Gmail 已连接。'
+        : result.errorReason ?? 'Gmail 连接未完成。');
+      reloadConfigStatus();
+    } finally {
+      setGmailBusy(false);
+    }
+  }
+
+  async function disconnectGmail() {
+    if (gmailBusy || !window.api?.disconnectGmailOAuth) return;
+    const confirmed = window.confirm('断开 Gmail 后会清除本机授权凭据，并尝试撤销 Google OAuth token。是否继续？');
+    if (!confirmed) return;
+    setGmailBusy(true);
+    setActionMessage(null);
+    try {
+      const result = await window.api.disconnectGmailOAuth({ confirmed: true });
+      setActionMessage(result.status === 'disconnected'
+        ? 'Gmail 已断开。'
+        : result.errorReason ?? 'Gmail 断开未完成。');
+      reloadConfigStatus();
+    } finally {
+      setGmailBusy(false);
+    }
   }
 
   const externalSafety = configStatus?.configurationSafetyReport?.surfaces
@@ -57,6 +97,7 @@ export function ConnectionsPage() {
   const externalStatusSources = (configStatus?.externalAccessStatus?.sources ?? []).map(connectorToConnectedSource);
   const statusSourceIds = new Set(externalStatusSources.map((source) => source.id));
   const displayedSources = externalStatusSources.length > 0 ? externalStatusSources : sources;
+  const gmailStatus = externalStatusSources.find((source) => source.id === 'gmail')?.status ?? null;
 
   return (
     <div className="connections-page">
@@ -110,11 +151,11 @@ export function ConnectionsPage() {
                 {src.status === 'error' && <button className="btn sm">重新授权</button>}
                 <button
                   className="btn sm ghost"
-                  disabled={statusSourceIds.has(src.id)}
-                  onClick={() => disconnectSource(src.id)}
-                  title={statusSourceIds.has(src.id) ? '由连接器状态管理' : '断开'}
+                  disabled={statusSourceIds.has(src.id) && (src.id !== 'gmail' || !window.api?.disconnectGmailOAuth || gmailBusy)}
+                  onClick={() => src.id === 'gmail' ? disconnectGmail() : disconnectSource(src.id)}
+                  title={statusSourceIds.has(src.id) && src.id !== 'gmail' ? '由连接器状态管理' : '断开'}
                 >
-                  断开
+                  {gmailBusy && src.id === 'gmail' ? '处理中' : '断开'}
                 </button>
               </div>
             </div>
@@ -128,6 +169,7 @@ export function ConnectionsPage() {
             </div>
           )}
         </div>
+        {actionMessage && <div className="connections-boundary-note">{actionMessage}</div>}
         <div className="connections-boundary-note">
           未授权的来源不会进入 AI 上下文；只有连接成功且产生新信号时，外部信息才会出现在 Brief 和任务上下文里。
         </div>
@@ -148,7 +190,13 @@ export function ConnectionsPage() {
               <span className="ctx-source-icon">{SOURCE_BADGES[s.type]}</span>
               <div className="conn-available-label">{s.label}</div>
               <div className="conn-available-desc muted">{s.desc}</div>
-              <button className="btn sm ghost" disabled>即将支持</button>
+              {s.type === 'email' && window.api?.connectGmailOAuth ? (
+                <button className="btn sm ghost" disabled={gmailBusy || gmailStatus === 'connected'} onClick={connectGmail}>
+                  {gmailBusy ? '处理中' : gmailStatus === 'connected' ? '已连接' : '连接'}
+                </button>
+              ) : (
+                <button className="btn sm ghost" disabled>即将支持</button>
+              )}
             </div>
           ))}
         </div>

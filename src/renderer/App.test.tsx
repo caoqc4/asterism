@@ -437,6 +437,22 @@ function createMockApi() {
       model: input.model,
       featureFlags: input.featureFlags,
     })),
+    connectGmailOAuth: vi.fn().mockResolvedValue({
+      status: 'connected',
+      connectorId: 'gmail',
+      openedAuthorizationUrl: true,
+      accountLabel: 'user@example.com',
+      redirectUri: 'http://127.0.0.1:40000/oauth/gmail/callback',
+      errorReason: null,
+    }),
+    disconnectGmailOAuth: vi.fn().mockResolvedValue({
+      status: 'disconnected',
+      connectorId: 'gmail',
+      hadRefreshToken: true,
+      revoked: true,
+      localTokenCleared: true,
+      errorReason: null,
+    }),
     listTasks: vi.fn().mockResolvedValue(tasks),
     getTaskHierarchyConsistency: vi.fn().mockResolvedValue({
       consistent: true,
@@ -965,6 +981,50 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('尚未连接任何来源。')).toBeNull();
     expect(screen.getByText('可用')).toBeTruthy();
     expect(screen.getByText('connected=1 / pending=0 / errors=0')).toBeTruthy();
+  });
+
+  it('routes Gmail connect through confirmed External Access controls', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /External Access/ }));
+    await user.click(await screen.findByRole('button', { name: '连接' }));
+
+    expect(harness.api.connectGmailOAuth).toHaveBeenCalledWith({ confirmed: true });
+    expect(await screen.findByText('Gmail 已连接。')).toBeTruthy();
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    confirmSpy.mockRestore();
+  });
+
+  it('routes Gmail disconnect through confirmed External Access controls', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      externalAccessStatus: {
+        sources: [{
+          id: 'gmail',
+          label: 'Gmail',
+          kind: 'email',
+          accountLabel: 'user@example.com',
+          status: 'connected',
+          lastSyncAt: '2026-05-17T09:30:00.000Z',
+        }],
+        connectedCount: 1,
+        pendingCount: 0,
+        errorCount: 0,
+        updatedAt: '2026-05-17T10:00:00.000Z',
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /External Access/ }));
+    await user.click(screen.getByRole('button', { name: '断开' }));
+
+    expect(harness.api.disconnectGmailOAuth).toHaveBeenCalledWith({ confirmed: true });
+    expect(await screen.findByText('Gmail 已断开。')).toBeTruthy();
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    confirmSpy.mockRestore();
   });
 
   it('keeps task management available before AI setup', async () => {
