@@ -86,19 +86,19 @@ describe('AiConfigService', () => {
       exposesSecretValue: false,
     });
     expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'external_access.connectors')).toMatchObject({
-      state: 'disabled_by_flag',
+      state: 'disabled_by_policy',
       reason: 'No external access connector is connected.',
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
     });
     expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'skills.catalogue')).toMatchObject({
-      state: 'disabled_by_flag',
+      state: 'disabled_by_policy',
       reason: 'No ready skill is enabled.',
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
     });
     expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
-      state: 'disabled_by_flag',
+      state: 'disabled_by_policy',
       reason: 'No connected MCP server exposes tools.',
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
