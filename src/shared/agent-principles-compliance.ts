@@ -101,6 +101,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AiConfigService feeds External Access, Skills, and MCP product-surface status into CapabilityRegistry, so default optional capability surfaces are structured disabled capabilities rather than deferred unknown rows.',
       'ExternalAccessStatusService provides a read-only connector status boundary, and AiConfigService feeds that status into CapabilityRegistry and ConfigurationSafetyReport.',
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
+      'ExternalAccessSourceIngestionService validates connector ingestion plans still belong to the selected task before preview or confirmed SourceContext creation.',
       'LocalInboxConnectorAdapter and GmailConnectorAdapter provide opt-in read-only connector implementations that keep evidence on the same ConnectorSourceIngestionPlan path and never write SourceContext records directly.',
       'Settings and Model consume ConfigurationSafetyReport as read-only safety boundaries for configured, approval-required, blocked, manual-probe, and secret-exposure-safe states.',
       'External Access consumes AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without live connector probes.',

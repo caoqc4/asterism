@@ -163,9 +163,12 @@ confirmed persistence path can create source contexts.
 `ExternalAccessSourceIngestionService` is that bridge: it previews plans,
 requires explicit confirmation before writing, skips existing connector batch
 ids, and calls `TaskService.createSourceContext` so task mutation, timeline, and
-canonical source metadata stay centralized. The External Access page now exposes
-this as a source-review panel, and the packaged local-inbox smoke verifies the
-path by creating a task, previewing local evidence, and confirming the write.
+canonical source metadata stay centralized. The service also validates that
+every connector ingestion plan still belongs to the selected task before
+preview or commit can proceed, so a connector/planner bug cannot write evidence
+into the wrong task. The External Access page now exposes this as a
+source-review panel, and the packaged local-inbox smoke verifies the path by
+creating a task, previewing local evidence, and confirming the write.
 `LocalInboxConnectorAdapter` is the first concrete opt-in adapter: when
 `TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR` points to a local inbox directory,
 it reads only supported top-level `.json`, `.md`, and `.txt` evidence files and

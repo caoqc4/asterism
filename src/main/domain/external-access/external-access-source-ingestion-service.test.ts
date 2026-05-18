@@ -192,4 +192,28 @@ describe('ExternalAccessSourceIngestionService', () => {
     });
     expect(writer.createSourceContext).not.toHaveBeenCalled();
   });
+
+  it('rejects connector plans whose source context belongs to a different task', async () => {
+    const plan = planConnectorSourceIngestion({
+      taskId: 'other_task',
+      connectorId: 'gmail',
+      connectorName: 'Gmail',
+      externalId: 'message_1',
+      title: '客户确认邮件',
+      uri: 'gmail://message/message_1',
+      capturedAt: '2026-05-17T09:00:00.000Z',
+    });
+    const writer = { createSourceContext: vi.fn() };
+    const service = new ExternalAccessSourceIngestionService({
+      planSourceIngestion: vi.fn().mockResolvedValue([plan]),
+    }, writer);
+
+    await expect(service.preview({ taskId: 'task_1' })).rejects.toThrow('task mismatch');
+    await expect(service.commit({
+      taskId: 'task_1',
+      planIds: [plan.planId],
+      confirmed: true,
+    })).rejects.toThrow('task mismatch');
+    expect(writer.createSourceContext).not.toHaveBeenCalled();
+  });
 });

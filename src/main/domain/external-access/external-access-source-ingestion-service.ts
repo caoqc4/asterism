@@ -32,6 +32,7 @@ export class ExternalAccessSourceIngestionService {
   async preview(input: ExternalAccessSourceIngestionPreviewInput): Promise<ExternalAccessSourceIngestionPreview> {
     const taskId = normalizeTaskId(input.taskId);
     const plans = await this.planner.planSourceIngestion({ taskId });
+    assertPlansBelongToTask(taskId, plans);
 
     return {
       taskId,
@@ -54,6 +55,7 @@ export class ExternalAccessSourceIngestionService {
     }
 
     const plans = await this.planner.planSourceIngestion({ taskId });
+    assertPlansBelongToTask(taskId, plans);
     const plansById = new Map(plans.map((plan) => [plan.planId, plan]));
     const existingBatchIds = await this.readExistingBatchIds(taskId);
     const missingPlanIds = [...selectedPlanIds].filter((planId) => !plansById.has(planId));
@@ -104,4 +106,10 @@ function normalizeTaskId(taskId: string): string {
     throw new Error('External Access source ingestion requires taskId.');
   }
   return normalized;
+}
+
+function assertPlansBelongToTask(taskId: string, plans: ConnectorSourceIngestionPlan[]): void {
+  const mismatched = plans.filter((plan) => plan.sourceContext.taskId !== taskId);
+  if (mismatched.length === 0) return;
+  throw new Error(`External Access source ingestion plan task mismatch: ${mismatched.map((plan) => plan.planId).join(', ')}`);
 }
