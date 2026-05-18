@@ -82,6 +82,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'BriefFocusProjection keeps Brief task-card inclusion, de-duplication, and parent/child filtering in shared projection data instead of page-local ordering logic.',
       'BriefFocusProjection carries rank, source action id, attention lane, and attention reason into focus-card data so Brief can explain inclusion without a page-local sorter.',
       'BriefExecutor consumes HomeBriefData.briefFocusTasks and briefAttention so generated or fallback briefs preserve the same visible focus list, display-limit, and attention-boundary wording.',
+      'BriefExecutor excludes the full recommendedActions compatibility queue from generated and fallback briefs so hidden task-management items cannot influence Brief outside the shared focus/attention projection.',
       'BriefProcessTemplateSelector includes HomeBriefData.briefFocusTasks when deciding whether method templates should influence a generated brief.',
       'Brief process-template candidates are built from visible Brief focus tasks instead of every active task.',
       'Brief, Decision, and Run process-template selectors share selection normalization, so skipped or invalid model selections never retain selected templates.',

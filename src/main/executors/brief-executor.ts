@@ -39,17 +39,6 @@ function formatDecisionLine(title: string, status: string): string {
   return `- ${title} [${status}]`;
 }
 
-function formatRecommendedAction(
-  label: string,
-  reason: string,
-  priority: string,
-  responsibilitySummary?: string | null,
-): string {
-  return `- [${priority}] ${label} | ${reason}${
-    responsibilitySummary ? ` | responsibility=${responsibilitySummary}` : ''
-  }`;
-}
-
 function formatBriefAttentionLine(
   item: NonNullable<HomeBriefData['briefAttention']>['items'][number],
 ): string {
@@ -212,19 +201,6 @@ export function buildFallbackBrief(
   const resumePreviewLines = homeData.recentTaskResumes.length
     ? homeData.recentTaskResumes.map((preview) => formatResumePreviewLine(preview)).join('\n')
     : '- 当前没有可恢复的任务预览';
-  const recommendedActionLines = homeData.recommendedActions.length
-    ? formatLaneSection(
-        homeData.recommendedActions,
-        (action) => action.lane,
-        (action) =>
-          formatRecommendedAction(
-            action.label,
-            action.reason,
-            action.priority,
-            action.responsibilitySummary,
-          ),
-      ).join('\n')
-    : '- 当前没有推荐动作';
   const focusTaskLines = homeData.briefFocusTasks?.length
     ? homeData.briefFocusTasks.map((task) => formatBriefFocusTaskLine(task)).join('\n')
     : '- 当前没有 Brief 焦点任务';
@@ -274,9 +250,6 @@ export function buildFallbackBrief(
           .map((task) => formatTaskLine(task.title, task.waitingReason ?? task.state))
           .join('\n')
       : '- 当前没有等待中任务',
-    '',
-    '推荐动作：',
-    recommendedActionLines,
     '',
     'Brief 焦点任务：',
     focusTaskLines,
@@ -369,21 +342,6 @@ function buildPrompt(
     ...(homeData.missingNextStepTasks.length
       ? homeData.missingNextStepTasks.map(
           (task) => `- ${task.title} | ${task.state} | summary=${task.summary ?? '无摘要'}`,
-        )
-      : ['- 无']),
-    '',
-    '推荐动作：',
-    ...(homeData.recommendedActions.length
-      ? formatLaneSection(
-          homeData.recommendedActions,
-          (action) => action.lane,
-          (action) =>
-            formatRecommendedAction(
-              action.label,
-              action.reason,
-              action.priority,
-              action.responsibilitySummary,
-            ),
         )
       : ['- 无']),
     '',

@@ -95,13 +95,12 @@ describe('buildFallbackBrief', () => {
     expect(brief).toContain('blocker_reason=当前阻塞原因：Need formal sign-off');
     expect(brief).toContain('source=Launch memo');
     expect(brief).toContain('method=Launch workflow');
-    expect(brief).toContain('推荐动作：');
-    expect(brief).toContain('当前没有推荐动作');
+    expect(brief).not.toContain('推荐动作：');
     expect(brief).toContain('Brief 焦点任务：');
     expect(brief).toContain('当前没有 Brief 焦点任务');
   });
 
-  it('groups recommended actions and recent activity by priority lane wording', () => {
+  it('uses attention boundary and recent activity without exposing hidden recommended actions', () => {
     const brief = buildFallbackBrief(
       {
         ...buildHomeBriefData(),
@@ -161,13 +160,13 @@ describe('buildFallbackBrief', () => {
       'startup',
     );
 
-    expect(brief).toContain('立即升级：');
     expect(brief).toContain('继续推进/复核：');
     expect(brief).toContain('Brief 注意力边界：');
     expect(brief).toContain('Brief shows 2 of 6 attention items; Tasks owns the full queue.');
     expect(brief).toContain('display=2/6 limit=2 truncated=yes');
     expect(brief).toContain('action_escalate | lane=unblock_or_decide');
-    expect(brief).toContain('优先升级阻塞项');
+    expect(brief).not.toContain('优先升级阻塞项');
+    expect(brief).not.toContain('推荐动作：');
     expect(brief).toContain('run:draft [completed] | task=Resume task');
   });
 

@@ -157,6 +157,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'BriefFocusProjection turns recommended actions into the capped Brief task-card list with shared de-duplication, parent/child filtering, and display-limit behavior before the page renders it.',
       'BriefFocusProjection carries rank, source action id, attention lane, and attention reason into visible focus cards so Brief can explain why an item appears without adding another sorter.',
       'BriefExecutor consumes HomeBriefData.briefFocusTasks and briefAttention so scheduled or fallback briefs preserve the visible focus list, attention-summary boundary, and display-limit explanation.',
+      'BriefExecutor does not expose the full recommendedActions compatibility queue to generated or fallback briefs; hidden queue items must pass through BriefFocusProjection or BriefAttentionBoundary first.',
       'BriefProcessTemplateSelector uses the same HomeBriefData.briefFocusTasks when selecting method templates for generated briefs.',
       'Brief process-template candidates are built from visible Brief focus tasks instead of every active task.',
       'Brief, Decision, and Run process-template selectors share selection normalization, so skipped or invalid model selections never retain selected templates.',
