@@ -4,6 +4,7 @@ import {
   AGENT_CLI_RUNTIME_FIXTURE_ENV,
   AgentCliRuntimeStatusService,
 } from './agent-cli-runtime-status-service.js';
+import { AgentCliRuntimeWorkloadTracker } from './agent-cli-runtime-workload.js';
 
 describe('agent cli runtime status service', () => {
   afterEach(() => {
@@ -51,6 +52,58 @@ describe('agent cli runtime status service', () => {
     expect(status.runtimes.find((runtime) => runtime.id === 'codex')).toMatchObject({
       authState: 'ready',
       missingReason: null,
+    });
+  });
+
+  it('projects active Agent CLI runs into runtime workload status', async () => {
+    const workloadTracker = new AgentCliRuntimeWorkloadTracker();
+    const lease = workloadTracker.start('codex', 'run_1');
+    const service = new AgentCliRuntimeStatusService(async (command) => ({
+      authState: command === 'codex' ? 'ready' : 'unknown',
+      installed: command === 'codex',
+      version: command === 'codex' ? 'codex 0.42.0' : null,
+    }), workloadTracker);
+
+    const runningStatus = await service.getStatus();
+    lease.finish();
+    const idleStatus = await service.getStatus();
+
+    expect(runningStatus.runningCount).toBe(1);
+    expect(runningStatus.runtimes.find((runtime) => runtime.id === 'codex')).toMatchObject({
+      workload: 'running',
+    });
+    expect(idleStatus.runningCount).toBe(0);
+    expect(idleStatus.runtimes.find((runtime) => runtime.id === 'codex')).toMatchObject({
+      workload: 'idle',
+    });
+  });
+
+  it('keeps fixture status deterministic instead of overlaying live workload', async () => {
+    const workloadTracker = new AgentCliRuntimeWorkloadTracker();
+    workloadTracker.start('codex', 'run_1');
+    process.env[AGENT_CLI_RUNTIME_FIXTURE_ENV] = JSON.stringify({
+      updatedAt: '2026-05-19T00:00:00.000Z',
+      runtimes: [{
+        id: 'codex',
+        label: 'Codex CLI',
+        command: 'codex',
+        installed: true,
+        version: 'codex fixture',
+        authState: 'ready',
+        executionSupport: 'manual_run',
+        workload: 'idle',
+        missingReason: null,
+      }],
+    });
+    const service = new AgentCliRuntimeStatusService(async () => {
+      throw new Error('probe should not run when fixture is provided');
+    }, workloadTracker);
+
+    const status = await service.getStatus();
+
+    expect(status.runningCount).toBe(0);
+    expect(status.runtimes.find((runtime) => runtime.id === 'codex')).toMatchObject({
+      workload: 'idle',
     });
   });
 

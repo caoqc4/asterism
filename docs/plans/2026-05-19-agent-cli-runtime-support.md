@@ -79,6 +79,7 @@ MVP capabilities:
 - restrict working directory to the configured workspace root;
 - pass a Taskplane-generated prompt/context bundle to the CLI;
 - capture stdout, stderr, exit code, start/end time, and timeout;
+- project active CLI subprocesses back into runtime workload status;
 - persist output as Run steps and artifacts;
 - keep all writes and risky outcomes behind existing runtime/Decision gates.
 

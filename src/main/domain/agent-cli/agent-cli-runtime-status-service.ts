@@ -9,6 +9,10 @@ import {
   type AgentCliRuntimeStatus,
 } from '../../../shared/agent-cli-runtime-status.js';
 import { readEnvValue } from '../../config/env.js';
+import {
+  agentCliRuntimeWorkloadTracker,
+  type AgentCliRuntimeWorkloadTracker,
+} from './agent-cli-runtime-workload.js';
 
 export type AgentCliCommandProbe = (command: string) => Promise<{
   authReason?: string | null;
@@ -24,6 +28,7 @@ export const AGENT_CLI_RUNTIME_FIXTURE_ENV = 'TASKPLANE_AGENT_CLI_RUNTIME_FIXTUR
 export class AgentCliRuntimeStatusService {
   constructor(
     private readonly probeCommand: AgentCliCommandProbe = probeAgentCliCommand,
+    private readonly workloadTracker: AgentCliRuntimeWorkloadTracker = agentCliRuntimeWorkloadTracker,
   ) {}
 
   async getStatus(): Promise<AgentCliRuntimeStatus> {
@@ -53,7 +58,14 @@ export class AgentCliRuntimeStatusService {
       };
     }));
 
-    return buildAgentCliRuntimeStatus(records, new Date().toISOString());
+    return buildAgentCliRuntimeStatus(
+      records.map((runtime) => (
+        this.workloadTracker.getActiveRunCount(runtime.id) > 0
+          ? { ...runtime, workload: 'running' }
+          : runtime
+      )),
+      new Date().toISOString(),
+    );
   }
 }
 

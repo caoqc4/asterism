@@ -4,6 +4,7 @@ import type { AiConfigStatus } from '../../../shared/types/settings.js';
 import type { RunRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import { AgentCliRunService } from './agent-cli-run-service.js';
+import { AgentCliRuntimeWorkloadTracker } from './agent-cli-runtime-workload.js';
 
 describe('AgentCliRunService', () => {
   it('runs Codex CLI through runtime gates and records run evidence', async () => {
@@ -67,6 +68,86 @@ describe('AgentCliRunService', () => {
       id: 'run_agent_cli_1',
       status: 'completed',
     });
+  });
+
+  it('marks the CLI runtime running only while the executor is active', async () => {
+    const workloadTracker = new AgentCliRuntimeWorkloadTracker();
+    let resolveExecution!: (result: {
+      exitCode: number;
+      failureReason: null;
+      status: 'completed';
+      stderr: string;
+      stdout: string;
+      summary: string;
+    }) => void;
+    const executor = vi.fn().mockImplementation(() => new Promise((resolve) => {
+      resolveExecution = resolve;
+    }));
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+      { upsert: vi.fn() },
+      workloadTracker,
+    );
+
+    const triggerPromise = service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Keep running long enough to observe workload.',
+      taskId: 'task_1',
+    });
+    await vi.waitFor(() => {
+      expect(workloadTracker.getActiveRunCount('codex')).toBe(1);
+    });
+
+    resolveExecution({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Done.',
+      summary: 'Agent CLI execution completed.',
+    });
+    await triggerPromise;
+
+    expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
+  });
+
+  it('records a failed run and clears workload when the executor throws', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const taskService = buildTaskService();
+    const workloadTracker = new AgentCliRuntimeWorkloadTracker();
+    const service = new AgentCliRunService(
+      taskService,
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      vi.fn().mockRejectedValue(new Error('spawn failed')),
+      { upsert: vi.fn() },
+      workloadTracker,
+    );
+
+    const result = await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run Codex.',
+      taskId: 'task_1',
+    });
+
+    expect(result).toMatchObject({
+      failureReason: 'spawn failed',
+      status: 'failed',
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'spawn failed',
+      kind: 'model',
+      status: 'failed',
+      title: 'codex cli failed',
+    }));
+    expect(taskService.annotateRunFailed).toHaveBeenCalledWith('task_1', 'spawn failed', 'run_agent_cli_1');
+    expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
   });
 
   it('blocks execution before creating a run when Codex CLI is not detected', async () => {

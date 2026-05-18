@@ -27,6 +27,10 @@ import type { RunVerificationRepository } from '../../db/repositories/run-verifi
 import type { AiConfigService } from '../../keychain/ai-config-service.js';
 import type { TaskService } from '../task/task-service.js';
 import { persistTerminalRunVerifications } from '../run/run-verification-service.js';
+import {
+  agentCliRuntimeWorkloadTracker,
+  type AgentCliRuntimeWorkloadTracker,
+} from './agent-cli-runtime-workload.js';
 
 export type AgentCliExecutionResult = {
   exitCode: number | null;
@@ -57,6 +61,7 @@ export class AgentCliRunService {
     private readonly runStepRepository: Pick<RunStepRepository, 'create' | 'listForRun' | 'listForTask'>,
     private readonly executor: AgentCliExecutor = executeAgentCliCommand,
     private readonly runVerificationRepository: Pick<RunVerificationRepository, 'upsert'> | null = null,
+    private readonly workloadTracker: AgentCliRuntimeWorkloadTracker = agentCliRuntimeWorkloadTracker,
   ) {}
 
   async trigger(input: CreateAgentCliRunInput): Promise<RunRecord> {
@@ -170,13 +175,16 @@ export class AgentCliRunService {
       sandboxMode,
       task,
     });
-    const execution = await this.executor({
+    const workloadLease = this.workloadTracker.start(runtimeId, run.id);
+    const execution = await this.executeWithFailureCapture({
       args: ['exec', '--sandbox', sandboxMode, '--cd', workspaceRoot, '--skip-git-repo-check', '-'],
       command: runtime.command,
       cwd: workspaceRoot,
       input: prompt,
       outputLimitBytes: DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES,
       timeoutMs: DEFAULT_AGENT_CLI_TIMEOUT_MS,
+    }).finally(() => {
+      workloadLease.finish();
     });
 
     await this.runStepRepository.create({
@@ -242,6 +250,22 @@ export class AgentCliRunService {
       guidanceSignals: steps,
       taskFiles: task.taskFiles,
     });
+  }
+
+  private async executeWithFailureCapture(params: Parameters<AgentCliExecutor>[0]): Promise<AgentCliExecutionResult> {
+    try {
+      return await this.executor(params);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        exitCode: null,
+        failureReason: message,
+        status: 'failed',
+        stderr: '',
+        stdout: '',
+        summary: `Agent CLI execution failed: ${message}`,
+      };
+    }
   }
 }
 
