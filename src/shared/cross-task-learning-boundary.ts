@@ -12,7 +12,7 @@ export type CrossTaskLearningDecision = {
   missing: string[];
 };
 
-const TASK_SPECIFIC_PATTERN = /这个任务|当前任务|本任务|这次|这里|刚刚|上面|this task|current task|for this one/i;
+const TASK_SPECIFIC_PATTERN = /这个任务|当前任务|本任务|本次任务|这批任务|当前这批|这个阶段|当前阶段|本阶段|这次|这里|刚刚|上面|this task|current task|for this one/i;
 const GLOBAL_PATTERN = /以后|每次|总是|默认|所有任务|类似任务|下次|统一|习惯|偏好|规则|原则|规范|always|every time|by default|next time|similar tasks/i;
 const PROCESS_PATTERN = /流程|步骤|SOP|模板|清单|先.*再|第一步|第二步|1\.|2\.|checklist|workflow|process|template/i;
 const CORRECTION_PATTERN = /我提醒|纠正|更正|不是这样|应该是|应当|改成|以.*为准|correction|correct|instead/i;

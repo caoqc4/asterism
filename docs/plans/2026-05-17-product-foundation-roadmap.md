@@ -475,6 +475,9 @@ learning item. Work Habit selection also exposes an applicability match reason
 for runtime prompts, so execution and decomposition can see whether a habit was
 included because of project scope, task type, task title, or global scope
 instead of treating habits as invisible rules.
+The task-bound leak guard also recognizes batch and phase phrasing such as
+"这批任务" and "当前阶段", so temporary rules from a focused implementation
+stage do not accidentally become global Work Habits.
 
 ## Package G: Brief And Attention System
 
