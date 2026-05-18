@@ -411,7 +411,10 @@ that tools have already become model-visible. The first default optional
 catalogue entries are `Gmail` for External Access, `Brainstorming` for Skills,
 and `Playwright MCP` for MCP. These entries come from shared product-surface
 definitions and remain unauthorized, disabled, or disconnected until a real
-service promotes them through the runtime capability gate.
+service promotes them through the runtime capability gate. The default Skills
+surface now reports `catalogueCount` separately from `readyCount`, so built-in
+catalogue previews do not imply that a real Skills service is ready or
+model-visible.
 
 ## Package F: Work Habits, SOPs, And Method Library
 

@@ -62,7 +62,9 @@ Recent closeout commits:
 - `07289a2` Clarify packaged surface smoke coverage.
 - Skills and MCP now use shared default optional catalogue definitions that
   feed the same `CapabilityRegistry` product-surface projection consumed by
-  their pages.
+  their pages. Skills keeps only Brainstorming as the first default optional
+  catalogue item, and catalogue count is separated from ready count until a real
+  Skills service promotes entries.
 
 ## Known Limits
 

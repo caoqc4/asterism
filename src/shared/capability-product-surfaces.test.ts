@@ -19,6 +19,7 @@ describe('capability product surfaces', () => {
   });
 
   it('keeps default Skills catalogue data in a shared product surface', () => {
+    expect(DEFAULT_SKILL_CATALOGUE_ITEMS).toHaveLength(1);
     expect(DEFAULT_SKILL_CATALOGUE_ITEMS[0]).toMatchObject({
       id: 'brainstorming',
       name: 'Brainstorming',
@@ -26,8 +27,9 @@ describe('capability product surfaces', () => {
     });
     expect(defaultSkillsProductSurfaceStatus()).toEqual({
       enabledCount: 0,
-      readyCount: DEFAULT_SKILL_CATALOGUE_ITEMS.length,
+      readyCount: 0,
       needsConfigCount: 0,
+      catalogueCount: DEFAULT_SKILL_CATALOGUE_ITEMS.length,
     });
   });
 

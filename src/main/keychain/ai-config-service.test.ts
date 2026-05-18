@@ -62,7 +62,7 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'enabled=0 / ready=5 / needsConfig=0',
+      summary: 'enabled=0 / ready=0 / needsConfig=0 / catalogue=1',
       missingReason: 'No ready skill is enabled.',
     });
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'mcp.servers')).toMatchObject({

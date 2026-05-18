@@ -60,6 +60,7 @@ export type CapabilityProductSurfaceStatus = {
     enabledCount: number;
     readyCount: number;
     needsConfigCount?: number;
+    catalogueCount?: number;
   } | null;
   mcp?: {
     connectedServerCount: number;
@@ -334,7 +335,12 @@ function skillsCapability(
     access: 'mixed',
     requiresApproval: true,
     requiredGate: 'runtime_entrypoint_coverage',
-    summary: `enabled=${status.enabledCount} / ready=${status.readyCount} / needsConfig=${status.needsConfigCount ?? 0}`,
+    summary: [
+      `enabled=${status.enabledCount}`,
+      `ready=${status.readyCount}`,
+      `needsConfig=${status.needsConfigCount ?? 0}`,
+      typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
+    ].filter(Boolean).join(' / '),
   };
 }
 

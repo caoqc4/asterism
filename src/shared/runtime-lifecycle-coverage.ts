@@ -536,7 +536,8 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'The packaged local-inbox smoke creates a task, previews local inbox evidence in External Access, confirms the source-review dialog, and verifies the source-context memory write path without live providers.',
       'Settings and Model consume ConfigurationSafetyReport as read-only configuration safety boundaries with secret exposure, manual-probe, approval-required, and blocked capability states.',
       'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
-      'Default Gmail, Brainstorming, and Playwright MCP catalogue entries share product-surface definitions, and External Access, Skills, and MCP pages consume the same CapabilityRegistry and ConfigurationSafetyReport rows as read-only safety strips.',
+      'Default Gmail, the first Brainstorming Skill, and Playwright MCP catalogue entries share product-surface definitions, and External Access, Skills, and MCP pages consume the same CapabilityRegistry and ConfigurationSafetyReport rows as read-only safety strips.',
+      'Skills keeps catalogue count separate from ready count, so built-in optional previews do not imply service readiness or model-visible exposure.',
     ],
     outOfAgentPrinciplesScope: [
       'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',
