@@ -183,7 +183,10 @@ scoped in `docs/plans/2026-05-17-gmail-oauth-design.md`: use desktop
 installed-app OAuth, store only refresh tokens in keychain, keep access tokens
 short-lived, preserve network-free connector status reads, and continue to
 require task-bound source-ingestion review before Gmail evidence becomes task
-memory.
+memory. The External Access page now treats Gmail as the first system default
+optional authorization item, mirroring the Skills/MCP default-optional pattern:
+it is visible by default, but remains unauthorized, unprobed, and unsynced until
+the user explicitly starts Gmail authorization.
 
 Broader network connector ingestion remains deferred, but the source-memory
 boundary now has a shared `ConnectorSourceIngestionPlan`. Future connector services must

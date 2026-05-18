@@ -1055,12 +1055,41 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /External Access/ }));
 
-    expect(await screen.findByText('Gmail')).toBeTruthy();
+    expect((await screen.findAllByText('Gmail')).length).toBeGreaterThan(0);
     expect(screen.getByText('user@example.com')).toBeTruthy();
     expect(screen.getByText('已连接')).toBeTruthy();
     expect(screen.queryByText('尚未连接任何来源。')).toBeNull();
     expect(screen.getByText('可用')).toBeTruthy();
     expect(screen.getByText('connected=1 / pending=0 / errors=0')).toBeTruthy();
+  });
+
+  it('keeps pending Gmail OAuth as a default optional item instead of a connected source', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      externalAccessStatus: {
+        sources: [{
+          id: 'gmail',
+          label: 'Gmail',
+          kind: 'email',
+          accountLabel: 'Gmail OAuth',
+          status: 'pending',
+          errorReason: 'Gmail OAuth refresh token is not configured.',
+        }],
+        connectedCount: 0,
+        pendingCount: 1,
+        errorCount: 0,
+        updatedAt: '2026-05-17T10:00:00.000Z',
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /External Access/ }));
+
+    expect(await screen.findByText('尚未连接任何来源。')).toBeTruthy();
+    expect(screen.getByText('系统默认可选功能')).toBeTruthy();
+    expect(screen.getByText('Gmail')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '授权' })).toBeTruthy();
+    expect(screen.queryByText('待授权')).toBeNull();
   });
 
   it('routes Gmail connect through confirmed External Access controls', async () => {
@@ -1069,7 +1098,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /External Access/ }));
-    await user.click(await screen.findByRole('button', { name: '连接' }));
+    await user.click(await screen.findByRole('button', { name: '授权' }));
 
     expect(harness.api.connectGmailOAuth).toHaveBeenCalledWith({ confirmed: true });
     expect(await screen.findByText('Gmail 已连接。')).toBeTruthy();
@@ -2921,7 +2950,12 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/只在任务上下文需要时引用相关信号/)).toBeTruthy();
     expect(screen.getByText(/相关新信号带入 Brief 和任务上下文，等待你确认/)).toBeTruthy();
     expect(screen.getByText(/未授权的来源不会进入 AI 上下文/)).toBeTruthy();
-    expect(screen.getByText('Gmail / Email')).toBeTruthy();
+    expect(screen.getByText('系统默认可选功能')).toBeTruthy();
+    expect(screen.getByText(/默认展示，不会自动授权、探测或同步/)).toBeTruthy();
+    expect(screen.getByText('Gmail')).toBeTruthy();
+    expect(screen.getByText(/系统默认可选邮箱授权/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '授权' })).toBeTruthy();
+    expect(screen.getByText('更多可连接来源')).toBeTruthy();
     expect(screen.getByText('Calendar')).toBeTruthy();
     expect(screen.getByText('GitHub')).toBeTruthy();
     expect(screen.getByText('EMAIL')).toBeTruthy();

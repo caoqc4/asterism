@@ -116,8 +116,11 @@ write the reviewed files after promotion preflight passes.
 
 ### External Access: Gmail
 
-Gmail is the first network connector target for External Access. The current
-slice is read-only and environment-gated:
+Gmail is the first system default optional authorization item for External
+Access. The page shows it by default, but Taskplane does not authorize, probe,
+or sync Gmail until the user explicitly starts authorization. The current
+read-only network connector can still be configured through environment-gated
+credentials:
 
 ```bash
 TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN=ya29...
@@ -126,10 +129,11 @@ TASKPLANE_EXTERNAL_ACCESS_GMAIL_QUERY=newer_than:7d
 TASKPLANE_EXTERNAL_ACCESS_GMAIL_MAX_RESULTS=10
 ```
 
-The connector expects an OAuth access token with the minimum read-only Gmail
-scope needed for message listing and metadata reads. Taskplane does not create
-or refresh OAuth tokens yet, does not send email, does not modify labels, and
-does not import full email bodies in this slice.
+The token connector expects an OAuth access token with the minimum read-only
+Gmail scope needed for message listing and metadata reads. The OAuth control
+path stores only a refresh token in the local keychain and refreshes access
+tokens only for task-bound evidence planning. Taskplane does not send email,
+does not modify labels, and does not import full email bodies in this slice.
 
 AI config/status reads only project the configured connector state. Gmail API
 network calls are limited to task-bound source-ingestion planning, where message

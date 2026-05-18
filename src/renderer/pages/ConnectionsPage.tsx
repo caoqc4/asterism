@@ -30,8 +30,11 @@ const SOURCE_BADGES: Record<SourceType, string> = {
   other: 'SRC',
 };
 
+const DEFAULT_OPTIONAL_SOURCES: Array<{ id: string; type: SourceType; label: string; desc: string }> = [
+  { id: 'gmail', type: 'email', label: 'Gmail', desc: '系统默认可选邮箱授权；授权后只在任务需要时读取邮件元数据，并在入库前复核' },
+];
+
 const AVAILABLE_SOURCES: Array<{ type: SourceType; label: string; desc: string }> = [
-  { type: 'email', label: 'Gmail / Email', desc: '授权后提取邮件里的待跟进信号' },
   { type: 'calendar', label: 'Calendar', desc: '授权后识别会议、截止时间和日程变更' },
   { type: 'github', label: 'GitHub', desc: '授权后同步 PR、Issue 和代码协作信号' },
   { type: 'notion', label: 'Notion', desc: '授权后同步页面和数据库作为任务来源' },
@@ -160,7 +163,8 @@ export function ConnectionsPage() {
     ?.find((entry) => entry.id === 'external_access.connectors') ?? null;
   const externalStatusSources = (configStatus?.externalAccessStatus?.sources ?? []).map(connectorToConnectedSource);
   const statusSourceIds = new Set(externalStatusSources.map((source) => source.id));
-  const displayedSources = externalStatusSources.length > 0 ? externalStatusSources : sources;
+  const connectedStatusSources = externalStatusSources.filter((source) => source.status === 'connected' || source.status === 'error');
+  const displayedSources = connectedStatusSources.length > 0 ? connectedStatusSources : sources;
   const gmailStatus = externalStatusSources.find((source) => source.id === 'gmail')?.status ?? null;
 
   return (
@@ -310,8 +314,33 @@ export function ConnectionsPage() {
       <section className="ctx-section">
         <div className="ctx-section-header">
           <div>
-            <div className="ctx-section-title">可连接来源</div>
-            <div className="ctx-section-desc">即将支持</div>
+            <div className="ctx-section-title">系统默认可选功能</div>
+            <div className="ctx-section-desc">默认展示，不会自动授权、探测或同步</div>
+          </div>
+        </div>
+        <div className="conn-available-grid">
+          {DEFAULT_OPTIONAL_SOURCES.map((s) => (
+            <div key={s.id} className="conn-available-card">
+              <span className="ctx-source-icon">{SOURCE_BADGES[s.type]}</span>
+              <div className="conn-available-label">{s.label}</div>
+              <div className="conn-available-desc muted">{s.desc}</div>
+              {window.api?.connectGmailOAuth ? (
+                <button className="btn sm ghost" disabled={gmailBusy || gmailStatus === 'connected'} onClick={connectGmail}>
+                  {gmailBusy ? '处理中' : gmailStatus === 'connected' ? '已连接' : '授权'}
+                </button>
+              ) : (
+                <button className="btn sm ghost" disabled>即将支持</button>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="ctx-section">
+        <div className="ctx-section-header">
+          <div>
+            <div className="ctx-section-title">更多可连接来源</div>
+            <div className="ctx-section-desc">后续按同一授权与入库复核边界接入</div>
           </div>
         </div>
         <div className="conn-available-grid">
@@ -320,13 +349,7 @@ export function ConnectionsPage() {
               <span className="ctx-source-icon">{SOURCE_BADGES[s.type]}</span>
               <div className="conn-available-label">{s.label}</div>
               <div className="conn-available-desc muted">{s.desc}</div>
-              {s.type === 'email' && window.api?.connectGmailOAuth ? (
-                <button className="btn sm ghost" disabled={gmailBusy || gmailStatus === 'connected'} onClick={connectGmail}>
-                  {gmailBusy ? '处理中' : gmailStatus === 'connected' ? '已连接' : '连接'}
-                </button>
-              ) : (
-                <button className="btn sm ghost" disabled>即将支持</button>
-              )}
+              <button className="btn sm ghost" disabled>即将支持</button>
             </div>
           ))}
         </div>
