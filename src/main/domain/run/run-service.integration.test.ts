@@ -490,7 +490,7 @@ describe('RunService integration', () => {
     );
   });
 
-  it('persists a provider-native structured agent session when the gate passes', async () => {
+  it('persists a provider-native structured agent session when an exposed provider tool passes', async () => {
     const taskRepository = new TaskRepository();
     const waitingItemRepository = new WaitingItemRepository();
     const artifactRepository = new ArtifactRepository();
@@ -557,11 +557,8 @@ describe('RunService integration', () => {
                       id: 'call_provider_native_1',
                       type: 'function',
                       function: {
-                        name: 'taskplane__artifact__create_note',
-                        arguments: JSON.stringify({
-                          title: 'Provider native note',
-                          content: 'Provider native final output',
-                        }),
+                        name: 'taskplane__task__inspect_context',
+                        arguments: JSON.stringify({}),
                       },
                     },
                   ],
@@ -604,11 +601,10 @@ describe('RunService integration', () => {
     const detail = await service.getDetail(run.id);
     const agentSessions = detail?.agentSessions ?? [];
     const steps = detail?.steps ?? [];
-    const artifacts = await artifactRepository.listRecentForTask(task.id, 10);
 
     expect(run).toMatchObject({
       status: 'completed',
-      output: 'Provider native final output',
+      output: expect.stringContaining('任务：Provider native persisted session'),
       outputSource: 'ai',
     });
     expect(agentSessions).toHaveLength(1);
@@ -629,17 +625,8 @@ describe('RunService integration', () => {
     expect(steps.some((step) =>
       step.kind === 'plan' &&
       step.title === '采用模型提出的 agent 步骤计划' &&
-      step.input?.includes('artifact.create_note')
+      step.input?.includes('task.inspect_context')
     )).toBe(true);
-    expect(artifacts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          kind: 'note',
-          title: 'Provider native note',
-          content: 'Provider native final output',
-        }),
-      ]),
-    );
   });
 
   it('falls back to a text-only agent session when the provider payload is missing', async () => {

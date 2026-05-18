@@ -1159,29 +1159,9 @@ describe('AgentRunLoop', () => {
     }));
   });
 
-  it('executes provider-native proposal steps when the model text is empty', async () => {
+  it('falls back instead of executing provider-native tools that are not exposed on that channel', async () => {
     const agentToolRegistry = {
-      execute: vi
-        .fn()
-        .mockResolvedValueOnce({
-          success: true,
-          status: 'completed',
-          summary: 'Inspected context',
-          output: 'Context summary',
-        })
-        .mockResolvedValueOnce({
-          success: true,
-          status: 'completed',
-          summary: 'Inspected timeline',
-          output: 'Timeline summary',
-        })
-        .mockResolvedValueOnce({
-          success: true,
-          status: 'completed',
-          summary: 'Created provider-native note',
-          output: 'Provider-native note from tool input',
-          artifactId: 'artifact_1',
-        }),
+      execute: vi.fn(),
     };
     const runStepRepository = buildRunStepRepositoryMock();
     const loop = new AgentRunLoop(agentToolRegistry as never, runStepRepository as never);
@@ -1190,6 +1170,7 @@ describe('AgentRunLoop', () => {
       request: buildRequest(),
       modelOutput: '',
       taskTitle: 'Task 1',
+      proposalSource: 'provider_tool_call',
       proposal: {
         finalOutput: null,
         steps: [
@@ -1206,38 +1187,16 @@ describe('AgentRunLoop', () => {
 
     expect(result).toEqual({
       status: 'completed',
-      output: 'Provider-native note from tool input',
-      observations: [
-        expect.objectContaining({
-          tool: 'task.inspect_context',
-          status: 'completed',
-        }),
-        expect.objectContaining({
-          tool: 'task.inspect_timeline',
-          status: 'completed',
-        }),
-        expect.objectContaining({
-          tool: 'artifact.create_note',
-          status: 'completed',
-          output: 'Provider-native note from tool input',
-        }),
-      ],
+      output: '',
+      observations: [],
     });
-    expect(agentToolRegistry.execute).toHaveBeenCalledWith(
-      'artifact.create_note',
-      {
-        title: 'Provider-native note',
-        content: 'Provider-native note from tool input',
-      },
-      expect.anything(),
-      expect.anything(),
-    );
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'plan',
-        title: '采用模型提出的 agent 步骤计划',
+        title: '采用保守 fallback agent 步骤计划',
         input: expect.stringContaining('"finalOutput":null'),
-        output: '1. task.inspect_context\n2. task.inspect_timeline\n3. artifact.create_note',
+        output: '无可执行步骤。',
       }),
     );
   });

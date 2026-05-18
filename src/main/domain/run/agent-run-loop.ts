@@ -6,6 +6,10 @@ import type {
   AgentToolName,
   AgentToolResult,
 } from '../../../shared/types/agent-execution.js';
+import {
+  shouldExposeAgentTool,
+  type AgentToolExposureChannel,
+} from '../../../shared/agent-tool-exposure.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { AgentCheckpointRecorder } from './agent-checkpoint-recorder.js';
@@ -447,9 +451,10 @@ export class AgentRunLoop {
     proposal: AgentStepProposal | null | undefined;
     modelOutput: string;
     policy?: AgentRunRequest['policy'];
+    channel?: AgentToolExposureChannel;
     taskTitle: string;
   }): AgentRunLoopStep[] {
-    const { modelOutput, policy, proposal, taskTitle } = params;
+    const { channel = 'text_prompt', modelOutput, policy, proposal, taskTitle } = params;
 
     if (!proposal?.steps.length) {
       return this.buildLocalNotePlan({ modelOutput, taskTitle });
@@ -458,6 +463,17 @@ export class AgentRunLoop {
     const nextPlan: AgentRunLoopStep[] = [];
 
     for (const step of proposal.steps) {
+      if (!shouldExposeAgentTool({
+        name: step.tool,
+        channel,
+        policy: {
+          allowLocalWorkspaceRead: Boolean(policy?.allowLocalWorkspaceRead),
+          allowTaskMutationTools: Boolean(policy?.allowTaskMutationTools),
+        },
+      })) {
+        return this.buildLocalNotePlan({ modelOutput, taskTitle });
+      }
+
       if (step.tool === 'task.inspect_context') {
         nextPlan.push(buildInspectContextStep());
         continue;
@@ -594,6 +610,7 @@ export class AgentRunLoop {
     proposal: AgentStepProposal | null | undefined;
     modelOutput: string;
     policy?: AgentRunRequest['policy'];
+    channel?: AgentToolExposureChannel;
     taskTitle: string;
   }): AgentRunLoopPlan {
     const fallbackPlan = this.buildLocalNotePlan(params);
@@ -743,6 +760,7 @@ export class AgentRunLoop {
       proposal: parsedProposal,
       modelOutput: effectiveModelOutput,
       policy: request.policy,
+      channel: proposalSource === 'provider_tool_call' ? 'provider_native' : 'text_prompt',
       taskTitle,
     });
     const planOutput = executionPlan.steps.map((step, index) => `${index + 1}. ${step.tool}`).join('\n')
