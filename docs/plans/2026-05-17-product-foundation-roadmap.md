@@ -125,8 +125,8 @@ Tasks:
    currently use ad hoc capability inputs.
 4. Add tests that disabled, unconfigured, or approval-required capabilities
    cannot silently become model-visible.
-5. Keep external connector ingestion deferred until the registry can express
-   source quality and permission boundaries.
+5. Keep external connector ingestion behind the registry, source-quality plan,
+   explicit review, and task-memory write boundary.
 
 Acceptance criteria:
 
