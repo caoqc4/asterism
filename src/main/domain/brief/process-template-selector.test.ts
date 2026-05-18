@@ -187,4 +187,51 @@ describe('BriefProcessTemplateSelector', () => {
       reason: '模型返回了一个不存在的模板。',
     });
   });
+
+  it('drops selected ids when the model says templates should not be used', async () => {
+    generateObjectMock.mockResolvedValue({
+      object: {
+        shouldUse: false,
+        selectedTemplateIds: ['process_template_1'],
+        reason: '这次 brief 不需要模板。',
+      },
+    });
+    const { BriefProcessTemplateSelector } = await import('./process-template-selector.js');
+    const selector = new BriefProcessTemplateSelector();
+    const homeData = {
+      ...buildHomeData(),
+      processTemplateCandidates: [
+        {
+          id: 'process_template_1',
+          title: 'Risk review skill',
+          summary: 'Prioritize risk and blockers',
+          content: '1. Review risks\n2. Highlight blockers',
+          kind: 'skill' as const,
+          tags: ['risk'],
+          taskIds: ['task_1'],
+          taskTitles: ['Task 1'],
+          notes: ['Use for risky work'],
+        },
+      ],
+    };
+
+    const result = await selector.select(
+      homeData,
+      'startup',
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: '这次 brief 不需要模板。',
+    });
+  });
 });

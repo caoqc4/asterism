@@ -261,4 +261,38 @@ describe('DecisionProcessTemplateSelector', () => {
       reason: '模型返回了一个不存在的模板。',
     });
   });
+
+  it('drops selected ids when the model says templates should not be used', async () => {
+    generateObjectMock.mockResolvedValue({
+      object: {
+        shouldUse: false,
+        selectedTemplateIds: ['process_template_1'],
+        reason: '这次决策不需要模板。',
+      },
+    });
+
+    const { DecisionProcessTemplateSelector } = await import('./process-template-selector.js');
+    const selector = new DecisionProcessTemplateSelector();
+
+    const result = await selector.select(
+      buildTaskDetail(),
+      {
+        taskId: 'task_1',
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: '这次决策不需要模板。',
+    });
+  });
 });

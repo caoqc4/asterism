@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
+import { normalizeProcessTemplateSelection } from '../../../shared/process-template-selection.js';
 import type { BriefProcessTemplateCandidate, HomeBriefData } from '../../../shared/types/brief.js';
 import { getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 import type { RuntimeAiConfig } from '../../keychain/ai-config-service.js';
@@ -88,14 +89,11 @@ export class BriefProcessTemplateSelector {
       prompt: buildSelectionPrompt(homeData, kind, templates),
     });
 
-    const selectedTemplates = templates.filter((item) =>
-      object.selectedTemplateIds.includes(item.id),
-    );
-
-    return {
-      shouldUse: object.shouldUse && selectedTemplates.length > 0,
-      selectedTemplates,
-      reason: object.reason.trim(),
-    };
+    return normalizeProcessTemplateSelection({
+      candidates: templates,
+      shouldUse: object.shouldUse,
+      selectedTemplateIds: object.selectedTemplateIds,
+      reason: object.reason,
+    });
   }
 }

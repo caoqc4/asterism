@@ -518,7 +518,10 @@ queue.
 `BriefProcessTemplateSelector` uses that same focus-task projection when
 deciding whether method templates should influence a generated brief, so method
 selection follows the visible attention surface instead of a separate hidden
-task list.
+task list. Brief, Decision, and Run template selectors now share one selection
+normalizer: templates are returned only when `shouldUse=true` and selected ids
+match active candidates, so model output cannot leave stale selected templates
+attached to a skipped selection.
 
 ## Recommended Execution Order
 

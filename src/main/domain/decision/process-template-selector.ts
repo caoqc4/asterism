@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
+import { normalizeProcessTemplateSelection } from '../../../shared/process-template-selection.js';
 import type { DraftDecisionInput } from '../../../shared/types/decision.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
@@ -102,14 +103,11 @@ export class DecisionProcessTemplateSelector {
       prompt: buildSelectionPrompt(task, input, templates),
     });
 
-    const selectedTemplates = templates.filter((item) =>
-      object.selectedTemplateIds.includes(item.id),
-    );
-
-    return {
-      shouldUse: object.shouldUse && selectedTemplates.length > 0,
-      selectedTemplates,
-      reason: object.reason.trim(),
-    };
+    return normalizeProcessTemplateSelection({
+      candidates: templates,
+      shouldUse: object.shouldUse,
+      selectedTemplateIds: object.selectedTemplateIds,
+      reason: object.reason,
+    });
   }
 }

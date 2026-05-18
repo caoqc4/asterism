@@ -154,6 +154,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'BriefFocusProjection carries rank, source action id, attention lane, and attention reason into visible focus cards so Brief can explain why an item appears without adding another sorter.',
       'BriefExecutor consumes HomeBriefData.briefFocusTasks and briefAttention so scheduled or fallback briefs preserve the visible focus list, attention-summary boundary, and display-limit explanation.',
       'BriefProcessTemplateSelector uses the same HomeBriefData.briefFocusTasks when selecting method templates for generated briefs.',
+      'Brief, Decision, and Run process-template selectors share selection normalization, so skipped or invalid model selections never retain selected templates.',
       'BriefPage now displays the Brief attention display count and per-card inclusion basis while keeping Tasks as the full priority queue owner.',
     ],
     outOfAgentPrinciplesScope: [
