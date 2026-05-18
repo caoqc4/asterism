@@ -18,8 +18,18 @@ const TRANSPORT_LABELS: Record<McpServer['transport'], string> = {
   http: 'HTTP',
 };
 
+const DEFAULT_MCP_SERVERS: McpServer[] = [
+  {
+    id: 'playwright',
+    name: 'Playwright MCP',
+    url: 'npx @playwright/mcp@latest',
+    transport: 'stdio',
+    status: 'disconnected',
+  },
+];
+
 export function McpPage() {
-  const [servers, setServers] = useState<McpServer[]>([]);
+  const [servers, setServers] = useState<McpServer[]>(DEFAULT_MCP_SERVERS);
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [configStatus, setConfigStatus] = useState<AiConfigStatus | null>(null);

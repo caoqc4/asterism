@@ -1155,7 +1155,7 @@ describe('App redesign v1', () => {
         access: 'read_only',
         requiresApproval: true,
         requiredGate: 'runtime_context_assembly',
-        summary: 'reserved=4 / exposed=0',
+        summary: 'reserved=5 / exposed=0',
       }],
       configurationSafetyReport: {
         secretExposureSafe: true,
@@ -1178,6 +1178,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/AI 执行任务时可用的工具能力登记/)).toBeTruthy();
     expect(screen.getByText(/当前页面只维护技能目录预览/)).toBeTruthy();
     expect(screen.getByText(/真实工具暴露必须接入 Skills 服务/)).toBeTruthy();
+    expect(screen.getByText('Brainstorming')).toBeTruthy();
+    expect(screen.getByText(/在创建功能、组件或修改行为前/)).toBeTruthy();
     expect(screen.getByText('能力状态')).toBeTruthy();
     expect(screen.getByText('未配置')).toBeTruthy();
     expect(screen.getByText(/Capability family is not configured/)).toBeTruthy();
@@ -1220,7 +1222,10 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Model Context Protocol 工具服务端/)).toBeTruthy();
     expect(screen.getByText(/当前页面只维护服务器登记预览/)).toBeTruthy();
     expect(screen.getByText(/真实连接、探测和工具暴露必须接入 MCP 服务/)).toBeTruthy();
-    expect(screen.getByText(/真实 MCP 服务接入后注册到 AI 能力库/)).toBeTruthy();
+    expect(screen.getByText('Playwright MCP')).toBeTruthy();
+    expect(screen.getByText('npx @playwright/mcp@latest')).toBeTruthy();
+    expect(screen.getByText('未连接')).toBeTruthy();
+    expect(screen.getByText(/真实 MCP 服务接入后，服务器暴露的工具才可出现在 AI 可用工具列表/)).toBeTruthy();
     expect(screen.getByText('能力状态')).toBeTruthy();
     expect(screen.getByText('已关闭')).toBeTruthy();
     expect(screen.getByText(/No connected MCP server exposes tools/)).toBeTruthy();

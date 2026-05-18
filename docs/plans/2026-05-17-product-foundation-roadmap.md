@@ -385,7 +385,10 @@ boundary copy. They still do not probe or expose real tools at startup; future
 service work should feed structured Skills/MCP product-surface status into the
 same registry path. Their current UI copy also treats local skill entries and
 MCP server entries as registration previews, not as evidence that tools have
-already become model-visible.
+already become model-visible. The first default optional catalogue entries are
+`Brainstorming` for Skills and `Playwright MCP` for MCP, both intentionally
+disabled/disconnected until a real Skills or MCP service promotes them through
+the runtime capability gate.
 
 ## Package F: Work Habits, SOPs, And Method Library
 

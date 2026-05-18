@@ -29,6 +29,14 @@ interface ConfigField {
 
 const BUILTIN_CATALOGUE: Omit<Skill, 'enabled' | 'status' | 'config'>[] = [
   {
+    id: 'brainstorming',
+    source: 'builtin',
+    name: 'Brainstorming',
+    invokeId: 'brainstorming',
+    desc: '在创建功能、组件或修改行为前，先帮助 AI 做意图澄清、方案比较和边界收束',
+    configSchema: [],
+  },
+  {
     id: 'web_search',
     source: 'builtin',
     name: 'Web Search',
@@ -85,7 +93,7 @@ function parseSkillFolders(files: FileList): string[] {
 
 export function SkillsPage() {
   const [builtins, setBuiltins] = useState<Skill[]>(
-    BUILTIN_CATALOGUE.map((c) => ({ ...c, enabled: c.id === 'web_search', status: 'ready', config: {} }))
+    BUILTIN_CATALOGUE.map((c) => ({ ...c, enabled: false, status: 'ready', config: {} }))
   );
   const [localSkills, setLocalSkills] = useState<Skill[]>([]);
   const [httpSkills, setHttpSkills] = useState<Skill[]>([]);
