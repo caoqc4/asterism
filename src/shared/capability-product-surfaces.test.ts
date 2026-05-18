@@ -6,6 +6,8 @@ import {
   DEFAULT_SKILL_CATALOGUE_ITEMS,
   defaultMcpProductSurfaceStatus,
   defaultSkillsProductSurfaceStatus,
+  mcpStatusForCapability,
+  skillsStatusForCapability,
 } from './capability-product-surfaces.js';
 
 describe('capability product surfaces', () => {
@@ -28,6 +30,7 @@ describe('capability product surfaces', () => {
     expect(defaultSkillsProductSurfaceStatus()).toEqual({
       enabledCount: 0,
       readyCount: 0,
+      modelVisibleCount: 0,
       needsConfigCount: 0,
       catalogueCount: DEFAULT_SKILL_CATALOGUE_ITEMS.length,
     });
@@ -43,7 +46,38 @@ describe('capability product surfaces', () => {
     expect(defaultMcpProductSurfaceStatus()).toEqual({
       connectedServerCount: 0,
       toolCount: 0,
+      modelVisibleToolCount: 0,
       errorCount: 0,
+      catalogueCount: DEFAULT_MCP_SERVER_CATALOGUE_ITEMS.length,
+    });
+  });
+
+  it('projects live Skills service state separately from model-visible exposure', () => {
+    expect(skillsStatusForCapability([
+      { id: 'brainstorming', status: 'ready', modelVisible: false },
+      { id: 'task-memory', status: 'ready', modelVisible: true },
+      { id: 'internal-draft', status: 'enabled', modelVisible: false },
+      { id: 'broken-skill', status: 'error', modelVisible: false },
+    ])).toEqual({
+      enabledCount: 3,
+      readyCount: 2,
+      modelVisibleCount: 1,
+      needsConfigCount: 2,
+      catalogueCount: DEFAULT_SKILL_CATALOGUE_ITEMS.length,
+    });
+  });
+
+  it('projects live MCP service state separately from connected tool count', () => {
+    expect(mcpStatusForCapability([
+      { id: 'playwright', status: 'connected', toolCount: 4, modelVisibleToolCount: 0 },
+      { id: 'docs', status: 'connected', toolCount: 2, modelVisibleToolCount: 1 },
+      { id: 'broken', status: 'error', toolCount: 3, modelVisibleToolCount: 3 },
+      { id: 'off', status: 'disconnected', toolCount: 5, modelVisibleToolCount: 5 },
+    ])).toEqual({
+      connectedServerCount: 2,
+      toolCount: 6,
+      modelVisibleToolCount: 1,
+      errorCount: 1,
       catalogueCount: DEFAULT_MCP_SERVER_CATALOGUE_ITEMS.length,
     });
   });

@@ -377,6 +377,63 @@ describe('runtime context manifest', () => {
     expect(formatted).not.toContain('Playwright');
   });
 
+  it('formats capability registry status as counts in runtime context', () => {
+    const manifest = buildRuntimeContextManifest({
+      capabilities: buildRuntimeCapabilitySnapshot({
+        aiStatus: {
+          configured: true,
+          apiKeyStored: true,
+          apiKeySource: 'env',
+          provider: 'anthropic',
+          model: 'claude-3-5-sonnet-latest',
+          baseUrl: null,
+          workspaceRoot: '/repo',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          configPath: '/config.json',
+          featureFlags: { enableScheduler: false },
+          capabilityRegistry: [
+            {
+              access: 'mixed',
+              configured: true,
+              family: 'skill',
+              id: 'skills.catalogue',
+              label: 'Skills',
+              missingReason: null,
+              requiredGate: 'runtime_entrypoint_coverage',
+              requiresApproval: true,
+              status: 'available',
+              summary: 'Brainstorming service ready',
+              visibility: 'model_visible',
+            },
+            {
+              access: 'mixed',
+              configured: false,
+              family: 'mcp',
+              id: 'mcp.servers',
+              label: 'MCP Servers',
+              missingReason: 'Connected MCP tools are not exposed through the runtime tool gate.',
+              requiredGate: 'runtime_entrypoint_coverage',
+              requiresApproval: true,
+              status: 'unconfigured',
+              summary: 'Playwright MCP connected but hidden',
+              visibility: 'hidden',
+            },
+          ],
+        },
+      }),
+      task: { id: 'task_1', title: 'Launch task', state: 'running' },
+      taskFiles: [{ path: 'Task.md', kind: 'file', contentPreview: '# Task' }],
+    });
+    const formatted = formatRuntimeContextManifestForStep(manifest);
+
+    expect(formatted).toContain('capabilityRows=2');
+    expect(formatted).toContain('capabilityAvailable=1');
+    expect(formatted).toContain('capabilityModelVisible=1');
+    expect(formatted).toContain('capabilityBlocked=1');
+    expect(formatted).not.toContain('Brainstorming');
+    expect(formatted).not.toContain('Playwright');
+  });
+
   it('adds source freshness inclusion reasons to manifest source contexts', () => {
     const manifest = buildRuntimeContextManifest({
       sourceContexts: [

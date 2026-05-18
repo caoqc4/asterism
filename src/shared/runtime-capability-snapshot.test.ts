@@ -82,6 +82,12 @@ describe('runtime capability snapshot', () => {
           modelVisibleIds: ['task.inspect_context'],
         })],
       },
+      registry: {
+        entryCount: 0,
+        availableCount: 0,
+        modelVisibleCount: 0,
+        blockedCount: 0,
+      },
     });
     expect(snapshot.summary).toContain('model=configured');
     expect(snapshot.summary).toContain('sandbox=not_probed');
@@ -149,5 +155,55 @@ describe('runtime capability snapshot', () => {
       summary: 'Sandbox producer backend ready.',
     });
     expect(snapshot.summary).toContain('sandbox=ready');
+  });
+
+  it('summarizes capability registry rows without exposing catalogue entry names', () => {
+    const snapshot = buildRuntimeCapabilitySnapshot({
+      aiStatus: aiStatus({
+        capabilityRegistry: [
+          {
+            access: 'mixed',
+            configured: true,
+            family: 'skill',
+            id: 'skills.catalogue',
+            label: 'Skills',
+            missingReason: null,
+            requiredGate: 'runtime_entrypoint_coverage',
+            requiresApproval: true,
+            status: 'available',
+            summary: 'enabled=1 / ready=1 / modelVisible=1 / needsConfig=0 / catalogue=1 / Brainstorming',
+            visibility: 'model_visible',
+          },
+          {
+            access: 'mixed',
+            configured: false,
+            family: 'mcp',
+            id: 'mcp.servers',
+            label: 'MCP Servers',
+            missingReason: 'Connected MCP tools are not exposed through the runtime tool gate.',
+            requiredGate: 'runtime_entrypoint_coverage',
+            requiresApproval: true,
+            status: 'unconfigured',
+            summary: 'connectedServers=1 / tools=3 / modelVisibleTools=0 / errors=0 / catalogue=1 / Playwright MCP',
+            visibility: 'hidden',
+          },
+        ],
+      }),
+    });
+
+    expect(snapshot.registry).toEqual({
+      availableCount: 1,
+      blockedCount: 1,
+      entryCount: 2,
+      hiddenCount: 1,
+      modelVisibleCount: 1,
+      policyGatedCount: 0,
+    });
+    expect(snapshot.summary).toContain('capabilityRows=2');
+    expect(snapshot.summary).toContain('capabilityAvailable=1');
+    expect(snapshot.summary).toContain('capabilityModelVisible=1');
+    expect(snapshot.summary).toContain('capabilityBlocked=1');
+    expect(snapshot.summary).not.toContain('Brainstorming');
+    expect(snapshot.summary).not.toContain('Playwright');
   });
 });

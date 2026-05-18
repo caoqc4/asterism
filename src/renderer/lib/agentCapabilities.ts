@@ -61,6 +61,31 @@ function formatPreRunSandboxCodingSummary(aiStatus: AiConfigStatus | null): stri
   return SANDBOX_CODING_GATED_SUMMARY;
 }
 
+function formatPreRunOptionalCapabilitySummary(aiStatus: AiConfigStatus | null): string {
+  const optionalCapabilities = (aiStatus?.capabilityRegistry ?? [])
+    .filter((entry) => entry.id === 'skills.catalogue' || entry.id === 'mcp.servers');
+
+  if (!optionalCapabilities.length) {
+    return 'optional Skills/MCP capabilities unavailable until registry status loads';
+  }
+
+  const modelVisible = optionalCapabilities
+    .filter((entry) => entry.status === 'available' && entry.visibility === 'model_visible')
+    .map((entry) => entry.label);
+
+  if (modelVisible.length > 0) {
+    return `optional Skills/MCP capabilities model-visible: ${modelVisible.join(', ')} / runtime gate still required`;
+  }
+
+  const blocked = optionalCapabilities
+    .filter((entry) => entry.status !== 'available')
+    .map((entry) => entry.id);
+
+  return blocked.length > 0
+    ? `optional Skills/MCP capabilities hidden: ${blocked.join(', ')}`
+    : 'optional Skills/MCP capabilities not model-visible';
+}
+
 export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {
   const metadataEntries = parseAgentSessionMetadata(session.metadata);
   if (metadataEntries.get('executor') === 'sandboxed_coding_producer') {
@@ -439,6 +464,7 @@ export function formatPreRunAgentCapabilitySummary(
     workspaceSummary,
     taskToolsSummary,
     formatPreRunStructuredToolSummary(aiStatus),
+    formatPreRunOptionalCapabilitySummary(aiStatus),
     formatPreRunSandboxCodingSummary(aiStatus),
   ].join(' / ');
 }

@@ -105,6 +105,35 @@ describe('normalizeProviderToolCallPlan', () => {
     });
   });
 
+  it('fails closed for reserved capability scaffold ids even when product surfaces are model-visible', () => {
+    expect(normalizeProviderToolCallPlan({
+      provider: 'openai-compatible',
+      model: 'relay/model',
+      payload: {
+        source: 'provider_tool_call',
+        rawSummary: 'capabilityRows=2 / capabilityModelVisible=2',
+        proposal: {
+          steps: [
+            {
+              tool: 'mcp.safe_read',
+              input: { serverId: 'playwright' },
+            },
+            {
+              tool: 'skill.prompt_shape',
+              input: { skillId: 'brainstorming' },
+            },
+          ],
+        },
+      },
+    })).toEqual({
+      status: 'failed',
+      provider: 'openai-compatible',
+      model: 'relay/model',
+      error: 'Provider tool-call payload did not contain executable Taskplane steps.',
+      rawSummary: 'proposal, rawSummary, source',
+    });
+  });
+
   it('fails closed when an otherwise valid provider payload includes an unknown tool', () => {
     expect(normalizeProviderToolCallPlan({
       provider: 'openai',

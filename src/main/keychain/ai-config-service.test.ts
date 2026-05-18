@@ -22,6 +22,7 @@ describe('AiConfigService', () => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
     fs.mkdirSync(tempRoot, { recursive: true });
     delete process.env.TASKPLANE_AI_API_KEY;
+    delete process.env.TASKPLANE_CAPABILITY_PRODUCT_SURFACE_FIXTURE_JSON;
     delete process.env.TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON;
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
     getPasswordMock.mockReset();
@@ -31,6 +32,7 @@ describe('AiConfigService', () => {
   afterEach(() => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
     delete process.env.TASKPLANE_AI_API_KEY;
+    delete process.env.TASKPLANE_CAPABILITY_PRODUCT_SURFACE_FIXTURE_JSON;
     delete process.env.TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON;
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
   });
@@ -62,13 +64,13 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'enabled=0 / ready=0 / needsConfig=0 / catalogue=1',
+      summary: 'enabled=0 / ready=0 / modelVisible=0 / needsConfig=0 / catalogue=1',
       missingReason: 'No ready skill is enabled.',
     });
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'connectedServers=0 / tools=0 / errors=0 / catalogue=1',
+      summary: 'connectedServers=0 / tools=0 / modelVisibleTools=0 / errors=0 / catalogue=1',
       missingReason: 'No connected MCP server exposes tools.',
     });
     expect(status.externalAccessStatus).toEqual({
@@ -167,6 +169,104 @@ describe('AiConfigService', () => {
     });
   });
 
+  it('feeds live Skills and MCP service status into capability and safety projections', async () => {
+    getPasswordMock.mockResolvedValue(null);
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const service = new AiConfigService(
+      new AppConfigService(() => tempRoot),
+      undefined,
+      {
+        getSkillsStatus: () => ({
+          enabledCount: 2,
+          readyCount: 1,
+          modelVisibleCount: 1,
+          needsConfigCount: 1,
+          catalogueCount: 1,
+        }),
+        getMcpStatus: () => ({
+          connectedServerCount: 1,
+          toolCount: 3,
+          modelVisibleToolCount: 2,
+          errorCount: 0,
+          catalogueCount: 1,
+        }),
+      },
+    );
+
+    const status = await service.getStatus();
+
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'available',
+      configured: true,
+      visibility: 'model_visible',
+      summary: 'enabled=2 / ready=1 / modelVisible=1 / needsConfig=1 / catalogue=1',
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
+      status: 'available',
+      configured: true,
+      visibility: 'model_visible',
+      summary: 'connectedServers=1 / tools=3 / modelVisibleTools=2 / errors=0 / catalogue=1',
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'skills.catalogue')).toMatchObject({
+      state: 'approval_required',
+      requiresApproval: true,
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
+      state: 'approval_required',
+      requiresApproval: true,
+    });
+  });
+
+  it('does not promote live Skills and MCP service state without model-visible runtime exposure', async () => {
+    getPasswordMock.mockResolvedValue(null);
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const service = new AiConfigService(
+      new AppConfigService(() => tempRoot),
+      undefined,
+      {
+        getSkillsStatus: () => ({
+          enabledCount: 1,
+          readyCount: 1,
+          modelVisibleCount: 0,
+          needsConfigCount: 0,
+          catalogueCount: 1,
+        }),
+        getMcpStatus: () => ({
+          connectedServerCount: 1,
+          toolCount: 3,
+          modelVisibleToolCount: 0,
+          errorCount: 0,
+          catalogueCount: 1,
+        }),
+      },
+    );
+
+    const status = await service.getStatus();
+
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'unconfigured',
+      configured: false,
+      visibility: 'hidden',
+      missingReason: 'Ready skills are not exposed through the runtime tool gate.',
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
+      status: 'unconfigured',
+      configured: false,
+      visibility: 'hidden',
+      missingReason: 'Connected MCP tools are not exposed through the runtime tool gate.',
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'skills.catalogue')).toMatchObject({
+      state: 'missing',
+      reason: 'Ready skills are not exposed through the runtime tool gate.',
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
+      state: 'missing',
+      reason: 'Connected MCP tools are not exposed through the runtime tool gate.',
+    });
+  });
+
   it('can project a local External Access fixture through the default service', async () => {
     getPasswordMock.mockResolvedValue(null);
     process.env.TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON = JSON.stringify({
@@ -191,6 +291,39 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
       status: 'available',
       summary: 'connected=1 / pending=0 / errors=0 / catalogue=1',
+    });
+  });
+
+  it('can project local Skills and MCP service fixtures through the default service', async () => {
+    getPasswordMock.mockResolvedValue(null);
+    process.env.TASKPLANE_CAPABILITY_PRODUCT_SURFACE_FIXTURE_JSON = JSON.stringify({
+      mcpServers: [{
+        id: 'playwright_fixture',
+        status: 'connected',
+        toolCount: 3,
+        modelVisibleToolCount: 1,
+      }],
+      skills: [{
+        id: 'brainstorming_fixture',
+        status: 'ready',
+        modelVisible: true,
+      }],
+    });
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const service = new AiConfigService(new AppConfigService(() => tempRoot));
+
+    const status = await service.getStatus();
+
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'available',
+      summary: 'enabled=1 / ready=1 / modelVisible=1 / needsConfig=0 / catalogue=1',
+      visibility: 'model_visible',
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
+      status: 'available',
+      summary: 'connectedServers=1 / tools=3 / modelVisibleTools=1 / errors=0 / catalogue=1',
+      visibility: 'model_visible',
     });
   });
 

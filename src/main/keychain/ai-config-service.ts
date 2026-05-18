@@ -7,12 +7,12 @@ import type { AiConfigInput, AiConfigStatus, AiProvider, AiProviderKeysInput, Fe
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
 import { buildCapabilityRegistry, type CapabilityProductSurfaceStatus } from '../../shared/capability-registry.js';
-import { defaultMcpProductSurfaceStatus, defaultSkillsProductSurfaceStatus } from '../../shared/capability-product-surfaces.js';
 import { buildConfigurationSafetyReport } from '../../shared/configuration-safety-report.js';
 import { emptyExternalAccessStatus, externalAccessStatusForCapability, type ExternalAccessStatus } from '../../shared/external-access-status.js';
 import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-snapshot.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { readEnvBoolean, readEnvValue } from '../config/env.js';
+import { createCapabilityProductSurfaceStatusService, type CapabilityProductSurfaceStatusProvider } from '../domain/capability/capability-product-surface-status-service.js';
 import { createExternalAccessStatusService, ExternalAccessStatusService } from '../domain/external-access/external-access-status-service.js';
 import { evaluateAgentExecutorLifecycleServiceAvailability } from '../domain/run/agent-executor-lifecycle-service-factory.js';
 
@@ -47,7 +47,6 @@ export type RuntimeAiConfig = {
   featureFlags: FeatureFlags;
 };
 
-
 function detectCodeAgentWorkspaceChecks(
   workspaceRoot: string | null,
 ): NonNullable<AiConfigStatus['codeAgentWorkspaceChecks']> {
@@ -73,11 +72,19 @@ function detectCodeAgentWorkspaceChecks(
   }
 }
 
-function buildCapabilityProductSurfaceStatus(externalAccessStatus: ExternalAccessStatus | undefined): CapabilityProductSurfaceStatus {
+async function buildCapabilityProductSurfaceStatus(
+  externalAccessStatus: ExternalAccessStatus | undefined,
+  productSurfaceStatusProvider: CapabilityProductSurfaceStatusProvider,
+): Promise<CapabilityProductSurfaceStatus> {
+  const [skills, mcp] = await Promise.all([
+    productSurfaceStatusProvider.getSkillsStatus(),
+    productSurfaceStatusProvider.getMcpStatus(),
+  ]);
+
   return {
     externalAccess: externalAccessStatusForCapability(externalAccessStatus ?? emptyExternalAccessStatus()),
-    skills: defaultSkillsProductSurfaceStatus(),
-    mcp: defaultMcpProductSurfaceStatus(),
+    skills,
+    mcp,
   };
 }
 
@@ -85,6 +92,7 @@ export class AiConfigService {
   constructor(
     private readonly appConfigService: AppConfigService,
     private readonly externalAccessStatusService = createExternalAccessStatusService(),
+    private readonly productSurfaceStatusProvider: CapabilityProductSurfaceStatusProvider = createCapabilityProductSurfaceStatusService(),
   ) {}
 
   /* ─── Per-provider key storage ─── */
@@ -158,7 +166,7 @@ export class AiConfigService {
       toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({ policy: DEFAULT_TOOL_SCAFFOLD_POLICY }),
       externalAccessStatus,
     };
-    return withCapabilityRegistry(status);
+    return withCapabilityRegistry(status, this.productSurfaceStatusProvider);
   }
 
   async setConfig(input: AiConfigInput): Promise<AiConfigStatus> {
@@ -204,7 +212,7 @@ export class AiConfigService {
       toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({ policy: DEFAULT_TOOL_SCAFFOLD_POLICY }),
       externalAccessStatus,
     };
-    return withCapabilityRegistry(status);
+    return withCapabilityRegistry(status, this.productSurfaceStatusProvider);
   }
 
   private async saveProviderKeys(keys: AiProviderKeysInput): Promise<void> {
@@ -236,12 +244,15 @@ export class AiConfigService {
   }
 }
 
-function withCapabilityRegistry(status: AiConfigStatus): AiConfigStatus {
+async function withCapabilityRegistry(
+  status: AiConfigStatus,
+  productSurfaceStatusProvider: CapabilityProductSurfaceStatusProvider,
+): Promise<AiConfigStatus> {
   const statusWithRegistry = {
     ...status,
     capabilityRegistry: buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: status }),
-      productSurfaces: buildCapabilityProductSurfaceStatus(status.externalAccessStatus),
+      productSurfaces: await buildCapabilityProductSurfaceStatus(status.externalAccessStatus, productSurfaceStatusProvider),
     }),
   };
   return {

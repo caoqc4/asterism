@@ -515,8 +515,8 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     coveredBy: [
       'External access, MCP, skills, model, settings, and work habits are separate navigation capabilities.',
       'Risky local command/write tools use confirmation checkpoints.',
-      'RuntimeCapabilitySnapshot captures model availability, workspace verification checks, feature flags, and tool scaffold exposure for runtime consumers.',
-      'RuntimeCapabilitySnapshot preserves tool scaffold family summaries so capability consumers can distinguish reserved, hidden, and model-visible tool families.',
+      'RuntimeCapabilitySnapshot captures model availability, workspace verification checks, feature flags, tool scaffold exposure, and capability-registry row counts for runtime consumers.',
+      'RuntimeCapabilitySnapshot preserves tool scaffold family summaries and registry count summaries so capability consumers can distinguish reserved, hidden, policy-gated, blocked, and model-visible capability state without exposing optional catalogue item names.',
       'RuntimeCapabilitySnapshot also carries sandbox backend probe and producer readiness so sandbox availability is not inferred from feature flags alone.',
       'CapabilityRegistry projects runtime capability snapshots into stable capability entries with status, visibility, access type, approval requirement, and runtime gate.',
       'CapabilityRegistry uses tool scaffold summaries for Skills, MCP, and browser/operator reserved status, so they are structured hidden/unconfigured rows rather than generic deferred capability rows.',

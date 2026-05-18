@@ -1,4 +1,5 @@
 import type { AgentToolScaffoldFamily, AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
+import type { CapabilityRegistryEntry } from './capability-registry.js';
 import type { AiConfigStatus } from './types/settings.js';
 
 export type RuntimeCapabilityStatus = 'available' | 'disabled' | 'unknown';
@@ -34,6 +35,14 @@ export type RuntimeCapabilitySnapshot = {
     families: AgentToolScaffoldFamily[];
     summaries: AgentToolScaffoldFamilySummary[];
   };
+  registry: {
+    entryCount: number;
+    availableCount: number;
+    hiddenCount: number;
+    modelVisibleCount: number;
+    policyGatedCount: number;
+    blockedCount: number;
+  };
   summary: string;
 };
 
@@ -50,6 +59,7 @@ export function buildRuntimeCapabilitySnapshot(params: {
   const toolSummaries = aiStatus?.toolScaffoldSummaries ?? [];
   const modelVisibleCount = toolSummaries.reduce((sum, family) => sum + family.modelVisibleIds.length, 0);
   const checkpointRequiredCount = toolSummaries.reduce((sum, family) => sum + family.checkpointRequiredIds.length, 0);
+  const registry = summarizeCapabilityRegistry(aiStatus?.capabilityRegistry ?? []);
   const sandboxBackendStatus = aiStatus?.sandboxBackendStatus ?? null;
   const sandboxReadiness = sandboxBackendStatus?.readiness ?? null;
   const producerReadiness = sandboxBackendStatus?.producerBackendReadiness ?? null;
@@ -84,6 +94,7 @@ export function buildRuntimeCapabilitySnapshot(params: {
       families: toolSummaries.map((family) => family.family),
       summaries: toolSummaries.map((family) => ({ ...family })),
     },
+    registry,
     summary: '',
   };
 
@@ -98,9 +109,24 @@ export function buildRuntimeCapabilitySnapshot(params: {
     `tools=${snapshot.tools.familyCount}`,
     `modelVisibleTools=${snapshot.tools.modelVisibleCount}`,
     `checkpointTools=${snapshot.tools.checkpointRequiredCount}`,
+    `capabilityRows=${snapshot.registry.entryCount}`,
+    `capabilityAvailable=${snapshot.registry.availableCount}`,
+    `capabilityModelVisible=${snapshot.registry.modelVisibleCount}`,
+    `capabilityBlocked=${snapshot.registry.blockedCount}`,
   ].filter(Boolean).join(' / ');
 
   return snapshot;
+}
+
+function summarizeCapabilityRegistry(registry: CapabilityRegistryEntry[]): RuntimeCapabilitySnapshot['registry'] {
+  return {
+    availableCount: registry.filter((entry) => entry.status === 'available').length,
+    blockedCount: registry.filter((entry) => entry.status !== 'available').length,
+    entryCount: registry.length,
+    hiddenCount: registry.filter((entry) => entry.visibility === 'hidden').length,
+    modelVisibleCount: registry.filter((entry) => entry.visibility === 'model_visible').length,
+    policyGatedCount: registry.filter((entry) => entry.visibility === 'policy_gated').length,
+  };
 }
 
 export function capabilitySnapshotAllowsModelExecution(snapshot: RuntimeCapabilitySnapshot): boolean {

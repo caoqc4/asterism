@@ -39,6 +39,34 @@ function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
     featureFlags: {
       enableScheduler: false,
     },
+    capabilityRegistry: [
+      {
+        access: 'mixed',
+        configured: false,
+        family: 'skill',
+        id: 'skills.catalogue',
+        label: 'Skills',
+        missingReason: 'No ready skill is enabled.',
+        requiredGate: 'runtime_entrypoint_coverage',
+        requiresApproval: true,
+        status: 'disabled',
+        summary: 'enabled=0 / ready=0 / modelVisible=0 / needsConfig=0 / catalogue=1',
+        visibility: 'hidden',
+      },
+      {
+        access: 'mixed',
+        configured: false,
+        family: 'mcp',
+        id: 'mcp.servers',
+        label: 'MCP Servers',
+        missingReason: 'No connected MCP server exposes tools.',
+        requiredGate: 'runtime_entrypoint_coverage',
+        requiresApproval: true,
+        status: 'disabled',
+        summary: 'connectedServers=0 / tools=0 / modelVisibleTools=0 / errors=0 / catalogue=1',
+        visibility: 'hidden',
+      },
+    ],
   };
 }
 
@@ -110,7 +138,7 @@ describe('agent capability formatting', () => {
 
   it('keeps the pre-run preview honest before a provider is configured', () => {
     expect(formatPreRunAgentCapabilitySummary(null, false)).toBe(
-      'Agent 能力预览：provider not configured / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / sandbox coding lane disabled; workspace patch/commands unavailable',
+      'Agent 能力预览：provider not configured / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / optional Skills/MCP capabilities unavailable until registry status loads / sandbox coding lane disabled; workspace patch/commands unavailable',
     );
   });
 
@@ -121,13 +149,13 @@ describe('agent capability formatting', () => {
       apiKeyStored: false,
       apiKeySource: null,
     }, false)).toBe(
-      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / sandbox coding lane disabled; workspace patch/commands unavailable',
+      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / optional Skills/MCP capabilities hidden: skills.catalogue, mcp.servers / sandbox coding lane disabled; workspace patch/commands unavailable',
     );
   });
 
   it('previews local executor capabilities before an agent run', () => {
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), false)).toBe(
-      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls disabled until provider-native flag is enabled / sandbox coding lane disabled; workspace patch/commands unavailable',
+      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls disabled until provider-native flag is enabled / optional Skills/MCP capabilities hidden: skills.catalogue, mcp.servers / sandbox coding lane disabled; workspace patch/commands unavailable',
     );
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), true)).toContain(
       'read-only workspace context enabled for this run',
@@ -136,7 +164,7 @@ describe('agent capability formatting', () => {
 
   it('names Replicate as text-only planning before an agent run', () => {
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('replicate'), true)).toBe(
-      'Agent 能力预览：replicate / openai/gpt-oss-20b / text-only planning via Replicate / read-only workspace context enabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable on native Replicate text path / sandbox coding lane disabled; workspace patch/commands unavailable',
+      'Agent 能力预览：replicate / openai/gpt-oss-20b / text-only planning via Replicate / read-only workspace context enabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable on native Replicate text path / optional Skills/MCP capabilities hidden: skills.catalogue, mcp.servers / sandbox coding lane disabled; workspace patch/commands unavailable',
     );
   });
 
@@ -159,7 +187,44 @@ describe('agent capability formatting', () => {
     expect(summary).toContain('read-only workspace context disabled for this run');
     expect(summary).toContain('task update/evidence tools disabled for this run');
     expect(summary).toContain('structured tool calls disabled until provider-native flag is enabled');
+    expect(summary).toContain('optional Skills/MCP capabilities hidden: skills.catalogue, mcp.servers');
     expect(summary).toContain('sandbox coding lane disabled; workspace patch/commands unavailable');
+  });
+
+  it('previews live optional Skills/MCP capability state from the shared registry before an agent run', () => {
+    expect(formatPreRunAgentCapabilitySummary({
+      ...buildAiStatus('anthropic'),
+      capabilityRegistry: [
+        {
+          access: 'mixed',
+          configured: true,
+          family: 'skill',
+          id: 'skills.catalogue',
+          label: 'Skills',
+          missingReason: null,
+          requiredGate: 'runtime_entrypoint_coverage',
+          requiresApproval: true,
+          status: 'available',
+          summary: 'enabled=1 / ready=1 / modelVisible=1 / needsConfig=0 / catalogue=1',
+          visibility: 'model_visible',
+        },
+        {
+          access: 'mixed',
+          configured: true,
+          family: 'mcp',
+          id: 'mcp.servers',
+          label: 'MCP Servers',
+          missingReason: null,
+          requiredGate: 'runtime_entrypoint_coverage',
+          requiresApproval: true,
+          status: 'available',
+          summary: 'connectedServers=1 / tools=3 / modelVisibleTools=1 / errors=0 / catalogue=1',
+          visibility: 'model_visible',
+        },
+      ],
+    }, true)).toContain(
+      'optional Skills/MCP capabilities model-visible: Skills, MCP Servers / runtime gate still required',
+    );
   });
 
   it('previews limited provider-native safe-read tool calls when the flag is enabled', () => {

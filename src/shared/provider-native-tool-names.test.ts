@@ -18,4 +18,11 @@ describe('provider native tool names', () => {
     expect(resolveProviderNativeToolName('taskplane__workspace__delete_all')).toBeNull();
     expect(resolveProviderNativeToolName('workspace.delete_all')).toBeNull();
   });
+
+  it('does not resolve reserved capability scaffold ids as executable provider-native tools', () => {
+    expect(resolveProviderNativeToolName('mcp.safe_read')).toBeNull();
+    expect(resolveProviderNativeToolName('skill.prompt_shape')).toBeNull();
+    expect(resolveProviderNativeToolName('taskplane__mcp__safe_read')).toBeNull();
+    expect(resolveProviderNativeToolName('taskplane__skill__prompt_shape')).toBeNull();
+  });
 });

@@ -60,12 +60,14 @@ export type CapabilityProductSurfaceStatus = {
   skills?: {
     enabledCount: number;
     readyCount: number;
+    modelVisibleCount?: number;
     needsConfigCount?: number;
     catalogueCount?: number;
   } | null;
   mcp?: {
     connectedServerCount: number;
     toolCount: number;
+    modelVisibleToolCount?: number;
     errorCount?: number;
     catalogueCount?: number;
   } | null;
@@ -333,21 +335,26 @@ function skillsCapability(
       requiredGate: 'runtime_entrypoint_coverage',
     });
   }
-  const enabled = status.enabledCount > 0 && status.readyCount > 0;
+  const ready = status.enabledCount > 0 && status.readyCount > 0;
+  const modelVisible = (status.modelVisibleCount ?? 0) > 0;
+  const configured = ready && modelVisible;
   return {
     id: 'skills.catalogue',
     label: 'Skills',
     family: 'skill',
-    status: enabled ? 'available' : status.needsConfigCount ? 'unconfigured' : 'disabled',
-    configured: enabled,
-    missingReason: enabled ? null : 'No ready skill is enabled.',
-    visibility: enabled ? 'policy_gated' : 'hidden',
+    status: configured ? 'available' : ready || status.needsConfigCount ? 'unconfigured' : 'disabled',
+    configured,
+    missingReason: configured ? null : ready
+      ? 'Ready skills are not exposed through the runtime tool gate.'
+      : 'No ready skill is enabled.',
+    visibility: configured ? 'model_visible' : 'hidden',
     access: 'mixed',
     requiresApproval: true,
     requiredGate: 'runtime_entrypoint_coverage',
     summary: [
       `enabled=${status.enabledCount}`,
       `ready=${status.readyCount}`,
+      `modelVisible=${status.modelVisibleCount ?? 0}`,
       `needsConfig=${status.needsConfigCount ?? 0}`,
       typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
     ].filter(Boolean).join(' / '),
@@ -369,20 +376,25 @@ function mcpCapability(
     });
   }
   const connected = status.connectedServerCount > 0 && status.toolCount > 0;
+  const modelVisible = (status.modelVisibleToolCount ?? 0) > 0;
+  const configured = connected && modelVisible;
   return {
     id: 'mcp.servers',
     label: 'MCP Servers',
     family: 'mcp',
-    status: connected ? 'available' : status.errorCount ? 'unconfigured' : 'disabled',
-    configured: connected,
-    missingReason: connected ? null : 'No connected MCP server exposes tools.',
-    visibility: connected ? 'policy_gated' : 'hidden',
+    status: configured ? 'available' : connected || status.errorCount ? 'unconfigured' : 'disabled',
+    configured,
+    missingReason: configured ? null : connected
+      ? 'Connected MCP tools are not exposed through the runtime tool gate.'
+      : 'No connected MCP server exposes tools.',
+    visibility: configured ? 'model_visible' : 'hidden',
     access: 'mixed',
     requiresApproval: true,
     requiredGate: 'runtime_entrypoint_coverage',
     summary: [
       `connectedServers=${status.connectedServerCount}`,
       `tools=${status.toolCount}`,
+      `modelVisibleTools=${status.modelVisibleToolCount ?? 0}`,
       `errors=${status.errorCount ?? 0}`,
       typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
     ].filter(Boolean).join(' / '),

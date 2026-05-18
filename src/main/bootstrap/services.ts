@@ -23,6 +23,7 @@ import { WorkHabitService } from '../domain/context/work-habit-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
 import { ExternalAccessSourceIngestionService } from '../domain/external-access/external-access-source-ingestion-service.js';
 import { createExternalAccessStatusService } from '../domain/external-access/external-access-status-service.js';
+import { createCapabilityProductSurfaceStatusService } from '../domain/capability/capability-product-surface-status-service.js';
 import { AgentSessionStore } from '../domain/run/agent-session-store.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
 import { BrowserEvidencePersister } from '../domain/run/browser-evidence-persister.js';
@@ -78,8 +79,14 @@ const homeBriefService = new HomeBriefService(
 );
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
-const aiConfigService = new AiConfigService(appConfigService);
 const agentSessionStore = new AgentSessionStore();
+const externalAccessStatusService = createExternalAccessStatusService();
+const capabilityProductSurfaceStatusService = createCapabilityProductSurfaceStatusService();
+const aiConfigService = new AiConfigService(
+  appConfigService,
+  externalAccessStatusService,
+  capabilityProductSurfaceStatusService,
+);
 const taskService = new TaskService(
   taskRepository,
   waitingItemRepository,
@@ -93,7 +100,6 @@ const taskService = new TaskService(
   taskFileRepository,
   decisionRepository,
 );
-const externalAccessStatusService = createExternalAccessStatusService();
 const externalAccessSourceIngestionService = new ExternalAccessSourceIngestionService(
   externalAccessStatusService,
   taskService,
@@ -220,6 +226,7 @@ const services = {
   aiConfigService,
   externalAccessStatusService,
   externalAccessSourceIngestionService,
+  capabilityProductSurfaceStatusService,
   schedulerService,
 };
 

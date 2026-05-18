@@ -143,8 +143,8 @@ describe('capability registry', () => {
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus() }),
       productSurfaces: {
         externalAccess: { connectedCount: 2, pendingCount: 1, errorCount: 0, catalogueCount: 1 },
-        skills: { enabledCount: 3, readyCount: 2, needsConfigCount: 1 },
-        mcp: { connectedServerCount: 1, toolCount: 4, errorCount: 0, catalogueCount: 1 },
+        skills: { enabledCount: 3, readyCount: 2, modelVisibleCount: 1, needsConfigCount: 1 },
+        mcp: { connectedServerCount: 1, toolCount: 4, modelVisibleToolCount: 2, errorCount: 0, catalogueCount: 1 },
         browser: { available: true, reason: 'Browser automation configured.' },
       },
     });
@@ -158,13 +158,13 @@ describe('capability registry', () => {
     });
     expect(registry.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
       status: 'available',
-      visibility: 'policy_gated',
-      summary: 'enabled=3 / ready=2 / needsConfig=1',
+      visibility: 'model_visible',
+      summary: 'enabled=3 / ready=2 / modelVisible=1 / needsConfig=1',
     });
     expect(registry.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
       status: 'available',
-      visibility: 'policy_gated',
-      summary: 'connectedServers=1 / tools=4 / errors=0 / catalogue=1',
+      visibility: 'model_visible',
+      summary: 'connectedServers=1 / tools=4 / modelVisibleTools=2 / errors=0 / catalogue=1',
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
@@ -202,6 +202,31 @@ describe('capability registry', () => {
       status: 'disabled',
       visibility: 'hidden',
       missingReason: 'Browser plugin unavailable.',
+    });
+  });
+
+  it('keeps ready Skills and connected MCP servers hidden until runtime gates expose model-visible tools', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus() }),
+      productSurfaces: {
+        skills: { enabledCount: 1, readyCount: 1, modelVisibleCount: 0, needsConfigCount: 0, catalogueCount: 1 },
+        mcp: { connectedServerCount: 1, toolCount: 3, modelVisibleToolCount: 0, errorCount: 0, catalogueCount: 1 },
+      },
+    });
+
+    expect(registry.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'unconfigured',
+      configured: false,
+      visibility: 'hidden',
+      missingReason: 'Ready skills are not exposed through the runtime tool gate.',
+      summary: 'enabled=1 / ready=1 / modelVisible=0 / needsConfig=0 / catalogue=1',
+    });
+    expect(registry.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
+      status: 'unconfigured',
+      configured: false,
+      visibility: 'hidden',
+      missingReason: 'Connected MCP tools are not exposed through the runtime tool gate.',
+      summary: 'connectedServers=1 / tools=3 / modelVisibleTools=0 / errors=0 / catalogue=1',
     });
   });
 

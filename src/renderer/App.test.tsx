@@ -1226,7 +1226,7 @@ describe('App redesign v1', () => {
         access: 'read_only',
         requiresApproval: true,
         requiredGate: 'runtime_entrypoint_coverage',
-        summary: 'enabled=0 / ready=0 / needsConfig=0 / catalogue=1',
+        summary: 'enabled=0 / ready=0 / modelVisible=0 / needsConfig=0 / catalogue=1',
       }],
       configurationSafetyReport: {
         secretExposureSafe: true,
@@ -1274,7 +1274,7 @@ describe('App redesign v1', () => {
         access: 'mixed',
         requiresApproval: true,
         requiredGate: 'runtime_context_assembly',
-        summary: 'connectedServers=0 / tools=0 / errors=0 / catalogue=1',
+        summary: 'connectedServers=0 / tools=0 / modelVisibleTools=0 / errors=0 / catalogue=1',
       }],
       configurationSafetyReport: {
         secretExposureSafe: true,
@@ -1304,6 +1304,90 @@ describe('App redesign v1', () => {
     expect(screen.getByText('能力状态')).toBeTruthy();
     expect(screen.getByText('策略关闭')).toBeTruthy();
     expect(screen.getByText(/No connected MCP server exposes tools/)).toBeTruthy();
+  });
+
+  it('surfaces live Skills readiness through shared capability safety without treating catalogue selection as execution', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      capabilityRegistry: [{
+        id: 'skills.catalogue',
+        label: 'Skills',
+        family: 'skill',
+        status: 'available',
+        configured: true,
+        missingReason: null,
+        visibility: 'model_visible',
+        access: 'mixed',
+        requiresApproval: true,
+        requiredGate: 'runtime_entrypoint_coverage',
+        summary: 'enabled=1 / ready=1 / modelVisible=1 / needsConfig=0 / catalogue=1',
+      }],
+      configurationSafetyReport: {
+        secretExposureSafe: true,
+        blockedReasons: [],
+        summary: 'configured=0 / approvalRequired=1 / blocked=0',
+        surfaces: [{
+          id: 'skills.catalogue',
+          state: 'approval_required',
+          reason: 'enabled=1 / ready=1 / modelVisible=1 / needsConfig=0 / catalogue=1',
+          requiresApproval: true,
+          startupProbePolicy: 'manual_only',
+          exposesSecretValue: false,
+        }],
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Skills/ }));
+
+    expect(await screen.findByText(/AI 执行任务时可用的工具能力登记/)).toBeTruthy();
+    expect(screen.getByText('可用')).toBeTruthy();
+    expect(screen.getByText('需确认')).toBeTruthy();
+    expect(screen.getByText(/modelVisible=1/)).toBeTruthy();
+    expect(screen.getByText(/选择状态只记录使用意图/)).toBeTruthy();
+    expect(screen.queryByText(/技能已启用/)).toBeNull();
+  });
+
+  it('surfaces live MCP readiness through shared capability safety without treating registration cards as connected services', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      capabilityRegistry: [{
+        id: 'mcp.servers',
+        label: 'MCP Servers',
+        family: 'mcp',
+        status: 'available',
+        configured: true,
+        missingReason: null,
+        visibility: 'model_visible',
+        access: 'mixed',
+        requiresApproval: true,
+        requiredGate: 'runtime_entrypoint_coverage',
+        summary: 'connectedServers=1 / tools=3 / modelVisibleTools=1 / errors=0 / catalogue=1',
+      }],
+      configurationSafetyReport: {
+        secretExposureSafe: true,
+        blockedReasons: [],
+        summary: 'configured=0 / approvalRequired=1 / blocked=0',
+        surfaces: [{
+          id: 'mcp.servers',
+          state: 'approval_required',
+          reason: 'connectedServers=1 / tools=3 / modelVisibleTools=1 / errors=0 / catalogue=1',
+          requiresApproval: true,
+          startupProbePolicy: 'manual_only',
+          exposesSecretValue: false,
+        }],
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /MCP/ }));
+
+    expect(await screen.findByText(/Model Context Protocol 工具服务端/)).toBeTruthy();
+    expect(screen.getByText('可用')).toBeTruthy();
+    expect(screen.getByText('需确认')).toBeTruthy();
+    expect(screen.getByText(/modelVisibleTools=1/)).toBeTruthy();
+    expect(screen.getByText('Playwright MCP')).toBeTruthy();
+    expect(screen.getByText('未连接')).toBeTruthy();
   });
 
   it('does not expose committed tasks as a first-version Brief stat', async () => {

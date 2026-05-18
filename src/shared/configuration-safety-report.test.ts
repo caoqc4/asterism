@@ -195,8 +195,8 @@ describe('configuration safety report', () => {
       capabilityRegistry: buildCapabilityRegistry({
         snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: base }),
         productSurfaces: {
-          skills: { enabledCount: 2, readyCount: 1, needsConfigCount: 1, catalogueCount: 1 },
-          mcp: { connectedServerCount: 1, toolCount: 3, errorCount: 0, catalogueCount: 1 },
+          skills: { enabledCount: 2, readyCount: 1, modelVisibleCount: 1, needsConfigCount: 1, catalogueCount: 1 },
+          mcp: { connectedServerCount: 1, toolCount: 3, modelVisibleToolCount: 2, errorCount: 0, catalogueCount: 1 },
         },
       }),
     };
@@ -213,6 +213,30 @@ describe('configuration safety report', () => {
       requiresApproval: true,
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
+    });
+  });
+
+  it('does not treat ready Skills or connected MCP tools as usable until model-visible exposure is gated in', () => {
+    const base = aiStatus();
+    const status = {
+      ...base,
+      capabilityRegistry: buildCapabilityRegistry({
+        snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: base }),
+        productSurfaces: {
+          skills: { enabledCount: 1, readyCount: 1, modelVisibleCount: 0, needsConfigCount: 0, catalogueCount: 1 },
+          mcp: { connectedServerCount: 1, toolCount: 3, modelVisibleToolCount: 0, errorCount: 0, catalogueCount: 1 },
+        },
+      }),
+    };
+    const report = buildConfigurationSafetyReport(status);
+
+    expect(report.surfaces.find((surface) => surface.id === 'skills.catalogue')).toMatchObject({
+      state: 'missing',
+      reason: 'Ready skills are not exposed through the runtime tool gate.',
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
+      state: 'missing',
+      reason: 'Connected MCP tools are not exposed through the runtime tool gate.',
     });
   });
 });

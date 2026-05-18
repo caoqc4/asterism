@@ -1,5 +1,7 @@
 import type { CapabilityProductSurfaceStatus } from './capability-registry.js';
 
+export type SkillServiceItemStatus = 'disabled' | 'enabled' | 'ready' | 'error';
+
 export type DefaultSkillCatalogueItem = {
   id: string;
   name: string;
@@ -7,11 +9,26 @@ export type DefaultSkillCatalogueItem = {
   desc: string;
 };
 
+export type SkillServiceItem = {
+  id: string;
+  status: SkillServiceItemStatus;
+  modelVisible: boolean;
+};
+
 export type DefaultMcpServerCatalogueItem = {
   id: string;
   name: string;
   command: string;
   transport: 'stdio' | 'sse' | 'http';
+};
+
+export type McpServiceServerStatus = 'disconnected' | 'connected' | 'error';
+
+export type McpServiceServer = {
+  id: string;
+  status: McpServiceServerStatus;
+  toolCount: number;
+  modelVisibleToolCount: number;
 };
 
 export type DefaultExternalAccessSourceCatalogueItem = {
@@ -52,6 +69,7 @@ export function defaultSkillsProductSurfaceStatus(): NonNullable<CapabilityProdu
   return {
     enabledCount: 0,
     readyCount: 0,
+    modelVisibleCount: 0,
     needsConfigCount: 0,
     catalogueCount: DEFAULT_SKILL_CATALOGUE_ITEMS.length,
   };
@@ -61,7 +79,36 @@ export function defaultMcpProductSurfaceStatus(): NonNullable<CapabilityProductS
   return {
     connectedServerCount: 0,
     toolCount: 0,
+    modelVisibleToolCount: 0,
     errorCount: 0,
+    catalogueCount: DEFAULT_MCP_SERVER_CATALOGUE_ITEMS.length,
+  };
+}
+
+export function skillsStatusForCapability(
+  skills: SkillServiceItem[],
+): NonNullable<CapabilityProductSurfaceStatus['skills']> {
+  return {
+    enabledCount: skills.filter((skill) => skill.status === 'enabled' || skill.status === 'ready').length,
+    readyCount: skills.filter((skill) => skill.status === 'ready').length,
+    modelVisibleCount: skills.filter((skill) => skill.status === 'ready' && skill.modelVisible).length,
+    needsConfigCount: skills.filter((skill) => skill.status === 'enabled' || skill.status === 'error').length,
+    catalogueCount: DEFAULT_SKILL_CATALOGUE_ITEMS.length,
+  };
+}
+
+export function mcpStatusForCapability(
+  servers: McpServiceServer[],
+): NonNullable<CapabilityProductSurfaceStatus['mcp']> {
+  return {
+    connectedServerCount: servers.filter((server) => server.status === 'connected').length,
+    toolCount: servers
+      .filter((server) => server.status === 'connected')
+      .reduce((sum, server) => sum + Math.max(0, server.toolCount), 0),
+    modelVisibleToolCount: servers
+      .filter((server) => server.status === 'connected')
+      .reduce((sum, server) => sum + Math.max(0, server.modelVisibleToolCount), 0),
+    errorCount: servers.filter((server) => server.status === 'error').length,
     catalogueCount: DEFAULT_MCP_SERVER_CATALOGUE_ITEMS.length,
   };
 }

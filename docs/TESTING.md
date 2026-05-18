@@ -104,6 +104,10 @@ default no-connector state. The local-inbox smoke uses
 a packaged-app task through the preload API, previews the local inbox evidence,
 and confirms that it can be written through the task Source Context memory
 path.
+Skills/MCP capability-status fixture coverage can use
+`TASKPLANE_CAPABILITY_PRODUCT_SURFACE_FIXTURE_JSON`; it only projects local
+ready/connected/model-visible counts through the shared capability registry and
+does not start Skill or MCP processes.
 Gmail connector tests use an injected fetch implementation and do not contact
 Google. Live Gmail OAuth/token validation remains manual until a concrete OAuth
 flow is selected.
