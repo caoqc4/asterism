@@ -34,6 +34,7 @@ export type CapabilityRegistryEntry = {
     | 'external_access'
     | 'skill'
     | 'mcp'
+    | 'agent_cli'
     | 'workspace'
     | 'sandbox'
     | 'scheduler'
@@ -70,6 +71,14 @@ export type CapabilityProductSurfaceStatus = {
     modelVisibleToolCount?: number;
     errorCount?: number;
     catalogueCount?: number;
+  } | null;
+  agentCli?: {
+    catalogueCount?: number;
+    detectedCount: number;
+    readyCount: number;
+    runningCount?: number;
+    errorCount?: number;
+    manualRunCount?: number;
   } | null;
   browser?: {
     available: boolean;
@@ -215,6 +224,7 @@ export function buildCapabilityRegistry(params: {
     externalAccessCapability(productSurfaces?.externalAccess ?? null),
     skillsCapability(productSurfaces?.skills ?? null, findToolFamily(snapshot, 'skill')),
     mcpCapability(productSurfaces?.mcp ?? null, findToolFamily(snapshot, 'mcp')),
+    agentCliCapability(productSurfaces?.agentCli ?? null),
     browserCapability(productSurfaces?.browser ?? null, findToolFamily(snapshot, 'browser_playwright')),
   ];
 }
@@ -395,6 +405,38 @@ function mcpCapability(
       `connectedServers=${status.connectedServerCount}`,
       `tools=${status.toolCount}`,
       `modelVisibleTools=${status.modelVisibleToolCount ?? 0}`,
+      `errors=${status.errorCount ?? 0}`,
+      typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
+    ].filter(Boolean).join(' / '),
+  };
+}
+
+function agentCliCapability(
+  status: NonNullable<CapabilityProductSurfaceStatus['agentCli']> | null,
+): CapabilityRegistryEntry {
+  if (!status) return deferredCapability('agent_cli.runtimes', 'Agent CLI Runtimes', 'agent_cli');
+  const detected = status.detectedCount > 0;
+  const ready = status.readyCount > 0;
+  const manualRun = (status.manualRunCount ?? 0) > 0;
+  const configured = ready && manualRun;
+  return {
+    id: 'agent_cli.runtimes',
+    label: 'Agent CLI Runtimes',
+    family: 'agent_cli',
+    status: configured ? 'available' : detected || (status.errorCount ?? 0) > 0 ? 'unconfigured' : 'disabled',
+    configured,
+    missingReason: configured ? null : detected
+      ? 'Agent CLI authentication is not confirmed; use the official CLI login flow before execution.'
+      : 'No supported Agent CLI runtime is detected.',
+    visibility: 'hidden',
+    access: 'mutating',
+    requiresApproval: true,
+    requiredGate: 'runtime_pre_step',
+    summary: [
+      `detected=${status.detectedCount}`,
+      `ready=${status.readyCount}`,
+      `manualRun=${status.manualRunCount ?? 0}`,
+      `running=${status.runningCount ?? 0}`,
       `errors=${status.errorCount ?? 0}`,
       typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
     ].filter(Boolean).join(' / '),

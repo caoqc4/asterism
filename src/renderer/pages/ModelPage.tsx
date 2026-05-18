@@ -179,16 +179,32 @@ export function ModelPage() {
   const modelSafetySurfaces = status?.configurationSafetyReport?.surfaces
     .filter((surface) => surface.id === 'model.provider' || surface.id === 'model.api_key')
     ?? [];
+  const agentCliStatus = status?.agentCliRuntimeStatus ?? null;
+  const agentCliSafety = status?.configurationSafetyReport?.surfaces
+    .find((surface) => surface.id === 'agent_cli.runtimes') ?? null;
+  const agentCliCapability = status?.capabilityRegistry
+    ?.find((entry) => entry.id === 'agent_cli.runtimes') ?? null;
 
   return (
     <div className="model-page">
       <div className="model-page-head">
-        <h2 className="model-page-title">Model</h2>
-        <p className="model-page-subtitle">配置 AI Provider 密钥，选择默认使用的模型。</p>
-        <p className="model-page-boundary">Provider 密钥保存在本机系统钥匙串；模型选择只影响后续 AI 调用，不会写入任务记忆。</p>
+        <h2 className="model-page-title">AI Runtime</h2>
+        <p className="model-page-subtitle">管理本机 Agent CLI、API 模型和执行安全边界。</p>
+        <p className="model-page-boundary">Agent CLI 使用你在官方 CLI 中完成的登录；Taskplane 只做本机检测、上下文装配和运行记录。</p>
       </div>
 
+      <AgentCliRuntimeSection
+        status={agentCliStatus}
+        safety={agentCliSafety}
+        capabilitySummary={agentCliCapability?.summary ?? null}
+      />
+
       <ModelConfigurationSafety surfaces={modelSafetySurfaces} />
+
+      <section className="model-api-section">
+        <div className="model-section-kicker">API Model</div>
+        <p className="model-section-copy">用于轻量 AI 辅助、摘要、草稿和内部工具；完整 coding agent 优先走 Agent CLI。</p>
+      </section>
 
       {PROVIDERS.map((section) => {
         const isConfigured = configuredProviders.has(section.provider);
@@ -294,12 +310,75 @@ export function ModelPage() {
   );
 }
 
+function AgentCliRuntimeSection({
+  status,
+  safety,
+  capabilitySummary,
+}: {
+  status: AiConfigStatus['agentCliRuntimeStatus'] | null;
+  safety: ConfigurationSafetySurface | null;
+  capabilitySummary: string | null;
+}) {
+  const runtimes = status?.runtimes ?? [];
+
+  return (
+    <section className="agent-cli-section">
+      <div className="agent-cli-head">
+        <div>
+          <div className="model-section-kicker">Agent CLI</div>
+          <p className="model-section-copy">第一版优先检测 Codex CLI 和 Claude Code。Codex 作为手动执行入口，Claude Code 先做状态检测。</p>
+        </div>
+        <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
+          <span>{status?.detectedCount ?? 0} detected</span>
+          <span>{status?.manualRunCount ?? 0} manual</span>
+          <span>{status?.runningCount ?? 0} running</span>
+        </div>
+      </div>
+
+      <div className="agent-cli-grid">
+        {runtimes.length > 0 ? runtimes.map((runtime) => (
+          <div key={runtime.id} className={`agent-cli-row ${runtime.installed ? 'installed' : 'missing'}`}>
+            <div className="agent-cli-runtime-main">
+              <span className="agent-cli-runtime-name">{runtime.label}</span>
+              <span className="agent-cli-runtime-command mono">{runtime.command}</span>
+              {runtime.id === 'codex' && <span className="model-tag">推荐执行路径</span>}
+              {runtime.id === 'claude' && <span className="agent-cli-pill">状态检测</span>}
+            </div>
+            <div className="agent-cli-runtime-meta">
+              <span className={`agent-cli-status ${runtime.installed ? 'ok' : 'muted'}`}>
+                {runtime.installed ? authStateLabel(runtime.authState) : '未安装'}
+              </span>
+              <span>{runtime.version ?? '版本未知'}</span>
+              <span>{workloadLabel(runtime.workload)}</span>
+            </div>
+            {runtime.missingReason && (
+              <p className="agent-cli-runtime-note">{runtime.missingReason}</p>
+            )}
+          </div>
+        )) : (
+          <div className="agent-cli-empty">Agent CLI 状态尚未生成。</div>
+        )}
+      </div>
+
+      <div className="agent-cli-boundary">
+        <span>登录由官方 CLI 管理；需要时在终端运行 <span className="mono">codex --login</span>。</span>
+        {safety && (
+          <span>
+            安全：{CONFIGURATION_SAFETY_STATE_LABELS[safety.state]} · 探测：{configurationSafetyProbePolicyLabel(safety.startupProbePolicy)}
+          </span>
+        )}
+        {capabilitySummary && <span className="mono">{capabilitySummary}</span>}
+      </div>
+    </section>
+  );
+}
+
 function ModelConfigurationSafety({ surfaces }: { surfaces: ConfigurationSafetySurface[] }) {
   if (surfaces.length === 0) {
     return (
       <section className="settings-section model-safety-section">
         <div className="settings-section-title">模型配置边界</div>
-        <p className="settings-hint">模型安全报告尚未生成；Model 页不会主动探测外部服务或读取密钥明文。</p>
+        <p className="settings-hint">模型安全报告尚未生成；AI Runtime 页不会主动探测外部服务或读取密钥明文。</p>
       </section>
     );
   }
@@ -328,4 +407,17 @@ function ModelConfigurationSafety({ surfaces }: { surfaces: ConfigurationSafetyS
       </div>
     </section>
   );
+}
+
+function authStateLabel(state: 'unknown' | 'ready' | 'needs_login' | 'error') {
+  if (state === 'ready') return '可运行';
+  if (state === 'needs_login') return '需登录';
+  if (state === 'error') return '异常';
+  return '已检测';
+}
+
+function workloadLabel(workload: 'idle' | 'running' | 'blocked') {
+  if (workload === 'running') return '运行中';
+  if (workload === 'blocked') return '受阻';
+  return '空闲';
 }

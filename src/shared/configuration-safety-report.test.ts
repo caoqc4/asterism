@@ -92,6 +92,10 @@ describe('configuration safety report', () => {
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
     });
+    expect(report.surfaces.find((surface) => surface.id === 'agent_cli.runtimes')).toMatchObject({
+      startupProbePolicy: 'safe_read_only',
+      exposesSecretValue: false,
+    });
     expect(report.surfaces.find((surface) => surface.id === 'browser.operator')).toMatchObject({
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
@@ -119,6 +123,7 @@ describe('configuration safety report', () => {
           externalAccess: { connectedCount: 0, pendingCount: 0, errorCount: 0, catalogueCount: 1 },
           skills: { enabledCount: 0, readyCount: 0, needsConfigCount: 0, catalogueCount: 1 },
           mcp: { connectedServerCount: 0, toolCount: 0, errorCount: 0, catalogueCount: 1 },
+          agentCli: { detectedCount: 0, readyCount: 0, manualRunCount: 0, runningCount: 0, errorCount: 0, catalogueCount: 2 },
         },
       }),
     });
@@ -137,6 +142,10 @@ describe('configuration safety report', () => {
     expect(report.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
       state: 'disabled_by_policy',
       reason: 'No connected MCP server exposes tools.',
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'agent_cli.runtimes')).toMatchObject({
+      state: 'disabled_by_policy',
+      reason: 'No supported Agent CLI runtime is detected.',
     });
   });
 
@@ -197,6 +206,7 @@ describe('configuration safety report', () => {
         productSurfaces: {
           skills: { enabledCount: 2, readyCount: 1, modelVisibleCount: 1, needsConfigCount: 1, catalogueCount: 1 },
           mcp: { connectedServerCount: 1, toolCount: 3, modelVisibleToolCount: 2, errorCount: 0, catalogueCount: 1 },
+          agentCli: { detectedCount: 1, readyCount: 1, manualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
         },
       }),
     };
@@ -212,6 +222,12 @@ describe('configuration safety report', () => {
       state: 'approval_required',
       requiresApproval: true,
       startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'agent_cli.runtimes')).toMatchObject({
+      state: 'approval_required',
+      requiresApproval: true,
+      startupProbePolicy: 'safe_read_only',
       exposesSecretValue: false,
     });
   });

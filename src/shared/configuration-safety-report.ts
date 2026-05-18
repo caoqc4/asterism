@@ -18,6 +18,7 @@ export type ConfigurationSafetySurfaceId =
   | 'external_access.connectors'
   | 'skills.catalogue'
   | 'mcp.servers'
+  | 'agent_cli.runtimes'
   | 'browser.operator';
 
 export type ConfigurationSafetySurface = {
@@ -105,6 +106,12 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
       id: 'mcp.servers',
       startupProbePolicy: 'manual_only',
       disabledReason: 'MCP servers are not connected or are not exposed through structured status.',
+      disabledState: 'disabled_by_policy',
+    }),
+    surfaceFromCapability('agent_cli.runtimes', registry, {
+      id: 'agent_cli.runtimes',
+      startupProbePolicy: 'safe_read_only',
+      disabledReason: 'Agent CLI runtimes are not detected or are not ready.',
       disabledState: 'disabled_by_policy',
     }),
     surfaceFromCapability('browser.operator', registry, {

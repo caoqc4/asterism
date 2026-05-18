@@ -6,6 +6,7 @@ import keytar from 'keytar';
 import type { AiConfigInput, AiConfigStatus, AiProvider, AiProviderKeysInput, FeatureFlags } from '../../shared/types/settings.js';
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
+import type { AgentCliRuntimeStatus } from '../../shared/agent-cli-runtime-status.js';
 import { buildCapabilityRegistry, type CapabilityProductSurfaceStatus } from '../../shared/capability-registry.js';
 import { buildConfigurationSafetyReport } from '../../shared/configuration-safety-report.js';
 import { emptyExternalAccessStatus, externalAccessStatusForCapability, type ExternalAccessStatus } from '../../shared/external-access-status.js';
@@ -13,6 +14,7 @@ import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-
 import { AppConfigService } from '../config/app-config-service.js';
 import { readEnvBoolean, readEnvValue } from '../config/env.js';
 import { createCapabilityProductSurfaceStatusService, type CapabilityProductSurfaceStatusProvider } from '../domain/capability/capability-product-surface-status-service.js';
+import { createAgentCliRuntimeStatusService, type AgentCliRuntimeStatusService } from '../domain/agent-cli/agent-cli-runtime-status-service.js';
 import { createExternalAccessStatusService, ExternalAccessStatusService } from '../domain/external-access/external-access-status-service.js';
 import { evaluateAgentExecutorLifecycleServiceAvailability } from '../domain/run/agent-executor-lifecycle-service-factory.js';
 
@@ -74,6 +76,7 @@ function detectCodeAgentWorkspaceChecks(
 
 async function buildCapabilityProductSurfaceStatus(
   externalAccessStatus: ExternalAccessStatus | undefined,
+  agentCliRuntimeStatus: AgentCliRuntimeStatus | undefined,
   productSurfaceStatusProvider: CapabilityProductSurfaceStatusProvider,
 ): Promise<CapabilityProductSurfaceStatus> {
   const [skills, mcp] = await Promise.all([
@@ -83,6 +86,16 @@ async function buildCapabilityProductSurfaceStatus(
 
   return {
     externalAccess: externalAccessStatusForCapability(externalAccessStatus ?? emptyExternalAccessStatus()),
+    agentCli: agentCliRuntimeStatus
+      ? {
+        catalogueCount: agentCliRuntimeStatus.catalogueCount,
+        detectedCount: agentCliRuntimeStatus.detectedCount,
+        errorCount: agentCliRuntimeStatus.errorCount,
+        manualRunCount: agentCliRuntimeStatus.manualRunCount,
+        readyCount: agentCliRuntimeStatus.readyCount,
+        runningCount: agentCliRuntimeStatus.runningCount,
+      }
+      : null,
     skills,
     mcp,
   };
@@ -93,6 +106,7 @@ export class AiConfigService {
     private readonly appConfigService: AppConfigService,
     private readonly externalAccessStatusService = createExternalAccessStatusService(),
     private readonly productSurfaceStatusProvider: CapabilityProductSurfaceStatusProvider = createCapabilityProductSurfaceStatusService(),
+    private readonly agentCliRuntimeStatusService: AgentCliRuntimeStatusService = createAgentCliRuntimeStatusService(),
   ) {}
 
   /* ─── Per-provider key storage ─── */
@@ -145,7 +159,10 @@ export class AiConfigService {
     const providerKey = await this.getProviderKey(config.aiProvider);
     const legacyKey = await this.getLegacyKey();
     const activeKey = providerKey ?? envApiKey ?? legacyKey;
-    const externalAccessStatus = await this.externalAccessStatusService.getStatus();
+    const [externalAccessStatus, agentCliRuntimeStatus] = await Promise.all([
+      this.externalAccessStatusService.getStatus(),
+      this.agentCliRuntimeStatusService.getStatus(),
+    ]);
 
     const status: AiConfigStatus = {
       configured: Boolean(activeKey),
@@ -165,6 +182,7 @@ export class AiConfigService {
       executorLifecycleAvailability: evaluateAgentExecutorLifecycleServiceAvailability(),
       toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({ policy: DEFAULT_TOOL_SCAFFOLD_POLICY }),
       externalAccessStatus,
+      agentCliRuntimeStatus,
     };
     return withCapabilityRegistry(status, this.productSurfaceStatusProvider);
   }
@@ -191,7 +209,10 @@ export class AiConfigService {
     const providerKey = await this.getProviderKey(provider);
     const legacyKey = await this.getLegacyKey();
     const activeKey = providerKey ?? envApiKey ?? legacyKey;
-    const externalAccessStatus = await this.externalAccessStatusService.getStatus();
+    const [externalAccessStatus, agentCliRuntimeStatus] = await Promise.all([
+      this.externalAccessStatusService.getStatus(),
+      this.agentCliRuntimeStatusService.getStatus(),
+    ]);
 
     const status: AiConfigStatus = {
       configured: Boolean(activeKey),
@@ -211,6 +232,7 @@ export class AiConfigService {
       executorLifecycleAvailability: evaluateAgentExecutorLifecycleServiceAvailability(),
       toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({ policy: DEFAULT_TOOL_SCAFFOLD_POLICY }),
       externalAccessStatus,
+      agentCliRuntimeStatus,
     };
     return withCapabilityRegistry(status, this.productSurfaceStatusProvider);
   }
@@ -252,7 +274,7 @@ async function withCapabilityRegistry(
     ...status,
     capabilityRegistry: buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: status }),
-      productSurfaces: await buildCapabilityProductSurfaceStatus(status.externalAccessStatus, productSurfaceStatusProvider),
+      productSurfaces: await buildCapabilityProductSurfaceStatus(status.externalAccessStatus, status.agentCliRuntimeStatus, productSurfaceStatusProvider),
     }),
   };
   return {

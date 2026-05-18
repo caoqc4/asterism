@@ -398,6 +398,39 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
       communicationStyle: 'balanced',
       confirmationThreshold: 'normal',
     },
+    agentCliRuntimeStatus: {
+      catalogueCount: 2,
+      detectedCount: 1,
+      readyCount: 0,
+      runningCount: 0,
+      errorCount: 0,
+      manualRunCount: 1,
+      updatedAt: '2026-05-19T00:00:00.000Z',
+      runtimes: [
+        {
+          id: 'codex',
+          label: 'Codex CLI',
+          command: 'codex',
+          installed: true,
+          version: 'codex 0.42.0',
+          authState: 'unknown',
+          executionSupport: 'manual_run',
+          workload: 'idle',
+          missingReason: 'Authentication is managed by Codex CLI; run codex --login if execution reports a login error.',
+        },
+        {
+          id: 'claude',
+          label: 'Claude Code',
+          command: 'claude',
+          installed: false,
+          version: null,
+          authState: 'unknown',
+          executionSupport: 'status_only',
+          workload: 'blocked',
+          missingReason: 'claude was not found on PATH.',
+        },
+      ],
+    },
     ...partial,
   };
 }
@@ -980,14 +1013,35 @@ describe('App redesign v1', () => {
     expect(harness.api.getHomeBrief).toHaveBeenCalled();
   });
 
-  it('clarifies Model configuration stays local and separate from task memory', async () => {
+  it('clarifies AI Runtime separates Agent CLI login from API model configuration', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      capabilityRegistry: [{
+        id: 'agent_cli.runtimes',
+        label: 'Agent CLI Runtimes',
+        family: 'agent_cli',
+        status: 'unconfigured',
+        configured: false,
+        missingReason: 'Agent CLI authentication is not confirmed; use the official CLI login flow before execution.',
+        visibility: 'hidden',
+        access: 'mutating',
+        requiresApproval: true,
+        requiredGate: 'runtime_pre_step',
+        summary: 'detected=1 / ready=0 / manualRun=1 / running=0 / errors=0 / catalogue=2',
+      }],
       configurationSafetyReport: {
         secretExposureSafe: true,
         blockedReasons: [],
-        summary: 'configured=2 / approvalRequired=0 / blocked=0',
+        summary: 'configured=2 / approvalRequired=0 / blocked=1',
         surfaces: [
+          {
+            id: 'agent_cli.runtimes',
+            state: 'missing',
+            reason: 'Agent CLI authentication is not confirmed; use the official CLI login flow before execution.',
+            requiresApproval: true,
+            startupProbePolicy: 'safe_read_only',
+            exposesSecretValue: false,
+          },
           {
             id: 'model.provider',
             state: 'configured',
@@ -1009,10 +1063,14 @@ describe('App redesign v1', () => {
     }));
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Model/ }));
+    await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
-    expect(await screen.findByText(/Provider 密钥保存在本机系统钥匙串/)).toBeTruthy();
-    expect(screen.getByText(/不会写入任务记忆/)).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
+    expect(screen.getByText(/官方 CLI 中完成的登录/)).toBeTruthy();
+    expect(screen.getByText('Codex CLI')).toBeTruthy();
+    expect(screen.getByText('Claude Code')).toBeTruthy();
+    expect(screen.getAllByText(/codex --login/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/API Model/)).toBeTruthy();
     expect(screen.getByText('模型配置边界')).toBeTruthy();
     expect(screen.getByText('model.provider')).toBeTruthy();
     expect(screen.getByText('model.api_key')).toBeTruthy();
@@ -1207,7 +1265,7 @@ describe('App redesign v1', () => {
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValueOnce(buildAiStatus({ configured: false }));
     render(<App />);
 
-    expect(await screen.findByText(/AI 尚未配置/)).toBeTruthy();
+    expect(await screen.findByText(/AI Runtime 尚未配置/)).toBeTruthy();
     expect(screen.getByText(/任务管理仍可继续使用/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
   });

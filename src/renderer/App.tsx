@@ -18,7 +18,7 @@ const ROUTE_LABELS: Record<AppRoute, string> = {
   'work-habits': 'Work Habits',
   skills: 'Skills',
   mcp: 'MCP',
-  model: 'Model',
+  model: 'AI Runtime',
   connections: 'External Access',
   settings: 'Settings',
 };
@@ -201,10 +201,10 @@ function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
     <div className="setup-banner">
       <span className="setup-banner-icon">⚠</span>
       <span className="setup-banner-text">
-        AI 尚未配置，请先添加 API Key 以使用 AI 功能；任务管理仍可继续使用。
+        AI Runtime 尚未配置；可先连接 Agent CLI 或添加 API Key，任务管理仍可继续使用。
       </span>
       <button className="btn sm primary" onClick={onGoToModel}>
-        前往配置 →
+        前往 AI Runtime →
       </button>
       <button className="icon-btn" onClick={() => setDismissed(true)} title="关闭">
         <span style={{ fontSize: 14, lineHeight: 1 }}>×</span>
@@ -244,7 +244,7 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
         <NavItem icon={<IconConnections />} label="External Access" active={route === 'connections'} onClick={() => onNavigate('connections')} />
         <NavItem icon={<IconSkills />} label="Skills" active={route === 'skills'} onClick={() => onNavigate('skills')} />
         <NavItem icon={<IconMcp />} label="MCP" active={route === 'mcp'} onClick={() => onNavigate('mcp')} />
-        <NavItem icon={<IconModel />} label="Model" active={route === 'model'} onClick={() => onNavigate('model')} />
+        <NavItem icon={<IconModel />} label="AI Runtime" active={route === 'model'} onClick={() => onNavigate('model')} />
         <NavItem icon={<IconContext />} label="Work Habits" active={route === 'work-habits'} onClick={() => onNavigate('work-habits')} />
         <NavItem icon={<IconSettings />} label="Settings" active={route === 'settings'} onClick={() => onNavigate('settings')} />
       </nav>

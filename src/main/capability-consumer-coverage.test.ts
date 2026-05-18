@@ -33,7 +33,7 @@ describe('capability consumer coverage', () => {
     }
   });
 
-  it('keeps Settings, Model, and agent pre-run summaries on shared capability status', () => {
+  it('keeps Settings, AI Runtime, and agent pre-run summaries on shared capability status', () => {
     const settingsSource = readProjectFile('src/renderer/pages/SettingsPage.tsx');
     const modelSource = readProjectFile('src/renderer/pages/ModelPage.tsx');
     const agentSummarySource = readProjectFile('src/renderer/lib/agentCapabilities.ts');
@@ -41,6 +41,8 @@ describe('capability consumer coverage', () => {
     expect(settingsSource).toContain('ConfigurationSafetySection');
     expect(settingsSource).toContain('configurationSafetyReport');
     expect(modelSource).toContain('configurationSafetyReport');
+    expect(modelSource).toContain('agent_cli.runtimes');
+    expect(modelSource).toContain('Agent CLI');
     expect(modelSource).toContain('model.provider');
     expect(modelSource).toContain('model.api_key');
     expect(agentSummarySource).toContain('capabilityRegistry');
@@ -51,6 +53,7 @@ describe('capability consumer coverage', () => {
     const source = readProjectFile('src/main/keychain/ai-config-service.ts');
 
     expect(source).toContain('createCapabilityProductSurfaceStatusService');
+    expect(source).toContain('createAgentCliRuntimeStatusService');
     expect(source).toContain('externalAccessStatusForCapability');
     expect(source).toContain('buildCapabilityRegistry');
     expect(source).toContain('buildConfigurationSafetyReport');

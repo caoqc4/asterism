@@ -28,6 +28,7 @@ describe('capability registry', () => {
       'external_access.connectors',
       'skills.catalogue',
       'mcp.servers',
+      'agent_cli.runtimes',
       'browser.operator',
     ]);
 
@@ -145,6 +146,7 @@ describe('capability registry', () => {
         externalAccess: { connectedCount: 2, pendingCount: 1, errorCount: 0, catalogueCount: 1 },
         skills: { enabledCount: 3, readyCount: 2, modelVisibleCount: 1, needsConfigCount: 1 },
         mcp: { connectedServerCount: 1, toolCount: 4, modelVisibleToolCount: 2, errorCount: 0, catalogueCount: 1 },
+        agentCli: { detectedCount: 1, readyCount: 1, manualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
         browser: { available: true, reason: 'Browser automation configured.' },
       },
     });
@@ -166,6 +168,14 @@ describe('capability registry', () => {
       visibility: 'model_visible',
       summary: 'connectedServers=1 / tools=4 / modelVisibleTools=2 / errors=0 / catalogue=1',
     });
+    expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
+      status: 'available',
+      configured: true,
+      visibility: 'hidden',
+      access: 'mutating',
+      requiredGate: 'runtime_pre_step',
+      summary: 'detected=1 / ready=1 / manualRun=1 / running=0 / errors=0 / catalogue=2',
+    });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
       visibility: 'policy_gated',
@@ -181,6 +191,7 @@ describe('capability registry', () => {
         externalAccess: { connectedCount: 0, errorCount: 1 },
         skills: { enabledCount: 1, readyCount: 0, needsConfigCount: 1 },
         mcp: { connectedServerCount: 1, toolCount: 0, errorCount: 1 },
+        agentCli: { detectedCount: 1, readyCount: 0, manualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
         browser: { available: false, reason: 'Browser plugin unavailable.' },
       },
     });
@@ -197,6 +208,11 @@ describe('capability registry', () => {
     expect(registry.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
       status: 'unconfigured',
       visibility: 'hidden',
+    });
+    expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
+      status: 'unconfigured',
+      visibility: 'hidden',
+      missingReason: 'Agent CLI authentication is not confirmed; use the official CLI login flow before execution.',
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'disabled',

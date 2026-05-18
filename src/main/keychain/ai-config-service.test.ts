@@ -24,7 +24,35 @@ describe('AiConfigService', () => {
     delete process.env.TASKPLANE_AI_API_KEY;
     delete process.env.TASKPLANE_CAPABILITY_PRODUCT_SURFACE_FIXTURE_JSON;
     delete process.env.TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON;
+    delete process.env.TASKPLANE_AGENT_CLI_RUNTIME_FIXTURE_JSON;
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
+    process.env.TASKPLANE_AGENT_CLI_RUNTIME_FIXTURE_JSON = JSON.stringify({
+      updatedAt: '2026-05-19T00:00:00.000Z',
+      runtimes: [
+        {
+          id: 'codex',
+          label: 'Codex CLI',
+          command: 'codex',
+          installed: false,
+          version: null,
+          authState: 'unknown',
+          executionSupport: 'manual_run',
+          workload: 'blocked',
+          missingReason: 'codex was not found on PATH.',
+        },
+        {
+          id: 'claude',
+          label: 'Claude Code',
+          command: 'claude',
+          installed: false,
+          version: null,
+          authState: 'unknown',
+          executionSupport: 'status_only',
+          workload: 'blocked',
+          missingReason: 'claude was not found on PATH.',
+        },
+      ],
+    });
     getPasswordMock.mockReset();
     setPasswordMock.mockReset();
   });
@@ -34,6 +62,7 @@ describe('AiConfigService', () => {
     delete process.env.TASKPLANE_AI_API_KEY;
     delete process.env.TASKPLANE_CAPABILITY_PRODUCT_SURFACE_FIXTURE_JSON;
     delete process.env.TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON;
+    delete process.env.TASKPLANE_AGENT_CLI_RUNTIME_FIXTURE_JSON;
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
   });
 
@@ -73,6 +102,18 @@ describe('AiConfigService', () => {
       summary: 'connectedServers=0 / tools=0 / modelVisibleTools=0 / errors=0 / catalogue=1',
       missingReason: 'No connected MCP server exposes tools.',
     });
+    expect(status.agentCliRuntimeStatus).toMatchObject({
+      catalogueCount: 2,
+      detectedCount: 0,
+      manualRunCount: 0,
+      readyCount: 0,
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
+      status: 'disabled',
+      visibility: 'hidden',
+      summary: 'detected=0 / ready=0 / manualRun=0 / running=0 / errors=0 / catalogue=2',
+      missingReason: 'No supported Agent CLI runtime is detected.',
+    });
     expect(status.externalAccessStatus).toEqual({
       sources: [],
       connectedCount: 0,
@@ -103,6 +144,12 @@ describe('AiConfigService', () => {
       state: 'disabled_by_policy',
       reason: 'No connected MCP server exposes tools.',
       startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'agent_cli.runtimes')).toMatchObject({
+      state: 'disabled_by_policy',
+      reason: 'No supported Agent CLI runtime is detected.',
+      startupProbePolicy: 'safe_read_only',
       exposesSecretValue: false,
     });
     expect(status.executorLifecycleAvailability).toMatchObject({

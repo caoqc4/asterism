@@ -173,7 +173,7 @@ export function SettingsPage() {
           </span>
         </div>
         <p className="settings-hint" style={{ marginTop: 6 }}>
-          修改 Provider 密钥或切换模型请前往 <strong>Model</strong> 页。
+          修改 Provider 密钥、切换模型或查看 Agent CLI 状态请前往 <strong>AI Runtime</strong> 页。
         </p>
       </section>
 

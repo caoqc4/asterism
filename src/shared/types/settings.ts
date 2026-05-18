@@ -4,6 +4,7 @@ import type { AgentToolScaffoldFamilySummary } from '../agent-tool-scaffold.js';
 import type { CapabilityRegistryEntry } from '../capability-registry.js';
 import type { ConfigurationSafetyReport } from '../configuration-safety-report.js';
 import type { ExternalAccessStatus } from '../external-access-status.js';
+import type { AgentCliRuntimeStatus } from '../agent-cli-runtime-status.js';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google' | 'deepseek' | 'groq' | 'fal-openrouter' | 'openai-compatible' | 'replicate';
 export type AiCommunicationStyle = 'concise' | 'balanced' | 'detailed';
@@ -76,6 +77,7 @@ export type AiConfigStatus = {
   executorLifecycleAvailability?: AgentExecutorLifecycleServiceAvailability | null;
   toolScaffoldSummaries?: AgentToolScaffoldFamilySummary[];
   externalAccessStatus?: ExternalAccessStatus;
+  agentCliRuntimeStatus?: AgentCliRuntimeStatus;
   capabilityRegistry?: CapabilityRegistryEntry[];
   configurationSafetyReport?: ConfigurationSafetyReport;
 };
