@@ -1047,7 +1047,7 @@ describe('App redesign v1', () => {
         access: 'read_only',
         requiresApproval: true,
         requiredGate: 'runtime_entrypoint_coverage',
-        summary: 'connected=1 / pending=0 / errors=0',
+        summary: 'connected=1 / pending=0 / errors=0 / catalogue=1',
       }],
       configurationSafetyReport: {
         secretExposureSafe: true,
@@ -1056,7 +1056,7 @@ describe('App redesign v1', () => {
         surfaces: [{
           id: 'external_access.connectors',
           state: 'approval_required',
-          reason: 'connected=1 / pending=0 / errors=0',
+          reason: 'connected=1 / pending=0 / errors=0 / catalogue=1',
           requiresApproval: true,
           startupProbePolicy: 'manual_only',
           exposesSecretValue: false,
@@ -1072,7 +1072,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('已连接')).toBeTruthy();
     expect(screen.queryByText('尚未连接任何来源。')).toBeNull();
     expect(screen.getByText('可用')).toBeTruthy();
-    expect(screen.getByText('connected=1 / pending=0 / errors=0')).toBeTruthy();
+    expect(screen.getByText('connected=1 / pending=0 / errors=0 / catalogue=1')).toBeTruthy();
   });
 
   it('keeps pending Gmail OAuth as a default optional item instead of a connected source', async () => {
@@ -1274,7 +1274,7 @@ describe('App redesign v1', () => {
         access: 'mixed',
         requiresApproval: true,
         requiredGate: 'runtime_context_assembly',
-        summary: 'connectedServers=0 / tools=0 / errors=0',
+        summary: 'connectedServers=0 / tools=0 / errors=0 / catalogue=1',
       }],
       configurationSafetyReport: {
         secretExposureSafe: true,

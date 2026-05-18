@@ -544,7 +544,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Settings and Model consume ConfigurationSafetyReport as read-only configuration safety boundaries with secret exposure, manual-probe, approval-required, and blocked capability states.',
       'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
       'Default Gmail, the first Brainstorming Skill, and Playwright MCP catalogue entries share product-surface definitions, and External Access, Skills, and MCP pages consume the same CapabilityRegistry and ConfigurationSafetyReport rows as read-only safety strips.',
-      'Skills keeps catalogue count separate from ready count, so built-in optional previews do not imply service readiness or model-visible exposure.',
+      'External Access, Skills, and MCP keep catalogue counts separate from connected, ready, and exposed-tool counts, so built-in optional previews do not imply authorization, service readiness, or model-visible exposure.',
     ],
     outOfAgentPrinciplesScope: [
       'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',
