@@ -112,6 +112,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'External Access consumes AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without live connector probes.',
       'Default Gmail, the first Brainstorming Skill, and Playwright MCP catalogue entries share product-surface definitions, and their pages consume the same CapabilityRegistry and ConfigurationSafetyReport rows instead of page-local capability semantics.',
       'Default External Access, Skills, and MCP catalogue counts stay separate from connected, ready, and exposed-tool counts, so built-in optional previews do not imply authorization, service readiness, or model-visible exposure.',
+      'RuntimeContextManifest formats capability context as count summaries and does not emit hidden optional catalogue ids or reserved Skill/MCP/Browser scaffold descriptors into step-facing context.',
       'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
