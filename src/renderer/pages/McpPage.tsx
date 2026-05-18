@@ -52,10 +52,10 @@ export function McpPage() {
         <div>
           <h2 className="mcp-title">MCP 服务器</h2>
           <p className="mcp-subtitle">
-            接入 Model Context Protocol 工具服务端，每个服务器可暴露多个工具供 AI 调用
+            登记 Model Context Protocol 工具服务端，每个服务器可暴露多个工具供 AI 调用
           </p>
           <p className="mcp-boundary">
-            连接服务器只会让工具进入 AI 能力库；具体调用仍由任务上下文、用户指令和执行确认决定。
+            当前页面只维护服务器登记预览；真实连接、探测和工具暴露必须接入 MCP 服务，并通过运行时能力门禁。
           </p>
         </div>
         <button className="btn sm primary" onClick={() => setShowForm(true)}>
@@ -81,10 +81,10 @@ export function McpPage() {
         ))}
         {servers.length === 0 && !showForm && (
           <div className="mcp-empty">
-            <p>还没有连接任何 MCP 服务器</p>
+            <p>还没有登记任何 MCP 服务器</p>
             <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
               MCP（Model Context Protocol）是 Anthropic 推出的开放工具协议，
-              兼容的服务端可将工具注册到 AI 能力库
+              兼容的服务端可在真实 MCP 服务接入后注册到 AI 能力库
             </p>
           </div>
         )}
@@ -93,7 +93,7 @@ export function McpPage() {
       {servers.length > 0 && (
         <div className="mcp-hint">
           <span className="mcp-hint-icon">ℹ</span>
-          服务器上线后，其暴露的工具可出现在 AI 可用工具列表中，无需手动配置每个工具
+          真实 MCP 服务接入后，服务器暴露的工具才可出现在 AI 可用工具列表中。
         </div>
       )}
     </div>

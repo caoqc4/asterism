@@ -83,8 +83,10 @@ runtime deepening in isolation. Recommended order:
    credentials are available.
 2. Skills/MCP capability pages: reuse `ConfigurationSafetyReport` and
    `CapabilityRegistry` without changing settled Tasks-page layout. The first
-   read-only safety strip is in place; future work should connect real
-   structured Skills/MCP status when those services exist.
+   read-only safety strip is in place, and the pages now describe local
+   catalogue/server registration as preview state rather than real model-visible
+   tool exposure. Future work should connect real structured Skills/MCP status
+   when those services exist.
 3. Retrieval/search growth: the deterministic execution-memory index is in
    place; add broader search UI or semantic retrieval only when a concrete
    lookup workflow needs it.

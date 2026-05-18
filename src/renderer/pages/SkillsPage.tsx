@@ -178,9 +178,9 @@ export function SkillsPage() {
       <div className="skills-head-row">
         <div>
           <h2 className="skills-title">Skills</h2>
-          <p className="skills-subtitle">AI 执行任务时可调用的工具模块</p>
+          <p className="skills-subtitle">AI 执行任务时可用的工具能力登记</p>
           <p className="skills-boundary">
-            启用技能只会把工具加入 AI 能力库；是否调用仍由任务上下文、用户指令和执行确认决定。
+            当前页面只维护技能目录预览；真实工具暴露必须接入 Skills 服务，并通过运行时能力门禁后才会进入 AI 执行上下文。
           </p>
         </div>
         {allEnabled.length > 0 && (
@@ -218,7 +218,7 @@ export function SkillsPage() {
       {activeTab === 'builtin' && (
         <div className="skills-panel">
           <p className="skills-panel-hint">
-            平台预置工具，开箱即用，按需开启
+            平台预置工具目录；启用状态用于记录意图，不代表当前运行时已经暴露工具。
           </p>
           <div className="skills-list">
             {builtins.map((s) => (
@@ -399,7 +399,7 @@ function LocalRow({ skill, expanded, onToggle, onExpand, onSetDesc, onRemove }: 
               value={skill.desc}
               onChange={(e) => onSetDesc(e.target.value)}
             />
-            <span className="settings-hint">此说明会注入 AI 系统提示，影响调用时机</span>
+            <span className="settings-hint">真实 Skills 服务接入后，此说明才会进入工具选择上下文；当前仅作为本地登记说明。</span>
           </div>
           <div className="skill-row-body-actions">
             <button className="btn sm ghost" style={{ color: 'var(--accent)' }} onClick={onRemove}>
@@ -521,7 +521,7 @@ function HttpSkillForm({ onAdd, onCancel }: { onAdd: (s: Skill) => void; onCance
           placeholder={derivedId || 'my_tool'}
           onChange={(e) => setInvokeId(e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''))}
         />
-        <span className="settings-hint">AI 用此 ID 调用工具，留空则自动从名称生成</span>
+        <span className="settings-hint">真实 Skills 服务接入后，AI 才会用此 ID 识别工具；留空则自动从名称生成</span>
       </div>
       <div className="skill-config-row">
         <label className="skill-config-label">描述</label>

@@ -1141,7 +1141,7 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
   });
 
-  it('clarifies enabled Skills are only available tools, not automatic execution', async () => {
+  it('clarifies enabled Skills are catalogue intent until a real service exposes tools', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
       capabilityRegistry: [{
@@ -1175,15 +1175,15 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Skills/ }));
 
-    expect(await screen.findByText(/AI 执行任务时可调用的工具模块/)).toBeTruthy();
-    expect(screen.getByText(/启用技能只会把工具加入 AI 能力库/)).toBeTruthy();
-    expect(screen.getByText(/是否调用仍由任务上下文、用户指令和执行确认决定/)).toBeTruthy();
+    expect(await screen.findByText(/AI 执行任务时可用的工具能力登记/)).toBeTruthy();
+    expect(screen.getByText(/当前页面只维护技能目录预览/)).toBeTruthy();
+    expect(screen.getByText(/真实工具暴露必须接入 Skills 服务/)).toBeTruthy();
     expect(screen.getByText('能力状态')).toBeTruthy();
     expect(screen.getByText('未配置')).toBeTruthy();
     expect(screen.getByText(/Capability family is not configured/)).toBeTruthy();
   });
 
-  it('clarifies MCP servers expose tools without automatic execution', async () => {
+  it('clarifies MCP servers are registration previews until a real service exposes tools', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
       capabilityRegistry: [{
@@ -1218,9 +1218,9 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /MCP/ }));
 
     expect(await screen.findByText(/Model Context Protocol 工具服务端/)).toBeTruthy();
-    expect(screen.getByText(/连接服务器只会让工具进入 AI 能力库/)).toBeTruthy();
-    expect(screen.getByText(/具体调用仍由任务上下文、用户指令和执行确认决定/)).toBeTruthy();
-    expect(screen.getByText(/可将工具注册到 AI 能力库/)).toBeTruthy();
+    expect(screen.getByText(/当前页面只维护服务器登记预览/)).toBeTruthy();
+    expect(screen.getByText(/真实连接、探测和工具暴露必须接入 MCP 服务/)).toBeTruthy();
+    expect(screen.getByText(/真实 MCP 服务接入后注册到 AI 能力库/)).toBeTruthy();
     expect(screen.getByText('能力状态')).toBeTruthy();
     expect(screen.getByText('已关闭')).toBeTruthy();
     expect(screen.getByText(/No connected MCP server exposes tools/)).toBeTruthy();

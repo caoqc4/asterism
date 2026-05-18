@@ -383,7 +383,9 @@ Skills and MCP now read the same `AiConfigStatus` capability and safety rows as
 read-only page strips, so those capability pages no longer depend only on static
 boundary copy. They still do not probe or expose real tools at startup; future
 service work should feed structured Skills/MCP product-surface status into the
-same registry path.
+same registry path. Their current UI copy also treats local skill entries and
+MCP server entries as registration previews, not as evidence that tools have
+already become model-visible.
 
 ## Package F: Work Habits, SOPs, And Method Library
 
