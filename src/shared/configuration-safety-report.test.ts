@@ -116,9 +116,9 @@ describe('configuration safety report', () => {
       capabilityRegistry: buildCapabilityRegistry({
         snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: base }),
         productSurfaces: {
-          externalAccess: { connectedCount: 0, pendingCount: 0, errorCount: 0 },
+          externalAccess: { connectedCount: 0, pendingCount: 0, errorCount: 0, catalogueCount: 1 },
           skills: { enabledCount: 0, readyCount: 0, needsConfigCount: 0, catalogueCount: 1 },
-          mcp: { connectedServerCount: 0, toolCount: 0, errorCount: 0 },
+          mcp: { connectedServerCount: 0, toolCount: 0, errorCount: 0, catalogueCount: 1 },
         },
       }),
     });
@@ -195,8 +195,8 @@ describe('configuration safety report', () => {
       capabilityRegistry: buildCapabilityRegistry({
         snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: base }),
         productSurfaces: {
-          skills: { enabledCount: 2, readyCount: 1, needsConfigCount: 1 },
-          mcp: { connectedServerCount: 1, toolCount: 3, errorCount: 0 },
+          skills: { enabledCount: 2, readyCount: 1, needsConfigCount: 1, catalogueCount: 1 },
+          mcp: { connectedServerCount: 1, toolCount: 3, errorCount: 0, catalogueCount: 1 },
         },
       }),
     };

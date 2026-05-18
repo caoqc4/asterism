@@ -1225,7 +1225,7 @@ describe('App redesign v1', () => {
         visibility: 'hidden',
         access: 'read_only',
         requiresApproval: true,
-        requiredGate: 'runtime_context_assembly',
+        requiredGate: 'runtime_entrypoint_coverage',
         summary: 'enabled=0 / ready=0 / needsConfig=0 / catalogue=1',
       }],
       configurationSafetyReport: {
