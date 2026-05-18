@@ -1875,7 +1875,7 @@ describe('DecisionService', () => {
         title: '确认已通过：确认提升 sandbox patch',
         output: [
           'Sandbox patch promotion preflight: ready / checkpoint=run_checkpoint_patch_1 / source=sandbox_session_1 / files=notes.md / no workspace files written',
-          'Workspace file application is still deferred; no workspace files were written.',
+          'Workspace file application is disabled by feature flag; no workspace files were written.',
         ].join('\n'),
       }),
     );

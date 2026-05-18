@@ -134,7 +134,7 @@ async function runScenario({ enabled, id, nextContent, originalContent }) {
   assert(resolvedCheckpoint?.status === 'resolved', 'default promotion did not resolve the checkpoint');
   assert(promotion?.status === 'pending', 'default promotion should keep the durable record pending');
   assert(
-    steps.some((step) => step.output?.includes('Workspace file application is still deferred; no workspace files were written.')),
+    steps.some((step) => step.output?.includes('Workspace file application is disabled by feature flag; no workspace files were written.')),
     'default promotion did not record no-write output',
   );
   return 'no-write';

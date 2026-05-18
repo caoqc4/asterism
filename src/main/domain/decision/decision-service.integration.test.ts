@@ -343,7 +343,7 @@ describe('DecisionService integration', () => {
     expect(steps.some((step) =>
       step.kind === 'checkpoint' &&
       step.status === 'completed' &&
-      step.output?.includes('Workspace file application is still deferred; no workspace files were written.')
+      step.output?.includes('Workspace file application is disabled by feature flag; no workspace files were written.')
     )).toBe(true);
   });
 

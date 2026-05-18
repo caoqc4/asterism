@@ -797,7 +797,7 @@ export class DecisionService {
       title: `确认已通过：${decision.title}`,
       output: [
         preflight.summary,
-        'Workspace file application is still deferred; no workspace files were written.',
+        'Workspace file application is disabled by feature flag; no workspace files were written.',
       ].join('\n'),
     });
   }
