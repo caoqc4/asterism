@@ -517,7 +517,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'ConfigurationSafetyReport projects AiConfigStatus and CapabilityRegistry into configured, missing, disabled, approval-required, and manual-probe safety states without exposing secret values.',
       'ConfigurationSafetyReport keeps provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in rather than startup side effects.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus, so retained settings/capability service consumers can read the shared safety projection without a separate UI path.',
-      'AiConfigService feeds External Access zero-connector product-surface status into CapabilityRegistry, so External Access is a structured disabled capability instead of an unconnected deferred row.',
+      'AiConfigService feeds External Access, Skills, and MCP product-surface status into CapabilityRegistry, so default optional capability surfaces are structured disabled capabilities instead of unconnected deferred rows.',
       'ExternalAccessStatusService provides a read-only connector status boundary, and AiConfigService feeds that status into CapabilityRegistry and ConfigurationSafetyReport.',
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
       'LocalInboxConnectorAdapter is the first concrete local read-only connector adapter: it is opt-in by environment variable, reads only supported local inbox files, and still produces ConnectorSourceIngestionPlan previews instead of direct SourceContext writes.',
@@ -528,7 +528,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'The packaged local-inbox smoke creates a task, previews local inbox evidence in External Access, confirms the source-review dialog, and verifies the source-context memory write path without live providers.',
       'Settings and Model consume ConfigurationSafetyReport as read-only configuration safety boundaries with secret exposure, manual-probe, approval-required, and blocked capability states.',
       'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
-      'ConfigurationSafetyReport includes Skills and MCP safety surfaces from CapabilityRegistry, and the Skills/MCP pages consume those rows as read-only capability safety strips.',
+      'Default Gmail, Brainstorming, and Playwright MCP catalogue entries share product-surface definitions, and External Access, Skills, and MCP pages consume the same CapabilityRegistry and ConfigurationSafetyReport rows as read-only safety strips.',
     ],
     outOfAgentPrinciplesScope: [
       'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',

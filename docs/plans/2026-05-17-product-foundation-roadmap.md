@@ -382,16 +382,17 @@ explicitly opted in.
 `AiConfigService` now attaches this report to `AiConfigStatus`, so existing
 settings/model/capability service consumers can read one shared safety
 projection without a new UI or IPC boundary.
-Skills and MCP now read the same `AiConfigStatus` capability and safety rows as
-read-only page strips, so those capability pages no longer depend only on static
-boundary copy. They still do not probe or expose real tools at startup; future
-service work should feed structured Skills/MCP product-surface status into the
-same registry path. Their current UI copy also treats local skill entries and
-MCP server entries as registration previews, not as evidence that tools have
-already become model-visible. The first default optional catalogue entries are
-`Brainstorming` for Skills and `Playwright MCP` for MCP, both intentionally
-disabled/disconnected until a real Skills or MCP service promotes them through
-the runtime capability gate.
+External Access, Skills, and MCP now read the same `AiConfigStatus` capability
+and safety rows as read-only page strips, so those capability pages no longer
+depend only on static boundary copy. They still do not probe or expose real
+tools at startup; future service work should feed structured live Skills/MCP
+status into the same registry path. Their current UI copy also treats local
+skill entries and MCP server entries as registration previews, not as evidence
+that tools have already become model-visible. The first default optional
+catalogue entries are `Gmail` for External Access, `Brainstorming` for Skills,
+and `Playwright MCP` for MCP. These entries come from shared product-surface
+definitions and remain unauthorized, disabled, or disconnected until a real
+service promotes them through the runtime capability gate.
 
 ## Package F: Work Habits, SOPs, And Method Library
 
