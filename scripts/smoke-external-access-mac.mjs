@@ -48,7 +48,11 @@ async function assertExternalAccessSurface(page) {
   await page.getByText('入库边界').waitFor();
   await page.getByText('先质检，再确认').waitFor();
   await page.getByText('来源入库复核').waitFor();
-  await page.getByText('没有可选任务').waitFor();
+  await page.waitForFunction(() => {
+    const select = document.querySelector('#external-source-task');
+    return select instanceof HTMLSelectElement
+      && Array.from(select.options).some((option) => option.textContent === '没有可选任务');
+  });
   await page.getByText('尚未预览外部来源。').waitFor();
   const previewButton = page.getByRole('button', { name: '预览来源' });
   await previewButton.waitFor();

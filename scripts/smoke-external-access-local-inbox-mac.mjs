@@ -49,6 +49,13 @@ function prepareInbox() {
 }
 
 async function assertExternalAccessLocalInboxSurface(page) {
+  await page.evaluate(async () => {
+    await window.api.createTask({
+      title: 'Packaged local inbox task',
+      summary: 'Validate External Access source review smoke.',
+      taskType: 'simple',
+    });
+  });
   await page.getByRole('button', { name: 'External Access' }).click();
   await page.getByRole('heading', { name: 'External Access' }).waitFor();
   await page.getByText('授权后只处理相关新信号').waitFor();
@@ -61,8 +68,20 @@ async function assertExternalAccessLocalInboxSurface(page) {
   await page.getByText('入库边界').waitFor();
   await page.getByText('先质检，再确认').waitFor();
   await page.getByText('来源入库复核').waitFor();
-  await page.getByText('没有可选任务').waitFor();
+  await page.waitForFunction(() => {
+    const select = document.querySelector('#external-source-task');
+    return select instanceof HTMLSelectElement
+      && Array.from(select.options).some((option) => option.textContent === 'Packaged local inbox task');
+  });
   await page.getByText('尚未预览外部来源。').waitFor();
+  await page.getByRole('button', { name: '预览来源' }).click();
+  await page.getByText('Packaged local inbox evidence', { exact: true }).waitFor();
+  await page.getByText('可写入', { exact: true }).waitFor();
+  page.once('dialog', async (dialog) => {
+    await dialog.accept();
+  });
+  await page.getByRole('button', { name: '确认写入' }).click();
+  await page.getByText(/已写入 1 条来源/).waitFor();
   await page.getByText('可用').waitFor();
   await page.getByText('connected=1 / pending=0 / errors=0').waitFor();
   await page.getByRole('button', { name: '+ 连接来源' }).waitFor();
