@@ -36,6 +36,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeTaskCaptureEvaluation blocks generic phase-template task titles even when a faulty flow tries to create them as top-level tasks.',
       'Task hierarchy tests cover explicit no-parent records, explicit top-level phase follow-ups, and renderer stale hierarchy attributes not overriding persisted parent/child fields.',
       'Runtime surface routing has regression coverage that explicit Decision kind, scope, and sourceType are not overridden by title-pattern inference.',
+      'CanonicalDataDiagnostics routes hierarchy self-references and duplicate child links to manual review instead of silently repairing ambiguous structure.',
       'RuntimeEntrypointCoverage now requires every retained runtime entrypoint to declare a simplicity_check gate, so future execution, creation, decision, write, resume, and context-transition surfaces cannot register without the smallest-state-change boundary.',
       'MemorySurfaceWriteCoverage requires every retained durable information writer to declare its smallest surface, write policy, simplicity boundary, and retained IPC channel where applicable.',
     ],

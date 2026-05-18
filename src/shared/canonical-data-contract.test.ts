@@ -456,4 +456,85 @@ describe('canonical data contract', () => {
     expect(result.manualReviewCount).toBeGreaterThan(0);
     expect(result.readOnlyDiagnosticCount).toBeGreaterThan(0);
   });
+
+  it('routes cyclic or duplicated hierarchy references to manual review', () => {
+    const result = evaluateCanonicalDataDiagnostics({
+      tasks: [
+        {
+          id: 'task_self_parent',
+          title: 'Self parent',
+          summary: null,
+          state: 'running',
+          taskType: 'project',
+          taskFacets: ['project'],
+          parentTaskId: 'task_self_parent',
+          childTaskIds: [],
+          nextStep: 'Continue',
+          waitingReason: null,
+          riskLevel: 'none',
+          riskNote: null,
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+        {
+          id: 'task_parent',
+          title: 'Parent task',
+          summary: null,
+          state: 'running',
+          taskType: 'project',
+          taskFacets: ['project'],
+          parentTaskId: null,
+          childTaskIds: ['task_parent', 'task_child', 'task_child'],
+          nextStep: 'Continue',
+          waitingReason: null,
+          riskLevel: 'none',
+          riskNote: null,
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+        {
+          id: 'task_child',
+          title: 'Child task',
+          summary: null,
+          state: 'planned',
+          taskType: 'simple',
+          taskFacets: ['simple'],
+          parentTaskId: 'task_parent',
+          childTaskIds: [],
+          nextStep: 'Continue',
+          waitingReason: null,
+          riskLevel: 'none',
+          riskNote: null,
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'hierarchy_backlink_mismatch',
+        recordId: 'task_self_parent',
+        field: 'parentTaskId',
+        severity: 'error',
+        repairRoute: 'decision_manual_review',
+      }),
+      expect.objectContaining({
+        code: 'hierarchy_backlink_mismatch',
+        recordId: 'task_parent',
+        field: 'childTaskIds',
+        severity: 'error',
+        repairRoute: 'decision_manual_review',
+        message: expect.stringContaining('itself as a child'),
+      }),
+      expect.objectContaining({
+        code: 'hierarchy_backlink_mismatch',
+        recordId: 'task_parent',
+        field: 'childTaskIds',
+        severity: 'warning',
+        repairRoute: 'decision_manual_review',
+        message: expect.stringContaining('more than once'),
+      }),
+    ]));
+  });
 });

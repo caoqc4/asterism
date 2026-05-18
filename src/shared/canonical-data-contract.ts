@@ -550,6 +550,19 @@ function taskHierarchyReferenceIssues(
 
     const parentTaskId = stringField(task, 'parentTaskId');
     if (parentTaskId) {
+      if (parentTaskId === taskId) {
+        issues.push({
+          code: 'hierarchy_backlink_mismatch',
+          domain: 'task_hierarchy',
+          recordId: recordId(task, index),
+          field: 'parentTaskId',
+          severity: 'error',
+          repairRoute: 'decision_manual_review',
+          message: `task_hierarchy record ${taskId} points to itself as parent.`,
+        });
+        continue;
+      }
+
       const parent = taskById.get(parentTaskId)?.task;
       if (!parent) {
         issues.push({
@@ -574,7 +587,36 @@ function taskHierarchyReferenceIssues(
       }
     }
 
-    for (const childTaskId of arrayField(task, 'childTaskIds')) {
+    const childTaskIds = arrayField(task, 'childTaskIds');
+    const seenChildTaskIds = new Set<string>();
+    for (const childTaskId of childTaskIds) {
+      if (seenChildTaskIds.has(childTaskId)) {
+        issues.push({
+          code: 'hierarchy_backlink_mismatch',
+          domain: 'task_hierarchy',
+          recordId: recordId(task, index),
+          field: 'childTaskIds',
+          severity: 'warning',
+          repairRoute: 'decision_manual_review',
+          message: `task_hierarchy parent ${taskId} lists child ${childTaskId} more than once.`,
+        });
+        continue;
+      }
+      seenChildTaskIds.add(childTaskId);
+
+      if (childTaskId === taskId) {
+        issues.push({
+          code: 'hierarchy_backlink_mismatch',
+          domain: 'task_hierarchy',
+          recordId: recordId(task, index),
+          field: 'childTaskIds',
+          severity: 'error',
+          repairRoute: 'decision_manual_review',
+          message: `task_hierarchy parent ${taskId} lists itself as a child.`,
+        });
+        continue;
+      }
+
       const child = taskById.get(childTaskId)?.task;
       if (!taskIds.has(childTaskId) || !child) {
         issues.push({
