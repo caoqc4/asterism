@@ -78,7 +78,7 @@ export class WorkHabitService {
   }
 
   async importLegacy(input: ImportLegacyWorkHabitsInput): Promise<WorkHabitStorageSnapshot> {
-    const legacy = input.habits.filter((habit) => habit.id && habit.rule.trim());
+    const legacy = input.habits.filter((habit) => habit.id && habit.rule.trim() && !isTaskBoundLearning(habit.rule));
     if (!legacy.length) return this.getSnapshot();
 
     const current = await this.ensureSeeded();

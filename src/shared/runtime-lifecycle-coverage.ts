@@ -293,7 +293,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RightPanel automatic context mode now consumes RuntimeHandoff and AutoContextClearReadiness after session-refresh triggers, so automatic clearing runs only after successful memory preservation and safe readiness.',
       'CrossTaskLearningBoundary classifies candidate learning text into task records, Work Habit proposals, process-template proposals, or discussion-only before durable cross-task memory is allowed.',
       'CrossTaskLearningBoundary keeps task-specific corrections task-bound and requires confirmation for Work Habit and process-template proposals.',
-      'WorkHabitService consumes CrossTaskLearningBoundary before creating Work Habit proposals, manual Work Habits, Work Habit rule edits, or SOP-template habit records, so task-specific corrections do not become cross-task memory.',
+      'WorkHabitService consumes CrossTaskLearningBoundary before creating Work Habit proposals, manual Work Habits, Work Habit rule edits, legacy imports, or SOP-template habit records, so task-specific corrections do not become cross-task memory.',
       'Work Habit selection returns applicability reasons for runtime prompts, so selected habits remain explainable by project, task type, task title, or global scope.',
     ],
     outOfAgentPrinciplesScope: [

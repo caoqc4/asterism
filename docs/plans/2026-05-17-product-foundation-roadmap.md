@@ -457,7 +457,9 @@ proposal and SOP-template writes, so task-specific corrections are rejected at
 the service boundary instead of relying on UI or prompt discipline. Manual
 Work Habit creation and rule edits now use the same task-bound leak guard, so a
 current-task correction cannot become a confirmed cross-task habit through a
-manual path. Equivalent confirmed Work Habits are not duplicated into new
+manual path. Legacy Work Habit imports now use the same task-bound leak guard,
+so old task-specific corrections cannot be promoted into cross-task memory
+during migration. Equivalent confirmed Work Habits are not duplicated into new
 pending proposals, and manual habit creation also reuses the shared dedupe rule
 for equivalent scope / rule pairs. SOP-template habit writes now deduplicate
 equivalent reusable step shapes across tasks before adding another retained

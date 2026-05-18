@@ -177,6 +177,26 @@ describe('WorkHabitService learning boundary', () => {
       applicationCount: 2,
     });
   });
+
+  it('does not import task-specific legacy habits into cross-task memory', async () => {
+    const service = new WorkHabitService(new FakeWorkHabitRepository() as never);
+
+    const snapshot = await service.importLegacy({
+      habits: [
+        workHabit({
+          id: 'legacy_task_bound',
+          rule: '这个任务应该以用户刚刚确认的范围为准',
+        }),
+        workHabit({
+          id: 'legacy_global',
+          rule: '以后所有任务都先做第一性原理评估',
+        }),
+      ],
+    });
+
+    expect(snapshot.habits.some((habit) => habit.id === 'legacy_task_bound')).toBe(false);
+    expect(snapshot.habits.some((habit) => habit.id === 'legacy_global')).toBe(true);
+  });
 });
 
 function workHabit(partial: Partial<WorkHabitRecord> = {}): WorkHabitRecord {

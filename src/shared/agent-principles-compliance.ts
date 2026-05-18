@@ -151,7 +151,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'runtime-surface-routing classifies Task.md, Task Records, source materials, AI output, artifacts, decisions, work habits, run steps, and discussion-only candidates.',
       'CrossTaskLearningBoundary keeps task-specific corrections in Task Records and routes cross-task habits or reusable SOP-shaped text to confirmation-only proposals.',
-      'WorkHabitService consumes CrossTaskLearningBoundary before creating retained Work Habit proposals, manual Work Habits, Work Habit rule edits, or SOP-template habit records.',
+      'WorkHabitService consumes CrossTaskLearningBoundary before creating retained Work Habit proposals, manual Work Habits, Work Habit rule edits, legacy imports, or SOP-template habit records.',
       'Work Habit proposal writes do not duplicate equivalent confirmed habits, and SOP-template habit writes deduplicate equivalent reusable step shapes across tasks.',
       'Work Habit selection returns applicability reasons for runtime prompts, so selected habits remain explainable by project, task type, task title, or global scope.',
       'MemorySurfacePolicy gives each runtime surface an explicit memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
