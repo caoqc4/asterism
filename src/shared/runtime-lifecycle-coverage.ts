@@ -124,7 +124,8 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryRetrieval ranks current task state and Task.md ahead of pending Decisions, blockers, dependencies, Task Records, source contexts, artifacts, task files, Work Habits, and process templates.',
       'Process template apply/remove events retain binding action and note context so task-bound method changes remain auditable.',
       'TaskMemoryRetrieval keeps active blockers and dependencies high in the read order while demoting resolved blockers and dependencies to historical recovery signals.',
-      'TaskMemoryRetrieval attaches include/caution/exclude decisions and reasons, excluding archived or duplicate sources by default and surfacing selected files with caution when they are otherwise weak.',
+      'TaskMemoryRetrieval attaches include/caution/exclude decisions and reasons, excluding archived, stale, or duplicate sources by default and surfacing selected files with caution when they are otherwise weak.',
+      'TaskMemoryRetrieval applies SourceFreshnessEvaluation and SourceMaterialQualityEvaluation together so retrieval read order cannot treat stale source materials as current evidence.',
       'RuntimeContextManifest now consumes TaskMemoryRetrieval and emits a compact memory_retrieval line for provider-visible step context.',
     ],
     outOfAgentPrinciplesScope: [

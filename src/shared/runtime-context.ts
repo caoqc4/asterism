@@ -511,6 +511,7 @@ export function buildRuntimeContextManifest(params: {
           createdAt: event.createdAt,
         })) ?? [],
         workHabits: runtimeWorkHabitsForRetrieval(params.applicableWorkHabits ?? []),
+        currentRunId: params.currentRunId,
         selectedFileIds: params.selectedFile?.path ? [params.selectedFile.path] : [],
       }))
     : null;

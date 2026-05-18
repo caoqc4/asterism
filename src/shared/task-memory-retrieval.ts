@@ -1,4 +1,5 @@
 import { evaluateSourceMaterialQuality, type SourceMaterialQualityEvaluation } from './source-material-quality-evaluator.js';
+import { evaluateSourceFreshness, type SourceFreshnessEvaluation } from './source-freshness-evaluator.js';
 import { isTaskMdPath, isTaskRecordPath } from './task-memory-path.js';
 import type { ArtifactRecord } from './types/artifact.js';
 import type { BlockerRecord } from './types/blocker.js';
@@ -35,6 +36,7 @@ export type TaskMemorySearchEntity = {
   path?: string | null;
   updatedAt: string | null;
   importanceSignals: string[];
+  freshness?: SourceFreshnessEvaluation | null;
   quality?: SourceMaterialQualityEvaluation | null;
   searchableText: string;
 };
@@ -58,6 +60,8 @@ export type TaskMemoryRetrievalInput = {
   timeline?: TimelineEventRecord[];
   workHabits?: WorkHabitRecord[];
   processTemplates?: AppliedProcessTemplateRecord[];
+  currentRunId?: string | null;
+  now?: string;
   query?: string | null;
   selectedFileIds?: string[];
   maxResults?: number;
@@ -103,6 +107,18 @@ export function buildTaskMemorySearchIndex(input: TaskMemorySearchIndexInput): T
   }
 
   for (const source of input.sourceContexts ?? []) {
+    const freshness = evaluateSourceFreshness({
+      capturedAt: source.capturedAt,
+      createdAt: source.createdAt,
+      currentRunId: input.currentRunId,
+      isKey: source.isKey,
+      runId: source.runId,
+      sourceRole: source.sourceRole,
+      status: source.status,
+      title: source.title,
+      updatedAt: source.updatedAt,
+      now: input.now,
+    });
     const quality = evaluateSourceMaterialQuality({
       content: source.content,
       credibility: source.credibility,
@@ -124,10 +140,12 @@ export function buildTaskMemorySearchIndex(input: TaskMemorySearchIndexInput): T
       preview: source.content ?? source.note ?? source.uri,
       path: source.uri,
       updatedAt: source.updatedAt,
+      freshness,
       quality,
       importanceSignals: [
         source.isKey ? 'key_source' : null,
         source.sourceRole === 'stable_reference' ? 'stable_reference' : null,
+        freshness.reason,
         quality.reason,
       ].filter(Boolean) as string[],
     }));
@@ -273,6 +291,12 @@ function rankEntity(
     if (entity.quality.decision === 'exclude') decision = 'exclude';
     if (entity.quality.decision === 'caution' && decision !== 'exclude') decision = 'caution';
     reasons.push(`source_quality:${entity.quality.reason}`);
+  }
+
+  if (entity.entityType === 'source_context' && entity.freshness) {
+    if (entity.freshness.decision === 'exclude') decision = 'exclude';
+    if (entity.freshness.decision === 'caution' && decision !== 'exclude') decision = 'caution';
+    reasons.push(`source_freshness:${entity.freshness.reason}`);
   }
 
   if (entity.entityType === 'decision' && entity.importanceSignals.includes('pending')) {

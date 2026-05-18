@@ -160,8 +160,8 @@ describe('runtime context manifest', () => {
 
     expect(manifest.memoryRetrieval).toMatchObject({
       totalCount: 7,
-      includedCount: 7,
-      cautionCount: 0,
+      includedCount: 6,
+      cautionCount: 1,
       excludedCount: 0,
     });
     expect(manifest.memoryRetrieval?.topResults.map((item) => item.kind)).toContain('task_state');

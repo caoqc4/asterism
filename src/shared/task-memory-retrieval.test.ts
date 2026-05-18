@@ -48,6 +48,7 @@ describe('task memory retrieval', () => {
       'process_template',
     ]);
     expect(index.find((item) => item.id === 'source_key')).toMatchObject({
+      freshness: expect.objectContaining({ decision: 'include', reason: 'key_source' }),
       quality: expect.objectContaining({ decision: 'include', reason: 'key_source' }),
       importanceSignals: expect.arrayContaining(['key_source']),
     });
@@ -110,16 +111,24 @@ describe('task memory retrieval', () => {
   it('excludes archived or duplicate sources by default while keeping reasons', () => {
     const results = retrieveTaskExecutionMemory({
       currentTask: task(),
+      now: '2026-05-18T00:00:00.000Z',
       sourceContexts: [
         sourceContext({ id: 'source_archived', status: 'archived', uri: 'https://old.example.com' }),
         sourceContext({ id: 'source_duplicate', isDuplicate: true, uri: 'https://dup.example.com' }),
         sourceContext({ id: 'source_sensitive', containsSensitiveData: true, uri: 'https://secret.example.com' }),
+        sourceContext({
+          id: 'source_stale',
+          capturedAt: '2026-03-01T00:00:00.000Z',
+          createdAt: '2026-03-01T00:00:00.000Z',
+          updatedAt: '2026-03-01T00:00:00.000Z',
+          uri: 'https://stale.example.com',
+        }),
       ],
     });
 
     expect(results.find((item) => item.entity.id === 'source_archived')).toMatchObject({
       decision: 'exclude',
-      reasons: expect.arrayContaining(['source_quality:archived']),
+      reasons: expect.arrayContaining(['source_quality:archived', 'source_freshness:archived']),
     });
     expect(results.find((item) => item.entity.id === 'source_duplicate')).toMatchObject({
       decision: 'exclude',
@@ -128,6 +137,10 @@ describe('task memory retrieval', () => {
     expect(results.find((item) => item.entity.id === 'source_sensitive')).toMatchObject({
       decision: 'caution',
       reasons: expect.arrayContaining(['source_quality:sensitive']),
+    });
+    expect(results.find((item) => item.entity.id === 'source_stale')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['source_freshness:stale']),
     });
   });
 

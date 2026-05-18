@@ -260,9 +260,12 @@ blockers, dependencies, Work Habits, and applied process templates. The first
 ranking pass keeps current task state and Task.md ahead of pending Decisions,
 active blockers/dependencies, current Task Records, key sources, artifacts, and
 support files. Results carry include/caution/exclude decisions plus reasons;
-archived or duplicate sources are excluded by default, sensitive sources are
-included with caution, unrelated records are excluded unless the query matches,
-and selected files can surface with caution without making them authoritative.
+archived, stale, or duplicate sources are excluded by default, sensitive
+sources are included with caution, unrelated records are excluded unless the
+query matches, and selected files can surface with caution without making them
+authoritative. Source retrieval now combines the same source freshness and
+source quality evaluators used by runtime context assembly, so old source
+materials cannot silently become current execution evidence.
 `RuntimeContextManifest` now consumes this retrieval projection directly and
 emits a compact `memory_retrieval` summary for provider-visible step context,
 so retained Run / RightPanel execution paths share the same read-order signal
