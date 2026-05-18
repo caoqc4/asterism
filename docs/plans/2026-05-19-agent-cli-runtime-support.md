@@ -80,6 +80,7 @@ MVP capabilities:
 - pass a Taskplane-generated prompt/context bundle to the CLI;
 - capture stdout, stderr, exit code, start/end time, and timeout;
 - project active CLI subprocesses back into runtime workload status;
+- accept operator-confirmed cancellation for active CLI subprocesses;
 - persist output as Run steps and artifacts;
 - keep all writes and risky outcomes behind existing runtime/Decision gates.
 
@@ -183,6 +184,7 @@ The adapter should reuse existing concepts:
 - Taskplane does not store ChatGPT browser sessions.
 - Taskplane does not auto-run, auto-commit, or auto-push.
 - CLI execution cannot bypass existing runtime gates or task memory checks.
+- Active CLI subprocesses can be cancelled without leaving runtime workload status stuck.
 - The real Codex CLI smoke is opt-in only:
   `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke`.
 - Default local acceptance and tests must not call Agent CLIs or model providers.

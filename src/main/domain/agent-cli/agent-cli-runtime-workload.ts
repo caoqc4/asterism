@@ -4,12 +4,18 @@ export type AgentCliRuntimeWorkloadLease = {
   finish(): void;
 };
 
-export class AgentCliRuntimeWorkloadTracker {
-  private readonly activeRuns = new Map<AgentCliRuntimeId, Set<string>>();
+export type AgentCliRuntimeCancel = (reason: string) => void;
 
-  start(runtimeId: AgentCliRuntimeId, runId: string): AgentCliRuntimeWorkloadLease {
-    const runs = this.activeRuns.get(runtimeId) ?? new Set<string>();
-    runs.add(runId);
+export class AgentCliRuntimeWorkloadTracker {
+  private readonly activeRuns = new Map<AgentCliRuntimeId, Map<string, { cancel: AgentCliRuntimeCancel | null }>>();
+
+  start(
+    runtimeId: AgentCliRuntimeId,
+    runId: string,
+    cancel: AgentCliRuntimeCancel | null = null,
+  ): AgentCliRuntimeWorkloadLease {
+    const runs = this.activeRuns.get(runtimeId) ?? new Map<string, { cancel: AgentCliRuntimeCancel | null }>();
+    runs.set(runId, { cancel });
     this.activeRuns.set(runtimeId, runs);
 
     let finished = false;
@@ -24,6 +30,17 @@ export class AgentCliRuntimeWorkloadTracker {
 
   getActiveRunCount(runtimeId: AgentCliRuntimeId): number {
     return this.activeRuns.get(runtimeId)?.size ?? 0;
+  }
+
+  cancelRun(runId: string, reason: string): boolean {
+    for (const runs of this.activeRuns.values()) {
+      const activeRun = runs.get(runId);
+      if (activeRun) {
+        activeRun.cancel?.(reason);
+        return true;
+      }
+    }
+    return false;
   }
 
   resetForTests(): void {

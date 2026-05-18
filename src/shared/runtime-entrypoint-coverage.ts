@@ -3,6 +3,7 @@ export type RuntimeEntrypointKind =
   | 'provider_visible_planning'
   | 'provider_visible_assistance'
   | 'hidden_local_execution'
+  | 'local_execution_control'
   | 'product_configuration'
   | 'preference_memory'
   | 'method_library'
@@ -95,6 +96,11 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'pre_step',
     'subtask_start',
     'post_step',
+  ],
+  local_execution_control: [
+    'simplicity_check',
+    'runtime_action',
+    'pre_step',
   ],
   product_configuration: [
     'simplicity_check',
@@ -273,6 +279,24 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'post_step',
     ],
     notes: 'Auth remains inside the official CLI; Taskplane gates context assembly and records run evidence.',
+  },
+  {
+    id: 'run.cancelAgentCli',
+    owner: 'AgentCliRunService.cancel',
+    kind: 'local_execution_control',
+    description: 'Operator-confirmed cancellation request for an active Agent CLI subprocess.',
+    ipcChannels: ['run:cancelAgentCli'],
+    requiredGates: [
+      'simplicity_check',
+      'runtime_action',
+      'pre_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_action',
+      'pre_step',
+    ],
+    notes: 'Cancellation does not expose new model tools; it interrupts an already-gated local Agent CLI run and terminal evidence is recorded through the trigger path.',
   },
   {
     id: 'run.triggerOperatorStarted',

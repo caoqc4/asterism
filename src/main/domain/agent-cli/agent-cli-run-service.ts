@@ -14,6 +14,8 @@ import {
 } from '../../../shared/task-memory-guidance-state.js';
 import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status.js';
 import type {
+  CancelAgentCliRunInput,
+  CancelAgentCliRunResult,
   AgentCliRunSandboxMode,
   CreateAgentCliRunInput,
   RunOutputSource,
@@ -47,6 +49,7 @@ export type AgentCliExecutor = (params: {
   cwd: string;
   input: string;
   outputLimitBytes: number;
+  signal?: AbortSignal;
   timeoutMs: number;
 }) => Promise<AgentCliExecutionResult>;
 
@@ -175,13 +178,17 @@ export class AgentCliRunService {
       sandboxMode,
       task,
     });
-    const workloadLease = this.workloadTracker.start(runtimeId, run.id);
+    const abortController = new AbortController();
+    const workloadLease = this.workloadTracker.start(runtimeId, run.id, (reason) => {
+      abortController.abort(reason);
+    });
     const execution = await this.executeWithFailureCapture({
       args: ['exec', '--sandbox', sandboxMode, '--cd', workspaceRoot, '--skip-git-repo-check', '-'],
       command: runtime.command,
       cwd: workspaceRoot,
       input: prompt,
       outputLimitBytes: DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES,
+      signal: abortController.signal,
       timeoutMs: DEFAULT_AGENT_CLI_TIMEOUT_MS,
     }).finally(() => {
       workloadLease.finish();
@@ -215,6 +222,19 @@ export class AgentCliRunService {
 
     await this.taskService.annotateRunFailed(task.id, execution.failureReason ?? execution.summary, updated.id);
     return updated;
+  }
+
+  async cancel(input: CancelAgentCliRunInput): Promise<CancelAgentCliRunResult> {
+    const request = normalizeCancelAgentCliRunInput(input);
+    const cancelled = this.workloadTracker.cancelRun(request.runId, request.reason);
+    return {
+      cancelled,
+      reason: request.reason,
+      runId: request.runId,
+      summary: cancelled
+        ? `Agent CLI cancellation requested for ${request.runId}.`
+        : `No active Agent CLI run found for ${request.runId}.`,
+    };
   }
 
   private async updateRunResult(
@@ -283,6 +303,21 @@ function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): Required<Crea
   };
 }
 
+function normalizeCancelAgentCliRunInput(input: CancelAgentCliRunInput): Required<CancelAgentCliRunInput> {
+  const runId = input.runId?.trim() ?? '';
+  if (!runId) {
+    throw new Error('Agent CLI cancellation requires a run id.');
+  }
+  if (!input.operatorConfirmed) {
+    throw new Error('Agent CLI cancellation requires explicit operator confirmation.');
+  }
+  return {
+    operatorConfirmed: true,
+    reason: input.reason?.trim() || 'Operator cancelled the Agent CLI run.',
+    runId,
+  };
+}
+
 function buildCodexCliPrompt(params: {
   contextSummary: string;
   prompt: string;
@@ -320,7 +355,23 @@ function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promis
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      params.signal?.removeEventListener('abort', onAbort);
       resolve(result);
+    };
+    const cancellationReason = () =>
+      typeof params.signal?.reason === 'string'
+        ? params.signal.reason
+        : 'Operator cancelled the Agent CLI run.';
+    const onAbort = () => {
+      child.kill('SIGTERM');
+      finish({
+        exitCode: null,
+        failureReason: cancellationReason(),
+        status: 'failed',
+        stderr,
+        stdout,
+        summary: 'Agent CLI execution cancelled.',
+      });
     };
     const timer = setTimeout(() => {
       child.kill('SIGTERM');
@@ -333,6 +384,11 @@ function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promis
         summary: 'Agent CLI execution timed out.',
       });
     }, params.timeoutMs);
+    if (params.signal?.aborted) {
+      onAbort();
+      return;
+    }
+    params.signal?.addEventListener('abort', onAbort, { once: true });
 
     child.stdout.on('data', (chunk: Buffer) => {
       stdout = append(stdout, chunk);

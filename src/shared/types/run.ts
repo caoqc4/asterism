@@ -112,3 +112,16 @@ export type CreateAgentCliRunInput = {
   sandboxMode?: AgentCliRunSandboxMode;
   operatorConfirmed: boolean;
 };
+
+export type CancelAgentCliRunInput = {
+  runId: string;
+  reason?: string;
+  operatorConfirmed: boolean;
+};
+
+export type CancelAgentCliRunResult = {
+  runId: string;
+  cancelled: boolean;
+  reason: string;
+  summary: string;
+};

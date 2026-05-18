@@ -83,6 +83,8 @@ function getExposedApi() {
     listRuns: () => Promise<unknown>;
     getRunDetail: (runId: string) => Promise<unknown>;
     triggerRun: (input: unknown) => Promise<unknown>;
+    triggerAgentCliRun?: (input: unknown) => Promise<unknown>;
+    cancelAgentCliRun?: (input: unknown) => Promise<unknown>;
     triggerCodeAgentRun?: (input: unknown) => Promise<unknown>;
     triggerOperatorStartedRun?: (input: unknown) => Promise<unknown>;
     continuePausedRun: (runId: string) => Promise<unknown>;
@@ -198,6 +200,16 @@ describe('preload bridge', () => {
     const draftDecisionInput = { taskId: 'task_1', note: 'Need stakeholder sign-off' };
     const decisionActionInput = { id: 'decision_1', action: 'approve' };
     const createRunInput = { taskId: 'task_1', type: 'summarize', instructions: 'Summarize blockers' };
+    const createAgentCliRunInput = {
+      operatorConfirmed: true,
+      prompt: 'Inspect this task.',
+      runtimeId: 'codex',
+      taskId: 'task_1',
+    };
+    const cancelAgentCliRunInput = {
+      operatorConfirmed: true,
+      runId: 'run_agent_cli_1',
+    };
     const operatorStartedRunInput = {
       descriptorId: 'browser.readonly_evidence',
       kind: 'browser_evidence_smoke',
@@ -294,6 +306,8 @@ describe('preload bridge', () => {
     await api.listRuns();
     await api.getRunDetail('run_1');
     await api.triggerRun(createRunInput);
+    await api.triggerAgentCliRun?.(createAgentCliRunInput);
+    await api.cancelAgentCliRun?.(cancelAgentCliRunInput);
     await api.triggerCodeAgentRun?.(createCodeAgentRunInput);
     await api.triggerOperatorStartedRun?.(operatorStartedRunInput);
     await api.continuePausedRun('run_1');
@@ -365,6 +379,8 @@ describe('preload bridge', () => {
       ['run:list'],
       ['run:getDetail', 'run_1'],
       ['run:trigger', createRunInput],
+      ['run:triggerAgentCli', createAgentCliRunInput],
+      ['run:cancelAgentCli', cancelAgentCliRunInput],
       ['run:triggerCodeAgent', createCodeAgentRunInput],
       ['run:triggerOperatorStarted', operatorStartedRunInput],
       ['run:continuePaused', 'run_1'],

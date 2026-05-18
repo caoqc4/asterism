@@ -150,6 +150,107 @@ describe('AgentCliRunService', () => {
     expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
   });
 
+  it('cancels an active Agent CLI run through the workload control handle', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const taskService = buildTaskService();
+    const workloadTracker = new AgentCliRuntimeWorkloadTracker();
+    const executor = vi.fn().mockImplementation((params: Parameters<ConstructorParameters<typeof AgentCliRunService>[4]>[0]) =>
+      new Promise((resolve) => {
+        params.signal?.addEventListener('abort', () => {
+          resolve({
+            exitCode: null,
+            failureReason: String(params.signal?.reason ?? 'cancelled'),
+            status: 'failed',
+            stderr: '',
+            stdout: '',
+            summary: 'Agent CLI execution cancelled.',
+          });
+        }, { once: true });
+      }));
+    const service = new AgentCliRunService(
+      taskService,
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+      { upsert: vi.fn() },
+      workloadTracker,
+    );
+
+    const triggerPromise = service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run until cancelled.',
+      taskId: 'task_1',
+    });
+    await vi.waitFor(() => {
+      expect(workloadTracker.getActiveRunCount('codex')).toBe(1);
+    });
+
+    const cancellation = await service.cancel({
+      operatorConfirmed: true,
+      reason: 'Operator stopped the run from Taskplane.',
+      runId: 'run_agent_cli_1',
+    });
+    const result = await triggerPromise;
+
+    expect(cancellation).toMatchObject({
+      cancelled: true,
+      runId: 'run_agent_cli_1',
+    });
+    expect(result).toMatchObject({
+      failureReason: 'Operator stopped the run from Taskplane.',
+      status: 'failed',
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'Operator stopped the run from Taskplane.',
+      kind: 'model',
+      status: 'failed',
+      title: 'codex cli failed',
+    }));
+    expect(taskService.annotateRunFailed).toHaveBeenCalledWith(
+      'task_1',
+      'Operator stopped the run from Taskplane.',
+      'run_agent_cli_1',
+    );
+    expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
+  });
+
+  it('requires explicit operator confirmation before cancelling an Agent CLI run', async () => {
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      vi.fn(),
+    );
+
+    await expect(service.cancel({
+      operatorConfirmed: false,
+      runId: 'run_agent_cli_1',
+    })).rejects.toThrow('Agent CLI cancellation requires explicit operator confirmation.');
+  });
+
+  it('returns a no-op cancellation result when the Agent CLI run is no longer active', async () => {
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      vi.fn(),
+      null,
+      new AgentCliRuntimeWorkloadTracker(),
+    );
+
+    await expect(service.cancel({
+      operatorConfirmed: true,
+      runId: 'run_agent_cli_1',
+    })).resolves.toMatchObject({
+      cancelled: false,
+      summary: 'No active Agent CLI run found for run_agent_cli_1.',
+    });
+  });
+
   it('blocks execution before creating a run when Codex CLI is not detected', async () => {
     const runRepository = buildRunRepository();
     const service = new AgentCliRunService(

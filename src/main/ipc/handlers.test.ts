@@ -94,6 +94,10 @@ const {
       trigger: vi.fn(),
       continuePausedRun: vi.fn(),
     },
+    agentCliRunService: {
+      trigger: vi.fn(),
+      cancel: vi.fn(),
+    },
     codeAgentRunService: {
       trigger: vi.fn(),
     },
@@ -1439,6 +1443,64 @@ describe('registerIpcHandlers', () => {
     expect(result.status).toBe('completed');
     expect(servicesMock.runRepository.create).not.toHaveBeenCalled();
     expect(codeAgentExecutionRunMock).not.toHaveBeenCalled();
+  });
+
+  it('delegates Agent CLI run triggers and emits run, task, and brief events', async () => {
+    servicesMock.agentCliRunService.trigger.mockResolvedValue({
+      id: 'run_agent_cli_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'completed',
+      instructions: 'Agent CLI (Codex CLI) read-only: Inspect.',
+      output: 'Codex completed.',
+      outputSource: 'ai',
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const input = {
+      operatorConfirmed: true,
+      prompt: 'Inspect.',
+      runtimeId: 'codex' as const,
+      taskId: 'task_1',
+    };
+    const handler = getRegisteredHandler<
+      [typeof input],
+      Awaited<ReturnType<typeof servicesMock.agentCliRunService.trigger>>
+    >('run:triggerAgentCli');
+
+    const result = await handler({}, input);
+
+    expect(servicesMock.agentCliRunService.trigger).toHaveBeenCalledWith(input);
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_agent_cli_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
+    expect(result.status).toBe('completed');
+  });
+
+  it('delegates Agent CLI cancellation and emits scoped run events only when active', async () => {
+    servicesMock.agentCliRunService.cancel.mockResolvedValue({
+      cancelled: true,
+      reason: 'Operator cancelled the Agent CLI run.',
+      runId: 'run_agent_cli_1',
+      summary: 'Agent CLI cancellation requested for run_agent_cli_1.',
+    });
+    const input = {
+      operatorConfirmed: true,
+      runId: 'run_agent_cli_1',
+    };
+    const handler = getRegisteredHandler<
+      [typeof input],
+      Awaited<ReturnType<typeof servicesMock.agentCliRunService.cancel>>
+    >('run:cancelAgentCli');
+
+    const result = await handler({}, input);
+
+    expect(servicesMock.agentCliRunService.cancel).toHaveBeenCalledWith(input);
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_agent_cli_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'brief.changed');
+    expect(emitAppEventMock).not.toHaveBeenCalledWith('task.changed', expect.anything());
+    expect(result.cancelled).toBe(true);
   });
 
   it('emits run, task, and brief events after continuing a paused run', async () => {

@@ -201,6 +201,7 @@ describe('runtime entrypoint coverage', () => {
       'processTemplate.libraryWrites',
       'project.decompositionConfirm',
       'project.decompositionDraft',
+      'run.cancelAgentCli',
       'run.continuePaused',
       'run.trigger',
       'run.triggerAgentCli',

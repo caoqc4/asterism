@@ -20,7 +20,12 @@ import type {
   CreateProcessTemplateInput,
   UpdateProcessTemplateInput,
 } from '../../shared/types/process-template.js';
-import type { CreateAgentCliRunInput, CreateCodeAgentRunInput, CreateRunInput } from '../../shared/types/run.js';
+import type {
+  CancelAgentCliRunInput,
+  CreateAgentCliRunInput,
+  CreateCodeAgentRunInput,
+  CreateRunInput,
+} from '../../shared/types/run.js';
 import type { AiConfigInput, FeatureFlags } from '../../shared/types/settings.js';
 import type { GmailOAuthConnectInput, GmailOAuthDisconnectInput } from '../../shared/types/external-access-control.js';
 import type {
@@ -593,6 +598,15 @@ export function registerIpcHandlers(): void {
     emitAppEvent('task.changed', created.taskId);
     emitAppEvent('brief.changed');
     return created;
+  });
+
+  ipcMain.handle('run:cancelAgentCli', async (_event, input: CancelAgentCliRunInput) => {
+    const result = await getServices().agentCliRunService.cancel(input);
+    if (result.cancelled) {
+      emitAppEvent('run.changed', result.runId);
+      emitAppEvent('brief.changed');
+    }
+    return result;
   });
 
   ipcMain.handle('run:triggerCodeAgent', async (_event, input: CreateCodeAgentRunInput) => {

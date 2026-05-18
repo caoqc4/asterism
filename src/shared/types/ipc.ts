@@ -99,7 +99,15 @@ import type {
   ExternalAccessSourceIngestionPreview,
   ExternalAccessSourceIngestionPreviewInput,
 } from './external-access-source-ingestion.js';
-import type { CreateAgentCliRunInput, CreateCodeAgentRunInput, CreateRunInput, RunDetailRecord, RunRecord } from './run.js';
+import type {
+  CancelAgentCliRunInput,
+  CancelAgentCliRunResult,
+  CreateAgentCliRunInput,
+  CreateCodeAgentRunInput,
+  CreateRunInput,
+  RunDetailRecord,
+  RunRecord,
+} from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
 import type {
@@ -214,6 +222,7 @@ export type ElectronApi = {
   getRunDetail: (runId: string) => Promise<RunDetailRecord | null>;
   triggerRun: (input: CreateRunInput) => Promise<RunRecord>;
   triggerAgentCliRun?: (input: CreateAgentCliRunInput) => Promise<RunRecord>;
+  cancelAgentCliRun?: (input: CancelAgentCliRunInput) => Promise<CancelAgentCliRunResult>;
   triggerCodeAgentRun?: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
   triggerOperatorStartedRun?: (input: OperatorStartedRunRequest) => Promise<RunRecord>;
   continuePausedRun: (runId: string) => Promise<RunRecord>;
