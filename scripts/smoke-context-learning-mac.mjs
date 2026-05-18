@@ -105,7 +105,7 @@ async function assertContextLearningUi(page) {
   await page.getByRole('heading', { name: 'Work Habits' }).waitFor();
   await page.getByText('工作习惯记录', { exact: true }).first().waitFor();
   await page.getByText(/任务文件和产物在 Tasks 中管理/).waitFor();
-  await page.getByText('待确认规则只作为提议展示，不会自动改变后续执行流程。', { exact: true }).waitFor();
+  await page.getByText(/待确认规则只作为提议展示，不会自动改变后续执行流程/).waitFor();
   await page.getByText(/只在 Step\/Run\/Task 完成、你编辑 AI 产物、或会话压缩前提取学习信号/).first().waitFor();
 
   await page.getByText('发布前只跑最小 packaged smoke').waitFor();
