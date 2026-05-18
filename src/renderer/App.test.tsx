@@ -956,6 +956,14 @@ describe('App redesign v1', () => {
       parentTaskId: null,
       parentTitle: null,
     }];
+    homeBrief.recommendedActions.push({
+      id: 'hidden_queue_action',
+      label: '隐藏队列项',
+      reason: '完整队列里还有其他任务，但 Brief 不直接展示。',
+      taskId: 'hidden_task',
+      priority: 'medium',
+      lane: 'continue_or_review',
+    });
     vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
 
     render(<App />);
@@ -964,6 +972,10 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/显示前 1\/7 件/)).toBeTruthy();
     expect(screen.getByText(/Brief 只做今日注意力摘要/)).toBeTruthy();
     expect(screen.getByText(/入选依据：有新的来源或产出可能影响下一步/)).toBeTruthy();
+    const records = JSON.parse(window.localStorage.getItem('taskplane.systemBrief.records.v1') ?? '[]') as Array<{
+      payload: { reasonCount: number };
+    }>;
+    expect(records[0]?.payload.reasonCount).toBe(1);
 
     expect(harness.api.getHomeBrief).toHaveBeenCalled();
   });

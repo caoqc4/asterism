@@ -112,7 +112,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       const focusTasks = focusTasksFromBriefData(data);
       recordBriefRecommendationSnapshot({
         recommendedTasks: focusTasks.map((task) => ({ id: task.id, title: task.title })),
-        reasonCount: data.recommendedActions.length,
+        reasonCount: data.briefAttention?.displayedCount ?? focusTasks.length,
         source: 'brief_open',
       });
       setBriefData(data);
