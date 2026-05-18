@@ -44,6 +44,7 @@
     "manual:browser-controlled-resume-smoke": "npm run build:main && node scripts/browser-controlled-resume-local-qa-smoke.mjs",
     "manual:browser-controlled-resume-review-fixture": "npm run build:main && node scripts/browser-controlled-resume-review-fixture.mjs",
     "manual:browser-evidence-smoke": "npm run build:main && node scripts/browser-evidence-smoke.mjs",
+    "manual:agent-cli-readonly-smoke": "node scripts/agent-cli-readonly-smoke.mjs",
     "diagnostics:canonical-data": "npm run build:main && node scripts/canonical-data-diagnostics.mjs",
     "diagnostics:canonical-data:optional": "npm run build:main && node scripts/canonical-data-diagnostics.mjs --allow-missing",
     "accept:provider-native-live:preflight": "node scripts/provider-native-live-preflight.mjs",

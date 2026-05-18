@@ -169,8 +169,9 @@ The adapter should reuse existing concepts:
 4. Manual Codex CLI run adapter with stdout/stderr capture.
 5. Run step/artifact persistence.
 6. Runtime gate and task memory integration.
-7. Cancellation/timeout handling.
-8. Later: Claude Code and other CLI adapters.
+7. Manual read-only Codex CLI smoke, skipped by default unless explicitly enabled.
+8. Cancellation/timeout handling.
+9. Later: Claude Code and other CLI adapters.
 
 ## Acceptance Criteria
 
@@ -181,6 +182,9 @@ The adapter should reuse existing concepts:
 - Taskplane does not store ChatGPT browser sessions.
 - Taskplane does not auto-run, auto-commit, or auto-push.
 - CLI execution cannot bypass existing runtime gates or task memory checks.
+- The real Codex CLI smoke is opt-in only:
+  `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke`.
+- Default local acceptance and tests must not call Agent CLIs or model providers.
 
 ## Strategic Summary
 

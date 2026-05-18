@@ -14,6 +14,7 @@ const envKeys = [
   'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER',
   'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
   'TASKPLANE_ENV_FILE',
+  'TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE',
   'TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS',
@@ -348,6 +349,16 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('status=skip');
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('docker=not-started');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('keeps Agent CLI read-only smoke skipped without CLI or provider spend by default', () => {
+    const result = runScript('scripts/agent-cli-readonly-smoke.mjs');
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Agent CLI read-only smoke');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('cli=not-called');
     expect(result.output).toContain('workspace=unchanged');
   });
 
