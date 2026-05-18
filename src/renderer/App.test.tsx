@@ -1177,23 +1177,23 @@ describe('App redesign v1', () => {
         id: 'skills.catalogue',
         label: 'Skills',
         family: 'skill',
-        status: 'unconfigured',
+        status: 'disabled',
         configured: false,
-        missingReason: 'Capability family is not configured for model-visible use.',
+        missingReason: 'No ready skill is enabled.',
         visibility: 'hidden',
         access: 'read_only',
         requiresApproval: true,
         requiredGate: 'runtime_context_assembly',
-        summary: 'reserved=5 / exposed=0',
+        summary: 'enabled=0 / ready=5 / needsConfig=0',
       }],
       configurationSafetyReport: {
         secretExposureSafe: true,
-        blockedReasons: ['skills.catalogue: Capability family is not configured for model-visible use.'],
+        blockedReasons: ['skills.catalogue: No ready skill is enabled.'],
         summary: 'configured=0 / approvalRequired=0 / blocked=1',
         surfaces: [{
           id: 'skills.catalogue',
-          state: 'missing',
-          reason: 'Capability family is not configured for model-visible use.',
+          state: 'disabled_by_flag',
+          reason: 'No ready skill is enabled.',
           requiresApproval: true,
           startupProbePolicy: 'manual_only',
           exposesSecretValue: false,
@@ -1210,8 +1210,8 @@ describe('App redesign v1', () => {
     expect(screen.getByText('Brainstorming')).toBeTruthy();
     expect(screen.getByText(/在创建功能、组件或修改行为前/)).toBeTruthy();
     expect(screen.getByText('能力状态')).toBeTruthy();
-    expect(screen.getByText('未配置')).toBeTruthy();
-    expect(screen.getByText(/Capability family is not configured/)).toBeTruthy();
+    expect(screen.getByText('已关闭')).toBeTruthy();
+    expect(screen.getByText(/No ready skill is enabled/)).toBeTruthy();
   });
 
   it('clarifies MCP servers are registration previews until a real service exposes tools', async () => {

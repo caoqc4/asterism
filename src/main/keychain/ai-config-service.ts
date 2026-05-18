@@ -7,6 +7,7 @@ import type { AiConfigInput, AiConfigStatus, AiProvider, AiProviderKeysInput, Fe
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
 import { buildCapabilityRegistry, type CapabilityProductSurfaceStatus } from '../../shared/capability-registry.js';
+import { defaultMcpProductSurfaceStatus, defaultSkillsProductSurfaceStatus } from '../../shared/capability-product-surfaces.js';
 import { buildConfigurationSafetyReport } from '../../shared/configuration-safety-report.js';
 import { emptyExternalAccessStatus, externalAccessStatusForCapability, type ExternalAccessStatus } from '../../shared/external-access-status.js';
 import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-snapshot.js';
@@ -75,6 +76,8 @@ function detectCodeAgentWorkspaceChecks(
 function buildCapabilityProductSurfaceStatus(externalAccessStatus: ExternalAccessStatus | undefined): CapabilityProductSurfaceStatus {
   return {
     externalAccess: externalAccessStatusForCapability(externalAccessStatus ?? emptyExternalAccessStatus()),
+    skills: defaultSkillsProductSurfaceStatus(),
+    mcp: defaultMcpProductSurfaceStatus(),
   };
 }
 

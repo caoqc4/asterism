@@ -59,6 +59,18 @@ describe('AiConfigService', () => {
       summary: 'connected=0 / pending=0 / errors=0',
       missingReason: 'No external access connector is connected.',
     });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
+      status: 'disabled',
+      visibility: 'hidden',
+      summary: 'enabled=0 / ready=5 / needsConfig=0',
+      missingReason: 'No ready skill is enabled.',
+    });
+    expect(status.capabilityRegistry?.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
+      status: 'disabled',
+      visibility: 'hidden',
+      summary: 'connectedServers=0 / tools=0 / errors=0',
+      missingReason: 'No connected MCP server exposes tools.',
+    });
     expect(status.externalAccessStatus).toEqual({
       sources: [],
       connectedCount: 0,
@@ -76,6 +88,18 @@ describe('AiConfigService', () => {
     expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'external_access.connectors')).toMatchObject({
       state: 'disabled_by_flag',
       reason: 'No external access connector is connected.',
+      startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'skills.catalogue')).toMatchObject({
+      state: 'disabled_by_flag',
+      reason: 'No ready skill is enabled.',
+      startupProbePolicy: 'manual_only',
+      exposesSecretValue: false,
+    });
+    expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
+      state: 'disabled_by_flag',
+      reason: 'No connected MCP server exposes tools.',
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
     });

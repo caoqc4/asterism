@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { DEFAULT_MCP_SERVER_CATALOGUE_ITEMS } from '@shared/capability-product-surfaces';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { CapabilitySafetyStrip } from '../components/CapabilitySafetyStrip';
 
@@ -18,15 +19,13 @@ const TRANSPORT_LABELS: Record<McpServer['transport'], string> = {
   http: 'HTTP',
 };
 
-const DEFAULT_MCP_SERVERS: McpServer[] = [
-  {
-    id: 'playwright',
-    name: 'Playwright MCP',
-    url: 'npx @playwright/mcp@latest',
-    transport: 'stdio',
-    status: 'disconnected',
-  },
-];
+const DEFAULT_MCP_SERVERS: McpServer[] = DEFAULT_MCP_SERVER_CATALOGUE_ITEMS.map((server) => ({
+  id: server.id,
+  name: server.name,
+  url: server.command,
+  transport: server.transport,
+  status: 'disconnected',
+}));
 
 export function McpPage() {
   const [servers, setServers] = useState<McpServer[]>(DEFAULT_MCP_SERVERS);

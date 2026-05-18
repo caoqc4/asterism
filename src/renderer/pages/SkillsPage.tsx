@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { DEFAULT_SKILL_CATALOGUE_ITEMS } from '@shared/capability-product-surfaces';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { CapabilitySafetyStrip } from '../components/CapabilitySafetyStrip';
 
@@ -28,46 +29,11 @@ interface ConfigField {
 /* ─── Built-in skills catalogue ─── */
 
 const BUILTIN_CATALOGUE: Omit<Skill, 'enabled' | 'status' | 'config'>[] = [
-  {
-    id: 'brainstorming',
-    source: 'builtin',
-    name: 'Brainstorming',
-    invokeId: 'brainstorming',
-    desc: '在创建功能、组件或修改行为前，先帮助 AI 做意图澄清、方案比较和边界收束',
+  ...DEFAULT_SKILL_CATALOGUE_ITEMS.map((item) => ({
+    ...item,
+    source: 'builtin' as const,
     configSchema: [],
-  },
-  {
-    id: 'web_search',
-    source: 'builtin',
-    name: 'Web Search',
-    invokeId: 'web_search',
-    desc: '实时搜索互联网，获取最新信息和资料',
-    configSchema: [],
-  },
-  {
-    id: 'code_runner',
-    source: 'builtin',
-    name: 'Code Runner',
-    invokeId: 'code_runner',
-    desc: '在沙盒环境中执行 Python / Node.js 代码',
-    configSchema: [],
-  },
-  {
-    id: 'browser',
-    source: 'builtin',
-    name: 'Browser',
-    invokeId: 'browser',
-    desc: '控制浏览器访问网页、截图、抓取内容',
-    configSchema: [],
-  },
-  {
-    id: 'file_read',
-    source: 'builtin',
-    name: 'File Read',
-    invokeId: 'file_read',
-    desc: '读取工作区文件内容，辅助 AI 理解上下文',
-    configSchema: [],
-  },
+  })),
 ];
 
 /* ─── Helpers ─── */

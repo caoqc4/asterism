@@ -60,6 +60,9 @@ Recent closeout commits:
 - `6066449` Bind memory write IPC channels to surface coverage.
 - `8fbe6dc` Check memory write IPC handler coverage.
 - `07289a2` Clarify packaged surface smoke coverage.
+- Skills and MCP now use shared default optional catalogue definitions that
+  feed the same `CapabilityRegistry` product-surface projection consumed by
+  their pages.
 
 ## Known Limits
 
@@ -84,9 +87,11 @@ runtime deepening in isolation. Recommended order:
 2. Skills/MCP capability pages: reuse `ConfigurationSafetyReport` and
    `CapabilityRegistry` without changing settled Tasks-page layout. The first
    read-only safety strip is in place, and the pages now describe local
-   catalogue/server registration as preview state rather than real model-visible
-   tool exposure. Future work should connect real structured Skills/MCP status
-   when those services exist.
+   catalogue/server registration as preview state rather than real
+   model-visible tool exposure. Default Brainstorming and Playwright MCP entries
+   now come from shared product-surface definitions; future work should replace
+   those static defaults with real structured Skills/MCP status when those
+   services exist.
 3. Retrieval/search growth: the deterministic execution-memory index is in
    place; add broader search UI or semantic retrieval only when a concrete
    lookup workflow needs it.
