@@ -269,6 +269,9 @@ describe('AiConfigService', () => {
       'computer_use',
       'creator_connector',
     ]);
+    expect(status.toolScaffoldSummaries?.find((summary) => summary.family === 'skill')?.modelVisibleIds).toEqual([]);
+    expect(status.toolScaffoldSummaries?.find((summary) => summary.family === 'mcp')?.modelVisibleIds).toEqual([]);
+    expect(status.toolScaffoldSummaries?.find((summary) => summary.family === 'browser_playwright')?.modelVisibleIds).toEqual([]);
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'workspace.checks')).toMatchObject({
       status: 'available',
       requiredGate: 'runtime_pre_step',

@@ -316,6 +316,67 @@ describe('runtime context manifest', () => {
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('capability:runtime_capabilities');
   });
 
+  it('formats runtime capability context as counts without exposing hidden optional catalogue entries', () => {
+    const manifest = buildRuntimeContextManifest({
+      capabilities: buildRuntimeCapabilitySnapshot({
+        aiStatus: {
+          configured: true,
+          apiKeyStored: true,
+          apiKeySource: 'env',
+          provider: 'anthropic',
+          model: 'claude-3-5-sonnet-latest',
+          baseUrl: null,
+          workspaceRoot: '/repo',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          configPath: '/config.json',
+          featureFlags: { enableScheduler: false },
+          toolScaffoldSummaries: [
+            {
+              family: 'skill',
+              descriptorIds: ['skill.prompt_shape'],
+              implementedCount: 0,
+              reservedCount: 1,
+              connectorPolicyRecords: [],
+              localVerificationEvidence: [],
+              textPromptExposedIds: [],
+              providerNativeExposedIds: [],
+              checkpointRequiredIds: [],
+              credentialGatedIds: ['skill.prompt_shape'],
+              localVerificationRequiredIds: ['skill.prompt_shape'],
+              modelVisibleIds: [],
+              summary: 'skill.prompt_shape reserved for Brainstorming catalogue preview',
+            },
+            {
+              family: 'mcp',
+              descriptorIds: ['mcp.safe_read'],
+              implementedCount: 0,
+              reservedCount: 1,
+              connectorPolicyRecords: [],
+              localVerificationEvidence: [],
+              textPromptExposedIds: [],
+              providerNativeExposedIds: [],
+              checkpointRequiredIds: [],
+              credentialGatedIds: ['mcp.safe_read'],
+              localVerificationRequiredIds: ['mcp.safe_read'],
+              modelVisibleIds: [],
+              summary: 'mcp.safe_read reserved for Playwright MCP catalogue preview',
+            },
+          ],
+        },
+      }),
+      task: { id: 'task_1', title: 'Launch task', state: 'running' },
+      taskFiles: [{ path: 'Task.md', kind: 'file', contentPreview: '# Task' }],
+    });
+    const formatted = formatRuntimeContextManifestForStep(manifest);
+
+    expect(formatted).toContain('modelVisibleTools=0');
+    expect(formatted).toContain('checkpointTools=0');
+    expect(formatted).not.toContain('skill.prompt_shape');
+    expect(formatted).not.toContain('mcp.safe_read');
+    expect(formatted).not.toContain('Brainstorming');
+    expect(formatted).not.toContain('Playwright');
+  });
+
   it('adds source freshness inclusion reasons to manifest source contexts', () => {
     const manifest = buildRuntimeContextManifest({
       sourceContexts: [
