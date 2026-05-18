@@ -1204,7 +1204,7 @@ describe('App redesign v1', () => {
         summary: 'configured=0 / approvalRequired=0 / blocked=1',
         surfaces: [{
           id: 'skills.catalogue',
-          state: 'disabled_by_flag',
+          state: 'disabled_by_policy',
           reason: 'No ready skill is enabled.',
           requiresApproval: true,
           startupProbePolicy: 'manual_only',
@@ -1226,7 +1226,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('已选择 1 个目录项')).toBeTruthy();
     expect(screen.queryByText(/技能已启用/)).toBeNull();
     expect(screen.getByText('能力状态')).toBeTruthy();
-    expect(screen.getByText('已关闭')).toBeTruthy();
+    expect(screen.getByText('策略关闭')).toBeTruthy();
     expect(screen.getByText(/No ready skill is enabled/)).toBeTruthy();
   });
 
@@ -1252,7 +1252,7 @@ describe('App redesign v1', () => {
         summary: 'configured=0 / approvalRequired=0 / blocked=1',
         surfaces: [{
           id: 'mcp.servers',
-          state: 'disabled_by_flag',
+          state: 'disabled_by_policy',
           reason: 'No connected MCP server exposes tools.',
           requiresApproval: true,
           startupProbePolicy: 'manual_only',
@@ -1272,7 +1272,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('未连接')).toBeTruthy();
     expect(screen.getByText(/真实 MCP 服务接入后，服务器暴露的工具才可出现在 AI 可用工具列表/)).toBeTruthy();
     expect(screen.getByText('能力状态')).toBeTruthy();
-    expect(screen.getByText('已关闭')).toBeTruthy();
+    expect(screen.getByText('策略关闭')).toBeTruthy();
     expect(screen.getByText(/No connected MCP server exposes tools/)).toBeTruthy();
   });
 

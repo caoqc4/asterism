@@ -12,7 +12,7 @@ export function CapabilitySafetyStrip({
     <div className="connections-safety-strip">
       <div className="connections-safety-item">
         <span>能力状态</span>
-        <strong>{capabilityStatusLabel(capability)}</strong>
+        <strong>{capabilityStatusLabel(capability, safety)}</strong>
       </div>
       <div className="connections-safety-item">
         <span>探测策略</span>
@@ -31,10 +31,14 @@ export function CapabilitySafetyStrip({
   );
 }
 
-function capabilityStatusLabel(capability: CapabilityRegistryEntry | null): string {
+function capabilityStatusLabel(
+  capability: CapabilityRegistryEntry | null,
+  safety: ConfigurationSafetySurface | null,
+): string {
   if (!capability) return '未接入';
   if (capability.status === 'available') return '可用';
   if (capability.status === 'unconfigured') return '未配置';
+  if (capability.status === 'disabled' && safety?.state === 'disabled_by_policy') return '策略关闭';
   if (capability.status === 'disabled') return '已关闭';
   return '未知';
 }
