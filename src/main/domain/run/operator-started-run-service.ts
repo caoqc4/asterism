@@ -79,10 +79,6 @@ export class OperatorStartedRunService {
       throw new Error(orchestrationValidation.summary);
     }
 
-    if (request.kind !== 'browser_evidence_smoke' && request.kind !== 'browser_controlled_local_qa') {
-      throw new Error(`Operator-started run kind is not implemented: ${request.kind}.`);
-    }
-
     const task = await this.taskService.getDetail(request.taskId);
     if (!task) {
       throw new Error(`Task not found: ${request.taskId}`);

@@ -237,10 +237,14 @@ describe('OperatorStartedRunService', () => {
       operatorConfirmed: false,
     })).rejects.toThrow('Operator-started run request requires explicit operator confirmation.');
 
-    await expect(service.trigger(buildDefaultOperatorStartedRunRequest({
+    await expect(service.trigger({
+      ...buildDefaultOperatorStartedRunRequest({
+        kind: 'browser_evidence_smoke',
+        taskId: 'task_1',
+      }),
       kind: 'code_agent_preview',
       taskId: 'task_1',
-    }))).rejects.toThrow('Operator-started run kind is not implemented: code_agent_preview.');
+    })).rejects.toThrow('Operator-started run request requires a supported kind.');
 
     expect(runRepository.create).not.toHaveBeenCalled();
   });

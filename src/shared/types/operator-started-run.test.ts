@@ -65,26 +65,6 @@ describe('operator-started run contract', () => {
     });
   });
 
-  it('maps code-agent and sandbox patch review requests to staged-patch policy', () => {
-    expect(buildDefaultOperatorStartedRunRequest({
-      kind: 'code_agent_preview',
-      taskId: 'task_1',
-    })).toMatchObject({
-      descriptorId: 'workspace.staged_patch',
-      policy: expect.objectContaining({
-        descriptorId: 'workspace.staged_patch',
-        networkPolicy: 'disabled',
-        sessionKind: 'sandbox',
-      }),
-    });
-    expect(buildDefaultOperatorStartedRunRequest({
-      kind: 'sandbox_patch_review',
-      taskId: 'task_1',
-    })).toMatchObject({
-      descriptorId: 'workspace.staged_patch',
-    });
-  });
-
   it('rejects ambient starts, model exposure, provider calls, and descriptor drift', () => {
     expect(validateOperatorStartedRunRequest({
       ...buildDefaultOperatorStartedRunRequest({
@@ -117,7 +97,7 @@ describe('operator-started run contract', () => {
     expect(validateOperatorStartedRunRequest({
       ...request,
       policy: buildDefaultOperatorStartedRunRequest({
-        kind: 'code_agent_preview',
+        kind: 'browser_controlled_local_qa',
         taskId: 'task_1',
       }).policy,
     })).toMatchObject({
@@ -131,6 +111,8 @@ describe('operator-started run contract', () => {
   it('exposes a narrow kind guard', () => {
     expect(isOperatorStartedRunKind('browser_evidence_smoke')).toBe(true);
     expect(isOperatorStartedRunKind('browser_controlled_local_qa')).toBe(true);
+    expect(isOperatorStartedRunKind('code_agent_preview')).toBe(false);
+    expect(isOperatorStartedRunKind('sandbox_patch_review')).toBe(false);
     expect(isOperatorStartedRunKind('browser.controlled_interaction')).toBe(false);
     expect(isOperatorStartedRunKind('scheduled_agent_run')).toBe(false);
   });

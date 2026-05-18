@@ -337,19 +337,12 @@ export function buildOperatorStartedOrchestrationRequest(
   }
 
   const request = validation.request;
-  const lane: AgentExecutionOrchestrationLane = request.kind === 'browser_evidence_smoke'
-    || request.kind === 'browser_controlled_local_qa'
-    ? 'browser_evidence'
-    : 'coding';
 
   return validateAgentExecutionOrchestrationRequest({
     idempotencyKey: `operator_started:${request.kind}:${request.taskId}`,
     taskId: request.taskId,
-    lane,
-    profileId: request.kind === 'browser_evidence_smoke'
-      || request.kind === 'browser_controlled_local_qa'
-      ? 'operator_browser_evidence'
-      : 'manual_sandbox_producer',
+    lane: 'browser_evidence',
+    profileId: 'operator_browser_evidence',
     runtimeId: request.policy.sessionKind === 'browser' ? 'browser_session' : 'local_sandbox',
     startMode: 'operator_started',
     policy: request.policy,
@@ -376,7 +369,7 @@ export function buildOperatorStartedOrchestrationRequest(
     },
     summary: [
       'Orchestration request',
-      `lane=${lane}`,
+      'lane=browser_evidence',
       `source=${request.kind}`,
       'start=operator_started',
       'providerCall=no',
