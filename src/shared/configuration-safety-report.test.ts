@@ -102,6 +102,44 @@ describe('configuration safety report', () => {
     });
   });
 
+  it('distinguishes product-policy disabled surfaces from feature-flag disabled surfaces', () => {
+    const base = aiStatus({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: false,
+        enableSandboxPatchPromotionApply: false,
+        enableSelfCheck: true,
+      },
+    });
+    const report = buildConfigurationSafetyReport({
+      ...base,
+      capabilityRegistry: buildCapabilityRegistry({
+        snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: base }),
+        productSurfaces: {
+          externalAccess: { connectedCount: 0, pendingCount: 0, errorCount: 0 },
+          skills: { enabledCount: 0, readyCount: 0, needsConfigCount: 0, catalogueCount: 1 },
+          mcp: { connectedServerCount: 0, toolCount: 0, errorCount: 0 },
+        },
+      }),
+    });
+
+    expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')).toMatchObject({
+      state: 'disabled_by_flag',
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'external_access.connectors')).toMatchObject({
+      state: 'disabled_by_policy',
+      reason: 'No external access connector is connected.',
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'skills.catalogue')).toMatchObject({
+      state: 'disabled_by_policy',
+      reason: 'No ready skill is enabled.',
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'mcp.servers')).toMatchObject({
+      state: 'disabled_by_policy',
+      reason: 'No connected MCP server exposes tools.',
+    });
+  });
+
   it('treats pending or errored External Access connectors as missing configuration, not disabled flags', () => {
     const base = aiStatus();
     const report = buildConfigurationSafetyReport({

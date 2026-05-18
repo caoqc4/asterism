@@ -71,11 +71,13 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
       id: 'runtime.scheduler',
       startupProbePolicy: 'never',
       disabledReason: 'Scheduler is disabled by feature flag or policy.',
+      disabledState: 'disabled_by_flag',
     }),
     surfaceFromCapability('sandbox.coding_agent', registry, {
       id: 'sandbox.coding_agent',
       startupProbePolicy: 'manual_only',
       disabledReason: 'Sandbox coding agent is disabled or backend readiness has not been manually confirmed.',
+      disabledState: 'disabled_by_policy',
     }),
     {
       id: 'sandbox.patch_promotion',
@@ -91,21 +93,25 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
       id: 'external_access.connectors',
       startupProbePolicy: 'manual_only',
       disabledReason: 'External access connectors are not connected or are not exposed through structured status.',
+      disabledState: 'disabled_by_policy',
     }),
     surfaceFromCapability('skills.catalogue', registry, {
       id: 'skills.catalogue',
       startupProbePolicy: 'manual_only',
       disabledReason: 'Skills are not enabled or are not exposed through structured status.',
+      disabledState: 'disabled_by_policy',
     }),
     surfaceFromCapability('mcp.servers', registry, {
       id: 'mcp.servers',
       startupProbePolicy: 'manual_only',
       disabledReason: 'MCP servers are not connected or are not exposed through structured status.',
+      disabledState: 'disabled_by_policy',
     }),
     surfaceFromCapability('browser.operator', registry, {
       id: 'browser.operator',
       startupProbePolicy: 'manual_only',
       disabledReason: 'Browser operator is unavailable or not configured.',
+      disabledState: 'disabled_by_policy',
     }),
   ];
   const safeSurfaces = surfaces.map((surface) => ({
@@ -132,6 +138,7 @@ function surfaceFromCapability(
     id: ConfigurationSafetySurfaceId;
     startupProbePolicy: ConfigurationSafetySurface['startupProbePolicy'];
     disabledReason: string;
+    disabledState?: Extract<ConfigurationSafetyState, 'disabled_by_flag' | 'disabled_by_policy'>;
   },
 ): ConfigurationSafetySurface {
   const capability = registry.find((entry) => entry.id === capabilityId);
@@ -148,7 +155,7 @@ function surfaceFromCapability(
 
   return {
     id: fallback.id,
-    state: stateFromCapability(capability),
+    state: stateFromCapability(capability, fallback.disabledState ?? 'disabled_by_policy'),
     reason: capability.missingReason ?? capability.summary,
     requiresApproval: capability.requiresApproval,
     startupProbePolicy: fallback.startupProbePolicy,
@@ -156,12 +163,15 @@ function surfaceFromCapability(
   };
 }
 
-function stateFromCapability(capability: CapabilityRegistryEntry): ConfigurationSafetyState {
+function stateFromCapability(
+  capability: CapabilityRegistryEntry,
+  disabledState: Extract<ConfigurationSafetyState, 'disabled_by_flag' | 'disabled_by_policy'>,
+): ConfigurationSafetyState {
   if (capability.status === 'available') {
     return capability.requiresApproval ? 'approval_required' : 'configured';
   }
   if (capability.status === 'unconfigured') return 'missing';
-  if (capability.status === 'disabled') return 'disabled_by_flag';
+  if (capability.status === 'disabled') return disabledState;
   return 'disabled_by_policy';
 }
 

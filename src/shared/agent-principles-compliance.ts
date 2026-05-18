@@ -105,6 +105,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'CapabilityRegistry treats pending or errored External Access connectors as unconfigured setup states instead of disabled feature-flag states.',
       'ExternalAccessStatusService provides a read-only connector status boundary, and AiConfigService feeds that status into CapabilityRegistry and ConfigurationSafetyReport.',
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
+      'ConfigurationSafetyReport distinguishes feature-flag-disabled surfaces from product-policy-disabled optional surfaces such as disconnected External Access, Skills, MCP, and browser/operator.',
       'ExternalAccessSourceIngestionService validates connector ingestion plans still belong to the selected task before preview or confirmed SourceContext creation.',
       'LocalInboxConnectorAdapter and GmailConnectorAdapter provide opt-in read-only connector implementations that keep evidence on the same ConnectorSourceIngestionPlan path and never write SourceContext records directly.',
       'Settings and Model consume ConfigurationSafetyReport as read-only safety boundaries for configured, approval-required, blocked, manual-probe, and secret-exposure-safe states.',

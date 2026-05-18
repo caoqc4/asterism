@@ -526,6 +526,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeEntrypointCoverage registers AI runtime configuration writes, Work Habit preference memory writes, and process-template library writes as product-level durable entrypoints instead of task mutations.',
       'RuntimeEntrypointCoverage registers sandbox backend probing as a read-only capability-probe entrypoint that returns readiness without starting execution or mutating task state.',
       'ConfigurationSafetyReport projects AiConfigStatus and CapabilityRegistry into configured, missing, disabled, approval-required, and manual-probe safety states without exposing secret values.',
+      'ConfigurationSafetyReport distinguishes feature-flag-disabled surfaces from product-policy-disabled optional surfaces such as disconnected External Access, Skills, MCP, and browser/operator.',
       'ConfigurationSafetyReport redacts secret-looking token, API key, credential, bearer, and common camel-case secret values from safety reasons before they can reach renderer or model-facing summaries.',
       'ConfigurationSafetyReport keeps provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in rather than startup side effects.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus, so retained settings/capability service consumers can read the shared safety projection without a separate UI path.',
