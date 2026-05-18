@@ -1209,6 +1209,10 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/真实工具暴露必须接入 Skills 服务/)).toBeTruthy();
     expect(screen.getByText('Brainstorming')).toBeTruthy();
     expect(screen.getByText(/在创建功能、组件或修改行为前/)).toBeTruthy();
+    expect(screen.getByText(/选择状态只记录使用意图/)).toBeTruthy();
+    await user.click(screen.getByRole('switch', { name: /选择目录项 Brainstorming/ }));
+    expect(screen.getByText('已选择 1 个目录项')).toBeTruthy();
+    expect(screen.queryByText(/技能已启用/)).toBeNull();
     expect(screen.getByText('能力状态')).toBeTruthy();
     expect(screen.getByText('已关闭')).toBeTruthy();
     expect(screen.getByText(/No ready skill is enabled/)).toBeTruthy();

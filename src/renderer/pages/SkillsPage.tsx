@@ -70,7 +70,7 @@ export function SkillsPage() {
   const [configStatus, setConfigStatus] = useState<AiConfigStatus | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const allEnabled = [...builtins, ...localSkills, ...httpSkills].filter((s) => s.enabled);
+  const selectedCatalogueItems = [...builtins, ...localSkills, ...httpSkills].filter((s) => s.enabled);
   const skillsSafety = configStatus?.configurationSafetyReport?.surfaces
     .find((surface) => surface.id === 'skills.catalogue') ?? null;
   const skillsCapability = configStatus?.capabilityRegistry
@@ -157,9 +157,9 @@ export function SkillsPage() {
             当前页面只维护技能目录预览；真实工具暴露必须接入 Skills 服务，并通过运行时能力门禁后才会进入 AI 执行上下文。
           </p>
         </div>
-        {allEnabled.length > 0 && (
+        {selectedCatalogueItems.length > 0 && (
           <span className="skills-enabled-summary">
-            {allEnabled.length} 个技能已启用
+            已选择 {selectedCatalogueItems.length} 个目录项
           </span>
         )}
       </div>
@@ -192,7 +192,7 @@ export function SkillsPage() {
       {activeTab === 'builtin' && (
         <div className="skills-panel">
           <p className="skills-panel-hint">
-            平台预置工具目录；启用状态用于记录意图，不代表当前运行时已经暴露工具。
+            平台预置工具目录；选择状态只记录使用意图，不代表当前运行时已经暴露工具。
           </p>
           <div className="skills-list">
             {builtins.map((s) => (
@@ -320,6 +320,7 @@ function BuiltinRow({ skill, expanded, onToggle, onExpand }: {
             className={`toggle${skill.enabled ? ' on' : ''}`}
             role="switch"
             aria-checked={skill.enabled}
+            aria-label={`选择目录项 ${skill.name}`}
             onClick={onToggle}
           >
             <span className="toggle-thumb" />
@@ -355,6 +356,7 @@ function LocalRow({ skill, expanded, onToggle, onExpand, onSetDesc, onRemove }: 
             className={`toggle${skill.enabled ? ' on' : ''}`}
             role="switch"
             aria-checked={skill.enabled}
+            aria-label={`选择目录项 ${skill.name}`}
             onClick={onToggle}
           >
             <span className="toggle-thumb" />
@@ -412,6 +414,7 @@ function HttpRow({ skill, expanded, onToggle, onExpand, onSetConfig, onRemove }:
             className={`toggle${skill.enabled ? ' on' : ''}${skill.status === 'needs_config' ? ' disabled' : ''}`}
             role="switch"
             aria-checked={skill.enabled}
+            aria-label={`选择目录项 ${skill.name}`}
             disabled={skill.status === 'needs_config'}
             onClick={onToggle}
           >
