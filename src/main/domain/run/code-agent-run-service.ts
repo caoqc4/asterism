@@ -186,7 +186,7 @@ export class CodeAgentRunService {
       runId: run.id,
       kind: 'plan',
       status: 'completed',
-      title: 'operator-started code-agent run accepted',
+      title: 'manual code-agent run accepted',
       input: patchIntent,
       output: [
         'descriptor=workspace.staged_patch',
