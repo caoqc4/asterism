@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CapabilityRegistryEntry } from '@shared/capability-registry';
+import { DEFAULT_EXTERNAL_ACCESS_SOURCE_CATALOGUE_ITEMS } from '@shared/capability-product-surfaces';
 import type { ConnectorSourceIngestionPlan } from '@shared/connector-source-ingestion';
 import type { ConfigurationSafetySurface } from '@shared/configuration-safety-report';
 import type { ExternalAccessConnectorRecord } from '@shared/external-access-status';
@@ -30,9 +31,13 @@ const SOURCE_BADGES: Record<SourceType, string> = {
   other: 'SRC',
 };
 
-const DEFAULT_OPTIONAL_SOURCES: Array<{ id: string; type: SourceType; label: string; desc: string }> = [
-  { id: 'gmail', type: 'email', label: 'Gmail', desc: '系统默认可选邮箱授权；授权后只在任务需要时读取邮件元数据，并在入库前复核' },
-];
+const DEFAULT_OPTIONAL_SOURCES: Array<{ id: string; type: SourceType; label: string; desc: string }> =
+  DEFAULT_EXTERNAL_ACCESS_SOURCE_CATALOGUE_ITEMS.map((source) => ({
+    id: source.id,
+    type: source.kind,
+    label: source.label,
+    desc: source.desc,
+  }));
 
 const AVAILABLE_SOURCES: Array<{ type: SourceType; label: string; desc: string }> = [
   { type: 'calendar', label: 'Calendar', desc: '授权后识别会议、截止时间和日程变更' },

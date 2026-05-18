@@ -14,6 +14,22 @@ export type DefaultMcpServerCatalogueItem = {
   transport: 'stdio' | 'sse' | 'http';
 };
 
+export type DefaultExternalAccessSourceCatalogueItem = {
+  id: string;
+  kind: 'email' | 'calendar' | 'github' | 'notion' | 'slack' | 'linear' | 'jira' | 'other';
+  label: string;
+  desc: string;
+};
+
+export const DEFAULT_EXTERNAL_ACCESS_SOURCE_CATALOGUE_ITEMS: DefaultExternalAccessSourceCatalogueItem[] = [
+  {
+    id: 'gmail',
+    kind: 'email',
+    label: 'Gmail',
+    desc: '系统默认可选邮箱授权；授权后只在任务需要时读取邮件元数据，并在入库前复核',
+  },
+];
+
 export const DEFAULT_SKILL_CATALOGUE_ITEMS: DefaultSkillCatalogueItem[] = [
   {
     id: 'brainstorming',
