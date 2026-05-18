@@ -1,5 +1,6 @@
 import type { CapabilityRegistryEntry } from '@shared/capability-registry';
 import type { ConfigurationSafetySurface } from '@shared/configuration-safety-report';
+import { configurationSafetyProbePolicyLabel } from '../lib/configurationSafetyLabels';
 
 export function CapabilitySafetyStrip({
   capability,
@@ -26,7 +27,7 @@ export function CapabilitySafetyStrip({
       </div>
       <div className="connections-safety-item">
         <span>探测策略</span>
-        <strong>{probePolicyLabel(safety?.startupProbePolicy)}</strong>
+        <strong>{configurationSafetyProbePolicyLabel(safety?.startupProbePolicy)}</strong>
       </div>
       <div className="connections-safety-item">
         <span>{boundaryLabel}</span>
@@ -52,11 +53,4 @@ function capabilityStatusLabel(
   if (capability.status === 'disabled' && safety?.state === 'disabled_by_policy') return '策略关闭';
   if (capability.status === 'disabled') return '已关闭';
   return '未知';
-}
-
-function probePolicyLabel(policy: ConfigurationSafetySurface['startupProbePolicy'] | undefined): string {
-  if (policy === 'manual_only') return '仅手动';
-  if (policy === 'safe_read_only') return '安全只读';
-  if (policy === 'never') return '不自动';
-  return '仅手动';
 }

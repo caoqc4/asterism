@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { ConfigurationSafetyState, ConfigurationSafetySurface } from '@shared/configuration-safety-report';
+import type { ConfigurationSafetySurface } from '@shared/configuration-safety-report';
 import type { AiConfigStatus, AiProvider } from '@shared/types/settings';
+import { CONFIGURATION_SAFETY_STATE_LABELS, configurationSafetyProbePolicyLabel } from '../lib/configurationSafetyLabels';
 
 interface ModelDef {
   id: string;
@@ -20,14 +21,6 @@ interface ProviderSection {
 }
 
 type KeyField = 'falOpenRouter' | 'anthropic' | 'openai' | 'google' | 'deepseek' | 'groq' | 'customKey';
-
-const SAFETY_STATE_LABELS: Record<ConfigurationSafetyState, string> = {
-  configured: '已配置',
-  missing: '缺失',
-  disabled_by_flag: '已关闭',
-  disabled_by_policy: '策略关闭',
-  approval_required: '需确认',
-};
 
 const PROVIDERS: ProviderSection[] = [
   {
@@ -319,14 +312,14 @@ function ModelConfigurationSafety({ surfaces }: { surfaces: ConfigurationSafetyS
           <div key={surface.id} className="settings-safety-row">
             <div className="settings-safety-main">
               <span className={`settings-safety-state ${surface.state}`}>
-                {SAFETY_STATE_LABELS[surface.state]}
+                {CONFIGURATION_SAFETY_STATE_LABELS[surface.state]}
               </span>
               <span className="settings-safety-id">{surface.id}</span>
             </div>
             <div className="settings-safety-detail">
               <span>{surface.reason}</span>
               <span>
-                探测：{probePolicyLabel(surface.startupProbePolicy)}
+                探测：{configurationSafetyProbePolicyLabel(surface.startupProbePolicy)}
                 {surface.requiresApproval ? ' · 需用户确认' : ''}
               </span>
             </div>
@@ -335,10 +328,4 @@ function ModelConfigurationSafety({ surfaces }: { surfaces: ConfigurationSafetyS
       </div>
     </section>
   );
-}
-
-function probePolicyLabel(policy: ConfigurationSafetySurface['startupProbePolicy']): string {
-  if (policy === 'manual_only') return '仅手动';
-  if (policy === 'safe_read_only') return '安全只读';
-  return '不自动';
 }

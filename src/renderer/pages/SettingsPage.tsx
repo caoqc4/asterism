@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { AiCommunicationStyle, AiConfigStatus, AiConfirmationThreshold } from '@shared/types/settings';
-import type { ConfigurationSafetyReport, ConfigurationSafetyState } from '@shared/configuration-safety-report';
+import type { ConfigurationSafetyReport } from '@shared/configuration-safety-report';
 import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS, SELF_CHECK_RETRY_LIMIT } from '@shared/settings-defaults';
+import { CONFIGURATION_SAFETY_STATE_LABELS, configurationSafetyProbePolicyLabel } from '../lib/configurationSafetyLabels';
 
 const COMMUNICATION_STYLE_LABELS: Record<AiCommunicationStyle, string> = {
   concise: '简洁',
@@ -13,14 +14,6 @@ const CONFIRMATION_THRESHOLD_LABELS: Record<AiConfirmationThreshold, string> = {
   low: '低',
   normal: '标准',
   high: '高',
-};
-
-const SAFETY_STATE_LABELS: Record<ConfigurationSafetyState, string> = {
-  configured: '已配置',
-  missing: '缺失',
-  disabled_by_flag: '已关闭',
-  disabled_by_policy: '策略关闭',
-  approval_required: '需确认',
 };
 
 export function SettingsPage() {
@@ -227,18 +220,14 @@ function ConfigurationSafetySection({ report }: { report: ConfigurationSafetyRep
           <div key={surface.id} className="settings-safety-row">
             <div className="settings-safety-main">
               <span className={`settings-safety-state ${surface.state}`}>
-                {SAFETY_STATE_LABELS[surface.state]}
+                {CONFIGURATION_SAFETY_STATE_LABELS[surface.state]}
               </span>
               <span className="settings-safety-id">{surface.id}</span>
             </div>
             <div className="settings-safety-detail">
               <span>{surface.reason}</span>
               <span>
-                探测：{surface.startupProbePolicy === 'never'
-                  ? '不自动'
-                  : surface.startupProbePolicy === 'manual_only'
-                    ? '仅手动'
-                    : '安全只读'}
+                探测：{configurationSafetyProbePolicyLabel(surface.startupProbePolicy)}
                 {surface.requiresApproval ? ' · 需用户确认' : ''}
               </span>
             </div>
