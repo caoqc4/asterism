@@ -38,7 +38,10 @@ describe('runtime entrypoint IPC coverage', () => {
     const handlersSource = fs.readFileSync(new URL('./handlers.ts', import.meta.url), 'utf8');
     const handledChannels = [...handlersSource.matchAll(/ipcMain\.handle\('([^']+)'/g)]
       .map((match) => match[1])
-      .filter((channel) => /^(artifact|decision|sourceContext|taskFile|workHabit):/.test(channel))
+      .filter((channel) => (
+        /^(artifact|decision|sourceContext|taskFile|workHabit):/.test(channel)
+        || channel === 'externalAccess:sourceIngestionCommit'
+      ))
       .sort();
     const memoryWriteChannels = memorySurfaceWriteEntrypoints()
       .flatMap((entrypoint) => entrypoint.ipcChannels ?? []);

@@ -107,6 +107,7 @@ describe('memory surface write coverage', () => {
       'artifact:update',
       'decision:act',
       'decision:create',
+      'externalAccess:sourceIngestionCommit',
       'sourceContext:archive',
       'sourceContext:create',
       'sourceContext:update',

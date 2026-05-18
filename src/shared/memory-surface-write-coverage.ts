@@ -5,6 +5,7 @@ export type MemorySurfaceWriteEntrypointOwner =
   | 'TasksPage'
   | 'RightPanel'
   | 'TaskService'
+  | 'ExternalAccessSourceIngestionService'
   | 'DecisionService'
   | 'AgentToolRegistry'
   | 'RunService'
@@ -168,6 +169,18 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     writePolicies: ['explicit_source_capture', 'generated_output_writer'],
     guards: ['runtime_surface_routing', 'canonical_write_validation', 'source_quality_metadata', 'task_mutation', 'simplicity_check'],
     note: 'Source-context persistence keeps explicit source roles and quality metadata at the service boundary.',
+  },
+  {
+    id: 'external_access.source_ingestion_commit',
+    owner: 'ExternalAccessSourceIngestionService',
+    kind: 'service_boundary',
+    ipcChannels: [
+      'externalAccess:sourceIngestionCommit',
+    ],
+    surfaces: ['source_material', 'ai_output'],
+    writePolicies: ['explicit_source_capture', 'generated_output_writer'],
+    guards: ['runtime_surface_routing', 'canonical_write_validation', 'source_quality_metadata', 'task_mutation', 'pre_step', 'simplicity_check'],
+    note: 'Confirmed External Access ingestion writes source context memory through connector source plans and the TaskService source-context boundary.',
   },
   {
     id: 'task_service.manual_artifact_boundary',
