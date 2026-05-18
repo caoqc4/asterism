@@ -263,6 +263,31 @@ describe('AiConfigService', () => {
     });
   });
 
+  it('reports all model page providers that have stored keychain keys', async () => {
+    getPasswordMock.mockImplementation(async (_serviceName: string, accountName: string) => (
+      accountName === 'ai_key_google' || accountName === 'ai_key_deepseek' || accountName === 'ai_key_groq'
+        ? `${accountName}-secret`
+        : null
+    ));
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const appConfigService = new AppConfigService(() => tempRoot);
+    appConfigService.write({
+      aiProvider: 'google',
+      aiModel: 'gemini-2.5-flash',
+    });
+    const service = new AiConfigService(appConfigService);
+
+    const status = await service.getStatus();
+    const runtimeConfig = await service.resolveRuntimeConfig();
+
+    expect(status.configured).toBe(true);
+    expect(status.apiKeyStored).toBe(true);
+    expect(status.apiKeySource).toBe('keychain');
+    expect(status.configuredProviders).toEqual(expect.arrayContaining(['google', 'deepseek', 'groq']));
+    expect(runtimeConfig.apiKey).toBe('ai_key_google-secret');
+  });
+
   it('uses environment API keys without storing them in Keychain', async () => {
     process.env.TASKPLANE_AI_API_KEY = 'env-secret';
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';

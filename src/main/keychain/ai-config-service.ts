@@ -28,6 +28,7 @@ const PROVIDER_ACCOUNT: Record<string, string> = {
   'fal-openrouter':    'ai_key_fal_openrouter',
   'openai-compatible': 'ai_key_custom',
 };
+const KEYCHAIN_PROVIDERS = Object.keys(PROVIDER_ACCOUNT) as AiProvider[];
 
 const DEFAULT_TOOL_SCAFFOLD_POLICY = {
   allowLocalWorkspaceRead: false,
@@ -112,8 +113,7 @@ export class AiConfigService {
 
   /* Returns which providers have keys in keychain */
   private async getConfiguredProviders(): Promise<AiProvider[]> {
-    const all: AiProvider[] = ['anthropic', 'openai', 'fal-openrouter', 'openai-compatible'];
-    const results = await Promise.all(all.map(async (p) => ({ p, key: await this.getProviderKey(p) })));
+    const results = await Promise.all(KEYCHAIN_PROVIDERS.map(async (p) => ({ p, key: await this.getProviderKey(p) })));
     return results.filter((r) => Boolean(r.key)).map((r) => r.p);
   }
 
@@ -131,13 +131,15 @@ export class AiConfigService {
     const config = this.appConfigService.read();
     const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
     const configuredProviders = await this.getConfiguredProviders();
-    const activeKey = await this.resolveKeyForProvider(config.aiProvider);
+    const providerKey = await this.getProviderKey(config.aiProvider);
+    const legacyKey = await this.getLegacyKey();
+    const activeKey = providerKey ?? envApiKey ?? legacyKey;
     const externalAccessStatus = await this.externalAccessStatusService.getStatus();
 
     const status: AiConfigStatus = {
       configured: Boolean(activeKey),
-      apiKeyStored: Boolean(await this.getProviderKey(config.aiProvider) ?? await this.getLegacyKey()),
-      apiKeySource: envApiKey ? 'env' : (await this.getLegacyKey()) ? 'keychain' : null,
+      apiKeyStored: Boolean(providerKey ?? legacyKey),
+      apiKeySource: envApiKey ? 'env' : (providerKey ?? legacyKey) ? 'keychain' : null,
       configuredProviders,
       codeAgentWorkspaceChecks: detectCodeAgentWorkspaceChecks(config.workspaceRoot),
       codeAgentModelProducerEnabled: readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true,
@@ -175,13 +177,15 @@ export class AiConfigService {
 
     const configuredProviders = await this.getConfiguredProviders();
     const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
-    const activeKey = await this.resolveKeyForProvider(provider);
+    const providerKey = await this.getProviderKey(provider);
+    const legacyKey = await this.getLegacyKey();
+    const activeKey = providerKey ?? envApiKey ?? legacyKey;
     const externalAccessStatus = await this.externalAccessStatusService.getStatus();
 
     const status: AiConfigStatus = {
       configured: Boolean(activeKey),
-      apiKeyStored: Boolean(await this.getProviderKey(provider)),
-      apiKeySource: envApiKey ? 'env' : (await this.getLegacyKey()) ? 'keychain' : null,
+      apiKeyStored: Boolean(providerKey),
+      apiKeySource: envApiKey ? 'env' : (providerKey ?? legacyKey) ? 'keychain' : null,
       configuredProviders,
       codeAgentWorkspaceChecks: detectCodeAgentWorkspaceChecks(config.workspaceRoot),
       codeAgentModelProducerEnabled: readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true,
