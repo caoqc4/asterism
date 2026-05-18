@@ -62,4 +62,29 @@ describe('ProcessTemplateRepository integration', () => {
       bindingId: 'task_binding_1',
     } as Parameters<ProcessTemplateRepository['update']>[0])).rejects.toThrow(/bindingId/);
   });
+
+  it('rejects invalid process template values before persistence', async () => {
+    await expect(repository.create({
+      title: '   ',
+      content: '1. Review sources',
+      kind: 'skill',
+    })).rejects.toThrow(/title/);
+
+    await expect(repository.create({
+      title: 'Outreach skill',
+      content: '1. Review sources',
+      kind: 'habit' as never,
+    })).rejects.toThrow(/kind must be one of/);
+
+    const created = await repository.create({
+      title: 'Outreach skill',
+      content: '1. Review sources',
+      kind: 'skill',
+    });
+
+    await expect(repository.update({
+      id: created.id,
+      content: ' ',
+    })).rejects.toThrow('Process template content is required.');
+  });
 });

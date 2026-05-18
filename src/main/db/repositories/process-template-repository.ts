@@ -6,13 +6,13 @@ import type {
   UpdateProcessTemplateInput,
 } from '../../../shared/types/process-template.js';
 import { assertCanonicalWriteInput } from '../../../shared/canonical-data-contract.js';
+import {
+  normalizeCreateProcessTemplateInput,
+  normalizeUpdateProcessTemplateInput,
+} from '../../../shared/process-template-input.js';
 import { processTemplates } from '../schema.js';
 import { initDatabase } from '../client.js';
-import { generateId, normalizeValue, nowIso, parseTags } from './repository-utils.js';
-
-function normalizeTags(tags: string[] | undefined): string[] {
-  return [...new Set((tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
-}
+import { generateId, nowIso, parseTags } from './repository-utils.js';
 
 function toRecord(row: typeof processTemplates.$inferSelect): ProcessTemplateRecord {
   return {
@@ -48,17 +48,18 @@ export class ProcessTemplateRepository {
       allowedFields: ['title', 'summary', 'content', 'kind', 'tags'],
       requiredFields: ['title', 'content', 'kind'],
     });
+    const normalized = normalizeCreateProcessTemplateInput(input);
     const db = initDatabase();
     const timestamp = nowIso();
     const id = generateId('process_template');
 
     await db.insert(processTemplates).values({
       id,
-      title: input.title.trim(),
-      summary: normalizeValue(input.summary),
-      content: input.content.trim(),
-      kind: input.kind,
-      tags: JSON.stringify(normalizeTags(input.tags)),
+      title: normalized.title,
+      summary: normalized.summary,
+      content: normalized.content,
+      kind: normalized.kind,
+      tags: JSON.stringify(normalized.tags),
       status: 'active',
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -76,34 +77,34 @@ export class ProcessTemplateRepository {
       allowedFields: ['id', 'title', 'summary', 'content', 'kind', 'tags'],
       requiredFields: ['id'],
     });
+    const normalized = normalizeUpdateProcessTemplateInput(input);
     const db = initDatabase();
     const [current] = await db
       .select()
       .from(processTemplates)
-      .where(eq(processTemplates.id, input.id))
+      .where(eq(processTemplates.id, normalized.id))
       .limit(1);
 
     if (!current) {
-      throw new Error(`Process template not found: ${input.id}`);
+      throw new Error(`Process template not found: ${normalized.id}`);
     }
 
     await db
       .update(processTemplates)
       .set({
-        title: input.title?.trim() || current.title,
-        summary: input.summary === undefined ? current.summary : normalizeValue(input.summary),
-        content: input.content?.trim() || current.content,
-        kind: input.kind ?? current.kind,
-        tags:
-          input.tags === undefined ? current.tags : JSON.stringify(normalizeTags(input.tags)),
+        title: normalized.title ?? current.title,
+        summary: normalized.summary === undefined ? current.summary : normalized.summary,
+        content: normalized.content ?? current.content,
+        kind: normalized.kind ?? current.kind,
+        tags: normalized.tags === undefined ? current.tags : JSON.stringify(normalized.tags),
         updatedAt: nowIso(),
       })
-      .where(eq(processTemplates.id, input.id));
+      .where(eq(processTemplates.id, normalized.id));
 
     const [updated] = await db
       .select()
       .from(processTemplates)
-      .where(eq(processTemplates.id, input.id))
+      .where(eq(processTemplates.id, normalized.id))
       .limit(1);
 
     return toRecord(updated);

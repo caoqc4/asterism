@@ -751,7 +751,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'method_library_boundary',
     ],
-    notes: 'Applying or removing a process template binding on a task remains a task mutation; this entrypoint covers library-level template writes only.',
+    notes: 'Applying or removing a process template binding on a task remains a task mutation; this entrypoint covers library-level template writes only. Library writes normalize template fields and reject blank required values or invalid kinds before persistence.',
   },
   {
     id: 'agent.toolDurableWrites',

@@ -526,7 +526,9 @@ selectors also share one selection normalizer: templates are returned only when
 cannot leave stale selected templates attached to a skipped selection. Applying
 or removing a task-bound process template now records the binding action and
 binding note in task dynamics, keeping method changes auditable without adding
-another workflow.
+another workflow. Process template library writes now normalize title, summary,
+content, kind, and tags before persistence, and reject blank required fields or
+invalid template kinds at the repository boundary.
 
 ## Recommended Execution Order
 

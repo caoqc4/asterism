@@ -237,6 +237,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'CanonicalDataContract documents canonical task hierarchy fields, legacy fallback boundaries, and repair routes before migration or repair behavior is changed.',
       'CanonicalDataDiagnostics reports missing canonical fields, orphan task references, blocker/dependency orphan links, and missing task-scoped Decision bindings as read-only diagnostics before any repair flow mutates records.',
       'CanonicalDataWriteValidation checks write-boundary fields separately from full canonical records, and retained task-file, source-context, artifact, Decision, Work Habit, and process-template create/update paths reject unknown or read-only legacy fields before repository persistence.',
+      'Process template library writes normalize title, summary, content, kind, and tags, and reject blank required values or invalid template kinds before repository persistence.',
       'Phase closeout now prefers handoff to existing child tasks instead of generating generic follow-up tasks.',
       'Task closeout evaluation can hand off to an existing successor when no child is available, and new follow-up proposals require evidence and confirmation instead of being created during closeout.',
       'runtime-subtask-evaluator blocks duplicate, near-duplicate, action/object duplicate, generic, parent-overlapping, or underspecified subtask drafts before confirmed child creation.',
