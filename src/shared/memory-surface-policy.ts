@@ -53,6 +53,16 @@ export type MemorySurfacePolicy = {
 };
 
 const SURFACE_POLICY: Record<RuntimeSurfaceKind, Omit<MemorySurfacePolicy, 'fileClass' | 'surface'>> = {
+  structured_task_state: {
+    category: 'recovery_memory',
+    writePolicy: 'dedicated_evaluator',
+    reusePolicy: 'read_for_task_resume',
+    requiresTaskContext: true,
+    requiresExplicitCreation: true,
+    requiresQualityMetadata: false,
+    label: '结构化任务状态',
+    reason: '结构化任务状态保存标题、状态、层级、阻塞、依赖、验收标准、下一步和风险等权威当前状态。',
+  },
   task_md: {
     category: 'recovery_memory',
     writePolicy: 'dedicated_evaluator',

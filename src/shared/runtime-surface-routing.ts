@@ -7,6 +7,7 @@ import type { CreateWorkHabitProposalInput, WorkHabitScope } from './types/work-
 import { isTaskMdPath, isTaskRecordPath, normalizeTaskMemoryPath } from './task-memory-path.js';
 
 export type RuntimeSurfaceKind =
+  | 'structured_task_state'
   | 'task_md'
   | 'task_file'
   | 'task_record'

@@ -30,7 +30,11 @@ describe('memory surface write coverage', () => {
 
   it('keeps recovery memory behind dedicated evaluators', () => {
     const recoveryEntrypoints = memorySurfaceWriteEntrypoints()
-      .filter((entrypoint) => entrypoint.surfaces.some((surface) => surface === 'task_md' || surface === 'task_record'));
+      .filter((entrypoint) => entrypoint.surfaces.some((surface) => (
+        surface === 'structured_task_state'
+        || surface === 'task_md'
+        || surface === 'task_record'
+      )));
 
     expect(recoveryEntrypoints.length).toBeGreaterThan(0);
     for (const entrypoint of recoveryEntrypoints) {
@@ -39,6 +43,7 @@ describe('memory surface write coverage', () => {
         guard === 'task_md_update_need'
         || guard === 'task_record_worthiness'
         || guard === 'task_memory_write_apply_plan'
+        || guard === 'canonical_write_validation'
         || guard === 'runtime_surface_routing'
       ))).toBe(true);
     }
@@ -105,12 +110,24 @@ describe('memory surface write coverage', () => {
       'artifact:createManual',
       'artifact:delete',
       'artifact:update',
+      'blocker:create',
+      'blocker:resolve',
+      'blocker:update',
+      'completionCriteria:create',
+      'completionCriteria:reopen',
+      'completionCriteria:satisfy',
+      'completionCriteria:update',
       'decision:act',
       'decision:create',
       'externalAccess:sourceIngestionCommit',
       'sourceContext:archive',
       'sourceContext:create',
       'sourceContext:update',
+      'task:transition',
+      'task:update',
+      'taskDependency:create',
+      'taskDependency:resolve',
+      'taskDependency:update',
       'taskFile:create',
       'taskFile:delete',
       'taskFile:update',

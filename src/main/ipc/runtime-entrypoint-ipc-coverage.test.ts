@@ -41,6 +41,9 @@ describe('runtime entrypoint IPC coverage', () => {
       .filter((channel) => (
         /^(artifact|decision|sourceContext|taskFile|workHabit):/.test(channel)
         || channel === 'externalAccess:sourceIngestionCommit'
+        || channel === 'task:update'
+        || channel === 'task:transition'
+        || /^(blocker|completionCriteria|taskDependency):/.test(channel)
       ))
       .sort();
     const memoryWriteChannels = memorySurfaceWriteEntrypoints()

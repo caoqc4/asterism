@@ -53,6 +53,29 @@ export type MemorySurfaceWriteEntrypoint = {
 
 export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = [
   {
+    id: 'task_service.structured_task_state_boundary',
+    owner: 'TaskService',
+    kind: 'service_boundary',
+    ipcChannels: [
+      'blocker:create',
+      'blocker:resolve',
+      'blocker:update',
+      'completionCriteria:create',
+      'completionCriteria:reopen',
+      'completionCriteria:satisfy',
+      'completionCriteria:update',
+      'task:transition',
+      'task:update',
+      'taskDependency:create',
+      'taskDependency:resolve',
+      'taskDependency:update',
+    ],
+    surfaces: ['structured_task_state'],
+    writePolicies: ['dedicated_evaluator'],
+    guards: ['canonical_write_validation', 'task_mutation', 'pre_step', 'simplicity_check'],
+    note: 'Structured task state writes preserve authoritative title, status, hierarchy, blockers, dependencies, criteria, next step, waiting, and risk fields through TaskService gates.',
+  },
+  {
     id: 'tasks.task_md.direct_save',
     owner: 'TasksPage',
     kind: 'renderer_memory_action',

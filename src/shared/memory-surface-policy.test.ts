@@ -9,6 +9,7 @@ import {
 describe('memory surface policy', () => {
   it('defines one policy for every runtime surface kind', () => {
     expect(memorySurfacePolicies().map((policy) => policy.surface)).toEqual([
+      'structured_task_state',
       'task_md',
       'task_record',
       'source_material',
@@ -20,6 +21,16 @@ describe('memory surface policy', () => {
       'work_habit',
       'discussion',
     ]);
+  });
+
+  it('keeps structured task state as the authoritative current-state memory surface', () => {
+    expect(policyForRuntimeSurface('structured_task_state')).toMatchObject({
+      category: 'recovery_memory',
+      writePolicy: 'dedicated_evaluator',
+      reusePolicy: 'read_for_task_resume',
+      requiresTaskContext: true,
+      label: '结构化任务状态',
+    });
   });
 
   it('treats Task.md and Task Records as dedicated recovery memory', () => {

@@ -163,7 +163,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Work Habit proposal writes do not duplicate equivalent confirmed habits, and SOP-template habit writes deduplicate equivalent reusable step shapes across tasks.',
       'Work Habit selection returns applicability reasons for runtime prompts, so selected habits remain explainable by project, task type, task title, or global scope.',
       'MemorySurfacePolicy gives each runtime surface an explicit memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
-      'MemorySurfaceWriteCoverage registers retained durable information writers and verifies their surfaces, write policies, required guards, and retained IPC channel bindings.',
+      'MemorySurfaceWriteCoverage registers retained durable information writers, including structured task-state writers, and verifies their surfaces, write policies, required guards, and retained IPC channel bindings.',
       'Artifact classification requires an explicit artifact surface or artifact kind; ordinary task files are not promoted to artifacts by an Artifacts/ path alone.',
       'Memory-surface tests keep AI output distinct from source material, generic source captures distinct from Task Records, and reserved Task.md / Task Records paths out of ordinary file handling.',
       'Source-context routing preserves explicit sourceRole before applying task-record-like title or note heuristics.',
