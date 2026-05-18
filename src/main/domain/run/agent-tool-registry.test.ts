@@ -31,6 +31,7 @@ function buildWorkingContext(): AgentWorkingContext {
     },
     blockers: [{ title: 'Legal review', detail: null, owner: 'Legal' }],
     dependencies: [{ title: 'Upstream research', detail: 'Waiting for notes' }],
+    decisions: [],
     sources: [
       {
         title: 'Key brief',

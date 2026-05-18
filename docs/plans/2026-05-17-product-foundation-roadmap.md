@@ -266,7 +266,11 @@ and selected files can surface with caution without making them authoritative.
 `RuntimeContextManifest` now consumes this retrieval projection directly and
 emits a compact `memory_retrieval` summary for provider-visible step context,
 so retained Run / RightPanel execution paths share the same read-order signal
-instead of rebuilding local lists.
+instead of rebuilding local lists. Task-bound Decisions are now attached to
+task detail when the Decision repository is available, carried into Agent
+working context, and included in RuntimeContextManifest retrieval so pending
+judgment items remain part of execution read order instead of living only on
+the Decisions page.
 
 ## Package D: Data Model, Migration, And Repair
 

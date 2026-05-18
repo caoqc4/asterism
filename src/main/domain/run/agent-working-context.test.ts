@@ -134,6 +134,24 @@ function buildTaskDetail(): TaskDetail {
         uri: 'https://example.com/launch',
       }),
     ],
+    decisions: [
+      {
+        id: 'decision_1',
+        taskId: 'task_1',
+        title: 'Approve launch claim',
+        status: 'pending',
+        scope: 'task',
+        kind: 'risk_approval',
+        sourceType: 'manual',
+        sourceId: null,
+        sourceLabel: 'Legal review',
+        context: { whyNow: 'Legal approval blocks launch.', impact: 'Public claim cannot ship.' },
+        options: [],
+        recommendation: { label: 'Wait for legal approval', reason: 'Avoid publishing unapproved claim.' },
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      },
+    ],
     processTemplates: [
       {
         id: 'process_template_1',
@@ -199,6 +217,11 @@ describe('agent working context', () => {
       'launch_note.md',
     ]);
     expect(context.artifacts[1]?.contentPreview).toBe('Draft launch note');
+    expect(context.decisions[0]).toMatchObject({
+      title: 'Approve launch claim',
+      status: 'pending',
+      recommendationLabel: 'Wait for legal approval',
+    });
     expect(context.processTemplates[0]).toMatchObject({ title: 'Launch writing skill' });
     expect(context.recentTimeline[0]).toMatchObject({
       type: 'task.created',
@@ -266,6 +289,7 @@ describe('agent working context', () => {
     expect(formatAgentRunRequestForStep(request)).toContain('适用工作习惯：1');
     expect(formatAgentRunRequestForStep(request)).toContain('产品原则：read-only');
     expect(formatAgentRunRequestForStep(request)).toContain('上下文装配：Runtime context assembly ready.');
+    expect(formatAgentRunRequestForStep(request)).toContain('decision/decision_1/include/pending_decision');
     expect(formatAgentRunRequestForStep(request)).toContain('Do not store full chat transcripts');
     expect(formatAgentRunRequestForStep(request)).toContain(
       '- 对外材料发布前先做一次事实核对（范围：全局；例：公告初稿）',

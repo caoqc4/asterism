@@ -66,6 +66,7 @@ import type { RunType } from '../../../shared/types/run.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
+import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import { TaskFileRepository } from '../../db/repositories/task-file-repository.js';
@@ -107,6 +108,7 @@ export class TaskService {
     private readonly taskDependencyRepository: TaskDependencyRepository | null = null,
     private readonly completionCriteriaRepository: CompletionCriteriaRepository | null = null,
     private readonly taskFileRepository: TaskFileRepository | null = null,
+    private readonly decisionRepository: Pick<DecisionRepository, 'listByTask'> | null = null,
   ) {}
 
   private async syncWaitingItem(
@@ -318,6 +320,17 @@ export class TaskService {
     return {
       ...detail,
       sourceContexts,
+    };
+  }
+
+  private async attachDecisions(detail: TaskDetailBase): Promise<TaskDetailBase> {
+    const decisions = this.decisionRepository
+      ? await this.decisionRepository.listByTask(detail.id)
+      : [];
+
+    return {
+      ...detail,
+      decisions,
     };
   }
 
@@ -1073,10 +1086,12 @@ export class TaskService {
 
     const enriched = await this.attachProcessTemplates(
       await this.attachTaskFiles(
-        await this.attachSourceContexts(
-          await this.attachCompletionCriteria(
-            await this.attachArtifacts(
-              await this.attachDetailDependencyReevaluation(await this.attachDetailWaitingItem(detail)),
+        await this.attachDecisions(
+          await this.attachSourceContexts(
+            await this.attachCompletionCriteria(
+              await this.attachArtifacts(
+                await this.attachDetailDependencyReevaluation(await this.attachDetailWaitingItem(detail)),
+              ),
             ),
           ),
         ),

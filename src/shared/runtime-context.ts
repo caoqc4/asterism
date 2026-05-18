@@ -20,11 +20,13 @@ import type {
   SourceContextRole,
   SourceContextStatus,
 } from './types/source-context.js';
+import type { DecisionKind, DecisionScope } from './types/decision.js';
 import type { TaskRiskLevel, TaskState } from './types/task.js';
 
 export type RuntimeContextManifestItemKind =
   | 'task_state'
   | 'selected_file'
+  | 'decision'
   | 'source_context'
   | 'artifact'
   | 'task_file'
@@ -312,6 +314,13 @@ export function buildRuntimeContextManifest(params: {
         label: file.path,
         note: file.kind,
       })),
+      ...(workingContext.decisions ?? []).map((decision) => ({
+        contentIncluded: Boolean(decision.contextPreview || decision.recommendationLabel || decision.recommendationReason),
+        id: decision.id,
+        kind: 'decision' as const,
+        label: decision.title,
+        note: [decision.status, decision.kind, decision.sourceLabel].filter(Boolean).join(' / '),
+      })),
       ...workingContext.processTemplates.map((template) => ({
         contentIncluded: Boolean(template.summary),
         id: template.id,
@@ -439,6 +448,37 @@ export function buildRuntimeContextManifest(params: {
           createdAt: '',
           updatedAt: '',
           resolvedAt: null,
+        })) ?? [],
+        decisions: (workingContext?.decisions ?? []).map((decision) => ({
+          id: decision.id,
+          taskId: task.id,
+          title: decision.title,
+          status: decision.status === 'approved'
+            ? 'approved'
+            : decision.status === 'deferred'
+              ? 'deferred'
+              : decision.status === 'cancelled'
+                ? 'cancelled'
+                : 'pending',
+          scope: runtimeDecisionScope(decision.scope),
+          kind: runtimeDecisionKind(decision.kind),
+          sourceType: null,
+          sourceId: null,
+          sourceLabel: decision.sourceLabel,
+          context: {
+            whyNow: decision.contextPreview,
+            impact: null,
+            ifDeferred: null,
+          },
+          options: [],
+          recommendation: decision.recommendationLabel || decision.recommendationReason
+            ? {
+                label: decision.recommendationLabel ?? decision.title,
+                reason: decision.recommendationReason,
+              }
+            : null,
+          createdAt: decision.updatedAt,
+          updatedAt: decision.updatedAt,
         })) ?? [],
         processTemplates: workingContext?.processTemplates.map((template) => ({
           id: template.id,
@@ -570,14 +610,15 @@ export function buildRuntimeContextAssemblyPolicy(params: {
     {
       kind: 'structured_signals',
       status: taskBound && (
+        has('decision') ||
         has('source_context') ||
         has('artifact') ||
         has('timeline') ||
         has('process_template')
       ) ? 'included' : taskBound ? 'optional' : 'not_applicable',
       reason: taskBound
-        ? has('source_context') || has('artifact') || has('timeline') || has('process_template')
-          ? '已包含来源、产物、时间线或流程模板等结构化信号。'
+        ? has('decision') || has('source_context') || has('artifact') || has('timeline') || has('process_template')
+          ? '已包含决策、来源、产物、时间线或流程模板等结构化信号。'
           : '当前没有结构化信号；执行复杂或有风险任务前应补充相关上下文。'
         : '全局上下文不要求任务结构化信号。',
     },
@@ -697,6 +738,36 @@ function runtimeSourceContextKind(kind: string | null | undefined): SourceContex
   return 'note';
 }
 
+function runtimeDecisionScope(scope: string): DecisionScope {
+  if (
+    scope === 'task' ||
+    scope === 'run' ||
+    scope === 'agent' ||
+    scope === 'external_access' ||
+    scope === 'workspace' ||
+    scope === 'system' ||
+    scope === 'global'
+  ) {
+    return scope;
+  }
+  return 'task';
+}
+
+function runtimeDecisionKind(kind: string): DecisionKind {
+  if (
+    kind === 'direction_choice' ||
+    kind === 'risk_approval' ||
+    kind === 'external_write' ||
+    kind === 'agent_resume' ||
+    kind === 'completion_acceptance' ||
+    kind === 'information_request' ||
+    kind === 'policy_change'
+  ) {
+    return kind;
+  }
+  return 'direction_choice';
+}
+
 function runtimeWorkHabitsForRetrieval(habits: string[]) {
   return habits
     .map((habit) => habit.trim())
@@ -728,6 +799,7 @@ function formatRuntimeContextManifestSummary(params: {
     `surface=${params.activeSurface}`,
     params.task ? `task=${params.task.title}` : null,
     `items=${params.items.length}`,
+    count('decision') ? `decisions=${count('decision')}` : null,
     `sources=${count('source_context')}`,
     `artifacts=${count('artifact')}`,
     `files=${count('task_file') + count('selected_file')}`,
@@ -758,6 +830,7 @@ function formatRuntimeContextManifestUserSummary(params: {
     params.items.filter((item) => item.kind === kind).length;
   const parts = [
     '任务状态',
+    count('decision') ? `${count('decision')} 个判断事项` : null,
     count('selected_file') ? '当前选中文件' : null,
     count('source_context') ? `${count('source_context')} 个来源` : null,
     count('artifact') ? `${count('artifact')} 个产物` : null,

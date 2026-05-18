@@ -66,6 +66,18 @@ export type AgentWorkingContext = {
     title: string;
     detail: string | null;
   }>;
+  decisions?: Array<{
+    id: string;
+    title: string;
+    status: string;
+    scope: string;
+    kind: string;
+    sourceLabel: string | null;
+    contextPreview: string | null;
+    recommendationLabel: string | null;
+    recommendationReason: string | null;
+    updatedAt: string;
+  }>;
   sources: Array<{
     capturedAt?: string | null;
     createdAt?: string | null;

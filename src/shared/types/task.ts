@@ -1,6 +1,7 @@
 import type { ArtifactRecord } from './artifact.js';
 import type { BlockerRecord } from './blocker.js';
 import type { CompletionCriteriaRecord } from './completion-criteria.js';
+import type { DecisionRecord } from './decision.js';
 import type {
   AppliedProcessTemplateRecord,
   ProcessTemplateRecord,
@@ -118,6 +119,7 @@ export type TaskDetailBase = TaskRecord & {
   artifacts: ArtifactRecord[];
   completionCriteria: CompletionCriteriaRecord[];
   sourceContexts: SourceContextRecord[];
+  decisions?: DecisionRecord[];
   taskFiles?: TaskFileRecord[];
   processTemplates: AppliedProcessTemplateRecord[];
   availableProcessTemplates: ProcessTemplateRecord[];

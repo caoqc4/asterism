@@ -36,6 +36,12 @@ describe('DecisionRepository integration', () => {
     expect(created.taskId).toBe(task.id);
     expect(created.title).toBe('Approve the final launch note');
     expect(created.status).toBe('pending');
+    await decisionRepository.create({
+      title: 'Global approval not tied to this task',
+      scope: 'global',
+      sourceType: 'manual',
+    });
+    expect((await decisionRepository.listByTask(task.id)).map((decision) => decision.id)).toEqual([created.id]);
 
     const detail = await taskRepository.getDetail(task.id);
 

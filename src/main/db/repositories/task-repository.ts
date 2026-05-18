@@ -180,6 +180,7 @@ export class TaskRepository {
       artifacts: [],
       completionCriteria: [],
       sourceContexts: [],
+      decisions: [],
       processTemplates: [],
       availableProcessTemplates: [],
       timeline: timeline.map((event) => ({

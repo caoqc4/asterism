@@ -58,6 +58,16 @@ export class DecisionRepository {
     return rows.map(toRecord);
   }
 
+  async listByTask(taskId: string): Promise<DecisionRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(decisionRequests)
+      .where(eq(decisionRequests.taskId, taskId))
+      .orderBy(desc(decisionRequests.updatedAt));
+    return rows.map(toRecord);
+  }
+
   async get(id: string): Promise<DecisionRecord | null> {
     const db = initDatabase();
     const [row] = await db

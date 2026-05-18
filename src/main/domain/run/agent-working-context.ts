@@ -25,6 +25,7 @@ const RECENT_TIMELINE_LIMIT = 6;
 const SOURCE_CONTEXT_LIMIT = 3;
 const ARTIFACT_LIMIT = 5;
 const TASK_FILE_LIMIT = 6;
+const DECISION_LIMIT = 5;
 const SOURCE_PREVIEW_LIMIT = 240;
 
 export const DEFAULT_AGENT_POLICY: AgentPolicy = {
@@ -76,9 +77,19 @@ function selectAgentSourceContexts(task: TaskDetail): TaskDetail['sourceContexts
   return (keySources.length ? keySources : activeSources).slice(0, SOURCE_CONTEXT_LIMIT);
 }
 
+function selectAgentDecisions(task: TaskDetail): NonNullable<TaskDetail['decisions']> {
+  return [...(task.decisions ?? [])]
+    .sort((left, right) => (
+      Number(right.status === 'pending') - Number(left.status === 'pending')
+      || right.updatedAt.localeCompare(left.updatedAt)
+    ))
+    .slice(0, DECISION_LIMIT);
+}
+
 export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext {
   const completionStatus = task.resumeCard.completionStatus;
   const selectedSources = selectAgentSourceContexts(task);
+  const selectedDecisions = selectAgentDecisions(task);
 
   return {
     productPrinciples: TASKPLANE_AGENT_PRINCIPLES,
@@ -116,6 +127,22 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
           },
         ]
       : [],
+    decisions: selectedDecisions.map((decision) => ({
+      id: decision.id,
+      title: decision.title,
+      status: decision.status,
+      scope: decision.scope,
+      kind: decision.kind,
+      sourceLabel: decision.sourceLabel ?? null,
+      contextPreview: preview([
+        decision.context?.whyNow,
+        decision.context?.impact,
+        decision.context?.ifDeferred,
+      ].filter(Boolean).join('\n')),
+      recommendationLabel: decision.recommendation?.label ?? null,
+      recommendationReason: decision.recommendation?.reason ?? null,
+      updatedAt: decision.updatedAt,
+    })),
     sources: selectedSources
       .map((source) => ({
         capturedAt: source.capturedAt ?? null,

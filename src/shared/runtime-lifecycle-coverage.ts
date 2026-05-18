@@ -99,7 +99,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     scope: 'agent_runtime',
     coveredBy: [
       'buildAgentWorkingContext assembles task state and structured context, including source metadata needed for freshness evaluation.',
-      'buildRuntimeContextManifest projects task state, selected files, sources, artifacts, task files, timeline, and work habits.',
+      'buildRuntimeContextManifest projects task state, selected files, Decisions, sources, artifacts, task files, timeline, and work habits.',
       'buildRuntimeContextAssemblyPolicy evaluates required read-order inputs such as product principles, task state, and Task.md.',
       'RuntimeCapabilitySnapshot summarizes model, workspace checks, feature flags, and tool scaffold state, and RuntimeContextManifest can include it as a capability context item.',
       'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',
@@ -117,6 +117,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RunOrchestrator blocks model execution when runtime context assembly is missing required inputs.',
       'CodeAgentRunService blocks model-producer execution when required task recovery context is missing and passes selected source-context metadata into RuntimeContextManifest before execution.',
       'RuntimeContextManifest tests verify AgentWorkingContext source metadata for duplicate, sensitive, and low-credibility sources is preserved in provider-visible context assembly.',
+      'Task-bound Decisions are attached to task detail, carried into AgentWorkingContext, and included in RuntimeContextManifest retrieval so pending judgments remain visible to execution memory.',
       'OperatorStartedRunService records that browser evidence and local QA entries do not require provider-visible context assembly only when providerCall=no and modelExposure=hidden.',
       'Code Agent has provider-visible context manifest logic.',
       'TaskMemoryRetrieval defines a deterministic local search index and execution-memory read order before any semantic search UI or embedding work.',

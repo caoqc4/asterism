@@ -91,6 +91,7 @@ const taskService = new TaskService(
   taskDependencyRepository,
   completionCriteriaRepository,
   taskFileRepository,
+  decisionRepository,
 );
 const externalAccessStatusService = createExternalAccessStatusService();
 const externalAccessSourceIngestionService = new ExternalAccessSourceIngestionService(
