@@ -1,4 +1,5 @@
 import type { CapabilityProductSurfaceStatus } from './capability-registry.js';
+import { DEFAULT_EXTERNAL_ACCESS_SOURCE_CATALOGUE_ITEMS } from './capability-product-surfaces.js';
 
 export type ExternalAccessConnectorStatus = 'connected' | 'pending' | 'error';
 
@@ -50,5 +51,6 @@ export function externalAccessStatusForCapability(
     connectedCount: status.connectedCount,
     pendingCount: status.pendingCount,
     errorCount: status.errorCount,
+    catalogueCount: DEFAULT_EXTERNAL_ACCESS_SOURCE_CATALOGUE_ITEMS.length,
   };
 }

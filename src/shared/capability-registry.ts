@@ -55,6 +55,7 @@ export type CapabilityProductSurfaceStatus = {
     connectedCount: number;
     pendingCount?: number;
     errorCount?: number;
+    catalogueCount?: number;
   } | null;
   skills?: {
     enabledCount: number;
@@ -308,7 +309,12 @@ function externalAccessCapability(
     access: 'read_only',
     requiresApproval: true,
     requiredGate: 'runtime_entrypoint_coverage',
-    summary: `connected=${status.connectedCount} / pending=${status.pendingCount ?? 0} / errors=${status.errorCount ?? 0}`,
+    summary: [
+      `connected=${status.connectedCount}`,
+      `pending=${status.pendingCount ?? 0}`,
+      `errors=${status.errorCount ?? 0}`,
+      typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
+    ].filter(Boolean).join(' / '),
   };
 }
 

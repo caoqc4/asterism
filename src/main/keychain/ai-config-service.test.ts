@@ -56,7 +56,7 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'connected=0 / pending=0 / errors=0',
+      summary: 'connected=0 / pending=0 / errors=0 / catalogue=1',
       missingReason: 'No external access connector is connected.',
     });
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
@@ -155,7 +155,7 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
       status: 'available',
       configured: true,
-      summary: 'connected=1 / pending=0 / errors=0',
+      summary: 'connected=1 / pending=0 / errors=0 / catalogue=1',
       visibility: 'hidden',
       access: 'read_only',
     });
@@ -190,7 +190,7 @@ describe('AiConfigService', () => {
     });
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
       status: 'available',
-      summary: 'connected=1 / pending=0 / errors=0',
+      summary: 'connected=1 / pending=0 / errors=0 / catalogue=1',
     });
   });
 

@@ -42,6 +42,7 @@ describe('external access status', () => {
       connectedCount: 1,
       pendingCount: 1,
       errorCount: 1,
+      catalogueCount: 1,
     });
   });
 
@@ -50,6 +51,7 @@ describe('external access status', () => {
       connectedCount: 0,
       pendingCount: 0,
       errorCount: 0,
+      catalogueCount: 1,
     });
   });
 });

@@ -142,7 +142,7 @@ describe('capability registry', () => {
     const registry = buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus() }),
       productSurfaces: {
-        externalAccess: { connectedCount: 2, pendingCount: 1, errorCount: 0 },
+        externalAccess: { connectedCount: 2, pendingCount: 1, errorCount: 0, catalogueCount: 1 },
         skills: { enabledCount: 3, readyCount: 2, needsConfigCount: 1 },
         mcp: { connectedServerCount: 1, toolCount: 4, errorCount: 0 },
         browser: { available: true, reason: 'Browser automation configured.' },
@@ -154,7 +154,7 @@ describe('capability registry', () => {
       configured: true,
       visibility: 'hidden',
       access: 'read_only',
-      summary: 'connected=2 / pending=1 / errors=0',
+      summary: 'connected=2 / pending=1 / errors=0 / catalogue=1',
     });
     expect(registry.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
       status: 'available',
