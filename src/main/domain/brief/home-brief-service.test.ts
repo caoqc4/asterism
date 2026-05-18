@@ -723,6 +723,62 @@ describe('HomeBriefService', () => {
     expect(homeData.processTemplateCandidates).toEqual([]);
   });
 
+  it('builds Brief process template candidates only from visible focus tasks', async () => {
+    const bindingRepository = {
+      listActiveForTasks: vi.fn().mockImplementation(async (taskIds: string[]) => [
+        buildAppliedProcessTemplate({
+          id: 'process_template_risk',
+          title: 'Risk review skill',
+          taskId: 'task_risk',
+        }),
+        buildAppliedProcessTemplate({
+          id: 'process_template_background',
+          title: 'Background checklist',
+          taskId: 'task_background',
+          bindingId: 'task_process_binding_background',
+        }),
+      ].filter((item) => taskIds.includes(item.taskId))),
+    };
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_risk',
+            title: 'High risk task',
+            state: 'running',
+            riskLevel: 'high',
+            riskNote: 'Deadline slipping',
+            nextStep: 'Escalate today',
+          }),
+          buildTask({
+            id: 'task_background',
+            title: 'Background task',
+            state: 'running',
+            nextStep: 'Continue normal work',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      { list: vi.fn().mockResolvedValue([]) } as never,
+      { list: vi.fn().mockResolvedValue([]) } as never,
+      { listRecent: vi.fn().mockResolvedValue([]) } as never,
+      { listActiveForTasks: vi.fn().mockResolvedValue([]) } as never,
+      { listRecent: vi.fn().mockResolvedValue([]) } as never,
+      () => null,
+      bindingRepository as never,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.briefFocusTasks?.map((task) => task.id)).toEqual(['task_risk']);
+    expect(bindingRepository.listActiveForTasks).toHaveBeenCalledWith(['task_risk']);
+    expect(homeData.processTemplateCandidates.map((item) => item.id)).toEqual(['process_template_risk']);
+  });
+
   it('does not recommend artifact follow-up when the artifact belongs to an inactive task', async () => {
     const service = new HomeBriefService(
       {

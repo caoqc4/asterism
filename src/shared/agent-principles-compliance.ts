@@ -83,6 +83,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'BriefFocusProjection carries rank, source action id, attention lane, and attention reason into focus-card data so Brief can explain inclusion without a page-local sorter.',
       'BriefExecutor consumes HomeBriefData.briefFocusTasks and briefAttention so generated or fallback briefs preserve the same visible focus list, display-limit, and attention-boundary wording.',
       'BriefProcessTemplateSelector includes HomeBriefData.briefFocusTasks when deciding whether method templates should influence a generated brief.',
+      'Brief process-template candidates are built from visible Brief focus tasks instead of every active task.',
       'Brief, Decision, and Run process-template selectors share selection normalization, so skipped or invalid model selections never retain selected templates.',
       'buildAgentWorkingContext and buildRuntimeContextManifest project task state, sources with freshness metadata, artifacts, files, timeline, and work habits.',
       'RuntimeCapabilitySnapshot can be included in RuntimeContextManifest so model, workspace, flags, and tool scaffold state become explicit context assembly inputs.',

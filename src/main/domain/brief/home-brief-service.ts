@@ -840,17 +840,17 @@ export class HomeBriefService {
   }
 
   private async buildProcessTemplateCandidates(
-    activeTasks: TaskListItemRecord[],
+    candidateTasks: Array<Pick<TaskListItemRecord, 'id' | 'title'>>,
   ): Promise<BriefProcessTemplateCandidate[]> {
-    if (!this.taskProcessBindingRepository || activeTasks.length === 0) {
+    if (!this.taskProcessBindingRepository || candidateTasks.length === 0) {
       return [];
     }
 
     const appliedTemplates = await this.taskProcessBindingRepository.listActiveForTasks(
-      activeTasks.map((task) => task.id),
+      candidateTasks.map((task) => task.id),
     );
 
-    const taskTitleById = new Map(activeTasks.map((task) => [task.id, task.title]));
+    const taskTitleById = new Map(candidateTasks.map((task) => [task.id, task.title]));
     const aggregated = new Map<string, BriefProcessTemplateCandidate>();
 
     for (const item of appliedTemplates) {
@@ -1647,7 +1647,6 @@ export class HomeBriefService {
     const appliedTemplates = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
       : [];
-    const processTemplateCandidates = await this.buildProcessTemplateCandidates(activeTasks);
     const completionReadyTasks = activeTasks
       .filter((task) => {
         const progress = completionProgressByTaskId.get(task.id);
@@ -1713,6 +1712,7 @@ export class HomeBriefService {
       tasks: activeTaskSlices,
       recommendedActions,
     });
+    const processTemplateCandidates = await this.buildProcessTemplateCandidates(briefFocusTasks);
 
     const blockerReevaluationTaskIds = recentSourceContexts
       .filter((sourceContext) =>
