@@ -108,16 +108,20 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
       disabledReason: 'Browser operator is unavailable or not configured.',
     }),
   ];
-  const blockedReasons = surfaces
+  const safeSurfaces = surfaces.map((surface) => ({
+    ...surface,
+    reason: redactSafetyText(surface.reason),
+  }));
+  const blockedReasons = safeSurfaces
     .filter((surface) => surface.state !== 'configured' && surface.state !== 'approval_required')
     .map((surface) => `${surface.id}: ${surface.reason}`);
-  const secretExposureSafe = surfaces.every((surface) => !surface.exposesSecretValue);
+  const secretExposureSafe = safeSurfaces.every((surface) => !surface.exposesSecretValue);
 
   return {
-    surfaces,
+    surfaces: safeSurfaces,
     secretExposureSafe,
     blockedReasons,
-    summary: `configured=${surfaces.filter((surface) => surface.state === 'configured').length} / approvalRequired=${surfaces.filter((surface) => surface.state === 'approval_required').length} / blocked=${blockedReasons.length}`,
+    summary: `configured=${safeSurfaces.filter((surface) => surface.state === 'configured').length} / approvalRequired=${safeSurfaces.filter((surface) => surface.state === 'approval_required').length} / blocked=${blockedReasons.length}`,
   };
 }
 
@@ -159,4 +163,10 @@ function stateFromCapability(capability: CapabilityRegistryEntry): Configuration
   if (capability.status === 'unconfigured') return 'missing';
   if (capability.status === 'disabled') return 'disabled_by_flag';
   return 'disabled_by_policy';
+}
+
+function redactSafetyText(value: string): string {
+  return value
+    .replace(/\b(api[_ -]?key|token|secret|password|credential|refresh[_ -]?token|access[_ -]?token)\s*[:=]\s*[^,;\s]+/gi, '$1=[redacted]')
+    .replace(/\b(Bearer)\s+[A-Za-z0-9._~+/-]+=*/g, '$1 [redacted]');
 }

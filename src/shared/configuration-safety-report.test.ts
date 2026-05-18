@@ -102,6 +102,33 @@ describe('configuration safety report', () => {
     });
   });
 
+  it('redacts accidental secret-looking values from safety reasons', () => {
+    const report = buildConfigurationSafetyReport({
+      ...aiStatus(),
+      capabilityRegistry: [
+        {
+          id: 'external_access.connectors',
+          family: 'external_access',
+          label: 'External Access',
+          status: 'unconfigured',
+          configured: false,
+          summary: 'Gmail token=secret-token-1 is missing',
+          missingReason: 'Gmail access_token=short-lived-token; Authorization Bearer abc.def',
+          visibility: 'hidden',
+          access: 'read_only',
+          requiresApproval: true,
+          requiredGate: 'capability_probe',
+        },
+      ],
+    });
+    const reason = report.surfaces.find((surface) => surface.id === 'external_access.connectors')?.reason ?? '';
+
+    expect(reason).toContain('access_token=[redacted]');
+    expect(reason).toContain('Bearer [redacted]');
+    expect(reason).not.toContain('short-lived-token');
+    expect(report.blockedReasons.join('\n')).not.toContain('abc.def');
+  });
+
   it('keeps Skills and MCP safety states aligned with capability registry rows', () => {
     const base = aiStatus();
     const status = {
