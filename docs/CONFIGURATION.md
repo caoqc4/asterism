@@ -157,32 +157,21 @@ The planned production OAuth path is documented in
 desktop installed-app OAuth flow with system-browser authorization, loopback
 callback, refresh-token storage in keychain, access tokens kept short-lived, and
 continued task-bound connector ingestion. Gmail OAuth remains out of the default
-local acceptance gate until that flow is implemented and guarded by mocked and
-explicitly opted-in live validation.
-The first credential foundation is `GmailOAuthTokenStore`, which reserves the
-keychain account `external_access_gmail_refresh_token` for future OAuth refresh
-tokens. That store is not yet connected to Gmail network reads; the existing
-environment access-token path remains the only live Gmail connector path until
-the refresh service is implemented.
-`GmailOAuthService` now provides the local token-refresh primitive for that
-future path: it exchanges the stored refresh token for a short-lived access
-token on demand, avoids persisting access tokens, and keeps token response
-bodies out of error messages. It also creates desktop authorization URLs with
-PKCE/state and can exchange an authorization code for tokens while storing only
-the refresh token. `createGmailOAuthLoopbackListener` provides the local
-loopback callback receiver for that future browser flow: it listens on
-`127.0.0.1` with an ephemeral port, validates state, captures only the OAuth
-code, returns a close-browser page, and closes itself. These pieces are still
-not wired into UI actions. `createGmailOAuthAuthorizationSession` composes those
-pieces into a browser-flow session for future callers: it returns the
-authorization URL and completes only after the loopback callback is received and
-the code exchange stores the refresh token.
-`GmailOAuthService.disconnect()` provides the future disconnect primitive: it
-revokes the stored refresh token when one exists, always deletes the local
-keychain refresh token, and keeps revoke response bodies out of surfaced errors.
-`GmailConnectorAdapter` can accept an access-token provider for the future OAuth
-path. Status reads still do not refresh tokens or call Gmail; the provider is
-called only when task-bound source ingestion lists Gmail evidence.
+local acceptance gate until it has explicitly opted-in live validation.
+`GmailOAuthTokenStore` stores refresh tokens in the keychain account
+`external_access_gmail_refresh_token`. `GmailOAuthService` creates desktop
+authorization URLs with PKCE/state, exchanges authorization codes, refreshes
+short-lived access tokens on demand, and keeps token response bodies out of
+surfaced errors. `createGmailOAuthLoopbackListener` captures only the OAuth code
+and state on `127.0.0.1` with an ephemeral port, returns a close-browser page,
+and closes itself. `createGmailOAuthAuthorizationSession` composes those pieces
+into the browser-flow session used by the External Access page.
+`GmailOAuthService.disconnect()` revokes the stored refresh token when one
+exists, always deletes the local keychain refresh token, and keeps revoke
+response bodies out of surfaced errors. `GmailConnectorAdapter` can use the
+OAuth access-token provider; status reads still do not refresh tokens or call
+Gmail, and the provider is called only when task-bound source ingestion lists
+Gmail evidence.
 
 OAuth refresh-token wiring can be enabled for local development with:
 
@@ -194,8 +183,7 @@ TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_SECRET=
 When no static access token is configured, the connector factory can project a
 stored keychain refresh token as configured Gmail status without network
 probing. The refresh token is exchanged only during task-bound source-ingestion
-planning. The actual browser authorization and token-capture flow is still a
-future slice.
+planning.
 Main-process Gmail OAuth connect/disconnect entrypoints now exist behind
 explicit confirmation:
 
@@ -206,8 +194,10 @@ explicit confirmation:
   keychain refresh token, and emits `settings.changed` after local credentials
   are cleared.
 
-These entrypoints are not wired to visible UI controls yet. They do not mutate
-tasks, write task memory, or start background Gmail sync.
+The External Access page exposes Gmail as a system default optional item. It is
+visible by default but remains unauthorized until the user explicitly starts the
+OAuth flow. The connect/disconnect controls do not mutate tasks, write task
+memory, or start background Gmail sync.
 
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does
