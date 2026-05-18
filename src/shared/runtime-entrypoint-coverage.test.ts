@@ -203,6 +203,7 @@ describe('runtime entrypoint coverage', () => {
       'project.decompositionDraft',
       'run.continuePaused',
       'run.trigger',
+      'run.triggerAgentCli',
       'run.triggerCodeAgent',
       'run.triggerOperatorStarted',
       'settings.aiRuntimeConfig',

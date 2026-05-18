@@ -68,6 +68,7 @@ const api: ElectronApi = {
   listRuns: () => ipcRenderer.invoke('run:list'),
   getRunDetail: (runId) => ipcRenderer.invoke('run:getDetail', runId),
   triggerRun: (input) => ipcRenderer.invoke('run:trigger', input),
+  triggerAgentCliRun: (input) => ipcRenderer.invoke('run:triggerAgentCli', input),
   triggerCodeAgentRun: (input) => ipcRenderer.invoke('run:triggerCodeAgent', input),
   triggerOperatorStartedRun: (input) => ipcRenderer.invoke('run:triggerOperatorStarted', input),
   continuePausedRun: (runId) => ipcRenderer.invoke('run:continuePaused', runId),

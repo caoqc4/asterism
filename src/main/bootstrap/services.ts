@@ -24,6 +24,7 @@ import { DecisionService } from '../domain/decision/decision-service.js';
 import { ExternalAccessSourceIngestionService } from '../domain/external-access/external-access-source-ingestion-service.js';
 import { createExternalAccessStatusService } from '../domain/external-access/external-access-status-service.js';
 import { createCapabilityProductSurfaceStatusService } from '../domain/capability/capability-product-surface-status-service.js';
+import { AgentCliRunService } from '../domain/agent-cli/agent-cli-run-service.js';
 import { AgentSessionStore } from '../domain/run/agent-session-store.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
 import { BrowserEvidencePersister } from '../domain/run/browser-evidence-persister.js';
@@ -177,6 +178,14 @@ const operatorStartedRunService = new OperatorStartedRunService(
   runBrowserControlledLocalQaForOperatorStartedRun,
   runVerificationRepository,
 );
+const agentCliRunService = new AgentCliRunService(
+  taskService,
+  aiConfigService,
+  runRepository,
+  runStepRepository,
+  undefined,
+  runVerificationRepository,
+);
 const codeAgentRunService = new CodeAgentRunService(
   taskService,
   aiConfigService,
@@ -219,6 +228,7 @@ const services = {
   decisionService,
   runService,
   operatorStartedRunService,
+  agentCliRunService,
   codeAgentRunService,
   workHabitService,
   browserEvidencePersister,

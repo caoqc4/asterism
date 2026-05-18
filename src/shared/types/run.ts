@@ -3,6 +3,7 @@ import type { ArtifactRecord } from './artifact.js';
 import type { RuntimeEventRecord, RuntimeReplayGroup } from '../runtime-event-record.js';
 import type { TaskMemoryGuidanceState } from '../task-memory-guidance-state.js';
 import type { TaskMemoryWriteProposal } from '../task-memory-write-proposal.js';
+import type { AgentCliRuntimeId } from '../agent-cli-runtime-status.js';
 
 export type RunType = 'draft' | 'summarize' | 'agent';
 
@@ -100,4 +101,14 @@ export type CreateCodeAgentRunInput = {
   requestedChecks: CodeAgentAllowedCheck[];
   operatorConfirmed: boolean;
   useModelProducer?: boolean;
+};
+
+export type AgentCliRunSandboxMode = 'read-only' | 'workspace-write';
+
+export type CreateAgentCliRunInput = {
+  taskId: string;
+  prompt: string;
+  runtimeId?: AgentCliRuntimeId;
+  sandboxMode?: AgentCliRunSandboxMode;
+  operatorConfirmed: boolean;
 };
