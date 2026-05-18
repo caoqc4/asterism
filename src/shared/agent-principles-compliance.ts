@@ -121,6 +121,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SourceContextMemoryMetadata normalizes source role, credibility, duplicate, and sensitive-data signals before source-context creation or update reaches persistence.',
       'OperatorStartedRunService keeps browser evidence and local QA outside provider-visible context assembly only while providerCall=no and modelExposure=hidden.',
       'TaskMemoryRetrieval provides deterministic execution-memory ranking with include/caution/exclude reasons across task state, Task.md, Task Records, Decisions, sources, artifacts, task files, Work Habits, and process templates.',
+      'Process template apply/remove events retain binding action and note context so task-bound method changes remain auditable.',
       'RuntimeContextManifest consumes TaskMemoryRetrieval and formats its compact read-order summary for provider-visible step context.',
     ],
     gaps: [

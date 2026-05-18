@@ -581,7 +581,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_mutation',
       'pre_step',
     ],
-    notes: 'This is the service/IPC minimum for task-bound durable resource writes. Renderer panel flows and Agent tool writes may add post_step verification when they have durable-change recovery context.',
+    notes: 'This is the service/IPC minimum for task-bound durable resource writes. Process template apply/remove writes timeline events with binding action and note context. Renderer panel flows and Agent tool writes may add post_step verification when they have durable-change recovery context.',
   },
   {
     id: 'externalAccess.sourceIngestionPreview',

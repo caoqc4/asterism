@@ -3100,7 +3100,9 @@ describe('TaskService', () => {
       listActiveForTask: vi.fn().mockResolvedValue([]),
       apply: vi.fn().mockResolvedValue({
         action: 'created',
-        binding: buildAppliedProcessTemplateRecord(),
+        binding: buildAppliedProcessTemplateRecord({
+          bindingNote: 'Use for outreach drafting',
+        }),
       }),
       remove: vi.fn(),
     };
@@ -3116,17 +3118,21 @@ describe('TaskService', () => {
     const result = await service.applyProcessTemplate({
       taskId: 'task_1',
       templateId: 'process_template_1',
+      note: 'Use for outreach drafting',
     });
 
     expect(processBindings.apply).toHaveBeenCalledWith({
       taskId: 'task_1',
       templateId: 'process_template_1',
+      note: 'Use for outreach drafting',
     });
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'process_template.applied', {
       templateId: 'process_template_1',
       bindingId: 'task_process_binding_1',
       title: 'Outreach skill',
       kind: 'skill',
+      action: 'created',
+      note: 'Use for outreach drafting',
     });
     expect(result.bindingId).toBe('task_process_binding_1');
   });
@@ -3151,6 +3157,7 @@ describe('TaskService', () => {
       apply: vi.fn(),
       remove: vi.fn().mockResolvedValue(
         buildAppliedProcessTemplateRecord({
+          bindingNote: 'No longer fits current task',
           bindingStatus: 'removed',
           removedAt: '2026-01-02T00:00:00.000Z',
         }),
@@ -3173,6 +3180,7 @@ describe('TaskService', () => {
       bindingId: 'task_process_binding_1',
       title: 'Outreach skill',
       kind: 'skill',
+      note: 'No longer fits current task',
     });
     expect(result.bindingStatus).toBe('removed');
   });

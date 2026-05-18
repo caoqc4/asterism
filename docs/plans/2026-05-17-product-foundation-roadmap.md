@@ -523,7 +523,10 @@ visible Brief focus tasks, not every active task, so the selector is not asked
 to filter unrelated background templates. Brief, Decision, and Run template
 selectors also share one selection normalizer: templates are returned only when
 `shouldUse=true` and selected ids match active candidates, so model output
-cannot leave stale selected templates attached to a skipped selection.
+cannot leave stale selected templates attached to a skipped selection. Applying
+or removing a task-bound process template now records the binding action and
+binding note in task dynamics, keeping method changes auditable without adding
+another workflow.
 
 ## Recommended Execution Order
 

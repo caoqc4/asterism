@@ -1992,6 +1992,8 @@ export class TaskService {
         bindingId: result.binding.bindingId,
         title: result.binding.title,
         kind: result.binding.kind,
+        action: result.action,
+        note: result.binding.bindingNote,
       });
     }
 
@@ -2015,6 +2017,7 @@ export class TaskService {
       bindingId: removed.bindingId,
       title: removed.title,
       kind: removed.kind,
+      note: removed.bindingNote,
     });
 
     return removed;
