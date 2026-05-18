@@ -47,6 +47,33 @@ After adding the opt-in local inbox connector, `accept:product-surfaces:mac`
 was rerun and passed the External Access empty, fixture-connected, local-inbox,
 Decisions, and task-file packaged checks.
 
+Re-verified on 2026-05-18 after the capability-state and product-foundation
+follow-up changes:
+
+```bash
+npm run test
+npm run lint
+npm run build
+npm run diagnostics:canonical-data:optional
+npm run accept:agent-local
+npm run smoke:release:mac
+npm run accept:packaged-recovery:mac
+npm run accept:product-surfaces:mac
+npm run accept:sandbox-coding:model-producer-preflight
+npm run accept:release:mac-preflight
+```
+
+Result: passed for automated tests, type/build, canonical diagnostics,
+agent-local gates, packaged release smoke, packaged recovery smoke, and
+product-surface smoke. Canonical diagnostics reported
+`issues=0 / manualReview=0 / readOnly=0 / safeAutoRepair=0`. The model producer
+preflight returned the expected local `status=skip` because the opt-in model
+producer and sandbox-coding flags were not enabled. The macOS release preflight
+again returned `status=not-ready` because local Developer ID signing and Apple
+notarization credentials were not configured; it performed no signing,
+notarization, upload, Apple network request, live provider request, Docker
+probe, or workspace mutation.
+
 The release preflight completed with `status=not-ready` because the local
 machine does not have Developer ID signing or Apple notarization credentials
 configured; no signing, notarization, upload, Apple network request, live
