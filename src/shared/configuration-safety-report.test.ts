@@ -102,6 +102,25 @@ describe('configuration safety report', () => {
     });
   });
 
+  it('treats pending or errored External Access connectors as missing configuration, not disabled flags', () => {
+    const base = aiStatus();
+    const report = buildConfigurationSafetyReport({
+      ...base,
+      capabilityRegistry: buildCapabilityRegistry({
+        snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: base }),
+        productSurfaces: {
+          externalAccess: { connectedCount: 0, pendingCount: 1, errorCount: 1 },
+        },
+      }),
+    });
+
+    expect(report.surfaces.find((surface) => surface.id === 'external_access.connectors')).toMatchObject({
+      state: 'missing',
+      reason: 'External access connector authorization is pending or has errors.',
+      startupProbePolicy: 'manual_only',
+    });
+  });
+
   it('redacts accidental secret-looking values from safety reasons', () => {
     const report = buildConfigurationSafetyReport({
       ...aiStatus(),

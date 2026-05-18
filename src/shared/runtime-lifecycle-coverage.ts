@@ -530,6 +530,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'ConfigurationSafetyReport keeps provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in rather than startup side effects.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus, so retained settings/capability service consumers can read the shared safety projection without a separate UI path.',
       'AiConfigService feeds External Access, Skills, and MCP product-surface status into CapabilityRegistry, so default optional capability surfaces are structured disabled capabilities instead of unconnected deferred rows.',
+      'CapabilityRegistry treats pending or errored External Access connectors as unconfigured setup states instead of disabled feature-flag states.',
       'ExternalAccessStatusService provides a read-only connector status boundary, and AiConfigService feeds that status into CapabilityRegistry and ConfigurationSafetyReport.',
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
       'LocalInboxConnectorAdapter is the first concrete local read-only connector adapter: it is opt-in by environment variable, reads only supported local inbox files, and still produces ConnectorSourceIngestionPlan previews instead of direct SourceContext writes.',

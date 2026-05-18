@@ -294,13 +294,16 @@ function externalAccessCapability(
 ): CapabilityRegistryEntry {
   if (!status) return deferredCapability('external_access.connectors', 'External Access', 'external_access');
   const connected = status.connectedCount > 0;
+  const needsConfiguration = (status.pendingCount ?? 0) > 0 || (status.errorCount ?? 0) > 0;
   return {
     id: 'external_access.connectors',
     label: 'External Access',
     family: 'external_access',
-    status: connected ? 'available' : 'disabled',
+    status: connected ? 'available' : needsConfiguration ? 'unconfigured' : 'disabled',
     configured: connected,
-    missingReason: connected ? null : 'No external access connector is connected.',
+    missingReason: connected ? null : needsConfiguration
+      ? 'External access connector authorization is pending or has errors.'
+      : 'No external access connector is connected.',
     visibility: 'hidden',
     access: 'read_only',
     requiresApproval: true,

@@ -186,8 +186,9 @@ describe('capability registry', () => {
     });
 
     expect(registry.find((entry) => entry.id === 'external_access.connectors')).toMatchObject({
-      status: 'disabled',
+      status: 'unconfigured',
       visibility: 'hidden',
+      missingReason: 'External access connector authorization is pending or has errors.',
     });
     expect(registry.find((entry) => entry.id === 'skills.catalogue')).toMatchObject({
       status: 'unconfigured',

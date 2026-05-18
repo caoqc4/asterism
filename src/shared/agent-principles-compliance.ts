@@ -102,6 +102,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'ConfigurationSafetyReport marks provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus so existing settings/model/capability service consumers share one safety projection.',
       'AiConfigService feeds External Access, Skills, and MCP product-surface status into CapabilityRegistry, so default optional capability surfaces are structured disabled capabilities rather than deferred unknown rows.',
+      'CapabilityRegistry treats pending or errored External Access connectors as unconfigured setup states instead of disabled feature-flag states.',
       'ExternalAccessStatusService provides a read-only connector status boundary, and AiConfigService feeds that status into CapabilityRegistry and ConfigurationSafetyReport.',
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
       'ExternalAccessSourceIngestionService validates connector ingestion plans still belong to the selected task before preview or confirmed SourceContext creation.',
