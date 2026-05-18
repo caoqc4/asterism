@@ -453,6 +453,86 @@ function createMockApi() {
       localTokenCleared: true,
       errorReason: null,
     }),
+    previewExternalAccessSourceIngestion: vi.fn().mockResolvedValue({
+      taskId: 'task_risk',
+      createCount: 1,
+      reviewCount: 1,
+      skipCount: 0,
+      plans: [{
+        planId: 'connector:gmail:message_1',
+        decision: 'create',
+        trace: {
+          connectorId: 'gmail',
+          connectorName: 'Gmail',
+          externalId: 'message_1',
+          originLabel: 'Gmail:message_1',
+        },
+        sourceContext: {
+          taskId: 'task_risk',
+          title: '客户确认邮件',
+          kind: 'doc',
+          isKey: false,
+          uri: 'gmail://message/message_1',
+          content: null,
+          note: 'Connector source: Gmail:message_1',
+          capturedAt: now,
+          batchId: 'connector:gmail:message_1',
+          sourceRole: 'raw',
+          credibility: 'verified',
+          isDuplicate: false,
+          containsSensitiveData: false,
+        },
+        quality: {
+          decision: 'include',
+          reason: 'traceable',
+          traceable: true,
+          credibility: 'verified',
+          duplicate: false,
+          sensitive: false,
+          summary: '客户确认邮件具备基本追溯信息，可以作为任务上下文来源。',
+        },
+        reviewReason: null,
+      }, {
+        planId: 'connector:gmail:message_2',
+        decision: 'review',
+        trace: {
+          connectorId: 'gmail',
+          connectorName: 'Gmail',
+          externalId: 'message_2',
+          originLabel: 'Gmail:message_2',
+        },
+        sourceContext: {
+          taskId: 'task_risk',
+          title: '含敏感信息邮件',
+          kind: 'doc',
+          isKey: false,
+          uri: 'gmail://message/message_2',
+          content: 'token=secret',
+          note: 'Connector source: Gmail:message_2',
+          capturedAt: now,
+          batchId: 'connector:gmail:message_2',
+          sourceRole: 'raw',
+          credibility: 'unknown',
+          isDuplicate: false,
+          containsSensitiveData: true,
+        },
+        quality: {
+          decision: 'caution',
+          reason: 'sensitive',
+          traceable: true,
+          credibility: 'unknown',
+          duplicate: false,
+          sensitive: true,
+          summary: '含敏感信息邮件可能包含敏感信息，纳入上下文前应确认可见范围。',
+        },
+        reviewReason: '含敏感信息邮件可能包含敏感信息，纳入上下文前应确认可见范围。',
+      }],
+    }),
+    commitExternalAccessSourceIngestion: vi.fn().mockResolvedValue({
+      taskId: 'task_risk',
+      created: [],
+      skippedPlanIds: [],
+    }),
     listTasks: vi.fn().mockResolvedValue(tasks),
     getTaskHierarchyConsistency: vi.fn().mockResolvedValue({
       consistent: true,
@@ -1024,6 +1104,31 @@ describe('App redesign v1', () => {
     expect(harness.api.disconnectGmailOAuth).toHaveBeenCalledWith({ confirmed: true });
     expect(await screen.findByText('Gmail 已断开。')).toBeTruthy();
     expect(confirmSpy).toHaveBeenCalledTimes(1);
+    confirmSpy.mockRestore();
+  });
+
+  it('reviews and commits External Access source ingestion from the connections page', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /External Access/ }));
+    await user.click(await screen.findByRole('button', { name: '预览来源' }));
+
+    expect(harness.api.previewExternalAccessSourceIngestion).toHaveBeenCalledWith({ taskId: 'task_risk' });
+    expect(await screen.findByText('客户确认邮件')).toBeTruthy();
+    expect(screen.getByText('含敏感信息邮件')).toBeTruthy();
+    expect(screen.getByText('可写入')).toBeTruthy();
+    expect(screen.getByText('需复核')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '确认写入' }));
+
+    expect(harness.api.commitExternalAccessSourceIngestion).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      planIds: ['connector:gmail:message_1', 'connector:gmail:message_2'],
+      confirmed: true,
+    });
+    expect(await screen.findByText(/已写入 0 条来源/)).toBeTruthy();
     confirmSpy.mockRestore();
   });
 

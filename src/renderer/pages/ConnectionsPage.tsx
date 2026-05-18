@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { CapabilityRegistryEntry } from '@shared/capability-registry';
+import type { ConnectorSourceIngestionPlan } from '@shared/connector-source-ingestion';
 import type { ConfigurationSafetySurface } from '@shared/configuration-safety-report';
 import type { ExternalAccessConnectorRecord } from '@shared/external-access-status';
 import type { AiConfigStatus } from '@shared/types/settings';
+import type { TaskListItemRecord } from '@shared/types/task';
 
 type SourceStatus = 'connected' | 'error' | 'pending';
 
@@ -42,10 +44,19 @@ export function ConnectionsPage() {
   const [sources, setSources] = useState<ConnectedSource[]>([]);
   const [configStatus, setConfigStatus] = useState<AiConfigStatus | null>(null);
   const [gmailBusy, setGmailBusy] = useState(false);
+  const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState('');
+  const [sourcePlans, setSourcePlans] = useState<ConnectorSourceIngestionPlan[]>([]);
+  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
+  const [sourceReviewBusy, setSourceReviewBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
     reloadConfigStatus();
+    window.api?.listTasks().then((items) => {
+      setTasks(items);
+      setSelectedTaskId((current) => current || items[0]?.id || '');
+    }).catch(() => {});
   }, []);
 
   function reloadConfigStatus() {
@@ -88,6 +99,59 @@ export function ConnectionsPage() {
     } finally {
       setGmailBusy(false);
     }
+  }
+
+  async function previewSourceIngestion() {
+    if (sourceReviewBusy || !selectedTaskId || !window.api?.previewExternalAccessSourceIngestion) return;
+    setSourceReviewBusy(true);
+    setActionMessage(null);
+    try {
+      const result = await window.api.previewExternalAccessSourceIngestion({ taskId: selectedTaskId });
+      setSourcePlans(result.plans);
+      setSelectedPlanIds(result.plans
+        .filter((plan) => plan.decision !== 'skip')
+        .map((plan) => plan.planId));
+      setActionMessage(result.plans.length > 0
+        ? `找到 ${result.createCount} 条可写入、${result.reviewCount} 条需复核、${result.skipCount} 条跳过。`
+        : '当前任务没有可入库的新外部来源。');
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : '外部来源预览失败。');
+    } finally {
+      setSourceReviewBusy(false);
+    }
+  }
+
+  async function commitSourceIngestion() {
+    if (
+      sourceReviewBusy
+      || !selectedTaskId
+      || selectedPlanIds.length === 0
+      || !window.api?.commitExternalAccessSourceIngestion
+    ) return;
+    const confirmed = window.confirm('将选中的外部来源写入当前任务记忆。写入后会作为任务上下文来源被后续 AI 读取。是否继续？');
+    if (!confirmed) return;
+    setSourceReviewBusy(true);
+    setActionMessage(null);
+    try {
+      const result = await window.api.commitExternalAccessSourceIngestion({
+        taskId: selectedTaskId,
+        planIds: selectedPlanIds,
+        confirmed: true,
+      });
+      setSourcePlans((plans) => plans.filter((plan) => !selectedPlanIds.includes(plan.planId)));
+      setSelectedPlanIds([]);
+      setActionMessage(`已写入 ${result.created.length} 条来源，跳过 ${result.skippedPlanIds.length} 条。`);
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : '外部来源入库失败。');
+    } finally {
+      setSourceReviewBusy(false);
+    }
+  }
+
+  function togglePlanSelection(planId: string) {
+    setSelectedPlanIds((current) => current.includes(planId)
+      ? current.filter((id) => id !== planId)
+      : [...current, planId]);
   }
 
   const externalSafety = configStatus?.configurationSafetyReport?.surfaces
@@ -176,6 +240,72 @@ export function ConnectionsPage() {
         <ExternalAccessSafetyStrip safety={externalSafety} capability={externalCapability} />
       </section>
 
+      <section className="ctx-section">
+        <div className="ctx-section-header">
+          <div>
+            <div className="ctx-section-title">来源入库复核</div>
+            <div className="ctx-section-desc">先按任务预览外部信号，再确认写入任务记忆</div>
+          </div>
+          <button
+            className="btn sm"
+            disabled={sourceReviewBusy || !selectedTaskId || !window.api?.previewExternalAccessSourceIngestion}
+            onClick={previewSourceIngestion}
+          >
+            {sourceReviewBusy ? '检查中' : '预览来源'}
+          </button>
+        </div>
+        <div className="connections-review-controls">
+          <label htmlFor="external-source-task">目标任务</label>
+          <select
+            id="external-source-task"
+            className="source-kind-select"
+            value={selectedTaskId}
+            onChange={(event) => {
+              setSelectedTaskId(event.target.value);
+              setSourcePlans([]);
+              setSelectedPlanIds([]);
+            }}
+          >
+            {tasks.length === 0 && <option value="">没有可选任务</option>}
+            {tasks.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}
+          </select>
+        </div>
+        <div className="connections-review-list">
+          {sourcePlans.length === 0 ? (
+            <div className="ctx-empty">
+              <p>尚未预览外部来源。</p>
+              <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                预览只读取候选信号，不会写入任务记忆。
+              </p>
+            </div>
+          ) : sourcePlans.map((plan) => (
+            <label key={plan.planId} className={`connections-review-row ${plan.decision}`}>
+              <input
+                type="checkbox"
+                checked={selectedPlanIds.includes(plan.planId)}
+                disabled={plan.decision === 'skip'}
+                onChange={() => togglePlanSelection(plan.planId)}
+              />
+              <span className={`connections-review-decision ${plan.decision}`}>{sourceDecisionLabel(plan.decision)}</span>
+              <span className="connections-review-body">
+                <strong>{plan.sourceContext.title}</strong>
+                <span>{plan.reviewReason ?? plan.quality.summary}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="connections-review-footer">
+          <span>{selectedPlanIds.length} 条已选择</span>
+          <button
+            className="btn sm primary"
+            disabled={sourceReviewBusy || selectedPlanIds.length === 0 || !window.api?.commitExternalAccessSourceIngestion}
+            onClick={commitSourceIngestion}
+          >
+            确认写入
+          </button>
+        </div>
+      </section>
+
       {/* Available to connect */}
       <section className="ctx-section">
         <div className="ctx-section-header">
@@ -203,6 +333,12 @@ export function ConnectionsPage() {
       </section>
     </div>
   );
+}
+
+function sourceDecisionLabel(decision: ConnectorSourceIngestionPlan['decision']): string {
+  if (decision === 'create') return '可写入';
+  if (decision === 'review') return '需复核';
+  return '跳过';
 }
 
 function connectorToConnectedSource(source: ExternalAccessConnectorRecord): ConnectedSource {
