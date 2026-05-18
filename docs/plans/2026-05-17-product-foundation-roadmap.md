@@ -328,6 +328,10 @@ canonical fields, orphan task references, task-scoped Decisions without a valid
 task binding, task-bound blocker/dependency orphan references, and blocker
 source-context references that point at missing source materials, giving
 migration and repair work a shared checklist before any writer mutates data.
+Task hierarchy diagnostics now also report missing parent/child endpoints and
+parent-child backlink mismatches: safe missing parent-side child backlinks are
+classified as mechanical repair candidates, while conflicting or orphaned
+hierarchy links route to Decisions manual review.
 
 ## Package E: Configuration, Safety, And Auditability
 

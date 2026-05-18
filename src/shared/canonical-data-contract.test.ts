@@ -225,6 +225,54 @@ describe('canonical data contract', () => {
           createdAt: '2026-05-17T00:00:00.000Z',
           updatedAt: '2026-05-17T00:00:00.000Z',
         },
+        {
+          id: 'task_parent',
+          title: 'Parent task',
+          summary: null,
+          state: 'running',
+          taskType: 'project',
+          taskFacets: ['project'],
+          parentTaskId: null,
+          childTaskIds: [],
+          nextStep: 'Continue',
+          waitingReason: null,
+          riskLevel: 'none',
+          riskNote: null,
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+        {
+          id: 'task_child',
+          title: 'Child task',
+          summary: null,
+          state: 'planned',
+          taskType: 'simple',
+          taskFacets: ['simple'],
+          parentTaskId: 'task_parent',
+          childTaskIds: [],
+          nextStep: 'Continue',
+          waitingReason: null,
+          riskLevel: 'none',
+          riskNote: null,
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+        {
+          id: 'task_orphan_parent',
+          title: 'Missing parent',
+          summary: null,
+          state: 'planned',
+          taskType: 'simple',
+          taskFacets: ['simple'],
+          parentTaskId: 'missing_parent_task',
+          childTaskIds: [],
+          nextStep: 'Continue',
+          waitingReason: null,
+          riskLevel: 'none',
+          riskNote: null,
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
       ],
       taskFiles: [
         {
@@ -322,6 +370,20 @@ describe('canonical data contract', () => {
     expect(result.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({
         code: 'orphan_task_reference',
+        domain: 'task_hierarchy',
+        recordId: 'task_orphan_parent',
+        field: 'parentTaskId',
+        repairRoute: 'decision_manual_review',
+      }),
+      expect.objectContaining({
+        code: 'hierarchy_backlink_mismatch',
+        domain: 'task_hierarchy',
+        recordId: 'task_child',
+        field: 'parentTaskId',
+        repairRoute: 'mechanical_auto_repair',
+      }),
+      expect.objectContaining({
+        code: 'orphan_task_reference',
         domain: 'task_file',
         recordId: 'file_1',
         field: 'taskId',
@@ -359,6 +421,7 @@ describe('canonical data contract', () => {
       }),
     ]));
     expect(result.summary).toContain('canonicalDataDiagnostics issues=');
+    expect(result.safeAutoRepairCount).toBeGreaterThan(0);
     expect(result.manualReviewCount).toBeGreaterThan(0);
     expect(result.readOnlyDiagnosticCount).toBeGreaterThan(0);
   });

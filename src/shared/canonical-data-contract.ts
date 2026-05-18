@@ -43,6 +43,7 @@ export type CanonicalDataContract = {
 
 export type CanonicalDataDiagnosticIssueCode =
   | 'missing_canonical_field'
+  | 'hierarchy_backlink_mismatch'
   | 'orphan_task_reference'
   | 'orphan_source_reference'
   | 'missing_task_binding';
@@ -465,6 +466,7 @@ export function evaluateCanonicalDataDiagnostics(
     ...missingCanonicalFieldIssues('task_dynamic', input.taskDynamics ?? []),
     ...missingCanonicalFieldIssues('work_habit', input.workHabits ?? []),
     ...missingCanonicalFieldIssues('process_template', input.processTemplates ?? []),
+    ...taskHierarchyReferenceIssues(input.tasks ?? [], taskIds),
     ...orphanTaskReferenceIssues('task_file', input.taskFiles ?? [], taskIds),
     ...orphanTaskReferenceIssues('source_context', input.sourceContexts ?? [], taskIds),
     ...orphanTaskReferenceIssues('artifact', input.artifacts ?? [], taskIds),
@@ -505,6 +507,80 @@ function missingCanonicalFieldIssues(
       repairRoute: contract.repairRoute,
       message: `${domain} record is missing canonical field ${field}; use ${contract.repairRoute} before relying on legacy fallback.`,
     })));
+}
+
+function taskHierarchyReferenceIssues(
+  tasks: CanonicalDataDiagnosticRecord[],
+  taskIds: Set<string>,
+): CanonicalDataDiagnosticIssue[] {
+  const taskById = new Map(tasks
+    .map((task, index) => [stringField(task, 'id'), { task, index }] as const)
+    .filter((entry): entry is readonly [string, { task: CanonicalDataDiagnosticRecord; index: number }] => Boolean(entry[0])));
+  const issues: CanonicalDataDiagnosticIssue[] = [];
+
+  for (const { task, index } of taskById.values()) {
+    const taskId = stringField(task, 'id');
+    if (!taskId) continue;
+
+    const parentTaskId = stringField(task, 'parentTaskId');
+    if (parentTaskId) {
+      const parent = taskById.get(parentTaskId)?.task;
+      if (!parent) {
+        issues.push({
+          code: 'orphan_task_reference',
+          domain: 'task_hierarchy',
+          recordId: recordId(task, index),
+          field: 'parentTaskId',
+          severity: 'error',
+          repairRoute: 'decision_manual_review',
+          message: `task_hierarchy record references missing parent task ${parentTaskId}.`,
+        });
+      } else if (!arrayField(parent, 'childTaskIds').includes(taskId)) {
+        issues.push({
+          code: 'hierarchy_backlink_mismatch',
+          domain: 'task_hierarchy',
+          recordId: recordId(task, index),
+          field: 'parentTaskId',
+          severity: 'warning',
+          repairRoute: 'mechanical_auto_repair',
+          message: `task_hierarchy child ${taskId} points to parent ${parentTaskId}, but the parent childTaskIds list does not include the child.`,
+        });
+      }
+    }
+
+    for (const childTaskId of arrayField(task, 'childTaskIds')) {
+      const child = taskById.get(childTaskId)?.task;
+      if (!taskIds.has(childTaskId) || !child) {
+        issues.push({
+          code: 'orphan_task_reference',
+          domain: 'task_hierarchy',
+          recordId: recordId(task, index),
+          field: 'childTaskIds',
+          severity: 'error',
+          repairRoute: 'decision_manual_review',
+          message: `task_hierarchy parent ${taskId} references missing child task ${childTaskId}.`,
+        });
+        continue;
+      }
+
+      const childParentTaskId = stringField(child, 'parentTaskId');
+      if (childParentTaskId !== taskId) {
+        issues.push({
+          code: 'hierarchy_backlink_mismatch',
+          domain: 'task_hierarchy',
+          recordId: recordId(task, index),
+          field: 'childTaskIds',
+          severity: 'warning',
+          repairRoute: 'decision_manual_review',
+          message: childParentTaskId
+            ? `task_hierarchy parent ${taskId} lists child ${childTaskId}, but the child points to parent ${childParentTaskId}.`
+            : `task_hierarchy parent ${taskId} lists child ${childTaskId}, but the child has no parentTaskId backlink.`,
+        });
+      }
+    }
+  }
+
+  return issues;
 }
 
 function orphanTaskReferenceIssues(
@@ -595,6 +671,12 @@ function orphanBlockerSourceReferenceIssues(
 function stringField(record: CanonicalDataDiagnosticRecord, field: string): string | null {
   const value = record[field];
   return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function arrayField(record: CanonicalDataDiagnosticRecord, field: string): string[] {
+  const value = record[field];
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
 }
 
 function hasValue(value: unknown): boolean {
