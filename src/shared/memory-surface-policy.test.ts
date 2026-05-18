@@ -61,6 +61,7 @@ describe('memory surface policy', () => {
     })).toMatchObject({
       surface: 'ai_output',
       category: 'generated_output',
+      writePolicy: 'generated_output_writer',
       reusePolicy: 'read_as_generated_context',
       requiresQualityMetadata: false,
     });

@@ -588,7 +588,8 @@ Start with Package A, but keep the slice narrow:
    Initial implementation: `MemorySurfacePolicy` maps runtime surfaces to
    recovery memory, evidence source, generated output, user artifact,
    supporting file, decision boundary, execution event, cross-task rule, or
-   discussion-only.
+   discussion-only. AI output uses its own generated-output write policy
+   instead of reusing source-material capture semantics.
 3. Add regression tests for the known confusing cases:
    - AI output vs source material;
    - artifact vs ordinary local file;

@@ -20,6 +20,7 @@ export type MemorySurfaceCategory =
 export type MemorySurfaceWritePolicy =
   | 'dedicated_evaluator'
   | 'explicit_source_capture'
+  | 'generated_output_writer'
   | 'artifact_writer'
   | 'ordinary_file_writer'
   | 'decision_service'
@@ -84,7 +85,7 @@ const SURFACE_POLICY: Record<RuntimeSurfaceKind, Omit<MemorySurfacePolicy, 'file
   },
   ai_output: {
     category: 'generated_output',
-    writePolicy: 'explicit_source_capture',
+    writePolicy: 'generated_output_writer',
     reusePolicy: 'read_as_generated_context',
     requiresTaskContext: true,
     requiresExplicitCreation: true,

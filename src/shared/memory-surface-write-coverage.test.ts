@@ -44,11 +44,19 @@ describe('memory surface write coverage', () => {
     }
   });
 
-  it('does not let source or artifact writers masquerade as ordinary files', () => {
+  it('does not let source, AI output, or artifact writers masquerade as ordinary files', () => {
     const sourceEntrypoints = memorySurfaceWriteEntrypoints()
-      .filter((entrypoint) => entrypoint.surfaces.some((surface) => surface === 'source_material' || surface === 'ai_output'));
+      .filter((entrypoint) => entrypoint.surfaces.includes('source_material'));
     for (const entrypoint of sourceEntrypoints) {
       expect(entrypoint.writePolicies).toContain('explicit_source_capture');
+      expect(entrypoint.writePolicies).not.toContain('ordinary_file_writer');
+      expect(entrypoint.guards).toContain('runtime_surface_routing');
+    }
+
+    const aiOutputEntrypoints = memorySurfaceWriteEntrypoints()
+      .filter((entrypoint) => entrypoint.surfaces.includes('ai_output'));
+    for (const entrypoint of aiOutputEntrypoints) {
+      expect(entrypoint.writePolicies).toContain('generated_output_writer');
       expect(entrypoint.writePolicies).not.toContain('ordinary_file_writer');
       expect(entrypoint.guards).toContain('runtime_surface_routing');
     }

@@ -189,7 +189,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskMemoryGuidanceState distinguishes unresolved task-memory guidance from completed Task.md or Task Record writes.',
       'TaskMemoryGuidanceState tracks Task.md and Task Record guidance per target so one newer recommendation cannot mask another pending memory surface.',
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
-      'Memory-surface write coverage tests keep recovery memory behind dedicated evaluators, source/AI output behind explicit source capture, and artifacts behind artifact writers.',
+      'Memory-surface write coverage tests keep recovery memory behind dedicated evaluators, source material behind explicit source capture, AI output behind generated-output writers, and artifacts behind artifact writers.',
       'MemorySurfaceWriteCoverage marks structured task-file, source-context, artifact, and Decision writes with canonical_write_validation so future write surfaces cannot claim coverage while bypassing canonical field checks.',
       'Source-context metadata tests keep unknown credibility explicit, detect sensitive content, preserve existing sensitivity flags, and keep generated task records in digest role.',
       'Connector source ingestion tests keep future connector evidence behind trace, capturedAt, duplicate, sensitivity, and credibility planning.',
