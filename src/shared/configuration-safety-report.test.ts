@@ -113,7 +113,7 @@ describe('configuration safety report', () => {
           status: 'unconfigured',
           configured: false,
           summary: 'Gmail token=secret-token-1 is missing',
-          missingReason: 'Gmail access_token=short-lived-token; Authorization Bearer abc.def',
+          missingReason: 'Gmail accessToken=short-lived-token; apiKey=raw-key; Authorization Bearer abc.def',
           visibility: 'hidden',
           access: 'read_only',
           requiresApproval: true,
@@ -123,9 +123,11 @@ describe('configuration safety report', () => {
     });
     const reason = report.surfaces.find((surface) => surface.id === 'external_access.connectors')?.reason ?? '';
 
-    expect(reason).toContain('access_token=[redacted]');
+    expect(reason).toContain('accessToken=[redacted]');
+    expect(reason).toContain('apiKey=[redacted]');
     expect(reason).toContain('Bearer [redacted]');
     expect(reason).not.toContain('short-lived-token');
+    expect(reason).not.toContain('raw-key');
     expect(report.blockedReasons.join('\n')).not.toContain('abc.def');
   });
 

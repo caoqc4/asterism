@@ -390,8 +390,9 @@ approval-required; records whether approval is needed; and marks startup probe
 policy as never, safe-read-only, or manual-only. API key state only reports the
 source class (`env`/`keychain`/missing) and never exposes secret values.
 Safety report reasons also redact secret-looking token, API key, credential,
-and bearer values as a final renderer/model-facing boundary, even if an
-upstream capability reason accidentally includes one.
+and bearer values, including common snake-case and camel-case key names, as a
+final renderer/model-facing boundary, even if an upstream capability reason
+accidentally includes one.
 Provider spend, sandbox, browser, and external-service checks remain manual or
 explicitly opted in.
 `AiConfigService` now attaches this report to `AiConfigStatus`, so existing

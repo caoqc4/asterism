@@ -95,7 +95,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'CapabilityRegistry maps Skills, MCP, and browser/operator scaffold families into hidden reserved/unconfigured rows when product-surface status is absent.',
       'CapabilityRegistry can accept product-surface status for External Access, Skills, MCP, and browser/operator capabilities without making those surfaces model-visible by default.',
       'ConfigurationSafetyReport normalizes AiConfigStatus and CapabilityRegistry into safety-facing configuration states without exposing API key values.',
-      'ConfigurationSafetyReport redacts secret-looking token, API key, credential, and bearer values from safety reasons before they can reach renderer or model-facing summaries.',
+      'ConfigurationSafetyReport redacts secret-looking token, API key, credential, bearer, and common camel-case secret values from safety reasons before they can reach renderer or model-facing summaries.',
       'ConfigurationSafetyReport marks provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in.',
       'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus so existing settings/model/capability service consumers share one safety projection.',
       'AiConfigService feeds External Access, Skills, and MCP product-surface status into CapabilityRegistry, so default optional capability surfaces are structured disabled capabilities rather than deferred unknown rows.',

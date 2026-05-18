@@ -167,6 +167,6 @@ function stateFromCapability(capability: CapabilityRegistryEntry): Configuration
 
 function redactSafetyText(value: string): string {
   return value
-    .replace(/\b(api[_ -]?key|token|secret|password|credential|refresh[_ -]?token|access[_ -]?token)\s*[:=]\s*[^,;\s]+/gi, '$1=[redacted]')
+    .replace(/\b(api[_ -]?key|apiKey|token|secret|password|credential|refresh[_ -]?token|refreshToken|access[_ -]?token|accessToken)\s*[:=]\s*[^,;\s]+/gi, '$1=[redacted]')
     .replace(/\b(Bearer)\s+[A-Za-z0-9._~+/-]+=*/g, '$1 [redacted]');
 }
