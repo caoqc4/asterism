@@ -363,7 +363,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     status: 'partial',
     priority: 'p1',
     implementedBy: [
-      'Task.md is classified as task state and Task.md edits sync back to the structured task record.',
+      'Task.md has a dedicated task_md memory surface, separate from structured task state, and Task.md edits sync back to the structured task record.',
       'RightPanel can ensure Task.md exists and reference phase records from task memory.',
       'RightPanel important-file reference writes are gated by TaskMdUpdateNeedEvaluation.',
       'TasksPage direct Task.md saves are gated by TaskMdUpdateNeedEvaluation.',

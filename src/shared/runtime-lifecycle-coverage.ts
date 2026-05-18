@@ -253,7 +253,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'MemorySurfacePolicy maps each runtime surface to a stable memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
       'MemorySurfacePolicy keeps AI output on a generated-output write policy instead of reusing the source-material capture policy.',
       'MemorySurfaceWriteCoverage registers retained write entrypoints for Task.md, Task Records, task files, source contexts, AI output, artifacts, run steps, Decisions, and Work Habit proposals.',
-      'MemorySurfaceWriteCoverage binds retained memory-write IPC channels for task files, source contexts, artifacts, Decisions, and Work Habits to the same surface coverage matrix.',
+      'MemorySurfaceWriteCoverage binds retained memory-write IPC channels for task files, source contexts, External Access source-ingestion commits, artifacts, Decisions, and Work Habits to the same surface coverage matrix.',
       'MemorySurfaceWriteCoverage marks structured task-file, source-context, artifact, and Decision writes with canonical_write_validation so future write surfaces cannot claim coverage while bypassing canonical field checks.',
       'Task file, source context, artifact, Decision, and Work Habit creation paths use shared normalization.',
       'Tasks file projections keep ordinary task files separate from artifacts while preserving Task.md, Task Records, AI output, source material, and artifact classes.',
