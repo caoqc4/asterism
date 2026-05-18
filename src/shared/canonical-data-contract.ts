@@ -43,6 +43,7 @@ export type CanonicalDataContract = {
 
 export type CanonicalDataDiagnosticIssueCode =
   | 'missing_canonical_field'
+  | 'stale_legacy_fallback'
   | 'hierarchy_backlink_mismatch'
   | 'orphan_task_reference'
   | 'orphan_source_reference'
@@ -466,6 +467,9 @@ export function evaluateCanonicalDataDiagnostics(
     ...missingCanonicalFieldIssues('task_dynamic', input.taskDynamics ?? []),
     ...missingCanonicalFieldIssues('work_habit', input.workHabits ?? []),
     ...missingCanonicalFieldIssues('process_template', input.processTemplates ?? []),
+    ...staleLegacyFallbackIssues('task_hierarchy', input.tasks ?? []),
+    ...staleLegacyFallbackIssues('source_context', input.sourceContexts ?? []),
+    ...staleLegacyFallbackIssues('task_dynamic', input.taskDynamics ?? []),
     ...taskHierarchyReferenceIssues(input.tasks ?? [], taskIds),
     ...orphanTaskReferenceIssues('task_file', input.taskFiles ?? [], taskIds),
     ...orphanTaskReferenceIssues('source_context', input.sourceContexts ?? [], taskIds),
@@ -489,6 +493,28 @@ export function evaluateCanonicalDataDiagnostics(
     readOnlyDiagnosticCount,
     summary: `canonicalDataDiagnostics issues=${issues.length} / manualReview=${manualReviewCount} / readOnly=${readOnlyDiagnosticCount} / safeAutoRepair=${safeAutoRepairCount}`,
   };
+}
+
+function staleLegacyFallbackIssues(
+  domain: CanonicalDomain,
+  records: CanonicalDataDiagnosticRecord[],
+): CanonicalDataDiagnosticIssue[] {
+  const contract = contractForCanonicalDomain(domain);
+  if (!contract.legacyFallbacks.length) return [];
+
+  return records.flatMap((record, index) => contract.legacyFallbacks.flatMap((fallback) => {
+    if (!Object.prototype.hasOwnProperty.call(record, fallback.legacyField)) return [];
+    if (!Object.prototype.hasOwnProperty.call(record, fallback.replacesCanonicalField)) return [];
+    return [{
+      code: 'stale_legacy_fallback' as const,
+      domain,
+      recordId: recordId(record, index),
+      field: fallback.legacyField,
+      severity: 'info' as const,
+      repairRoute: 'read_only_diagnostic' as const,
+      message: `${domain} record still carries legacy fallback field ${fallback.legacyField} even though canonical field ${fallback.replacesCanonicalField} is present; ignore the legacy field and remove it during migration cleanup.`,
+    }];
+  }));
 }
 
 function missingCanonicalFieldIssues(

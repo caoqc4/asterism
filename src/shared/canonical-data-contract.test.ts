@@ -75,6 +75,37 @@ describe('canonical data contract', () => {
     })).toBe(false);
   });
 
+  it('diagnoses stale legacy hierarchy fallback fields when canonical fields are present', () => {
+    const result = evaluateCanonicalDataDiagnostics({
+      tasks: [{
+        id: 'task_1',
+        title: 'Task',
+        summary: null,
+        state: 'running',
+        taskType: 'project',
+        taskFacets: ['project'],
+        parentTaskId: null,
+        childTaskIds: [],
+        nextStep: 'Continue',
+        waitingReason: null,
+        riskLevel: 'none',
+        riskNote: null,
+        createdAt: '2026-05-17T00:00:00.000Z',
+        updatedAt: '2026-05-17T00:00:00.000Z',
+        'renderer.localTaskAttributes.parentTaskId': 'legacy_parent',
+      }],
+    });
+
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'stale_legacy_fallback',
+        domain: 'task_hierarchy',
+        field: 'renderer.localTaskAttributes.parentTaskId',
+        repairRoute: 'read_only_diagnostic',
+      }),
+    ]));
+  });
+
   it('keeps source role keyword fallback below explicit sourceRole authority', () => {
     expect(legacyFallbacksForDomain('source_context')).toEqual([
       expect.objectContaining({
