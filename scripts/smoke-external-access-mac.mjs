@@ -47,6 +47,14 @@ async function assertExternalAccessSurface(page) {
   await page.getByText('探测策略').waitFor();
   await page.getByText('入库边界').waitFor();
   await page.getByText('先质检，再确认').waitFor();
+  await page.getByText('来源入库复核').waitFor();
+  await page.getByText('没有可选任务').waitFor();
+  await page.getByText('尚未预览外部来源。').waitFor();
+  const previewButton = page.getByRole('button', { name: '预览来源' });
+  await previewButton.waitFor();
+  if (!(await previewButton.isDisabled())) {
+    throw new Error('External Access source preview should stay disabled without a target task.');
+  }
   await page.getByText(/未接入|未连接|已关闭|未知/).first().waitFor();
   await page.getByRole('button', { name: '+ 连接来源' }).waitFor();
   const connectButton = page.getByRole('button', { name: '+ 连接来源' });
