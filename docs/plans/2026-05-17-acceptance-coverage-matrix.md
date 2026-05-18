@@ -40,7 +40,7 @@ not own every UI surface: Brief recovery is protected by
 `accept:packaged-recovery:mac`, and task-dynamics replay rendering is protected
 by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 
-- External Access: verifies the no-connector state still communicates authorization boundaries and keeps connection actions disabled; a fixture-connected smoke verifies the structured connector status path reaches the packaged page, CapabilityRegistry, and ConfigurationSafetyReport without live external providers; a local-inbox smoke verifies the first opt-in read-only connector adapter reaches the same packaged surface.
+- External Access: verifies the no-connector state still communicates authorization boundaries and keeps connection actions disabled; a fixture-connected smoke verifies the structured connector status path reaches the packaged page, CapabilityRegistry, and ConfigurationSafetyReport without live external providers; a local-inbox smoke creates a packaged task, previews local inbox evidence through the source-review panel, confirms the write, and verifies the Source Context memory path without live providers.
 - Decisions: verifies pending decisions render as a judgment center and can be resolved through the packaged UI.
 - Task files: verifies the task file explorer opens a persisted task file, classifies it as a normal file, saves through the packaged UI, and persists to SQLite.
 
