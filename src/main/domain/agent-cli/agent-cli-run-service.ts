@@ -246,12 +246,15 @@ export class AgentCliRunService {
 }
 
 function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): Required<CreateAgentCliRunInput> {
-  const sandboxMode = input.sandboxMode === 'workspace-write' ? 'workspace-write' : 'read-only';
+  const rawSandboxMode = (input as { sandboxMode?: unknown }).sandboxMode;
+  if (rawSandboxMode !== undefined && rawSandboxMode !== 'read-only') {
+    throw new Error('Agent CLI workspace-write mode is not enabled in this version.');
+  }
   return {
     operatorConfirmed: input.operatorConfirmed === true,
     prompt: input.prompt?.trim() ?? '',
     runtimeId: input.runtimeId ?? 'codex',
-    sandboxMode,
+    sandboxMode: 'read-only',
     taskId: input.taskId?.trim() ?? '',
   };
 }
@@ -265,9 +268,7 @@ function buildCodexCliPrompt(params: {
   return [
     'You are running as Codex CLI from inside Taskplane.',
     `Sandbox mode: ${params.sandboxMode}.`,
-    params.sandboxMode === 'read-only'
-      ? 'Do not modify files. Inspect and answer with a concrete plan, risks, and verification steps.'
-      : 'You may modify files inside the configured workspace only when the requested task requires it.',
+    'Do not modify files. Inspect and answer with a concrete plan, risks, and verification steps.',
     '',
     `Task: ${params.task.title}`,
     params.task.summary ? `Summary: ${params.task.summary}` : null,

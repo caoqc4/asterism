@@ -117,6 +117,25 @@ describe('AgentCliRunService', () => {
     })).rejects.toThrow('Agent CLI run requires explicit operator confirmation.');
     expect(runRepository.create).not.toHaveBeenCalled();
   });
+
+  it('rejects workspace-write mode until a product confirmation path exists', async () => {
+    const runRepository = buildRunRepository();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      buildRunStepRepository(),
+      vi.fn(),
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Modify files.',
+      sandboxMode: 'workspace-write',
+      taskId: 'task_1',
+    } as unknown as Parameters<AgentCliRunService['trigger']>[0])).rejects.toThrow('Agent CLI workspace-write mode is not enabled in this version.');
+    expect(runRepository.create).not.toHaveBeenCalled();
+  });
 });
 
 function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {

@@ -103,7 +103,7 @@ export type CreateCodeAgentRunInput = {
   useModelProducer?: boolean;
 };
 
-export type AgentCliRunSandboxMode = 'read-only' | 'workspace-write';
+export type AgentCliRunSandboxMode = 'read-only';
 
 export type CreateAgentCliRunInput = {
   taskId: string;
