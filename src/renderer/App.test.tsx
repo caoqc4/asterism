@@ -867,6 +867,14 @@ function createMockApi() {
       taskId: input.taskId,
       type: input.type,
     })),
+    triggerAgentCliRun: vi.fn().mockImplementation(async (input) => buildRun({
+      id: 'run_agent_cli_created',
+      output: 'Codex CLI final answer.',
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: input.taskId,
+      type: 'agent',
+    })),
     continuePausedRun: vi.fn(),
     subscribeToEvents: vi.fn().mockImplementation((listener) => {
       subscriber = listener;
@@ -1722,6 +1730,36 @@ describe('App redesign v1', () => {
     expect(screen.getByText('挂起')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Search or ask/ }));
     expect(screen.getByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
+  });
+
+  it('can route a task-bound right-panel message through Codex CLI', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Codex' }));
+    const input = screen.getByPlaceholderText(/关于「董事会材料修订」/);
+    await user.type(input, '用 Codex CLI 检查下一步。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith({
+        operatorConfirmed: true,
+        prompt: '用 Codex CLI 检查下一步。',
+        runtimeId: 'codex',
+        sandboxMode: 'read-only',
+        taskId: 'task_risk',
+      });
+    });
+    expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
+      messages: expect.arrayContaining([
+        expect.objectContaining({ content: '用 Codex CLI 检查下一步。' }),
+      ]),
+    }));
+    expect(await screen.findByText(/Codex CLI run 已完成/)).toBeTruthy();
+    expect(screen.getByText(/run_agent_cli_created/)).toBeTruthy();
   });
 
   it('captures a global right-panel discussion as a task before planning', async () => {

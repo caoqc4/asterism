@@ -63,6 +63,7 @@ import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 
 type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
+type PanelExecutionMode = 'chat' | 'codex';
 
 interface Message {
   id: string;
@@ -821,6 +822,8 @@ export function RightPanel({
   const [fullScreen, setFullScreen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
+  const [executionMode, setExecutionMode] = useState<PanelExecutionMode>('chat');
+  const [codexCliAvailable, setCodexCliAvailable] = useState(false);
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
   );
@@ -895,8 +898,19 @@ export function RightPanel({
       setCompressionThreshold(
         status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
       );
+      setCodexCliAvailable(Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
+        runtime.id === 'codex'
+        && runtime.installed
+        && runtime.executionSupport === 'manual_run'
+      ))));
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!activeTaskId && executionMode === 'codex') {
+      setExecutionMode('chat');
+    }
+  }, [activeTaskId, executionMode]);
 
   useEffect(() => {
     if (!autoSendDraftPrompt || !draftPrompt || taskId !== activeTaskId) return;
@@ -1707,7 +1721,22 @@ export function RightPanel({
 
     let replyText: string;
     try {
-      if (window.api?.chatWithAI) {
+      if (executionMode === 'codex' && activeTaskId && window.api?.triggerAgentCliRun) {
+        const run = await window.api.triggerAgentCliRun({
+          operatorConfirmed: true,
+          prompt: text,
+          runtimeId: 'codex',
+          sandboxMode: 'read-only',
+          taskId: activeTaskId,
+        });
+        const detail = await window.api.getRunDetail(run.id).catch(() => null);
+        const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || 'Codex CLI run 已记录。';
+        replyText = [
+          run.status === 'completed' ? 'Codex CLI run 已完成。' : `Codex CLI run ${run.status}。`,
+          output,
+          `Run: ${run.id}`,
+        ].join('\n\n');
+      } else if (window.api?.chatWithAI) {
         const habitParams = {
           taskTitle: titleCache[activeTaskId ?? ''] ?? null,
           taskTypeLabel: activeAttrs ? TASK_TYPE_HABIT_LABELS[activeAttrs.type] : null,
@@ -1737,8 +1766,10 @@ export function RightPanel({
         await new Promise((r) => setTimeout(r, 900 + Math.random() * 600));
         replyText = generateReply(text, activeTaskId);
       }
-    } catch {
-      replyText = generateReply(text, activeTaskId);
+    } catch (error) {
+      replyText = executionMode === 'codex'
+        ? `Codex CLI run 未启动：${error instanceof Error ? error.message : '未知错误'}`
+        : generateReply(text, activeTaskId);
     }
 
     setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: replyText, ts: now() }]);
@@ -1824,6 +1855,7 @@ export function RightPanel({
     : null;
   const canCloseoutActiveTaskPhase = Boolean(!phaseCloseoutSaved && phaseCloseoutPreStep.canProceed);
   const canProposeTaskFileWrite = Boolean(!taskFileProposal && taskFileWriteEvaluation.allowed);
+  const canUseCodexCli = Boolean(activeTaskId && codexCliAvailable && window.api?.triggerAgentCliRun);
   const taskPlanningPrompt = activeAttrs?.type && title
     ? buildTaskPlanningPrompt(title, activeAttrs.type, 'panel')
     : null;
@@ -2204,7 +2236,25 @@ export function RightPanel({
           onKeyDown={handleKeyDown}
         />
         <div className="panel-input-foot">
-          <span className="panel-hint muted">⏎ 发送  ⇧⏎ 换行</span>
+          <div className="panel-send-mode" aria-label="执行方式">
+            <button
+              type="button"
+              className={`panel-send-mode-btn${executionMode === 'chat' ? ' active' : ''}`}
+              onClick={() => setExecutionMode('chat')}
+            >
+              Chat
+            </button>
+            <button
+              type="button"
+              className={`panel-send-mode-btn${executionMode === 'codex' ? ' active' : ''}`}
+              onClick={() => canUseCodexCli && setExecutionMode('codex')}
+              disabled={!canUseCodexCli}
+              title={canUseCodexCli ? '通过 Codex CLI 创建只读 Agent run' : 'Codex CLI 需要任务上下文并完成本机检测'}
+            >
+              Codex
+            </button>
+          </div>
+          <span className="panel-hint muted">{executionMode === 'codex' ? 'Codex CLI · 只读' : '⏎ 发送  ⇧⏎ 换行'}</span>
           <button
             className={`btn sm primary${!input.trim() || thinking ? ' disabled' : ''}`}
             onClick={() => void send()}
