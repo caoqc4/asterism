@@ -45,6 +45,16 @@ export function evaluateCrossTaskLearningBoundary(text: string): CrossTaskLearni
     };
   }
 
+  if (taskSpecific) {
+    return {
+      surface: 'task_record',
+      requiresConfirmation: false,
+      scope: 'task',
+      reason: '这包含当前任务指代，应先作为任务内上下文保存，不应直接升级成跨任务规则。',
+      missing: [],
+    };
+  }
+
   if (global && process) {
     return {
       surface: 'process_template_proposal',
@@ -75,7 +85,7 @@ export function evaluateCrossTaskLearningBoundary(text: string): CrossTaskLearni
     };
   }
 
-  if (correction || taskSpecific) {
+  if (correction) {
     return {
       surface: 'task_record',
       requiresConfirmation: false,

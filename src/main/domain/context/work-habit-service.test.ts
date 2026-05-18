@@ -99,6 +99,31 @@ describe('WorkHabitService learning boundary', () => {
     expect(habits.filter((habit) => habit.rule.includes('董事会材料发出前'))).toHaveLength(1);
   });
 
+  it('does not let manual Work Habit creation store task-specific corrections', async () => {
+    const service = new WorkHabitService(new FakeWorkHabitRepository() as never);
+
+    const habits = await service.createManual({
+      rule: '这个任务以后都按当前验收口径处理',
+      scope: 'global',
+      scopeLabel: '全局',
+    });
+
+    expect(habits.some((habit) => habit.rule.includes('当前验收口径'))).toBe(false);
+  });
+
+  it('does not let Work Habit edits turn confirmed rules into task-specific corrections', async () => {
+    const service = new WorkHabitService(new FakeWorkHabitRepository([workHabit()]) as never);
+
+    const habits = await service.update({
+      id: 'habit_1',
+      rule: '这个任务应该用刚才确认的方案',
+    });
+
+    expect(habits.find((habit) => habit.id === 'habit_1')).toMatchObject({
+      rule: '以后所有任务都先做第一性原理评估',
+    });
+  });
+
   it('persists conflicting proposals so the retained conflict resolver can decide', async () => {
     const repository = new FakeWorkHabitRepository([workHabit({
       id: 'habit_confirmed',

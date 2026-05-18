@@ -289,7 +289,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RightPanel automatic context mode now consumes RuntimeHandoff and AutoContextClearReadiness after session-refresh triggers, so automatic clearing runs only after successful memory preservation and safe readiness.',
       'CrossTaskLearningBoundary classifies candidate learning text into task records, Work Habit proposals, process-template proposals, or discussion-only before durable cross-task memory is allowed.',
       'CrossTaskLearningBoundary keeps task-specific corrections task-bound and requires confirmation for Work Habit and process-template proposals.',
-      'WorkHabitService consumes CrossTaskLearningBoundary before creating Work Habit proposals or SOP-template habit records, so task-specific corrections do not become cross-task memory.',
+      'WorkHabitService consumes CrossTaskLearningBoundary before creating Work Habit proposals, manual Work Habits, Work Habit rule edits, or SOP-template habit records, so task-specific corrections do not become cross-task memory.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
@@ -300,7 +300,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
       'MemorySurfaceWriteCoverage is an explicit regression registry; future durable write paths must add their surface, write policy, guard coverage, and retained IPC channel when applicable instead of relying on path or title inference.',
       'SourceContextMemoryMetadata covers retained source-context creation and update paths; connector ingestion now has a shared planning contract, confirmed service bridge, IPC boundary, idempotency check, External Access review panel, and local-inbox packaged write smoke.',
-      'WorkHabitService consumes CrossTaskLearningBoundary for retained proposal/SOP paths; future learning writers should use the same service boundary.',
+      'WorkHabitService consumes CrossTaskLearningBoundary for retained proposal/manual/update/SOP paths; future learning writers should use the same service boundary.',
     ],
     nextImplementation: [
       'Require future durable information write paths and IPC channels to be registered in MemorySurfaceWriteCoverage before treating the write surface as retained behavior.',

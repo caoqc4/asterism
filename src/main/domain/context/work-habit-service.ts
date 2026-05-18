@@ -34,6 +34,7 @@ export class WorkHabitService {
   }
 
   async update(input: UpdateWorkHabitInput): Promise<WorkHabitRecord[]> {
+    if (input.rule && isTaskBoundLearning(input.rule)) return this.ensureSeeded();
     return this.replace(updateWorkHabitInList(await this.ensureSeeded(), input));
   }
 
@@ -42,6 +43,7 @@ export class WorkHabitService {
   }
 
   async createManual(input: CreateManualWorkHabitInput): Promise<WorkHabitRecord[]> {
+    if (isTaskBoundLearning(input.rule)) return this.ensureSeeded();
     return this.replace(createManualWorkHabitInList(await this.ensureSeeded(), input));
   }
 
@@ -99,4 +101,8 @@ export class WorkHabitService {
   private async replace(habits: WorkHabitRecord[]): Promise<WorkHabitRecord[]> {
     return this.repository.replaceAll(habits);
   }
+}
+
+function isTaskBoundLearning(rule: string): boolean {
+  return evaluateCrossTaskLearningBoundary(rule).surface === 'task_record';
 }

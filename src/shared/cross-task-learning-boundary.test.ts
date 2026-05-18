@@ -11,6 +11,14 @@ describe('cross task learning boundary', () => {
     });
   });
 
+  it('keeps current-task phrasing task-bound even when it mentions future behavior', () => {
+    expect(evaluateCrossTaskLearningBoundary('这个任务以后都按当前验收口径处理')).toMatchObject({
+      surface: 'task_record',
+      requiresConfirmation: false,
+      scope: 'task',
+    });
+  });
+
   it('routes global preferences to pending work habit proposals', () => {
     expect(evaluateCrossTaskLearningBoundary('以后所有任务都先做第一性原理评估')).toMatchObject({
       surface: 'work_habit_proposal',
