@@ -30,7 +30,7 @@ describe('memory surface write coverage', () => {
 
   it('keeps recovery memory behind dedicated evaluators', () => {
     const recoveryEntrypoints = memorySurfaceWriteEntrypoints()
-      .filter((entrypoint) => entrypoint.surfaces.some((surface) => surface === 'task_state' || surface === 'task_record'));
+      .filter((entrypoint) => entrypoint.surfaces.some((surface) => surface === 'task_md' || surface === 'task_record'));
 
     expect(recoveryEntrypoints.length).toBeGreaterThan(0);
     for (const entrypoint of recoveryEntrypoints) {

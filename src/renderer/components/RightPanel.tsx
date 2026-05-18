@@ -532,7 +532,7 @@ function normalizeTaskFilePath(value: string): string {
 }
 
 function taskFileProposalSurfaceLabel(surface: RuntimeSurfaceKind): string {
-  if (surface === 'task_state') return '任务说明';
+  if (surface === 'task_md') return '任务说明';
   if (surface === 'task_record') return '任务记录';
   if (surface === 'artifact') return '产物';
   if (surface === 'ai_output') return 'AI 产出';
@@ -611,7 +611,7 @@ function buildTaskFileWriteProposal(params: {
 }
 
 function taskMemoryProposalToFileProposal(proposal: TaskMemoryWriteProposal): TaskFileWriteProposal {
-  const surface = proposal.target === 'task_md' ? 'task_state' : 'task_record';
+  const surface = proposal.target === 'task_md' ? 'task_md' : 'task_record';
   return {
     path: proposal.path,
     summary: proposal.reason,

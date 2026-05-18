@@ -7,7 +7,7 @@ import type { CreateWorkHabitProposalInput, WorkHabitScope } from './types/work-
 import { isTaskMdPath, isTaskRecordPath, normalizeTaskMemoryPath } from './task-memory-path.js';
 
 export type RuntimeSurfaceKind =
-  | 'task_state'
+  | 'task_md'
   | 'task_file'
   | 'task_record'
   | 'source_material'
@@ -126,7 +126,7 @@ function isAiOutputCandidate(candidate: RuntimeSurfaceCandidate): boolean {
 export function classifyRuntimeFileSurface(candidate: RuntimeSurfaceCandidate): RuntimeSurfaceDecision {
   if (candidate.kind === 'task_record' || isTaskMdPath(candidate.path)) {
     return {
-      surface: 'task_state',
+      surface: 'task_md',
       fileClass: 'task',
       label: '任务说明',
       note: '任务目标、进度与下一步',

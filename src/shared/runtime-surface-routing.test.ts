@@ -15,14 +15,14 @@ import {
 } from './runtime-surface-routing.js';
 
 describe('runtime surface routing', () => {
-  it('classifies Task.md as task state', () => {
+  it('classifies Task.md as the dedicated Task.md memory surface', () => {
     expect(classifyRuntimeFileSurface({ kind: 'task_record', path: 'Task.md' })).toMatchObject({
-      surface: 'task_state',
+      surface: 'task_md',
       fileClass: 'task',
       label: '任务说明',
     });
     expect(classifyRuntimeFileSurface({ kind: 'local_file', path: ' Task.md ' })).toMatchObject({
-      surface: 'task_state',
+      surface: 'task_md',
       fileClass: 'task',
     });
   });
@@ -165,7 +165,7 @@ describe('runtime surface routing', () => {
       path: 'Task.md',
       kind: 'file',
       content: '# Task',
-    })).toBe('task_state');
+    })).toBe('task_md');
 
     expect(classifyCreateTaskFileSurface({
       taskId: 'task_1',

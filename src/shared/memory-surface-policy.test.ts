@@ -9,7 +9,7 @@ import {
 describe('memory surface policy', () => {
   it('defines one policy for every runtime surface kind', () => {
     expect(memorySurfacePolicies().map((policy) => policy.surface)).toEqual([
-      'task_state',
+      'task_md',
       'task_record',
       'source_material',
       'ai_output',
@@ -24,7 +24,7 @@ describe('memory surface policy', () => {
 
   it('treats Task.md and Task Records as dedicated recovery memory', () => {
     expect(classifyMemorySurfaceCandidate({ kind: 'local_file', path: 'Task.md' })).toMatchObject({
-      surface: 'task_state',
+      surface: 'task_md',
       category: 'recovery_memory',
       writePolicy: 'dedicated_evaluator',
       reusePolicy: 'read_for_task_resume',
@@ -38,6 +38,11 @@ describe('memory surface policy', () => {
       reusePolicy: 'read_for_task_resume',
       requiresTaskContext: true,
     });
+  });
+
+  it('keeps Task.md distinct from structured task state terminology', () => {
+    expect(memorySurfacePolicies().map((policy) => policy.surface)).not.toContain('task_state');
+    expect(classifyMemorySurfaceCandidate({ kind: 'local_file', path: 'Task.md' }).surface).toBe('task_md');
   });
 
   it('separates external evidence sources from AI-generated output', () => {

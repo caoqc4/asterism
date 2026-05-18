@@ -53,7 +53,7 @@ export type MemorySurfacePolicy = {
 };
 
 const SURFACE_POLICY: Record<RuntimeSurfaceKind, Omit<MemorySurfacePolicy, 'fileClass' | 'surface'>> = {
-  task_state: {
+  task_md: {
     category: 'recovery_memory',
     writePolicy: 'dedicated_evaluator',
     reusePolicy: 'read_for_task_resume',
