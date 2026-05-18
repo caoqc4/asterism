@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AgentPolicy } from './types/agent-execution.js';
+import { AGENT_TOOL_NAMES } from './agent-tools.js';
 import {
+  AGENT_TOOL_EXPOSURE_MATRIX,
   getExposedAgentToolNames,
   shouldExposeAgentTool,
 } from './agent-tool-exposure.js';
@@ -19,6 +21,10 @@ function buildPolicy(overrides: Partial<AgentPolicy> = {}): AgentPolicy {
 }
 
 describe('agent tool exposure matrix', () => {
+  it('requires every known runtime agent tool to declare exposure rules', () => {
+    expect(AGENT_TOOL_EXPOSURE_MATRIX.map((descriptor) => descriptor.name).sort()).toEqual([...AGENT_TOOL_NAMES].sort());
+  });
+
   it('exposes only core observe/write-note tools to normal text prompts by default', () => {
     expect(getExposedAgentToolNames({
       channel: 'text_prompt',

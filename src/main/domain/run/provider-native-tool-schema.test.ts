@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { AgentPolicy } from '../../../shared/types/agent-execution.js';
 import type { AgentToolDefinition } from './agent-tool-registry.js';
-import { buildProviderNativeToolSchemas } from './provider-native-tool-schema.js';
+import { AGENT_TOOL_EXPOSURE_MATRIX } from '../../../shared/agent-tool-exposure.js';
+import { buildProviderNativeToolSchemas, PROVIDER_NATIVE_INPUT_SCHEMAS } from './provider-native-tool-schema.js';
 
 const definitions: AgentToolDefinition[] = [
   {
@@ -74,6 +75,15 @@ function buildPolicy(overrides: Partial<AgentPolicy> = {}): AgentPolicy {
 }
 
 describe('buildProviderNativeToolSchemas', () => {
+  it('declares input schemas for every provider-native-exposable tool', () => {
+    const providerNativeExposableTools = AGENT_TOOL_EXPOSURE_MATRIX
+      .filter((descriptor) => descriptor.providerNative !== 'never')
+      .map((descriptor) => descriptor.name)
+      .sort();
+
+    expect(Object.keys(PROVIDER_NATIVE_INPUT_SCHEMAS).sort()).toEqual(providerNativeExposableTools);
+  });
+
   it('exposes only safe read tools that are currently allowed by policy', () => {
     expect(buildProviderNativeToolSchemas({
       definitions,

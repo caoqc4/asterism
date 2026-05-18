@@ -28,7 +28,7 @@ const EMPTY_INPUT_SCHEMA: JsonSchemaObject = {
   additionalProperties: false,
 };
 
-const INPUT_SCHEMAS: Partial<Record<AgentToolName, JsonSchemaObject>> = {
+export const PROVIDER_NATIVE_INPUT_SCHEMAS: Partial<Record<AgentToolName, JsonSchemaObject>> = {
   'task.inspect_context': EMPTY_INPUT_SCHEMA,
   'task.inspect_timeline': EMPTY_INPUT_SCHEMA,
   'task.review_completion_evidence': EMPTY_INPUT_SCHEMA,
@@ -75,7 +75,7 @@ function canExposeTool(definition: AgentToolDefinition, policy: AgentPolicy): bo
     name: definition.name,
     channel: 'provider_native',
     policy,
-  }) && Boolean(INPUT_SCHEMAS[definition.name]);
+  }) && Boolean(PROVIDER_NATIVE_INPUT_SCHEMAS[definition.name]);
 }
 
 export function buildProviderNativeToolSchemas(params: {
@@ -89,6 +89,6 @@ export function buildProviderNativeToolSchemas(params: {
       taskplaneToolName: definition.name,
       description: definition.description,
       risk: definition.risk,
-      inputSchema: INPUT_SCHEMAS[definition.name] ?? EMPTY_INPUT_SCHEMA,
+      inputSchema: PROVIDER_NATIVE_INPUT_SCHEMAS[definition.name] ?? EMPTY_INPUT_SCHEMA,
     }));
 }
