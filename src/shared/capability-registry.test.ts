@@ -144,7 +144,7 @@ describe('capability registry', () => {
       productSurfaces: {
         externalAccess: { connectedCount: 2, pendingCount: 1, errorCount: 0, catalogueCount: 1 },
         skills: { enabledCount: 3, readyCount: 2, needsConfigCount: 1 },
-        mcp: { connectedServerCount: 1, toolCount: 4, errorCount: 0 },
+        mcp: { connectedServerCount: 1, toolCount: 4, errorCount: 0, catalogueCount: 1 },
         browser: { available: true, reason: 'Browser automation configured.' },
       },
     });
@@ -164,7 +164,7 @@ describe('capability registry', () => {
     expect(registry.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
       status: 'available',
       visibility: 'policy_gated',
-      summary: 'connectedServers=1 / tools=4 / errors=0',
+      summary: 'connectedServers=1 / tools=4 / errors=0 / catalogue=1',
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',

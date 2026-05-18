@@ -67,6 +67,7 @@ export type CapabilityProductSurfaceStatus = {
     connectedServerCount: number;
     toolCount: number;
     errorCount?: number;
+    catalogueCount?: number;
   } | null;
   browser?: {
     available: boolean;
@@ -379,7 +380,12 @@ function mcpCapability(
     access: 'mixed',
     requiresApproval: true,
     requiredGate: 'runtime_entrypoint_coverage',
-    summary: `connectedServers=${status.connectedServerCount} / tools=${status.toolCount} / errors=${status.errorCount ?? 0}`,
+    summary: [
+      `connectedServers=${status.connectedServerCount}`,
+      `tools=${status.toolCount}`,
+      `errors=${status.errorCount ?? 0}`,
+      typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
+    ].filter(Boolean).join(' / '),
   };
 }
 

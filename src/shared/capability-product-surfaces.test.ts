@@ -44,6 +44,7 @@ describe('capability product surfaces', () => {
       connectedServerCount: 0,
       toolCount: 0,
       errorCount: 0,
+      catalogueCount: DEFAULT_MCP_SERVER_CATALOGUE_ITEMS.length,
     });
   });
 });

@@ -68,7 +68,7 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'mcp.servers')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'connectedServers=0 / tools=0 / errors=0',
+      summary: 'connectedServers=0 / tools=0 / errors=0 / catalogue=1',
       missingReason: 'No connected MCP server exposes tools.',
     });
     expect(status.externalAccessStatus).toEqual({
