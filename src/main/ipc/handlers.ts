@@ -63,8 +63,10 @@ import { evaluateSandboxedCodingProducerBackendReadiness } from '../domain/run/s
 import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
 import {
+  projectWorkHabitLabel,
   selectApplicableWorkHabitMatches,
   summarizeWorkHabitMatchesForPrompt,
+  taskTypeWorkHabitLabel,
 } from '../../shared/work-habit-rules.js';
 import { TASKPLANE_AGENT_PRINCIPLES } from '../../shared/agent-principles.js';
 import { normalizeCreateManualArtifactInput } from '../../shared/runtime-surface-routing.js';
@@ -707,7 +709,8 @@ export function registerIpcHandlers(): void {
     const applicableWorkHabitMatches = habitSnapshot
       ? selectApplicableWorkHabitMatches(habitSnapshot.habits, {
           taskTitle: task.title,
-          projectLabel: task.title,
+          taskTypeLabel: taskTypeWorkHabitLabel(task.taskType),
+          projectLabel: projectWorkHabitLabel(task),
           limit: 4,
         })
       : [];

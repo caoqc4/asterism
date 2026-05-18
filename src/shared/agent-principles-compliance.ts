@@ -86,6 +86,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Brief process-template candidates are built from visible Brief focus tasks instead of every active task.',
       'Brief, Decision, and Run process-template selectors share selection normalization, so skipped or invalid model selections never retain selected templates.',
       'buildAgentWorkingContext and buildRuntimeContextManifest project task state, Decisions, sources with freshness metadata, artifacts, files, timeline, and work habits.',
+      'RunService and project decomposition pass structured task type/project labels into the shared confirmed work-habit selector before provider-visible execution or planning.',
       'RuntimeCapabilitySnapshot can be included in RuntimeContextManifest so model, workspace, flags, and tool scaffold state become explicit context assembly inputs.',
       'RuntimeCapabilitySnapshot preserves full tool scaffold family summaries for capability registry consumers.',
       'RunService and CodeAgentRunService pass RuntimeCapabilitySnapshot into run_start pre-step verification for model/workspace capability checks.',

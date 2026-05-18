@@ -11,6 +11,7 @@ import type {
   WorkHabitStatus,
   WorkHabitStorageSnapshot,
 } from './types/work-habit.js';
+import type { TaskExecutionType } from './types/task.js';
 
 export type ApplicableWorkHabitMatch = {
   habit: WorkHabitRecord;
@@ -21,6 +22,14 @@ export type ApplicableWorkHabitMatch = {
 const STORAGE_VERSION = 3;
 const COMPLETION_OVERRIDE_PATTERN_ID = 'habit_pattern_completion_override';
 const PATTERN_CONFIRMATION_THRESHOLD = 3;
+
+const TASK_TYPE_WORK_HABIT_LABELS: Record<TaskExecutionType, string> = {
+  simple: '一次性',
+  project: '项目型',
+  scheduled: '定时任务',
+  event: '事件触发',
+  routine: '常设任务',
+};
 
 export const WORK_HABIT_PRIVACY_BOUNDARY: WorkHabitStorageSnapshot['privacyBoundary'] = {
   locality: 'device_only',
@@ -344,6 +353,17 @@ export function selectApplicableWorkHabits(
   } = {},
 ): WorkHabitRecord[] {
   return selectApplicableWorkHabitMatches(habits, params).map((match) => match.habit);
+}
+
+export function taskTypeWorkHabitLabel(taskType: TaskExecutionType | null | undefined): string | null {
+  return taskType ? TASK_TYPE_WORK_HABIT_LABELS[taskType] : null;
+}
+
+export function projectWorkHabitLabel(params: {
+  title: string;
+  taskType?: TaskExecutionType | null;
+}): string | null {
+  return params.taskType === 'project' ? params.title : null;
 }
 
 export function selectApplicableWorkHabitMatches(

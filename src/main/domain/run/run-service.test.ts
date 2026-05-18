@@ -588,6 +588,7 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue({
         ...buildTaskDetail('planned'),
+        taskType: 'project',
         processTemplates: [buildAppliedTemplate()],
       }),
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
@@ -632,6 +633,18 @@ describe('RunService', () => {
           excludes: [],
         },
         habits: [
+          {
+            id: 'habit_project_type',
+            rule: '项目型任务先确认拆解边界',
+            source: 'manual',
+            scope: 'task_type',
+            scopeLabel: '项目型',
+            status: 'confirmed',
+            examples: '开发小程序',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            lastAppliedAt: null,
+            applicationCount: 0,
+          },
           {
             id: 'habit_confirmed',
             rule: '数据报告初稿完成后先内部评审再对外发送',
@@ -708,6 +721,7 @@ describe('RunService', () => {
     expect(textExecutor.execute).toHaveBeenCalledWith(
       {
         ...buildTaskDetail('planned'),
+        taskType: 'project',
         processTemplates: [buildAppliedTemplate()],
         state: 'running',
         updatedAt: '2026-01-01T00:00:01.000Z',
@@ -725,12 +739,13 @@ describe('RunService', () => {
       {
         selectedTemplates: [buildAppliedTemplate()],
         applicableWorkHabitSummaries: [
+          '项目型任务先确认拆解边界（范围：项目型；适用原因：task type match: 项目型；例：开发小程序）',
           '数据报告初稿完成后先内部评审再对外发送（范围：全局；适用原因：global confirmed habit；例：Q1 财报）',
         ],
       },
     );
     expect(workHabitService.getSnapshot).toHaveBeenCalled();
-    expect(workHabitService.recordApplications).toHaveBeenCalledWith(['habit_confirmed']);
+    expect(workHabitService.recordApplications).toHaveBeenCalledWith(['habit_project_type', 'habit_confirmed']);
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_1',
       'completed',
@@ -778,7 +793,7 @@ describe('RunService', () => {
       targetType: 'run',
       targetId: 'run_1',
       source: 'lightweight_rule_engine',
-      detail: expect.stringContaining('本次还对照 1 条已确认工作习惯。'),
+      detail: expect.stringContaining('本次还对照 2 条已确认工作习惯。'),
     }));
     expect(result.status).toBe('completed');
   });

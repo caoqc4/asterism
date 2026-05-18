@@ -5,9 +5,11 @@ import {
   findWorkHabitConflict,
   recordSopTemplateHabitInList,
   recordWorkHabitApplicationsInList,
+  projectWorkHabitLabel,
   selectApplicableWorkHabitMatches,
   selectApplicableWorkHabits,
   summarizeWorkHabitMatchesForPrompt,
+  taskTypeWorkHabitLabel,
 } from './work-habit-rules.js';
 import type { WorkHabitRecord } from './types/work-habit.js';
 
@@ -102,6 +104,13 @@ describe('work habit rules', () => {
       ['habit_global', 'global confirmed habit'],
     ]);
     expect(summarizeWorkHabitMatchesForPrompt(matches)[0]).toContain('适用原因：project match: 官网改版');
+  });
+
+  it('maps task metadata into work habit selector labels', () => {
+    expect(taskTypeWorkHabitLabel('scheduled')).toBe('定时任务');
+    expect(taskTypeWorkHabitLabel('project')).toBe('项目型');
+    expect(projectWorkHabitLabel({ title: '开发小程序', taskType: 'project' })).toBe('开发小程序');
+    expect(projectWorkHabitLabel({ title: '普通任务', taskType: 'simple' })).toBeNull();
   });
 
   it('does not mark unrelated pending rules as conflicts only because scope matches', () => {

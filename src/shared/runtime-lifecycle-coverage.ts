@@ -100,6 +100,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     coveredBy: [
       'buildAgentWorkingContext assembles task state and structured context, including source metadata needed for freshness evaluation.',
       'buildRuntimeContextManifest projects task state, selected files, Decisions, sources, artifacts, task files, timeline, and work habits.',
+      'RunService and project decomposition pass structured task type/project labels into the shared confirmed work-habit selector before model-facing execution or planning.',
       'buildRuntimeContextAssemblyPolicy evaluates required read-order inputs such as product principles, task state, and Task.md.',
       'RuntimeCapabilitySnapshot summarizes model, workspace checks, feature flags, and tool scaffold state, and RuntimeContextManifest can include it as a capability context item.',
       'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',

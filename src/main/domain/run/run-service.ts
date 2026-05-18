@@ -29,8 +29,10 @@ import type {
 } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import {
+  projectWorkHabitLabel,
   selectApplicableWorkHabitMatches,
   summarizeWorkHabitMatchesForPrompt,
+  taskTypeWorkHabitLabel,
 } from '../../../shared/work-habit-rules.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
@@ -495,6 +497,8 @@ export class RunService {
       const snapshot = await this.workHabitService.getSnapshot();
       const matches = selectApplicableWorkHabitMatches(snapshot.habits, {
         taskTitle: task.title,
+        taskTypeLabel: taskTypeWorkHabitLabel(task.taskType),
+        projectLabel: projectWorkHabitLabel(task),
         limit: 5,
       });
       return {
