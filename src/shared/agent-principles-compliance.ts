@@ -148,6 +148,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'CrossTaskLearningBoundary keeps task-specific corrections in Task Records and routes cross-task habits or reusable SOP-shaped text to confirmation-only proposals.',
       'WorkHabitService consumes CrossTaskLearningBoundary before creating retained Work Habit proposals, manual Work Habits, Work Habit rule edits, or SOP-template habit records.',
       'Work Habit proposal writes do not duplicate equivalent confirmed habits, and SOP-template habit writes deduplicate equivalent reusable step shapes across tasks.',
+      'Work Habit selection returns applicability reasons for runtime prompts, so selected habits remain explainable by project, task type, task title, or global scope.',
       'MemorySurfacePolicy gives each runtime surface an explicit memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
       'MemorySurfaceWriteCoverage registers retained durable information writers and verifies their surfaces, write policies, required guards, and retained IPC channel bindings.',
       'Artifact classification requires an explicit artifact surface or artifact kind; ordinary task files are not promoted to artifacts by an Artifacts/ path alone.',
@@ -191,7 +192,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
       'MemorySurfaceWriteCoverage is an explicit registry, so future durable writers and retained memory-write IPC channels must be added there before they count as covered.',
       'Future connector ingestion services still need to be wired, but the retained source-context boundary now has a shared ingestion plan for connector-specific credibility and duplication signals.',
-      'Retained Work Habit proposal, manual Work Habit, Work Habit update, and SOP-template writes consume CrossTaskLearningBoundary plus duplicate/conflict guards; future learning writers should keep using that service boundary.',
+      'Retained Work Habit proposal, manual Work Habit, Work Habit update, SOP-template writes, and runtime Work Habit selection consume shared boundary or applicability logic; future learning writers should keep using that service boundary.',
     ],
     nextVerification: [
       'Keep memory-surface write coverage tests failing when a future writer omits its surface, write policy, guard, or simplicity_check.',

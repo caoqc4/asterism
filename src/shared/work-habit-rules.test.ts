@@ -5,7 +5,9 @@ import {
   findWorkHabitConflict,
   recordSopTemplateHabitInList,
   recordWorkHabitApplicationsInList,
+  selectApplicableWorkHabitMatches,
   selectApplicableWorkHabits,
+  summarizeWorkHabitMatchesForPrompt,
 } from './work-habit-rules.js';
 import type { WorkHabitRecord } from './types/work-habit.js';
 
@@ -81,6 +83,25 @@ describe('work habit rules', () => {
       'habit_type',
       'habit_global',
     ]);
+  });
+
+  it('explains why selected work habits apply to the current task', () => {
+    const matches = selectApplicableWorkHabitMatches([
+      { ...baseHabit, id: 'habit_global', scope: 'global', scopeLabel: '全局', applicationCount: 12 },
+      { ...baseHabit, id: 'habit_type', scope: 'task_type', scopeLabel: '定时任务', applicationCount: 4 },
+      { ...baseHabit, id: 'habit_project', scope: 'project', scopeLabel: '官网改版', applicationCount: 1 },
+    ], {
+      taskTitle: '官网改版周会',
+      taskTypeLabel: '定时任务',
+      projectLabel: '官网改版',
+    });
+
+    expect(matches.map((match) => [match.habit.id, match.reason])).toEqual([
+      ['habit_project', 'project match: 官网改版'],
+      ['habit_type', 'task type match: 定时任务'],
+      ['habit_global', 'global confirmed habit'],
+    ]);
+    expect(summarizeWorkHabitMatchesForPrompt(matches)[0]).toContain('适用原因：project match: 官网改版');
   });
 
   it('does not mark unrelated pending rules as conflicts only because scope matches', () => {

@@ -8,8 +8,10 @@ import {
   recordWorkHabitApplicationsInList,
   recordSopTemplateHabitInList,
   resolveWorkHabitConflictInList,
+  selectApplicableWorkHabitMatches as selectApplicableWorkHabitMatchesFromList,
   selectApplicableWorkHabits as selectApplicableWorkHabitsFromList,
   SEED_WORK_HABITS,
+  summarizeWorkHabitMatchesForPrompt,
   summarizeWorkHabitsForPrompt,
   updateWorkHabitInList,
 } from '@shared/work-habit-rules';
@@ -94,7 +96,7 @@ export function saveWorkHabits(habits: WorkHabitRecord[]): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(buildWorkHabitStorageSnapshot(habits)));
 }
 
-export { describeWorkHabitStorageBoundary, summarizeWorkHabitsForPrompt };
+export { describeWorkHabitStorageBoundary, summarizeWorkHabitMatchesForPrompt, summarizeWorkHabitsForPrompt };
 
 export function updateWorkHabit(
   id: string,
@@ -164,4 +166,13 @@ export function selectApplicableWorkHabits(params: {
   limit?: number;
 } = {}): WorkHabitRecord[] {
   return selectApplicableWorkHabitsFromList(loadWorkHabits(), params);
+}
+
+export function selectApplicableWorkHabitMatches(params: {
+  taskTitle?: string | null;
+  taskTypeLabel?: string | null;
+  projectLabel?: string | null;
+  limit?: number;
+} = {}) {
+  return selectApplicableWorkHabitMatchesFromList(loadWorkHabits(), params);
 }

@@ -12,6 +12,12 @@ import type {
   WorkHabitStorageSnapshot,
 } from './types/work-habit.js';
 
+export type ApplicableWorkHabitMatch = {
+  habit: WorkHabitRecord;
+  reason: string;
+  specificity: WorkHabitScope;
+};
+
 const STORAGE_VERSION = 3;
 const COMPLETION_OVERRIDE_PATTERN_ID = 'habit_pattern_completion_override';
 const PATTERN_CONFIRMATION_THRESHOLD = 3;
@@ -337,18 +343,32 @@ export function selectApplicableWorkHabits(
     limit?: number;
   } = {},
 ): WorkHabitRecord[] {
+  return selectApplicableWorkHabitMatches(habits, params).map((match) => match.habit);
+}
+
+export function selectApplicableWorkHabitMatches(
+  habits: WorkHabitRecord[],
+  params: {
+    taskTitle?: string | null;
+    taskTypeLabel?: string | null;
+    projectLabel?: string | null;
+    limit?: number;
+  } = {},
+): ApplicableWorkHabitMatch[] {
   const context = {
     taskTitle: normalizeComparable(params.taskTitle),
     taskTypeLabel: normalizeComparable(params.taskTypeLabel),
     projectLabel: normalizeComparable(params.projectLabel),
   };
-  const confirmed = habits.filter((habit) => (
-    habit.status === 'confirmed' && habitAppliesToContext(habit, context)
-  ));
-  const sorted = confirmed.sort((a, b) => {
-    const priorityDelta = scopePriority(b.scope) - scopePriority(a.scope);
+  const matches = habits.flatMap((habit) => {
+    if (habit.status !== 'confirmed') return [];
+    const reason = habitApplicabilityReason(habit, context);
+    return reason ? [{ habit, reason, specificity: habit.scope }] : [];
+  });
+  const sorted = matches.sort((a, b) => {
+    const priorityDelta = scopePriority(b.habit.scope) - scopePriority(a.habit.scope);
     if (priorityDelta !== 0) return priorityDelta;
-    return b.applicationCount - a.applicationCount;
+    return b.habit.applicationCount - a.habit.applicationCount;
   });
   return sorted.slice(0, params.limit ?? 5);
 }
@@ -358,6 +378,14 @@ export function summarizeWorkHabitsForPrompt(habits: WorkHabitRecord[]): string[
     const scope = habit.scopeLabel || habit.scope;
     const examples = habit.examples ? `；例：${habit.examples}` : '';
     return `${habit.rule}（范围：${scope}${examples}）`;
+  });
+}
+
+export function summarizeWorkHabitMatchesForPrompt(matches: ApplicableWorkHabitMatch[]): string[] {
+  return matches.map((match) => {
+    const scope = match.habit.scopeLabel || match.habit.scope;
+    const examples = match.habit.examples ? `；例：${match.habit.examples}` : '';
+    return `${match.habit.rule}（范围：${scope}；适用原因：${match.reason}${examples}）`;
   });
 }
 
@@ -493,21 +521,32 @@ function scopePriority(scope: WorkHabitScope): number {
   return 1;
 }
 
-function labelMatches(label: string, ...candidates: string[]): boolean {
+function matchedCandidate(label: string, ...candidates: Array<{ value: string; reason: string }>): string | null {
   const normalized = normalizeComparable(label);
-  return candidates.some((candidate) => (
-    Boolean(candidate)
-    && (normalized.includes(candidate) || candidate.includes(normalized))
-  ));
+  for (const candidate of candidates) {
+    if (!candidate.value) continue;
+    if (normalized.includes(candidate.value) || candidate.value.includes(normalized)) {
+      return candidate.reason;
+    }
+  }
+  return null;
 }
 
-function habitAppliesToContext(
+function habitApplicabilityReason(
   habit: WorkHabitRecord,
   context: { taskTitle: string; taskTypeLabel: string; projectLabel: string },
-): boolean {
-  if (habit.scope === 'global') return true;
+): string | null {
+  if (habit.scope === 'global') return 'global confirmed habit';
   if (habit.scope === 'project') {
-    return labelMatches(habit.scopeLabel, context.projectLabel, context.taskTitle);
+    return matchedCandidate(
+      habit.scopeLabel,
+      { value: context.projectLabel, reason: `project match: ${habit.scopeLabel}` },
+      { value: context.taskTitle, reason: `task title mentions project scope: ${habit.scopeLabel}` },
+    );
   }
-  return labelMatches(habit.scopeLabel, context.taskTypeLabel, context.taskTitle);
+  return matchedCandidate(
+    habit.scopeLabel,
+    { value: context.taskTypeLabel, reason: `task type match: ${habit.scopeLabel}` },
+    { value: context.taskTitle, reason: `task title mentions task type: ${habit.scopeLabel}` },
+  );
 }

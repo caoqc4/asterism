@@ -453,7 +453,10 @@ manual path. Equivalent confirmed Work Habits are not duplicated into new
 pending proposals, and manual habit creation also reuses the shared dedupe rule
 for equivalent scope / rule pairs. SOP-template habit writes now deduplicate
 equivalent reusable step shapes across tasks before adding another retained
-learning item.
+learning item. Work Habit selection also exposes an applicability match reason
+for runtime prompts, so execution and decomposition can see whether a habit was
+included because of project scope, task type, task title, or global scope
+instead of treating habits as invisible rules.
 
 ## Package G: Brief And Attention System
 

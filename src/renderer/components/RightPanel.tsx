@@ -10,7 +10,7 @@ import {
   type TaskMemoryWriteProposal,
 } from '@shared/task-memory-write-proposal';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
-import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
+import { selectApplicableWorkHabitMatches as selectApplicableWorkHabitMatchesFromList } from '@shared/work-habit-rules';
 import { CONTEXT_COMPRESSION_THRESHOLD } from '@shared/settings-defaults';
 import { PANEL_CAPTURE_SUMMARY_PREFIX } from '@shared/panel-capture';
 import { evaluateRuntimeAction } from '@shared/runtime-action-evaluator';
@@ -43,10 +43,10 @@ import {
   type RuntimeSurfaceKind,
 } from '@shared/runtime-surface-routing';
 import {
-  selectApplicableWorkHabits,
+  selectApplicableWorkHabitMatches,
   getPersistedWorkHabitStorageSnapshot,
   recordWorkHabitApplications,
-  summarizeWorkHabitsForPrompt,
+  summarizeWorkHabitMatchesForPrompt,
 } from '../lib/workHabits';
 import {
   buildTaskPlanningPrompt,
@@ -1714,18 +1714,18 @@ export function RightPanel({
           projectLabel: activeAttrs?.type === 'project' ? titleCache[activeTaskId ?? ''] ?? null : null,
         };
         const snapshot = await getPersistedWorkHabitStorageSnapshot().catch(() => null);
-        const selectedHabits = snapshot
-          ? selectApplicableWorkHabitsFromList(snapshot.habits, habitParams)
-          : selectApplicableWorkHabits(habitParams);
-        const appliedHabits = summarizeWorkHabitsForPrompt(selectedHabits);
+        const selectedHabitMatches = snapshot
+          ? selectApplicableWorkHabitMatchesFromList(snapshot.habits, habitParams)
+          : selectApplicableWorkHabitMatches(habitParams);
+        const appliedHabits = summarizeWorkHabitMatchesForPrompt(selectedHabitMatches);
         const res = await window.api.chatWithAI({
           messages: historyForAI,
           taskId: activeTaskId,
           workHabits: appliedHabits,
           selectedFile,
         });
-        if (selectedHabits.length > 0) {
-          const habitIds = selectedHabits.map((habit) => habit.id);
+        if (selectedHabitMatches.length > 0) {
+          const habitIds = selectedHabitMatches.map((match) => match.habit.id);
           if (window.api.recordWorkHabitApplications) {
             void window.api.recordWorkHabitApplications({ habitIds });
           } else {

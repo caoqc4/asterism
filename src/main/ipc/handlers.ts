@@ -63,8 +63,8 @@ import { evaluateSandboxedCodingProducerBackendReadiness } from '../domain/run/s
 import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
 import {
-  selectApplicableWorkHabits,
-  summarizeWorkHabitsForPrompt,
+  selectApplicableWorkHabitMatches,
+  summarizeWorkHabitMatchesForPrompt,
 } from '../../shared/work-habit-rules.js';
 import { TASKPLANE_AGENT_PRINCIPLES } from '../../shared/agent-principles.js';
 import { normalizeCreateManualArtifactInput } from '../../shared/runtime-surface-routing.js';
@@ -704,14 +704,14 @@ export function registerIpcHandlers(): void {
     } catch {
       habitSnapshot = null;
     }
-    const applicableWorkHabits = habitSnapshot
-      ? selectApplicableWorkHabits(habitSnapshot.habits, {
+    const applicableWorkHabitMatches = habitSnapshot
+      ? selectApplicableWorkHabitMatches(habitSnapshot.habits, {
           taskTitle: task.title,
           projectLabel: task.title,
           limit: 4,
         })
       : [];
-    const applicableWorkHabitSummaries = summarizeWorkHabitsForPrompt(applicableWorkHabits);
+    const applicableWorkHabitSummaries = summarizeWorkHabitMatchesForPrompt(applicableWorkHabitMatches);
 
     const result = await generateText({
       model,
@@ -764,7 +764,7 @@ export function registerIpcHandlers(): void {
     if (!draftEvaluation.allowed) {
       throw new Error(draftEvaluation.summary);
     }
-    const appliedHabitIds = applicableWorkHabits.map((habit) => habit.id);
+    const appliedHabitIds = applicableWorkHabitMatches.map((match) => match.habit.id);
     if (appliedHabitIds.length > 0) {
       try {
         await Promise.resolve(getServices().workHabitService.recordApplications(appliedHabitIds));

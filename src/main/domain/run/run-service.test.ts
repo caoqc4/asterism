@@ -725,7 +725,7 @@ describe('RunService', () => {
       {
         selectedTemplates: [buildAppliedTemplate()],
         applicableWorkHabitSummaries: [
-          '数据报告初稿完成后先内部评审再对外发送（范围：全局；例：Q1 财报）',
+          '数据报告初稿完成后先内部评审再对外发送（范围：全局；适用原因：global confirmed habit；例：Q1 财报）',
         ],
       },
     );
