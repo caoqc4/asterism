@@ -68,7 +68,7 @@ export function McpPage() {
           </p>
         </div>
         <button className="btn sm primary" onClick={() => setShowForm(true)}>
-          + 添加服务器
+          + 登记服务器
         </button>
       </div>
 
@@ -90,7 +90,7 @@ export function McpPage() {
         ))}
         {servers.length === 0 && !showForm && (
           <div className="mcp-empty">
-            <p>还没有登记任何 MCP 服务器</p>
+          <p>还没有登记任何 MCP 服务器</p>
             <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
               MCP（Model Context Protocol）是 Anthropic 推出的开放工具协议，
               兼容的服务端可在真实 MCP 服务接入后注册到 AI 能力库
@@ -212,7 +212,7 @@ function AddServerForm({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onC
       </div>
       <div className="skill-installed-actions">
         <button className="btn sm primary" disabled={!name.trim() || !url.trim()} onClick={submit}>
-          添加
+          登记
         </button>
         <button className="btn sm ghost" onClick={onCancel}>取消</button>
       </div>
