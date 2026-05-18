@@ -100,8 +100,10 @@ covered by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 The External Access fixture uses `TASKPLANE_EXTERNAL_ACCESS_FIXTURE_JSON` only
 inside the smoke process, so it does not contact live providers or change the
 default no-connector state. The local-inbox smoke uses
-`TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR` with a temporary directory and only
-checks read-only connector status projection.
+`TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR` with a temporary directory, creates
+a packaged-app task through the preload API, previews the local inbox evidence,
+and confirms that it can be written through the task Source Context memory
+path.
 Gmail connector tests use an injected fetch implementation and do not contact
 Google. Live Gmail OAuth/token validation remains manual until a concrete OAuth
 flow is selected.
