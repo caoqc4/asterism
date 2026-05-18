@@ -29,12 +29,28 @@ describe('agent cli runtime status service', () => {
       authState: 'unknown',
       executionSupport: 'manual_run',
       workload: 'idle',
-      missingReason: 'Authentication is managed by Codex CLI; run codex --login if execution reports a login error.',
+      missingReason: 'Authentication is managed by Codex CLI; run codex login if execution reports a login error.',
     });
     expect(status.runtimes.find((runtime) => runtime.id === 'claude')).toMatchObject({
       installed: false,
       workload: 'blocked',
       missingReason: 'claude was not found on PATH.',
+    });
+  });
+
+  it('marks Codex ready when the injected probe reports official CLI login status', async () => {
+    const service = new AgentCliRuntimeStatusService(async (command) => ({
+      authState: command === 'codex' ? 'ready' : 'unknown',
+      installed: command === 'codex',
+      version: command === 'codex' ? 'codex 0.42.0' : null,
+    }));
+
+    const status = await service.getStatus();
+
+    expect(status.readyCount).toBe(1);
+    expect(status.runtimes.find((runtime) => runtime.id === 'codex')).toMatchObject({
+      authState: 'ready',
+      missingReason: null,
     });
   });
 

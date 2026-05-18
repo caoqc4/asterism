@@ -361,7 +361,7 @@ function AgentCliRuntimeSection({
       </div>
 
       <div className="agent-cli-boundary">
-        <span>登录由官方 CLI 管理；需要时在终端运行 <span className="mono">codex --login</span>。</span>
+        <span>登录由官方 CLI 管理；需要时在终端运行 <span className="mono">codex login</span>。</span>
         {safety && (
           <span>
             安全：{CONFIGURATION_SAFETY_STATE_LABELS[safety.state]} · 探测：{configurationSafetyProbePolicyLabel(safety.startupProbePolicy)}

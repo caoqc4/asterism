@@ -38,7 +38,7 @@ Taskplane should not directly manage ChatGPT browser sessions or simulate accoun
 
 Instead:
 
-- users install and authenticate official CLIs themselves, for example `codex --login`;
+- users install and authenticate official CLIs themselves, for example `codex login`;
 - Taskplane detects CLI availability and readiness;
 - Taskplane launches the CLI as a local subprocess only after explicit user action;
 - Taskplane captures logs, outputs, artifacts, and changed-file evidence;
@@ -74,7 +74,7 @@ MVP capabilities:
 
 - detect whether `codex` is installed;
 - read `codex --version` when available;
-- expose a clear login hint when execution fails due to missing auth, such as `codex --login`;
+- expose a clear login hint when execution fails due to missing auth, such as `codex login`;
 - run one explicit, user-triggered background task;
 - restrict working directory to the configured workspace root;
 - pass a Taskplane-generated prompt/context bundle to the CLI;

@@ -4,12 +4,15 @@ import {
   DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE,
   buildAgentCliRuntimeStatus,
   emptyAgentCliRuntimeStatus,
+  type AgentCliAuthState,
   type AgentCliRuntimeRecord,
   type AgentCliRuntimeStatus,
 } from '../../../shared/agent-cli-runtime-status.js';
 import { readEnvValue } from '../../config/env.js';
 
 export type AgentCliCommandProbe = (command: string) => Promise<{
+  authReason?: string | null;
+  authState?: AgentCliAuthState;
   installed: boolean;
   version: string | null;
   errorReason?: string | null;
@@ -42,11 +45,9 @@ export class AgentCliRuntimeStatusService {
 
       return {
         ...runtime,
-        authState: 'unknown',
+        authState: probe.authState ?? 'unknown',
         installed: true,
-        missingReason: runtime.executionSupport === 'manual_run'
-          ? `Authentication is managed by ${runtime.label}; run ${runtime.command} --login if execution reports a login error.`
-          : `${runtime.label} detection is status-only in this version.`,
+        missingReason: installedRuntimeMissingReason(runtime.label, runtime.command, runtime.executionSupport, probe.authState, probe.authReason),
         version: probe.version,
         workload: 'idle',
       };
@@ -61,6 +62,8 @@ export function createAgentCliRuntimeStatusService(): AgentCliRuntimeStatusServi
 }
 
 async function probeAgentCliCommand(command: string): Promise<{
+  authReason?: string | null;
+  authState?: AgentCliAuthState;
   installed: boolean;
   version: string | null;
   errorReason?: string | null;
@@ -74,13 +77,49 @@ async function probeAgentCliCommand(command: string): Promise<{
     };
   }
 
-  const versionProbe = await runProbe(command, ['--version']);
+  const [versionProbe, authProbe] = await Promise.all([
+    runProbe(command, ['--version']),
+    command === 'codex' ? runProbe(command, ['login', 'status']) : Promise.resolve(null),
+  ]);
+  const authStatus = authProbe ? authStateFromLoginProbe(authProbe) : null;
   return {
+    authReason: authStatus?.reason ?? null,
+    authState: authStatus?.state,
     installed: true,
     version: versionProbe.exitCode === 0
       ? firstLine(versionProbe.stdout || versionProbe.stderr)
       : null,
   };
+}
+
+function installedRuntimeMissingReason(
+  label: string,
+  command: string,
+  executionSupport: 'manual_run' | 'status_only',
+  authState: AgentCliAuthState | undefined,
+  authReason: string | null | undefined,
+): string | null {
+  if (authState === 'ready') return null;
+  if (authState === 'needs_login') return `${label} is installed but not logged in; run ${command} login.`;
+  if (authState === 'error') return authReason ?? `${label} login status could not be checked.`;
+  return executionSupport === 'manual_run'
+    ? `Authentication is managed by ${label}; run ${command} login if execution reports a login error.`
+    : `${label} detection is status-only in this version.`;
+}
+
+function authStateFromLoginProbe(probe: {
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+}): { reason: string | null; state: AgentCliAuthState } {
+  const reason = firstLine(probe.stdout || probe.stderr);
+  if (probe.exitCode === 0) {
+    return { reason, state: 'ready' };
+  }
+  if (/not\s+logged\s+in|login|required|unauth/i.test(`${probe.stdout}\n${probe.stderr}`)) {
+    return { reason, state: 'needs_login' };
+  }
+  return { reason, state: 'error' };
 }
 
 function runProbe(command: string, args: string[]): Promise<{

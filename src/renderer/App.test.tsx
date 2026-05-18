@@ -416,7 +416,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
           authState: 'unknown',
           executionSupport: 'manual_run',
           workload: 'idle',
-          missingReason: 'Authentication is managed by Codex CLI; run codex --login if execution reports a login error.',
+          missingReason: 'Authentication is managed by Codex CLI; run codex login if execution reports a login error.',
         },
         {
           id: 'claude',
@@ -1077,7 +1077,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/官方 CLI 中完成的登录/)).toBeTruthy();
     expect(screen.getByText('Codex CLI')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
-    expect(screen.getAllByText(/codex --login/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/codex login/).length).toBeGreaterThan(0);
     expect(screen.getByText(/API Model/)).toBeTruthy();
     expect(screen.getByText('模型配置边界')).toBeTruthy();
     expect(screen.getByText('model.provider')).toBeTruthy();
