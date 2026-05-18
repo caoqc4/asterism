@@ -546,6 +546,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Default Gmail, the first Brainstorming Skill, and Playwright MCP catalogue entries share product-surface definitions, and External Access, Skills, and MCP pages consume the same CapabilityRegistry and ConfigurationSafetyReport rows as read-only safety strips.',
       'External Access, Skills, and MCP keep catalogue counts separate from connected, ready, and exposed-tool counts, so built-in optional previews do not imply authorization, service readiness, or model-visible exposure.',
       'Runtime context formatting includes capability count summaries but does not emit hidden optional catalogue ids or reserved Skill/MCP/Browser scaffold descriptors as model-visible tools.',
+      'Provider-native tool calls are rechecked against AgentToolExposureMatrix at execution-plan time, so schema-hidden or channel-hidden tools cannot execute even if a provider payload includes them.',
     ],
     outOfAgentPrinciplesScope: [
       'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',

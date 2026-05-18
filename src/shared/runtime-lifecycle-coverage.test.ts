@@ -127,6 +127,7 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('accept:external-access:gmail-oauth-local covers the mocked local Gmail OAuth control chain');
     expect(text).toContain('without changing task-management UI');
     expect(text).toContain('ConnectorSourceIngestionPlan previews instead of direct SourceContext writes');
+    expect(text).toContain('Provider-native tool calls are rechecked against AgentToolExposureMatrix');
   });
 
   it('classifies next work without promoting future or UI-only gaps into current tasks', () => {
