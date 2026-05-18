@@ -77,6 +77,14 @@ describe('agent principles compliance matrix', () => {
     expect(text).not.toContain('Add TaskMdUpdateNeed evaluator');
   });
 
+  it('records completed External Access source-ingestion persistence wiring', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('confirmed source-ingestion persistence');
+    expect(text).toContain('local-inbox packaged source-write smoke');
+    expect(text).not.toContain('persistence wiring, and live connector smoke coverage remain future work');
+  });
+
   it('does not keep completed subtask-start evaluator work as a future task', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 

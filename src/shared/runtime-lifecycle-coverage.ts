@@ -299,7 +299,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance, preserved as structured reference metadata, and can be persisted through the reusable confirmed-write plan; automatic persistence remains intentionally disabled.',
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
       'MemorySurfaceWriteCoverage is an explicit regression registry; future durable write paths must add their surface, write policy, guard coverage, and retained IPC channel when applicable instead of relying on path or title inference.',
-      'SourceContextMemoryMetadata covers retained source-context creation and update paths; future connector ingestion has a shared planning contract but still needs real service wiring.',
+      'SourceContextMemoryMetadata covers retained source-context creation and update paths; connector ingestion now has a shared planning contract, confirmed service bridge, IPC boundary, idempotency check, External Access review panel, and local-inbox packaged write smoke.',
       'WorkHabitService consumes CrossTaskLearningBoundary for retained proposal/SOP paths; future learning writers should use the same service boundary.',
     ],
     nextImplementation: [
@@ -523,7 +523,9 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'LocalInboxConnectorAdapter is the first concrete local read-only connector adapter: it is opt-in by environment variable, reads only supported local inbox files, and still produces ConnectorSourceIngestionPlan previews instead of direct SourceContext writes.',
       'GmailConnectorAdapter is the first concrete network read-only connector slice: it is opt-in by access-token environment variable, does not probe Gmail during status reads, and only reads message metadata/snippets during task-bound source-ingestion planning.',
       'Gmail OAuth now has a guarded product entrypoint: refresh tokens are stored in keychain, access tokens are refreshed on demand, authorization URLs use PKCE/state, loopback callbacks validate state, disconnect revokes and clears local credentials, IPC requires explicit confirmation, and External Access exposes minimal connect/disconnect controls without changing task-management UI.',
+      'ExternalAccessSourceIngestionService bridges ConnectorSourceIngestionPlan previews into confirmed TaskService.createSourceContext writes, skips existing batch ids, and is exposed through preview/commit IPC plus the External Access source-review panel.',
       'accept:external-access:gmail-oauth-local covers the mocked local Gmail OAuth control chain across service, loopback, factory, IPC, preload, and External Access UI without real Google credentials.',
+      'The packaged local-inbox smoke creates a task, previews local inbox evidence in External Access, confirms the source-review dialog, and verifies the source-context memory write path without live providers.',
       'Settings and Model consume ConfigurationSafetyReport as read-only configuration safety boundaries with secret exposure, manual-probe, approval-required, and blocked capability states.',
       'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
       'ConfigurationSafetyReport includes Skills and MCP safety surfaces from CapabilityRegistry, and the Skills/MCP pages consume those rows as read-only capability safety strips.',
@@ -533,7 +535,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
-      'External Access now has a structured connector status service, adapter contract, opt-in local inbox adapter, opt-in Gmail adapter, Gmail OAuth service/IPC/UI token/session/disconnect plumbing, and mocked local OAuth acceptance; live OAuth smoke coverage and production Google verification remain future work.',
+      'External Access now has a structured connector status service, adapter contract, opt-in local inbox adapter, opt-in Gmail adapter, Gmail OAuth service/IPC/UI token/session/disconnect plumbing, confirmed source-ingestion service/UI, local packaged source-write smoke, and mocked local OAuth acceptance; live OAuth smoke coverage and production Google verification remain future work.',
       'Sandbox coding capability remains hidden until both the feature flag and backend readiness support the capability.',
       'ConfigurationSafetyReport is exposed through AiConfigStatus and consumed by Settings, Model, External Access, Skills, and MCP; retained capability pages can reuse the same safety projection.',
     ],

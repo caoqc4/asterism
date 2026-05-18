@@ -75,11 +75,12 @@ Next work should move to a concrete product surface instead of continuing
 runtime deepening in isolation. Recommended order:
 
 1. External Access connector growth: the first opt-in read-only local inbox
-   adapter and Gmail network connector slice are connected through the existing
-   capability and source-ingestion boundaries. Gmail now has a read-only
-   environment preflight that hides token values and performs no network call;
-   add OAuth token creation/refresh and connector-backed live smoke coverage
-   only when that workflow is selected.
+   adapter, Gmail network connector slice, Gmail OAuth control path, and
+   confirmed source-review write bridge are connected through the existing
+   capability and source-ingestion boundaries. Gmail has a read-only environment
+   preflight that hides token values and performs no network call; add
+   credentials-gated live OAuth smoke coverage only when real Google OAuth
+   credentials are available.
 2. Skills/MCP capability pages: reuse `ConfigurationSafetyReport` and
    `CapabilityRegistry` without changing settled Tasks-page layout. The first
    read-only safety strip is in place; future work should connect real

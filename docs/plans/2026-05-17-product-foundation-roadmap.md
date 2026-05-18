@@ -153,14 +153,20 @@ MCP, and browser/operator to appear as explicit hidden/unconfigured reserved
 rows instead of generic deferred rows before their product pages expose richer
 status. `ExternalAccessStatusService` now provides an explicit connector status
 boundary, and `AiConfigService` feeds that status into CapabilityRegistry and
-ConfigurationSafetyReport. External Access is still read-only; concrete
-connector services now have a single product-surface status input instead of a
-hard-coded empty row.
+ConfigurationSafetyReport. External Access keeps connector status reads
+read-only, and confirmed source ingestion now routes external evidence through a
+single Source Context memory bridge instead of a connector-specific shortcut.
 `ExternalAccessStatusService` also defines the minimal read-only connector
 adapter contract: adapters report status, and connected adapters can preview
 evidence that is normalized through `ConnectorSourceIngestionPlan` before any
-future persistence path can create source contexts. `LocalInboxConnectorAdapter`
-is the first concrete opt-in adapter: when
+confirmed persistence path can create source contexts.
+`ExternalAccessSourceIngestionService` is that bridge: it previews plans,
+requires explicit confirmation before writing, skips existing connector batch
+ids, and calls `TaskService.createSourceContext` so task mutation, timeline, and
+canonical source metadata stay centralized. The External Access page now exposes
+this as a source-review panel, and the packaged local-inbox smoke verifies the
+path by creating a task, previewing local evidence, and confirming the write.
+`LocalInboxConnectorAdapter` is the first concrete opt-in adapter: when
 `TASKPLANE_EXTERNAL_ACCESS_LOCAL_INBOX_DIR` points to a local inbox directory,
 it reads only supported top-level `.json`, `.md`, and `.txt` evidence files and
 returns ingestion previews through the same plan path. The service also supports
@@ -172,12 +178,12 @@ connected state without live provider credentials.
 connector without startup network probing, and only calls Gmail during
 task-bound source-ingestion planning. It reads message metadata/snippets through
 the shared connector evidence path, marks Gmail evidence sensitive by default,
-and still leaves OAuth token creation/refresh plus live smoke validation as
-manual future work. The next OAuth path is scoped in
-`docs/plans/2026-05-17-gmail-oauth-design.md`: use desktop installed-app OAuth,
-store only refresh tokens in keychain, keep access tokens short-lived, preserve
-network-free connector status reads, and continue to require task-bound
-source-ingestion review before Gmail evidence becomes task memory.
+and still leaves live OAuth validation as manual future work. The OAuth path is
+scoped in `docs/plans/2026-05-17-gmail-oauth-design.md`: use desktop
+installed-app OAuth, store only refresh tokens in keychain, keep access tokens
+short-lived, preserve network-free connector status reads, and continue to
+require task-bound source-ingestion review before Gmail evidence becomes task
+memory.
 
 Broader network connector ingestion remains deferred, but the source-memory
 boundary now has a shared `ConnectorSourceIngestionPlan`. Future connector services must

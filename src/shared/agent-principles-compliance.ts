@@ -126,7 +126,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeContextManifest now consumes TaskMemoryRetrieval; future provider-visible execution boundaries must not rebuild their own task-memory read order.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
       'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; the opt-in local inbox and Gmail adapters use it, and future provider connectors must call it before persistence.',
-      'External Access has a structured connector status service, adapter contract, opt-in local inbox adapter, and first Gmail network adapter; OAuth token creation/refresh, persistence wiring, and live connector smoke coverage remain future work.',
+      'External Access has a structured connector status service, adapter contract, opt-in local inbox adapter, first Gmail network adapter, OAuth token creation/refresh wiring, confirmed source-ingestion persistence, and local-inbox packaged source-write smoke; live Gmail OAuth validation remains credentials-gated future work.',
       'ConfigurationSafetyReport is consumed by Settings, Model, External Access, Skills, and MCP; remaining capability pages can reuse the same safety projection when their UI work resumes.',
     ],
     nextVerification: [

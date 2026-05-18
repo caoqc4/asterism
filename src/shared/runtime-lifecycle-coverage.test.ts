@@ -122,6 +122,8 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('GmailConnectorAdapter');
     expect(text).toContain('Gmail OAuth now has a guarded product entrypoint');
     expect(text).toContain('disconnect revokes and clears local credentials');
+    expect(text).toContain('ExternalAccessSourceIngestionService bridges ConnectorSourceIngestionPlan previews');
+    expect(text).toContain('packaged local-inbox smoke creates a task');
     expect(text).toContain('accept:external-access:gmail-oauth-local covers the mocked local Gmail OAuth control chain');
     expect(text).toContain('without changing task-management UI');
     expect(text).toContain('ConnectorSourceIngestionPlan previews instead of direct SourceContext writes');
