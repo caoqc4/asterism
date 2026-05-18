@@ -44,6 +44,7 @@ export type CanonicalDataContract = {
 export type CanonicalDataDiagnosticIssueCode =
   | 'missing_canonical_field'
   | 'orphan_task_reference'
+  | 'orphan_source_reference'
   | 'missing_task_binding';
 
 export type CanonicalDataWriteIssueCode =
@@ -447,6 +448,9 @@ export function evaluateCanonicalDataDiagnostics(
   const taskIds = new Set((input.tasks ?? [])
     .map((task) => stringField(task, 'id'))
     .filter(Boolean) as string[]);
+  const sourceContextIds = new Set((input.sourceContexts ?? [])
+    .map((source) => stringField(source, 'id'))
+    .filter(Boolean) as string[]);
 
   issues.push(
     ...missingCanonicalFieldIssues('task', input.tasks ?? []),
@@ -467,6 +471,7 @@ export function evaluateCanonicalDataDiagnostics(
     ...orphanTaskReferenceIssues('task_dynamic', input.taskDynamics ?? [], taskIds),
     ...orphanTaskReferenceIssues('blocker', input.blockers ?? [], taskIds),
     ...orphanTaskReferenceIssues('dependency', input.dependencies ?? [], taskIds),
+    ...orphanBlockerSourceReferenceIssues(input.blockers ?? [], sourceContextIds),
     ...orphanDependencyTargetIssues(input.dependencies ?? [], taskIds),
     ...taskScopedDecisionBindingIssues(input.decisions ?? [], taskIds),
   );
@@ -563,6 +568,26 @@ function orphanDependencyTargetIssues(
       severity: 'error' as const,
       repairRoute: contract.repairRoute,
       message: `dependency record references missing upstream task ${blockedByTaskId}.`,
+    }];
+  });
+}
+
+function orphanBlockerSourceReferenceIssues(
+  blockers: CanonicalDataDiagnosticRecord[],
+  sourceContextIds: Set<string>,
+): CanonicalDataDiagnosticIssue[] {
+  const contract = contractForCanonicalDomain('blocker');
+  return blockers.flatMap((blocker, index) => {
+    const sourceContextId = stringField(blocker, 'sourceContextId');
+    if (!sourceContextId || sourceContextIds.has(sourceContextId)) return [];
+    return [{
+      code: 'orphan_source_reference' as const,
+      domain: 'blocker' as const,
+      recordId: recordId(blocker, index),
+      field: 'sourceContextId',
+      severity: 'warning' as const,
+      repairRoute: contract.repairRoute,
+      message: `blocker record references missing source context ${sourceContextId}.`,
     }];
   });
 }

@@ -322,7 +322,8 @@ and ambiguous hierarchy/decision repairs route to Decisions rather than silent
 mutation.
 `CanonicalDataDiagnostics` now adds read-only mechanical checks for missing
 canonical fields, orphan task references, task-scoped Decisions without a valid
-task binding, and task-bound blocker/dependency orphan references, giving
+task binding, task-bound blocker/dependency orphan references, and blocker
+source-context references that point at missing source materials, giving
 migration and repair work a shared checklist before any writer mutates data.
 
 ## Package E: Configuration, Safety, And Auditability
