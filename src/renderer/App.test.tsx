@@ -1148,6 +1148,36 @@ describe('App redesign v1', () => {
     confirmSpy.mockRestore();
   });
 
+  it('routes errored Gmail reconnect through the same confirmed External Access control', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      externalAccessStatus: {
+        sources: [{
+          id: 'gmail',
+          label: 'Gmail',
+          kind: 'email',
+          accountLabel: 'user@example.com',
+          status: 'error',
+          errorReason: 'Token expired',
+        }],
+        connectedCount: 0,
+        pendingCount: 0,
+        errorCount: 1,
+        updatedAt: '2026-05-17T10:00:00.000Z',
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /External Access/ }));
+    await user.click(await screen.findByRole('button', { name: '重新授权' }));
+
+    expect(harness.api.connectGmailOAuth).toHaveBeenCalledWith({ confirmed: true });
+    expect(await screen.findByText('Gmail 已连接。')).toBeTruthy();
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    confirmSpy.mockRestore();
+  });
+
   it('reviews and commits External Access source ingestion from the connections page', async () => {
     const user = userEvent.setup();
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);

@@ -186,7 +186,7 @@ export function ConnectionsPage() {
             <div className="ctx-section-title">已连接来源</div>
             <div className="ctx-section-desc">连接成功后，AI 只在任务上下文需要时引用相关信号</div>
           </div>
-          <button className="btn sm primary" disabled title="即将支持">+ 连接来源</button>
+          <button className="btn sm primary" disabled title="请从下方系统默认可选功能授权">从下方授权</button>
         </div>
 
         <div className="ctx-list">
@@ -221,7 +221,16 @@ export function ConnectionsPage() {
                 {src.status === 'connected' ? `同步于 ${src.lastSync}` : ''}
               </span>
               <div className="ctx-source-actions">
-                {src.status === 'error' && <button className="btn sm">重新授权</button>}
+                {src.status === 'error' && (
+                  <button
+                    className="btn sm"
+                    disabled={src.id !== 'gmail' || gmailBusy || !window.api?.connectGmailOAuth}
+                    onClick={() => src.id === 'gmail' ? connectGmail() : undefined}
+                    title={src.id === 'gmail' ? '重新授权 Gmail' : '该连接器暂未接入重新授权'}
+                  >
+                    {gmailBusy && src.id === 'gmail' ? '处理中' : '重新授权'}
+                  </button>
+                )}
                 <button
                   className="btn sm ghost"
                   disabled={statusSourceIds.has(src.id) && (src.id !== 'gmail' || !window.api?.disconnectGmailOAuth || gmailBusy)}
