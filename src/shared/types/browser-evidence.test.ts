@@ -48,7 +48,7 @@ describe('browser evidence contract', () => {
     })).toEqual({
       blockedReasons: [
         'browser.readonly_evidence remains reserved and hidden',
-        'browser evidence runtime is not implemented',
+        'model-visible browser evidence runtime is not implemented; operator-started local smoke remains available',
       ],
       browserWillStart: false,
       configuredOriginCount: 1,
@@ -70,7 +70,7 @@ describe('browser evidence contract', () => {
   it('keeps preflight blocked when enabled without explicit origins', () => {
     expect(buildBrowserEvidencePreflight({ enabled: true })).toMatchObject({
       blockedReasons: expect.arrayContaining([
-        'browser evidence requires explicit allowed origins before runtime implementation',
+        'browser evidence requires explicit allowed origins before model-visible runtime implementation',
       ]),
       browserWillStart: false,
       configuredOriginCount: 0,

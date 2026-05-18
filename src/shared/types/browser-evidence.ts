@@ -135,11 +135,11 @@ export function buildBrowserEvidencePreflight(params: {
   const allowedOrigins = params.allowedOrigins ?? [];
   const blockedReasons = [
     'browser.readonly_evidence remains reserved and hidden',
-    'browser evidence runtime is not implemented',
+    'model-visible browser evidence runtime is not implemented; operator-started local smoke remains available',
   ];
 
   if (params.enabled && allowedOrigins.length === 0) {
-    blockedReasons.push('browser evidence requires explicit allowed origins before runtime implementation');
+    blockedReasons.push('browser evidence requires explicit allowed origins before model-visible runtime implementation');
   }
 
   return {
