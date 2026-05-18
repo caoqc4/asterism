@@ -319,7 +319,10 @@ Acceptance criteria:
 Initial implementation: `CanonicalDataContract` lists authoritative fields,
 write/read authority, legacy fallback rules, and repair routes for task state,
 task hierarchy, task files, source contexts, artifacts, Decisions, run events,
-task dynamics, Work Habits, and process templates. Hierarchy fallback is now
+task dynamics, Work Habits, process templates, and process-template bindings.
+Template library records and task-specific template bindings now have separate
+canonical contracts, so diagnostics do not treat a reusable template as if it
+must already be applied to a task. Hierarchy fallback is now
 documented as read-only and only allowed while persisted `parentTaskId` /
 `childTaskIds` fields are genuinely missing; title-pattern hierarchy inference
 is also bounded to that legacy case. Artifact classification has no folder-name

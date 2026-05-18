@@ -10,7 +10,8 @@ export type CanonicalDomain =
   | 'run_event'
   | 'task_dynamic'
   | 'work_habit'
-  | 'process_template';
+  | 'process_template'
+  | 'process_template_binding';
 
 export type LegacyFallbackMode =
   | 'not_allowed'
@@ -103,6 +104,7 @@ export type CanonicalDataDiagnosticInput = {
   taskDynamics?: CanonicalDataDiagnosticRecord[];
   workHabits?: CanonicalDataDiagnosticRecord[];
   processTemplates?: CanonicalDataDiagnosticRecord[];
+  processTemplateBindings?: CanonicalDataDiagnosticRecord[];
 };
 
 export const CANONICAL_DATA_CONTRACTS: CanonicalDataContract[] = [
@@ -346,13 +348,26 @@ export const CANONICAL_DATA_CONTRACTS: CanonicalDataContract[] = [
   },
   {
     domain: 'process_template',
-    canonicalFields: ['id', 'title', 'summary', 'content', 'kind', 'tags', 'status', 'bindingId', 'taskId', 'bindingStatus', 'boundAt'],
+    canonicalFields: ['id', 'title', 'summary', 'content', 'kind', 'tags', 'status', 'createdAt', 'updatedAt', 'archivedAt'],
     writeAuthority: 'Process template service and task binding mutations',
-    readAuthority: 'AppliedProcessTemplateRecord with active binding status',
+    readAuthority: 'ProcessTemplateRecord active/archive status',
     legacyFallbacks: [],
     repairRoute: 'read_only_diagnostic',
     notes: [
-      'Removed or archived templates do not participate in execution read order.',
+      'Template library records define reusable method content but do not prove task applicability without a binding.',
+      'Archived templates do not participate in execution read order.',
+    ],
+  },
+  {
+    domain: 'process_template_binding',
+    canonicalFields: ['bindingId', 'taskId', 'templateId', 'bindingStatus', 'bindingNote', 'boundAt', 'bindingUpdatedAt', 'removedAt'],
+    writeAuthority: 'TaskProcessBindingRepository apply/remove flows',
+    readAuthority: 'AppliedProcessTemplateRecord binding fields plus active binding status',
+    legacyFallbacks: [],
+    repairRoute: 'read_only_diagnostic',
+    notes: [
+      'Task-specific template applicability lives on bindings, not on the reusable template library record.',
+      'Removed bindings do not participate in execution read order.',
     ],
   },
 ];
@@ -467,6 +482,7 @@ export function evaluateCanonicalDataDiagnostics(
     ...missingCanonicalFieldIssues('task_dynamic', input.taskDynamics ?? []),
     ...missingCanonicalFieldIssues('work_habit', input.workHabits ?? []),
     ...missingCanonicalFieldIssues('process_template', input.processTemplates ?? []),
+    ...missingCanonicalFieldIssues('process_template_binding', input.processTemplateBindings ?? []),
     ...staleLegacyFallbackIssues('task_hierarchy', input.tasks ?? []),
     ...staleLegacyFallbackIssues('source_context', input.sourceContexts ?? []),
     ...staleLegacyFallbackIssues('task_dynamic', input.taskDynamics ?? []),
@@ -477,6 +493,7 @@ export function evaluateCanonicalDataDiagnostics(
     ...orphanTaskReferenceIssues('task_dynamic', input.taskDynamics ?? [], taskIds),
     ...orphanTaskReferenceIssues('blocker', input.blockers ?? [], taskIds),
     ...orphanTaskReferenceIssues('dependency', input.dependencies ?? [], taskIds),
+    ...orphanTaskReferenceIssues('process_template_binding', input.processTemplateBindings ?? [], taskIds),
     ...orphanBlockerSourceReferenceIssues(input.blockers ?? [], sourceContextIds),
     ...orphanDependencyTargetIssues(input.dependencies ?? [], taskIds),
     ...taskScopedDecisionBindingIssues(input.decisions ?? [], taskIds),

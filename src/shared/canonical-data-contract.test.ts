@@ -26,6 +26,7 @@ describe('canonical data contract', () => {
       'task_dynamic',
       'work_habit',
       'process_template',
+      'process_template_binding',
     ]);
 
     for (const contract of CANONICAL_DATA_CONTRACTS) {
@@ -158,6 +159,72 @@ describe('canonical data contract', () => {
     ]));
   });
 
+  it('keeps process template library records separate from task bindings', () => {
+    expect(canonicalFieldsForDomain('process_template')).not.toContain('bindingId');
+    expect(canonicalFieldsForDomain('process_template_binding')).toEqual(expect.arrayContaining([
+      'bindingId',
+      'taskId',
+      'templateId',
+      'bindingStatus',
+      'boundAt',
+    ]));
+
+    const result = evaluateCanonicalDataDiagnostics({
+      tasks: [{
+        id: 'task_1',
+        title: 'Task',
+        summary: null,
+        state: 'running',
+        taskType: 'project',
+        taskFacets: ['project'],
+        parentTaskId: null,
+        childTaskIds: [],
+        nextStep: 'Continue',
+        waitingReason: null,
+        riskLevel: 'none',
+        riskNote: null,
+        createdAt: '2026-05-17T00:00:00.000Z',
+        updatedAt: '2026-05-17T00:00:00.000Z',
+      }],
+      processTemplates: [{
+        id: 'process_template_1',
+        title: 'Review SOP',
+        summary: null,
+        content: '1. Review',
+        kind: 'sop',
+        tags: [],
+        status: 'active',
+        createdAt: '2026-05-17T00:00:00.000Z',
+        updatedAt: '2026-05-17T00:00:00.000Z',
+        archivedAt: null,
+      }],
+      processTemplateBindings: [{
+        bindingId: 'binding_1',
+        taskId: 'missing_task',
+        templateId: 'process_template_1',
+        bindingStatus: 'active',
+        bindingNote: null,
+        boundAt: '2026-05-17T00:00:00.000Z',
+        bindingUpdatedAt: '2026-05-17T00:00:00.000Z',
+        removedAt: null,
+      }],
+    });
+
+    expect(result.issues).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        domain: 'process_template',
+        field: 'bindingId',
+      }),
+    ]));
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'orphan_task_reference',
+        domain: 'process_template_binding',
+        field: 'taskId',
+      }),
+    ]));
+  });
+
   it('validates write-boundary fields without treating every canonical field as caller-writable', () => {
     const valid = evaluateCanonicalWriteInput({
       domain: 'task_file',
@@ -221,6 +288,41 @@ describe('canonical data contract', () => {
         code: 'legacy_fallback_write',
         field: 'renderer.localTaskAttributes.parentTaskId',
         repairRoute: 'decision_manual_review',
+      }),
+    ]));
+  });
+
+  it('validates process template binding writes separately from template library writes', () => {
+    const valid = evaluateCanonicalWriteInput({
+      domain: 'process_template_binding',
+      input: {
+        taskId: 'task_1',
+        templateId: 'process_template_1',
+        note: 'Use for review.',
+      },
+      allowedFields: ['taskId', 'templateId', 'note'],
+      requiredFields: ['taskId', 'templateId'],
+    });
+    expect(valid.allowed).toBe(true);
+
+    const invalid = evaluateCanonicalWriteInput({
+      domain: 'process_template_binding',
+      input: {
+        taskId: 'task_1',
+        bindingId: 'caller_supplied',
+      },
+      allowedFields: ['taskId', 'templateId', 'note'],
+      requiredFields: ['taskId', 'templateId'],
+    });
+    expect(invalid.allowed).toBe(false);
+    expect(invalid.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'unknown_write_field',
+        field: 'bindingId',
+      }),
+      expect.objectContaining({
+        code: 'missing_required_write_field',
+        field: 'templateId',
       }),
     ]));
   });

@@ -4,6 +4,7 @@ import type {
   AppliedProcessTemplateRecord,
   ApplyProcessTemplateInput,
 } from '../../../shared/types/process-template.js';
+import { assertCanonicalWriteInput } from '../../../shared/canonical-data-contract.js';
 import { processTemplates, taskProcessBindings } from '../schema.js';
 import { initDatabase } from '../client.js';
 import { generateId, normalizeValue, nowIso, parseTags } from './repository-utils.js';
@@ -138,6 +139,12 @@ export class TaskProcessBindingRepository {
     action: 'created' | 'reactivated' | 'existing';
     binding: AppliedProcessTemplateRecord;
   }> {
+    assertCanonicalWriteInput({
+      domain: 'process_template_binding',
+      input: input as Record<string, unknown>,
+      allowedFields: ['taskId', 'templateId', 'note'],
+      requiredFields: ['taskId', 'templateId'],
+    });
     const db = initDatabase();
     const [template] = await db
       .select()
