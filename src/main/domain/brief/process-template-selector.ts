@@ -32,6 +32,15 @@ function buildSelectionPrompt(
         )
         .join(' | ')
     : '无';
+  const attentionLines = homeData.briefAttention?.items.length
+    ? [
+        homeData.briefAttention.summary,
+        ...homeData.briefAttention.items.map(
+          (item) =>
+            `${item.actionId} [lane=${item.lane}] (${item.reason})`,
+        ),
+      ].join(' | ')
+    : '无';
   const templateLines = templates
     .map(
       (item) =>
@@ -58,9 +67,7 @@ function buildSelectionPrompt(
       .map((event) => `${event.sourceType}:${event.title}[${event.status}]`)
       .join(' | ') || '无'}`,
     `Brief 焦点任务：${focusTaskLines}`,
-    `推荐动作：${homeData.recommendedActions
-      .map((action) => `${action.label} (${action.reason})`)
-      .join(' | ') || '无'}`,
+    `Brief 注意力边界：${attentionLines}`,
     '候选模板：',
     templateLines,
     '返回结构化结果。',

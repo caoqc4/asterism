@@ -530,7 +530,10 @@ deciding whether method templates should influence a generated brief, so method
 selection follows the visible attention surface instead of a separate hidden
 task list. Brief process-template candidates are now built only from the
 visible Brief focus tasks, not every active task, so the selector is not asked
-to filter unrelated background templates. Brief, Decision, and Run template
+to filter unrelated background templates. The selector prompt now reads Brief
+focus tasks plus the Brief attention boundary instead of the full
+`recommendedActions` compatibility field, so generated briefs do not let hidden
+queue items influence method selection. Brief, Decision, and Run template
 selectors also share one selection normalizer: templates are returned only when
 `shouldUse=true` and selected ids match active candidates, so model output
 cannot leave stale selected templates attached to a skipped selection. Applying

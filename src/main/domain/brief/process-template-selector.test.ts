@@ -108,6 +108,21 @@ describe('BriefProcessTemplateSelector', () => {
           action: '解除阻塞',
         },
       ],
+      briefAttention: {
+        items: [
+          {
+            actionId: 'blocker:task_1',
+            taskId: 'task_1',
+            lane: 'unblock_or_decide',
+            reason: '需要先解除阻塞、拍板或确认依赖。',
+          },
+        ],
+        totalCount: 1,
+        displayedCount: 1,
+        displayLimit: 5,
+        truncated: false,
+        summary: 'Brief 显示 1 条注意力项。',
+      },
     };
 
     const result = await selector.select(
@@ -134,6 +149,12 @@ describe('BriefProcessTemplateSelector', () => {
         prompt: expect.stringContaining('Brief 焦点任务：Task 1 [lane=escalate status=blocked] (当前阻塞影响发布。)'),
       }),
     );
+    expect(generateObjectMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('Brief 注意力边界：Brief 显示 1 条注意力项。 | blocker:task_1 [lane=unblock_or_decide] (需要先解除阻塞、拍板或确认依赖。)'),
+      }),
+    );
+    expect(generateObjectMock.mock.calls[0]?.[0]?.prompt).not.toContain('推荐动作：');
     expect(result).toEqual({
       shouldUse: true,
       selectedTemplates: homeData.processTemplateCandidates,
