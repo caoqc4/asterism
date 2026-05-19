@@ -314,6 +314,7 @@ First pass implemented on 2026-05-19:
 - CapabilityRegistry and ConfigurationSafetyReport now include `agent_api.runtime` as a disabled peer execution runtime, so diagnostics and context manifests see Agent API as a real planned runtime rather than conflating it with model-service configuration.
 - RuntimeCapabilitySnapshot now records the selected execution runtime (`codex`, `claude`, or `api`), its runtime kind, and whether it is executable. CapabilityRegistry summaries surface the selected Agent CLI or selected-but-disabled Agent API state for diagnostics without changing execution behavior.
 - ConfigurationSafetyReport keeps the user-facing safety reason separate from an optional diagnostic summary, so Settings and capability pages can show selected-runtime diagnostics without replacing the blocking reason.
+- RuntimeContextManifest includes the selected runtime label, kind, executable flag, and reason in the `runtime_capabilities` item, so Agent CLI accepted steps and context bridges carry the same runtime boundary shown in diagnostics.
 
 Remaining next steps are deciding what evidence an adapter must provide before actual native-goal forwarding is allowed, and replacing the deterministic lightweight verifier with an optional API verifier subagent when the Agent API runtime is ready.
 

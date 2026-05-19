@@ -365,6 +365,7 @@ describe('runtime context manifest', () => {
           workspaceRoot: '/repo',
           updatedAt: '2026-01-01T00:00:00.000Z',
           configPath: '/config.json',
+          runtimeMode: 'api',
           featureFlags: { enableScheduler: false },
         },
       }),
@@ -375,6 +376,9 @@ describe('runtime context manifest', () => {
     expect(manifest.items.map((item) => item.kind)).toEqual(['task_state', 'task_file', 'capability']);
     expect(manifest.summary).toContain('capabilities=1');
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('capability:runtime_capabilities');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('selectedRuntime=Agent API Runtime');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('runtimeExecutable=no');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('Agent API Runtime is selected in config');
   });
 
   it('formats runtime capability context as counts without exposing hidden optional catalogue entries', () => {

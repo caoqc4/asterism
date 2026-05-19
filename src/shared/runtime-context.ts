@@ -535,7 +535,13 @@ export function buildRuntimeContextManifest(params: {
       id: 'runtime_capabilities',
       kind: 'capability',
       label: 'Runtime capabilities',
-      note: params.capabilities.summary,
+      note: [
+        params.capabilities.summary,
+        `selectedRuntime=${params.capabilities.executionRuntime.label}`,
+        `runtimeKind=${params.capabilities.executionRuntime.kind}`,
+        `runtimeExecutable=${params.capabilities.executionRuntime.executable ? 'yes' : 'no'}`,
+        `runtimeReason=${params.capabilities.executionRuntime.reason}`,
+      ].join(' / '),
     });
   }
   items.push(...capabilityBridgeItems(params.capabilityRegistry ?? []));
