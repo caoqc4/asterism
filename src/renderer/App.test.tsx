@@ -1098,16 +1098,19 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
     expect(screen.getByText(/账号登录在官方 CLI 中完成/)).toBeTruthy();
     expect(screen.getByText(/当前可执行/)).toBeTruthy();
-    expect(screen.getByText(/自动检测：Codex CLI 已登录/)).toBeTruthy();
+    expect(screen.getByText(/自动检测：发现 1 个 CLI，1 个已登录/)).toBeTruthy();
     expect(screen.getByText('AI Runtime 已准备好')).toBeTruthy();
     expect(screen.getByText(/切到 Codex/)).toBeTruthy();
-    expect(screen.getByText(/第一版只读运行/)).toBeTruthy();
+    expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
+    expect(screen.getByText('已登录')).toBeTruthy();
+    expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
+    expect(screen.getByText(/工作区默认自动处理/)).toBeTruthy();
     await user.click(screen.getByText('高级：更改工作区'));
     expect(screen.getByLabelText('工作区路径')).toBeTruthy();
     expect(screen.getByText('CLI 明细')).toBeTruthy();
     await user.click(screen.getByText('CLI 明细'));
-    expect(screen.getByText('Codex CLI')).toBeTruthy();
-    expect(screen.getByText('Claude Code')).toBeTruthy();
+    expect(screen.getAllByText('Codex CLI').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Claude Code').length).toBeGreaterThan(0);
     expect(screen.getByText(/Auxiliary API Model/)).toBeTruthy();
     expect(screen.getByText(/辅助 API 当前/)).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
@@ -1163,9 +1166,9 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
-    expect(await screen.findByText('先登录 Codex CLI')).toBeTruthy();
-    expect(screen.getByText(/自动检测：已找到 Codex CLI/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '打开终端登录 Codex' }));
+    expect(await screen.findByText('先登录一个 Agent CLI')).toBeTruthy();
+    expect(screen.getByText(/自动检测：发现 1 个 CLI，0 个已登录/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '登录 Codex' }));
 
     expect(harness.api.openAgentCliLogin).toHaveBeenCalledWith({ runtimeId: 'codex' });
   });

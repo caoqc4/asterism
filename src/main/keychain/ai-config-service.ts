@@ -40,11 +40,23 @@ const DEFAULT_TOOL_SCAFFOLD_POLICY = {
 const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
 const CODE_AGENT_CHECK_SCRIPTS = ['test', 'lint'] as const;
 
-function inferSuggestedWorkspaceRoot(configuredWorkspaceRoot: string | null): string | null {
+function ensureDirectory(pathname: string): string | null {
+  try {
+    fs.mkdirSync(pathname, { recursive: true });
+    return pathname;
+  } catch {
+    return null;
+  }
+}
+
+function inferSuggestedWorkspaceRoot(configuredWorkspaceRoot: string | null, configPath: string): string | null {
   if (configuredWorkspaceRoot?.trim()) return configuredWorkspaceRoot.trim();
 
   const envWorkspaceRoot = readEnvValue('TASKPLANE_WORKSPACE_ROOT');
   if (envWorkspaceRoot?.trim()) return envWorkspaceRoot.trim();
+
+  const productWorkspaceRoot = ensureDirectory(path.join(path.dirname(configPath), 'workspace'));
+  if (productWorkspaceRoot) return productWorkspaceRoot;
 
   const cwd = process.cwd();
   if (!cwd || cwd === path.parse(cwd).root) return null;
@@ -170,6 +182,8 @@ export class AiConfigService {
 
   async getStatus(): Promise<AiConfigStatus> {
     const config = this.appConfigService.read();
+    const configPath = this.appConfigService.getConfigPath();
+    const suggestedWorkspaceRoot = inferSuggestedWorkspaceRoot(config.workspaceRoot, configPath);
     const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
     const configuredProviders = await this.getConfiguredProviders();
     const providerKey = await this.getProviderKey(config.aiProvider);
@@ -191,9 +205,9 @@ export class AiConfigService {
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
       workspaceRoot: config.workspaceRoot,
-      suggestedWorkspaceRoot: inferSuggestedWorkspaceRoot(config.workspaceRoot),
+      suggestedWorkspaceRoot,
       updatedAt: config.updatedAt,
-      configPath: this.appConfigService.getConfigPath(),
+      configPath,
       featureFlags: config.featureFlags,
       sandboxBackendStatus: buildAgentSandboxBackendStatus(null),
       executorLifecycleAvailability: evaluateAgentExecutorLifecycleServiceAvailability(),
@@ -223,6 +237,8 @@ export class AiConfigService {
     const config = this.appConfigService.write(input.workspaceRoot !== undefined
       ? { ...configInput, workspaceRoot: input.workspaceRoot }
       : configInput);
+    const configPath = this.appConfigService.getConfigPath();
+    const suggestedWorkspaceRoot = inferSuggestedWorkspaceRoot(config.workspaceRoot, configPath);
 
     const configuredProviders = await this.getConfiguredProviders();
     const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
@@ -245,9 +261,9 @@ export class AiConfigService {
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
       workspaceRoot: config.workspaceRoot,
-      suggestedWorkspaceRoot: inferSuggestedWorkspaceRoot(config.workspaceRoot),
+      suggestedWorkspaceRoot,
       updatedAt: config.updatedAt,
-      configPath: this.appConfigService.getConfigPath(),
+      configPath,
       featureFlags: config.featureFlags,
       sandboxBackendStatus: buildAgentSandboxBackendStatus(null),
       executorLifecycleAvailability: evaluateAgentExecutorLifecycleServiceAvailability(),

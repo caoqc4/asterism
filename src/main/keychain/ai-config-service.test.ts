@@ -109,6 +109,8 @@ describe('AiConfigService', () => {
       readyCount: 0,
       readyManualRunCount: 0,
     });
+    expect(status.suggestedWorkspaceRoot).toBe(path.join(tempRoot, 'workspace'));
+    expect(fs.existsSync(path.join(tempRoot, 'workspace'))).toBe(true);
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',

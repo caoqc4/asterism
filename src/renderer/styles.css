@@ -5533,6 +5533,80 @@ a { color: inherit; text-decoration: none; }
   border-radius: 999px;
   padding: 2px 7px;
 }
+.agent-cli-runtime-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+.agent-cli-runtime-card {
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+.agent-cli-runtime-card:last-child { border-right: none; }
+.agent-cli-runtime-card.ready {
+  background: linear-gradient(180deg, oklch(98% 0.015 145), var(--bg-elev));
+}
+.agent-cli-runtime-card.needs-login {
+  background: linear-gradient(180deg, oklch(98% 0.018 75), var(--bg-elev));
+}
+.agent-cli-runtime-card-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.agent-cli-runtime-card-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-1);
+}
+.agent-cli-runtime-card-command {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.agent-cli-runtime-card-status {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ink-3);
+  background: var(--bg-sunk);
+}
+.agent-cli-runtime-card-status.ready {
+  color: oklch(42% 0.13 145);
+  border-color: oklch(84% 0.07 145);
+  background: oklch(96% 0.03 145);
+}
+.agent-cli-runtime-card-status.needs-login {
+  color: oklch(47% 0.11 75);
+  border-color: oklch(86% 0.08 75);
+  background: oklch(96% 0.035 75);
+}
+.agent-cli-runtime-card p {
+  min-height: 34px;
+  margin: 10px 0 12px;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.agent-cli-runtime-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ink-4);
+  font-size: 12px;
+}
 .agent-cli-workspace {
   padding: 14px 16px;
   border-bottom: 1px solid var(--line);
@@ -5790,6 +5864,12 @@ a { color: inherit; text-decoration: none; }
   .agent-cli-action { align-items: flex-start; }
   .agent-cli-action-state { display: none; }
   .agent-cli-counts { justify-content: flex-start; }
+  .agent-cli-runtime-cards { grid-template-columns: 1fr; }
+  .agent-cli-runtime-card {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .agent-cli-runtime-card:last-child { border-bottom: none; }
   .agent-cli-row { grid-template-columns: 1fr; }
   .agent-cli-runtime-meta { grid-template-columns: 72px minmax(0, 1fr) 56px; }
 }
