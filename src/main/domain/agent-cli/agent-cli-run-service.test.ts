@@ -11,6 +11,8 @@ import {
 import { AgentCliRuntimeWorkloadTracker } from './agent-cli-runtime-workload.js';
 
 describe('AgentCliRunService', () => {
+  const workspaceRoot = process.cwd();
+
   it('runs Codex CLI through runtime gates and records run evidence', async () => {
     const runRepository = buildRunRepository();
     const runStepRepository = buildRunStepRepository();
@@ -51,9 +53,9 @@ describe('AgentCliRunService', () => {
       output: expect.stringContaining('Agent CLI run context assembly gate ready'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      args: ['exec', '--sandbox', 'read-only', '--cd', '/tmp/taskplane-workspace', '--skip-git-repo-check', '-'],
+      args: ['exec', '--sandbox', 'read-only', '--cd', workspaceRoot, '--skip-git-repo-check', '-'],
       command: 'codex',
-      cwd: '/tmp/taskplane-workspace',
+      cwd: workspaceRoot,
       input: expect.stringContaining('User request:\nReview the next implementation step.'),
     }));
     expect(result).toMatchObject({
@@ -509,6 +511,42 @@ describe('AgentCliRunService', () => {
     expect(runRepository.create).not.toHaveBeenCalled();
   });
 
+  it('blocks execution before creating a run when workspace root is missing', async () => {
+    const runRepository = buildRunRepository();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({ workspaceRoot: null })) },
+      runRepository,
+      buildRunStepRepository(),
+      vi.fn(),
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run Codex.',
+      taskId: 'task_1',
+    })).rejects.toThrow('Agent CLI run requires a configured workspace root.');
+    expect(runRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('blocks execution before creating a run when workspace root is unreadable', async () => {
+    const runRepository = buildRunRepository();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({ workspaceRoot: '/tmp/taskplane-missing-agent-cli-workspace' })) },
+      runRepository,
+      buildRunStepRepository(),
+      vi.fn(),
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run Codex.',
+      taskId: 'task_1',
+    })).rejects.toThrow('Agent CLI workspace root is not a readable directory: /tmp/taskplane-missing-agent-cli-workspace');
+    expect(runRepository.create).not.toHaveBeenCalled();
+  });
+
   it('keeps Claude Code status-only until a run adapter is enabled', async () => {
     const runRepository = buildRunRepository();
     const service = new AgentCliRunService(
@@ -602,6 +640,7 @@ describe('AgentCliRunService', () => {
 });
 
 function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
+  const workspaceRoot = process.cwd();
   return {
     configured: false,
     apiKeyStored: false,
@@ -609,7 +648,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
     provider: 'fal-openrouter',
     model: 'google/gemini-2.5-flash',
     baseUrl: null,
-    workspaceRoot: '/tmp/taskplane-workspace',
+    workspaceRoot,
     updatedAt: '2026-05-19T00:00:00.000Z',
     configPath: '/tmp/config.json',
     featureFlags: {

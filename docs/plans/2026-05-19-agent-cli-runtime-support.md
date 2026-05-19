@@ -227,6 +227,7 @@ Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com
 
 - A user can authenticate Codex CLI through the official CLI flow outside Taskplane.
 - Taskplane can detect the CLI and show a safe readiness state.
+- A ready CLI does not count as executable until a workspace root is configured.
 - A user can explicitly run a Taskplane task through Codex CLI.
 - The UI receives a Run id immediately after the gated run is accepted.
 - The UI can request cancellation for the active task-bound CLI run.

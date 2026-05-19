@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeContextAssemblyGate } from '../../../shared/runtime-context-assembly-gate.js';
@@ -176,7 +177,13 @@ export class AgentCliRunService {
     }
 
     const sandboxMode = request.sandboxMode ?? 'read-only';
-    const workspaceRoot = aiStatus.workspaceRoot?.trim() || process.cwd();
+    const workspaceRoot = aiStatus.workspaceRoot?.trim();
+    if (!workspaceRoot) {
+      throw new Error('Agent CLI run requires a configured workspace root.');
+    }
+    if (!fs.existsSync(workspaceRoot) || !fs.statSync(workspaceRoot).isDirectory()) {
+      throw new Error(`Agent CLI workspace root is not a readable directory: ${workspaceRoot}`);
+    }
     const run = await this.runRepository.create({
       taskId: task.id,
       type: 'agent',

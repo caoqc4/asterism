@@ -384,7 +384,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
     provider: 'fal-openrouter',
     model: 'google/gemini-2.5-flash',
     baseUrl: null,
-    workspaceRoot: null,
+    workspaceRoot: '/tmp/taskplane-workspace',
     updatedAt: now,
     configPath: '/tmp/taskplane-config.json',
     featureFlags: {
@@ -1363,6 +1363,18 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('does not treat Agent CLI login alone as setup without a workspace root', async () => {
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValueOnce(buildAiStatus({
+      apiKeyStored: false,
+      configured: false,
+      configuredProviders: [],
+      workspaceRoot: null,
+    }));
+    render(<App />);
+
+    expect(await screen.findByText(/AI Runtime 尚未配置/)).toBeTruthy();
+  });
+
   it('clarifies enabled Skills are catalogue intent until a real service exposes tools', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
@@ -1940,6 +1952,29 @@ describe('App redesign v1', () => {
     await waitFor(() => {
       expect(codexButton.disabled).toBe(false);
     });
+  });
+
+  it('keeps Codex CLI mode disabled until a workspace root is configured', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      apiKeyStored: false,
+      configured: false,
+      configuredProviders: [],
+      workspaceRoot: null,
+    }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    const codexButton = screen.getByRole('button', { name: 'Codex' }) as HTMLButtonElement;
+    expect(codexButton.disabled).toBe(true);
+    await user.click(codexButton);
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(harness.api.chatWithAI).toHaveBeenCalled();
   });
 
   it('summarizes a background Codex CLI run when the terminal run event arrives', async () => {

@@ -863,7 +863,7 @@ export function RightPanel({
       setCompressionThreshold(
         status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
       );
-      setCodexCliAvailable(Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
+      setCodexCliAvailable(Boolean(status.workspaceRoot?.trim()) && Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
         runtime.id === 'codex'
         && runtime.installed
         && runtime.authState === 'ready'
