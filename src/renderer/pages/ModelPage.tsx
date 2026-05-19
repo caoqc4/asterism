@@ -249,13 +249,13 @@ export function ModelPage() {
           <p className="model-page-boundary">账号由官方 CLI 管理，Taskplane 只检测状态并记录运行证据。</p>
         </div>
         <button
-          className={`btn sm ghost${refreshingStatus ? ' disabled' : ''}`}
+          className={`btn sm model-refresh-btn${refreshingStatus ? ' disabled' : ''}`}
           onClick={() => void refreshStatus()}
           disabled={refreshingStatus}
           title="重新检测官方 CLI 登录和本机运行状态"
           type="button"
         >
-          {refreshingStatus ? '检测中' : '重新检测'}
+          {refreshingStatus ? '检测中…' : '重新检测 CLI'}
         </button>
       </div>
 
@@ -450,8 +450,8 @@ function AgentCliRuntimeSection({
         <div className="agent-cli-action-icon">{hasReadyRuntime ? '✓' : '1'}</div>
         <div className="agent-cli-action-copy">
           <span className="agent-cli-detection">自动检测：发现 {detectedCount} 个 CLI，{readyCount} 个已登录。</span>
-          <strong>{hasReadyRuntime ? '可以在任务里使用' : '先登录一个官方 CLI'}</strong>
-          <span>{hasReadyRuntime ? '打开任务，在右侧选择 Codex 或 Claude；文件上下文由具体任务决定。' : '点击下方登录按钮，Taskplane 会打开终端并填好官方命令。'}</span>
+          <strong>{hasReadyRuntime ? '在任务右侧选择调用哪个 CLI' : '先登录一个官方 CLI'}</strong>
+          <span>{hasReadyRuntime ? '打开任一任务，右侧输入框下方有 Chat / Codex / Claude；点 Codex 或 Claude 后发送。' : '点击下方登录按钮，Taskplane 会打开终端并填好官方命令。'}</span>
         </div>
       </div>
 
@@ -632,7 +632,7 @@ function AgentCliRuntimeRow({
           {openingInstall ? '正在打开…' : fallback.id === 'claude' ? '安装 Claude' : '安装 Codex'}
         </button>
       ) : (
-        <span className="agent-cli-runtime-row-action">可用</span>
+        <span className="agent-cli-runtime-row-action">任务侧可选</span>
       )}
     </div>
   );

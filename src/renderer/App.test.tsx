@@ -1105,8 +1105,8 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/账号由官方 CLI 管理/)).toBeTruthy();
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
     expect(screen.getByText(/自动检测：发现 1 个 CLI，1 个已登录/)).toBeTruthy();
-    expect(screen.getByText('可以在任务里使用')).toBeTruthy();
-    expect(screen.getByText(/文件上下文由具体任务决定/)).toBeTruthy();
+    expect(screen.getByText('在任务右侧选择调用哪个 CLI')).toBeTruthy();
+    expect(screen.getByText(/右侧输入框下方有 Chat \/ Codex \/ Claude/)).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
@@ -1261,7 +1261,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
     expect(await screen.findByText('0 ready manual')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '重新检测' }));
+    await user.click(screen.getByRole('button', { name: '重新检测 CLI' }));
 
     expect(await screen.findByText('1 ready manual')).toBeTruthy();
     expect(harness.api.getAiConfigStatus).toHaveBeenCalledTimes(3);
@@ -1303,7 +1303,7 @@ describe('App redesign v1', () => {
 
     window.dispatchEvent(new Event('focus'));
 
-    expect(await screen.findByText('可以在任务里使用')).toBeTruthy();
+    expect(await screen.findByText('在任务右侧选择调用哪个 CLI')).toBeTruthy();
     expect(harness.api.getAiConfigStatus).toHaveBeenCalledTimes(3);
   });
 
