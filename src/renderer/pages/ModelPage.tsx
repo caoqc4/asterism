@@ -567,12 +567,14 @@ function AgentCliRuntimeRow({
 }) {
   const installed = runtime?.installed ?? false;
   const ready = installed && runtime?.authState === 'ready';
-  const needsLogin = installed && runtime?.authState !== 'ready';
-  const statusLabel = ready ? '已登录' : installed ? '需登录' : '未安装';
-  const detail = ready ? workloadLabel(runtime.workload) : installed ? '等待登录' : '未检测到';
+  const brokenInstall = installed && runtime?.authState === 'error';
+  const needsLogin = installed && runtime?.authState === 'needs_login';
+  const rowState = ready ? 'ready' : brokenInstall ? 'error' : needsLogin ? 'needs-login' : installed ? 'needs-login' : 'missing';
+  const statusLabel = ready ? '已登录' : brokenInstall ? '安装异常' : installed ? '需登录' : '未安装';
+  const detail = ready ? workloadLabel(runtime.workload) : brokenInstall ? '需重新安装' : installed ? '等待登录' : '未检测到';
 
   return (
-    <div className={`agent-cli-runtime-row ${ready ? 'ready' : installed ? 'needs-login' : 'missing'}`}>
+    <div className={`agent-cli-runtime-row ${rowState}`}>
       <div className="agent-cli-runtime-row-name">
         <div className="agent-cli-runtime-card-title">
           <span>{fallback.label}</span>
@@ -581,12 +583,21 @@ function AgentCliRuntimeRow({
         </div>
         <span className="agent-cli-runtime-card-command mono">{runtime?.command ?? fallback.command}</span>
       </div>
-      <span className={`agent-cli-runtime-card-status ${ready ? 'ready' : installed ? 'needs-login' : 'missing'}`}>
+      <span className={`agent-cli-runtime-card-status ${rowState}`}>
         {statusLabel}
       </span>
       <span className="agent-cli-runtime-row-version">{runtime?.version ?? '版本未知'}</span>
       <span className="agent-cli-runtime-row-detail">{detail}</span>
-      {!ready && installed ? (
+      {brokenInstall ? (
+        <button
+          className={`btn sm${openingInstall ? ' disabled' : ''}`}
+          type="button"
+          onClick={() => onOpenInstall(fallback.id)}
+          disabled={openingInstall}
+        >
+          {openingInstall ? '正在打开…' : fallback.id === 'claude' ? '重新安装 Claude' : '重新安装 Codex'}
+        </button>
+      ) : !ready && installed ? (
         <button
           className={`btn sm primary${openingLogin ? ' disabled' : ''}`}
           type="button"

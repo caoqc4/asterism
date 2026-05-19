@@ -1190,6 +1190,44 @@ describe('App redesign v1', () => {
     expect(harness.api.openAgentCliInstall).toHaveBeenCalledWith({ runtimeId: 'claude' });
   });
 
+  it('offers reinstall when a detected Agent CLI install is broken', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      agentCliRuntimeStatus: {
+        catalogueCount: 2,
+        detectedCount: 2,
+        readyCount: 1,
+        runningCount: 0,
+        errorCount: 1,
+        manualRunCount: 2,
+        readyManualRunCount: 1,
+        updatedAt: '2026-05-19T00:00:00.000Z',
+        runtimes: [
+          buildAiStatus().agentCliRuntimeStatus!.runtimes[0]!,
+          {
+            id: 'claude',
+            label: 'Claude Code',
+            command: 'claude',
+            installed: true,
+            version: null,
+            authState: 'error',
+            executionSupport: 'manual_run',
+            workload: 'blocked',
+            missingReason: 'claude is present but is not executable; reinstall the official CLI.',
+          },
+        ],
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
+    expect(await screen.findByText('安装异常')).toBeTruthy();
+    expect(screen.getByText('需重新安装')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '重新安装 Claude' }));
+
+    expect(harness.api.openAgentCliInstall).toHaveBeenCalledWith({ runtimeId: 'claude' });
+  });
+
   it('can manually refresh AI Runtime CLI readiness after official CLI login', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus)

@@ -5,6 +5,7 @@ import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status
 import {
   AGENT_CLI_RUNTIME_FIXTURE_ENV,
   AgentCliRuntimeStatusService,
+  executableProbeFailureReason,
 } from './agent-cli-runtime-status-service.js';
 import { AgentCliRuntimeWorkloadTracker } from './agent-cli-runtime-workload.js';
 
@@ -82,6 +83,20 @@ describe('agent cli runtime status service', () => {
       missingReason: 'Claude Code is installed but not logged in; run claude auth login.',
     });
     expect(status.manualRunCount).toBe(2);
+  });
+
+  it('classifies present but non-executable CLI probes as install errors', () => {
+    expect(executableProbeFailureReason('claude', {
+      exitCode: 126,
+      stdout: '',
+      stderr: 'zsh: permission denied: claude',
+    })).toBe('claude is present but is not executable; reinstall the official CLI.');
+
+    expect(executableProbeFailureReason('claude', {
+      exitCode: 1,
+      stdout: '',
+      stderr: 'Error: claude native binary not installed. Either postinstall did not run or optional dependency was not downloaded.',
+    })).toBe('claude install is incomplete; reinstall the official CLI with optional dependencies enabled.');
   });
 
   it('projects active Agent CLI runs into runtime workload status', async () => {

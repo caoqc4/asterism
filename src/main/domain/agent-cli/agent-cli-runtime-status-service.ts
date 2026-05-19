@@ -81,7 +81,7 @@ export function createAgentCliRuntimeStatusService(): AgentCliRuntimeStatusServi
   return new AgentCliRuntimeStatusService();
 }
 
-async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeId): Promise<{
+export async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeId): Promise<{
   authReason?: string | null;
   authState?: AgentCliAuthState;
   executablePath?: string | null;
@@ -109,6 +109,16 @@ async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeI
     runProbe(executable, ['--version']),
     authProbePromise,
   ]);
+  const executableFailure = executableProbeFailureReason(command, versionProbe);
+  if (executableFailure) {
+    return {
+      authReason: executableFailure,
+      authState: 'error',
+      executablePath,
+      installed: true,
+      version: null,
+    };
+  }
   const authStatus = authProbe
     ? authStateFromLoginProbe(authProbe, { nonZeroMeansNeedsLogin: runtimeId === 'claude' })
     : null;
@@ -121,6 +131,21 @@ async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeI
       ? firstLine(versionProbe.stdout || versionProbe.stderr)
       : null,
   };
+}
+
+export function executableProbeFailureReason(
+  command: string,
+  probe: { exitCode: number | null; stdout: string; stderr: string },
+): string | null {
+  if (probe.exitCode === 0) return null;
+  const output = `${probe.stdout}\n${probe.stderr}`;
+  if (/permission denied/i.test(output)) {
+    return `${command} is present but is not executable; reinstall the official CLI.`;
+  }
+  if (/native binary not installed|postinstall did not run|optional dependency/i.test(output)) {
+    return `${command} install is incomplete; reinstall the official CLI with optional dependencies enabled.`;
+  }
+  return null;
 }
 
 function installedRuntimeMissingReason(
