@@ -107,7 +107,18 @@ describe('task memory write proposal', () => {
         pendingTargets: ['task_record'],
         reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
         suggestedContentByTarget: {
-          task_record: '## Summary\nCodex checked the task.\n\n## Next\nRun focused tests.',
+          task_record: [
+            '## Summary',
+            'Codex checked the task.',
+            '',
+            '## Confirmed',
+            '- Runtime mode: Codex CLI / read-only.',
+            '- Run objective: Review implementation path.',
+            '- Completion conditions checked: 1',
+            '',
+            '## Next',
+            'Run focused tests.',
+          ].join('\n'),
         },
         targets: ['task_record'],
       }),
@@ -117,7 +128,22 @@ describe('task memory write proposal', () => {
 
     expect(proposals[0]!.contentTemplate).toContain('## Trigger');
     expect(proposals[0]!.contentTemplate).toContain('## Summary\nCodex checked the task.');
+    expect(proposals[0]!.contentTemplate).toContain('- Runtime mode: Codex CLI / read-only.');
+    expect(proposals[0]!.contentTemplate).toContain('- Run objective: Review implementation path.');
+    expect(proposals[0]!.contentTemplate).toContain('- Completion conditions checked: 1');
     expect(proposals[0]!.contentTemplate).toContain('## Next\nRun focused tests.');
+
+    const applyPlan = buildTaskMemoryWriteApplyPlan({
+      proposal: proposals[0]!,
+      taskId: 'task_1',
+    });
+    expect(applyPlan).toMatchObject({
+      action: 'create',
+      input: {
+        content: expect.stringContaining('- Runtime mode: Codex CLI / read-only.'),
+      },
+      status: 'ready',
+    });
   });
 
   it('returns no proposals when guidance is absent or already satisfied', () => {
