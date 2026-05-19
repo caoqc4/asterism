@@ -632,6 +632,25 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.4;
 }
+.panel-agent-cli-run {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg-sunk);
+  color: var(--ink-3);
+  font-size: 11px;
+}
+.panel-agent-cli-run span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .panel-context-strategy {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

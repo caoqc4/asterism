@@ -867,14 +867,24 @@ function createMockApi() {
       taskId: input.taskId,
       type: input.type,
     })),
-    triggerAgentCliRun: vi.fn().mockImplementation(async (input) => buildRun({
-      id: 'run_agent_cli_created',
-      output: null,
-      outputSource: null,
-      status: 'running',
-      taskId: input.taskId,
-      type: 'agent',
-    })),
+    triggerAgentCliRun: vi.fn().mockImplementation(async (input) => {
+      const run = buildRun({
+        id: 'run_agent_cli_created',
+        output: null,
+        outputSource: null,
+        status: 'running',
+        taskId: input.taskId,
+        type: 'agent',
+      });
+      runs.push(run);
+      return run;
+    }),
+    cancelAgentCliRun: vi.fn().mockResolvedValue({
+      cancelled: true,
+      reason: 'Operator cancelled the Codex CLI run from Taskplane.',
+      runId: 'run_agent_cli_created',
+      summary: 'Agent CLI cancellation requested for run_agent_cli_created.',
+    }),
     continuePausedRun: vi.fn(),
     subscribeToEvents: vi.fn().mockImplementation((listener) => {
       subscriber = listener;
@@ -1759,7 +1769,42 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/Codex CLI run 已在后台启动/)).toBeTruthy();
-    expect(screen.getByText(/run_agent_cli_created/)).toBeTruthy();
+    expect(screen.getAllByText(/run_agent_cli_created/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Codex CLI 后台运行/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '取消 Codex run' }));
+    expect(harness.api.cancelAgentCliRun).toHaveBeenCalledWith({
+      operatorConfirmed: true,
+      reason: 'Operator cancelled the Codex CLI run from Taskplane.',
+      runId: 'run_agent_cli_created',
+    });
+    expect(await screen.findByText(/Codex CLI run 取消请求已发送/)).toBeTruthy();
+  });
+
+  it('summarizes a background Codex CLI run when the terminal run event arrives', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Codex' }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+    expect(await screen.findByText(/Codex CLI 后台运行/)).toBeTruthy();
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
+    expect(run).toBeTruthy();
+    Object.assign(run!, {
+      output: 'Codex CLI final answer.',
+      outputSource: 'ai',
+      status: 'completed',
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText(/Codex CLI run 已完成/)).toBeTruthy();
+    expect(screen.getByText(/Codex CLI final answer/)).toBeTruthy();
+    expect(screen.queryByText(/Codex CLI 后台运行/)).toBeNull();
   });
 
   it('captures a global right-panel discussion as a task before planning', async () => {

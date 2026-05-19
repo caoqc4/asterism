@@ -184,6 +184,7 @@ The adapter should reuse existing concepts:
 - Taskplane can detect the CLI and show a safe readiness state.
 - A user can explicitly run a Taskplane task through Codex CLI.
 - The UI receives a Run id immediately after the gated run is accepted.
+- The UI can request cancellation for the active task-bound CLI run.
 - Taskplane stores logs and outputs in the run timeline.
 - Taskplane does not store ChatGPT browser sessions.
 - Taskplane does not auto-run, auto-commit, or auto-push.

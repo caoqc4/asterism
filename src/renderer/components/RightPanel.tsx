@@ -64,6 +64,11 @@ import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
 type PanelExecutionMode = 'chat' | 'codex';
+type ActiveAgentCliRunState = {
+  runId: string;
+  status: 'running' | 'cancelling';
+  taskId: string;
+};
 
 interface Message {
   id: string;
@@ -823,6 +828,7 @@ export function RightPanel({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
   const [executionMode, setExecutionMode] = useState<PanelExecutionMode>('chat');
+  const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
   const [codexCliAvailable, setCodexCliAvailable] = useState(false);
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
@@ -851,10 +857,15 @@ export function RightPanel({
     taskFileProposal,
   } = sessionState;
   const activeTaskIdRef = useRef(activeTaskId);
+  const activeAgentCliRunRef = useRef(activeAgentCliRun);
 
   useEffect(() => {
     activeTaskIdRef.current = activeTaskId;
   }, [activeTaskId]);
+
+  useEffect(() => {
+    activeAgentCliRunRef.current = activeAgentCliRun;
+  }, [activeAgentCliRun]);
 
   function patchSession(patch: PanelSessionPatch) {
     dispatchSession({ type: 'patch', patch });
@@ -904,6 +915,29 @@ export function RightPanel({
         && runtime.executionSupport === 'manual_run'
       ))));
     }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!window.api?.subscribeToEvents) return undefined;
+    return window.api.subscribeToEvents((event) => {
+      const current = activeAgentCliRunRef.current;
+      if (event.type !== 'run.changed' || !current || event.entityId !== current.runId) return;
+      void window.api.getRunDetail(current.runId).then((detail) => {
+        if (!detail || detail.status === 'running' || detail.status === 'pending') return;
+        const statusText = detail.status === 'completed'
+          ? '已完成'
+          : detail.status === 'failed'
+            ? '失败'
+            : detail.status;
+        const output = detail.output?.trim() || detail.failureReason || '终态已记录。';
+        appendSysMsg([
+          `Codex CLI run ${statusText}。`,
+          output,
+          `Run: ${detail.id}`,
+        ].join('\n\n'));
+        setActiveAgentCliRun((value) => value?.runId === detail.id ? null : value);
+      }).catch(() => undefined);
+    });
   }, []);
 
   useEffect(() => {
@@ -1731,6 +1765,13 @@ export function RightPanel({
         });
         const detail = await window.api.getRunDetail(run.id).catch(() => null);
         const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || 'Codex CLI run 已记录。';
+        if (run.status === 'running') {
+          setActiveAgentCliRun({
+            runId: run.id,
+            status: 'running',
+            taskId: activeTaskId,
+          });
+        }
         replyText = [
           run.status === 'running'
             ? 'Codex CLI run 已在后台启动。'
@@ -1778,6 +1819,29 @@ export function RightPanel({
 
     setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: replyText, ts: now() }]);
     setThinking(false);
+  }
+
+  async function cancelActiveAgentCliRun() {
+    if (!activeAgentCliRun || activeAgentCliRun.status === 'cancelling' || !window.api?.cancelAgentCliRun) return;
+    setActiveAgentCliRun((value) => value ? { ...value, status: 'cancelling' } : value);
+    try {
+      const result = await window.api.cancelAgentCliRun({
+        operatorConfirmed: true,
+        reason: 'Operator cancelled the Codex CLI run from Taskplane.',
+        runId: activeAgentCliRun.runId,
+      });
+      if (!result.cancelled) {
+        appendSysMsg(`Codex CLI run 取消请求未生效：${result.summary}`);
+        setActiveAgentCliRun(null);
+        return;
+      }
+      appendSysMsg(`Codex CLI run 取消请求已发送。\n\nRun: ${activeAgentCliRun.runId}`);
+    } catch (error) {
+      appendSysMsg(`Codex CLI run 取消失败：${error instanceof Error ? error.message : '未知错误'}`);
+      setActiveAgentCliRun((value) => value?.runId === activeAgentCliRun.runId
+        ? { ...value, status: 'running' }
+        : value);
+    }
   }
 
   const title = taskTitle(activeTaskId, titleCache);
@@ -1860,6 +1924,9 @@ export function RightPanel({
   const canCloseoutActiveTaskPhase = Boolean(!phaseCloseoutSaved && phaseCloseoutPreStep.canProceed);
   const canProposeTaskFileWrite = Boolean(!taskFileProposal && taskFileWriteEvaluation.allowed);
   const canUseCodexCli = Boolean(activeTaskId && codexCliAvailable && window.api?.triggerAgentCliRun);
+  const activeTaskAgentCliRun = activeAgentCliRun && activeAgentCliRun.taskId === activeTaskId
+    ? activeAgentCliRun
+    : null;
   const taskPlanningPrompt = activeAttrs?.type && title
     ? buildTaskPlanningPrompt(title, activeAttrs.type, 'panel')
     : null;
@@ -2167,6 +2234,18 @@ export function RightPanel({
         >
           {runtimeContextManifest.userFacingSummary}
         </div>
+        {activeTaskAgentCliRun && (
+          <div className="panel-agent-cli-run">
+            <span>Codex CLI 后台运行 · {activeTaskAgentCliRun.runId}</span>
+            <button
+              className={`btn sm ghost${activeTaskAgentCliRun.status === 'cancelling' ? ' disabled' : ''}`}
+              onClick={() => void cancelActiveAgentCliRun()}
+              disabled={activeTaskAgentCliRun.status === 'cancelling'}
+            >
+              {activeTaskAgentCliRun.status === 'cancelling' ? '取消中…' : '取消 Codex run'}
+            </button>
+          </div>
+        )}
         <div className="panel-context-strategy" aria-label="上下文策略">
           {([
             ['auto', '自动检查'],
