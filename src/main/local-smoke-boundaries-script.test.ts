@@ -244,6 +244,16 @@ describe('local smoke script default boundaries', () => {
     );
   });
 
+  it('keeps the package smoke checking AI Runtime renderer freshness markers', () => {
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/smoke-package-mac.mjs'), 'utf8');
+
+    expect(script).toContain('AI Runtime');
+    expect(script).toContain('ready manual');
+    expect(script).toContain('重新检测');
+    expect(script).toContain('配置 AI Provider 密钥');
+    expect(script).toContain('stale Model page marker');
+  });
+
   it('keeps the real-use path helper read-only and explicit about temporary overrides', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-real-use-path-test-'));
     const userDataPath = path.join(tempRoot, 'real-use-data');

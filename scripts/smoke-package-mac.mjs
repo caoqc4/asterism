@@ -10,6 +10,7 @@ const contentsPath = path.join(appPath, 'Contents');
 const resourcesPath = path.join(contentsPath, 'Resources');
 const infoPlistPath = path.join(contentsPath, 'Info.plist');
 const executablePath = path.join(contentsPath, 'MacOS/Taskplane');
+const appAsarPath = path.join(resourcesPath, 'app.asar');
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
 function fail(message) {
@@ -74,7 +75,7 @@ if (!info.ElectronAsarIntegrity?.['Resources/app.asar']?.hash) {
   fail('Info.plist is missing Electron ASAR integrity metadata.');
 }
 
-const asarFiles = asar.listPackage(path.join(resourcesPath, 'app.asar'));
+const asarFiles = asar.listPackage(appAsarPath);
 const requiredAsarFiles = [
   '/dist/index.html',
   '/dist-electron/main/index.js',
@@ -88,6 +89,31 @@ const missingAsarFiles = requiredAsarFiles.filter((filePath) => !asarFiles.inclu
 
 if (missingAsarFiles.length > 0) {
   fail(`app.asar is missing required files: ${missingAsarFiles.join(', ')}`);
+}
+
+const rendererBundles = asarFiles.filter((filePath) => /^\/dist\/assets\/index-.*\.js$/.test(filePath));
+
+if (rendererBundles.length === 0) {
+  fail('app.asar is missing the renderer JavaScript bundle.');
+}
+
+const rendererBundleText = rendererBundles
+  .map((filePath) => asar.extractFile(appAsarPath, filePath.slice(1)).toString('utf8'))
+  .join('\n');
+const requiredRendererMarkers = ['AI Runtime', 'ready manual', '重新检测'];
+
+for (const marker of requiredRendererMarkers) {
+  if (!rendererBundleText.includes(marker)) {
+    fail(`packaged renderer bundle is missing AI Runtime marker: ${marker}`);
+  }
+}
+
+const staleRendererMarkers = ['配置 AI Provider 密钥'];
+
+for (const marker of staleRendererMarkers) {
+  if (rendererBundleText.includes(marker)) {
+    fail(`packaged renderer bundle still contains stale Model page marker: ${marker}`);
+  }
 }
 
 const packagedTestFiles = asarFiles.filter((filePath) =>

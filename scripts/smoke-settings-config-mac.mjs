@@ -138,7 +138,7 @@ async function assertPersistedSettings(page) {
   await page.getByText('mcp.servers').waitFor();
   await page.getByText(/真正压缩前会先保留关键决策/).waitFor();
   await page.getByText(/标准：风险和外部动作会确认/).waitFor();
-  await page.getByText(/修改 Provider 密钥或切换模型请前往/).waitFor();
+  await page.getByText(/修改 Provider 密钥、切换模型或查看 Agent CLI 状态请前往/).waitFor();
 }
 
 if (process.platform !== 'darwin') {
