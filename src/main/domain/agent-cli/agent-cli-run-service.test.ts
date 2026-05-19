@@ -367,6 +367,46 @@ describe('AgentCliRunService', () => {
     expect(runRepository.create).not.toHaveBeenCalled();
   });
 
+  it('blocks execution before creating a run when Codex CLI is not authenticated', async () => {
+    const runRepository = buildRunRepository();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+        agentCliRuntimeStatus: {
+          catalogueCount: 2,
+          detectedCount: 1,
+          errorCount: 0,
+          manualRunCount: 1,
+          readyCount: 0,
+          readyManualRunCount: 0,
+          runningCount: 0,
+          updatedAt: '2026-05-19T00:00:00.000Z',
+          runtimes: [{
+            id: 'codex',
+            label: 'Codex CLI',
+            command: 'codex',
+            installed: true,
+            version: 'codex 0.42.0',
+            authState: 'needs_login',
+            executionSupport: 'manual_run',
+            workload: 'idle',
+            missingReason: 'Codex CLI is installed but not logged in; run codex login.',
+          }],
+        },
+      })) },
+      runRepository,
+      buildRunStepRepository(),
+      vi.fn(),
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run Codex.',
+      taskId: 'task_1',
+    })).rejects.toThrow('Codex CLI is installed but not logged in; run codex login.');
+    expect(runRepository.create).not.toHaveBeenCalled();
+  });
+
   it('keeps Claude Code status-only until a run adapter is enabled', async () => {
     const runRepository = buildRunRepository();
     const service = new AgentCliRunService(
@@ -479,8 +519,8 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
       detectedCount: 1,
       errorCount: 0,
       manualRunCount: 1,
-      readyCount: 0,
-      readyManualRunCount: 0,
+      readyCount: 1,
+      readyManualRunCount: 1,
       runningCount: 0,
       updatedAt: '2026-05-19T00:00:00.000Z',
       runtimes: [{
@@ -489,10 +529,10 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
         command: 'codex',
         installed: true,
         version: 'codex 0.42.0',
-        authState: 'unknown',
+        authState: 'ready',
         executionSupport: 'manual_run',
         workload: 'idle',
-        missingReason: 'Authentication is managed by Codex CLI.',
+        missingReason: null,
       }],
     },
     ...partial,

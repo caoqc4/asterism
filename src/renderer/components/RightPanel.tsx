@@ -912,6 +912,7 @@ export function RightPanel({
       setCodexCliAvailable(Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
         runtime.id === 'codex'
         && runtime.installed
+        && runtime.authState === 'ready'
         && runtime.executionSupport === 'manual_run'
       ))));
     }).catch(() => {});

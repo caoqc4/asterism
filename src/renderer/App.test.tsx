@@ -401,11 +401,11 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
     agentCliRuntimeStatus: {
       catalogueCount: 2,
       detectedCount: 1,
-      readyCount: 0,
+      readyCount: 1,
       runningCount: 0,
       errorCount: 0,
       manualRunCount: 1,
-      readyManualRunCount: 0,
+      readyManualRunCount: 1,
       updatedAt: '2026-05-19T00:00:00.000Z',
       runtimes: [
         {
@@ -414,10 +414,10 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
           command: 'codex',
           installed: true,
           version: 'codex 0.42.0',
-          authState: 'unknown',
+          authState: 'ready',
           executionSupport: 'manual_run',
           workload: 'idle',
-          missingReason: 'Authentication is managed by Codex CLI; run codex login if execution reports a login error.',
+          missingReason: null,
         },
         {
           id: 'claude',
@@ -1780,6 +1780,48 @@ describe('App redesign v1', () => {
       runId: 'run_agent_cli_created',
     });
     expect(await screen.findByText(/Codex CLI run 取消请求已发送/)).toBeTruthy();
+  });
+
+  it('keeps Codex CLI mode disabled until the manual-run runtime is authenticated', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      agentCliRuntimeStatus: {
+        catalogueCount: 2,
+        detectedCount: 1,
+        readyCount: 0,
+        runningCount: 0,
+        errorCount: 0,
+        manualRunCount: 1,
+        readyManualRunCount: 0,
+        updatedAt: '2026-05-19T00:00:00.000Z',
+        runtimes: [
+          {
+            id: 'codex',
+            label: 'Codex CLI',
+            command: 'codex',
+            installed: true,
+            version: 'codex 0.42.0',
+            authState: 'needs_login',
+            executionSupport: 'manual_run',
+            workload: 'idle',
+            missingReason: 'Codex CLI is installed but not logged in; run codex login.',
+          },
+        ],
+      },
+    }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    const codexButton = screen.getByRole('button', { name: 'Codex' }) as HTMLButtonElement;
+    expect(codexButton.disabled).toBe(true);
+    await user.click(codexButton);
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(harness.api.chatWithAI).toHaveBeenCalled();
   });
 
   it('summarizes a background Codex CLI run when the terminal run event arrives', async () => {

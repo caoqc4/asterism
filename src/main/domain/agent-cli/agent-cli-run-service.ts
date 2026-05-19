@@ -114,6 +114,9 @@ export class AgentCliRunService {
     if (!runtime?.installed || runtime.executionSupport !== 'manual_run') {
       throw new Error(`${adapter.acceptedLabel} is not detected on PATH or is not enabled for manual runs.`);
     }
+    if (runtime.authState !== 'ready') {
+      throw new Error(runtime.missingReason ?? `${adapter.acceptedLabel} is not authenticated; use the official CLI login flow before execution.`);
+    }
 
     const startVerification = evaluateRuntimeVerification({
       mode: 'subtask_start',

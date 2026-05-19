@@ -176,6 +176,7 @@ The first implementation keeps Codex CLI as the only executable Agent CLI, but t
 - each executable CLI must provide its own command args, command preview, prompt builder, and terminal step labels;
 - the shared run service owns Taskplane gates, task memory checks, context assembly, workload tracking, cancellation, and terminal persistence;
 - a detected runtime is not executable unless a run adapter is registered and the runtime reports `executionSupport: 'manual_run'`;
+- an executable runtime must also report `authState: 'ready'` before the UI or execution service can launch it;
 - Claude Code remains `status_only` until Taskplane verifies a safe official invocation path.
 
 This avoids accidentally reusing Codex-specific flags for other CLIs. It also keeps the current product promise narrow: Taskplane can show Claude Code presence, but cannot launch it through the background Agent CLI lane yet.
@@ -194,6 +195,7 @@ Taskplane should not enable Claude execution only because `claude -p` exists. Cl
 - keep `executionSupport: 'status_only'`;
 - show `claude auth login` as the official login hint;
 - keep Capability Registry unavailable unless a ready manual-run runtime such as Codex is present;
+- keep the RightPanel launch control disabled and reject execution requests unless the selected CLI is authenticated and ready;
 - require a dedicated Claude adapter design before launching any background Claude run.
 
 Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com/docs/en/headless.
@@ -228,6 +230,7 @@ Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com
 - Active CLI subprocesses can be cancelled without leaving runtime workload status stuck.
 - A status-only CLI such as Claude Code cannot be launched until a dedicated run adapter is enabled.
 - Claude Code readiness uses the official `claude auth status` command and points users to `claude auth login`.
+- Agent CLI launch controls and execution services require a ready manual-run runtime, not merely an installed CLI.
 - The real Codex CLI smoke is opt-in only:
   `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke`.
 - Default local acceptance and tests must not call Agent CLIs or model providers.
