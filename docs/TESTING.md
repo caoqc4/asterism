@@ -146,9 +146,25 @@ npm run accept:release:mac-preflight
 The preflight is read-only. It does not sign, notarize, upload, or contact Apple
 services.
 
-## Agent and Sandbox Gates
+## Agent CLI and Legacy Sandbox Gates
 
-These commands keep higher-risk agent capabilities explicit and local:
+Agent CLI real smoke is the current primary coding-agent path and is opt-in
+because it calls the user's locally installed official CLI:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke
+```
+
+Codex CLI is the verified default. Claude Code can be checked explicitly when a
+local `claude` command and valid account are available:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-readonly-smoke
+```
+
+The older self-built sandbox/API-agent lane remains gated and explicit. These
+commands are useful when maintaining that legacy/experimental runtime boundary,
+but they are not the first-run Agent CLI validation path:
 
 ```bash
 npm run accept:agent-local

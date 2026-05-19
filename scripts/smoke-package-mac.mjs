@@ -100,7 +100,7 @@ if (rendererBundles.length === 0) {
 const rendererBundleText = rendererBundles
   .map((filePath) => asar.extractFile(appAsarPath, filePath.slice(1)).toString('utf8'))
   .join('\n');
-const requiredRendererMarkers = ['AI Runtime', 'ready manual', '重新检测'];
+const requiredRendererMarkers = ['AI Runtime', '当前可执行', 'Auxiliary API Model', '重新检测'];
 
 for (const marker of requiredRendererMarkers) {
   if (!rendererBundleText.includes(marker)) {
