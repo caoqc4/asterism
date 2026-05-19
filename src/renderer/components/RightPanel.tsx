@@ -858,6 +858,19 @@ export function RightPanel({
   } = sessionState;
   const activeTaskIdRef = useRef(activeTaskId);
   const activeAgentCliRunRef = useRef(activeAgentCliRun);
+  const refreshAiRuntimeStatus = useCallback(() => {
+    window.api?.getAiConfigStatus().then((status) => {
+      setCompressionThreshold(
+        status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
+      );
+      setCodexCliAvailable(Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
+        runtime.id === 'codex'
+        && runtime.installed
+        && runtime.authState === 'ready'
+        && runtime.executionSupport === 'manual_run'
+      ))));
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     activeTaskIdRef.current = activeTaskId;
@@ -905,22 +918,19 @@ export function RightPanel({
   }, []);
 
   useEffect(() => {
-    window.api?.getAiConfigStatus().then((status) => {
-      setCompressionThreshold(
-        status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
-      );
-      setCodexCliAvailable(Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
-        runtime.id === 'codex'
-        && runtime.installed
-        && runtime.authState === 'ready'
-        && runtime.executionSupport === 'manual_run'
-      ))));
-    }).catch(() => {});
-  }, []);
+    refreshAiRuntimeStatus();
+  }, [refreshAiRuntimeStatus]);
+
+  useEffect(() => {
+    if (!hidden) refreshAiRuntimeStatus();
+  }, [hidden, refreshAiRuntimeStatus]);
 
   useEffect(() => {
     if (!window.api?.subscribeToEvents) return undefined;
     return window.api.subscribeToEvents((event) => {
+      if (event.type === 'settings.changed' || event.type === 'run.changed') {
+        refreshAiRuntimeStatus();
+      }
       const current = activeAgentCliRunRef.current;
       if (event.type !== 'run.changed' || !current || event.entityId !== current.runId) return;
       void window.api.getRunDetail(current.runId).then((detail) => {

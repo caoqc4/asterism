@@ -43,6 +43,17 @@ export function App() {
   const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
+  const refreshAiRuntimeAvailability = useCallback(() => {
+    window.api?.getAiConfigStatus()
+      .then((status) => {
+        setAiConfigured(Boolean(
+          status.configured
+          || (status.agentCliRuntimeStatus?.readyManualRunCount ?? 0) > 0,
+        ));
+      })
+      .catch(() => setAiConfigured(false));
+  }, []);
+
   const navigate = useCallback((r: AppRoute) => {
     setRouteState(r);
     setRoute(r);
@@ -95,8 +106,17 @@ export function App() {
   }, [openPanelGlobal]);
 
   useEffect(() => {
-    window.api?.getAiConfigStatus().then((s) => setAiConfigured(s.configured)).catch(() => setAiConfigured(false));
-  }, []);
+    refreshAiRuntimeAvailability();
+  }, [refreshAiRuntimeAvailability]);
+
+  useEffect(() => {
+    if (!window.api?.subscribeToEvents) return undefined;
+    return window.api.subscribeToEvents((event) => {
+      if (event.type === 'settings.changed' || event.type === 'run.changed') {
+        refreshAiRuntimeAvailability();
+      }
+    });
+  }, [refreshAiRuntimeAvailability]);
 
   useEffect(() => {
     if (route !== 'tasks' || !panelOpen || panelSuspended) return;

@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event';
 import type { HomeBriefData } from '@shared/types/brief';
 import type { BlockerRecord } from '@shared/types/blocker';
 import type { DecisionRecord } from '@shared/types/decision';
+import type { AppEvent } from '@shared/types/events';
 import type { ElectronApi } from '@shared/types/ipc';
 import type { AppliedProcessTemplateRecord, ProcessTemplateRecord } from '@shared/types/process-template';
 import type { RunDetailRecord, RunRecord } from '@shared/types/run';
@@ -459,7 +460,7 @@ function createMockApi() {
   ];
   const runs = [buildRun({ taskId: tasks[0]!.id })];
   const taskFiles: Record<string, TaskFileRecord[]> = {};
-  let subscriber: Parameters<ElectronApi['subscribeToEvents']>[0] | null = null;
+  const subscribers = new Set<Parameters<ElectronApi['subscribeToEvents']>[0]>();
   let createCounter = 0;
   let taskFileCounter = 0;
 
@@ -888,8 +889,8 @@ function createMockApi() {
     }),
     continuePausedRun: vi.fn(),
     subscribeToEvents: vi.fn().mockImplementation((listener) => {
-      subscriber = listener;
-      return () => { subscriber = null; };
+      subscribers.add(listener);
+      return () => { subscribers.delete(listener); };
     }),
     chatWithAI: vi.fn().mockResolvedValue({ text: '我会基于任务上下文给出下一步建议。' }),
     decomposeProject: vi.fn().mockResolvedValue({
@@ -922,8 +923,10 @@ function createMockApi() {
     decisions,
     runs,
     taskFiles,
-    emit: (type: Parameters<NonNullable<typeof subscriber>>[0]['type'], entityId?: string) => {
-      subscriber?.({ type, entityId, at: now });
+    emit: (type: AppEvent['type'], entityId?: string) => {
+      for (const subscriber of subscribers) {
+        subscriber({ type, entityId, at: now });
+      }
     },
   };
 }
@@ -1321,12 +1324,43 @@ describe('App redesign v1', () => {
   });
 
   it('keeps task management available before AI setup', async () => {
-    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValueOnce(buildAiStatus({ configured: false }));
+    const missingAgentCliStatus = {
+      ...buildAiStatus().agentCliRuntimeStatus!,
+      readyCount: 0,
+      readyManualRunCount: 0,
+      runtimes: buildAiStatus().agentCliRuntimeStatus!.runtimes.map((runtime) => (
+        runtime.id === 'codex'
+          ? {
+              ...runtime,
+              authState: 'needs_login' as const,
+              missingReason: 'Codex CLI is installed but not logged in; run codex login.',
+            }
+          : runtime
+      )),
+    };
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValueOnce(buildAiStatus({
+      agentCliRuntimeStatus: missingAgentCliStatus,
+      configured: false,
+      configuredProviders: [],
+    }));
     render(<App />);
 
     expect(await screen.findByText(/AI Runtime 尚未配置/)).toBeTruthy();
     expect(screen.getByText(/任务管理仍可继续使用/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
+  });
+
+  it('treats a ready manual Agent CLI runtime as AI Runtime setup', async () => {
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValueOnce(buildAiStatus({
+      apiKeyStored: false,
+      configured: false,
+      configuredProviders: [],
+    }));
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/AI Runtime 尚未配置/)).toBeNull();
+    });
   });
 
   it('clarifies enabled Skills are catalogue intent until a real service exposes tools', async () => {
@@ -1863,6 +1897,49 @@ describe('App redesign v1', () => {
 
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
     expect(harness.api.chatWithAI).toHaveBeenCalled();
+  });
+
+  it('refreshes Codex CLI mode availability after AI Runtime settings change', async () => {
+    const user = userEvent.setup();
+    const needsLogin = buildAiStatus({
+      agentCliRuntimeStatus: {
+        catalogueCount: 2,
+        detectedCount: 1,
+        errorCount: 0,
+        manualRunCount: 1,
+        readyCount: 0,
+        readyManualRunCount: 0,
+        runningCount: 0,
+        updatedAt: '2026-05-19T00:00:00.000Z',
+        runtimes: [
+          {
+            id: 'codex',
+            label: 'Codex CLI',
+            command: 'codex',
+            installed: true,
+            version: 'codex 0.42.0',
+            authState: 'needs_login',
+            executionSupport: 'manual_run',
+            workload: 'idle',
+            missingReason: 'Codex CLI is installed but not logged in; run codex login.',
+          },
+        ],
+      },
+    });
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(needsLogin);
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+    const codexButton = screen.getByRole('button', { name: 'Codex' }) as HTMLButtonElement;
+    expect(codexButton.disabled).toBe(true);
+
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus());
+    harness.emit('settings.changed');
+
+    await waitFor(() => {
+      expect(codexButton.disabled).toBe(false);
+    });
   });
 
   it('summarizes a background Codex CLI run when the terminal run event arrives', async () => {
