@@ -457,25 +457,19 @@ function AgentCliRuntimeSection({
           <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
             {readyCount}/{catalogueCount} 已登录
           </div>
-        </div>
-      </div>
-
-      <div className="agent-cli-runtime-list" aria-label="Agent CLI runtimes">
-        <div className="agent-cli-refresh-row">
-          <div>
-            <strong>CLI 状态检测</strong>
-            <span>安装、登录或更新完成后点这里同步状态。</span>
-          </div>
           <button
-            className={`btn sm model-refresh-inline${refreshing ? ' disabled' : ''}`}
+            className={`btn sm ghost${refreshing ? ' disabled' : ''}`}
             onClick={onRefresh}
             disabled={refreshing}
             title="重新检测官方 CLI 登录和本机运行状态"
             type="button"
           >
-            {refreshing ? '检测中…' : '重新检测 CLI 状态'}
+            {refreshing ? '检测中…' : '重新检测'}
           </button>
         </div>
+      </div>
+
+      <div className="agent-cli-runtime-list" aria-label="Agent CLI runtimes">
         <AgentCliRuntimeRow
           runtime={codexRuntime}
           fallback={{

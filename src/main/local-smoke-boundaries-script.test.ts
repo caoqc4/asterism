@@ -252,7 +252,7 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('Agent CLI runtimes');
     expect(script).toContain('API Model 配置');
     expect(script).toContain('使用此方式');
-    expect(script).toContain('重新检测 CLI 状态');
+    expect(script).toContain('重新检测');
     expect(script).toContain('配置 AI Provider 密钥');
     expect(script).toContain('stale Model page marker');
   });
