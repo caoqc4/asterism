@@ -1106,7 +1106,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
     expect(screen.getByText(/CLI 账号由官方工具管理/)).toBeTruthy();
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
-    expect(screen.getByText(/选择任务默认调用 CLI 还是 API/)).toBeTruthy();
+    expect(screen.getByText(/选择任务默认调用 Codex 或 Claude/)).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
@@ -1119,6 +1119,7 @@ describe('App redesign v1', () => {
     expect(screen.getAllByRole('button', { name: '更新' }).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '修改配置' }));
     expect(screen.getByText(/API Model 配置/)).toBeTruthy();
+    expect(screen.getByText('配置预留')).toBeTruthy();
     expect(screen.getByText(/当前使用/)).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
     expect(screen.queryByText(/Safety Details/)).toBeNull();
@@ -2047,7 +2048,7 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Search or ask/ }));
 
-    expect(await screen.findByText('Codex CLI · 选择任务后可用')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI')).toBeTruthy();
     expect(screen.queryByText('API Model · 全局对话')).toBeNull();
   });
 

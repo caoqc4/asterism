@@ -1973,7 +1973,7 @@ export function RightPanel({
     ? shouldUseAgentCliRuntime
       ? AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode]
       : agentCliAvailability[activeAgentCliRuntimeMode]
-        ? `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} · 选择任务后可用`
+        ? AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]
         : activeTaskId
           ? 'API Model · 当前 CLI 不可用'
           : `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} · 当前不可用`

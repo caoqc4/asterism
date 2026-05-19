@@ -131,7 +131,7 @@ export function ModelPage() {
       setStatus(s);
       if (s.model) setSelectedModel(s.model);
       if (s.provider) setSelectedProvider(s.provider);
-      setSelectedRuntimeMode(s.runtimeMode ?? 'codex');
+      setSelectedRuntimeMode(s.runtimeMode === 'api' ? 'codex' : s.runtimeMode ?? 'codex');
       setWorkspaceRoot(s.workspaceRoot ?? s.suggestedWorkspaceRoot ?? '');
     } catch {
       // Keep the last known status visible when a manual probe fails.
@@ -199,7 +199,7 @@ export function ModelPage() {
         featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
       });
       setStatus(next);
-      setSelectedRuntimeMode(next.runtimeMode ?? selectedRuntimeMode);
+      setSelectedRuntimeMode(next.runtimeMode === 'api' ? 'codex' : next.runtimeMode ?? selectedRuntimeMode);
       setWorkspaceRoot(next.workspaceRoot ?? '');
       setKeys({});
       setSaveResult('ok');
@@ -247,7 +247,7 @@ export function ModelPage() {
         featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
       });
       setStatus(next);
-      setSelectedRuntimeMode(next.runtimeMode ?? runtimeMode);
+      setSelectedRuntimeMode(next.runtimeMode === 'api' ? 'codex' : next.runtimeMode ?? runtimeMode);
       setSaveResult('ok');
     } catch {
       setSaveResult('error');
@@ -382,7 +382,7 @@ export function ModelPage() {
 
       {/* Footer */}
       <div className="model-page-footer">
-        <span className="muted" style={{ fontSize: 12 }}>{selectedRuntimeMode === 'api' ? '当前使用 API Model' : '当前使用 Agent CLI'}</span>
+        <span className="muted" style={{ fontSize: 12 }}>当前使用 Agent CLI</span>
         <button
           className={`btn primary${saving ? ' disabled' : ''}${saveResult === 'ok' ? ' saved' : ''}${saveResult === 'error' ? ' danger' : ''}`}
           onClick={save}
@@ -451,7 +451,7 @@ function AgentCliRuntimeSection({
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">运行方式</div>
-          <p className="model-section-copy">选择任务默认调用 CLI 还是 API。</p>
+          <p className="model-section-copy">选择任务默认调用 Codex 或 Claude；API Model 暂作为配置预留。</p>
         </div>
         <div className="agent-cli-head-actions">
           <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
@@ -509,18 +509,8 @@ function AgentCliRuntimeSection({
             {apiConfigured ? '已配置' : '未配置'}
           </span>
           <span className="agent-cli-runtime-row-version">{apiProviderSummary ?? '未完成'}</span>
-          <span className="agent-cli-runtime-row-detail">{runtimeMode === 'api' ? '正在使用' : apiConfigured ? '可选择' : '先配置'}</span>
+          <span className="agent-cli-runtime-row-detail">{apiConfigured ? '配置预留' : '先配置'}</span>
           <div className="agent-cli-runtime-row-actions">
-            {apiConfigured && (
-              <button
-                className={`btn sm${runtimeMode === 'api' ? ' disabled' : ''}`}
-                disabled={runtimeMode === 'api'}
-                onClick={() => onSelectRuntimeMode('api')}
-                type="button"
-              >
-                {runtimeMode === 'api' ? '正在使用' : '使用此方式'}
-              </button>
-            )}
             <button
               className={`btn sm${apiConfigured ? ' ghost' : ' primary'}`}
               onClick={onToggleApiConfig}
