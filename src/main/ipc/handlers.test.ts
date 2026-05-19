@@ -98,6 +98,7 @@ const {
     },
     agentCliRunService: {
       trigger: vi.fn(),
+      recordNativeGoalRequest: vi.fn(),
       cancel: vi.fn(),
     },
     codeAgentRunService: {
@@ -1566,6 +1567,43 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
     expect(result.status).toBe('completed');
+  });
+
+  it('delegates runtime-native goal audit runs and emits run, task, and brief events', async () => {
+    servicesMock.agentCliRunService.recordNativeGoalRequest.mockResolvedValue({
+      id: 'run_native_goal_audit',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'completed',
+      instructions: 'Runtime native goal request (Codex CLI): 跑完验收',
+      output: 'Runtime-native goal request recorded without forwarding.',
+      outputSource: 'system',
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const input = {
+      forwarded: false,
+      objective: '跑完验收',
+      operatorConfirmed: true,
+      reason: 'Adapter native goal capability is disabled.',
+      runtimeId: 'codex' as const,
+      runtimeLabel: 'Codex CLI',
+      supportsNativeGoalMode: false,
+      taskId: 'task_1',
+    };
+    const handler = getRegisteredHandler<
+      [typeof input],
+      Awaited<ReturnType<typeof servicesMock.agentCliRunService.recordNativeGoalRequest>>
+    >('run:recordRuntimeNativeGoalRequest');
+
+    const result = await handler({}, input);
+
+    expect(servicesMock.agentCliRunService.recordNativeGoalRequest).toHaveBeenCalledWith(input);
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_native_goal_audit');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
+    expect(result.outputSource).toBe('system');
   });
 
   it('delegates Agent CLI cancellation and emits scoped run events only when active', async () => {

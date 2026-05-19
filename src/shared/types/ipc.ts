@@ -105,6 +105,7 @@ import type {
   CreateAgentCliRunInput,
   CreateCodeAgentRunInput,
   CreateRunInput,
+  RecordRuntimeNativeGoalRequestInput,
   RunDetailRecord,
   RunRecord,
 } from './run.js';
@@ -235,6 +236,7 @@ export type ElectronApi = {
   getRunDetail: (runId: string) => Promise<RunDetailRecord | null>;
   triggerRun: (input: CreateRunInput) => Promise<RunRecord>;
   triggerAgentCliRun?: (input: CreateAgentCliRunInput) => Promise<RunRecord>;
+  recordRuntimeNativeGoalRequest?: (input: RecordRuntimeNativeGoalRequestInput) => Promise<RunRecord>;
   cancelAgentCliRun?: (input: CancelAgentCliRunInput) => Promise<CancelAgentCliRunResult>;
   triggerCodeAgentRun?: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
   triggerOperatorStartedRun?: (input: OperatorStartedRunRequest) => Promise<RunRecord>;

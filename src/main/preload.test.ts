@@ -206,6 +206,16 @@ describe('preload bridge', () => {
       runtimeId: 'codex',
       taskId: 'task_1',
     };
+    const nativeGoalAuditInput = {
+      forwarded: false,
+      objective: 'Run native goal.',
+      operatorConfirmed: true,
+      reason: 'Adapter native goal capability is disabled.',
+      runtimeId: 'codex',
+      runtimeLabel: 'Codex CLI',
+      supportsNativeGoalMode: false,
+      taskId: 'task_1',
+    };
     const cancelAgentCliRunInput = {
       operatorConfirmed: true,
       runId: 'run_agent_cli_1',
@@ -309,6 +319,7 @@ describe('preload bridge', () => {
     await api.getRunDetail('run_1');
     await api.triggerRun(createRunInput);
     await api.triggerAgentCliRun?.(createAgentCliRunInput);
+    await api.recordRuntimeNativeGoalRequest?.(nativeGoalAuditInput);
     await api.cancelAgentCliRun?.(cancelAgentCliRunInput);
     await api.triggerCodeAgentRun?.(createCodeAgentRunInput);
     await api.triggerOperatorStartedRun?.(operatorStartedRunInput);
@@ -384,6 +395,7 @@ describe('preload bridge', () => {
       ['run:getDetail', 'run_1'],
       ['run:trigger', createRunInput],
       ['run:triggerAgentCli', createAgentCliRunInput],
+      ['run:recordRuntimeNativeGoalRequest', nativeGoalAuditInput],
       ['run:cancelAgentCli', cancelAgentCliRunInput],
       ['run:triggerCodeAgent', createCodeAgentRunInput],
       ['run:triggerOperatorStarted', operatorStartedRunInput],

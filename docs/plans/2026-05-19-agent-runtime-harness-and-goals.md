@@ -301,17 +301,17 @@ First pass implemented on 2026-05-19:
 - `/goal clear` clears that durable Task Goal projection when a goal exists, records the previous objective, and keeps the lifecycle visible in task dynamics.
 - `/goal pause` and `/goal resume` now persist Task Goal lifecycle control events. A paused Task Goal remains visible on the task, but is not projected as the next Run Goal Contract objective until resumed.
 - `RunGoalContract` now carries the derived Task Goal lifecycle state, so verifier/subagent code can distinguish an active durable Task Goal from a paused goal plus one-off user request.
-- `/codex goal ...`, `/claude goal ...`, and `/runtime goal ...` are recognized as explicit runtime-native goal requests, but native forwarding remains disabled until adapter capability flags and audit behavior are implemented.
+- `/codex goal ...`, `/claude goal ...`, and `/runtime goal ...` are recognized as explicit runtime-native goal requests. Native forwarding remains disabled, but Taskplane now records a non-executing audit run with a skipped step so the request appears in the Run evidence chain as well as task dynamics.
 - The task-bound panel surfaces the current Task Goal above the run-context preview.
 - Agent CLI runtime status now carries explicit adapter capability flags. Codex and Claude both default `supportsNativeGoalMode=false`, `supportsWorkspaceWrite=false`, and `passthroughRequiresExplicitNamespace=true`.
-- Product `/goal` updates and explicit native-goal requests are persisted into task dynamics through `panel.task_goal_updated` and `panel.runtime_native_goal_requested`.
+- Product `/goal` updates and explicit native-goal requests are persisted into task dynamics through `panel.task_goal_updated` and `panel.runtime_native_goal_requested`; runtime-native goal requests also persist a completed system-output audit run without calling the CLI.
 - The Agent CLI terminal acceptance check now uses a shared bounded verifier contract (`taskplane.verifier.lightweight`) that reads the Run Goal Contract and terminal evidence. The result includes a structured decision (`accept_for_review`, `needs_evidence`, or `failed`), next action, memory-proposal flag, and an explicit `canMarkTaskComplete=false` safety boundary. This is still local and deterministic, but gives the future API verifier subagent a stable input/output shape.
 - Agent CLI task-memory proposal creation now follows the verifier result instead of duplicating its own stdout rule: only `shouldProposeTaskMemory=true` creates the `任务记忆建议` step, and the proposal records the verifier decision and next action.
 - AI Runtime configuration now separates three concepts in copy: first-version Agent CLI execution, future peer Agent API Runtime execution, and model-service configuration for global helper/summaries/lightweight model calls.
 - RightPanel uses the same terminology: global chat is model-service assistance, unavailable CLI falls back to model-service assistance, and legacy `api` runtime mode is shown as `Agent API Runtime` in development rather than as an active API Model executor.
 - CapabilityRegistry and ConfigurationSafetyReport now include `agent_api.runtime` as a disabled peer execution runtime, so diagnostics and context manifests see Agent API as a real planned runtime rather than conflating it with model-service configuration.
 
-Remaining next steps are explicit native-goal UI/namespace enablement with actual run audit persistence, and replacing the deterministic lightweight verifier with an optional API verifier subagent when the Agent API runtime is ready.
+Remaining next steps are deciding whether any adapter should enable actual native-goal forwarding, and replacing the deterministic lightweight verifier with an optional API verifier subagent when the Agent API runtime is ready.
 
 ## Non-Goals For The Next Pass
 

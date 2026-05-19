@@ -2050,22 +2050,36 @@ export function RightPanel({
       const runtimeLabel = targetRuntime ? AGENT_CLI_PANEL_RUNTIME_LABELS[targetRuntime] : '当前 runtime';
       const capabilities = targetRuntime ? agentCliCapabilities[targetRuntime] : null;
       const nativeGoalAvailable = Boolean(capabilities?.supportsNativeGoalMode);
+      const nativeGoalReason = nativeGoalAvailable
+        ? 'Adapter declares native goal support, but Taskplane passthrough entrypoint is not open yet.'
+        : 'Adapter native goal capability is disabled.';
       await recordPanelTimelineEvent(activeTaskId, 'panel.runtime_native_goal_requested', {
         forwarded: false,
         objective: command.objective,
-        reason: nativeGoalAvailable
-          ? 'Adapter declares native goal support, but Taskplane passthrough entrypoint is not open yet.'
-          : 'Adapter native goal capability is disabled.',
+        reason: nativeGoalReason,
         runtimeId: targetRuntime ?? command.runtimeId,
         runtimeLabel,
         supportsNativeGoalMode: nativeGoalAvailable,
       });
+      const auditRun = targetRuntime && window.api?.recordRuntimeNativeGoalRequest
+        ? await window.api.recordRuntimeNativeGoalRequest({
+            forwarded: false,
+            objective: command.objective,
+            operatorConfirmed: true,
+            reason: nativeGoalReason,
+            runtimeId: targetRuntime,
+            runtimeLabel,
+            supportsNativeGoalMode: nativeGoalAvailable,
+            taskId: activeTaskId,
+          }).catch(() => null)
+        : null;
       return [
         nativeGoalAvailable
           ? `${runtimeLabel} native goal mode 已被 adapter 声明，但 Taskplane 透传入口尚未开放。`
           : `${runtimeLabel} native goal mode 尚未开启。`,
         '',
         'Taskplane 已识别这是显式 runtime-native goal 请求，但本版本不会直接透传到底层 CLI，避免目标状态落在 Taskplane 会话之外。',
+        auditRun ? `审计 Run: ${auditRun.id}` : null,
         capabilities
           ? `Adapter capability: supportsNativeGoalMode=${String(capabilities.supportsNativeGoalMode)}, passthroughRequiresExplicitNamespace=${String(capabilities.commandRouting.passthroughRequiresExplicitNamespace)}`
           : 'Adapter capability: unavailable',

@@ -897,6 +897,18 @@ function createMockApi() {
       runs.push(run);
       return run;
     }),
+    recordRuntimeNativeGoalRequest: vi.fn().mockImplementation(async (input) => {
+      const run = buildRun({
+        id: 'run_native_goal_audit',
+        output: 'Runtime-native goal request recorded without forwarding.',
+        outputSource: 'system',
+        status: 'completed',
+        taskId: input.taskId,
+        type: 'agent',
+      });
+      runs.push(run);
+      return run;
+    }),
     cancelAgentCliRun: vi.fn().mockResolvedValue({
       cancelled: true,
       reason: 'Operator cancelled the Codex CLI run from Taskplane.',
@@ -2194,6 +2206,16 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '发送' }));
 
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(harness.api.recordRuntimeNativeGoalRequest).toHaveBeenCalledWith({
+      forwarded: false,
+      objective: '跑完验收',
+      operatorConfirmed: true,
+      reason: 'Adapter native goal capability is disabled.',
+      runtimeId: 'codex',
+      runtimeLabel: 'Codex CLI',
+      supportsNativeGoalMode: false,
+      taskId: 'task_risk',
+    });
     expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith({
       taskId: 'task_risk',
       type: 'panel.runtime_native_goal_requested',
@@ -2211,6 +2233,7 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/Codex CLI native goal mode 尚未开启/)).toBeTruthy();
+    expect(screen.getByText(/审计 Run: run_native_goal_audit/)).toBeTruthy();
     expect(screen.getByText(/显式 runtime-native goal 请求/)).toBeTruthy();
   });
 

@@ -113,6 +113,17 @@ export type CreateAgentCliRunInput = {
   operatorConfirmed: boolean;
 };
 
+export type RecordRuntimeNativeGoalRequestInput = {
+  taskId: string;
+  runtimeId: AgentCliRuntimeId | 'selected';
+  runtimeLabel: string;
+  objective: string;
+  supportsNativeGoalMode: boolean;
+  forwarded: false;
+  reason: string;
+  operatorConfirmed: boolean;
+};
+
 export type CancelAgentCliRunInput = {
   runId: string;
   reason?: string;

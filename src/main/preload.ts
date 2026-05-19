@@ -71,6 +71,7 @@ const api: ElectronApi = {
   getRunDetail: (runId) => ipcRenderer.invoke('run:getDetail', runId),
   triggerRun: (input) => ipcRenderer.invoke('run:trigger', input),
   triggerAgentCliRun: (input) => ipcRenderer.invoke('run:triggerAgentCli', input),
+  recordRuntimeNativeGoalRequest: (input) => ipcRenderer.invoke('run:recordRuntimeNativeGoalRequest', input),
   cancelAgentCliRun: (input) => ipcRenderer.invoke('run:cancelAgentCli', input),
   triggerCodeAgentRun: (input) => ipcRenderer.invoke('run:triggerCodeAgent', input),
   triggerOperatorStartedRun: (input) => ipcRenderer.invoke('run:triggerOperatorStarted', input),

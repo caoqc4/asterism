@@ -28,6 +28,7 @@ import type {
   CreateAgentCliRunInput,
   CreateCodeAgentRunInput,
   CreateRunInput,
+  RecordRuntimeNativeGoalRequestInput,
 } from '../../shared/types/run.js';
 import type { AiConfigInput, FeatureFlags } from '../../shared/types/settings.js';
 import type { GmailOAuthConnectInput, GmailOAuthDisconnectInput } from '../../shared/types/external-access-control.js';
@@ -693,6 +694,14 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('run:triggerAgentCli', async (_event, input: CreateAgentCliRunInput) => {
     const created = await getServices().agentCliRunService.trigger(input);
+    emitAppEvent('run.changed', created.id);
+    emitAppEvent('task.changed', created.taskId);
+    emitAppEvent('brief.changed');
+    return created;
+  });
+
+  ipcMain.handle('run:recordRuntimeNativeGoalRequest', async (_event, input: RecordRuntimeNativeGoalRequestInput) => {
+    const created = await getServices().agentCliRunService.recordNativeGoalRequest(input);
     emitAppEvent('run.changed', created.id);
     emitAppEvent('task.changed', created.taskId);
     emitAppEvent('brief.changed');

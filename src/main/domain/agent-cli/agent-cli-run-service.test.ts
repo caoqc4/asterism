@@ -165,6 +165,59 @@ describe('AgentCliRunService', () => {
     });
   });
 
+  it('records explicit runtime-native goal requests as skipped audit runs without executing CLI', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn();
+    const onTerminalRun = vi.fn();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+      null,
+      new AgentCliRuntimeWorkloadTracker(),
+      onTerminalRun,
+    );
+
+    const result = await service.recordNativeGoalRequest({
+      forwarded: false,
+      objective: '跑完验收',
+      operatorConfirmed: true,
+      reason: 'Adapter native goal capability is disabled.',
+      runtimeId: 'codex',
+      runtimeLabel: 'Codex CLI',
+      supportsNativeGoalMode: false,
+      taskId: 'task_1',
+    });
+
+    expect(executor).not.toHaveBeenCalled();
+    expect(runRepository.create).toHaveBeenCalledWith({
+      instructions: 'Runtime native goal request (Codex CLI): 跑完验收',
+      taskId: 'task_1',
+      type: 'agent',
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'skipped',
+      title: 'Runtime Native Goal 请求审计',
+      input: expect.stringContaining('"forwarded": false'),
+      output: expect.stringContaining('Taskplane kept this as audit evidence'),
+    }));
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_agent_cli_1',
+      'completed',
+      expect.stringContaining('Runtime-native goal request recorded without forwarding'),
+      'system',
+    );
+    expect(onTerminalRun).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'run_agent_cli_1',
+      status: 'completed',
+    }));
+    expect(result.outputSource).toBe('system');
+  });
+
   it('does not project a paused Task Goal into the next Agent CLI run contract', async () => {
     const taskService = buildTaskService();
     vi.mocked(taskService.getDetail).mockResolvedValue({

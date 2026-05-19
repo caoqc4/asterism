@@ -33,6 +33,7 @@ import type {
   CancelAgentCliRunResult,
   AgentCliRunSandboxMode,
   CreateAgentCliRunInput,
+  RecordRuntimeNativeGoalRequestInput,
   RunOutputSource,
   RunRecord,
   RunStatus,
@@ -103,6 +104,54 @@ export class AgentCliRunService {
     private readonly workloadTracker: AgentCliRuntimeWorkloadTracker = agentCliRuntimeWorkloadTracker,
     private readonly onTerminalRun: AgentCliRunTerminalListener | null = null,
   ) {}
+
+  async recordNativeGoalRequest(input: RecordRuntimeNativeGoalRequestInput): Promise<RunRecord> {
+    const request = normalizeRuntimeNativeGoalRequestInput(input);
+    const task = await this.taskService.getDetail(request.taskId);
+    if (!task) {
+      throw new Error(`Task not found: ${request.taskId}`);
+    }
+    if (!request.operatorConfirmed) {
+      throw new Error('Runtime-native goal audit requires explicit operator confirmation.');
+    }
+
+    const run = await this.runRepository.create({
+      instructions: `Runtime native goal request (${request.runtimeLabel}): ${request.objective}`,
+      taskId: task.id,
+      type: 'agent',
+    });
+    const payload = {
+      forwarded: request.forwarded,
+      objective: request.objective,
+      reason: request.reason,
+      runtimeId: request.runtimeId,
+      runtimeLabel: request.runtimeLabel,
+      supportsNativeGoalMode: request.supportsNativeGoalMode,
+      taskId: task.id,
+    };
+    await this.runStepRepository.create({
+      runId: run.id,
+      kind: 'plan',
+      status: 'skipped',
+      title: 'Runtime Native Goal 请求审计',
+      input: JSON.stringify(payload, null, 2),
+      output: [
+        `Runtime: ${request.runtimeLabel}`,
+        `Objective: ${request.objective}`,
+        'Forwarded: no',
+        `Reason: ${request.reason}`,
+        'Taskplane kept this as audit evidence; no CLI command was executed.',
+      ].join('\n'),
+    });
+    const updated = await this.updateRunResult(
+      run.id,
+      'completed',
+      `Runtime-native goal request recorded without forwarding. Runtime: ${request.runtimeLabel}. Objective: ${request.objective}. Reason: ${request.reason}`,
+      'system',
+    );
+    await this.notifyTerminalRun(updated);
+    return updated;
+  }
 
   async trigger(input: CreateAgentCliRunInput): Promise<RunRecord> {
     const request = normalizeAgentCliRunInput(input);
@@ -480,6 +529,21 @@ function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): Required<Crea
     prompt: input.prompt?.trim() ?? '',
     runtimeId: input.runtimeId ?? 'codex',
     sandboxMode: 'read-only',
+    taskId: input.taskId?.trim() ?? '',
+  };
+}
+
+function normalizeRuntimeNativeGoalRequestInput(
+  input: RecordRuntimeNativeGoalRequestInput,
+): RecordRuntimeNativeGoalRequestInput {
+  return {
+    forwarded: false,
+    objective: input.objective?.trim() ?? '',
+    operatorConfirmed: input.operatorConfirmed === true,
+    reason: input.reason?.trim() || 'Runtime-native goal request was not forwarded by Taskplane policy.',
+    runtimeId: input.runtimeId ?? 'selected',
+    runtimeLabel: input.runtimeLabel?.trim() || String(input.runtimeId ?? 'selected'),
+    supportsNativeGoalMode: input.supportsNativeGoalMode === true,
     taskId: input.taskId?.trim() ?? '',
   };
 }
