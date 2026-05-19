@@ -761,10 +761,10 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
   },
   {
     id: 'settings.agentCliLoginProbe',
-    owner: 'IPC settings:openAgentCliLogin',
+    owner: 'IPC settings:openAgentCliLogin / settings:openAgentCliInstall',
     kind: 'capability_probe',
-    description: 'Open a prepared official Agent CLI login command in the local terminal without storing credentials or starting a run.',
-    ipcChannels: ['settings:openAgentCliLogin'],
+    description: 'Open a prepared official Agent CLI install or login command in the local terminal without storing credentials or starting a run.',
+    ipcChannels: ['settings:openAgentCliLogin', 'settings:openAgentCliInstall'],
     requiredGates: [
       'simplicity_check',
       'capability_probe_boundary',
@@ -773,7 +773,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'capability_probe_boundary',
     ],
-    notes: 'This launches only the official CLI login command. Account authorization remains with the official CLI/web flow, and Taskplane stores no CLI account credential.',
+    notes: 'This launches only the official CLI install or login command. Account authorization remains with the official CLI/web flow, and Taskplane stores no CLI account credential.',
   },
   {
     id: 'externalAccess.gmailOAuthCredential',

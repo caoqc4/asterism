@@ -90,6 +90,11 @@ function agentCliLoginCommand(runtimeId: AgentCliRuntimeId): string {
   return 'codex login';
 }
 
+function agentCliInstallCommand(runtimeId: AgentCliRuntimeId): string {
+  if (runtimeId === 'claude') return 'npm install -g @anthropic-ai/claude-code';
+  return 'npm install -g @openai/codex';
+}
+
 function openTerminalWithCommand(command: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (process.platform !== 'darwin') {
@@ -249,6 +254,19 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('settings:openAgentCliLogin', async (_event, input: { runtimeId?: AgentCliRuntimeId }) => {
     const runtimeId = input.runtimeId === 'claude' ? 'claude' : 'codex';
     const command = agentCliLoginCommand(runtimeId);
+    await openTerminalWithCommand(command);
+
+    return {
+      command,
+      opened: true,
+      runtimeId,
+      summary: `Opened Terminal with ${command}.`,
+    };
+  });
+
+  ipcMain.handle('settings:openAgentCliInstall', async (_event, input: { runtimeId?: AgentCliRuntimeId }) => {
+    const runtimeId = input.runtimeId === 'claude' ? 'claude' : 'codex';
+    const command = agentCliInstallCommand(runtimeId);
     await openTerminalWithCommand(command);
 
     return {

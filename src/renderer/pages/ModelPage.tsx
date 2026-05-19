@@ -118,6 +118,7 @@ export function ModelPage() {
   const [saving, setSaving] = useState(false);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [openingLogin, setOpeningLogin] = useState(false);
+  const [openingInstall, setOpeningInstall] = useState(false);
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
   const [apiModelOpen, setApiModelOpen] = useState(false);
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -203,6 +204,16 @@ export function ModelPage() {
     }
   }
 
+  async function openAgentCliInstall(runtimeId: 'codex' | 'claude' = 'codex') {
+    if (!window.api?.openAgentCliInstall || openingInstall) return;
+    setOpeningInstall(true);
+    try {
+      await window.api.openAgentCliInstall({ runtimeId });
+    } finally {
+      setOpeningInstall(false);
+    }
+  }
+
   const configuredProviders = new Set(status?.configuredProviders ?? []);
   const modelSafetySurfaces = status?.configurationSafetyReport?.surfaces
     .filter((surface) => surface.id === 'model.provider' || surface.id === 'model.api_key')
@@ -240,6 +251,8 @@ export function ModelPage() {
         capabilitySummary={agentCliCapability?.summary ?? null}
         suggestedWorkspaceRoot={status?.suggestedWorkspaceRoot ?? null}
         onOpenLogin={(runtimeId) => void openAgentCliLogin(runtimeId)}
+        onOpenInstall={(runtimeId) => void openAgentCliInstall(runtimeId)}
+        openingInstall={openingInstall}
         openingLogin={openingLogin}
         onSave={() => void save()}
         saveLabel={saving ? '保存中…' : saveResult === 'ok' ? '已保存' : '保存工作区'}
@@ -373,6 +386,8 @@ function AgentCliRuntimeSection({
   onWorkspaceRootChange,
   onSave,
   onOpenLogin,
+  onOpenInstall,
+  openingInstall,
   openingLogin,
   saveDisabled,
   saveLabel,
@@ -385,6 +400,8 @@ function AgentCliRuntimeSection({
   onWorkspaceRootChange: (value: string) => void;
   onSave: () => void;
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
+  onOpenInstall: (runtimeId: 'codex' | 'claude') => void;
+  openingInstall: boolean;
   openingLogin: boolean;
   saveDisabled: boolean;
   saveLabel: string;
@@ -431,7 +448,9 @@ function AgentCliRuntimeSection({
             label: 'Codex CLI',
           }}
           openingLogin={openingLogin}
+          openingInstall={openingInstall}
           onOpenLogin={onOpenLogin}
+          onOpenInstall={onOpenInstall}
           primary
         />
         <AgentCliRuntimeRow
@@ -442,7 +461,9 @@ function AgentCliRuntimeSection({
             label: 'Claude Code',
           }}
           openingLogin={openingLogin}
+          openingInstall={openingInstall}
           onOpenLogin={onOpenLogin}
+          onOpenInstall={onOpenInstall}
         />
       </div>
 
@@ -526,6 +547,8 @@ function AgentCliRuntimeSection({
 function AgentCliRuntimeRow({
   fallback,
   onOpenLogin,
+  onOpenInstall,
+  openingInstall,
   openingLogin,
   primary = false,
   runtime,
@@ -536,6 +559,8 @@ function AgentCliRuntimeRow({
     label: string;
   };
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
+  onOpenInstall: (runtimeId: 'codex' | 'claude') => void;
+  openingInstall: boolean;
   openingLogin: boolean;
   primary?: boolean;
   runtime: NonNullable<AiConfigStatus['agentCliRuntimeStatus']>['runtimes'][number] | null;
@@ -570,8 +595,17 @@ function AgentCliRuntimeRow({
         >
           {openingLogin ? '正在打开…' : fallback.id === 'claude' ? '登录 Claude' : '登录 Codex'}
         </button>
+      ) : !installed ? (
+        <button
+          className={`btn sm${openingInstall ? ' disabled' : ''}`}
+          type="button"
+          onClick={() => onOpenInstall(fallback.id)}
+          disabled={openingInstall}
+        >
+          {openingInstall ? '正在打开…' : fallback.id === 'claude' ? '安装 Claude' : '安装 Codex'}
+        </button>
       ) : (
-        <span className="agent-cli-runtime-row-action">{ready ? '可用' : '安装后检测'}</span>
+        <span className="agent-cli-runtime-row-action">可用</span>
       )}
     </div>
   );

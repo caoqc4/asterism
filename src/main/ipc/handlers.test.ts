@@ -502,6 +502,32 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.aiConfigService.setConfig).not.toHaveBeenCalled();
   });
 
+  it('opens a prepared Claude Code install command without storing credentials', async () => {
+    execFileMock.mockImplementation((_command: unknown, _args: unknown, callback: (error: Error | null) => void) => {
+      callback(null);
+    });
+
+    const handler = getRegisteredHandler<[{ runtimeId: 'claude' }], {
+      command: string;
+      opened: boolean;
+      runtimeId: string;
+      summary: string;
+    }>('settings:openAgentCliInstall');
+
+    const result = await handler({}, { runtimeId: 'claude' });
+
+    expect(result).toMatchObject({
+      command: 'npm install -g @anthropic-ai/claude-code',
+      opened: true,
+      runtimeId: 'claude',
+    });
+    expect(execFileMock).toHaveBeenCalledWith('osascript', expect.arrayContaining([
+      'tell application "Terminal" to activate',
+      expect.stringContaining('npm install -g @anthropic-ai/claude-code'),
+    ]), expect.any(Function));
+    expect(servicesMock.aiConfigService.setConfig).not.toHaveBeenCalled();
+  });
+
   it('connects Gmail OAuth through explicit External Access IPC and emits settings.changed only when connected', async () => {
     gmailOAuthConnectMock.mockResolvedValue({
       status: 'connected',

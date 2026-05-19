@@ -249,7 +249,8 @@ describe('local smoke script default boundaries', () => {
     const script = fs.readFileSync(path.join(process.cwd(), 'scripts/smoke-package-mac.mjs'), 'utf8');
 
     expect(script).toContain('AI Runtime');
-    expect(script).toContain('当前可执行');
+    expect(script).toContain('Agent CLI runtimes');
+    expect(script).toContain('文件上下文由具体任务决定');
     expect(script).toContain('Auxiliary API Model');
     expect(script).toContain('重新检测');
     expect(script).toContain('配置 AI Provider 密钥');

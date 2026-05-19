@@ -9,6 +9,7 @@ const api: ElectronApi = {
   getAiConfigStatus: () => ipcRenderer.invoke('settings:getAiConfigStatus'),
   setAiConfig: (input) => ipcRenderer.invoke('settings:setAiConfig', input),
   openAgentCliLogin: (input) => ipcRenderer.invoke('settings:openAgentCliLogin', input),
+  openAgentCliInstall: (input) => ipcRenderer.invoke('settings:openAgentCliInstall', input),
   probeSandboxBackend: () => ipcRenderer.invoke('settings:probeSandboxBackend'),
   connectGmailOAuth: (input) => ipcRenderer.invoke('externalAccess:gmailOAuthConnect', input),
   disconnectGmailOAuth: (input) => ipcRenderer.invoke('externalAccess:gmailOAuthDisconnect', input),

@@ -156,6 +156,12 @@ export type ElectronApi = {
     runtimeId: AgentCliRuntimeId;
     summary: string;
   }>;
+  openAgentCliInstall?: (input: { runtimeId: AgentCliRuntimeId }) => Promise<{
+    command: string;
+    opened: boolean;
+    runtimeId: AgentCliRuntimeId;
+    summary: string;
+  }>;
   probeSandboxBackend?: () => Promise<AgentSandboxBackendStatus>;
   connectGmailOAuth?: (input: GmailOAuthConnectInput) => Promise<GmailOAuthConnectResult>;
   disconnectGmailOAuth?: (input: GmailOAuthDisconnectInput) => Promise<GmailOAuthDisconnectResult>;

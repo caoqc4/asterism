@@ -246,6 +246,7 @@ describe('preload bridge', () => {
     await api.getAiConfigStatus();
     await api.setAiConfig(aiInput);
     await api.openAgentCliLogin?.({ runtimeId: 'codex' });
+    await api.openAgentCliInstall?.({ runtimeId: 'claude' });
     await api.probeSandboxBackend();
     await api.connectGmailOAuth?.({ confirmed: true });
     await api.disconnectGmailOAuth?.({ confirmed: true });
@@ -320,6 +321,7 @@ describe('preload bridge', () => {
       ['settings:getAiConfigStatus'],
       ['settings:setAiConfig', aiInput],
       ['settings:openAgentCliLogin', { runtimeId: 'codex' }],
+      ['settings:openAgentCliInstall', { runtimeId: 'claude' }],
       ['settings:probeSandboxBackend'],
       ['externalAccess:gmailOAuthConnect', { confirmed: true }],
       ['externalAccess:gmailOAuthDisconnect', { confirmed: true }],

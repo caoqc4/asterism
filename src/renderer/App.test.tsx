@@ -480,6 +480,12 @@ function createMockApi() {
       runtimeId: 'codex',
       summary: 'Opened Terminal with codex login.',
     }),
+    openAgentCliInstall: vi.fn().mockResolvedValue({
+      command: 'npm install -g @anthropic-ai/claude-code',
+      opened: true,
+      runtimeId: 'claude',
+      summary: 'Opened Terminal with npm install -g @anthropic-ai/claude-code.',
+    }),
     connectGmailOAuth: vi.fn().mockResolvedValue({
       status: 'connected',
       connectorId: 'gmail',
@@ -1104,6 +1110,7 @@ describe('App redesign v1', () => {
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: '安装 Claude' })).toBeTruthy();
     expect(screen.getByText(/第一版只读运行/)).toBeTruthy();
     await user.click(screen.getByText('高级：运行目录'));
     expect(screen.getByLabelText('内部运行目录')).toBeTruthy();
@@ -1171,6 +1178,16 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '登录 Codex' }));
 
     expect(harness.api.openAgentCliLogin).toHaveBeenCalledWith({ runtimeId: 'codex' });
+  });
+
+  it('opens a guided Claude Code install command when the CLI is missing', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
+    await user.click(await screen.findByRole('button', { name: '安装 Claude' }));
+
+    expect(harness.api.openAgentCliInstall).toHaveBeenCalledWith({ runtimeId: 'claude' });
   });
 
   it('can manually refresh AI Runtime CLI readiness after official CLI login', async () => {

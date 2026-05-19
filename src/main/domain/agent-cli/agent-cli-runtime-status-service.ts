@@ -26,6 +26,11 @@ export type AgentCliCommandProbe = (command: string, runtimeId: AgentCliRuntimeI
 
 const PROBE_TIMEOUT_MS = 1_500;
 export const AGENT_CLI_RUNTIME_FIXTURE_ENV = 'TASKPLANE_AGENT_CLI_RUNTIME_FIXTURE_JSON';
+const COMMON_CLI_PATH_SETUP = [
+  'for d in "$HOME"/.nvm/versions/node/*/bin "$HOME"/.npm-global/bin "$HOME"/.local/bin /opt/homebrew/bin /usr/local/bin; do',
+  '  [ -d "$d" ] && PATH="$PATH:$d"',
+  'done',
+].join('; ');
 
 export class AgentCliRuntimeStatusService {
   constructor(
@@ -84,7 +89,7 @@ async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeI
   version: string | null;
   errorReason?: string | null;
 }> {
-  const pathProbe = await runProbe('/bin/zsh', ['-lc', `command -v ${shellQuote(command)}`]);
+  const pathProbe = await runProbe('/bin/zsh', ['-lc', `${COMMON_CLI_PATH_SETUP}; command -v ${shellQuote(command)}`]);
   const executablePath = firstLine(pathProbe.stdout);
   if (pathProbe.exitCode !== 0 || !pathProbe.stdout.trim()) {
     return {
