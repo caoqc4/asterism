@@ -312,6 +312,47 @@ describe('AgentCliRunService', () => {
     }));
   });
 
+  it('blocks a new Agent CLI run when the previous memory proposal still needs Task Record confirmation', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    vi.mocked(runStepRepository.listForTask).mockResolvedValue([{
+      createdAt: '2026-05-20T00:00:00.000Z',
+      error: null,
+      id: 'run_step_pending_memory',
+      index: 0,
+      input: JSON.stringify({
+        suggestedContentByTarget: {
+          task_record: '## Agent CLI outcome\n\n- Key findings: Previous CLI result needs review.',
+        },
+        targets: ['task_record'],
+      }),
+      kind: 'plan',
+      output: '- Task Record may be useful: agent_cli_summary',
+      runId: 'run_previous',
+      status: 'completed',
+      title: '任务记忆建议',
+      updatedAt: '2026-05-20T00:00:00.000Z',
+    }]);
+    const executor = vi.fn();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Start another Codex run.',
+      taskId: 'task_1',
+    })).rejects.toThrow('最新任务记忆建议仍缺少对应写入：Task Record。');
+
+    expect(runRepository.create).not.toHaveBeenCalled();
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(executor).not.toHaveBeenCalled();
+  });
+
   it('uses the resolved executable path when the runtime status provides one', async () => {
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,
