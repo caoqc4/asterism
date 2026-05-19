@@ -528,6 +528,33 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.aiConfigService.setConfig).not.toHaveBeenCalled();
   });
 
+  it('opens a Claude Code repair install command for broken npm installs', async () => {
+    execFileMock.mockImplementation((_command: unknown, _args: unknown, callback: (error: Error | null) => void) => {
+      callback(null);
+    });
+
+    const handler = getRegisteredHandler<[{ repair: true; runtimeId: 'claude' }], {
+      command: string;
+      opened: boolean;
+      runtimeId: string;
+      summary: string;
+    }>('settings:openAgentCliInstall');
+
+    const result = await handler({}, { repair: true, runtimeId: 'claude' });
+
+    expect(result).toMatchObject({
+      opened: true,
+      runtimeId: 'claude',
+    });
+    expect(result.command).toContain('mv "$dir" "$dir.bak.$STAMP"');
+    expect(result.command).toContain('npm install -g @anthropic-ai/claude-code --include=optional');
+    expect(execFileMock).toHaveBeenCalledWith('osascript', expect.arrayContaining([
+      'tell application "Terminal" to activate',
+      expect.stringContaining('claude-code --include=optional'),
+    ]), expect.any(Function));
+    expect(servicesMock.aiConfigService.setConfig).not.toHaveBeenCalled();
+  });
+
   it('connects Gmail OAuth through explicit External Access IPC and emits settings.changed only when connected', async () => {
     gmailOAuthConnectMock.mockResolvedValue({
       status: 'connected',

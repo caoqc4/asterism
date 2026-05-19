@@ -1187,7 +1187,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
     await user.click(await screen.findByRole('button', { name: '安装 Claude' }));
 
-    expect(harness.api.openAgentCliInstall).toHaveBeenCalledWith({ runtimeId: 'claude' });
+    expect(harness.api.openAgentCliInstall).toHaveBeenCalledWith({ repair: undefined, runtimeId: 'claude' });
   });
 
   it('offers reinstall when a detected Agent CLI install is broken', async () => {
@@ -1225,7 +1225,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('需重新安装')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '重新安装 Claude' }));
 
-    expect(harness.api.openAgentCliInstall).toHaveBeenCalledWith({ runtimeId: 'claude' });
+    expect(harness.api.openAgentCliInstall).toHaveBeenCalledWith({ repair: true, runtimeId: 'claude' });
   });
 
   it('can manually refresh AI Runtime CLI readiness after official CLI login', async () => {

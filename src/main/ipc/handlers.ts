@@ -95,6 +95,23 @@ function agentCliInstallCommand(runtimeId: AgentCliRuntimeId): string {
   return 'npm install -g @openai/codex';
 }
 
+function agentCliRepairInstallCommand(runtimeId: AgentCliRuntimeId): string {
+  if (runtimeId !== 'claude') return agentCliInstallCommand(runtimeId);
+
+  return [
+    'set -e',
+    'ROOT="$(npm root -g)"',
+    'PREFIX="$(npm prefix -g)"',
+    'BASE="$ROOT/@anthropic-ai"',
+    'STAMP="$(date +%Y%m%d%H%M%S)"',
+    'for dir in "$BASE"/.claude-code-* "$BASE"/claude-code; do',
+    '  [ -e "$dir" ] && mv "$dir" "$dir.bak.$STAMP"',
+    'done',
+    'rm -f "$PREFIX/bin/claude"',
+    'npm install -g @anthropic-ai/claude-code --include=optional',
+  ].join('; ');
+}
+
 function openTerminalWithCommand(command: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (process.platform !== 'darwin') {
@@ -264,9 +281,9 @@ export function registerIpcHandlers(): void {
     };
   });
 
-  ipcMain.handle('settings:openAgentCliInstall', async (_event, input: { runtimeId?: AgentCliRuntimeId }) => {
+  ipcMain.handle('settings:openAgentCliInstall', async (_event, input: { repair?: boolean; runtimeId?: AgentCliRuntimeId }) => {
     const runtimeId = input.runtimeId === 'claude' ? 'claude' : 'codex';
-    const command = agentCliInstallCommand(runtimeId);
+    const command = input.repair ? agentCliRepairInstallCommand(runtimeId) : agentCliInstallCommand(runtimeId);
     await openTerminalWithCommand(command);
 
     return {

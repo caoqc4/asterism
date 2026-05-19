@@ -156,7 +156,7 @@ export type ElectronApi = {
     runtimeId: AgentCliRuntimeId;
     summary: string;
   }>;
-  openAgentCliInstall?: (input: { runtimeId: AgentCliRuntimeId }) => Promise<{
+  openAgentCliInstall?: (input: { repair?: boolean; runtimeId: AgentCliRuntimeId }) => Promise<{
     command: string;
     opened: boolean;
     runtimeId: AgentCliRuntimeId;

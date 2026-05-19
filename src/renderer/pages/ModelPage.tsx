@@ -204,11 +204,11 @@ export function ModelPage() {
     }
   }
 
-  async function openAgentCliInstall(runtimeId: 'codex' | 'claude' = 'codex') {
+  async function openAgentCliInstall(runtimeId: 'codex' | 'claude' = 'codex', options: { repair?: boolean } = {}) {
     if (!window.api?.openAgentCliInstall || openingInstall) return;
     setOpeningInstall(true);
     try {
-      await window.api.openAgentCliInstall({ runtimeId });
+      await window.api.openAgentCliInstall({ repair: options.repair, runtimeId });
     } finally {
       setOpeningInstall(false);
     }
@@ -251,7 +251,7 @@ export function ModelPage() {
         capabilitySummary={agentCliCapability?.summary ?? null}
         suggestedWorkspaceRoot={status?.suggestedWorkspaceRoot ?? null}
         onOpenLogin={(runtimeId) => void openAgentCliLogin(runtimeId)}
-        onOpenInstall={(runtimeId) => void openAgentCliInstall(runtimeId)}
+        onOpenInstall={(runtimeId, options) => void openAgentCliInstall(runtimeId, options)}
         openingInstall={openingInstall}
         openingLogin={openingLogin}
         onSave={() => void save()}
@@ -400,7 +400,7 @@ function AgentCliRuntimeSection({
   onWorkspaceRootChange: (value: string) => void;
   onSave: () => void;
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
-  onOpenInstall: (runtimeId: 'codex' | 'claude') => void;
+  onOpenInstall: (runtimeId: 'codex' | 'claude', options?: { repair?: boolean }) => void;
   openingInstall: boolean;
   openingLogin: boolean;
   saveDisabled: boolean;
@@ -559,7 +559,7 @@ function AgentCliRuntimeRow({
     label: string;
   };
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
-  onOpenInstall: (runtimeId: 'codex' | 'claude') => void;
+  onOpenInstall: (runtimeId: 'codex' | 'claude', options?: { repair?: boolean }) => void;
   openingInstall: boolean;
   openingLogin: boolean;
   primary?: boolean;
@@ -592,7 +592,7 @@ function AgentCliRuntimeRow({
         <button
           className={`btn sm${openingInstall ? ' disabled' : ''}`}
           type="button"
-          onClick={() => onOpenInstall(fallback.id)}
+          onClick={() => onOpenInstall(fallback.id, { repair: true })}
           disabled={openingInstall}
         >
           {openingInstall ? '正在打开…' : fallback.id === 'claude' ? '重新安装 Claude' : '重新安装 Codex'}
