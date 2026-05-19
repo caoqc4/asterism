@@ -89,7 +89,10 @@ export async function probeAgentCliCommand(command: string, runtimeId: AgentCliR
   version: string | null;
   errorReason?: string | null;
 }> {
-  const pathProbe = await runProbe('/bin/zsh', ['-lc', `${COMMON_CLI_PATH_SETUP}; command -v ${shellQuote(command)}`]);
+  const pathProbe = await runProbe('/bin/zsh', ['-lc', [
+    COMMON_CLI_PATH_SETUP,
+    `command -v ${shellQuote(command)} || for d in "\${(@s/:/)PATH}"; do [ -e "$d/${command}" ] && echo "$d/${command}" && break; done`,
+  ].join('; ')]);
   const executablePath = firstLine(pathProbe.stdout);
   if (pathProbe.exitCode !== 0 || !pathProbe.stdout.trim()) {
     return {
@@ -139,7 +142,7 @@ export function executableProbeFailureReason(
 ): string | null {
   if (probe.exitCode === 0) return null;
   const output = `${probe.stdout}\n${probe.stderr}`;
-  if (/permission denied/i.test(output)) {
+  if (/permission denied|EACCES/i.test(output)) {
     return `${command} is present but is not executable; reinstall the official CLI.`;
   }
   if (/native binary not installed|postinstall did not run|optional dependency/i.test(output)) {
@@ -199,7 +202,7 @@ function runProbe(command: string, args: string[]): Promise<{
     }, (error, stdout, stderr) => {
       resolve({
         exitCode: typeof error?.code === 'number' ? error.code : error ? 1 : 0,
-        stderr: String(stderr ?? ''),
+        stderr: String(stderr || error?.message || ''),
         stdout: String(stdout ?? ''),
       });
     });

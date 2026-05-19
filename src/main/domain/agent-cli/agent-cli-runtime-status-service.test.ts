@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status.js';
@@ -6,6 +10,7 @@ import {
   AGENT_CLI_RUNTIME_FIXTURE_ENV,
   AgentCliRuntimeStatusService,
   executableProbeFailureReason,
+  probeAgentCliCommand,
 } from './agent-cli-runtime-status-service.js';
 import { AgentCliRuntimeWorkloadTracker } from './agent-cli-runtime-workload.js';
 
@@ -97,6 +102,28 @@ describe('agent cli runtime status service', () => {
       stdout: '',
       stderr: 'Error: claude native binary not installed. Either postinstall did not run or optional dependency was not downloaded.',
     })).toBe('claude install is incomplete; reinstall the official CLI with optional dependencies enabled.');
+  });
+
+  it('keeps probing a PATH command that exists but is not executable', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-probe-'));
+    const previousPath = process.env.PATH;
+    fs.writeFileSync(path.join(tempRoot, 'claude'), '#!/bin/sh\necho no\n', { mode: 0o644 });
+    process.env.PATH = `${tempRoot}:${previousPath ?? ''}`;
+
+    try {
+      const status = await probeAgentCliCommand('claude', 'claude');
+
+      expect(status).toMatchObject({
+        authState: 'error',
+        executablePath: path.join(tempRoot, 'claude'),
+        installed: true,
+        version: null,
+      });
+      expect(status.authReason).toContain('not executable');
+    } finally {
+      process.env.PATH = previousPath;
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it('projects active Agent CLI runs into runtime workload status', async () => {
