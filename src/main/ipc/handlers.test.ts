@@ -517,13 +517,15 @@ describe('registerIpcHandlers', () => {
     const result = await handler({}, { runtimeId: 'claude' });
 
     expect(result).toMatchObject({
-      command: 'npm install -g @anthropic-ai/claude-code',
       opened: true,
       runtimeId: 'claude',
     });
+    expect(result.command).toContain('npm install -g @anthropic-ai/claude-code --include=optional');
+    expect(result.command).toContain('claude auth status --text');
+    expect(result.command).toContain('Return to Taskplane and click Re-detect.');
     expect(execFileMock).toHaveBeenCalledWith('osascript', expect.arrayContaining([
       'tell application "Terminal" to activate',
-      expect.stringContaining('npm install -g @anthropic-ai/claude-code'),
+      expect.stringContaining('Return to Taskplane and click Re-detect.'),
     ]), expect.any(Function));
     expect(servicesMock.aiConfigService.setConfig).not.toHaveBeenCalled();
   });
@@ -548,6 +550,8 @@ describe('registerIpcHandlers', () => {
     });
     expect(result.command).toContain('mv "$dir" "$dir.bak.$STAMP"');
     expect(result.command).toContain('npm install -g @anthropic-ai/claude-code --include=optional');
+    expect(result.command).toContain('claude --version');
+    expect(result.command).toContain('Return to Taskplane and click Re-detect.');
     expect(execFileMock).toHaveBeenCalledWith('osascript', expect.arrayContaining([
       'tell application "Terminal" to activate',
       expect.stringContaining('claude-code --include=optional'),

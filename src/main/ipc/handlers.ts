@@ -91,8 +91,24 @@ function agentCliLoginCommand(runtimeId: AgentCliRuntimeId): string {
 }
 
 function agentCliInstallCommand(runtimeId: AgentCliRuntimeId): string {
-  if (runtimeId === 'claude') return 'npm install -g @anthropic-ai/claude-code';
-  return 'npm install -g @openai/codex';
+  if (runtimeId === 'claude') {
+    return [
+      'npm install -g @anthropic-ai/claude-code --include=optional',
+      'echo ""',
+      'echo "Claude Code installed. Checking status..."',
+      'claude --version',
+      'claude auth status --text || echo "Claude is installed but not authorized. Run: claude auth login"',
+      'echo "Return to Taskplane and click Re-detect."',
+    ].join('; ');
+  }
+  return [
+    'npm install -g @openai/codex',
+    'echo ""',
+    'echo "Codex CLI installed. Checking status..."',
+    'codex --version',
+    'codex login status || echo "Codex is installed but not authorized. Run: codex login"',
+    'echo "Return to Taskplane and click Re-detect."',
+  ].join('; ');
 }
 
 function agentCliRepairInstallCommand(runtimeId: AgentCliRuntimeId): string {
@@ -109,6 +125,11 @@ function agentCliRepairInstallCommand(runtimeId: AgentCliRuntimeId): string {
     'done',
     'rm -f "$PREFIX/bin/claude"',
     'npm install -g @anthropic-ai/claude-code --include=optional',
+    'echo ""',
+    'echo "Claude Code installed. Checking status..."',
+    'claude --version',
+    'claude auth status --text || echo "Claude is installed but not authorized. Run: claude auth login"',
+    'echo "Return to Taskplane and click Re-detect."',
   ].join('; ');
 }
 

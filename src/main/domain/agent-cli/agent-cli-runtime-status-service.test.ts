@@ -107,15 +107,15 @@ describe('agent cli runtime status service', () => {
   it('keeps probing a PATH command that exists but is not executable', async () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-probe-'));
     const previousPath = process.env.PATH;
-    fs.writeFileSync(path.join(tempRoot, 'claude'), '#!/bin/sh\necho no\n', { mode: 0o644 });
+    fs.writeFileSync(path.join(tempRoot, 'taskplane-fake-claude'), '#!/bin/sh\necho no\n', { mode: 0o644 });
     process.env.PATH = `${tempRoot}:${previousPath ?? ''}`;
 
     try {
-      const status = await probeAgentCliCommand('claude', 'claude');
+      const status = await probeAgentCliCommand('taskplane-fake-claude', 'claude');
 
       expect(status).toMatchObject({
         authState: 'error',
-        executablePath: path.join(tempRoot, 'claude'),
+        executablePath: path.join(tempRoot, 'taskplane-fake-claude'),
         installed: true,
         version: null,
       });
