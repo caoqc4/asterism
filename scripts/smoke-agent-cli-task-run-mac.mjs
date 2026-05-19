@@ -278,6 +278,27 @@ try {
   if (!completedSteps.some((step) => step.title === '任务记忆建议' && /"decision":"accept_for_review"/.test(step.input ?? '') && /Verifier decision: accept_for_review/.test(step.output ?? ''))) {
     throw new Error('Missing Agent CLI task memory guidance step.');
   }
+
+  await sendPanelMessage(page, '/codex goal packaged native audit');
+  await waitFor(() => queryRunRows().length >= 3, 'created runtime-native goal audit run');
+  const nativeGoalRun = queryRunRows().find((run) => /Runtime native goal request \(Codex CLI\): packaged native audit/.test(run.instructions ?? ''));
+  if (!nativeGoalRun) {
+    throw new Error(`Missing runtime-native goal audit run. runs=${queryRunRows().map((run) => `${run.id}:${run.instructions}`).join(' | ')}`);
+  }
+  if (nativeGoalRun.status !== 'completed' || nativeGoalRun.output_source !== 'system') {
+    throw new Error(`Runtime-native goal audit run should complete as system evidence. status=${nativeGoalRun.status} output_source=${nativeGoalRun.output_source}`);
+  }
+  const nativeGoalSteps = queryRunStepRows(nativeGoalRun.id);
+  if (!nativeGoalSteps.some((step) => step.title === 'Runtime Native Goal 请求审计' && step.status === 'skipped')) {
+    throw new Error('Missing skipped runtime-native goal audit step.');
+  }
+  if (!nativeGoalSteps.some((step) => step.title === 'Runtime Native Goal 请求审计' && /"forwarded": false/.test(step.input ?? '') && /Taskplane kept this as audit evidence/.test(step.output ?? ''))) {
+    throw new Error('Missing structured runtime-native goal audit evidence.');
+  }
+  if (nativeGoalSteps.some((step) => /codex cli completed|codex cli failed/i.test(step.title))) {
+    throw new Error('Runtime-native goal audit must not execute Codex CLI.');
+  }
+
   await assertTaskDynamicsShowsAgentCli(page);
 
   if (workspaceSnapshot() !== beforeWorkspace) {
