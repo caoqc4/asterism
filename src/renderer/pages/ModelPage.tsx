@@ -336,15 +336,15 @@ export function ModelPage() {
       <div className="model-page-footer">
         <span className="muted" style={{ fontSize: 12 }}>
           {status?.model
-            ? <>当前生效：<span className="mono">{status.provider} / {status.model}</span></>
-            : '尚未配置'}
+            ? <>辅助 API 当前：<span className="mono">{status.provider} / {status.model}</span></>
+            : '辅助 API 尚未配置'}
         </span>
         <button
           className={`btn primary${saving ? ' disabled' : ''}${saveResult === 'ok' ? ' saved' : ''}${saveResult === 'error' ? ' danger' : ''}`}
           onClick={save}
           disabled={saving}
         >
-          {saving ? '保存中…' : saveResult === 'ok' ? '已保存 ✓' : saveResult === 'error' ? '保存失败' : '保存'}
+          {saving ? '保存中…' : saveResult === 'ok' ? '已保存 ✓' : saveResult === 'error' ? '保存失败' : '保存 AI Runtime 配置'}
         </button>
       </div>
     </div>
@@ -399,7 +399,7 @@ function AgentCliRuntimeSection({
           placeholder="/absolute/path/to/workspace"
           onChange={(event) => onWorkspaceRootChange(event.target.value)}
         />
-        <p className="settings-hint">Agent CLI run 从这个目录启动并保持只读；不设置时不会执行。</p>
+        <p className="settings-hint">Agent CLI run 从这个目录启动并保持只读；不设置时不会执行。修改后点击页面底部保存 AI Runtime 配置。</p>
       </div>
 
       <div className="agent-cli-grid">

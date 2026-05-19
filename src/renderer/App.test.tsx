@@ -1094,8 +1094,10 @@ describe('App redesign v1', () => {
     expect(screen.getByText('Codex CLI')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByLabelText('Workspace root')).toBeTruthy();
+    expect(screen.getByText(/修改后点击页面底部保存 AI Runtime 配置/)).toBeTruthy();
     expect(screen.getAllByText(/codex login/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Auxiliary API Model/)).toBeTruthy();
+    expect(screen.getByText(/辅助 API 当前/)).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
     await user.click(screen.getByRole('button', { name: /Safety Details/ }));
     expect(screen.getByText('model.provider')).toBeTruthy();
@@ -1111,7 +1113,7 @@ describe('App redesign v1', () => {
     const workspaceInput = await screen.findByLabelText('Workspace root');
     await user.clear(workspaceInput);
     await user.type(workspaceInput, '/Users/example/project');
-    await user.click(screen.getByRole('button', { name: '保存' }));
+    await user.click(screen.getByRole('button', { name: '保存 AI Runtime 配置' }));
 
     await waitFor(() => {
       expect(harness.api.setAiConfig).toHaveBeenCalledWith(expect.objectContaining({
