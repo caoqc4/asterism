@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
-import type { AgentCliRuntimeId } from '@shared/agent-cli-runtime-status';
+import {
+  buildDefaultAgentCliRuntimeCapabilities,
+  type AgentCliRuntimeId,
+} from '@shared/agent-cli-runtime-status';
 import type { AiRuntimeMode } from '@shared/types/settings';
 import type { RunStepRecord } from '@shared/types/run';
 import type { CapabilityRegistryEntry } from '@shared/capability-registry';
@@ -47,6 +50,7 @@ import {
 } from '@shared/runtime-surface-routing';
 import {
   deriveTaskGoalLifecycleState,
+  evaluateRuntimeNativeGoalForwarding,
   parseAgentRuntimeSlashCommand,
   type AgentRuntimeAdapterCapabilities,
 } from '@shared/agent-runtime-goal';
@@ -905,7 +909,9 @@ export function RightPanel({
         return acc;
       }, { claude: false, codex: false });
       const nextCapabilities = AGENT_CLI_PANEL_RUNTIMES.reduce<Record<AgentCliRuntimeId, AgentRuntimeAdapterCapabilities | null>>((acc, runtimeId) => {
-        acc[runtimeId] = status.agentCliRuntimeStatus?.runtimes.find((runtime) => runtime.id === runtimeId)?.capabilities ?? null;
+        const runtime = status.agentCliRuntimeStatus?.runtimes.find((item) => item.id === runtimeId);
+        acc[runtimeId] = runtime?.capabilities
+          ?? buildDefaultAgentCliRuntimeCapabilities(runtimeId, AGENT_CLI_PANEL_RUNTIME_LABELS[runtimeId]);
         return acc;
       }, { claude: null, codex: null });
       setAgentCliAvailability(nextAvailability);
@@ -2049,39 +2055,36 @@ export function RightPanel({
         : command.runtimeId;
       const runtimeLabel = targetRuntime ? AGENT_CLI_PANEL_RUNTIME_LABELS[targetRuntime] : '当前 runtime';
       const capabilities = targetRuntime ? agentCliCapabilities[targetRuntime] : null;
-      const nativeGoalAvailable = Boolean(capabilities?.supportsNativeGoalMode);
-      const nativeGoalReason = nativeGoalAvailable
-        ? 'Adapter declares native goal support, but Taskplane passthrough entrypoint is not open yet.'
-        : 'Adapter native goal capability is disabled.';
+      const nativeGoalDecision = evaluateRuntimeNativeGoalForwarding(capabilities);
       await recordPanelTimelineEvent(activeTaskId, 'panel.runtime_native_goal_requested', {
-        forwarded: false,
+        forwarded: nativeGoalDecision.forwarded,
         objective: command.objective,
-        reason: nativeGoalReason,
+        reason: nativeGoalDecision.reason,
         runtimeId: targetRuntime ?? command.runtimeId,
         runtimeLabel,
-        supportsNativeGoalMode: nativeGoalAvailable,
+        supportsNativeGoalMode: nativeGoalDecision.supportsNativeGoalMode,
       });
       const auditRun = targetRuntime && window.api?.recordRuntimeNativeGoalRequest
         ? await window.api.recordRuntimeNativeGoalRequest({
-            forwarded: false,
+            forwarded: nativeGoalDecision.forwarded,
             objective: command.objective,
             operatorConfirmed: true,
-            reason: nativeGoalReason,
+            reason: nativeGoalDecision.reason,
             runtimeId: targetRuntime,
             runtimeLabel,
-            supportsNativeGoalMode: nativeGoalAvailable,
+            supportsNativeGoalMode: nativeGoalDecision.supportsNativeGoalMode,
             taskId: activeTaskId,
           }).catch(() => null)
         : null;
       return [
-        nativeGoalAvailable
+        nativeGoalDecision.supportsNativeGoalMode
           ? `${runtimeLabel} native goal mode 已被 adapter 声明，但 Taskplane 透传入口尚未开放。`
           : `${runtimeLabel} native goal mode 尚未开启。`,
         '',
         'Taskplane 已识别这是显式 runtime-native goal 请求，但本版本不会直接透传到底层 CLI，避免目标状态落在 Taskplane 会话之外。',
         auditRun ? `审计 Run: ${auditRun.id}` : null,
         capabilities
-          ? `Adapter capability: supportsNativeGoalMode=${String(capabilities.supportsNativeGoalMode)}, passthroughRequiresExplicitNamespace=${String(capabilities.commandRouting.passthroughRequiresExplicitNamespace)}`
+          ? `Adapter capability: supportsNativeGoalMode=${String(nativeGoalDecision.supportsNativeGoalMode)}, passthroughRequiresExplicitNamespace=${String(nativeGoalDecision.passthroughRequiresExplicitNamespace)}, policy=${nativeGoalDecision.policy}`
           : 'Adapter capability: unavailable',
         command.objective ? `请求目标：${command.objective}` : null,
         '',

@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRunGoalContract,
   deriveTaskGoalLifecycleState,
+  evaluateRuntimeNativeGoalForwarding,
   formatRunGoalContractForPrompt,
   formatRunGoalContractForStep,
   parseAgentRuntimeSlashCommand,
 } from './agent-runtime-goal.js';
+import { buildDefaultAgentCliRuntimeCapabilities } from './agent-cli-runtime-status.js';
 import type { RuntimeContextManifest } from './runtime-context.js';
 import type { TaskDetail } from './types/task.js';
 
@@ -46,6 +48,35 @@ describe('agent-runtime-goal', () => {
     expect(parseAgentRuntimeSlashCommand('/unknown do work')).toEqual({
       kind: 'unknown',
       command: '/unknown',
+    });
+  });
+
+  it('keeps runtime-native goal forwarding closed behind a shared policy', () => {
+    expect(evaluateRuntimeNativeGoalForwarding(null)).toMatchObject({
+      forwarded: false,
+      policy: 'capability_unavailable',
+      reason: 'Adapter capability is unavailable.',
+      supportsNativeGoalMode: false,
+    });
+
+    const disabled = buildDefaultAgentCliRuntimeCapabilities('codex', 'Codex CLI');
+    expect(evaluateRuntimeNativeGoalForwarding(disabled)).toMatchObject({
+      forwarded: false,
+      passthroughRequiresExplicitNamespace: true,
+      policy: 'native_goal_disabled',
+      reason: 'Adapter native goal capability is disabled.',
+      supportsNativeGoalMode: false,
+    });
+
+    expect(evaluateRuntimeNativeGoalForwarding({
+      ...disabled,
+      supportsNativeGoalMode: true,
+    })).toMatchObject({
+      forwarded: false,
+      passthroughRequiresExplicitNamespace: true,
+      policy: 'passthrough_entrypoint_closed',
+      reason: 'Adapter declares native goal support, but Taskplane passthrough entrypoint is not open yet.',
+      supportsNativeGoalMode: true,
     });
   });
 

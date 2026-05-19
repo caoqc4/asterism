@@ -55,6 +55,14 @@ export type AgentRuntimeSlashCommand =
   | { kind: 'runtime_native_goal'; runtimeId: AgentCliRuntimeId | 'selected'; objective: string }
   | { kind: 'unknown'; command: string };
 
+export type RuntimeNativeGoalForwardingDecision = {
+  forwarded: false;
+  reason: string;
+  supportsNativeGoalMode: boolean;
+  passthroughRequiresExplicitNamespace: boolean | null;
+  policy: 'capability_unavailable' | 'native_goal_disabled' | 'passthrough_entrypoint_closed';
+};
+
 export type TaskGoalLifecycleStatus = 'unset' | 'active' | 'paused' | 'cleared';
 
 export type TaskGoalLifecycleState = {
@@ -95,6 +103,38 @@ export function parseAgentRuntimeSlashCommand(input: string): AgentRuntimeSlashC
   }
 
   return { kind: 'unknown', command: `/${command}` };
+}
+
+export function evaluateRuntimeNativeGoalForwarding(
+  capabilities: AgentRuntimeAdapterCapabilities | null | undefined,
+): RuntimeNativeGoalForwardingDecision {
+  if (!capabilities) {
+    return {
+      forwarded: false,
+      passthroughRequiresExplicitNamespace: null,
+      policy: 'capability_unavailable',
+      reason: 'Adapter capability is unavailable.',
+      supportsNativeGoalMode: false,
+    };
+  }
+
+  if (!capabilities.supportsNativeGoalMode) {
+    return {
+      forwarded: false,
+      passthroughRequiresExplicitNamespace: capabilities.commandRouting.passthroughRequiresExplicitNamespace,
+      policy: 'native_goal_disabled',
+      reason: 'Adapter native goal capability is disabled.',
+      supportsNativeGoalMode: false,
+    };
+  }
+
+  return {
+    forwarded: false,
+    passthroughRequiresExplicitNamespace: capabilities.commandRouting.passthroughRequiresExplicitNamespace,
+    policy: 'passthrough_entrypoint_closed',
+    reason: 'Adapter declares native goal support, but Taskplane passthrough entrypoint is not open yet.',
+    supportsNativeGoalMode: true,
+  };
 }
 
 export function deriveTaskGoalLifecycleState(params: {
