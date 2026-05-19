@@ -117,6 +117,7 @@ export function ModelPage() {
   const [showKeys, setShowKeys] = useState<Partial<Record<KeyField, boolean>>>({});
   const [saving, setSaving] = useState(false);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
+  const [openingLogin, setOpeningLogin] = useState(false);
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
   const [apiModelOpen, setApiModelOpen] = useState(false);
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -133,7 +134,7 @@ export function ModelPage() {
       setStatus(s);
       if (s.model) setSelectedModel(s.model);
       if (s.provider) setSelectedProvider(s.provider);
-      setWorkspaceRoot(s.workspaceRoot ?? '');
+      setWorkspaceRoot(s.workspaceRoot ?? s.suggestedWorkspaceRoot ?? '');
     } catch {
       // Keep the last known status visible when a manual probe fails.
     } finally {
@@ -192,6 +193,16 @@ export function ModelPage() {
     }
   }
 
+  async function openAgentCliLogin(runtimeId: 'codex' | 'claude' = 'codex') {
+    if (!window.api?.openAgentCliLogin || openingLogin) return;
+    setOpeningLogin(true);
+    try {
+      await window.api.openAgentCliLogin({ runtimeId });
+    } finally {
+      setOpeningLogin(false);
+    }
+  }
+
   const configuredProviders = new Set(status?.configuredProviders ?? []);
   const modelSafetySurfaces = status?.configurationSafetyReport?.surfaces
     .filter((surface) => surface.id === 'model.provider' || surface.id === 'model.api_key')
@@ -227,6 +238,10 @@ export function ModelPage() {
         status={agentCliStatus}
         safety={agentCliSafety}
         capabilitySummary={agentCliCapability?.summary ?? null}
+        configuredWorkspaceRoot={status?.workspaceRoot ?? null}
+        suggestedWorkspaceRoot={status?.suggestedWorkspaceRoot ?? null}
+        onOpenLogin={() => void openAgentCliLogin('codex')}
+        openingLogin={openingLogin}
         onSave={() => void save()}
         saveLabel={saving ? '保存中…' : saveResult === 'ok' ? '已保存' : '保存 Workspace root'}
         saveDisabled={saving}
@@ -358,8 +373,12 @@ function AgentCliRuntimeSection({
   workspaceRoot,
   onWorkspaceRootChange,
   onSave,
+  onOpenLogin,
+  openingLogin,
   saveDisabled,
   saveLabel,
+  configuredWorkspaceRoot,
+  suggestedWorkspaceRoot,
   status,
   safety,
   capabilitySummary,
@@ -367,49 +386,63 @@ function AgentCliRuntimeSection({
   workspaceRoot: string;
   onWorkspaceRootChange: (value: string) => void;
   onSave: () => void;
+  onOpenLogin: () => void;
+  openingLogin: boolean;
   saveDisabled: boolean;
   saveLabel: string;
+  configuredWorkspaceRoot: string | null;
+  suggestedWorkspaceRoot: string | null;
   status: AiConfigStatus['agentCliRuntimeStatus'] | null;
   safety: ConfigurationSafetySurface | null;
   capabilitySummary: string | null;
 }) {
   const runtimes = status?.runtimes ?? [];
+  const codexRuntime = runtimes.find((runtime) => runtime.id === 'codex') ?? null;
   const readyRuntime = runtimes.find((runtime) => (
     runtime.installed
     && runtime.authState === 'ready'
     && runtime.executionSupport === 'manual_run'
   )) ?? null;
-  const workspaceReady = Boolean(workspaceRoot.trim());
-  const primaryStatus = !workspaceReady
+  const workspaceConfigured = Boolean(configuredWorkspaceRoot?.trim());
+  const displayedWorkspaceRoot = configuredWorkspaceRoot?.trim() || suggestedWorkspaceRoot?.trim() || workspaceRoot.trim();
+  const workspaceReady = workspaceConfigured;
+  const primaryStatus = !readyRuntime
+    ? '需要登录 Codex'
+    : !workspaceReady
     ? '先设置 Workspace root'
-    : readyRuntime
-      ? `当前可执行：${readyRuntime.label}`
-      : '等待官方 CLI 登录或安装';
+      : `当前可执行：${readyRuntime.label}`;
   const runnable = Boolean(workspaceReady && readyRuntime);
   const nextAction = !readyRuntime
     ? {
-        label: '在终端登录 Codex',
+        button: openingLogin ? '正在打开终端…' : '打开终端登录 Codex',
         title: '先登录 Codex CLI',
-        detail: '打开终端运行 codex login，登录完成后回到这里点重新检测。',
+        detail: 'Taskplane 会打开终端并输入 codex login；按官方网页完成授权后，回到这里点重新检测。',
       }
     : !workspaceReady
       ? {
-          label: '保存工作目录',
-          title: '选择这个任务要操作的项目目录',
-          detail: '填项目根目录。Agent CLI 会从这里读取代码和上下文。',
+          button: saveLabel === '保存中…' ? saveLabel : '使用默认工作区',
+          title: '使用默认工作区',
+          detail: displayedWorkspaceRoot
+            ? `默认使用：${displayedWorkspaceRoot}`
+            : '暂时没有检测到默认工作区；需要在高级设置里填一次。',
         }
       : {
-          label: '去任务里运行',
+          button: '已就绪',
           title: 'AI Runtime 已准备好',
           detail: '打开一个任务，在右侧输入框切到 Codex，然后发送你的需求。',
         };
+  const detectionSummary = codexRuntime?.installed
+    ? codexRuntime.authState === 'ready'
+      ? `自动检测：Codex CLI 已登录，可运行。`
+      : `自动检测：已找到 Codex CLI，还需要登录。`
+    : '自动检测：没有找到 Codex CLI。';
 
   return (
     <section className="agent-cli-section">
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">Agent CLI</div>
-          <p className="model-section-copy">用官方 CLI 账号在任务里启动后台 Agent run。</p>
+          <p className="model-section-copy">Taskplane 会自动检测本机官方 CLI，不在这里保存账号。</p>
         </div>
         <div className={`agent-cli-primary-state${readyRuntime && workspaceReady ? ' ready' : ''}`}>
           {primaryStatus}
@@ -419,39 +452,50 @@ function AgentCliRuntimeSection({
       <div className={`agent-cli-action ${runnable ? 'ready' : ''}`}>
         <div className="agent-cli-action-icon">{runnable ? '✓' : readyRuntime ? '2' : '1'}</div>
         <div className="agent-cli-action-copy">
+          <span className="agent-cli-detection">{detectionSummary}</span>
           <strong>{nextAction.title}</strong>
           <span>{nextAction.detail}</span>
         </div>
-        <div className="agent-cli-action-state">{nextAction.label}</div>
-      </div>
-
-      <div className="agent-cli-workspace">
-        <div className="agent-cli-workspace-head">
-          <label className="settings-label" htmlFor="agent-cli-workspace-root">项目目录</label>
+        {!runnable && (
           <button
-            className={`btn sm primary${saveDisabled ? ' disabled' : ''}`}
+            className={`btn sm primary${(openingLogin || saveDisabled) ? ' disabled' : ''}`}
             type="button"
-            onClick={onSave}
-            disabled={saveDisabled}
+            onClick={readyRuntime ? onSave : onOpenLogin}
+            disabled={openingLogin || saveDisabled}
           >
-            {saveLabel}
+            {nextAction.button}
           </button>
-        </div>
-        <div className="agent-cli-workspace-row">
-          <input
-            id="agent-cli-workspace-root"
-            className="settings-input mono"
-            type="text"
-            value={workspaceRoot}
-            placeholder="/Users/you/git/project"
-            onChange={(event) => onWorkspaceRootChange(event.target.value)}
-          />
-        </div>
-        <p className="settings-hint">第一版只读运行，不会自动改代码或提交。</p>
+        )}
       </div>
 
       <div className="agent-cli-boundary">
-        <span>账号不在这里配置。Codex 登录用 <span className="mono">codex login</span>；Claude 登录用 <span className="mono">claude auth login</span>。</span>
+        <span>第一版只读运行，不会自动改代码或提交。</span>
+        <details className="agent-cli-debug">
+          <summary>高级：更改工作区</summary>
+          <div className="agent-cli-workspace">
+            <div className="agent-cli-workspace-head">
+              <label className="settings-label" htmlFor="agent-cli-workspace-root">工作区路径</label>
+              <button
+                className={`btn sm ghost${saveDisabled ? ' disabled' : ''}`}
+                type="button"
+                onClick={onSave}
+                disabled={saveDisabled}
+              >
+                {saveLabel}
+              </button>
+            </div>
+            <div className="agent-cli-workspace-row">
+              <input
+                id="agent-cli-workspace-root"
+                className="settings-input mono"
+                type="text"
+                value={workspaceRoot}
+                placeholder={suggestedWorkspaceRoot ?? '/Users/you/git/project'}
+                onChange={(event) => onWorkspaceRootChange(event.target.value)}
+              />
+            </div>
+          </div>
+        </details>
         <details className="agent-cli-debug">
           <summary>CLI 明细</summary>
           <div className="agent-cli-grid">

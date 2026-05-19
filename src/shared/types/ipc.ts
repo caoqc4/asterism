@@ -110,6 +110,7 @@ import type {
 } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
+import type { AgentCliRuntimeId } from '../agent-cli-runtime-status.js';
 import type {
   CreateSourceContextInput,
   SourceContextRecord,
@@ -149,6 +150,12 @@ export type ElectronApi = {
   ping: () => Promise<PingResponse>;
   getAiConfigStatus: () => Promise<AiConfigStatus>;
   setAiConfig: (input: AiConfigInput) => Promise<AiConfigStatus>;
+  openAgentCliLogin?: (input: { runtimeId: AgentCliRuntimeId }) => Promise<{
+    command: string;
+    opened: boolean;
+    runtimeId: AgentCliRuntimeId;
+    summary: string;
+  }>;
   probeSandboxBackend?: () => Promise<AgentSandboxBackendStatus>;
   connectGmailOAuth?: (input: GmailOAuthConnectInput) => Promise<GmailOAuthConnectResult>;
   disconnectGmailOAuth?: (input: GmailOAuthDisconnectInput) => Promise<GmailOAuthDisconnectResult>;

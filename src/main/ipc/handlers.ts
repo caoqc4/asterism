@@ -1,3 +1,6 @@
+import { execFile } from 'node:child_process';
+
+import type { AgentCliRuntimeId } from '../../shared/agent-cli-runtime-status.js';
 import type {
   ChatInput,
   PingResponse,
@@ -81,6 +84,33 @@ import { evaluateRuntimeVerification } from '../../shared/runtime-verification.j
 import { GmailOAuthControlService } from '../domain/external-access/gmail-oauth-control-service.js';
 
 const PING_CHANNEL = 'app:ping';
+
+function agentCliLoginCommand(runtimeId: AgentCliRuntimeId): string {
+  if (runtimeId === 'claude') return 'claude auth login';
+  return 'codex login';
+}
+
+function openTerminalWithCommand(command: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (process.platform !== 'darwin') {
+      reject(new Error('Opening a prepared terminal login command is only supported on macOS for now.'));
+      return;
+    }
+
+    execFile('osascript', [
+      '-e',
+      'tell application "Terminal" to activate',
+      '-e',
+      `tell application "Terminal" to do script ${JSON.stringify(command)}`,
+    ], (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
 
 function extractJsonObject(text: string): unknown {
   const trimmed = text.trim();
@@ -214,6 +244,19 @@ export function registerIpcHandlers(): void {
     emitAppEvent('settings.changed');
 
     return nextStatus;
+  });
+
+  ipcMain.handle('settings:openAgentCliLogin', async (_event, input: { runtimeId?: AgentCliRuntimeId }) => {
+    const runtimeId = input.runtimeId === 'claude' ? 'claude' : 'codex';
+    const command = agentCliLoginCommand(runtimeId);
+    await openTerminalWithCommand(command);
+
+    return {
+      command,
+      opened: true,
+      runtimeId,
+      summary: `Opened Terminal with ${command}.`,
+    };
   });
 
   ipcMain.handle('settings:probeSandboxBackend', async () => {

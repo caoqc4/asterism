@@ -385,6 +385,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
     model: 'google/gemini-2.5-flash',
     baseUrl: null,
     workspaceRoot: '/tmp/taskplane-workspace',
+    suggestedWorkspaceRoot: '/tmp/taskplane-workspace',
     updatedAt: now,
     configPath: '/tmp/taskplane-config.json',
     featureFlags: {
@@ -473,6 +474,12 @@ function createMockApi() {
       featureFlags: input.featureFlags,
       workspaceRoot: input.workspaceRoot ?? null,
     })),
+    openAgentCliLogin: vi.fn().mockResolvedValue({
+      command: 'codex login',
+      opened: true,
+      runtimeId: 'codex',
+      summary: 'Opened Terminal with codex login.',
+    }),
     connectGmailOAuth: vi.fn().mockResolvedValue({
       status: 'connected',
       connectorId: 'gmail',
@@ -1091,12 +1098,12 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
     expect(screen.getByText(/账号登录在官方 CLI 中完成/)).toBeTruthy();
     expect(screen.getByText(/当前可执行/)).toBeTruthy();
+    expect(screen.getByText(/自动检测：Codex CLI 已登录/)).toBeTruthy();
     expect(screen.getByText('AI Runtime 已准备好')).toBeTruthy();
     expect(screen.getByText(/切到 Codex/)).toBeTruthy();
-    expect(screen.getByLabelText('项目目录')).toBeTruthy();
     expect(screen.getByText(/第一版只读运行/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /保存 Workspace root/ })).toBeTruthy();
-    expect(screen.getAllByText(/codex login/).length).toBeGreaterThan(0);
+    await user.click(screen.getByText('高级：更改工作区'));
+    expect(screen.getByLabelText('工作区路径')).toBeTruthy();
     expect(screen.getByText('CLI 明细')).toBeTruthy();
     await user.click(screen.getByText('CLI 明细'));
     expect(screen.getByText('Codex CLI')).toBeTruthy();
@@ -1115,7 +1122,8 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
-    const workspaceInput = await screen.findByLabelText('项目目录');
+    await user.click(await screen.findByText('高级：更改工作区'));
+    const workspaceInput = await screen.findByLabelText('工作区路径');
     await user.clear(workspaceInput);
     await user.type(workspaceInput, '/Users/example/project');
     await user.click(screen.getByRole('button', { name: '保存 AI Runtime 配置' }));
@@ -1125,6 +1133,41 @@ describe('App redesign v1', () => {
         workspaceRoot: '/Users/example/project',
       }));
     });
+  });
+
+  it('opens a guided Codex CLI login from AI Runtime when auth is missing', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      agentCliRuntimeStatus: {
+        catalogueCount: 2,
+        detectedCount: 1,
+        readyCount: 0,
+        runningCount: 0,
+        errorCount: 0,
+        manualRunCount: 1,
+        readyManualRunCount: 0,
+        updatedAt: '2026-05-19T00:00:00.000Z',
+        runtimes: [{
+          id: 'codex',
+          label: 'Codex CLI',
+          command: 'codex',
+          installed: true,
+          version: 'codex 0.42.0',
+          authState: 'needs_login',
+          executionSupport: 'manual_run',
+          workload: 'idle',
+          missingReason: 'Codex CLI is installed but not logged in; run codex login.',
+        }],
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
+    expect(await screen.findByText('先登录 Codex CLI')).toBeTruthy();
+    expect(screen.getByText(/自动检测：已找到 Codex CLI/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '打开终端登录 Codex' }));
+
+    expect(harness.api.openAgentCliLogin).toHaveBeenCalledWith({ runtimeId: 'codex' });
   });
 
   it('can manually refresh AI Runtime CLI readiness after official CLI login', async () => {

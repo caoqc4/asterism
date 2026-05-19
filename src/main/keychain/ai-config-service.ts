@@ -40,6 +40,21 @@ const DEFAULT_TOOL_SCAFFOLD_POLICY = {
 const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
 const CODE_AGENT_CHECK_SCRIPTS = ['test', 'lint'] as const;
 
+function inferSuggestedWorkspaceRoot(configuredWorkspaceRoot: string | null): string | null {
+  if (configuredWorkspaceRoot?.trim()) return configuredWorkspaceRoot.trim();
+
+  const envWorkspaceRoot = readEnvValue('TASKPLANE_WORKSPACE_ROOT');
+  if (envWorkspaceRoot?.trim()) return envWorkspaceRoot.trim();
+
+  const cwd = process.cwd();
+  if (!cwd || cwd === path.parse(cwd).root) return null;
+  if (fs.existsSync(path.join(cwd, 'package.json')) || fs.existsSync(path.join(cwd, '.git'))) {
+    return cwd;
+  }
+
+  return null;
+}
+
 export type RuntimeAiConfig = {
   provider: AiProvider;
   model: string;
@@ -176,6 +191,7 @@ export class AiConfigService {
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
       workspaceRoot: config.workspaceRoot,
+      suggestedWorkspaceRoot: inferSuggestedWorkspaceRoot(config.workspaceRoot),
       updatedAt: config.updatedAt,
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
@@ -229,6 +245,7 @@ export class AiConfigService {
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
       workspaceRoot: config.workspaceRoot,
+      suggestedWorkspaceRoot: inferSuggestedWorkspaceRoot(config.workspaceRoot),
       updatedAt: config.updatedAt,
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,

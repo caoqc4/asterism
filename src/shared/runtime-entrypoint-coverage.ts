@@ -760,6 +760,22 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     notes: 'The probe returns backend status and producer readiness through explicit settings IPC; it does not start runs, mutate tasks, or persist scheduler decisions.',
   },
   {
+    id: 'settings.agentCliLoginProbe',
+    owner: 'IPC settings:openAgentCliLogin',
+    kind: 'capability_probe',
+    description: 'Open a prepared official Agent CLI login command in the local terminal without storing credentials or starting a run.',
+    ipcChannels: ['settings:openAgentCliLogin'],
+    requiredGates: [
+      'simplicity_check',
+      'capability_probe_boundary',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'capability_probe_boundary',
+    ],
+    notes: 'This launches only the official CLI login command. Account authorization remains with the official CLI/web flow, and Taskplane stores no CLI account credential.',
+  },
+  {
     id: 'externalAccess.gmailOAuthCredential',
     owner: 'IPC externalAccess:gmailOAuthConnect / externalAccess:gmailOAuthDisconnect',
     kind: 'product_configuration',

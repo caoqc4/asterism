@@ -6,6 +6,7 @@ const {
   getLanguageModelMock,
   handleMock,
   emitAppEventMock,
+  execFileMock,
   gmailOAuthConnectMock,
   gmailOAuthDisconnectMock,
   probeLocalContainerSandboxBackendMock,
@@ -16,6 +17,7 @@ const {
   getLanguageModelMock: vi.fn(),
   handleMock: vi.fn(),
   emitAppEventMock: vi.fn(),
+  execFileMock: vi.fn(),
   gmailOAuthConnectMock: vi.fn(),
   gmailOAuthDisconnectMock: vi.fn(),
   probeLocalContainerSandboxBackendMock: vi.fn(),
@@ -133,6 +135,10 @@ const {
   },
 }));
 
+vi.mock('node:child_process', () => ({
+  execFile: execFileMock,
+}));
+
 vi.mock('../electron.js', () => ({
   ipcMain: {
     handle: handleMock,
@@ -208,6 +214,7 @@ describe('registerIpcHandlers', () => {
     generateTextMock.mockResolvedValue({ text: 'AI response' });
     handleMock.mockClear();
     emitAppEventMock.mockClear();
+    execFileMock.mockReset();
     gmailOAuthConnectMock.mockReset();
     gmailOAuthDisconnectMock.mockReset();
     probeLocalContainerSandboxBackendMock.mockReset();
@@ -467,6 +474,32 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.schedulerService.stop).not.toHaveBeenCalled();
     expect(emitAppEventMock).toHaveBeenCalledWith('settings.changed');
     expect(result.featureFlags.enableScheduler).toBe(true);
+  });
+
+  it('opens a prepared Codex CLI login command without storing credentials', async () => {
+    execFileMock.mockImplementation((_command: unknown, _args: unknown, callback: (error: Error | null) => void) => {
+      callback(null);
+    });
+
+    const handler = getRegisteredHandler<[{ runtimeId: 'codex' }], {
+      command: string;
+      opened: boolean;
+      runtimeId: string;
+      summary: string;
+    }>('settings:openAgentCliLogin');
+
+    const result = await handler({}, { runtimeId: 'codex' });
+
+    expect(result).toMatchObject({
+      command: 'codex login',
+      opened: true,
+      runtimeId: 'codex',
+    });
+    expect(execFileMock).toHaveBeenCalledWith('osascript', expect.arrayContaining([
+      'tell application "Terminal" to activate',
+      expect.stringContaining('codex login'),
+    ]), expect.any(Function));
+    expect(servicesMock.aiConfigService.setConfig).not.toHaveBeenCalled();
   });
 
   it('connects Gmail OAuth through explicit External Access IPC and emits settings.changed only when connected', async () => {

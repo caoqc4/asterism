@@ -207,6 +207,7 @@ describe('runtime entrypoint coverage', () => {
       'run.triggerAgentCli',
       'run.triggerCodeAgent',
       'run.triggerOperatorStarted',
+      'settings.agentCliLoginProbe',
       'settings.aiRuntimeConfig',
       'settings.sandboxBackendProbe',
       'task.capture',

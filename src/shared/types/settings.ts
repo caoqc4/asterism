@@ -71,6 +71,7 @@ export type AiConfigStatus = {
   model: string | null;
   baseUrl: string | null;
   workspaceRoot: string | null;
+  suggestedWorkspaceRoot?: string | null;
   updatedAt: string | null;
   configPath: string | null;
   featureFlags: FeatureFlags;
