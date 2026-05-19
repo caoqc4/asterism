@@ -308,20 +308,13 @@ function projectRunEvents(run: RunRecord, params: {
   taskId: string | null;
   steps: RunStepRecord[];
 }): RuntimeEventRecord[] {
+  const agentCli = parseAgentCliRunDescriptor(run);
   const events: RuntimeEventRecord[] = [{
     id: `run:${run.id}`,
     taskId: run.taskId,
     type: `run.${run.status}`,
-    title: run.status === 'paused'
-      ? 'Run 暂停，等待 checkpoint 恢复'
-      : run.status === 'completed'
-        ? 'Run 已完成'
-        : run.status === 'failed'
-          ? 'Run 执行失败'
-          : run.status === 'running'
-            ? 'Run 正在执行'
-            : 'Run 状态更新',
-    detail: run.failureReason ?? run.output ?? run.instructions,
+    title: formatRunEventTitle(run, agentCli),
+    detail: formatRunEventDetail(run, agentCli),
     sourceType: 'run',
     sourceId: run.id,
     priority: run.status === 'failed' ? 'p1' : run.status === 'paused' ? 'p2' : 'p3',
@@ -346,19 +339,97 @@ function projectRunEvents(run: RunRecord, params: {
     });
   }
 
-  events.push(...params.steps.map((step) => ({
+  events.push(...params.steps.map((step) => projectRunStepEvent(run, step, agentCli)));
+
+  return events;
+}
+
+function projectRunStepEvent(
+  run: RunRecord,
+  step: RunStepRecord,
+  agentCli: AgentCliRunDescriptor | null,
+): RuntimeEventRecord {
+  return {
     id: `run_step:${step.id}`,
     taskId: run.taskId,
     type: `run_step.${step.kind}.${step.status}`,
-    title: `Run Step · ${step.title}`,
-    detail: step.error ?? step.output ?? step.input,
-    sourceType: 'run_step' as const,
+    title: formatRunStepTitle(step, agentCli),
+    detail: formatRunStepDetail(step, agentCli),
+    sourceType: 'run_step',
     sourceId: step.id,
-    priority: step.status === 'failed' ? 'p1' as const : step.kind === 'decision' || step.kind === 'checkpoint' ? 'p2' as const : 'p3' as const,
+    priority: step.status === 'failed' ? 'p1' : step.kind === 'decision' || step.kind === 'checkpoint' ? 'p2' : 'p3',
     createdAt: step.updatedAt,
-  })));
+  };
+}
 
-  return events;
+type AgentCliRunDescriptor = {
+  label: string;
+  sandboxMode: string;
+  userPrompt: string | null;
+};
+
+function parseAgentCliRunDescriptor(run: RunRecord): AgentCliRunDescriptor | null {
+  const instructions = run.instructions ?? '';
+  const match = instructions.match(/^Agent CLI \(([^)]+)\) ([^:]+):\s*([\s\S]*)$/);
+  if (!match) return null;
+  return {
+    label: match[1]?.trim() || 'Agent CLI',
+    sandboxMode: match[2]?.trim() || 'unknown',
+    userPrompt: match[3]?.trim() || null,
+  };
+}
+
+function formatRunEventTitle(run: RunRecord, agentCli: AgentCliRunDescriptor | null): string {
+  if (agentCli) {
+    if (run.status === 'completed') return `${agentCli.label} 已完成`;
+    if (run.status === 'failed') return `${agentCli.label} 执行失败`;
+    if (run.status === 'running') return `${agentCli.label} 后台运行中`;
+    if (run.status === 'paused') return `${agentCli.label} 暂停`;
+    return `${agentCli.label} 状态更新`;
+  }
+  return run.status === 'paused'
+    ? 'Run 暂停，等待 checkpoint 恢复'
+    : run.status === 'completed'
+      ? 'Run 已完成'
+      : run.status === 'failed'
+        ? 'Run 执行失败'
+        : run.status === 'running'
+          ? 'Run 正在执行'
+          : 'Run 状态更新';
+}
+
+function formatRunEventDetail(run: RunRecord, agentCli: AgentCliRunDescriptor | null): string | null {
+  if (!agentCli) return run.failureReason ?? run.output ?? run.instructions;
+  const parts = [
+    `sandbox=${agentCli.sandboxMode}`,
+    'auth=official CLI',
+    agentCli.userPrompt ? `request=${agentCli.userPrompt}` : null,
+    run.failureReason ? `failure=${run.failureReason}` : null,
+    !run.failureReason && run.output ? run.output : null,
+  ].filter((value): value is string => Boolean(value));
+  return parts.join(' / ') || null;
+}
+
+function formatRunStepTitle(step: RunStepRecord, agentCli: AgentCliRunDescriptor | null): string {
+  if (!agentCli) return `Run Step · ${step.title}`;
+  if (step.title === 'agent cli run accepted') return `${agentCli.label} 已接收`;
+  if (step.title === 'codex cli completed') return `${agentCli.label} 输出`;
+  if (step.title === 'codex cli failed') return `${agentCli.label} 失败证据`;
+  return `${agentCli.label} · ${step.title}`;
+}
+
+function formatRunStepDetail(step: RunStepRecord, agentCli: AgentCliRunDescriptor | null): string | null {
+  if (!agentCli) return step.error ?? step.output ?? step.input;
+  const parts = [
+    step.error ? `错误：${step.error}` : null,
+    step.input ? `命令：${firstLine(step.input)}` : null,
+    step.output ? `输出：${step.output}` : null,
+  ].filter((value): value is string => Boolean(value));
+  return parts.join(' / ') || null;
+}
+
+function firstLine(value: string): string {
+  return value.split(/\r?\n/).map((line) => line.trim()).find(Boolean) ?? value.trim();
 }
 
 function timelineTitle(type: string, payload: string | null): string {

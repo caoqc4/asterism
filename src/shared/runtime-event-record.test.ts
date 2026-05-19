@@ -365,6 +365,67 @@ describe('runtime event record projection', () => {
     });
   });
 
+  it('projects Agent CLI runs and terminal steps as readable execution evidence', () => {
+    const events = projectRuntimeEvents({
+      runs: [{
+        id: 'run-agent-cli',
+        taskId: 'task-1',
+        type: 'agent',
+        status: 'failed',
+        instructions: 'Agent CLI (Codex CLI) read-only: Review the implementation path.',
+        output: 'Agent CLI execution cancelled.',
+        outputSource: 'system',
+        failureReason: 'Operator cancelled the Codex CLI run from Taskplane.',
+        createdAt: '2026-05-14T08:00:00.000Z',
+        updatedAt: '2026-05-14T08:03:00.000Z',
+      }],
+      runStepsByRunId: {
+        'run-agent-cli': [
+          {
+            id: 'step-accepted',
+            runId: 'run-agent-cli',
+            index: 0,
+            kind: 'plan',
+            status: 'completed',
+            title: 'agent cli run accepted',
+            input: 'Review the implementation path.',
+            output: 'runtime=codex / sandbox=read-only / context ready',
+            error: null,
+            createdAt: '2026-05-14T08:01:00.000Z',
+            updatedAt: '2026-05-14T08:01:00.000Z',
+          },
+          {
+            id: 'step-terminal',
+            runId: 'run-agent-cli',
+            index: 1,
+            kind: 'model',
+            status: 'failed',
+            title: 'codex cli failed',
+            input: 'codex exec --sandbox read-only --cd /workspace -\nexitCode=unknown',
+            output: 'Agent CLI execution cancelled.',
+            error: 'Operator cancelled the Codex CLI run from Taskplane.',
+            createdAt: '2026-05-14T08:02:00.000Z',
+            updatedAt: '2026-05-14T08:02:00.000Z',
+          },
+        ],
+      },
+    });
+
+    expect(events.map((event) => event.title)).toEqual([
+      'Codex CLI 执行失败',
+      'Codex CLI 失败证据',
+      'Codex CLI 已接收',
+    ]);
+    expect(events[0]?.detail).toBe(
+      'sandbox=read-only / auth=official CLI / request=Review the implementation path. / failure=Operator cancelled the Codex CLI run from Taskplane.',
+    );
+    expect(events[1]).toMatchObject({
+      priority: 'p1',
+      sourceType: 'run_step',
+      detail: '错误：Operator cancelled the Codex CLI run from Taskplane. / 命令：codex exec --sandbox read-only --cd /workspace - / 输出：Agent CLI execution cancelled.',
+    });
+  });
+
   it('groups completion checks as quality gates instead of generic task state', () => {
     const events = projectRuntimeEvents({
       timeline: [{

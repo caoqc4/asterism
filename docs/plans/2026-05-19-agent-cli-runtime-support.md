@@ -186,6 +186,7 @@ The adapter should reuse existing concepts:
 - The UI receives a Run id immediately after the gated run is accepted.
 - The UI can request cancellation for the active task-bound CLI run.
 - Taskplane stores logs and outputs in the run timeline.
+- Task dynamics can replay CLI sandbox mode, output, and failure/cancellation evidence.
 - Taskplane does not store ChatGPT browser sessions.
 - Taskplane does not auto-run, auto-commit, or auto-push.
 - CLI execution cannot bypass existing runtime gates or task memory checks.
