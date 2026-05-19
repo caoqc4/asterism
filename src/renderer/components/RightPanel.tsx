@@ -2333,7 +2333,7 @@ export function RightPanel({
               className={`panel-send-mode-btn${executionMode === 'codex' ? ' active' : ''}`}
               onClick={() => canUseCodexCli && setExecutionMode('codex')}
               disabled={!canUseCodexCli}
-              title={canUseCodexCli ? '通过 Codex CLI 创建只读 Agent run' : 'Codex CLI 需要任务上下文并完成本机检测'}
+              title={canUseCodexCli ? '通过 Codex CLI 创建只读 Agent run' : 'Codex CLI 需要任务上下文、本机检测和官方 CLI 登录 ready'}
             >
               Codex
             </button>

@@ -1089,6 +1089,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('Codex CLI')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getAllByText(/codex login/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/ready manual/)).toBeTruthy();
     expect(screen.getByText(/API Model/)).toBeTruthy();
     expect(screen.getByText('模型配置边界')).toBeTruthy();
     expect(screen.getByText('model.provider')).toBeTruthy();
@@ -1816,6 +1817,7 @@ describe('App redesign v1', () => {
 
     const codexButton = screen.getByRole('button', { name: 'Codex' }) as HTMLButtonElement;
     expect(codexButton.disabled).toBe(true);
+    expect(codexButton.title).toContain('官方 CLI 登录 ready');
     await user.click(codexButton);
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));

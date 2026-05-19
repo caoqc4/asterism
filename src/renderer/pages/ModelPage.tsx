@@ -331,6 +331,7 @@ function AgentCliRuntimeSection({
         <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
           <span>{status?.detectedCount ?? 0} detected</span>
           <span>{status?.manualRunCount ?? 0} manual</span>
+          <span>{status?.readyManualRunCount ?? 0} ready manual</span>
           <span>{status?.runningCount ?? 0} running</span>
         </div>
       </div>
