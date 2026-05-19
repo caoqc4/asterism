@@ -118,6 +118,8 @@ export function ModelPage() {
   const [saving, setSaving] = useState(false);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
+  const [apiModelOpen, setApiModelOpen] = useState(false);
+  const [safetyOpen, setSafetyOpen] = useState(false);
 
   useEffect(() => {
     void refreshStatus();
@@ -205,8 +207,8 @@ export function ModelPage() {
       <div className="model-page-head">
         <div>
           <h2 className="model-page-title">AI Runtime</h2>
-          <p className="model-page-subtitle">管理本机 Agent CLI、API 模型和执行安全边界。</p>
-          <p className="model-page-boundary">Agent CLI 使用你在官方 CLI 中完成的登录；Taskplane 只做本机检测、上下文装配和运行记录。</p>
+          <p className="model-page-subtitle">优先使用本机官方 Agent CLI；API 模型只作为辅助配置。</p>
+          <p className="model-page-boundary">账号登录在官方 CLI 中完成，Taskplane 只检测本机状态、配置工作目录并记录运行证据。</p>
         </div>
         <button
           className={`btn sm ghost${refreshingStatus ? ' disabled' : ''}`}
@@ -227,97 +229,108 @@ export function ModelPage() {
         capabilitySummary={agentCliCapability?.summary ?? null}
       />
 
-      <ModelConfigurationSafety surfaces={modelSafetySurfaces} />
-
       <section className="model-api-section">
-        <div className="model-section-kicker">API Model</div>
-        <p className="model-section-copy">用于轻量 AI 辅助、摘要、草稿和内部工具；完整 coding agent 优先走 Agent CLI。</p>
+        <button
+          className="model-collapsible-head"
+          onClick={() => setApiModelOpen((value) => !value)}
+          type="button"
+        >
+          <span>
+            <span className="model-section-kicker">Auxiliary API Model</span>
+            <span className="model-section-copy">可选。用于轻量 AI 辅助、摘要、草稿和内部工具；coding agent 优先走 Agent CLI。</span>
+          </span>
+          <span className="model-collapsible-state">{apiModelOpen ? '收起' : '展开'}</span>
+        </button>
       </section>
 
-      {PROVIDERS.map((section) => {
-        const isConfigured = configuredProviders.has(section.provider);
-        const isSelected = selectedProvider === section.provider;
-        const keyVal = keys[section.keyField] ?? '';
-        const isUnlocked = isConfigured || Boolean(keyVal);
+      {apiModelOpen && PROVIDERS.map((section) => {
+          const isConfigured = configuredProviders.has(section.provider);
+          const isSelected = selectedProvider === section.provider;
+          const keyVal = keys[section.keyField] ?? '';
+          const isUnlocked = isConfigured || Boolean(keyVal);
 
-        return (
-          <div
-            key={section.provider}
-            className={`model-provider-block${isSelected ? ' active' : ''}`}
-            onClick={() => !isSelected && handleProviderClick(section.provider)}
-          >
-            <div className="model-provider-header">
-              <div className="model-provider-header-left">
-                <span className="model-provider-label">{section.label}</span>
-                {isConfigured && !keyVal && (
-                  <span className="model-provider-status configured">已配置 ✓</span>
-                )}
-              </div>
-              {isSelected && <span className="model-provider-active-dot" />}
-            </div>
-
-            {isSelected && (
-              <div className="model-provider-body">
-                {/* Key input */}
-                {section.customBaseUrl && (
-                  <input
-                    className="settings-input"
-                    type="text"
-                    value={customBaseUrl}
-                    placeholder="Base URL  https://your-endpoint.com/v1"
-                    onChange={(e) => setCustomBaseUrl(e.target.value)}
-                    style={{ marginBottom: 6 }}
-                  />
-                )}
-                <div className="settings-api-row" style={{ marginBottom: 4 }}>
-                  <input
-                    className="settings-input"
-                    type={showKeys[section.keyField] ? 'text' : 'password'}
-                    value={keyVal}
-                    placeholder={isConfigured ? '（已存储，输入新值可覆盖）' : section.placeholder}
-                    onChange={(e) => setKey(section.keyField, e.target.value)}
-                  />
-                  <button className="btn sm ghost" onClick={() => toggleShow(section.keyField)}>
-                    {showKeys[section.keyField] ? '隐藏' : '显示'}
-                  </button>
+          return (
+            <div
+              key={section.provider}
+              className={`model-provider-block${isSelected ? ' active' : ''}`}
+              onClick={() => !isSelected && handleProviderClick(section.provider)}
+            >
+              <div className="model-provider-header">
+                <div className="model-provider-header-left">
+                  <span className="model-provider-label">{section.label}</span>
+                  {isConfigured && !keyVal && (
+                    <span className="model-provider-status configured">已配置 ✓</span>
+                  )}
                 </div>
-                <p className="settings-hint" style={{ marginBottom: 14 }}>{section.hint}</p>
+                {isSelected && <span className="model-provider-active-dot" />}
+              </div>
 
-                {/* Model selector */}
-                {section.models.length > 0 ? (
-                  <div className="model-select-row">
-                    <label className="settings-label">默认模型</label>
-                    <select
-                      className="model-select"
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      disabled={!isUnlocked}
-                    >
-                      {section.models.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name}{m.recommended ? ' ★' : ''} — {m.desc}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="model-select-id mono muted">{selectedModel}</span>
-                  </div>
-                ) : (
-                  <div className="model-select-row">
-                    <label className="settings-label">模型 ID</label>
+              {isSelected && (
+                <div className="model-provider-body">
+                  {section.customBaseUrl && (
                     <input
                       className="settings-input"
                       type="text"
-                      value={customModelId}
-                      placeholder="例：mistral-7b-instruct"
-                      onChange={(e) => setCustomModelId(e.target.value)}
+                      value={customBaseUrl}
+                      placeholder="Base URL  https://your-endpoint.com/v1"
+                      onChange={(e) => setCustomBaseUrl(e.target.value)}
+                      style={{ marginBottom: 6 }}
                     />
+                  )}
+                  <div className="settings-api-row" style={{ marginBottom: 4 }}>
+                    <input
+                      className="settings-input"
+                      type={showKeys[section.keyField] ? 'text' : 'password'}
+                      value={keyVal}
+                      placeholder={isConfigured ? '（已存储，输入新值可覆盖）' : section.placeholder}
+                      onChange={(e) => setKey(section.keyField, e.target.value)}
+                    />
+                    <button className="btn sm ghost" onClick={() => toggleShow(section.keyField)}>
+                      {showKeys[section.keyField] ? '隐藏' : '显示'}
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+                  <p className="settings-hint" style={{ marginBottom: 14 }}>{section.hint}</p>
+
+                  {section.models.length > 0 ? (
+                    <div className="model-select-row">
+                      <label className="settings-label">默认模型</label>
+                      <select
+                        className="model-select"
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        disabled={!isUnlocked}
+                      >
+                        {section.models.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}{m.recommended ? ' ★' : ''} — {m.desc}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="model-select-id mono muted">{selectedModel}</span>
+                    </div>
+                  ) : (
+                    <div className="model-select-row">
+                      <label className="settings-label">模型 ID</label>
+                      <input
+                        className="settings-input"
+                        type="text"
+                        value={customModelId}
+                        placeholder="例：mistral-7b-instruct"
+                        onChange={(e) => setCustomModelId(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+      <ModelConfigurationSafety
+        open={safetyOpen}
+        onToggle={() => setSafetyOpen((value) => !value)}
+        surfaces={modelSafetySurfaces}
+      />
 
       {/* Footer */}
       <div className="model-page-footer">
@@ -352,19 +365,27 @@ function AgentCliRuntimeSection({
   capabilitySummary: string | null;
 }) {
   const runtimes = status?.runtimes ?? [];
+  const readyRuntime = runtimes.find((runtime) => (
+    runtime.installed
+    && runtime.authState === 'ready'
+    && runtime.executionSupport === 'manual_run'
+  )) ?? null;
+  const workspaceReady = Boolean(workspaceRoot.trim());
+  const primaryStatus = !workspaceReady
+    ? '先设置 Workspace root'
+    : readyRuntime
+      ? `当前可执行：${readyRuntime.label}`
+      : '等待官方 CLI 登录或安装';
 
   return (
     <section className="agent-cli-section">
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">Agent CLI</div>
-          <p className="model-section-copy">第一版优先检测 Codex CLI 和 Claude Code；两者都只通过官方 CLI 登录，Taskplane 负责本机检测、只读启动和运行记录。</p>
+          <p className="model-section-copy">主执行路径。账号在官方 CLI 里登录；Taskplane 只识别本机 CLI、配置工作目录并启动只读任务 run。</p>
         </div>
-        <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
-          <span>{status?.detectedCount ?? 0} detected</span>
-          <span>{status?.manualRunCount ?? 0} manual</span>
-          <span>{status?.readyManualRunCount ?? 0} ready manual</span>
-          <span>{status?.runningCount ?? 0} running</span>
+        <div className={`agent-cli-primary-state${readyRuntime && workspaceReady ? ' ready' : ''}`}>
+          {primaryStatus}
         </div>
       </div>
 
@@ -378,7 +399,7 @@ function AgentCliRuntimeSection({
           placeholder="/absolute/path/to/workspace"
           onChange={(event) => onWorkspaceRootChange(event.target.value)}
         />
-        <p className="settings-hint">Agent CLI runs stay read-only and start from this configured workspace root.</p>
+        <p className="settings-hint">Agent CLI run 从这个目录启动并保持只读；不设置时不会执行。</p>
       </div>
 
       <div className="agent-cli-grid">
@@ -387,8 +408,8 @@ function AgentCliRuntimeSection({
             <div className="agent-cli-runtime-main">
               <span className="agent-cli-runtime-name">{runtime.label}</span>
               <span className="agent-cli-runtime-command mono">{runtime.command}</span>
-              {runtime.id === 'codex' && <span className="model-tag">推荐执行路径</span>}
-              {runtime.id === 'claude' && <span className="agent-cli-pill">Plan 模式</span>}
+              {runtime.id === 'codex' && <span className="model-tag">主路径</span>}
+              {runtime.id === 'claude' && <span className="agent-cli-pill">可选 Plan 模式</span>}
             </div>
             <div className="agent-cli-runtime-meta">
               <span className={`agent-cli-status ${runtime.installed ? 'ok' : 'muted'}`}>
@@ -400,6 +421,7 @@ function AgentCliRuntimeSection({
             {runtime.missingReason && (
               <p className="agent-cli-runtime-note">{runtime.missingReason}</p>
             )}
+            <p className="agent-cli-runtime-note">{agentCliRuntimeNextStep(runtime)}</p>
           </div>
         )) : (
           <div className="agent-cli-empty">Agent CLI 状态尚未生成。</div>
@@ -407,23 +429,46 @@ function AgentCliRuntimeSection({
       </div>
 
       <div className="agent-cli-boundary">
-        <span>登录由官方 CLI 管理；Codex 运行 <span className="mono">codex login</span>，Claude 运行 <span className="mono">claude auth login</span>。</span>
-        {safety && (
-          <span>
-            安全：{CONFIGURATION_SAFETY_STATE_LABELS[safety.state]} · 探测：{configurationSafetyProbePolicyLabel(safety.startupProbePolicy)}
-          </span>
-        )}
-        {capabilitySummary && <span className="mono">{capabilitySummary}</span>}
+        <span>Taskplane 不保存 CLI 账号；登录请在终端运行 <span className="mono">codex login</span> 或 <span className="mono">claude auth login</span>，完成后点击重新检测。</span>
+        <details className="agent-cli-debug">
+          <summary>调试详情</summary>
+          <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
+            <span>{status?.detectedCount ?? 0} detected</span>
+            <span>{status?.manualRunCount ?? 0} manual</span>
+            <span>{status?.readyManualRunCount ?? 0} ready manual</span>
+            <span>{status?.runningCount ?? 0} running</span>
+          </div>
+          {safety && (
+            <span>
+              安全：{CONFIGURATION_SAFETY_STATE_LABELS[safety.state]} · 探测：{configurationSafetyProbePolicyLabel(safety.startupProbePolicy)}
+            </span>
+          )}
+          {capabilitySummary && <span className="mono">{capabilitySummary}</span>}
+        </details>
       </div>
     </section>
   );
 }
 
-function ModelConfigurationSafety({ surfaces }: { surfaces: ConfigurationSafetySurface[] }) {
+function ModelConfigurationSafety({
+  open,
+  onToggle,
+  surfaces,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  surfaces: ConfigurationSafetySurface[];
+}) {
   if (surfaces.length === 0) {
     return (
       <section className="settings-section model-safety-section">
-        <div className="settings-section-title">模型配置边界</div>
+        <button className="model-collapsible-head" onClick={onToggle} type="button">
+          <span>
+            <span className="model-section-kicker">Safety Details</span>
+            <span className="model-section-copy">内部安全报告。当前没有可显示的模型配置项。</span>
+          </span>
+          <span className="model-collapsible-state">{open ? '收起' : '展开'}</span>
+        </button>
         <p className="settings-hint">模型安全报告尚未生成；AI Runtime 页不会主动探测外部服务或读取密钥明文。</p>
       </section>
     );
@@ -431,28 +476,52 @@ function ModelConfigurationSafety({ surfaces }: { surfaces: ConfigurationSafetyS
 
   return (
     <section className="settings-section model-safety-section">
-      <div className="settings-section-title">模型配置边界</div>
-      <div className="settings-safety-list">
-        {surfaces.map((surface) => (
-          <div key={surface.id} className="settings-safety-row">
-            <div className="settings-safety-main">
-              <span className={`settings-safety-state ${surface.state}`}>
-                {CONFIGURATION_SAFETY_STATE_LABELS[surface.state]}
-              </span>
-              <span className="settings-safety-id">{surface.id}</span>
+      <button className="model-collapsible-head" onClick={onToggle} type="button">
+        <span>
+          <span className="model-section-kicker">Safety Details</span>
+          <span className="model-section-copy">默认收起。用于检查密钥暴露、探测策略和配置安全边界。</span>
+        </span>
+        <span className="model-collapsible-state">{open ? '收起' : '展开'}</span>
+      </button>
+      {open && (
+        <div className="settings-safety-list">
+          {surfaces.map((surface) => (
+            <div key={surface.id} className="settings-safety-row">
+              <div className="settings-safety-main">
+                <span className={`settings-safety-state ${surface.state}`}>
+                  {CONFIGURATION_SAFETY_STATE_LABELS[surface.state]}
+                </span>
+                <span className="settings-safety-id">{surface.id}</span>
+              </div>
+              <div className="settings-safety-detail">
+                <span>{surface.reason}</span>
+                <span>
+                  探测：{configurationSafetyProbePolicyLabel(surface.startupProbePolicy)}
+                  {surface.requiresApproval ? ' · 需用户确认' : ''}
+                </span>
+              </div>
             </div>
-            <div className="settings-safety-detail">
-              <span>{surface.reason}</span>
-              <span>
-                探测：{configurationSafetyProbePolicyLabel(surface.startupProbePolicy)}
-                {surface.requiresApproval ? ' · 需用户确认' : ''}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
+}
+
+function agentCliRuntimeNextStep(runtime: NonNullable<AiConfigStatus['agentCliRuntimeStatus']>['runtimes'][number]) {
+  if (!runtime.installed) {
+    return runtime.id === 'claude'
+      ? '可选：安装 Claude Code 并在终端登录；当前 Codex CLI 是第一版主路径。'
+      : '安装 Codex CLI 后在终端运行 codex login，再点击重新检测。';
+  }
+  if (runtime.authState === 'ready') return '已通过官方 CLI 登录；Taskplane 不接管或保存账号。';
+  if (runtime.authState === 'needs_login') {
+    return runtime.id === 'claude'
+      ? '在终端运行 claude auth login 后点击重新检测。'
+      : '在终端运行 codex login 后点击重新检测。';
+  }
+  if (runtime.authState === 'error') return '官方 CLI 登录状态异常；请在终端检查后重新检测。';
+  return '如果已完成官方 CLI 登录，点击重新检测同步状态。';
 }
 
 function authStateLabel(state: 'unknown' | 'ready' | 'needs_login' | 'error') {

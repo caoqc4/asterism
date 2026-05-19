@@ -1089,14 +1089,15 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
-    expect(screen.getByText(/官方 CLI 中完成的登录/)).toBeTruthy();
+    expect(screen.getByText(/账号登录在官方 CLI 中完成/)).toBeTruthy();
+    expect(screen.getByText(/当前可执行/)).toBeTruthy();
     expect(screen.getByText('Codex CLI')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByLabelText('Workspace root')).toBeTruthy();
     expect(screen.getAllByText(/codex login/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/ready manual/)).toBeTruthy();
-    expect(screen.getByText(/API Model/)).toBeTruthy();
-    expect(screen.getByText('模型配置边界')).toBeTruthy();
+    expect(screen.getByText(/Auxiliary API Model/)).toBeTruthy();
+    expect(screen.queryByText('model.provider')).toBeNull();
+    await user.click(screen.getByRole('button', { name: /Safety Details/ }));
     expect(screen.getByText('model.provider')).toBeTruthy();
     expect(screen.getByText('model.api_key')).toBeTruthy();
     expect(screen.getByText(/secret value is not exposed/)).toBeTruthy();
