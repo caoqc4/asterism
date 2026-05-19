@@ -177,6 +177,12 @@ async function assertTaskDynamicsShowsAgentCli(page) {
   await page.getByText(/Codex CLI 已完成|Codex CLI 输出/).first().waitFor({ timeout: timeoutMs });
 }
 
+async function assertTaskDynamicsShowsNativeGoalAudit(page) {
+  await page.getByRole('button', { name: '任务动态' }).click();
+  await page.getByText('Codex CLI Native Goal 请求已审计').first().waitFor({ timeout: timeoutMs });
+  await page.getByText('Codex CLI Native Goal 未透传').first().waitFor({ timeout: timeoutMs });
+}
+
 if (process.platform !== 'darwin') {
   fail('macOS packaged Agent CLI task smoke requires macOS.');
 }
@@ -300,6 +306,7 @@ try {
   }
 
   await assertTaskDynamicsShowsAgentCli(page);
+  await assertTaskDynamicsShowsNativeGoalAudit(page);
 
   if (workspaceSnapshot() !== beforeWorkspace) {
     throw new Error('Agent CLI packaged smoke changed the workspace fixture.');
