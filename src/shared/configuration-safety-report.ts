@@ -19,6 +19,7 @@ export type ConfigurationSafetySurfaceId =
   | 'skills.catalogue'
   | 'mcp.servers'
   | 'agent_cli.runtimes'
+  | 'agent_api.runtime'
   | 'browser.operator';
 
 export type ConfigurationSafetySurface = {
@@ -112,6 +113,12 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
       id: 'agent_cli.runtimes',
       startupProbePolicy: 'safe_read_only',
       disabledReason: 'Agent CLI runtimes are not detected or are not ready.',
+      disabledState: 'disabled_by_policy',
+    }),
+    surfaceFromCapability('agent_api.runtime', registry, {
+      id: 'agent_api.runtime',
+      startupProbePolicy: 'never',
+      disabledReason: 'Agent API Runtime is a peer execution runtime planned for a later version.',
       disabledState: 'disabled_by_policy',
     }),
     surfaceFromCapability('browser.operator', registry, {

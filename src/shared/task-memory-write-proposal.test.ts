@@ -14,6 +14,7 @@ function pendingGuidance(partial: Partial<TaskMemoryGuidanceState> = {}): TaskMe
     pendingTargets: partial.pendingTargets ?? ['task_md'],
     reason: partial.reason ?? '最新任务记忆建议仍缺少对应写入：Task.md。',
     referencePathsByTarget: partial.referencePathsByTarget,
+    suggestedContentByTarget: partial.suggestedContentByTarget,
     targets: partial.targets ?? partial.pendingTargets ?? ['task_md'],
   };
 }
@@ -98,6 +99,25 @@ describe('task memory write proposal', () => {
     }]);
     expect(proposals[0]!.contentTemplate).toContain('## Trigger');
     expect(proposals[0]!.contentTemplate).toContain('最新任务记忆建议仍缺少对应写入');
+  });
+
+  it('uses structured suggested content in Task Record proposals', () => {
+    const proposals = buildTaskMemoryWriteProposals({
+      guidance: pendingGuidance({
+        pendingTargets: ['task_record'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        suggestedContentByTarget: {
+          task_record: '## Summary\nCodex checked the task.\n\n## Next\nRun focused tests.',
+        },
+        targets: ['task_record'],
+      }),
+      nowIso: '2026-05-16T11:00:00.000Z',
+      taskTitle: '开发小程序',
+    });
+
+    expect(proposals[0]!.contentTemplate).toContain('## Trigger');
+    expect(proposals[0]!.contentTemplate).toContain('## Summary\nCodex checked the task.');
+    expect(proposals[0]!.contentTemplate).toContain('## Next\nRun focused tests.');
   });
 
   it('returns no proposals when guidance is absent or already satisfied', () => {

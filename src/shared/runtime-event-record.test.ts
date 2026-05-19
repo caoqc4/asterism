@@ -126,22 +126,89 @@ describe('runtime event record projection', () => {
 
   it('projects panel-only durable actions from timeline', () => {
     const events = projectRuntimeEvents({
-      timeline: [{
-        id: 'timeline-panel',
-        taskId: 'task-1',
-        type: 'panel.context_switch_accepted',
-        payload: JSON.stringify({ toTaskId: 'task-2', toTaskTitle: 'Next task' }),
-        createdAt: '2026-05-14T08:00:00.000Z',
-      }],
+      timeline: [
+        {
+          id: 'timeline-panel',
+          taskId: 'task-1',
+          type: 'panel.context_switch_accepted',
+          payload: JSON.stringify({ toTaskId: 'task-2', toTaskTitle: 'Next task' }),
+          createdAt: '2026-05-14T08:00:00.000Z',
+        },
+        {
+          id: 'timeline-goal',
+          taskId: 'task-1',
+          type: 'panel.task_goal_updated',
+          payload: JSON.stringify({ objective: '完成运行时验收', source: '/goal' }),
+          createdAt: '2026-05-14T08:01:00.000Z',
+        },
+        {
+          id: 'timeline-native-goal',
+          taskId: 'task-1',
+          type: 'panel.runtime_native_goal_requested',
+          payload: JSON.stringify({
+            forwarded: false,
+            objective: '跑完 CLI 原生 goal',
+            reason: 'Adapter native goal capability is disabled.',
+            runtimeLabel: 'Codex CLI',
+          }),
+          createdAt: '2026-05-14T08:02:00.000Z',
+        },
+        {
+          id: 'timeline-goal-clear',
+          taskId: 'task-1',
+          type: 'panel.task_goal_updated',
+          payload: JSON.stringify({
+            cleared: true,
+            objective: null,
+            previousObjective: '完成运行时验收',
+            source: '/goal clear',
+          }),
+          createdAt: '2026-05-14T08:03:00.000Z',
+        },
+        {
+          id: 'timeline-goal-pause',
+          taskId: 'task-1',
+          type: 'panel.task_goal_paused',
+          payload: JSON.stringify({ objective: '完成运行时验收', source: '/goal pause' }),
+          createdAt: '2026-05-14T08:02:30.000Z',
+        },
+        {
+          id: 'timeline-goal-resume',
+          taskId: 'task-1',
+          type: 'panel.task_goal_resumed',
+          payload: JSON.stringify({ objective: '完成运行时验收', source: '/goal resume' }),
+          createdAt: '2026-05-14T08:02:45.000Z',
+        },
+      ],
     });
 
-    expect(events[0]).toMatchObject({
+    expect(events.find((event) => event.type === 'panel.context_switch_accepted')).toMatchObject({
       type: 'panel.context_switch_accepted',
       title: '任务上下文切换已确认',
       priority: 'p2',
       sourceType: 'timeline',
     });
-    expect(events[0]?.relatedTaskId).toBe('task-2');
+    expect(events.find((event) => event.type === 'panel.context_switch_accepted')?.relatedTaskId).toBe('task-2');
+    expect(events.find((event) => event.sourceId === 'timeline-goal')).toMatchObject({
+      title: 'Task Goal 已更新',
+      detail: '目标：完成运行时验收 / 来源：/goal',
+    });
+    expect(events.find((event) => event.type === 'panel.runtime_native_goal_requested')).toMatchObject({
+      title: 'Native Goal 请求已记录',
+      detail: 'Runtime：Codex CLI / 目标：跑完 CLI 原生 goal / 未透传 / 原因：Adapter native goal capability is disabled.',
+    });
+    expect(events.find((event) => event.sourceId === 'timeline-goal-pause')).toMatchObject({
+      title: 'Task Goal 已暂停',
+      detail: '状态：已暂停 / 目标：完成运行时验收 / 来源：/goal pause',
+    });
+    expect(events.find((event) => event.sourceId === 'timeline-goal-resume')).toMatchObject({
+      title: 'Task Goal 已恢复',
+      detail: '状态：已恢复 / 目标：完成运行时验收 / 来源：/goal resume',
+    });
+    expect(events.find((event) => event.sourceId === 'timeline-goal-clear')).toMatchObject({
+      title: 'Task Goal 已更新',
+      detail: '目标：已清除 / 原目标：完成运行时验收 / 来源：/goal clear',
+    });
   });
 
   it('shows changed durable task fields in task update events', () => {

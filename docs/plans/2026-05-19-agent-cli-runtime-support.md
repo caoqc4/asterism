@@ -2,11 +2,22 @@
 
 ## Decision
 
-Taskplane should prioritize a thin Agent CLI runtime layer before continuing to deepen the self-built API-agent runtime as the primary execution path.
+Taskplane should prioritize a thin Agent CLI runtime layer as the first execution path before continuing to deepen the self-built API-agent runtime.
 
-The current self-built API-agent work remains valuable, but its strongest parts are task memory, runtime gates, context assembly, provider safety, Decisions, and auditability. Rebuilding the full coding-agent execution layer would duplicate mature tools such as Codex CLI, Claude Code, Cursor Agent, Gemini CLI, OpenCode, and Kiro CLI.
+Agent CLI and Agent API should be treated as peer execution-runtime choices in the long-term product model. The current self-built API-agent work remains valuable, but its strongest completed parts are task memory, runtime gates, context assembly, provider safety, Decisions, and auditability. Rebuilding the full coding-agent execution layer before validating the official-CLI path would duplicate mature tools such as Codex CLI, Claude Code, Cursor Agent, Gemini CLI, OpenCode, and Kiro CLI.
 
 The next stage should therefore make Taskplane able to call a user-installed, user-authenticated official Agent CLI in the background, starting with Codex CLI and Claude Code.
+
+## Related Harness And Goal Design
+
+This document covers the first-version Agent CLI execution backend. The broader runtime harness, goal, slash-command routing, native CLI goal compatibility, and verifier-subagent constraints are captured in [2026-05-19-agent-runtime-harness-and-goals.md](2026-05-19-agent-runtime-harness-and-goals.md).
+
+Key boundary:
+
+- Taskplane owns the durable product session, task goal, run goal contract, context gates, verification, memory proposals, Decisions, and context clearing.
+- Agent CLI and future Agent API are peer execution runtimes selected by the user.
+- CLI-native goal modes, such as Codex or Claude goal features, may be supported later as explicit runtime-native modes, but they must not silently replace Taskplane's task goal or session log.
+- Slash commands such as `/goal` should be product-owned by default; runtime-native forwarding should require an explicit namespace or UI mode and must be recorded in Taskplane's run history.
 
 ## Current Self-Built API-Agent Status
 

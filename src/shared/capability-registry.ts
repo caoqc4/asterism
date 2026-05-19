@@ -35,6 +35,7 @@ export type CapabilityRegistryEntry = {
     | 'skill'
     | 'mcp'
     | 'agent_cli'
+    | 'agent_api'
     | 'workspace'
     | 'sandbox'
     | 'scheduler'
@@ -226,6 +227,7 @@ export function buildCapabilityRegistry(params: {
     skillsCapability(productSurfaces?.skills ?? null, findToolFamily(snapshot, 'skill')),
     mcpCapability(productSurfaces?.mcp ?? null, findToolFamily(snapshot, 'mcp')),
     agentCliCapability(productSurfaces?.agentCli ?? null),
+    agentApiRuntimeCapability(),
     browserCapability(productSurfaces?.browser ?? null, findToolFamily(snapshot, 'browser_playwright')),
   ];
 }
@@ -441,6 +443,22 @@ function agentCliCapability(
       `errors=${status.errorCount ?? 0}`,
       typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
     ].filter(Boolean).join(' / '),
+  };
+}
+
+function agentApiRuntimeCapability(): CapabilityRegistryEntry {
+  return {
+    id: 'agent_api.runtime',
+    label: 'Agent API Runtime',
+    family: 'agent_api',
+    status: 'disabled',
+    configured: false,
+    missingReason: 'Agent API Runtime is a peer execution runtime planned for a later version; it is not executable yet.',
+    visibility: 'hidden',
+    access: 'mutating',
+    requiresApproval: true,
+    requiredGate: 'runtime_pre_step',
+    summary: 'executionKind=api / status=development / executable=false',
   };
 }
 

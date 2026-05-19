@@ -261,7 +261,7 @@ export function ModelPage() {
   const agentCliStatus = status?.agentCliRuntimeStatus ?? null;
   const apiConfigPanel = apiModelOpen ? (
     <div className="agent-cli-api-config-panel">
-      <div className="agent-cli-api-config-title">API Model 配置</div>
+      <div className="agent-cli-api-config-title">模型服务配置</div>
       {PROVIDERS.map((section) => {
         const isConfigured = configuredProviders.has(section.provider);
         const isSelected = selectedProvider === section.provider;
@@ -352,8 +352,8 @@ export function ModelPage() {
       <div className="model-page-head">
         <div>
           <h2 className="model-page-title">AI Runtime</h2>
-          <p className="model-page-subtitle">选择任务默认使用的 AI 运行方式。</p>
-          <p className="model-page-boundary">CLI 账号由官方工具管理；API 密钥保存在本机钥匙串。</p>
+          <p className="model-page-subtitle">选择任务 Agent 默认使用的执行 Runtime。</p>
+          <p className="model-page-boundary">Agent CLI 是第一版执行层；Agent API 是后续同级执行层；模型服务配置用于全局助手、摘要和轻量模型调用。</p>
         </div>
       </div>
 
@@ -382,7 +382,7 @@ export function ModelPage() {
 
       {/* Footer */}
       <div className="model-page-footer">
-        <span className="muted" style={{ fontSize: 12 }}>当前使用 Agent CLI</span>
+        <span className="muted" style={{ fontSize: 12 }}>第一版任务执行使用 Agent CLI；Agent API 后续同级接入</span>
         <button
           className={`btn primary${saving ? ' disabled' : ''}${saveResult === 'ok' ? ' saved' : ''}${saveResult === 'error' ? ' danger' : ''}`}
           onClick={save}
@@ -451,7 +451,7 @@ function AgentCliRuntimeSection({
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">运行方式</div>
-          <p className="model-section-copy">选择任务默认调用 Codex 或 Claude；API Model 暂作为配置预留。</p>
+          <p className="model-section-copy">选择第一版任务默认调用 Codex 或 Claude；Agent API 保持同级执行层定位，后续完善后可选。</p>
         </div>
         <div className="agent-cli-head-actions">
           <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
@@ -501,22 +501,40 @@ function AgentCliRuntimeSection({
         <div className="agent-cli-runtime-row api-preview">
           <div className="agent-cli-runtime-row-name">
             <div className="agent-cli-runtime-card-title">
-              <span>API Model</span>
+              <span>Agent API Runtime</span>
             </div>
-            <span className="agent-cli-runtime-card-command mono">{apiConfigured ? '已填写 Provider 密钥' : '需要先配置 Provider 密钥'}</span>
+            <span className="agent-cli-runtime-card-command mono">同级执行层 · 后续版本</span>
           </div>
           <span className="agent-cli-runtime-card-status preview">
             开发中
           </span>
+          <span className="agent-cli-runtime-row-version">未开放</span>
+          <span className="agent-cli-runtime-row-detail">任务执行 Runtime · 待完善</span>
+          <div className="agent-cli-runtime-row-actions">
+            <button className="btn sm disabled" type="button" disabled>
+              暂不可选
+            </button>
+          </div>
+        </div>
+        <div className="agent-cli-runtime-row api-preview">
+          <div className="agent-cli-runtime-row-name">
+            <div className="agent-cli-runtime-card-title">
+              <span>模型服务配置</span>
+            </div>
+            <span className="agent-cli-runtime-card-command mono">{apiConfigured ? '已填写 Provider 密钥' : '需要先配置 Provider 密钥'}</span>
+          </div>
+          <span className="agent-cli-runtime-card-status preview">
+            配置项
+          </span>
           <span className="agent-cli-runtime-row-version">{apiProviderSummary ?? '未完成'}</span>
-          <span className="agent-cli-runtime-row-detail">暂不可选</span>
+          <span className="agent-cli-runtime-row-detail">用于全局助手 / 摘要 / verifier 等模型调用</span>
           <div className="agent-cli-runtime-row-actions">
             <button
               className={`btn sm${apiConfigured ? ' ghost' : ' primary'}`}
               onClick={onToggleApiConfig}
               type="button"
             >
-              {apiConfigOpen ? '收起配置' : apiConfigured ? '修改配置' : '配置 API'}
+              {apiConfigOpen ? '收起配置' : apiConfigured ? '修改配置' : '配置模型服务'}
             </button>
           </div>
         </div>
@@ -588,7 +606,8 @@ function AgentCliRuntimeRow({
   const needsLogin = installed && runtime?.authState === 'needs_login';
   const rowState = ready ? 'ready' : brokenInstall ? 'error' : needsLogin ? 'needs-login' : installed ? 'needs-login' : 'missing';
   const statusLabel = ready ? '已登录' : brokenInstall ? '安装异常' : installed ? '需登录' : '未安装';
-  const detail = ready ? workloadLabel(runtime.workload) : brokenInstall ? '需重新安装' : installed ? '等待登录' : '未检测到';
+  const nativeGoalLabel = runtime?.capabilities?.supportsNativeGoalMode ? 'Native Goal 可用' : 'Native Goal 关闭';
+  const detail = ready ? `${workloadLabel(runtime.workload)} · ${nativeGoalLabel}` : brokenInstall ? '需重新安装' : installed ? '等待登录' : '未检测到';
 
   return (
     <div className={`agent-cli-runtime-row ${rowState}`}>

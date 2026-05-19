@@ -2,6 +2,10 @@ export const PANEL_RUNTIME_TIMELINE_EVENT_TYPES = [
   'panel.context_refreshed',
   'panel.context_switch_accepted',
   'panel.context_switch_dismissed',
+  'panel.task_goal_updated',
+  'panel.task_goal_paused',
+  'panel.task_goal_resumed',
+  'panel.runtime_native_goal_requested',
   'panel.phase_closeout',
   'panel.task_file_written',
   'panel.task_file_created',
@@ -36,6 +40,10 @@ export function getPanelRuntimeTimelineEventTitle(type: PanelRuntimeTimelineEven
     case 'panel.context_refreshed': return '任务会话已刷新';
     case 'panel.context_switch_accepted': return '任务上下文切换已确认';
     case 'panel.context_switch_dismissed': return '任务上下文切换已取消';
+    case 'panel.task_goal_updated': return 'Task Goal 已更新';
+    case 'panel.task_goal_paused': return 'Task Goal 已暂停';
+    case 'panel.task_goal_resumed': return 'Task Goal 已恢复';
+    case 'panel.runtime_native_goal_requested': return 'Native Goal 请求已记录';
     case 'panel.phase_closeout': return '阶段收尾已记录';
     case 'panel.task_file_written': return '任务面板写入文件';
     case 'panel.task_file_created': return '任务面板创建文件';

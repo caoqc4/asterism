@@ -26,6 +26,7 @@ export type TaskMemoryGuidanceState = {
   pendingTargets: TaskMemoryGuidanceTarget[];
   reason: string;
   referencePathsByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string[]>>;
+  suggestedContentByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string>>;
   targets: TaskMemoryGuidanceTarget[];
 };
 
@@ -53,6 +54,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
         parseStructuredGuidanceReferences(signal.input),
         parseHumanReadableGuidanceReferences(signal.output),
       ),
+      suggestedContentByTarget: parseStructuredGuidanceSuggestedContent(signal.input),
       targets: normalizeGuidanceTargets(signal.targets)
         ?? parseStructuredGuidanceTargets(signal.input)
         ?? detectTaskMemoryGuidanceTargets([
@@ -69,6 +71,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
       pendingTargets: [],
       reason: '没有发现待处理的任务记忆建议。',
       referencePathsByTarget: {},
+      suggestedContentByTarget: {},
       targets: [],
     };
   }
@@ -90,6 +93,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
       pendingTargets: [],
       reason: '最新任务记忆建议已有对应的 Task.md 或 Task Record 写入。',
       referencePathsByTarget: referencePathsForTargets(targets, latestByTarget),
+      suggestedContentByTarget: suggestedContentForTargets(targets, latestByTarget),
       targets,
     };
   }
@@ -100,6 +104,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
     pendingTargets,
     reason: `最新任务记忆建议仍缺少对应写入：${pendingTargets.map(labelTarget).join('、')}。`,
     referencePathsByTarget: referencePathsForTargets(pendingTargets, latestByTarget),
+    suggestedContentByTarget: suggestedContentForTargets(pendingTargets, latestByTarget),
     targets,
   };
 }
@@ -137,6 +142,28 @@ function parseStructuredGuidanceReferences(input?: string | null): Partial<Recor
   } catch {
     return {};
   }
+}
+
+function parseStructuredGuidanceSuggestedContent(input?: string | null): Partial<Record<TaskMemoryGuidanceTarget, string>> {
+  if (!input) return {};
+  try {
+    const parsed = JSON.parse(input) as { suggestedContentByTarget?: unknown };
+    const value = parsed.suggestedContentByTarget;
+    if (!value || typeof value !== 'object') return {};
+    const record = value as Partial<Record<TaskMemoryGuidanceTarget, unknown>>;
+    return {
+      task_md: normalizeSuggestedContent(record.task_md),
+      task_record: normalizeSuggestedContent(record.task_record),
+    };
+  } catch {
+    return {};
+  }
+}
+
+function normalizeSuggestedContent(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const content = value.trim();
+  return content || undefined;
 }
 
 function parseHumanReadableGuidanceReferences(output?: string | null): Partial<Record<TaskMemoryGuidanceTarget, string[]>> {
@@ -271,17 +298,20 @@ function latestGuidanceByTarget(
     createdAt: string | null;
     index: number;
     referencePathsByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string[]>>;
+    suggestedContentByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string>>;
     targets: TaskMemoryGuidanceTarget[];
   }>,
 ): Map<TaskMemoryGuidanceTarget, {
   createdAt: string | null;
   index: number;
   referencePaths: string[];
+  suggestedContent: string | null;
 }> {
   const byTarget = new Map<TaskMemoryGuidanceTarget, {
     createdAt: string | null;
     index: number;
     referencePaths: string[];
+    suggestedContent: string | null;
   }>();
   for (const signal of signals) {
     for (const target of signal.targets) {
@@ -291,6 +321,7 @@ function latestGuidanceByTarget(
           createdAt: signal.createdAt,
           index: signal.index,
           referencePaths: signal.referencePathsByTarget?.[target] ?? [],
+          suggestedContent: signal.suggestedContentByTarget?.[target] ?? null,
         });
       }
     }
@@ -316,6 +347,18 @@ function referencePathsForTargets(
   for (const target of targets) {
     const paths = latestByTarget.get(target)?.referencePaths ?? [];
     if (paths.length) result[target] = paths;
+  }
+  return result;
+}
+
+function suggestedContentForTargets(
+  targets: TaskMemoryGuidanceTarget[],
+  latestByTarget: Map<TaskMemoryGuidanceTarget, { suggestedContent: string | null }>,
+): Partial<Record<TaskMemoryGuidanceTarget, string>> {
+  const result: Partial<Record<TaskMemoryGuidanceTarget, string>> = {};
+  for (const target of targets) {
+    const content = latestByTarget.get(target)?.suggestedContent;
+    if (content) result[target] = content;
   }
   return result;
 }

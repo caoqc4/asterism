@@ -6,7 +6,21 @@ import { evaluateRuntimeContextAssemblyGate } from '../../../shared/runtime-cont
 import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
+  formatRuntimeContextManifestForStep,
+  type RuntimeContextManifest,
 } from '../../../shared/runtime-context.js';
+import {
+  buildRunGoalContract,
+  formatRunGoalContractForPrompt,
+  formatRunGoalContractForStep,
+  type RunGoalContract,
+} from '../../../shared/agent-runtime-goal.js';
+import {
+  formatAgentRuntimeVerifierResult,
+  type AgentRuntimeVerifierResult,
+  verifyRunGoalContractEvidence,
+} from '../../../shared/agent-runtime-verifier.js';
+import { buildRuntimeCapabilitySnapshot } from '../../../shared/runtime-capability-snapshot.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
 import {
@@ -71,6 +85,7 @@ type AgentCliRunAdapter = {
   };
   completedStepTitle: string;
   failedStepTitle: string;
+  runtimeLabel: string;
 };
 
 const DEFAULT_AGENT_CLI_TIMEOUT_MS = 120_000;
@@ -155,6 +170,8 @@ export class AgentCliRunService {
     }
 
     const contextManifest = buildRuntimeContextManifest({
+      capabilities: buildRuntimeCapabilitySnapshot({ aiStatus }),
+      capabilityRegistry: aiStatus.capabilityRegistry ?? [],
       currentRunId: null,
       sourceContexts: task.sourceContexts.map((source) => ({
         ...source,
@@ -189,6 +206,17 @@ export class AgentCliRunService {
       type: 'agent',
       instructions: `Agent CLI (${runtime.label}) ${sandboxMode}: ${request.prompt}`,
     });
+    const runContract = buildRunGoalContract({
+      contextGateSummary: contextGate.summary,
+      contextManifest,
+      executionKind: 'cli',
+      prompt: request.prompt,
+      runId: run.id,
+      runtimeId,
+      runtimeLabel: adapter.runtimeLabel,
+      sandboxMode,
+      task,
+    });
 
     await this.runStepRepository.create({
       runId: run.id,
@@ -203,9 +231,21 @@ export class AgentCliRunService {
         contextManifest.summary,
       ].join(' / '),
     });
+    await this.runStepRepository.create({
+      runId: run.id,
+      kind: 'plan',
+      status: 'completed',
+      title: 'Agent CLI 目标契约',
+      input: JSON.stringify(runContract, null, 2),
+      output: formatRunGoalContractForStep(runContract),
+    });
 
     const execution = adapter.buildExecution({
-      contextSummary: contextManifest.userFacingSummary,
+      contextSummary: buildAgentCliContextBridge({
+        contract: runContract,
+        manifest: contextManifest,
+        task,
+      }),
       prompt: request.prompt,
       sandboxMode,
       task,
@@ -221,6 +261,7 @@ export class AgentCliRunService {
       input: execution.input,
       runAdapter: adapter,
       runArgs: execution.args,
+      runContract,
       run,
       runtimeCommand: runtime.executablePath ?? runtime.command,
       sandboxMode,
@@ -286,6 +327,7 @@ export class AgentCliRunService {
     input: string;
     runAdapter: AgentCliRunAdapter;
     runArgs: string[];
+    runContract: RunGoalContract;
     run: RunRecord;
     runtimeCommand: string;
     sandboxMode: AgentCliRunSandboxMode;
@@ -318,6 +360,54 @@ export class AgentCliRunService {
         output: execution.stdout || execution.summary,
         error: execution.failureReason,
       });
+      const verificationStep = buildAgentCliGoalVerificationStep({
+        contract: params.runContract,
+        execution,
+        runId: params.run.id,
+        runtimeLabel: params.runAdapter.runtimeLabel,
+        task: params.task,
+      });
+      await this.runStepRepository.create({
+        runId: params.run.id,
+        kind: 'final',
+        status: verificationStep.status,
+        title: '验收子 Agent 检查',
+        input: verificationStep.input,
+        output: verificationStep.output,
+        error: verificationStep.error,
+      });
+      if (verificationStep.verification.shouldProposeTaskMemory) {
+        await this.runStepRepository.create({
+          runId: params.run.id,
+          kind: 'plan',
+          status: 'completed',
+          title: '任务记忆建议',
+          input: JSON.stringify({
+            decision: verificationStep.verification.decision,
+            nextAction: verificationStep.verification.nextAction,
+            source: 'agent_cli',
+            sourceRunId: params.run.id,
+            targets: ['task_record'],
+            userConfirmationRequired: verificationStep.verification.userConfirmationRequired,
+            suggestedContentByTarget: {
+              task_record: buildAgentCliTaskRecordSuggestion({
+                output: execution.stdout,
+                runId: params.run.id,
+                runtimeLabel: params.runAdapter.runtimeLabel,
+                task: params.task,
+                verification: verificationStep.verification,
+              }),
+            },
+          }),
+          output: [
+            '- Task Record may be useful: Agent CLI output should be reviewed and confirmed into task memory.',
+            `- Verifier decision: ${verificationStep.verification.decision}`,
+            `- Next action: ${verificationStep.verification.nextAction}`,
+            `- Runtime: ${params.runAdapter.runtimeLabel}`,
+            `- Run: ${params.run.id}`,
+          ].join('\n'),
+        });
+      }
 
       const updated = await this.updateRunResult(
         params.run.id,
@@ -431,6 +521,7 @@ const codexCliRunAdapter: AgentCliRunAdapter = {
   },
   completedStepTitle: 'codex cli completed',
   failedStepTitle: 'codex cli failed',
+  runtimeLabel: 'Codex CLI',
 };
 
 const claudeCodeRunAdapter: AgentCliRunAdapter = {
@@ -449,7 +540,149 @@ const claudeCodeRunAdapter: AgentCliRunAdapter = {
   },
   completedStepTitle: 'claude code completed',
   failedStepTitle: 'claude code failed',
+  runtimeLabel: 'Claude Code',
 };
+
+function buildAgentCliContextBridge(params: {
+  contract: RunGoalContract;
+  manifest: RuntimeContextManifest;
+  task: TaskDetail;
+}): string {
+  const includedSourceIds = new Set(params.manifest.items
+    .filter((item) => item.kind === 'source_context' && item.contentIncluded)
+    .map((item) => item.id));
+  const sourcePreviews = params.task.sourceContexts
+    .filter((source) => (
+      includedSourceIds.has(source.id)
+      && !source.containsSensitiveData
+      && !source.isDuplicate
+      && source.status === 'active'
+    ))
+    .slice(0, 3)
+    .map((source, index) => [
+      `${index + 1}. ${source.title}`,
+      source.sourceRole ? `role=${source.sourceRole}` : null,
+      source.uri ? `uri=${source.uri}` : null,
+      source.note ? `note=${truncateAgentCliContextLine(source.note, 240)}` : null,
+      source.content ? `preview=${truncateAgentCliContextLine(source.content, 600)}` : null,
+    ].filter(Boolean).join(' / '));
+
+  return [
+    'Taskplane run contract:',
+    formatRunGoalContractForPrompt(params.contract),
+    '',
+    params.manifest.userFacingSummary,
+    '',
+    'Runtime context manifest:',
+    formatRuntimeContextManifestForStep(params.manifest),
+    sourcePreviews.length ? '' : null,
+    sourcePreviews.length ? 'Confirmed source previews:' : null,
+    ...sourcePreviews,
+    '',
+    'Capability bridge policy:',
+    '- External Access, Skills, and MCP entries are context-only unless Taskplane exposes explicit tools in this run.',
+    '- Do not claim live connector/tool access from these summaries; use them to understand available context and safety boundaries.',
+  ].filter((line): line is string => line !== null).join('\n');
+}
+
+function buildAgentCliGoalVerificationStep(params: {
+  contract: RunGoalContract;
+  execution: AgentCliExecutionResult;
+  runId: string;
+  runtimeLabel: string;
+  task: TaskDetail;
+}): {
+  error: string | null;
+  input: string;
+  output: string;
+  status: 'completed' | 'failed';
+  verification: AgentRuntimeVerifierResult;
+} {
+  const verification = verifyRunGoalContractEvidence({
+    contract: params.contract,
+    failureReason: params.execution.failureReason,
+    stdout: params.execution.stdout,
+    terminalStatus: params.execution.status,
+  });
+  return {
+    status: params.execution.status === 'failed' ? 'failed' : 'completed',
+    input: JSON.stringify({
+      canMarkTaskComplete: verification.canMarkTaskComplete,
+      decision: verification.decision,
+      evaluator: verification.evaluator,
+      nextAction: verification.nextAction,
+      runId: params.runId,
+      runtimeLabel: params.runtimeLabel,
+      runGoalContract: {
+        completionConditions: params.contract.completionConditions,
+        constraints: params.contract.constraints,
+        objective: params.contract.objective,
+        taskGoal: params.contract.taskGoal,
+      },
+      shouldProposeTaskMemory: verification.shouldProposeTaskMemory,
+      taskId: params.task.id,
+      taskTitle: params.task.title,
+      userConfirmationRequired: verification.userConfirmationRequired,
+    }, null, 2),
+    output: formatAgentRuntimeVerifierResult(verification),
+    error: params.execution.status === 'failed'
+      ? params.execution.failureReason ?? params.execution.summary
+      : null,
+    verification,
+  };
+}
+
+function truncateAgentCliContextLine(value: string, limit: number): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= limit) return normalized;
+  return `${normalized.slice(0, Math.max(0, limit - 3))}...`;
+}
+
+function buildAgentCliTaskRecordSuggestion(params: {
+  output: string;
+  runId: string;
+  runtimeLabel: string;
+  task: TaskDetail;
+  verification: AgentRuntimeVerifierResult;
+}): string {
+  return [
+    '## Summary',
+    truncateAgentCliMemoryLine(params.output),
+    '',
+    '## Confirmed',
+    `- ${params.runtimeLabel} completed a read-only task inspection.`,
+    `- Verifier decision: ${params.verification.decision}.`,
+    `- User confirmation required: ${params.verification.userConfirmationRequired ? 'yes' : 'no'}.`,
+    `- Source run: ${params.runId}`,
+    '',
+    '## Open',
+    '- Review the Agent CLI output before treating these findings as durable task memory.',
+    '',
+    '## Next',
+    params.task.nextStep?.trim()
+      ? `- ${params.task.nextStep.trim()}`
+      : '- Decide the next task step from the Agent CLI findings.',
+    '',
+    '## Verification',
+    '- Agent CLI process exited successfully and did not receive workspace-write permission from Taskplane.',
+    `- Task Goal status: ${params.verification.contract.taskGoalStatus}.`,
+    `- Next verifier action: ${params.verification.nextAction}.`,
+    '',
+    '## Risks',
+    params.task.riskNote?.trim()
+      ? `- ${params.task.riskNote.trim()}`
+      : '- No explicit task risk note was present before this run.',
+    '',
+    '## Links',
+    `- Run: ${params.runId}`,
+  ].join('\n');
+}
+
+function truncateAgentCliMemoryLine(value: string): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= 600) return normalized;
+  return `${normalized.slice(0, 597)}...`;
+}
 
 function buildCodexCliPrompt(params: {
   contextSummary: string;

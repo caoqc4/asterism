@@ -250,11 +250,20 @@ describe('local smoke script default boundaries', () => {
 
     expect(script).toContain('AI Runtime');
     expect(script).toContain('Agent CLI runtimes');
-    expect(script).toContain('API Model 配置');
+    expect(script).toContain('辅助 API 配置');
     expect(script).toContain('使用此方式');
     expect(script).toContain('重新检测');
     expect(script).toContain('配置 AI Provider 密钥');
     expect(script).toContain('stale Model page marker');
+  });
+
+  it('keeps the packaged Agent CLI task smoke wired after Code Agent UI smoke', () => {
+    const scripts = readPackageScripts();
+
+    expect(scripts['smoke:agent-cli-task:mac']).toBe('node scripts/smoke-agent-cli-task-run-mac.mjs');
+    expect(scripts['accept:packaged-recovery:mac']).toContain(
+      'npm run smoke:code-agent-ui:mac && npm run smoke:agent-cli-task:mac && npm run smoke:run-decision-recovery:mac',
+    );
   });
 
   it('keeps the real-use path helper read-only and explicit about temporary overrides', () => {
@@ -288,7 +297,7 @@ describe('local smoke script default boundaries', () => {
     const scripts = readPackageScripts();
 
     expect(scripts['accept:packaged-recovery:mac']).toBe(
-      'npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:context-learning:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
+      'npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:context-learning:mac && npm run smoke:code-agent-ui:mac && npm run smoke:agent-cli-task:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
     );
     expect(scripts['accept:product-surfaces:mac']).toBe(
       'npm run smoke:external-access:mac && npm run smoke:external-access-connected:mac && npm run smoke:external-access-local-inbox:mac && npm run smoke:decisions-center:mac && npm run smoke:task-files:mac',

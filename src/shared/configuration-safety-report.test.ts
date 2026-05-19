@@ -96,6 +96,10 @@ describe('configuration safety report', () => {
       startupProbePolicy: 'safe_read_only',
       exposesSecretValue: false,
     });
+    expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
+      startupProbePolicy: 'never',
+      exposesSecretValue: false,
+    });
     expect(report.surfaces.find((surface) => surface.id === 'browser.operator')).toMatchObject({
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
@@ -146,6 +150,10 @@ describe('configuration safety report', () => {
     expect(report.surfaces.find((surface) => surface.id === 'agent_cli.runtimes')).toMatchObject({
       state: 'disabled_by_policy',
       reason: 'No supported Agent CLI runtime is detected.',
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
+      state: 'disabled_by_policy',
+      reason: 'Agent API Runtime is a peer execution runtime planned for a later version; it is not executable yet.',
     });
   });
 

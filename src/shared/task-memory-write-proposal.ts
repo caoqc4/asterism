@@ -72,7 +72,11 @@ export function buildTaskMemoryWriteProposals(params: {
     }
 
     return {
-      contentTemplate: buildTaskRecordProposalContent(taskTitle, guidance.reason),
+      contentTemplate: buildTaskRecordProposalContent(
+        taskTitle,
+        guidance.reason,
+        guidance.suggestedContentByTarget?.task_record,
+      ),
       existingFileId: null,
       operation: 'create',
       path: `Task Records/${formatTaskRecordDate(params.nowIso)}-memory-guidance.md`,
@@ -248,7 +252,24 @@ function appendImportantFileReferences(content: string, referencePaths: string[]
   ].join('\n');
 }
 
-function buildTaskRecordProposalContent(taskTitle: string, reason: string): string {
+function buildTaskRecordProposalContent(
+  taskTitle: string,
+  reason: string,
+  suggestedContent?: string,
+): string {
+  const suggested = suggestedContent?.trim();
+  if (suggested) {
+    return [
+      `# Task Record: ${taskTitle}`,
+      '',
+      '## Trigger',
+      reason,
+      '',
+      suggested,
+      '',
+    ].join('\n');
+  }
+
   return [
     `# Task Record: ${taskTitle}`,
     '',

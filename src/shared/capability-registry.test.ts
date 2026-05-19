@@ -29,6 +29,7 @@ describe('capability registry', () => {
       'skills.catalogue',
       'mcp.servers',
       'agent_cli.runtimes',
+      'agent_api.runtime',
       'browser.operator',
     ]);
 
@@ -175,6 +176,15 @@ describe('capability registry', () => {
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
       summary: 'detected=1 / ready=1 / manualRun=1 / readyManualRun=1 / running=0 / errors=0 / catalogue=2',
+    });
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
+      status: 'disabled',
+      configured: false,
+      family: 'agent_api',
+      visibility: 'hidden',
+      access: 'mutating',
+      requiredGate: 'runtime_pre_step',
+      summary: 'executionKind=api / status=development / executable=false',
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',

@@ -1104,9 +1104,9 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
-    expect(screen.getByText(/CLI 账号由官方工具管理/)).toBeTruthy();
+    expect(screen.getByText(/Agent CLI 是第一版执行层/)).toBeTruthy();
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
-    expect(screen.getByText(/选择任务默认调用 Codex 或 Claude/)).toBeTruthy();
+    expect(screen.getByText(/选择第一版任务默认调用 Codex 或 Claude/)).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
@@ -1118,10 +1118,12 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: '重新检测' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: '更新' }).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '修改配置' }));
-    expect(screen.getByText(/API Model 配置/)).toBeTruthy();
+    expect(screen.getAllByText(/模型服务配置/).length).toBeGreaterThan(0);
+    expect(screen.getByText('Agent API Runtime')).toBeTruthy();
     expect(screen.getByText('开发中')).toBeTruthy();
-    expect(screen.getByText('暂不可选')).toBeTruthy();
-    expect(screen.getByText(/当前使用/)).toBeTruthy();
+    expect(screen.getAllByText(/同级执行层/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/用于全局助手/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/第一版任务执行使用 Agent CLI/)).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
     expect(screen.queryByText(/Safety Details/)).toBeNull();
   });
@@ -2009,7 +2011,12 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Codex CLI · 只读')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent · Codex CLI · 只读')).toBeTruthy();
+    expect(await screen.findByText('运行前上下文')).toBeTruthy();
+    expect(screen.getByText('任务 Agent 只读执行')).toBeTruthy();
+    await user.click(screen.getByText('运行前上下文'));
+    expect(screen.getByText(/不会授予 External Access \/ Skills \/ MCP 的 live tool 权限/)).toBeTruthy();
+    expect(screen.getByText(/完成后会写入 Run 证据/)).toBeTruthy();
     const input = screen.getByPlaceholderText(/关于「董事会材料修订」/);
     await user.type(input, '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
@@ -2042,15 +2049,169 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Codex CLI run 取消请求已发送/)).toBeTruthy();
   });
 
-  it('shows the selected Codex CLI runtime in global chat as task-bound only', async () => {
+  it('shows selected Codex CLI global chat as lightweight API assistance', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Search or ask/ }));
 
-    expect(await screen.findByText('Codex CLI')).toBeTruthy();
-    expect(screen.queryByText('API Model · 全局对话')).toBeNull();
+    expect(await screen.findByText('全局助手 · 模型服务辅助')).toBeTruthy();
+    await user.type(screen.getByPlaceholderText(/搜索、提问或捕获任务想法/), '这个方案你怎么看？');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: null,
+      }));
+    });
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+  });
+
+  it('labels legacy API runtime mode as Agent API in development and falls back to model service assistance', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    expect(await screen.findByText('Agent API Runtime · 开发中，转模型服务辅助')).toBeTruthy();
+    expect(screen.getByText('Agent API 开发中')).toBeTruthy();
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/goal status');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
+      messages: expect.arrayContaining([
+        expect.objectContaining({ content: '/goal status' }),
+      ]),
+    }));
+    expect(await screen.findByText(/执行 runtime：Agent API Runtime（开发中）/)).toBeTruthy();
+    expect(screen.getByText(/当前仅使用模型服务辅助/)).toBeTruthy();
+  });
+
+  it('keeps /goal product-owned in task chat and persists it as the Taskplane task goal', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    await user.type(
+      screen.getByPlaceholderText(/关于「董事会材料修订」/),
+      '/goal 完成运行时边界收口并通过验收',
+    );
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.updateTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        nextStep: '完成运行时边界收口并通过验收',
+      });
+    });
+    expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      type: 'panel.task_goal_updated',
+      payload: {
+        objective: '完成运行时边界收口并通过验收',
+        previousObjective: expect.any(String),
+        source: '/goal',
+      },
+    });
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
+      messages: expect.arrayContaining([
+        expect.objectContaining({ content: '/goal 完成运行时边界收口并通过验收' }),
+      ]),
+    }));
+    expect(await screen.findByText(/已设置 Taskplane Task Goal/)).toBeTruthy();
+    expect(screen.getByText(/不会把 `\/goal` 透传给 Codex CLI 或 Claude Code/)).toBeTruthy();
+    expect(await screen.findByText('完成运行时边界收口并通过验收')).toBeTruthy();
+
+    await user.clear(screen.getByPlaceholderText(/关于「董事会材料修订」/));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/goal pause');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      type: 'panel.task_goal_paused',
+      payload: {
+        objective: '完成运行时边界收口并通过验收',
+        source: '/goal pause',
+      },
+    });
+    expect(await screen.findByText(/已暂停 Taskplane Task Goal/)).toBeTruthy();
+    expect(await screen.findByText('Task Goal · 已暂停')).toBeTruthy();
+
+    await user.clear(screen.getByPlaceholderText(/关于「董事会材料修订」/));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/goal resume');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      type: 'panel.task_goal_resumed',
+      payload: {
+        objective: '完成运行时边界收口并通过验收',
+        source: '/goal resume',
+      },
+    });
+    expect(await screen.findByText(/已恢复 Taskplane Task Goal/)).toBeTruthy();
+
+    await user.clear(screen.getByPlaceholderText(/关于「董事会材料修订」/));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/goal clear');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.updateTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        nextStep: null,
+      });
+    });
+    expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      type: 'panel.task_goal_updated',
+      payload: {
+        cleared: true,
+        objective: null,
+        previousObjective: '完成运行时边界收口并通过验收',
+        source: '/goal clear',
+      },
+    });
+    expect(await screen.findByText(/已清除 Taskplane Task Goal/)).toBeTruthy();
+  });
+
+  it('recognizes explicit native goal requests without forwarding them to the CLI yet', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/codex goal 跑完验收');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      type: 'panel.runtime_native_goal_requested',
+      payload: expect.objectContaining({
+        forwarded: false,
+        objective: '跑完验收',
+        runtimeId: 'codex',
+        runtimeLabel: 'Codex CLI',
+        supportsNativeGoalMode: false,
+      }),
+    });
+    expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
+      messages: expect.arrayContaining([
+        expect.objectContaining({ content: '/codex goal 跑完验收' }),
+      ]),
+    }));
+    expect(await screen.findByText(/Codex CLI native goal mode 尚未开启/)).toBeTruthy();
+    expect(screen.getByText(/显式 runtime-native goal 请求/)).toBeTruthy();
   });
 
   it('can route a task-bound right-panel message through Claude Code plan mode', async () => {
@@ -2097,7 +2258,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Claude Code · Plan')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent · Claude Code · Plan')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Claude Code 看风险。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2148,7 +2309,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('API Model · 当前 CLI 不可用')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent · CLI 不可用，转模型服务辅助')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2189,13 +2350,13 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
-    expect(await screen.findByText('API Model · 当前 CLI 不可用')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent · CLI 不可用，转模型服务辅助')).toBeTruthy();
 
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     harness.emit('settings.changed');
 
     await waitFor(() => {
-      expect(screen.getByText('Codex CLI · 只读')).toBeTruthy();
+      expect(screen.getByText('任务 Agent · Codex CLI · 只读')).toBeTruthy();
     });
   });
 
@@ -2213,7 +2374,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Codex CLI · 只读')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent · Codex CLI · 只读')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2225,13 +2386,28 @@ describe('App redesign v1', () => {
 
   it('summarizes a background Codex CLI run when the terminal run event arrives', async () => {
     const user = userEvent.setup();
+    const pendingProposal: TaskMemoryWriteProposal = {
+      contentTemplate: '# Task Record: 董事会材料修订\n\n## Summary\nCodex CLI final answer.',
+      operation: 'create',
+      path: 'Task Records/2026-01-01-memory-guidance.md',
+      reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+      target: 'task_record',
+      title: '创建任务记录',
+    };
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    vi.mocked(harness.api.getRunDetail).mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      if (!run) return null;
+      return buildRunDetail(run, {
+        taskMemoryWriteProposals: run.id === 'run_agent_cli_created' ? [pendingProposal] : [],
+      });
+    });
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Codex CLI · 只读')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent · Codex CLI · 只读')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
     expect(await screen.findByText(/Codex CLI 后台运行 · 完成后写入任务动态/)).toBeTruthy();
@@ -2246,8 +2422,10 @@ describe('App redesign v1', () => {
     harness.emit('run.changed', 'run_agent_cli_created');
 
     expect(await screen.findByText(/Codex CLI run 已完成/)).toBeTruthy();
-    expect(screen.getByText(/Codex CLI final answer/)).toBeTruthy();
-    expect(screen.getByText(/完整执行记录已进入当前任务动态/)).toBeTruthy();
+    expect(screen.getAllByText(/Codex CLI final answer/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/生成了待确认的任务记忆写入提案/)).toBeTruthy();
+    expect(await screen.findByText('任务记忆写入提案')).toBeTruthy();
+    expect(screen.getByText('建议归类：任务记录')).toBeTruthy();
     expect(screen.queryByText(/Codex CLI 后台运行/)).toBeNull();
   });
 

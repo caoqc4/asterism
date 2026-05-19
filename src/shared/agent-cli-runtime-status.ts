@@ -1,3 +1,5 @@
+import type { AgentRuntimeAdapterCapabilities } from './agent-runtime-goal.js';
+
 export type AgentCliRuntimeId = 'codex' | 'claude';
 
 export type AgentCliAuthState =
@@ -16,6 +18,7 @@ export type AgentCliRuntimeRecord = {
   id: AgentCliRuntimeId;
   label: string;
   command: string;
+  capabilities?: AgentRuntimeAdapterCapabilities;
   executablePath?: string | null;
   installed: boolean;
   version: string | null;
@@ -37,20 +40,54 @@ export type AgentCliRuntimeStatus = {
   updatedAt: string | null;
 };
 
-export const DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE: Array<Pick<AgentCliRuntimeRecord, 'command' | 'executionSupport' | 'id' | 'label'>> = [
+export const DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE: Array<Pick<AgentCliRuntimeRecord, 'capabilities' | 'command' | 'executionSupport' | 'id' | 'label'>> = [
   {
     id: 'codex',
     label: 'Codex CLI',
     command: 'codex',
     executionSupport: 'manual_run',
+    capabilities: buildDefaultAgentCliRuntimeCapabilities('codex', 'Codex CLI'),
   },
   {
     id: 'claude',
     label: 'Claude Code',
     command: 'claude',
     executionSupport: 'manual_run',
+    capabilities: buildDefaultAgentCliRuntimeCapabilities('claude', 'Claude Code'),
   },
 ];
+
+export function buildDefaultAgentCliRuntimeCapabilities(
+  runtimeId: AgentCliRuntimeId,
+  label: string,
+): AgentRuntimeAdapterCapabilities {
+  return {
+    id: runtimeId,
+    label,
+    executionKind: 'cli',
+    supportsSingleRun: true,
+    supportsNativeGoalMode: false,
+    supportsPauseGoal: false,
+    supportsResumeGoal: false,
+    supportsClearGoal: false,
+    supportsStructuredProgressEvents: false,
+    supportsWorkspaceWrite: false,
+    defaultPermissionMode: runtimeId === 'claude' ? 'plan' : 'read_only',
+    commandRouting: {
+      productOwned: ['/goal', '/goal status', '/goal pause', '/goal resume', '/goal clear', '/cancel', '/status'],
+      runtimeNative: runtimeId === 'codex'
+        ? ['/codex goal', '/runtime goal']
+        : ['/claude goal', '/runtime goal'],
+      passthroughRequiresExplicitNamespace: true,
+    },
+  };
+}
+
+export function agentCliRuntimeCapabilities(
+  runtime: Pick<AgentCliRuntimeRecord, 'capabilities' | 'id' | 'label'>,
+): AgentRuntimeAdapterCapabilities {
+  return runtime.capabilities ?? buildDefaultAgentCliRuntimeCapabilities(runtime.id, runtime.label);
+}
 
 export function emptyAgentCliRuntimeStatus(): AgentCliRuntimeStatus {
   return buildAgentCliRuntimeStatus(
@@ -82,7 +119,10 @@ export function buildAgentCliRuntimeStatus(
       && runtime.executionSupport === 'manual_run'
     )).length,
     runningCount: runtimes.filter((runtime) => runtime.workload === 'running').length,
-    runtimes: runtimes.map((runtime) => ({ ...runtime })),
+    runtimes: runtimes.map((runtime) => ({
+      ...runtime,
+      capabilities: agentCliRuntimeCapabilities(runtime),
+    })),
     updatedAt,
   };
 }

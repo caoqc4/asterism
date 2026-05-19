@@ -87,6 +87,29 @@ describe('task memory guidance state', () => {
     });
   });
 
+  it('keeps structured suggested content with the pending target', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        input: JSON.stringify({
+          targets: ['task_record'],
+          suggestedContentByTarget: {
+            task_record: '## Summary\nCodex found the next verification step.',
+          },
+        }),
+        output: '- Task Record may be useful: agent_cli_summary',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      suggestedContentByTarget: {
+        task_record: '## Summary\nCodex found the next verification step.',
+      },
+    });
+  });
+
   it('recovers reference paths from human-readable guidance output', () => {
     expect(evaluateTaskMemoryGuidanceState({
       guidanceSignals: [{

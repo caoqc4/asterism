@@ -1,4 +1,5 @@
 import type { AgentWorkingContext } from './types/agent-execution.js';
+import type { CapabilityRegistryEntry } from './capability-registry.js';
 import type { RuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 import { evaluateSelectedFileRelevance, type SelectedFileRelevanceReason } from './selected-file-relevance.js';
 import {
@@ -216,6 +217,7 @@ function sourceInclusionReason(
 export function buildRuntimeContextManifest(params: {
   applicableWorkHabits?: string[];
   capabilities?: RuntimeCapabilitySnapshot | null;
+  capabilityRegistry?: CapabilityRegistryEntry[] | null;
   currentRunId?: string | null;
   selectedFile?: RuntimeContextSelectedFile | null;
   sourceContexts?: RuntimeContextSourceContext[];
@@ -536,6 +538,7 @@ export function buildRuntimeContextManifest(params: {
       note: params.capabilities.summary,
     });
   }
+  items.push(...capabilityBridgeItems(params.capabilityRegistry ?? []));
 
   const activeSurface = task ? 'task' : 'global';
   return {
@@ -545,6 +548,47 @@ export function buildRuntimeContextManifest(params: {
     summary: formatRuntimeContextManifestSummary({ activeSurface, items, task }),
     userFacingSummary: formatRuntimeContextManifestUserSummary({ activeSurface, items, task }),
   };
+}
+
+function capabilityBridgeItems(registry: CapabilityRegistryEntry[]): RuntimeContextManifestItem[] {
+  const families: Array<CapabilityRegistryEntry['family']> = ['external_access', 'skill', 'mcp'];
+  return families.flatMap((family) => {
+    const entries = registry.filter((entry) => entry.family === family);
+    if (!entries.length) return [];
+    const availableCount = entries.filter((entry) => entry.status === 'available').length;
+    const configuredCount = entries.filter((entry) => entry.configured).length;
+    const modelVisibleCount = entries.filter((entry) => entry.visibility === 'model_visible').length;
+    const policyGatedCount = entries.filter((entry) => entry.visibility === 'policy_gated').length;
+    const blockedCount = entries.filter((entry) => entry.status !== 'available').length;
+    const primary = entries[0]!;
+    return [{
+      contentIncluded: true,
+      id: `capability:${family}`,
+      kind: 'capability' as const,
+      label: capabilityBridgeLabel(family),
+      note: [
+        `family=${family}`,
+        `status=${primary.status}`,
+        `configured=${configuredCount}`,
+        `available=${availableCount}`,
+        `blocked=${blockedCount}`,
+        `modelVisible=${modelVisibleCount}`,
+        `policyGated=${policyGatedCount}`,
+        `access=${primary.access}`,
+        `approval=${primary.requiresApproval ? 'required' : 'not_required'}`,
+        `gate=${primary.requiredGate}`,
+        primary.summary,
+        primary.missingReason ? `missing=${primary.missingReason}` : null,
+      ].filter(Boolean).join(' / '),
+    }];
+  });
+}
+
+function capabilityBridgeLabel(family: CapabilityRegistryEntry['family']): string {
+  if (family === 'external_access') return 'External Access context bridge';
+  if (family === 'skill') return 'Skills context bridge';
+  if (family === 'mcp') return 'MCP context bridge';
+  return 'Capability context bridge';
 }
 
 export function buildRuntimeContextAssemblyPolicy(params: {

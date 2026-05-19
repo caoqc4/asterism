@@ -9,8 +9,26 @@ import {
 describe('agent cli runtime status', () => {
   it('defines Codex and Claude Code as first manual-run runtimes', () => {
     expect(DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE).toEqual([
-      expect.objectContaining({ id: 'codex', command: 'codex', executionSupport: 'manual_run' }),
-      expect.objectContaining({ id: 'claude', command: 'claude', executionSupport: 'manual_run' }),
+      expect.objectContaining({
+        id: 'codex',
+        command: 'codex',
+        executionSupport: 'manual_run',
+        capabilities: expect.objectContaining({
+          supportsNativeGoalMode: false,
+          commandRouting: expect.objectContaining({
+            passthroughRequiresExplicitNamespace: true,
+          }),
+        }),
+      }),
+      expect.objectContaining({
+        id: 'claude',
+        command: 'claude',
+        executionSupport: 'manual_run',
+        capabilities: expect.objectContaining({
+          defaultPermissionMode: 'plan',
+          supportsNativeGoalMode: false,
+        }),
+      }),
     ]);
   });
 
@@ -60,6 +78,11 @@ describe('agent cli runtime status', () => {
       runningCount: 1,
       errorCount: 1,
       updatedAt: '2026-05-19T00:00:00.000Z',
+    });
+    expect(status.runtimes.find((runtime) => runtime.id === 'codex')?.capabilities).toMatchObject({
+      executionKind: 'cli',
+      supportsNativeGoalMode: false,
+      supportsWorkspaceWrite: false,
     });
   });
 

@@ -3,6 +3,7 @@ import type { ChatMessage } from '@shared/types/ipc';
 import type { AgentCliRuntimeId } from '@shared/agent-cli-runtime-status';
 import type { AiRuntimeMode } from '@shared/types/settings';
 import type { RunStepRecord } from '@shared/types/run';
+import type { CapabilityRegistryEntry } from '@shared/capability-registry';
 import {
   selectBlockingTaskMemoryGuidance,
   type TaskMemoryGuidanceState,
@@ -44,6 +45,11 @@ import {
   normalizeCreateTaskFileInput,
   type RuntimeSurfaceKind,
 } from '@shared/runtime-surface-routing';
+import {
+  deriveTaskGoalLifecycleState,
+  parseAgentRuntimeSlashCommand,
+  type AgentRuntimeAdapterCapabilities,
+} from '@shared/agent-runtime-goal';
 import {
   selectApplicableWorkHabitMatches,
   getPersistedWorkHabitStorageSnapshot,
@@ -844,9 +850,15 @@ export function RightPanel({
   const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
   const [runtimeMode, setRuntimeMode] = useState<AiRuntimeMode>('codex');
   const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
+  const [activeTaskDetail, setActiveTaskDetail] = useState<TaskDetail | null>(null);
+  const [capabilityRegistry, setCapabilityRegistry] = useState<CapabilityRegistryEntry[]>([]);
   const [agentCliAvailability, setAgentCliAvailability] = useState<Record<AgentCliRuntimeId, boolean>>({
     claude: false,
     codex: false,
+  });
+  const [agentCliCapabilities, setAgentCliCapabilities] = useState<Record<AgentCliRuntimeId, AgentRuntimeAdapterCapabilities | null>>({
+    claude: null,
+    codex: null,
   });
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
@@ -882,6 +894,7 @@ export function RightPanel({
         status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
       );
       setRuntimeMode(status.runtimeMode ?? 'codex');
+      setCapabilityRegistry(status.capabilityRegistry ?? []);
       const nextAvailability = AGENT_CLI_PANEL_RUNTIMES.reduce<Record<AgentCliRuntimeId, boolean>>((acc, runtimeId) => {
         acc[runtimeId] = Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
           runtime.id === runtimeId
@@ -891,7 +904,12 @@ export function RightPanel({
         )));
         return acc;
       }, { claude: false, codex: false });
+      const nextCapabilities = AGENT_CLI_PANEL_RUNTIMES.reduce<Record<AgentCliRuntimeId, AgentRuntimeAdapterCapabilities | null>>((acc, runtimeId) => {
+        acc[runtimeId] = status.agentCliRuntimeStatus?.runtimes.find((runtime) => runtime.id === runtimeId)?.capabilities ?? null;
+        return acc;
+      }, { claude: null, codex: null });
       setAgentCliAvailability(nextAvailability);
+      setAgentCliCapabilities(nextCapabilities);
     }).catch(() => {});
   }, []);
 
@@ -949,6 +967,26 @@ export function RightPanel({
   }, [hidden, refreshAiRuntimeStatus]);
 
   useEffect(() => {
+    if (!activeTaskId || !window.api?.getTaskDetail) {
+      setActiveTaskDetail(null);
+      return;
+    }
+    let cancelled = false;
+    void window.api.getTaskDetail(activeTaskId).then((detail) => {
+      if (cancelled) return;
+      setActiveTaskDetail(detail);
+      if (detail) {
+        setTitleCache((prev) => ({ ...prev, [detail.id]: detail.title }));
+      }
+    }).catch(() => {
+      if (!cancelled) setActiveTaskDetail(null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTaskId]);
+
+  useEffect(() => {
     if (!window.api?.subscribeToEvents) return undefined;
     return window.api.subscribeToEvents((event) => {
       if (event.type === 'settings.changed' || event.type === 'run.changed') {
@@ -964,10 +1002,16 @@ export function RightPanel({
             ? '失败'
             : detail.status;
         const output = detail.output?.trim() || detail.failureReason || '终态已记录。';
+        const proposal = detail.taskMemoryWriteProposals?.[0];
+        if (proposal) {
+          updateTaskFileProposal((value) => value ?? taskMemoryProposalToFileProposal(proposal));
+        }
         appendSysMsg([
           `${current.runtimeLabel} run ${statusText}。`,
           output,
-          '完整执行记录已进入当前任务动态。',
+          proposal
+            ? '完整执行记录已进入当前任务动态，并生成了待确认的任务记忆写入提案。'
+            : '完整执行记录已进入当前任务动态。',
           `Run: ${detail.id}`,
         ].join('\n\n'));
         setActiveAgentCliRun((value) => value?.runId === detail.id ? null : value);
@@ -1782,9 +1826,12 @@ export function RightPanel({
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setThinking(true);
 
+    const slashCommand = parseAgentRuntimeSlashCommand(text);
     let replyText: string;
     try {
-      if (activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun) {
+      if (slashCommand.kind !== 'none') {
+        replyText = await handleAgentRuntimeSlashCommand(slashCommand);
+      } else if (activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun) {
         const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
@@ -1847,13 +1894,225 @@ export function RightPanel({
         replyText = generateReply(text, activeTaskId);
       }
     } catch (error) {
-      replyText = activeAgentCliRuntimeMode
+      replyText = slashCommand.kind !== 'none'
+        ? `Runtime 命令执行失败：${error instanceof Error ? error.message : '未知错误'}`
+        : activeAgentCliRuntimeMode
         ? `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} run 未启动：${error instanceof Error ? error.message : '未知错误'}`
         : generateReply(text, activeTaskId);
     }
 
     setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: replyText, ts: now() }]);
     setThinking(false);
+  }
+
+  async function handleAgentRuntimeSlashCommand(command: ReturnType<typeof parseAgentRuntimeSlashCommand>): Promise<string> {
+    const goalLifecycle = deriveTaskGoalLifecycleState({
+      fallbackGoal: activeTaskDetail?.resumeCard?.nextSuggestedMove,
+      nextStep: activeTaskDetail?.nextStep,
+      timeline: activeTaskDetail?.timeline,
+    });
+    const currentGoal = goalLifecycle.status === 'cleared' ? null : goalLifecycle.objective;
+    if (!activeTaskId) {
+      if (command.kind === 'product_status') {
+        return '当前是全局助手会话。Agent runtime 命令需要先进入具体任务；全局消息会继续作为普通助手问答处理。';
+      }
+      return '这里是全局助手会话。`/goal` 是任务级控制命令，请先进入一个任务后再设置 Taskplane Task Goal。';
+    }
+
+    if (command.kind === 'product_goal_set') {
+      if (!command.objective) {
+        return 'Task Goal 不能为空。可以输入 `/goal <可验收的目标>`。';
+      }
+      if (!window.api?.updateTask) {
+        return '当前环境暂不支持更新任务目标。';
+      }
+      const updated = await window.api.updateTask({
+        id: activeTaskId,
+        nextStep: command.objective,
+      });
+      await recordPanelTimelineEvent(activeTaskId, 'panel.task_goal_updated', {
+        objective: command.objective,
+        previousObjective: currentGoal,
+        source: '/goal',
+      });
+      appendLocalTaskGoalEvent('panel.task_goal_updated', {
+        objective: command.objective,
+        previousObjective: currentGoal,
+        source: '/goal',
+      });
+      setActiveTaskDetail((prev) => prev && prev.id === activeTaskId
+        ? { ...prev, nextStep: updated.nextStep ?? command.objective }
+        : prev);
+      return [
+        '已设置 Taskplane Task Goal。',
+        '',
+        `目标：${command.objective}`,
+        '',
+        '这次不会把 `/goal` 透传给 Codex CLI 或 Claude Code。下一次任务 Agent run 会把这个目标写入 Run Goal Contract，再由 Taskplane 做验收和任务记忆提案。',
+      ].join('\n');
+    }
+
+    if (command.kind === 'product_goal_status') {
+      return [
+        'Taskplane Task Goal',
+        '',
+        currentGoal ? `当前目标：${currentGoal}` : '当前还没有明确 Task Goal。可以用 `/goal <可验收的目标>` 设置。',
+        `目标状态：${goalLifecycle.status === 'paused' ? '已暂停' : goalLifecycle.status === 'cleared' ? '已清除' : currentGoal ? '推进中' : '未设置'}`,
+        '',
+        `执行 runtime：${executionRuntimeStatusLabel}`,
+        shouldUseAgentCliRuntime
+          ? `执行边界：${sandboxBoundaryLabel}`
+          : runtimeMode === 'api'
+            ? '执行边界：Agent API Runtime 仍在开发中；当前仅使用模型服务辅助，不启动任务执行 runtime。'
+            : '执行边界：当前仅使用模型服务辅助，不启动 Agent CLI。',
+      ].join('\n');
+    }
+
+    if (command.kind === 'product_goal_pause' || command.kind === 'product_goal_resume') {
+      if (!currentGoal) {
+        return '当前还没有可暂停或恢复的 Task Goal。可以用 `/goal <可验收的目标>` 设置。';
+      }
+      if (command.kind === 'product_goal_pause') {
+        if (goalLifecycle.status === 'paused') return `Task Goal 已经处于暂停状态。\n\n目标：${currentGoal}`;
+        await recordPanelTimelineEvent(activeTaskId, 'panel.task_goal_paused', {
+          objective: currentGoal,
+          source: '/goal pause',
+        });
+        appendLocalTaskGoalEvent('panel.task_goal_paused', {
+          objective: currentGoal,
+          source: '/goal pause',
+        });
+        return [
+          '已暂停 Taskplane Task Goal。',
+          '',
+          `目标：${currentGoal}`,
+          '',
+          '暂停期间不会把该目标投影为下一次 Run Goal Contract 的 objective；普通任务消息仍可作为一次性请求执行。',
+        ].join('\n');
+      }
+      if (goalLifecycle.status !== 'paused') return `Task Goal 当前没有暂停。\n\n目标：${currentGoal}`;
+      await recordPanelTimelineEvent(activeTaskId, 'panel.task_goal_resumed', {
+        objective: currentGoal,
+        source: '/goal resume',
+      });
+      appendLocalTaskGoalEvent('panel.task_goal_resumed', {
+        objective: currentGoal,
+        source: '/goal resume',
+      });
+      return [
+        '已恢复 Taskplane Task Goal。',
+        '',
+        `目标：${currentGoal}`,
+        '',
+        '下一次任务 Agent run 会重新把该目标写入 Run Goal Contract。',
+      ].join('\n');
+    }
+
+    if (command.kind === 'product_goal_clear') {
+      if (!currentGoal) {
+        return '当前还没有可清除的 Task Goal。可以用 `/goal <可验收的目标>` 设置。';
+      }
+      if (!window.api?.updateTask) {
+        return '当前环境暂不支持清除任务目标。';
+      }
+      const updated = await window.api.updateTask({
+        id: activeTaskId,
+        nextStep: null,
+      });
+      await recordPanelTimelineEvent(activeTaskId, 'panel.task_goal_updated', {
+        cleared: true,
+        objective: null,
+        previousObjective: currentGoal,
+        source: '/goal clear',
+      });
+      appendLocalTaskGoalEvent('panel.task_goal_updated', {
+        cleared: true,
+        objective: null,
+        previousObjective: currentGoal,
+        source: '/goal clear',
+      });
+      setActiveTaskDetail((prev) => prev && prev.id === activeTaskId
+        ? { ...prev, nextStep: updated.nextStep ?? null }
+        : prev);
+      return [
+        '已清除 Taskplane Task Goal。',
+        '',
+        `原目标：${currentGoal}`,
+        '',
+        '后续任务 Agent run 会回到普通任务请求；如需继续持久推进，可以再用 `/goal <目标>` 设置新的可验收目标。',
+      ].join('\n');
+    }
+
+    if (command.kind === 'runtime_native_goal') {
+      const targetRuntime = command.runtimeId === 'selected'
+        ? activeAgentCliRuntimeMode
+        : command.runtimeId;
+      const runtimeLabel = targetRuntime ? AGENT_CLI_PANEL_RUNTIME_LABELS[targetRuntime] : '当前 runtime';
+      const capabilities = targetRuntime ? agentCliCapabilities[targetRuntime] : null;
+      const nativeGoalAvailable = Boolean(capabilities?.supportsNativeGoalMode);
+      await recordPanelTimelineEvent(activeTaskId, 'panel.runtime_native_goal_requested', {
+        forwarded: false,
+        objective: command.objective,
+        reason: nativeGoalAvailable
+          ? 'Adapter declares native goal support, but Taskplane passthrough entrypoint is not open yet.'
+          : 'Adapter native goal capability is disabled.',
+        runtimeId: targetRuntime ?? command.runtimeId,
+        runtimeLabel,
+        supportsNativeGoalMode: nativeGoalAvailable,
+      });
+      return [
+        nativeGoalAvailable
+          ? `${runtimeLabel} native goal mode 已被 adapter 声明，但 Taskplane 透传入口尚未开放。`
+          : `${runtimeLabel} native goal mode 尚未开启。`,
+        '',
+        'Taskplane 已识别这是显式 runtime-native goal 请求，但本版本不会直接透传到底层 CLI，避免目标状态落在 Taskplane 会话之外。',
+        capabilities
+          ? `Adapter capability: supportsNativeGoalMode=${String(capabilities.supportsNativeGoalMode)}, passthroughRequiresExplicitNamespace=${String(capabilities.commandRouting.passthroughRequiresExplicitNamespace)}`
+          : 'Adapter capability: unavailable',
+        command.objective ? `请求目标：${command.objective}` : null,
+        '',
+        '当前可用路径：用 `/goal <目标>` 设置 Taskplane Task Goal，然后发送普通任务消息启动任务 Agent run。',
+      ].filter((line): line is string => line !== null).join('\n');
+    }
+
+    if (command.kind === 'product_cancel') {
+      if (activeTaskAgentCliRun) {
+        await cancelActiveAgentCliRun();
+        return `${activeTaskAgentCliRun.runtimeLabel} run 取消请求已发起。\n\nRun: ${activeTaskAgentCliRun.runId}`;
+      }
+      return '当前任务没有正在运行的 Agent CLI run。';
+    }
+
+    if (command.kind === 'product_status') {
+      return [
+        'Taskplane Runtime Status',
+        '',
+        `上下文：${runtimeChipLabel}`,
+        currentGoal ? `Task Goal：${currentGoal}` : 'Task Goal：未设置',
+        activeTaskAgentCliRun ? `运行中：${activeTaskAgentCliRun.runtimeLabel} · ${activeTaskAgentCliRun.runId}` : '运行中：无',
+      ].join('\n');
+    }
+
+    return `暂不支持命令 ${command.kind === 'unknown' ? command.command : 'unknown'}。可用命令：/goal、/goal status、/goal pause、/goal resume、/goal clear、/status、/cancel。`;
+  }
+
+  function appendLocalTaskGoalEvent(type: PanelRuntimeTimelineEventType, payload: Record<string, unknown>) {
+    if (!activeTaskId) return;
+    setActiveTaskDetail((prev) => prev && prev.id === activeTaskId
+      ? {
+          ...prev,
+          timeline: [
+            ...prev.timeline,
+            {
+              createdAt: new Date().toISOString(),
+              id: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              payload: JSON.stringify(payload),
+              taskId: activeTaskId,
+              type,
+            },
+          ],
+        }
+      : prev);
   }
 
   async function cancelActiveAgentCliRun() {
@@ -1894,22 +2153,55 @@ export function RightPanel({
       })
     : null;
   const hasSpecificConversationSignal = hasSpecificHandoffSignal(userMessageTexts);
+  const previewTaskDetail = activeTaskDetail?.id === activeTaskId ? activeTaskDetail : null;
+  const runtimeTaskPreview = activeTaskId
+    ? {
+        id: activeTaskId,
+        title: previewTaskDetail?.title ?? title ?? activeTaskId,
+        state: previewTaskDetail?.state ?? null,
+        summary: previewTaskDetail?.summary ?? null,
+        nextStep: previewTaskDetail?.nextStep ?? null,
+        riskLevel: previewTaskDetail?.riskLevel ?? null,
+        riskNote: previewTaskDetail?.riskNote ?? null,
+        createdAt: previewTaskDetail?.createdAt ?? null,
+        updatedAt: previewTaskDetail?.updatedAt ?? null,
+      }
+    : null;
   const runtimeContextManifest = buildRuntimeContextManifest({
-    task: activeTaskId
-      ? {
-          id: activeTaskId,
-          title: title ?? activeTaskId,
-        }
-      : null,
+    task: runtimeTaskPreview,
     selectedFile,
+    sourceContexts: previewTaskDetail?.sourceContexts.map((source) => ({
+      capturedAt: source.capturedAt ?? null,
+      contentPreview: (source.content ?? source.note ?? '').slice(0, 800) || null,
+      createdAt: source.createdAt,
+      id: source.id,
+      isKey: source.isKey,
+      kind: source.kind,
+      note: source.note,
+      runId: source.runId ?? null,
+      selected: source.isKey,
+      sourceRole: source.sourceRole ?? null,
+      status: source.status,
+      credibility: source.credibility ?? null,
+      isDuplicate: source.isDuplicate,
+      containsSensitiveData: source.containsSensitiveData,
+      title: source.title,
+      updatedAt: source.updatedAt,
+      uri: source.uri,
+    })) ?? [],
+    taskFiles: previewTaskDetail?.taskFiles?.map((file) => ({
+      contentPreview: file.content.slice(0, 800) || null,
+      id: file.id,
+      kind: file.kind,
+      name: file.name,
+      path: file.path,
+      taskId: file.taskId,
+      updatedAt: file.updatedAt,
+    })) ?? [],
+    capabilityRegistry,
   });
   const runtimeContextSnapshot = buildRuntimeContextSnapshot({
-    task: activeTaskId
-      ? {
-          id: activeTaskId,
-          title: title ?? activeTaskId,
-        }
-      : null,
+    task: runtimeTaskPreview,
     selectedFile,
   });
   const runtimeContextAssemblyPolicy = buildRuntimeContextAssemblyPolicy({
@@ -1963,21 +2255,59 @@ export function RightPanel({
   const activeAgentCliRuntimeMode: AgentCliRuntimeId | null = runtimeMode === 'codex' || runtimeMode === 'claude'
     ? runtimeMode
     : null;
+  const isAgentApiRuntimeMode = runtimeMode === 'api';
   const shouldUseAgentCliRuntime = Boolean(
     activeAgentCliRuntimeMode && canUseAgentCliRuntime(activeAgentCliRuntimeMode),
   );
   const activeTaskAgentCliRun = activeAgentCliRun && activeAgentCliRun.taskId === activeTaskId
     ? activeAgentCliRun
     : null;
-  const runtimeChipLabel = activeAgentCliRuntimeMode
+  const executionRuntimeStatusLabel = activeAgentCliRuntimeMode
     ? shouldUseAgentCliRuntime
-      ? AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode]
-      : agentCliAvailability[activeAgentCliRuntimeMode]
-        ? AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]
-        : activeTaskId
-          ? 'API Model · 当前 CLI 不可用'
-          : `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} · 当前不可用`
-    : 'API Model';
+      ? AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]
+      : `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]}（不可用）`
+    : isAgentApiRuntimeMode
+      ? 'Agent API Runtime（开发中）'
+      : '模型服务辅助';
+  const runtimeChipLabel = !activeTaskId
+    ? '全局助手 · 模型服务辅助'
+    : activeAgentCliRuntimeMode
+      ? shouldUseAgentCliRuntime
+        ? `任务 Agent · ${AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode]}`
+        : '任务 Agent · CLI 不可用，转模型服务辅助'
+      : isAgentApiRuntimeMode
+        ? 'Agent API Runtime · 开发中，转模型服务辅助'
+        : '模型服务辅助';
+  const includedContextCount = runtimeContextManifest.items.filter((item) => item.contentIncluded).length;
+  const sourceContextCount = runtimeContextManifest.items.filter((item) => item.kind === 'source_context').length;
+  const taskFileContextCount = runtimeContextManifest.items.filter((item) => item.kind === 'task_file').length;
+  const capabilityBoundaryCount = runtimeContextManifest.items.filter((item) => item.kind === 'capability').length;
+  const taskMemoryContextCount = runtimeContextManifest.memoryRetrieval?.includedCount ?? 0;
+  const runContextModeLabel = shouldUseAgentCliRuntime
+    ? activeAgentCliRuntimeMode === 'claude'
+      ? '任务 Agent Plan 执行'
+      : '任务 Agent 只读执行'
+    : isAgentApiRuntimeMode
+      ? 'Agent API 开发中'
+      : '模型服务辅助';
+  const sandboxBoundaryLabel = shouldUseAgentCliRuntime
+    ? activeAgentCliRuntimeMode === 'claude'
+      ? 'Claude Plan'
+      : 'read-only'
+    : '无 CLI 执行';
+  const runContextCarryLabel = [
+    `任务状态 ${runtimeTaskPreview ? '1' : '0'}`,
+    `任务记忆 ${taskMemoryContextCount}`,
+    `来源 ${sourceContextCount}`,
+    `任务文件 ${taskFileContextCount}`,
+    `能力边界 ${capabilityBoundaryCount}`,
+  ].join(' · ');
+  const taskGoalState = deriveTaskGoalLifecycleState({
+    fallbackGoal: activeTaskDetail?.resumeCard?.nextSuggestedMove,
+    nextStep: activeTaskDetail?.nextStep,
+    timeline: activeTaskDetail?.timeline,
+  });
+  const taskGoalLabel = taskGoalState.status === 'cleared' ? null : taskGoalState.objective;
   const taskPlanningPrompt = activeAttrs?.type && title
     ? buildTaskPlanningPrompt(title, activeAttrs.type, 'panel')
     : null;
@@ -2285,6 +2615,43 @@ export function RightPanel({
         >
           {runtimeContextManifest.userFacingSummary}
         </div>
+        {activeTaskId && (
+          <div className="panel-task-goal">
+            <span>Task Goal{taskGoalState.status === 'paused' ? ' · 已暂停' : ''}</span>
+            <strong>{taskGoalLabel ?? '未设置，可输入 /goal <目标>'}</strong>
+          </div>
+        )}
+        {activeTaskId && (
+          <details className="panel-run-context-preview">
+            <summary>
+              <span>运行前上下文</span>
+              <strong>{runContextModeLabel}</strong>
+            </summary>
+            <div className="panel-run-context-grid">
+              <div>
+                <span>任务记忆</span>
+                <strong>{taskMemoryContextCount ? `${taskMemoryContextCount} 条` : '无'}</strong>
+              </div>
+              <div>
+                <span>来源材料</span>
+                <strong>{sourceContextCount ? `${sourceContextCount} 个` : '无'}</strong>
+              </div>
+              <div>
+                <span>能力边界</span>
+                <strong>{capabilityBoundaryCount ? `${capabilityBoundaryCount} 项` : '无'}</strong>
+              </div>
+              <div>
+                <span>沙箱</span>
+                <strong>{sandboxBoundaryLabel}</strong>
+              </div>
+            </div>
+            <div className="panel-run-context-lines">
+              <span>会带入：{runContextCarryLabel} · 已确认内容 {includedContextCount}</span>
+              <span>不会授予 External Access / Skills / MCP 的 live tool 权限。</span>
+              <span>完成后会写入 Run 证据；有价值输出会生成待确认任务记忆提案。</span>
+            </div>
+          </details>
+        )}
         {activeTaskAgentCliRun && (
           <div className="panel-agent-cli-run">
             <span>{activeTaskAgentCliRun.runtimeLabel} 后台运行 · 完成后写入任务动态 · {activeTaskAgentCliRun.runId}</span>

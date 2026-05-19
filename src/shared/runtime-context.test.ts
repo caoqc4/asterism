@@ -151,6 +151,67 @@ describe('runtime context manifest', () => {
     );
   });
 
+  it('bridges optional capability surfaces as context-only boundaries', () => {
+    const manifest = buildRuntimeContextManifest({
+      capabilityRegistry: [
+        {
+          access: 'read_only',
+          configured: true,
+          family: 'external_access',
+          id: 'external_access.connectors',
+          label: 'External Access',
+          missingReason: null,
+          requiredGate: 'runtime_entrypoint_coverage',
+          requiresApproval: true,
+          status: 'available',
+          summary: 'connected=1 / pending=0 / errors=0 / catalogue=1',
+          visibility: 'policy_gated',
+        },
+        {
+          access: 'read_only',
+          configured: false,
+          family: 'skill',
+          id: 'skills.catalogue',
+          label: 'Skills',
+          missingReason: 'No ready model-visible Skill is enabled.',
+          requiredGate: 'runtime_entrypoint_coverage',
+          requiresApproval: false,
+          status: 'unconfigured',
+          summary: 'enabled=1 / ready=1 / modelVisible=0 / needsConfig=0 / catalogue=1',
+          visibility: 'hidden',
+        },
+        {
+          access: 'mixed',
+          configured: false,
+          family: 'mcp',
+          id: 'mcp.servers',
+          label: 'MCP Servers',
+          missingReason: 'Connected MCP tools are not exposed through the runtime tool gate.',
+          requiredGate: 'runtime_entrypoint_coverage',
+          requiresApproval: true,
+          status: 'unconfigured',
+          summary: 'connectedServers=1 / tools=3 / modelVisibleTools=0 / errors=0 / catalogue=1',
+          visibility: 'hidden',
+        },
+      ],
+      task: { id: 'task_1', title: 'Launch task', state: 'running' },
+      taskFiles: [{ path: 'Task.md', kind: 'file', contentPreview: '# Task' }],
+    });
+
+    expect(manifest.items.filter((item) => item.kind === 'capability').map((item) => item.id)).toEqual([
+      'capability:external_access',
+      'capability:skill',
+      'capability:mcp',
+    ]);
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain(
+      'capability:capability:external_access:External Access context bridge:content=yes',
+    );
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain(
+      'note=family=mcp / status=unconfigured / configured=0 / available=0 / blocked=1',
+    );
+    expect(manifest.userFacingSummary).toContain('运行能力状态');
+  });
+
   it('attaches deterministic task memory retrieval to task-bound manifests', () => {
     const manifest = buildRuntimeContextManifest({
       applicableWorkHabits: ['先做事实核对'],

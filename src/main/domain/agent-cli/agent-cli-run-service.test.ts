@@ -52,10 +52,24 @@ describe('AgentCliRunService', () => {
       title: 'agent cli run accepted',
       output: expect.stringContaining('Agent CLI run context assembly gate ready'),
     }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'completed',
+      title: 'Agent CLI 目标契约',
+      input: expect.stringContaining('"runtimeLabel": "Codex CLI"'),
+      output: expect.stringContaining('taskGoal=active'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 目标契约',
+      output: expect.stringContaining('objective=Review implementation path.'),
+    }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       args: ['exec', '--sandbox', 'read-only', '--cd', workspaceRoot, '--skip-git-repo-check', '-'],
       command: 'codex',
       cwd: workspaceRoot,
+      input: expect.stringContaining('Taskplane run contract:'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('User request:\nReview the next implementation step.'),
     }));
     expect(result).toMatchObject({
@@ -70,6 +84,30 @@ describe('AgentCliRunService', () => {
         output: 'Codex CLI final answer.',
       }));
     });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'completed',
+      title: '任务记忆建议',
+      input: expect.stringContaining('"decision":"accept_for_review"'),
+      output: expect.stringContaining('Verifier decision: accept_for_review'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
+      input: expect.stringContaining('"targets":["task_record"]'),
+      output: expect.stringContaining('Next action: review_memory_proposal'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'completed',
+      title: '验收子 Agent 检查',
+      input: expect.stringContaining('taskplane.verifier.lightweight'),
+      output: expect.stringContaining('Task Goal status: active'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '验收子 Agent 检查',
+      input: expect.stringContaining('"decision": "accept_for_review"'),
+      output: expect.stringContaining('Can mark task complete: no'),
+    }));
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_agent_cli_1',
       'completed',
@@ -87,8 +125,8 @@ describe('AgentCliRunService', () => {
       runId: 'run_agent_cli_1',
       targetType: 'run',
       targetId: 'run_agent_cli_1',
-      tone: 'pass',
-      label: 'Run 验证通过',
+      tone: 'warn',
+      label: 'Run 任务记忆待处理',
     }));
   });
 
@@ -127,6 +165,88 @@ describe('AgentCliRunService', () => {
     });
   });
 
+  it('does not project a paused Task Goal into the next Agent CLI run contract', async () => {
+    const taskService = buildTaskService();
+    vi.mocked(taskService.getDetail).mockResolvedValue({
+      ...buildTask(),
+      nextStep: 'Durable goal that is currently paused.',
+      timeline: [{
+        id: 'event_goal_paused',
+        taskId: 'task_1',
+        type: 'panel.task_goal_paused',
+        payload: JSON.stringify({
+          objective: 'Durable goal that is currently paused.',
+          source: '/goal pause',
+        }),
+        createdAt: '2026-05-20T00:00:00.000Z',
+      }],
+    });
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'One-off inspection complete.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      taskService,
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run a one-off inspection.',
+      taskId: 'task_1',
+    });
+
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('- Objective: Run a one-off inspection.'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.not.stringContaining('- Objective: Durable goal that is currently paused.'),
+    }));
+  });
+
+  it('does not create a task memory proposal when verifier says evidence is missing', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: '',
+      summary: 'Agent CLI execution completed without output.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run without output.',
+      taskId: 'task_1',
+    });
+
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        title: '验收子 Agent 检查',
+        input: expect.stringContaining('"decision": "needs_evidence"'),
+        output: expect.stringContaining('Should propose task memory: no'),
+      }));
+    });
+    expect(runStepRepository.create).not.toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
+    }));
+  });
+
   it('uses the resolved executable path when the runtime status provides one', async () => {
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,
@@ -163,6 +283,134 @@ describe('AgentCliRunService', () => {
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       command: '/opt/homebrew/bin/codex',
     }));
+  });
+
+  it('bridges confirmed sources and optional capability boundaries into the CLI prompt', async () => {
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Done.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const task = {
+      ...buildTask(),
+      sourceContexts: [
+        {
+          archivedAt: null,
+          capturedAt: '2026-05-19T00:00:00.000Z',
+          content: 'Confirmed Gmail source says the launch note needs legal review.',
+          containsSensitiveData: false,
+          createdAt: '2026-05-19T00:00:00.000Z',
+          credibility: 'verified',
+          id: 'source_external_access_1',
+          isDuplicate: false,
+          isKey: true,
+          kind: 'note',
+          note: 'Confirmed External Access source',
+          runId: null,
+          sourceRole: 'digest',
+          status: 'active',
+          taskId: 'task_1',
+          title: 'Gmail launch digest',
+          updatedAt: '2026-05-19T00:00:00.000Z',
+          uri: 'gmail://message/1',
+        },
+        {
+          archivedAt: null,
+          capturedAt: '2026-05-19T00:00:00.000Z',
+          content: 'token=secret',
+          containsSensitiveData: true,
+          createdAt: '2026-05-19T00:00:00.000Z',
+          credibility: 'verified',
+          id: 'source_sensitive_1',
+          isDuplicate: false,
+          isKey: true,
+          kind: 'note',
+          note: 'Sensitive source',
+          runId: null,
+          sourceRole: 'digest',
+          status: 'active',
+          taskId: 'task_1',
+          title: 'Sensitive digest',
+          updatedAt: '2026-05-19T00:00:00.000Z',
+          uri: null,
+        },
+      ],
+    } satisfies TaskDetail;
+    const service = new AgentCliRunService(
+      {
+        ...buildTaskService(),
+        getDetail: vi.fn().mockResolvedValue(task),
+      },
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+        capabilityRegistry: [
+          {
+            access: 'read_only',
+            configured: true,
+            family: 'external_access',
+            id: 'external_access.connectors',
+            label: 'External Access',
+            missingReason: null,
+            requiredGate: 'runtime_entrypoint_coverage',
+            requiresApproval: true,
+            status: 'available',
+            summary: 'connected=1 / pending=0 / errors=0 / catalogue=1',
+            visibility: 'policy_gated',
+          },
+          {
+            access: 'read_only',
+            configured: false,
+            family: 'skill',
+            id: 'skills.catalogue',
+            label: 'Skills',
+            missingReason: 'No ready model-visible Skill is enabled.',
+            requiredGate: 'runtime_entrypoint_coverage',
+            requiresApproval: false,
+            status: 'unconfigured',
+            summary: 'enabled=1 / ready=1 / modelVisible=0 / needsConfig=0 / catalogue=1',
+            visibility: 'hidden',
+          },
+          {
+            access: 'mixed',
+            configured: false,
+            family: 'mcp',
+            id: 'mcp.servers',
+            label: 'MCP Servers',
+            missingReason: 'Connected MCP tools are not exposed through the runtime tool gate.',
+            requiredGate: 'runtime_entrypoint_coverage',
+            requiresApproval: true,
+            status: 'unconfigured',
+            summary: 'connectedServers=1 / tools=3 / modelVisibleTools=0 / errors=0 / catalogue=1',
+            visibility: 'hidden',
+          },
+        ],
+      })) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+      { upsert: vi.fn() },
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Inspect bridged context.',
+      taskId: 'task_1',
+    });
+
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('Capability bridge policy:'),
+    }));
+    const prompt = vi.mocked(executor).mock.calls[0]?.[0].input ?? '';
+    expect(prompt).toContain('External Access context bridge');
+    expect(prompt).toContain('Skills context bridge');
+    expect(prompt).toContain('MCP context bridge');
+    expect(prompt).toContain('Confirmed source previews:');
+    expect(prompt).toContain('Gmail launch digest');
+    expect(prompt).toContain('Confirmed Gmail source says the launch note needs legal review.');
+    expect(prompt).not.toContain('token=secret');
+    expect(prompt).toContain('Do not claim live connector/tool access');
   });
 
   it('records the accepted run immediately before the executor completes', async () => {
@@ -286,12 +534,19 @@ describe('AgentCliRunService', () => {
       status: 'running',
     });
     await vi.waitFor(() => {
-      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        error: 'spawn failed',
-        kind: 'model',
-        status: 'failed',
-        title: 'codex cli failed',
-      }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'spawn failed',
+      kind: 'model',
+      status: 'failed',
+      title: 'codex cli failed',
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'spawn failed',
+      kind: 'final',
+      status: 'failed',
+      title: '验收子 Agent 检查',
+      output: expect.stringContaining('Verdict: fail'),
+    }));
     });
     expect(taskService.annotateRunFailed).toHaveBeenCalledWith('task_1', 'spawn failed', 'run_agent_cli_1');
     expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
@@ -359,13 +614,22 @@ describe('AgentCliRunService', () => {
       runId: 'run_agent_cli_1',
     });
     await vi.waitFor(() => {
-      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        error: 'Operator stopped the run from Taskplane.',
-        kind: 'model',
-        status: 'failed',
-        title: 'codex cli failed',
-      }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'Operator stopped the run from Taskplane.',
+      kind: 'model',
+      status: 'failed',
+      title: 'codex cli failed',
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'Operator stopped the run from Taskplane.',
+      kind: 'final',
+      status: 'failed',
+      title: '验收子 Agent 检查',
+    }));
     });
+    expect(runStepRepository.create).not.toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
+    }));
     expect(taskService.annotateRunFailed).toHaveBeenCalledWith(
       'task_1',
       'Operator stopped the run from Taskplane.',

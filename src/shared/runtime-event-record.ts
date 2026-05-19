@@ -474,6 +474,10 @@ function timelineTitle(type: string, payload: string | null): string {
 function timelineDetail(type: string, payload: string | null): string | null {
   if (!payload) return null;
   if (type === 'task.updated') return formatTaskUpdatedDetail(payload);
+  if (type === 'panel.task_goal_updated') return formatTaskGoalUpdatedDetail(payload);
+  if (type === 'panel.task_goal_paused') return formatTaskGoalControlDetail(payload, '已暂停');
+  if (type === 'panel.task_goal_resumed') return formatTaskGoalControlDetail(payload, '已恢复');
+  if (type === 'panel.runtime_native_goal_requested') return formatRuntimeNativeGoalRequestedDetail(payload);
   if (type.startsWith('completion_criteria.')) return formatCompletionCriteriaDetail(payload);
   if (type.startsWith('task_dependency.')) return formatTaskDependencyDetail(payload);
   if (type.startsWith('blocker.')) return formatBlockerDetail(payload);
@@ -489,6 +493,52 @@ function timelineDetail(type: string, payload: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+function formatTaskGoalUpdatedDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const cleared = parsed.cleared === true ? '目标：已清除' : null;
+  const objective = typeof parsed.objective === 'string' && parsed.objective.trim()
+    ? `目标：${parsed.objective.trim()}`
+    : null;
+  const previousObjective = typeof parsed.previousObjective === 'string' && parsed.previousObjective.trim()
+    ? `原目标：${parsed.previousObjective.trim()}`
+    : null;
+  const source = typeof parsed.source === 'string' && parsed.source.trim()
+    ? `来源：${parsed.source.trim()}`
+    : '来源：/goal';
+  return [cleared ?? objective, previousObjective, source].filter(Boolean).join(' / ') || null;
+}
+
+function formatTaskGoalControlDetail(payload: string, status: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const objective = typeof parsed.objective === 'string' && parsed.objective.trim()
+    ? `目标：${parsed.objective.trim()}`
+    : null;
+  const source = typeof parsed.source === 'string' && parsed.source.trim()
+    ? `来源：${parsed.source.trim()}`
+    : null;
+  return [`状态：${status}`, objective, source].filter(Boolean).join(' / ') || null;
+}
+
+function formatRuntimeNativeGoalRequestedDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const runtime = typeof parsed.runtimeLabel === 'string' && parsed.runtimeLabel.trim()
+    ? `Runtime：${parsed.runtimeLabel.trim()}`
+    : typeof parsed.runtimeId === 'string' && parsed.runtimeId.trim()
+      ? `Runtime：${parsed.runtimeId.trim()}`
+      : null;
+  const objective = typeof parsed.objective === 'string' && parsed.objective.trim()
+    ? `目标：${parsed.objective.trim()}`
+    : null;
+  const forwarded = parsed.forwarded === true ? '已透传' : '未透传';
+  const reason = typeof parsed.reason === 'string' && parsed.reason.trim()
+    ? `原因：${parsed.reason.trim()}`
+    : null;
+  return [runtime, objective, forwarded, reason].filter(Boolean).join(' / ') || null;
 }
 
 function timelinePayloadTitle(payload: string | null, fallback: string, field: string): string {
