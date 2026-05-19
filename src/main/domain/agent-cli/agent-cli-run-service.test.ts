@@ -366,6 +366,59 @@ describe('AgentCliRunService', () => {
     expect(runRepository.create).not.toHaveBeenCalled();
   });
 
+  it('keeps Claude Code status-only until a run adapter is enabled', async () => {
+    const runRepository = buildRunRepository();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+        agentCliRuntimeStatus: {
+          catalogueCount: 2,
+          detectedCount: 2,
+          errorCount: 0,
+          manualRunCount: 1,
+          readyCount: 1,
+          runningCount: 0,
+          updatedAt: '2026-05-19T00:00:00.000Z',
+          runtimes: [
+            {
+              id: 'codex',
+              label: 'Codex CLI',
+              command: 'codex',
+              installed: true,
+              version: 'codex 0.42.0',
+              authState: 'ready',
+              executionSupport: 'manual_run',
+              workload: 'idle',
+              missingReason: null,
+            },
+            {
+              id: 'claude',
+              label: 'Claude Code',
+              command: 'claude',
+              installed: true,
+              version: 'claude 1.0.0',
+              authState: 'unknown',
+              executionSupport: 'status_only',
+              workload: 'idle',
+              missingReason: 'Claude Code detection is status-only in this version.',
+            },
+          ],
+        },
+      })) },
+      runRepository,
+      buildRunStepRepository(),
+      vi.fn(),
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run Claude.',
+      runtimeId: 'claude',
+      taskId: 'task_1',
+    })).rejects.toThrow('claude CLI execution is not enabled in this version.');
+    expect(runRepository.create).not.toHaveBeenCalled();
+  });
+
   it('requires explicit operator confirmation', async () => {
     const runRepository = buildRunRepository();
     const service = new AgentCliRunService(

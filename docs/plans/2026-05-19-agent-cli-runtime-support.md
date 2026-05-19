@@ -94,6 +94,7 @@ Out of scope for the first pass:
 - direct ChatGPT web-session usage;
 - automatic commit/push/release;
 - broad multi-CLI abstraction before Codex CLI proves the path.
+- enabling Claude Code execution before its official non-interactive, read-only invocation contract is verified.
 
 ## Capability Model
 
@@ -165,6 +166,17 @@ The adapter should reuse existing concepts:
 - CapabilityRegistry;
 - ConfigurationSafetyReport.
 
+## Adapter Boundary
+
+The first implementation keeps Codex CLI as the only executable Agent CLI, but the run service now has an explicit runtime adapter boundary:
+
+- each executable CLI must provide its own command args, command preview, prompt builder, and terminal step labels;
+- the shared run service owns Taskplane gates, task memory checks, context assembly, workload tracking, cancellation, and terminal persistence;
+- a detected runtime is not executable unless a run adapter is registered and the runtime reports `executionSupport: 'manual_run'`;
+- Claude Code remains `status_only` until Taskplane verifies a safe official invocation path.
+
+This avoids accidentally reusing Codex-specific flags for other CLIs. It also keeps the current product promise narrow: Taskplane can show Claude Code presence, but cannot launch it through the background Agent CLI lane yet.
+
 ## Implementation Order
 
 1. Agent CLI catalogue and read-only status service.
@@ -176,7 +188,8 @@ The adapter should reuse existing concepts:
 7. Runtime gate and task memory integration.
 8. Manual read-only Codex CLI smoke, skipped by default unless explicitly enabled.
 9. Cancellation/timeout handling.
-10. Later: Claude Code and other CLI adapters.
+10. Runtime-specific adapter boundary for command/prompt/step labeling.
+11. Later: Claude Code and other CLI adapters after their official read-only/non-interactive command contracts are verified.
 
 ## Acceptance Criteria
 
@@ -191,6 +204,7 @@ The adapter should reuse existing concepts:
 - Taskplane does not auto-run, auto-commit, or auto-push.
 - CLI execution cannot bypass existing runtime gates or task memory checks.
 - Active CLI subprocesses can be cancelled without leaving runtime workload status stuck.
+- A status-only CLI such as Claude Code cannot be launched until a dedicated run adapter is enabled.
 - The real Codex CLI smoke is opt-in only:
   `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke`.
 - Default local acceptance and tests must not call Agent CLIs or model providers.

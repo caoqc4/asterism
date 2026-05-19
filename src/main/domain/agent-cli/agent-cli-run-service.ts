@@ -55,6 +55,23 @@ export type AgentCliExecutor = (params: {
 
 export type AgentCliRunTerminalListener = (run: RunRecord) => void | Promise<void>;
 
+type AgentCliRunAdapter = {
+  acceptedLabel: string;
+  buildExecution(params: {
+    contextSummary: string;
+    prompt: string;
+    sandboxMode: AgentCliRunSandboxMode;
+    task: TaskDetail;
+    workspaceRoot: string;
+  }): {
+    args: string[];
+    commandPreview: string;
+    input: string;
+  };
+  completedStepTitle: string;
+  failedStepTitle: string;
+};
+
 const DEFAULT_AGENT_CLI_TIMEOUT_MS = 120_000;
 const DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES = 64_000;
 
@@ -87,14 +104,15 @@ export class AgentCliRunService {
     }
 
     const runtimeId = request.runtimeId ?? 'codex';
-    if (runtimeId !== 'codex') {
-      throw new Error('Only Codex CLI execution is supported in this version.');
+    const adapter = getAgentCliRunAdapter(runtimeId);
+    if (!adapter) {
+      throw new Error(`${runtimeId} CLI execution is not enabled in this version.`);
     }
 
     const aiStatus = await this.aiConfigService.getStatus();
     const runtime = aiStatus.agentCliRuntimeStatus?.runtimes.find((item) => item.id === runtimeId) ?? null;
     if (!runtime?.installed || runtime.executionSupport !== 'manual_run') {
-      throw new Error('Codex CLI is not detected on PATH or is not enabled for manual runs.');
+      throw new Error(`${adapter.acceptedLabel} is not detected on PATH or is not enabled for manual runs.`);
     }
 
     const startVerification = evaluateRuntimeVerification({
@@ -175,11 +193,12 @@ export class AgentCliRunService {
       ].join(' / '),
     });
 
-    const prompt = buildCodexCliPrompt({
+    const execution = adapter.buildExecution({
       contextSummary: contextManifest.userFacingSummary,
       prompt: request.prompt,
       sandboxMode,
       task,
+      workspaceRoot,
     });
     const abortController = new AbortController();
     const workloadLease = this.workloadTracker.start(runtimeId, run.id, (reason) => {
@@ -187,7 +206,10 @@ export class AgentCliRunService {
     });
     void this.completeRunInBackground({
       abortController,
-      prompt,
+      commandPreview: execution.commandPreview,
+      input: execution.input,
+      runAdapter: adapter,
+      runArgs: execution.args,
       run,
       runtimeCommand: runtime.command,
       sandboxMode,
@@ -249,7 +271,10 @@ export class AgentCliRunService {
 
   private async completeRunInBackground(params: {
     abortController: AbortController;
-    prompt: string;
+    commandPreview: string;
+    input: string;
+    runAdapter: AgentCliRunAdapter;
+    runArgs: string[];
     run: RunRecord;
     runtimeCommand: string;
     sandboxMode: AgentCliRunSandboxMode;
@@ -258,10 +283,10 @@ export class AgentCliRunService {
     workspaceRoot: string;
   }): Promise<void> {
     const execution = await this.executeWithFailureCapture({
-      args: ['exec', '--sandbox', params.sandboxMode, '--cd', params.workspaceRoot, '--skip-git-repo-check', '-'],
+      args: params.runArgs,
       command: params.runtimeCommand,
       cwd: params.workspaceRoot,
-      input: params.prompt,
+      input: params.input,
       outputLimitBytes: DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES,
       signal: params.abortController.signal,
       timeoutMs: DEFAULT_AGENT_CLI_TIMEOUT_MS,
@@ -274,9 +299,9 @@ export class AgentCliRunService {
         runId: params.run.id,
         kind: 'model',
         status: execution.status,
-        title: execution.status === 'completed' ? 'codex cli completed' : 'codex cli failed',
+        title: execution.status === 'completed' ? params.runAdapter.completedStepTitle : params.runAdapter.failedStepTitle,
         input: [
-          `codex exec --sandbox ${params.sandboxMode} --cd ${params.workspaceRoot} -`,
+          params.commandPreview,
           `exitCode=${execution.exitCode ?? 'unknown'}`,
         ].join('\n'),
         output: execution.stdout || execution.summary,
@@ -372,6 +397,29 @@ function normalizeCancelAgentCliRunInput(input: CancelAgentCliRunInput): Require
     runId,
   };
 }
+
+function getAgentCliRunAdapter(runtimeId: AgentCliRuntimeId): AgentCliRunAdapter | null {
+  if (runtimeId === 'codex') return codexCliRunAdapter;
+  return null;
+}
+
+const codexCliRunAdapter: AgentCliRunAdapter = {
+  acceptedLabel: 'Codex CLI',
+  buildExecution(params) {
+    return {
+      args: ['exec', '--sandbox', params.sandboxMode, '--cd', params.workspaceRoot, '--skip-git-repo-check', '-'],
+      commandPreview: `codex exec --sandbox ${params.sandboxMode} --cd ${params.workspaceRoot} -`,
+      input: buildCodexCliPrompt({
+        contextSummary: params.contextSummary,
+        prompt: params.prompt,
+        sandboxMode: params.sandboxMode,
+        task: params.task,
+      }),
+    };
+  },
+  completedStepTitle: 'codex cli completed',
+  failedStepTitle: 'codex cli failed',
+};
 
 function buildCodexCliPrompt(params: {
   contextSummary: string;
