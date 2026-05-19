@@ -1969,6 +1969,15 @@ export function RightPanel({
   const activeTaskAgentCliRun = activeAgentCliRun && activeAgentCliRun.taskId === activeTaskId
     ? activeAgentCliRun
     : null;
+  const runtimeChipLabel = activeAgentCliRuntimeMode
+    ? shouldUseAgentCliRuntime
+      ? AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode]
+      : agentCliAvailability[activeAgentCliRuntimeMode]
+        ? `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} · 选择任务后可用`
+        : activeTaskId
+          ? 'API Model · 当前 CLI 不可用'
+          : `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} · 当前不可用`
+    : 'API Model';
   const taskPlanningPrompt = activeAttrs?.type && title
     ? buildTaskPlanningPrompt(title, activeAttrs.type, 'panel')
     : null;
@@ -2362,13 +2371,7 @@ export function RightPanel({
         />
         <div className="panel-input-foot">
           <span className="panel-runtime-chip">
-            {shouldUseAgentCliRuntime && activeAgentCliRuntimeMode
-              ? AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode]
-              : runtimeMode === 'api'
-                ? 'API Model'
-                : activeTaskId
-                  ? 'API Model · 当前 CLI 不可用'
-                  : 'API Model · 全局对话'}
+            {runtimeChipLabel}
           </span>
           <span className="panel-hint muted">⏎ 发送  ⇧⏎ 换行</span>
           <button

@@ -2040,6 +2040,17 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Codex CLI run 取消请求已发送/)).toBeTruthy();
   });
 
+  it('shows the selected Codex CLI runtime in global chat as task-bound only', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Search or ask/ }));
+
+    expect(await screen.findByText('Codex CLI · 选择任务后可用')).toBeTruthy();
+    expect(screen.queryByText('API Model · 全局对话')).toBeNull();
+  });
+
   it('can route a task-bound right-panel message through Claude Code plan mode', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
