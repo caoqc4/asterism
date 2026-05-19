@@ -32,6 +32,7 @@ export type AgentCliRuntimeStatus = {
   runningCount: number;
   errorCount: number;
   manualRunCount: number;
+  readyManualRunCount: number;
   updatedAt: string | null;
 };
 
@@ -74,6 +75,11 @@ export function buildAgentCliRuntimeStatus(
     errorCount: runtimes.filter((runtime) => runtime.authState === 'error').length,
     manualRunCount: runtimes.filter((runtime) => runtime.installed && runtime.executionSupport === 'manual_run').length,
     readyCount: runtimes.filter((runtime) => runtime.installed && runtime.authState === 'ready').length,
+    readyManualRunCount: runtimes.filter((runtime) => (
+      runtime.installed
+      && runtime.authState === 'ready'
+      && runtime.executionSupport === 'manual_run'
+    )).length,
     runningCount: runtimes.filter((runtime) => runtime.workload === 'running').length,
     runtimes: runtimes.map((runtime) => ({ ...runtime })),
     updatedAt,

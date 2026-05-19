@@ -111,6 +111,7 @@ type AgentCliRuntimeStatus = {
   catalogueCount: number;
   detectedCount: number;
   readyCount: number;
+  readyManualRunCount: number;
   runningCount: number;
   errorCount: number;
   runtimes: Array<{
@@ -137,6 +138,8 @@ installed/authenticated/ready does not mean model-visible or auto-executable.
 ```
 
 The CLI runtime is an execution backend, not a provider-native tool automatically exposed to the model.
+
+Capability Registry and ConfigurationSafetyReport must use `readyManualRunCount`, not only `readyCount` or `manualRunCount`, when deciding whether an Agent CLI execution backend is configured. A status-only Claude Code login must not make the Agent CLI capability available if no authenticated manual-run runtime is ready.
 
 ## Runtime Path
 
@@ -190,6 +193,7 @@ Taskplane should not enable Claude execution only because `claude -p` exists. Cl
 - check auth readiness with `claude auth status`;
 - keep `executionSupport: 'status_only'`;
 - show `claude auth login` as the official login hint;
+- keep Capability Registry unavailable unless a ready manual-run runtime such as Codex is present;
 - require a dedicated Claude adapter design before launching any background Claude run.
 
 Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com/docs/en/headless.

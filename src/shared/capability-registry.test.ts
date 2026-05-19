@@ -146,7 +146,7 @@ describe('capability registry', () => {
         externalAccess: { connectedCount: 2, pendingCount: 1, errorCount: 0, catalogueCount: 1 },
         skills: { enabledCount: 3, readyCount: 2, modelVisibleCount: 1, needsConfigCount: 1 },
         mcp: { connectedServerCount: 1, toolCount: 4, modelVisibleToolCount: 2, errorCount: 0, catalogueCount: 1 },
-        agentCli: { detectedCount: 1, readyCount: 1, manualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
+        agentCli: { detectedCount: 1, readyCount: 1, manualRunCount: 1, readyManualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
         browser: { available: true, reason: 'Browser automation configured.' },
       },
     });
@@ -174,7 +174,7 @@ describe('capability registry', () => {
       visibility: 'hidden',
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
-      summary: 'detected=1 / ready=1 / manualRun=1 / running=0 / errors=0 / catalogue=2',
+      summary: 'detected=1 / ready=1 / manualRun=1 / readyManualRun=1 / running=0 / errors=0 / catalogue=2',
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
@@ -191,7 +191,7 @@ describe('capability registry', () => {
         externalAccess: { connectedCount: 0, errorCount: 1 },
         skills: { enabledCount: 1, readyCount: 0, needsConfigCount: 1 },
         mcp: { connectedServerCount: 1, toolCount: 0, errorCount: 1 },
-        agentCli: { detectedCount: 1, readyCount: 0, manualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
+        agentCli: { detectedCount: 1, readyCount: 0, manualRunCount: 1, readyManualRunCount: 0, runningCount: 0, errorCount: 0, catalogueCount: 2 },
         browser: { available: false, reason: 'Browser plugin unavailable.' },
       },
     });
@@ -218,6 +218,29 @@ describe('capability registry', () => {
       status: 'disabled',
       visibility: 'hidden',
       missingReason: 'Browser plugin unavailable.',
+    });
+  });
+
+  it('does not mark Agent CLI available when only a status-only runtime is authenticated', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus() }),
+      productSurfaces: {
+        agentCli: {
+          catalogueCount: 2,
+          detectedCount: 2,
+          errorCount: 0,
+          manualRunCount: 1,
+          readyCount: 1,
+          readyManualRunCount: 0,
+          runningCount: 0,
+        },
+      },
+    });
+
+    expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
+      configured: false,
+      status: 'unconfigured',
+      summary: 'detected=2 / ready=1 / manualRun=1 / readyManualRun=0 / running=0 / errors=0 / catalogue=2',
     });
   });
 

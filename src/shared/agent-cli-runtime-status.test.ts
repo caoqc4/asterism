@@ -21,6 +21,7 @@ describe('agent cli runtime status', () => {
     expect(status.detectedCount).toBe(0);
     expect(status.readyCount).toBe(0);
     expect(status.manualRunCount).toBe(0);
+    expect(status.readyManualRunCount).toBe(0);
     expect(status.errorCount).toBe(0);
   });
 
@@ -55,9 +56,44 @@ describe('agent cli runtime status', () => {
       detectedCount: 2,
       readyCount: 1,
       manualRunCount: 1,
+      readyManualRunCount: 1,
       runningCount: 1,
       errorCount: 1,
       updatedAt: '2026-05-19T00:00:00.000Z',
+    });
+  });
+
+  it('does not count status-only authenticated runtimes as ready manual-run runtimes', () => {
+    const status = buildAgentCliRuntimeStatus([
+      {
+        id: 'codex',
+        label: 'Codex CLI',
+        command: 'codex',
+        installed: true,
+        version: 'codex 1.0.0',
+        authState: 'needs_login',
+        executionSupport: 'manual_run',
+        workload: 'idle',
+        missingReason: 'Codex CLI login required.',
+      },
+      {
+        id: 'claude',
+        label: 'Claude Code',
+        command: 'claude',
+        installed: true,
+        version: 'claude 2.1.128',
+        authState: 'ready',
+        executionSupport: 'status_only',
+        workload: 'idle',
+        missingReason: null,
+      },
+    ]);
+
+    expect(status).toMatchObject({
+      detectedCount: 2,
+      readyCount: 1,
+      manualRunCount: 1,
+      readyManualRunCount: 0,
     });
   });
 });

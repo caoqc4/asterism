@@ -93,6 +93,7 @@ async function buildCapabilityProductSurfaceStatus(
         errorCount: agentCliRuntimeStatus.errorCount,
         manualRunCount: agentCliRuntimeStatus.manualRunCount,
         readyCount: agentCliRuntimeStatus.readyCount,
+        readyManualRunCount: agentCliRuntimeStatus.readyManualRunCount,
         runningCount: agentCliRuntimeStatus.runningCount,
       }
       : null,

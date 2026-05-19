@@ -347,6 +347,7 @@ describe('AgentCliRunService', () => {
             errorCount: 0,
             manualRunCount: 0,
             readyCount: 0,
+            readyManualRunCount: 0,
             runningCount: 0,
             updatedAt: null,
             runtimes: [],
@@ -377,6 +378,7 @@ describe('AgentCliRunService', () => {
           errorCount: 0,
           manualRunCount: 1,
           readyCount: 1,
+          readyManualRunCount: 1,
           runningCount: 0,
           updatedAt: '2026-05-19T00:00:00.000Z',
           runtimes: [
@@ -478,6 +480,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
       errorCount: 0,
       manualRunCount: 1,
       readyCount: 0,
+      readyManualRunCount: 0,
       runningCount: 0,
       updatedAt: '2026-05-19T00:00:00.000Z',
       runtimes: [{

@@ -405,6 +405,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
       runningCount: 0,
       errorCount: 0,
       manualRunCount: 1,
+      readyManualRunCount: 0,
       updatedAt: '2026-05-19T00:00:00.000Z',
       runtimes: [
         {
@@ -1045,7 +1046,7 @@ describe('App redesign v1', () => {
         access: 'mutating',
         requiresApproval: true,
         requiredGate: 'runtime_pre_step',
-        summary: 'detected=1 / ready=0 / manualRun=1 / running=0 / errors=0 / catalogue=2',
+        summary: 'detected=1 / ready=0 / manualRun=1 / readyManualRun=0 / running=0 / errors=0 / catalogue=2',
       }],
       configurationSafetyReport: {
         secretExposureSafe: true,

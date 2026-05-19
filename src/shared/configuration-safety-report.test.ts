@@ -123,7 +123,7 @@ describe('configuration safety report', () => {
           externalAccess: { connectedCount: 0, pendingCount: 0, errorCount: 0, catalogueCount: 1 },
           skills: { enabledCount: 0, readyCount: 0, needsConfigCount: 0, catalogueCount: 1 },
           mcp: { connectedServerCount: 0, toolCount: 0, errorCount: 0, catalogueCount: 1 },
-          agentCli: { detectedCount: 0, readyCount: 0, manualRunCount: 0, runningCount: 0, errorCount: 0, catalogueCount: 2 },
+          agentCli: { detectedCount: 0, readyCount: 0, manualRunCount: 0, readyManualRunCount: 0, runningCount: 0, errorCount: 0, catalogueCount: 2 },
         },
       }),
     });
@@ -206,7 +206,7 @@ describe('configuration safety report', () => {
         productSurfaces: {
           skills: { enabledCount: 2, readyCount: 1, modelVisibleCount: 1, needsConfigCount: 1, catalogueCount: 1 },
           mcp: { connectedServerCount: 1, toolCount: 3, modelVisibleToolCount: 2, errorCount: 0, catalogueCount: 1 },
-          agentCli: { detectedCount: 1, readyCount: 1, manualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
+          agentCli: { detectedCount: 1, readyCount: 1, manualRunCount: 1, readyManualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
         },
       }),
     };

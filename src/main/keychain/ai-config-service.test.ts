@@ -107,11 +107,12 @@ describe('AiConfigService', () => {
       detectedCount: 0,
       manualRunCount: 0,
       readyCount: 0,
+      readyManualRunCount: 0,
     });
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'detected=0 / ready=0 / manualRun=0 / running=0 / errors=0 / catalogue=2',
+      summary: 'detected=0 / ready=0 / manualRun=0 / readyManualRun=0 / running=0 / errors=0 / catalogue=2',
       missingReason: 'No supported Agent CLI runtime is detected.',
     });
     expect(status.externalAccessStatus).toEqual({

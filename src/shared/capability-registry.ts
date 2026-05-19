@@ -79,6 +79,7 @@ export type CapabilityProductSurfaceStatus = {
     runningCount?: number;
     errorCount?: number;
     manualRunCount?: number;
+    readyManualRunCount?: number;
   } | null;
   browser?: {
     available: boolean;
@@ -416,9 +417,8 @@ function agentCliCapability(
 ): CapabilityRegistryEntry {
   if (!status) return deferredCapability('agent_cli.runtimes', 'Agent CLI Runtimes', 'agent_cli');
   const detected = status.detectedCount > 0;
-  const ready = status.readyCount > 0;
-  const manualRun = (status.manualRunCount ?? 0) > 0;
-  const configured = ready && manualRun;
+  const readyManualRunCount = status.readyManualRunCount ?? Math.min(status.readyCount, status.manualRunCount ?? 0);
+  const configured = readyManualRunCount > 0;
   return {
     id: 'agent_cli.runtimes',
     label: 'Agent CLI Runtimes',
@@ -436,6 +436,7 @@ function agentCliCapability(
       `detected=${status.detectedCount}`,
       `ready=${status.readyCount}`,
       `manualRun=${status.manualRunCount ?? 0}`,
+      `readyManualRun=${readyManualRunCount}`,
       `running=${status.runningCount ?? 0}`,
       `errors=${status.errorCount ?? 0}`,
       typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
