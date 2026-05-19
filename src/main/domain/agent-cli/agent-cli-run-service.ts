@@ -443,6 +443,7 @@ export class AgentCliRunService {
                 output: execution.stdout,
                 runId: params.run.id,
                 runtimeLabel: params.runAdapter.runtimeLabel,
+                sandboxMode: params.sandboxMode,
                 task: params.task,
                 verification: verificationStep.verification,
               }),
@@ -706,6 +707,7 @@ function buildAgentCliTaskRecordSuggestion(params: {
   output: string;
   runId: string;
   runtimeLabel: string;
+  sandboxMode: AgentCliRunSandboxMode;
   task: TaskDetail;
   verification: AgentRuntimeVerifierResult;
 }): string {
@@ -715,6 +717,9 @@ function buildAgentCliTaskRecordSuggestion(params: {
     '',
     '## Confirmed',
     `- ${params.runtimeLabel} completed a read-only task inspection.`,
+    `- Runtime mode: ${params.runtimeLabel} / ${params.sandboxMode}.`,
+    `- Run objective: ${params.verification.contract.objective}`,
+    `- Completion conditions checked: ${params.verification.contract.completionConditionCount}`,
     `- Verifier decision: ${params.verification.decision}.`,
     `- User confirmation required: ${params.verification.userConfirmationRequired ? 'yes' : 'no'}.`,
     `- Source run: ${params.runId}`,

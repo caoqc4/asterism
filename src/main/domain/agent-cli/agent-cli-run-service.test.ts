@@ -97,6 +97,18 @@ describe('AgentCliRunService', () => {
       output: expect.stringContaining('Next action: review_memory_proposal'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
+      input: expect.stringContaining('- Runtime mode: Codex CLI / read-only.'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
+      input: expect.stringContaining('- Run objective: Review implementation path.'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
+      input: expect.stringContaining('- Completion conditions checked: 1'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'final',
       status: 'completed',
       title: '验收子 Agent 检查',
