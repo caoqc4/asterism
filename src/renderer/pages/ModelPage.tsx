@@ -265,8 +265,8 @@ export function ModelPage() {
       <div className="model-page-head">
         <div>
           <h2 className="model-page-title">AI Runtime</h2>
-          <p className="model-page-subtitle">优先使用本机官方 Agent CLI；API 模型只作为辅助。</p>
-          <p className="model-page-boundary">账号由官方 CLI 管理，Taskplane 只检测状态并记录运行证据。</p>
+          <p className="model-page-subtitle">选择任务默认使用的 AI 运行方式。</p>
+          <p className="model-page-boundary">CLI 账号由官方工具管理；API 密钥保存在本机钥匙串。</p>
         </div>
         <button
           className={`btn sm model-refresh-btn${refreshingStatus ? ' disabled' : ''}`}
@@ -275,7 +275,7 @@ export function ModelPage() {
           title="重新检测官方 CLI 登录和本机运行状态"
           type="button"
         >
-          {refreshingStatus ? '检测中…' : '重新检测 CLI'}
+          {refreshingStatus ? '检测中…' : '重新检测'}
         </button>
       </div>
 
@@ -289,6 +289,7 @@ export function ModelPage() {
         suggestedWorkspaceRoot={status?.suggestedWorkspaceRoot ?? null}
         onOpenLogin={(runtimeId) => void openAgentCliLogin(runtimeId)}
         onOpenInstall={(runtimeId, options) => void openAgentCliInstall(runtimeId, options)}
+        onOpenApiConfig={() => setApiModelOpen(true)}
         openingInstall={openingInstall}
         openingLogin={openingLogin}
         onSave={() => void save()}
@@ -299,22 +300,15 @@ export function ModelPage() {
       <section className="model-api-section">
         <div className="model-collapsible-head">
           <button className="model-collapsible-copy" onClick={() => setApiModelOpen((value) => !value)} type="button">
-            <span className="model-section-kicker">Auxiliary API Model</span>
-            <span className="model-section-copy">可选。用于轻量 AI 辅助、摘要、草稿和内部工具；coding agent 优先走 Agent CLI。</span>
-          </button>
-          <button
-            className={`btn sm${selectedRuntimeMode === 'api' ? ' disabled' : ''}`}
-            disabled={selectedRuntimeMode === 'api' || saving || !status?.configured}
-            onClick={(event) => {
-              event.stopPropagation();
-              void saveRuntimeMode('api');
-            }}
-            type="button"
-          >
-            {selectedRuntimeMode === 'api' ? '当前默认' : status?.configured ? '设为默认' : '配置后可选'}
+            <span className="model-section-kicker">API Model 配置</span>
+            <span className="model-section-copy">
+              {status?.configured
+                ? <>当前：<span className="mono">{status.provider} / {status.model}</span></>
+                : '填写 Provider 密钥后，API Model 才能作为运行方式使用。'}
+            </span>
           </button>
           <button className="model-collapsible-state" onClick={() => setApiModelOpen((value) => !value)} type="button">
-            {apiModelOpen ? '收起' : '展开'}
+            {apiModelOpen ? '收起配置' : status?.configured ? '修改配置' : '配置 API'}
           </button>
         </div>
       </section>
@@ -404,11 +398,7 @@ export function ModelPage() {
 
       {/* Footer */}
       <div className="model-page-footer">
-        <span className="muted" style={{ fontSize: 12 }}>
-          {status?.model
-            ? <>辅助 API 当前：<span className="mono">{status.provider} / {status.model}</span></>
-            : '辅助 API 尚未配置'}
-        </span>
+        <span className="muted" style={{ fontSize: 12 }}>{selectedRuntimeMode === 'api' ? '当前使用 API Model' : '当前使用 Agent CLI'}</span>
         <button
           className={`btn primary${saving ? ' disabled' : ''}${saveResult === 'ok' ? ' saved' : ''}${saveResult === 'error' ? ' danger' : ''}`}
           onClick={save}
@@ -427,6 +417,7 @@ function AgentCliRuntimeSection({
   onSave,
   onOpenLogin,
   onOpenInstall,
+  onOpenApiConfig,
   onSelectRuntimeMode,
   openingInstall,
   openingLogin,
@@ -442,6 +433,7 @@ function AgentCliRuntimeSection({
   onSave: () => void;
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
   onOpenInstall: (runtimeId: 'codex' | 'claude', options?: { repair?: boolean }) => void;
+  onOpenApiConfig: () => void;
   onSelectRuntimeMode: (runtimeMode: AiRuntimeMode) => void;
   apiConfigured: boolean;
   openingInstall: boolean;
@@ -464,8 +456,8 @@ function AgentCliRuntimeSection({
     <section className="agent-cli-section">
       <div className="agent-cli-head">
         <div>
-          <div className="model-section-kicker">Agent CLI</div>
-          <p className="model-section-copy">选择默认执行方式；账号仍由官方 CLI 或 API Provider 管理。</p>
+          <div className="model-section-kicker">运行方式</div>
+          <p className="model-section-copy">选择任务默认调用 CLI 还是 API。</p>
         </div>
         <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
           {readyCount}/{catalogueCount} 已登录
@@ -485,7 +477,6 @@ function AgentCliRuntimeSection({
           onOpenLogin={onOpenLogin}
           onOpenInstall={onOpenInstall}
           onSelectRuntimeMode={onSelectRuntimeMode}
-          primary
           runtimeMode={runtimeMode}
         />
         <AgentCliRuntimeRow
@@ -506,23 +497,28 @@ function AgentCliRuntimeSection({
           <div className="agent-cli-runtime-row-name">
             <div className="agent-cli-runtime-card-title">
               <span>API Model</span>
-              <span className="agent-cli-pill">辅助</span>
             </div>
-            <span className="agent-cli-runtime-card-command mono">provider api</span>
+            <span className="agent-cli-runtime-card-command mono">{apiConfigured ? '已填写 Provider 密钥' : '需要先配置 Provider 密钥'}</span>
           </div>
           <span className={`agent-cli-runtime-card-status ${apiConfigured ? 'ready' : 'missing'}`}>
             {apiConfigured ? '已配置' : '未配置'}
           </span>
-          <span className="agent-cli-runtime-row-version">见下方 API Model</span>
-          <span className="agent-cli-runtime-row-detail">{apiConfigured ? '可用' : '需配置'}</span>
-          <button
-            className={`btn sm${runtimeMode === 'api' ? ' disabled' : ''}`}
-            disabled={!apiConfigured || runtimeMode === 'api'}
-            onClick={() => onSelectRuntimeMode('api')}
-            type="button"
-          >
-            {runtimeMode === 'api' ? '当前默认' : apiConfigured ? '设为默认' : '配置后可选'}
-          </button>
+          <span className="agent-cli-runtime-row-version">{apiConfigured ? '可用' : '未完成'}</span>
+          <span className="agent-cli-runtime-row-detail">{runtimeMode === 'api' ? '正在使用' : apiConfigured ? '可选择' : '先配置'}</span>
+          {apiConfigured ? (
+            <button
+              className={`btn sm${runtimeMode === 'api' ? ' disabled' : ''}`}
+              disabled={runtimeMode === 'api'}
+              onClick={() => onSelectRuntimeMode('api')}
+              type="button"
+            >
+              {runtimeMode === 'api' ? '正在使用' : '使用此方式'}
+            </button>
+          ) : (
+            <button className="btn sm primary" onClick={onOpenApiConfig} type="button">
+              配置 API
+            </button>
+          )}
         </div>
       </div>
 
@@ -569,7 +565,6 @@ function AgentCliRuntimeRow({
   onOpenInstall,
   openingInstall,
   openingLogin,
-  primary = false,
   runtime,
   runtimeMode,
 }: {
@@ -583,7 +578,6 @@ function AgentCliRuntimeRow({
   onSelectRuntimeMode: (runtimeMode: AiRuntimeMode) => void;
   openingInstall: boolean;
   openingLogin: boolean;
-  primary?: boolean;
   runtime: NonNullable<AiConfigStatus['agentCliRuntimeStatus']>['runtimes'][number] | null;
   runtimeMode: AiRuntimeMode;
 }) {
@@ -600,8 +594,6 @@ function AgentCliRuntimeRow({
       <div className="agent-cli-runtime-row-name">
         <div className="agent-cli-runtime-card-title">
           <span>{fallback.label}</span>
-          {primary && <span className="model-tag">主路径</span>}
-          {!primary && <span className="agent-cli-pill">可选</span>}
         </div>
         <span className="agent-cli-runtime-card-command mono">{runtime?.command ?? fallback.command}</span>
       </div>
@@ -644,7 +636,7 @@ function AgentCliRuntimeRow({
           onClick={() => onSelectRuntimeMode(fallback.id)}
           disabled={runtimeMode === fallback.id}
         >
-          {runtimeMode === fallback.id ? '当前默认' : '设为默认'}
+          {runtimeMode === fallback.id ? '正在使用' : '使用此方式'}
         </button>
       )}
     </div>

@@ -1104,9 +1104,9 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
-    expect(screen.getByText(/账号由官方 CLI 管理/)).toBeTruthy();
+    expect(screen.getByText(/CLI 账号由官方工具管理/)).toBeTruthy();
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
-    expect(screen.getByText(/选择默认执行方式/)).toBeTruthy();
+    expect(screen.getByText(/选择任务默认调用 CLI 还是 API/)).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
@@ -1115,8 +1115,8 @@ describe('App redesign v1', () => {
     expect(screen.getByLabelText('内部运行目录')).toBeTruthy();
     expect(screen.getAllByText('Codex CLI').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Claude Code').length).toBeGreaterThan(0);
-    expect(screen.getByText(/Auxiliary API Model/)).toBeTruthy();
-    expect(screen.getByText(/辅助 API 当前/)).toBeTruthy();
+    expect(screen.getByText(/API Model 配置/)).toBeTruthy();
+    expect(screen.getByText(/当前使用/)).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
     expect(screen.queryByText(/Safety Details/)).toBeNull();
   });
@@ -1254,10 +1254,10 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
     expect(await screen.findByText('需登录')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '重新检测 CLI' }));
+    await user.click(screen.getByRole('button', { name: '重新检测' }));
 
     await waitFor(() => {
-      expect(screen.getAllByText('当前默认').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('正在使用').length).toBeGreaterThan(0);
     });
     expect(harness.api.getAiConfigStatus).toHaveBeenCalledTimes(3);
   });
@@ -1299,7 +1299,7 @@ describe('App redesign v1', () => {
     window.dispatchEvent(new Event('focus'));
 
     await waitFor(() => {
-      expect(screen.getAllByText('当前默认').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('正在使用').length).toBeGreaterThan(0);
     });
     expect(harness.api.getAiConfigStatus).toHaveBeenCalledTimes(3);
   });
