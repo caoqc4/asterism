@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
 import type { RunRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
-import { AgentCliRunService } from './agent-cli-run-service.js';
+import { AgentCliRunService, type AgentCliExecutor } from './agent-cli-run-service.js';
 import { AgentCliRuntimeWorkloadTracker } from './agent-cli-runtime-workload.js';
 
 describe('AgentCliRunService', () => {
@@ -51,12 +51,18 @@ describe('AgentCliRunService', () => {
       cwd: '/tmp/taskplane-workspace',
       input: expect.stringContaining('User request:\nReview the next implementation step.'),
     }));
-    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-      kind: 'model',
-      status: 'completed',
-      title: 'codex cli completed',
-      output: 'Codex CLI final answer.',
-    }));
+    expect(result).toMatchObject({
+      id: 'run_agent_cli_1',
+      status: 'running',
+    });
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'model',
+        status: 'completed',
+        title: 'codex cli completed',
+        output: 'Codex CLI final answer.',
+      }));
+    });
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_agent_cli_1',
       'completed',
@@ -64,9 +70,90 @@ describe('AgentCliRunService', () => {
       'ai',
     );
     expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_agent_cli_1');
+  });
+
+  it('notifies the app when an async Agent CLI run reaches a terminal state', async () => {
+    const onTerminalRun = vi.fn();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      vi.fn().mockResolvedValue({
+        exitCode: 0,
+        failureReason: null,
+        status: 'completed',
+        stderr: '',
+        stdout: 'Done.',
+        summary: 'Agent CLI execution completed.',
+      }),
+      { upsert: vi.fn() },
+      new AgentCliRuntimeWorkloadTracker(),
+      onTerminalRun,
+    );
+
+    const result = await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run Codex.',
+      taskId: 'task_1',
+    });
+
+    expect(result.status).toBe('running');
+    await vi.waitFor(() => {
+      expect(onTerminalRun).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'run_agent_cli_1',
+        status: 'completed',
+      }));
+    });
+  });
+
+  it('records the accepted run immediately before the executor completes', async () => {
+    const workloadTracker = new AgentCliRuntimeWorkloadTracker();
+    let resolveExecution!: (result: {
+      exitCode: number;
+      failureReason: null;
+      status: 'completed';
+      stderr: string;
+      stdout: string;
+      summary: string;
+    }) => void;
+    const executor = vi.fn().mockImplementation(() => new Promise((resolve) => {
+      resolveExecution = resolve;
+    }));
+    const runRepository = buildRunRepository();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      buildRunStepRepository(),
+      executor,
+      { upsert: vi.fn() },
+      workloadTracker,
+    );
+
+    const result = await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Keep running long enough to observe async start.',
+      taskId: 'task_1',
+    });
+
     expect(result).toMatchObject({
       id: 'run_agent_cli_1',
+      status: 'running',
+    });
+    expect(workloadTracker.getActiveRunCount('codex')).toBe(1);
+    expect(runRepository.updateResult).not.toHaveBeenCalled();
+
+    resolveExecution({
+      exitCode: 0,
+      failureReason: null,
       status: 'completed',
+      stderr: '',
+      stdout: 'Done.',
+      summary: 'Agent CLI execution completed.',
+    });
+    await vi.waitFor(() => {
+      expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
     });
   });
 
@@ -93,14 +180,13 @@ describe('AgentCliRunService', () => {
       workloadTracker,
     );
 
-    const triggerPromise = service.trigger({
+    const result = await service.trigger({
       operatorConfirmed: true,
       prompt: 'Keep running long enough to observe workload.',
       taskId: 'task_1',
     });
-    await vi.waitFor(() => {
-      expect(workloadTracker.getActiveRunCount('codex')).toBe(1);
-    });
+    expect(result.status).toBe('running');
+    expect(workloadTracker.getActiveRunCount('codex')).toBe(1);
 
     resolveExecution({
       exitCode: 0,
@@ -110,9 +196,9 @@ describe('AgentCliRunService', () => {
       stdout: 'Done.',
       summary: 'Agent CLI execution completed.',
     });
-    await triggerPromise;
-
-    expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
+    await vi.waitFor(() => {
+      expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
+    });
   });
 
   it('records a failed run and clears workload when the executor throws', async () => {
@@ -137,15 +223,17 @@ describe('AgentCliRunService', () => {
     });
 
     expect(result).toMatchObject({
-      failureReason: 'spawn failed',
-      status: 'failed',
+      id: 'run_agent_cli_1',
+      status: 'running',
     });
-    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-      error: 'spawn failed',
-      kind: 'model',
-      status: 'failed',
-      title: 'codex cli failed',
-    }));
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'spawn failed',
+        kind: 'model',
+        status: 'failed',
+        title: 'codex cli failed',
+      }));
+    });
     expect(taskService.annotateRunFailed).toHaveBeenCalledWith('task_1', 'spawn failed', 'run_agent_cli_1');
     expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
   });
@@ -155,7 +243,7 @@ describe('AgentCliRunService', () => {
     const runStepRepository = buildRunStepRepository();
     const taskService = buildTaskService();
     const workloadTracker = new AgentCliRuntimeWorkloadTracker();
-    const executor = vi.fn().mockImplementation((params: Parameters<ConstructorParameters<typeof AgentCliRunService>[4]>[0]) =>
+    const executor: AgentCliExecutor = vi.fn().mockImplementation((params) =>
       new Promise((resolve) => {
         params.signal?.addEventListener('abort', () => {
           resolve({
@@ -178,36 +266,32 @@ describe('AgentCliRunService', () => {
       workloadTracker,
     );
 
-    const triggerPromise = service.trigger({
+    const result = await service.trigger({
       operatorConfirmed: true,
       prompt: 'Run until cancelled.',
       taskId: 'task_1',
     });
-    await vi.waitFor(() => {
-      expect(workloadTracker.getActiveRunCount('codex')).toBe(1);
-    });
+    expect(result.status).toBe('running');
+    expect(workloadTracker.getActiveRunCount('codex')).toBe(1);
 
     const cancellation = await service.cancel({
       operatorConfirmed: true,
       reason: 'Operator stopped the run from Taskplane.',
       runId: 'run_agent_cli_1',
     });
-    const result = await triggerPromise;
 
     expect(cancellation).toMatchObject({
       cancelled: true,
       runId: 'run_agent_cli_1',
     });
-    expect(result).toMatchObject({
-      failureReason: 'Operator stopped the run from Taskplane.',
-      status: 'failed',
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Operator stopped the run from Taskplane.',
+        kind: 'model',
+        status: 'failed',
+        title: 'codex cli failed',
+      }));
     });
-    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-      error: 'Operator stopped the run from Taskplane.',
-      kind: 'model',
-      status: 'failed',
-      title: 'codex cli failed',
-    }));
     expect(taskService.annotateRunFailed).toHaveBeenCalledWith(
       'task_1',
       'Operator stopped the run from Taskplane.',

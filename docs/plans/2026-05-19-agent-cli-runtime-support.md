@@ -79,6 +79,7 @@ MVP capabilities:
 - restrict working directory to the configured workspace root;
 - pass a Taskplane-generated prompt/context bundle to the CLI;
 - capture stdout, stderr, exit code, start/end time, and timeout;
+- return the Run record immediately after the gated run is accepted;
 - project active CLI subprocesses back into runtime workload status;
 - accept operator-confirmed cancellation for active CLI subprocesses;
 - persist output as Run steps and artifacts;
@@ -145,8 +146,9 @@ User starts agent CLI run
 -> Taskplane evaluates runtime action
 -> Task memory coverage and context assembly checks run
 -> Taskplane builds a prompt/context bundle
--> Codex CLI subprocess starts in workspace root
--> stdout/stderr stream into Run steps
+-> Taskplane creates a running Run and returns its id to the UI
+-> Codex CLI subprocess starts in workspace root in the background
+-> stdout/stderr are captured into terminal Run steps
 -> result is summarized into artifact/task memory
 -> patches or risky writes require Decision/checkpoint review
 ```
@@ -169,17 +171,19 @@ The adapter should reuse existing concepts:
 2. Codex CLI detector.
 3. CapabilityRegistry and ConfigurationSafetyReport projection.
 4. Manual Codex CLI run adapter with stdout/stderr capture.
-5. Run step/artifact persistence.
-6. Runtime gate and task memory integration.
-7. Manual read-only Codex CLI smoke, skipped by default unless explicitly enabled.
-8. Cancellation/timeout handling.
-9. Later: Claude Code and other CLI adapters.
+5. Async run start with background terminal persistence.
+6. Run step/artifact persistence.
+7. Runtime gate and task memory integration.
+8. Manual read-only Codex CLI smoke, skipped by default unless explicitly enabled.
+9. Cancellation/timeout handling.
+10. Later: Claude Code and other CLI adapters.
 
 ## Acceptance Criteria
 
 - A user can authenticate Codex CLI through the official CLI flow outside Taskplane.
 - Taskplane can detect the CLI and show a safe readiness state.
 - A user can explicitly run a Taskplane task through Codex CLI.
+- The UI receives a Run id immediately after the gated run is accepted.
 - Taskplane stores logs and outputs in the run timeline.
 - Taskplane does not store ChatGPT browser sessions.
 - Taskplane does not auto-run, auto-commit, or auto-push.

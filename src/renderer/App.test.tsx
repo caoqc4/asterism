@@ -869,9 +869,9 @@ function createMockApi() {
     })),
     triggerAgentCliRun: vi.fn().mockImplementation(async (input) => buildRun({
       id: 'run_agent_cli_created',
-      output: 'Codex CLI final answer.',
-      outputSource: 'ai',
-      status: 'completed',
+      output: null,
+      outputSource: null,
+      status: 'running',
       taskId: input.taskId,
       type: 'agent',
     })),
@@ -1758,7 +1758,7 @@ describe('App redesign v1', () => {
         expect.objectContaining({ content: '用 Codex CLI 检查下一步。' }),
       ]),
     }));
-    expect(await screen.findByText(/Codex CLI run 已完成/)).toBeTruthy();
+    expect(await screen.findByText(/Codex CLI run 已在后台启动/)).toBeTruthy();
     expect(screen.getByText(/run_agent_cli_created/)).toBeTruthy();
   });
 

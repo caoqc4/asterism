@@ -1732,7 +1732,11 @@ export function RightPanel({
         const detail = await window.api.getRunDetail(run.id).catch(() => null);
         const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || 'Codex CLI run 已记录。';
         replyText = [
-          run.status === 'completed' ? 'Codex CLI run 已完成。' : `Codex CLI run ${run.status}。`,
+          run.status === 'running'
+            ? 'Codex CLI run 已在后台启动。'
+            : run.status === 'completed'
+              ? 'Codex CLI run 已完成。'
+              : `Codex CLI run ${run.status}。`,
           output,
           `Run: ${run.id}`,
         ].join('\n\n');

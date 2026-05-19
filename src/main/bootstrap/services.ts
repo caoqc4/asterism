@@ -40,6 +40,7 @@ import { TaskService } from '../domain/task/task-service.js';
 import { BriefExecutor } from '../executors/brief-executor.js';
 import { TextExecutor } from '../executors/text-executor.js';
 import { AiConfigService } from '../keychain/ai-config-service.js';
+import { emitAppEvent } from '../ipc/event-bus.js';
 import { SchedulerService } from '../scheduler/scheduler-service.js';
 
 let initialized = false;
@@ -185,6 +186,12 @@ const agentCliRunService = new AgentCliRunService(
   runStepRepository,
   undefined,
   runVerificationRepository,
+  undefined,
+  (run) => {
+    emitAppEvent('run.changed', run.id);
+    emitAppEvent('task.changed', run.taskId);
+    emitAppEvent('brief.changed');
+  },
 );
 const codeAgentRunService = new CodeAgentRunService(
   taskService,

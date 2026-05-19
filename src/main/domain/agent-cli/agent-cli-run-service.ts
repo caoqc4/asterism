@@ -53,6 +53,8 @@ export type AgentCliExecutor = (params: {
   timeoutMs: number;
 }) => Promise<AgentCliExecutionResult>;
 
+export type AgentCliRunTerminalListener = (run: RunRecord) => void | Promise<void>;
+
 const DEFAULT_AGENT_CLI_TIMEOUT_MS = 120_000;
 const DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES = 64_000;
 
@@ -65,6 +67,7 @@ export class AgentCliRunService {
     private readonly executor: AgentCliExecutor = executeAgentCliCommand,
     private readonly runVerificationRepository: Pick<RunVerificationRepository, 'upsert'> | null = null,
     private readonly workloadTracker: AgentCliRuntimeWorkloadTracker = agentCliRuntimeWorkloadTracker,
+    private readonly onTerminalRun: AgentCliRunTerminalListener | null = null,
   ) {}
 
   async trigger(input: CreateAgentCliRunInput): Promise<RunRecord> {
@@ -182,46 +185,18 @@ export class AgentCliRunService {
     const workloadLease = this.workloadTracker.start(runtimeId, run.id, (reason) => {
       abortController.abort(reason);
     });
-    const execution = await this.executeWithFailureCapture({
-      args: ['exec', '--sandbox', sandboxMode, '--cd', workspaceRoot, '--skip-git-repo-check', '-'],
-      command: runtime.command,
-      cwd: workspaceRoot,
-      input: prompt,
-      outputLimitBytes: DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES,
-      signal: abortController.signal,
-      timeoutMs: DEFAULT_AGENT_CLI_TIMEOUT_MS,
-    }).finally(() => {
-      workloadLease.finish();
+    void this.completeRunInBackground({
+      abortController,
+      prompt,
+      run,
+      runtimeCommand: runtime.command,
+      sandboxMode,
+      task,
+      workloadLease,
+      workspaceRoot,
     });
 
-    await this.runStepRepository.create({
-      runId: run.id,
-      kind: 'model',
-      status: execution.status,
-      title: execution.status === 'completed' ? 'codex cli completed' : 'codex cli failed',
-      input: [
-        `codex exec --sandbox ${sandboxMode} --cd ${workspaceRoot} -`,
-        `exitCode=${execution.exitCode ?? 'unknown'}`,
-      ].join('\n'),
-      output: execution.stdout || execution.summary,
-      error: execution.failureReason,
-    });
-
-    const updated = await this.updateRunResult(
-      run.id,
-      execution.status,
-      execution.stdout || execution.summary,
-      execution.status === 'completed' ? 'ai' : 'system',
-      execution.failureReason,
-    );
-
-    if (execution.status === 'completed') {
-      await this.taskService.annotateRunCompleted(task.id, 'agent', Boolean(execution.stdout.trim()), updated.id);
-      return updated;
-    }
-
-    await this.taskService.annotateRunFailed(task.id, execution.failureReason ?? execution.summary, updated.id);
-    return updated;
+    return run;
   }
 
   async cancel(input: CancelAgentCliRunInput): Promise<CancelAgentCliRunResult> {
@@ -270,6 +245,86 @@ export class AgentCliRunService {
       guidanceSignals: steps,
       taskFiles: task.taskFiles,
     });
+  }
+
+  private async completeRunInBackground(params: {
+    abortController: AbortController;
+    prompt: string;
+    run: RunRecord;
+    runtimeCommand: string;
+    sandboxMode: AgentCliRunSandboxMode;
+    task: TaskDetail;
+    workloadLease: { finish(): void };
+    workspaceRoot: string;
+  }): Promise<void> {
+    const execution = await this.executeWithFailureCapture({
+      args: ['exec', '--sandbox', params.sandboxMode, '--cd', params.workspaceRoot, '--skip-git-repo-check', '-'],
+      command: params.runtimeCommand,
+      cwd: params.workspaceRoot,
+      input: params.prompt,
+      outputLimitBytes: DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES,
+      signal: params.abortController.signal,
+      timeoutMs: DEFAULT_AGENT_CLI_TIMEOUT_MS,
+    }).finally(() => {
+      params.workloadLease.finish();
+    });
+
+    try {
+      await this.runStepRepository.create({
+        runId: params.run.id,
+        kind: 'model',
+        status: execution.status,
+        title: execution.status === 'completed' ? 'codex cli completed' : 'codex cli failed',
+        input: [
+          `codex exec --sandbox ${params.sandboxMode} --cd ${params.workspaceRoot} -`,
+          `exitCode=${execution.exitCode ?? 'unknown'}`,
+        ].join('\n'),
+        output: execution.stdout || execution.summary,
+        error: execution.failureReason,
+      });
+
+      const updated = await this.updateRunResult(
+        params.run.id,
+        execution.status,
+        execution.stdout || execution.summary,
+        execution.status === 'completed' ? 'ai' : 'system',
+        execution.failureReason,
+      );
+
+      if (execution.status === 'completed') {
+        await this.taskService.annotateRunCompleted(
+          params.task.id,
+          'agent',
+          Boolean(execution.stdout.trim()),
+          updated.id,
+        );
+      } else {
+        await this.taskService.annotateRunFailed(
+          params.task.id,
+          execution.failureReason ?? execution.summary,
+          updated.id,
+        );
+      }
+
+      await this.notifyTerminalRun(updated);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const failed = await this.updateRunResult(
+        params.run.id,
+        'failed',
+        `Agent CLI terminal persistence failed: ${message}`,
+        'system',
+        message,
+      ).catch(() => null);
+      if (failed) {
+        await this.taskService.annotateRunFailed(params.task.id, message, failed.id).catch(() => undefined);
+        await this.notifyTerminalRun(failed).catch(() => undefined);
+      }
+    }
+  }
+
+  private async notifyTerminalRun(run: RunRecord): Promise<void> {
+    await this.onTerminalRun?.(run);
   }
 
   private async executeWithFailureCapture(params: Parameters<AgentCliExecutor>[0]): Promise<AgentCliExecutionResult> {
