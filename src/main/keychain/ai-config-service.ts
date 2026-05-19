@@ -198,12 +198,15 @@ export class AiConfigService {
 
     const customBaseUrl = input.providerKeys?.customBaseUrl?.trim() || null;
 
-    const config = this.appConfigService.write({
+    const configInput = {
       aiProvider: provider,
       aiModel: input.model.trim(),
       aiBaseUrl: customBaseUrl || null,
       featureFlags: input.featureFlags,
-    });
+    };
+    const config = this.appConfigService.write(input.workspaceRoot !== undefined
+      ? { ...configInput, workspaceRoot: input.workspaceRoot }
+      : configInput);
 
     const configuredProviders = await this.getConfiguredProviders();
     const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');

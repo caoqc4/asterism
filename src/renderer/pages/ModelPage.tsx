@@ -111,6 +111,7 @@ export function ModelPage() {
   const [selectedProvider, setSelectedProvider] = useState<AiProvider>('fal-openrouter');
   const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-flash');
   const [customModelId, setCustomModelId] = useState('');
+  const [workspaceRoot, setWorkspaceRoot] = useState('');
   const [keys, setKeys] = useState<Partial<Record<KeyField, string>>>({});
   const [customBaseUrl, setCustomBaseUrl] = useState('');
   const [showKeys, setShowKeys] = useState<Partial<Record<KeyField, boolean>>>({});
@@ -130,6 +131,7 @@ export function ModelPage() {
       setStatus(s);
       if (s.model) setSelectedModel(s.model);
       if (s.provider) setSelectedProvider(s.provider);
+      setWorkspaceRoot(s.workspaceRoot ?? '');
     } catch {
       // Keep the last known status visible when a manual probe fails.
     } finally {
@@ -173,9 +175,11 @@ export function ModelPage() {
           customKey:    keys.customKey    || undefined,
           customBaseUrl: customBaseUrl    || undefined,
         },
+        workspaceRoot,
         featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
       });
       setStatus(next);
+      setWorkspaceRoot(next.workspaceRoot ?? '');
       setKeys({});
       setSaveResult('ok');
     } catch {
@@ -216,6 +220,8 @@ export function ModelPage() {
       </div>
 
       <AgentCliRuntimeSection
+        workspaceRoot={workspaceRoot}
+        onWorkspaceRootChange={setWorkspaceRoot}
         status={agentCliStatus}
         safety={agentCliSafety}
         capabilitySummary={agentCliCapability?.summary ?? null}
@@ -333,10 +339,14 @@ export function ModelPage() {
 }
 
 function AgentCliRuntimeSection({
+  workspaceRoot,
+  onWorkspaceRootChange,
   status,
   safety,
   capabilitySummary,
 }: {
+  workspaceRoot: string;
+  onWorkspaceRootChange: (value: string) => void;
   status: AiConfigStatus['agentCliRuntimeStatus'] | null;
   safety: ConfigurationSafetySurface | null;
   capabilitySummary: string | null;
@@ -356,6 +366,19 @@ function AgentCliRuntimeSection({
           <span>{status?.readyManualRunCount ?? 0} ready manual</span>
           <span>{status?.runningCount ?? 0} running</span>
         </div>
+      </div>
+
+      <div className="agent-cli-workspace">
+        <label className="settings-label" htmlFor="agent-cli-workspace-root">Workspace root</label>
+        <input
+          id="agent-cli-workspace-root"
+          className="settings-input mono"
+          type="text"
+          value={workspaceRoot}
+          placeholder="/absolute/path/to/workspace"
+          onChange={(event) => onWorkspaceRootChange(event.target.value)}
+        />
+        <p className="settings-hint">Codex CLI runs stay read-only and start from this configured workspace root.</p>
       </div>
 
       <div className="agent-cli-grid">

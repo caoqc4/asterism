@@ -471,6 +471,7 @@ function createMockApi() {
       provider: input.provider,
       model: input.model,
       featureFlags: input.featureFlags,
+      workspaceRoot: input.workspaceRoot ?? null,
     })),
     connectGmailOAuth: vi.fn().mockResolvedValue({
       status: 'connected',
@@ -1091,6 +1092,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/官方 CLI 中完成的登录/)).toBeTruthy();
     expect(screen.getByText('Codex CLI')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
+    expect(screen.getByLabelText('Workspace root')).toBeTruthy();
     expect(screen.getAllByText(/codex login/).length).toBeGreaterThan(0);
     expect(screen.getByText(/ready manual/)).toBeTruthy();
     expect(screen.getByText(/API Model/)).toBeTruthy();
@@ -1098,6 +1100,23 @@ describe('App redesign v1', () => {
     expect(screen.getByText('model.provider')).toBeTruthy();
     expect(screen.getByText('model.api_key')).toBeTruthy();
     expect(screen.getByText(/secret value is not exposed/)).toBeTruthy();
+  });
+
+  it('saves the Agent CLI workspace root through AI Runtime config', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
+    const workspaceInput = await screen.findByLabelText('Workspace root');
+    await user.clear(workspaceInput);
+    await user.type(workspaceInput, '/Users/example/project');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(harness.api.setAiConfig).toHaveBeenCalledWith(expect.objectContaining({
+        workspaceRoot: '/Users/example/project',
+      }));
+    });
   });
 
   it('can manually refresh AI Runtime CLI readiness after official CLI login', async () => {
@@ -3320,6 +3339,7 @@ describe('App redesign v1', () => {
           communicationStyle: 'detailed',
           confirmationThreshold: 'high',
         }),
+        workspaceRoot: '/tmp/taskplane-workspace',
       }));
     });
   });

@@ -356,9 +356,8 @@ configured, while ordinary unsigned package validation can pass.
 `TASKPLANE_WORKSPACE_ROOT` or `config.json.workspaceRoot` defines the root used by opted-in
 read-only workspace agent runs.
 
-When this value is empty, Taskplane falls back to the app process working directory. Workspace
-tools still remain disabled unless the user explicitly enables read-only workspace context for
-that run.
+When this value is empty, Taskplane blocks Agent CLI execution instead of guessing
+from the app process working directory.
 
 Settings changes are read when workspace tools execute, so changing the workspace root does not
 require an app restart.

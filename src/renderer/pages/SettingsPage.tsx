@@ -48,6 +48,7 @@ export function SettingsPage() {
       const next = await window.api.setAiConfig({
         provider: status?.provider ?? 'fal-openrouter',
         model: status?.model ?? 'google/gemini-2.5-flash',
+        workspaceRoot: status?.workspaceRoot ?? null,
         featureFlags: {
           ...DEFAULT_FEATURE_FLAGS,
           enableProviderNativeToolCalls: true,

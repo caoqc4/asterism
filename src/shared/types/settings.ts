@@ -51,6 +51,7 @@ export type AiConfigInput = {
   provider: AiProvider;
   model: string;
   providerKeys?: AiProviderKeysInput;
+  workspaceRoot?: string | null;
   featureFlags: FeatureFlags;
 };
 
