@@ -1115,7 +1115,7 @@ describe('App redesign v1', () => {
     expect(screen.getByLabelText('内部运行目录')).toBeTruthy();
     expect(screen.getAllByText('Codex CLI').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Claude Code').length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: '重新检测' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '重新检测 CLI 状态' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: '更新' }).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '修改配置' }));
     expect(screen.getByText(/API Model 配置/)).toBeTruthy();
@@ -1257,7 +1257,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
     expect(await screen.findByText('需登录')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '重新检测' }));
+    await user.click(screen.getByRole('button', { name: '重新检测 CLI 状态' }));
 
     await waitFor(() => {
       expect(screen.getAllByText('正在使用').length).toBeGreaterThan(0);
