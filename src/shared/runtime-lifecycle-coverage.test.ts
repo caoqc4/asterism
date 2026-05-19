@@ -78,7 +78,8 @@ describe('runtime lifecycle coverage matrix', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
     expect(text).toContain('block run_start when prior task-memory guidance is still pending');
-    expect(text).toContain('Run start pre-step verification consumes pending TaskMemoryGuidanceState');
+    expect(text).toContain('AgentCliRunService block run_start when prior task-memory guidance is still pending');
+    expect(text).toContain('Agent CLI runs cannot bypass unresolved task-memory writes');
   });
 
   it('tracks service-boundary task completion and waiting-state guards', () => {

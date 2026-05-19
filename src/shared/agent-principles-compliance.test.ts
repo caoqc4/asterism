@@ -144,7 +144,8 @@ describe('agent principles compliance matrix', () => {
   it('records that new run start uses the same pending-memory boundary', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 
-    expect(text).toContain('Run start pre-step verification consumes pending TaskMemoryGuidanceState');
+    expect(text).toContain('AgentCliRunService pass run_start through pre_step verification');
+    expect(text).toContain('Agent CLI runs cannot bypass unresolved task-memory writes');
   });
 
   it('records that paused run resume uses the same pending-memory boundary', () => {
