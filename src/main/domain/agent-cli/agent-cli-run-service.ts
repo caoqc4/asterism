@@ -74,6 +74,7 @@ type AgentCliRunAdapter = {
 
 const DEFAULT_AGENT_CLI_TIMEOUT_MS = 120_000;
 const DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES = 64_000;
+const AGENT_CLI_TERMINATION_GRACE_MS = 1_500;
 
 export class AgentCliRunService {
   constructor(
@@ -446,7 +447,7 @@ function buildCodexCliPrompt(params: {
   ].filter((line): line is string => line !== null).join('\n');
 }
 
-function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promise<AgentCliExecutionResult> {
+export function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promise<AgentCliExecutionResult> {
   return new Promise((resolve) => {
     const child = spawn(params.command, params.args, {
       cwd: params.cwd,
@@ -455,12 +456,15 @@ function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promis
     let settled = false;
     let stdout = '';
     let stderr = '';
+    let terminalOverride: AgentCliExecutionResult | null = null;
+    let terminationTimer: ReturnType<typeof setTimeout> | null = null;
     const append = (current: string, chunk: Buffer) =>
       (current + chunk.toString('utf8')).slice(-params.outputLimitBytes);
     const finish = (result: AgentCliExecutionResult) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      if (terminationTimer) clearTimeout(terminationTimer);
       params.signal?.removeEventListener('abort', onAbort);
       resolve(result);
     };
@@ -469,26 +473,32 @@ function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promis
         ? params.signal.reason
         : 'Operator cancelled the Agent CLI run.';
     const onAbort = () => {
-      child.kill('SIGTERM');
-      finish({
+      terminalOverride = {
         exitCode: null,
         failureReason: cancellationReason(),
         status: 'failed',
         stderr,
         stdout,
         summary: 'Agent CLI execution cancelled.',
-      });
+      };
+      child.kill('SIGTERM');
+      terminationTimer = setTimeout(() => {
+        child.kill('SIGKILL');
+      }, AGENT_CLI_TERMINATION_GRACE_MS);
     };
     const timer = setTimeout(() => {
-      child.kill('SIGTERM');
-      finish({
+      terminalOverride = {
         exitCode: null,
         failureReason: `Agent CLI execution timed out after ${params.timeoutMs}ms.`,
         status: 'failed',
         stderr,
         stdout,
         summary: 'Agent CLI execution timed out.',
-      });
+      };
+      child.kill('SIGTERM');
+      terminationTimer = setTimeout(() => {
+        child.kill('SIGKILL');
+      }, AGENT_CLI_TERMINATION_GRACE_MS);
     }, params.timeoutMs);
     if (params.signal?.aborted) {
       onAbort();
@@ -513,6 +523,14 @@ function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promis
       });
     });
     child.on('close', (exitCode) => {
+      if (terminalOverride) {
+        finish({
+          ...terminalOverride,
+          stderr,
+          stdout: stdout.trim(),
+        });
+        return;
+      }
       const status = exitCode === 0 ? 'completed' : 'failed';
       finish({
         exitCode,

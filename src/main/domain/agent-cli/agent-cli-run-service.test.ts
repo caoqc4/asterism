@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
 import type { RunRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
-import { AgentCliRunService, type AgentCliExecutor } from './agent-cli-run-service.js';
+import {
+  AgentCliRunService,
+  executeAgentCliCommand,
+  type AgentCliExecutor,
+} from './agent-cli-run-service.js';
 import { AgentCliRuntimeWorkloadTracker } from './agent-cli-runtime-workload.js';
 
 describe('AgentCliRunService', () => {
@@ -366,6 +370,36 @@ describe('AgentCliRunService', () => {
       'run_agent_cli_1',
     );
     expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
+  });
+
+  it('waits for the CLI subprocess to close after cancellation before returning terminal evidence', async () => {
+    const controller = new AbortController();
+    const execution = executeAgentCliCommand({
+      args: ['-e', [
+        "process.stdout.write('started\\n');",
+        "process.on('SIGTERM', () => {",
+        "  process.stdout.write('cleanup-after-sigterm\\n');",
+        '  setTimeout(() => process.exit(0), 40);',
+        '});',
+        'setInterval(() => {}, 1000);',
+      ].join('')],
+      command: process.execPath,
+      cwd: process.cwd(),
+      input: '',
+      outputLimitBytes: 64_000,
+      signal: controller.signal,
+      timeoutMs: 5_000,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    controller.abort('Operator cancelled from test.');
+
+    await expect(execution).resolves.toMatchObject({
+      failureReason: 'Operator cancelled from test.',
+      status: 'failed',
+      stdout: expect.stringContaining('cleanup-after-sigterm'),
+      summary: 'Agent CLI execution cancelled.',
+    });
   });
 
   it('requires explicit operator confirmation before cancelling an Agent CLI run', async () => {
