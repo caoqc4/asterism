@@ -967,6 +967,7 @@ export function RightPanel({
         appendSysMsg([
           `${current.runtimeLabel} run ${statusText}。`,
           output,
+          '完整执行记录已进入当前任务动态。',
           `Run: ${detail.id}`,
         ].join('\n\n'));
         setActiveAgentCliRun((value) => value?.runId === detail.id ? null : value);
@@ -1816,6 +1817,9 @@ export function RightPanel({
               ? `${runtimeLabel} run 已完成。`
               : `${runtimeLabel} run ${run.status}。`,
           output,
+          run.status === 'running'
+            ? '完成后会写入当前任务动态。'
+            : '完整执行记录已进入当前任务动态。',
           `Run: ${run.id}`,
         ].join('\n\n');
       } else if (window.api?.chatWithAI) {
@@ -2274,7 +2278,7 @@ export function RightPanel({
         </div>
         {activeTaskAgentCliRun && (
           <div className="panel-agent-cli-run">
-            <span>{activeTaskAgentCliRun.runtimeLabel} 后台运行 · {activeTaskAgentCliRun.runId}</span>
+            <span>{activeTaskAgentCliRun.runtimeLabel} 后台运行 · 完成后写入任务动态 · {activeTaskAgentCliRun.runId}</span>
             <button
               className={`btn sm ghost${activeTaskAgentCliRun.status === 'cancelling' ? ' disabled' : ''}`}
               onClick={() => void cancelActiveAgentCliRun()}

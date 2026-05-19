@@ -1875,8 +1875,9 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/Codex CLI run 已在后台启动/)).toBeTruthy();
+    expect(screen.getByText(/完成后会写入当前任务动态/)).toBeTruthy();
     expect(screen.getAllByText(/run_agent_cli_created/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Codex CLI 后台运行/)).toBeTruthy();
+    expect(screen.getByText(/Codex CLI 后台运行 · 完成后写入任务动态/)).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '取消 Codex CLI run' }));
     expect(harness.api.cancelAgentCliRun).toHaveBeenCalledWith({
@@ -1946,7 +1947,8 @@ describe('App redesign v1', () => {
       });
     });
     expect(await screen.findByText(/Claude Code run 已在后台启动/)).toBeTruthy();
-    expect(screen.getByText(/Claude Code 后台运行/)).toBeTruthy();
+    expect(screen.getByText(/完成后会写入当前任务动态/)).toBeTruthy();
+    expect(screen.getByText(/Claude Code 后台运行 · 完成后写入任务动态/)).toBeTruthy();
   });
 
   it('keeps Codex CLI mode disabled until the manual-run runtime is authenticated', async () => {
@@ -2068,7 +2070,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: 'Codex' }));
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
-    expect(await screen.findByText(/Codex CLI 后台运行/)).toBeTruthy();
+    expect(await screen.findByText(/Codex CLI 后台运行 · 完成后写入任务动态/)).toBeTruthy();
 
     const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
     expect(run).toBeTruthy();
@@ -2081,6 +2083,7 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText(/Codex CLI run 已完成/)).toBeTruthy();
     expect(screen.getByText(/Codex CLI final answer/)).toBeTruthy();
+    expect(screen.getByText(/完整执行记录已进入当前任务动态/)).toBeTruthy();
     expect(screen.queryByText(/Codex CLI 后台运行/)).toBeNull();
   });
 
