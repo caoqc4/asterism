@@ -226,8 +226,8 @@ export function buildCapabilityRegistry(params: {
     externalAccessCapability(productSurfaces?.externalAccess ?? null),
     skillsCapability(productSurfaces?.skills ?? null, findToolFamily(snapshot, 'skill')),
     mcpCapability(productSurfaces?.mcp ?? null, findToolFamily(snapshot, 'mcp')),
-    agentCliCapability(productSurfaces?.agentCli ?? null),
-    agentApiRuntimeCapability(),
+    agentCliCapability(productSurfaces?.agentCli ?? null, snapshot),
+    agentApiRuntimeCapability(snapshot),
     browserCapability(productSurfaces?.browser ?? null, findToolFamily(snapshot, 'browser_playwright')),
   ];
 }
@@ -416,11 +416,13 @@ function mcpCapability(
 
 function agentCliCapability(
   status: NonNullable<CapabilityProductSurfaceStatus['agentCli']> | null,
+  snapshot: RuntimeCapabilitySnapshot | null,
 ): CapabilityRegistryEntry {
   if (!status) return deferredCapability('agent_cli.runtimes', 'Agent CLI Runtimes', 'agent_cli');
   const detected = status.detectedCount > 0;
   const readyManualRunCount = status.readyManualRunCount ?? Math.min(status.readyCount, status.manualRunCount ?? 0);
   const configured = readyManualRunCount > 0;
+  const selected = snapshot?.executionRuntime.kind === 'agent_cli' ? snapshot.executionRuntime.label : null;
   return {
     id: 'agent_cli.runtimes',
     label: 'Agent CLI Runtimes',
@@ -441,12 +443,14 @@ function agentCliCapability(
       `readyManualRun=${readyManualRunCount}`,
       `running=${status.runningCount ?? 0}`,
       `errors=${status.errorCount ?? 0}`,
+      selected ? `selected=${selected}` : null,
       typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
     ].filter(Boolean).join(' / '),
   };
 }
 
-function agentApiRuntimeCapability(): CapabilityRegistryEntry {
+function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): CapabilityRegistryEntry {
+  const selected = snapshot?.executionRuntime.kind === 'agent_api';
   return {
     id: 'agent_api.runtime',
     label: 'Agent API Runtime',
@@ -458,7 +462,12 @@ function agentApiRuntimeCapability(): CapabilityRegistryEntry {
     access: 'mutating',
     requiresApproval: true,
     requiredGate: 'runtime_pre_step',
-    summary: 'executionKind=api / status=development / executable=false',
+    summary: [
+      'executionKind=api',
+      'status=development',
+      'executable=false',
+      selected ? 'selected=true' : null,
+    ].filter(Boolean).join(' / '),
   };
 }
 

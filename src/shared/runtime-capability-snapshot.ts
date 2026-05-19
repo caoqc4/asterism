@@ -1,10 +1,20 @@
 import type { AgentToolScaffoldFamily, AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { CapabilityRegistryEntry } from './capability-registry.js';
-import type { AiConfigStatus } from './types/settings.js';
+import type { AiConfigStatus, AiRuntimeMode } from './types/settings.js';
 
 export type RuntimeCapabilityStatus = 'available' | 'disabled' | 'unknown';
+export type RuntimeExecutionSelectionKind = 'agent_cli' | 'agent_api' | 'unknown';
+
+export type RuntimeExecutionSelectionSnapshot = {
+  mode: AiRuntimeMode | null;
+  kind: RuntimeExecutionSelectionKind;
+  label: string;
+  executable: boolean;
+  reason: string;
+};
 
 export type RuntimeCapabilitySnapshot = {
+  executionRuntime: RuntimeExecutionSelectionSnapshot;
   model: {
     configured: boolean;
     provider: string | null;
@@ -52,6 +62,43 @@ function flagStatus(value: boolean | undefined): RuntimeCapabilityStatus {
   return 'unknown';
 }
 
+export function describeRuntimeExecutionSelection(mode: AiRuntimeMode | null | undefined): RuntimeExecutionSelectionSnapshot {
+  if (mode === 'codex') {
+    return {
+      executable: true,
+      kind: 'agent_cli',
+      label: 'Codex CLI',
+      mode,
+      reason: 'Codex CLI is the selected first-version Agent CLI runtime.',
+    };
+  }
+  if (mode === 'claude') {
+    return {
+      executable: true,
+      kind: 'agent_cli',
+      label: 'Claude Code',
+      mode,
+      reason: 'Claude Code is the selected first-version Agent CLI runtime.',
+    };
+  }
+  if (mode === 'api') {
+    return {
+      executable: false,
+      kind: 'agent_api',
+      label: 'Agent API Runtime',
+      mode,
+      reason: 'Agent API Runtime is selected in config but remains a peer execution runtime planned for a later version.',
+    };
+  }
+  return {
+    executable: false,
+    kind: 'unknown',
+    label: 'Unknown Runtime',
+    mode: null,
+    reason: 'No AI runtime mode is selected.',
+  };
+}
+
 export function buildRuntimeCapabilitySnapshot(params: {
   aiStatus?: AiConfigStatus | null;
 }): RuntimeCapabilitySnapshot {
@@ -63,7 +110,9 @@ export function buildRuntimeCapabilitySnapshot(params: {
   const sandboxBackendStatus = aiStatus?.sandboxBackendStatus ?? null;
   const sandboxReadiness = sandboxBackendStatus?.readiness ?? null;
   const producerReadiness = sandboxBackendStatus?.producerBackendReadiness ?? null;
+  const executionRuntime = describeRuntimeExecutionSelection(aiStatus?.runtimeMode);
   const snapshot: RuntimeCapabilitySnapshot = {
+    executionRuntime,
     model: {
       configured: Boolean(aiStatus?.configured),
       provider: aiStatus?.provider ?? null,
@@ -99,6 +148,9 @@ export function buildRuntimeCapabilitySnapshot(params: {
   };
 
   snapshot.summary = [
+    `runtime=${snapshot.executionRuntime.mode ?? 'unknown'}`,
+    `runtimeKind=${snapshot.executionRuntime.kind}`,
+    `runtimeExecutable=${snapshot.executionRuntime.executable ? 'yes' : 'no'}`,
     `model=${snapshot.model.configured ? 'configured' : 'missing'}`,
     snapshot.model.provider ? `provider=${snapshot.model.provider}` : null,
     snapshot.model.model ? `modelId=${snapshot.model.model}` : null,

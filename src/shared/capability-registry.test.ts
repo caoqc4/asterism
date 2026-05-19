@@ -194,6 +194,34 @@ describe('capability registry', () => {
     });
   });
 
+  it('marks the selected Agent CLI runtime in diagnostics when one is configured', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'codex' }) }),
+      productSurfaces: {
+        agentCli: { detectedCount: 1, readyCount: 1, manualRunCount: 1, readyManualRunCount: 1, runningCount: 0, errorCount: 0, catalogueCount: 2 },
+      },
+    });
+
+    expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
+      status: 'available',
+      summary: 'detected=1 / ready=1 / manualRun=1 / readyManualRun=1 / running=0 / errors=0 / selected=Codex CLI / catalogue=2',
+    });
+  });
+
+  it('marks Agent API Runtime as selected in diagnostics without making it executable', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'api' }) }),
+    });
+
+    expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')?.summary).not.toContain('selected=');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
+      status: 'disabled',
+      configured: false,
+      missingReason: 'Agent API Runtime is a peer execution runtime planned for a later version; it is not executable yet.',
+      summary: 'executionKind=api / status=development / executable=false / selected=true',
+    });
+  });
+
   it('keeps product surfaces hidden when they are not connected or ready', () => {
     const registry = buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus() }),

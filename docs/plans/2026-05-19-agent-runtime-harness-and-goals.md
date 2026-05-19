@@ -312,6 +312,7 @@ First pass implemented on 2026-05-19:
 - AI Runtime configuration now separates three concepts in copy: first-version Agent CLI execution, future peer Agent API Runtime execution, and model-service configuration for global helper/summaries/lightweight model calls.
 - RightPanel uses the same terminology: global chat is model-service assistance, unavailable CLI falls back to model-service assistance, and legacy `api` runtime mode is shown as `Agent API Runtime` in development rather than as an active model-service executor.
 - CapabilityRegistry and ConfigurationSafetyReport now include `agent_api.runtime` as a disabled peer execution runtime, so diagnostics and context manifests see Agent API as a real planned runtime rather than conflating it with model-service configuration.
+- RuntimeCapabilitySnapshot now records the selected execution runtime (`codex`, `claude`, or `api`), its runtime kind, and whether it is executable. CapabilityRegistry summaries surface the selected Agent CLI or selected-but-disabled Agent API state for diagnostics without changing execution behavior.
 
 Remaining next steps are deciding what evidence an adapter must provide before actual native-goal forwarding is allowed, and replacing the deterministic lightweight verifier with an optional API verifier subagent when the Agent API runtime is ready.
 

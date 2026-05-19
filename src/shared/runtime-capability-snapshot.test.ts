@@ -57,6 +57,11 @@ describe('runtime capability snapshot', () => {
         provider: 'anthropic',
         producer: 'available',
       },
+      executionRuntime: {
+        executable: false,
+        kind: 'unknown',
+        label: 'Unknown Runtime',
+      },
       workspace: {
         rootConfigured: true,
         lintAvailable: true,
@@ -89,10 +94,37 @@ describe('runtime capability snapshot', () => {
         blockedCount: 0,
       },
     });
+    expect(snapshot.summary).toContain('runtime=unknown');
     expect(snapshot.summary).toContain('model=configured');
     expect(snapshot.summary).toContain('sandbox=not_probed');
     expect(capabilitySnapshotAllowsModelExecution(snapshot)).toBe(true);
     expect(capabilitySnapshotAllowsWorkspaceVerification(snapshot)).toBe(true);
+  });
+
+  it('projects the selected execution runtime without making Agent API executable', () => {
+    expect(buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'codex' }) }).executionRuntime).toMatchObject({
+      executable: true,
+      kind: 'agent_cli',
+      label: 'Codex CLI',
+      mode: 'codex',
+    });
+    expect(buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'claude' }) }).executionRuntime).toMatchObject({
+      executable: true,
+      kind: 'agent_cli',
+      label: 'Claude Code',
+      mode: 'claude',
+    });
+
+    const agentApiSnapshot = buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'api' }) });
+    expect(agentApiSnapshot.executionRuntime).toMatchObject({
+      executable: false,
+      kind: 'agent_api',
+      label: 'Agent API Runtime',
+      mode: 'api',
+    });
+    expect(agentApiSnapshot.summary).toContain('runtime=api');
+    expect(agentApiSnapshot.summary).toContain('runtimeKind=agent_api');
+    expect(agentApiSnapshot.summary).toContain('runtimeExecutable=no');
   });
 
   it('keeps missing capability state explicit', () => {

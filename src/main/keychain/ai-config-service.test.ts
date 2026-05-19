@@ -114,7 +114,7 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'detected=0 / ready=0 / manualRun=0 / readyManualRun=0 / running=0 / errors=0 / catalogue=2',
+      summary: 'detected=0 / ready=0 / manualRun=0 / readyManualRun=0 / running=0 / errors=0 / selected=Codex CLI / catalogue=2',
       missingReason: 'No supported Agent CLI runtime is detected.',
     });
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
