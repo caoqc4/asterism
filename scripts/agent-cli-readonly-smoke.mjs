@@ -62,6 +62,9 @@ export function runAgentCliReadonlySmoke() {
     console.log('auth=unknown');
     console.log('workspace=unchanged');
     console.log(`error=${versionResult.error.message}`);
+    if (RUNTIME === 'claude') {
+      console.log('note=Claude Code smoke requires a local claude CLI and a valid Claude account; Codex CLI remains the current primary verified path.');
+    }
     return 1;
   }
 
@@ -77,6 +80,9 @@ export function runAgentCliReadonlySmoke() {
     console.log('workspace=unchanged');
     console.log(`loginStatus=${loginResult.status}`);
     console.log(`output=${preview(loginResult.output)}`);
+    if (RUNTIME === 'claude') {
+      console.log('note=Claude Code smoke requires a valid Claude account; keep this non-blocking when Codex CLI smoke passes.');
+    }
     return 1;
   }
 

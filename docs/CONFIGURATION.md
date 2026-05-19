@@ -369,6 +369,26 @@ Current workspace tools are read-only:
 
 Patch creation and command execution are not enabled.
 
+## Agent CLI Real Smoke
+
+Agent CLI smoke tests are opt-in and call the user's locally installed official
+CLI. They create a temporary workspace, ask the CLI to return a validation
+phrase, and fail if the temporary workspace changes.
+
+Codex CLI is the current primary verified path:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke
+```
+
+Claude Code support is implemented but its real smoke requires a local
+`claude` command and a valid Claude account. If that account is unavailable,
+keep Claude smoke non-blocking and continue validating the Codex path:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-readonly-smoke
+```
+
 ## Scheduler Flag
 
 `featureFlags.enableScheduler`
