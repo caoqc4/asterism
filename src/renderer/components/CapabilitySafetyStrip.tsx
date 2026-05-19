@@ -37,6 +37,9 @@ export function CapabilitySafetyStrip({
         {safety?.reason
           ?? capability?.missingReason
           ?? emptyReason}
+        {safety?.diagnosticSummary && safety.diagnosticSummary !== safety.reason
+          ? ` / 诊断：${safety.diagnosticSummary}`
+          : ''}
       </p>
     </div>
   );

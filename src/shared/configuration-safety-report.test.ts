@@ -110,6 +110,23 @@ describe('configuration safety report', () => {
     });
   });
 
+  it('preserves capability summaries as diagnostic details without replacing the safety reason', () => {
+    const report = buildConfigurationSafetyReport({
+      ...aiStatus(),
+      capabilityRegistry: buildCapabilityRegistry({
+        snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'codex' }) }),
+        productSurfaces: {
+          agentCli: { detectedCount: 0, readyCount: 0, manualRunCount: 0, readyManualRunCount: 0, runningCount: 0, errorCount: 0, catalogueCount: 2 },
+        },
+      }),
+    });
+
+    expect(report.surfaces.find((surface) => surface.id === 'agent_cli.runtimes')).toMatchObject({
+      reason: 'No supported Agent CLI runtime is detected.',
+      diagnosticSummary: 'detected=0 / ready=0 / manualRun=0 / readyManualRun=0 / running=0 / errors=0 / selected=Codex CLI / catalogue=2',
+    });
+  });
+
   it('distinguishes product-policy disabled surfaces from feature-flag disabled surfaces', () => {
     const base = aiStatus({
       featureFlags: {

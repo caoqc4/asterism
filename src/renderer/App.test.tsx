@@ -3725,6 +3725,7 @@ describe('App redesign v1', () => {
             id: 'workspace.root',
             state: 'missing',
             reason: 'Workspace root is missing.',
+            diagnosticSummary: 'workspace=missing / selected=Codex CLI',
             requiresApproval: true,
             startupProbePolicy: 'safe_read_only',
             exposesSecretValue: false,
@@ -3750,6 +3751,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('配置安全边界')).toBeTruthy();
     expect(screen.getByText('密钥不外显')).toBeTruthy();
     expect(screen.getByText('sandbox.patch_promotion')).toBeTruthy();
+    expect(screen.getByText(/诊断：workspace=missing \/ selected=Codex CLI/)).toBeTruthy();
     expect(screen.getByText(/探测：仅手动 · 需用户确认/)).toBeTruthy();
     expect(screen.getByText(/当前不会自动启用受阻能力/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '详细' }));

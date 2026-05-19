@@ -158,6 +158,7 @@ describe('AiConfigService', () => {
     expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'agent_cli.runtimes')).toMatchObject({
       state: 'disabled_by_policy',
       reason: 'No supported Agent CLI runtime is detected.',
+      diagnosticSummary: 'detected=0 / ready=0 / manualRun=0 / readyManualRun=0 / running=0 / errors=0 / selected=Codex CLI / catalogue=2',
       startupProbePolicy: 'safe_read_only',
       exposesSecretValue: false,
     });

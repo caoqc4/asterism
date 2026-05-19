@@ -43,6 +43,22 @@ describe('CapabilitySafetyStrip', () => {
     expect(screen.getByText('先质检，再确认')).toBeTruthy();
     expect(screen.getByText('External access connector authorization is pending or has errors.')).toBeTruthy();
   });
+
+  it('shows diagnostic summaries without replacing the safety reason', () => {
+    render(
+      <CapabilitySafetyStrip
+        capability={capability({ status: 'disabled' })}
+        safety={safety({
+          state: 'disabled_by_policy',
+          reason: 'No supported Agent CLI runtime is detected.',
+          diagnosticSummary: 'detected=0 / selected=Codex CLI',
+        })}
+      />,
+    );
+
+    expect(screen.getByText(/No supported Agent CLI runtime is detected/)).toBeTruthy();
+    expect(screen.getByText(/诊断：detected=0 \/ selected=Codex CLI/)).toBeTruthy();
+  });
 });
 
 function capability(partial: Partial<CapabilityRegistryEntry> = {}): CapabilityRegistryEntry {
@@ -66,6 +82,7 @@ function safety(partial: Partial<ConfigurationSafetySurface> = {}): Configuratio
     id: partial.id ?? 'skills.catalogue',
     state: partial.state ?? 'approval_required',
     reason: partial.reason ?? 'enabled=1 / ready=1 / needsConfig=0 / catalogue=1',
+    diagnosticSummary: partial.diagnosticSummary,
     requiresApproval: partial.requiresApproval ?? true,
     startupProbePolicy: partial.startupProbePolicy ?? 'manual_only',
     exposesSecretValue: partial.exposesSecretValue ?? false,

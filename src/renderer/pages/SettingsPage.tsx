@@ -227,6 +227,9 @@ function ConfigurationSafetySection({ report }: { report: ConfigurationSafetyRep
             </div>
             <div className="settings-safety-detail">
               <span>{surface.reason}</span>
+              {surface.diagnosticSummary && surface.diagnosticSummary !== surface.reason && (
+                <span>诊断：{surface.diagnosticSummary}</span>
+              )}
               <span>
                 探测：{configurationSafetyProbePolicyLabel(surface.startupProbePolicy)}
                 {surface.requiresApproval ? ' · 需用户确认' : ''}

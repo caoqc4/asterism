@@ -26,6 +26,7 @@ export type ConfigurationSafetySurface = {
   id: ConfigurationSafetySurfaceId;
   state: ConfigurationSafetyState;
   reason: string;
+  diagnosticSummary?: string;
   requiresApproval: boolean;
   startupProbePolicy: 'never' | 'manual_only' | 'safe_read_only';
   exposesSecretValue: boolean;
@@ -130,6 +131,7 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
   ];
   const safeSurfaces = surfaces.map((surface) => ({
     ...surface,
+    diagnosticSummary: surface.diagnosticSummary ? redactSafetyText(surface.diagnosticSummary) : undefined,
     reason: redactSafetyText(surface.reason),
   }));
   const blockedReasons = safeSurfaces
@@ -171,6 +173,7 @@ function surfaceFromCapability(
     id: fallback.id,
     state: stateFromCapability(capability, fallback.disabledState ?? 'disabled_by_policy'),
     reason: capability.missingReason ?? capability.summary,
+    diagnosticSummary: capability.summary,
     requiresApproval: capability.requiresApproval,
     startupProbePolicy: fallback.startupProbePolicy,
     exposesSecretValue: false,
