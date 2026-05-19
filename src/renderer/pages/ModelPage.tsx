@@ -131,7 +131,7 @@ export function ModelPage() {
       setStatus(s);
       if (s.model) setSelectedModel(s.model);
       if (s.provider) setSelectedProvider(s.provider);
-      setSelectedRuntimeMode(s.runtimeMode === 'api' ? 'codex' : s.runtimeMode ?? 'codex');
+      setSelectedRuntimeMode(s.runtimeMode ?? 'codex');
       setWorkspaceRoot(s.workspaceRoot ?? s.suggestedWorkspaceRoot ?? '');
     } catch {
       // Keep the last known status visible when a manual probe fails.
@@ -199,7 +199,7 @@ export function ModelPage() {
         featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
       });
       setStatus(next);
-      setSelectedRuntimeMode(next.runtimeMode === 'api' ? 'codex' : next.runtimeMode ?? selectedRuntimeMode);
+      setSelectedRuntimeMode(next.runtimeMode ?? selectedRuntimeMode);
       setWorkspaceRoot(next.workspaceRoot ?? '');
       setKeys({});
       setSaveResult('ok');
@@ -247,7 +247,7 @@ export function ModelPage() {
         featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
       });
       setStatus(next);
-      setSelectedRuntimeMode(next.runtimeMode === 'api' ? 'codex' : next.runtimeMode ?? runtimeMode);
+      setSelectedRuntimeMode(next.runtimeMode ?? runtimeMode);
       setSaveResult('ok');
     } catch {
       setSaveResult('error');
@@ -498,7 +498,7 @@ function AgentCliRuntimeSection({
           onSelectRuntimeMode={onSelectRuntimeMode}
           runtimeMode={runtimeMode}
         />
-        <div className="agent-cli-runtime-row api-preview">
+        <div className={`agent-cli-runtime-row api-preview${runtimeMode === 'api' ? ' selected' : ''}`}>
           <div className="agent-cli-runtime-row-name">
             <div className="agent-cli-runtime-card-title">
               <span>Agent API Runtime</span>
@@ -506,10 +506,14 @@ function AgentCliRuntimeSection({
             <span className="agent-cli-runtime-card-command mono">同级执行层 · 后续版本</span>
           </div>
           <span className="agent-cli-runtime-card-status preview">
-            开发中
+            {runtimeMode === 'api' ? '当前配置' : '开发中'}
           </span>
-          <span className="agent-cli-runtime-row-version">未开放</span>
-          <span className="agent-cli-runtime-row-detail">任务执行 Runtime · 待完善</span>
+          <span className="agent-cli-runtime-row-version">{runtimeMode === 'api' ? '不可执行' : '未开放'}</span>
+          <span className="agent-cli-runtime-row-detail">
+            {runtimeMode === 'api'
+              ? '当前配置会在任务面板转模型服务辅助'
+              : '任务执行 Runtime · 待完善'}
+          </span>
           <div className="agent-cli-runtime-row-actions">
             <button className="btn sm disabled" type="button" disabled>
               暂不可选

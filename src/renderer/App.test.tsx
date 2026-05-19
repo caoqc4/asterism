@@ -1132,10 +1132,12 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '修改配置' }));
     expect(screen.getAllByText(/模型服务配置/).length).toBeGreaterThan(0);
     expect(screen.getByText('Agent API Runtime')).toBeTruthy();
-    expect(screen.getByText('开发中')).toBeTruthy();
+    expect(screen.getByText('当前配置')).toBeTruthy();
+    expect(screen.getByText(/当前配置会在任务面板转模型服务辅助/)).toBeTruthy();
     expect(screen.getAllByText(/同级执行层/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/用于全局助手/).length).toBeGreaterThan(0);
     expect(screen.getByText(/第一版任务执行使用 Agent CLI/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '正在使用' })).toBeNull();
     expect(screen.queryByText('model.provider')).toBeNull();
     expect(screen.queryByText(/Safety Details/)).toBeNull();
   });
@@ -1243,8 +1245,9 @@ describe('App redesign v1', () => {
   it('can manually refresh AI Runtime CLI readiness after official CLI login', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus)
-      .mockResolvedValueOnce(buildAiStatus())
+      .mockResolvedValueOnce(buildAiStatus({ runtimeMode: 'codex' }))
       .mockResolvedValueOnce(buildAiStatus({
+        runtimeMode: 'codex',
         agentCliRuntimeStatus: {
           catalogueCount: 2,
           detectedCount: 1,
@@ -1267,7 +1270,7 @@ describe('App redesign v1', () => {
           }],
         },
       }))
-      .mockResolvedValue(buildAiStatus());
+      .mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
@@ -1284,6 +1287,7 @@ describe('App redesign v1', () => {
   it('refreshes AI Runtime CLI readiness when the app regains focus after Terminal login', async () => {
     const user = userEvent.setup();
     const needsLoginStatus = buildAiStatus({
+      runtimeMode: 'codex',
       agentCliRuntimeStatus: {
         catalogueCount: 2,
         detectedCount: 1,
@@ -1309,7 +1313,7 @@ describe('App redesign v1', () => {
     vi.mocked(harness.api.getAiConfigStatus)
       .mockResolvedValueOnce(needsLoginStatus)
       .mockResolvedValueOnce(needsLoginStatus)
-      .mockResolvedValue(buildAiStatus());
+      .mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
