@@ -177,6 +177,23 @@ The first implementation keeps Codex CLI as the only executable Agent CLI, but t
 
 This avoids accidentally reusing Codex-specific flags for other CLIs. It also keeps the current product promise narrow: Taskplane can show Claude Code presence, but cannot launch it through the background Agent CLI lane yet.
 
+## Claude Code Evaluation
+
+Official Claude Code docs currently expose two relevant surfaces:
+
+- status/authentication commands: `claude auth login`, `claude auth status`;
+- non-interactive execution: `claude -p` / `claude --print`, with permission modes such as `plan`, `dontAsk`, `acceptEdits`, and `bypassPermissions`.
+
+Taskplane should not enable Claude execution only because `claude -p` exists. Claude Code's scripted mode has its own permission and settings model, including bare mode and tool allow-lists. The safe next bridge is therefore:
+
+- detect `claude` and `claude --version`;
+- check auth readiness with `claude auth status`;
+- keep `executionSupport: 'status_only'`;
+- show `claude auth login` as the official login hint;
+- require a dedicated Claude adapter design before launching any background Claude run.
+
+Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com/docs/en/headless.
+
 ## Implementation Order
 
 1. Agent CLI catalogue and read-only status service.
@@ -189,7 +206,8 @@ This avoids accidentally reusing Codex-specific flags for other CLIs. It also ke
 8. Manual read-only Codex CLI smoke, skipped by default unless explicitly enabled.
 9. Cancellation/timeout handling.
 10. Runtime-specific adapter boundary for command/prompt/step labeling.
-11. Later: Claude Code and other CLI adapters after their official read-only/non-interactive command contracts are verified.
+11. Claude Code auth-status bridge while keeping execution status-only.
+12. Later: Claude Code and other CLI adapters after their official read-only/non-interactive command contracts are verified.
 
 ## Acceptance Criteria
 
@@ -205,6 +223,7 @@ This avoids accidentally reusing Codex-specific flags for other CLIs. It also ke
 - CLI execution cannot bypass existing runtime gates or task memory checks.
 - Active CLI subprocesses can be cancelled without leaving runtime workload status stuck.
 - A status-only CLI such as Claude Code cannot be launched until a dedicated run adapter is enabled.
+- Claude Code readiness uses the official `claude auth status` command and points users to `claude auth login`.
 - The real Codex CLI smoke is opt-in only:
   `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke`.
 - Default local acceptance and tests must not call Agent CLIs or model providers.

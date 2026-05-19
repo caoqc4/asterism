@@ -5,6 +5,7 @@ import {
   buildAgentCliRuntimeStatus,
   emptyAgentCliRuntimeStatus,
   type AgentCliAuthState,
+  type AgentCliRuntimeId,
   type AgentCliRuntimeRecord,
   type AgentCliRuntimeStatus,
 } from '../../../shared/agent-cli-runtime-status.js';
@@ -14,7 +15,7 @@ import {
   type AgentCliRuntimeWorkloadTracker,
 } from './agent-cli-runtime-workload.js';
 
-export type AgentCliCommandProbe = (command: string) => Promise<{
+export type AgentCliCommandProbe = (command: string, runtimeId: AgentCliRuntimeId) => Promise<{
   authReason?: string | null;
   authState?: AgentCliAuthState;
   installed: boolean;
@@ -36,7 +37,7 @@ export class AgentCliRuntimeStatusService {
     if (fixture) return fixture;
 
     const records = await Promise.all(DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE.map(async (runtime): Promise<AgentCliRuntimeRecord> => {
-      const probe = await this.probeCommand(runtime.command);
+      const probe = await this.probeCommand(runtime.command, runtime.id);
       if (!probe.installed) {
         return {
           ...runtime,
@@ -52,7 +53,7 @@ export class AgentCliRuntimeStatusService {
         ...runtime,
         authState: probe.authState ?? 'unknown',
         installed: true,
-        missingReason: installedRuntimeMissingReason(runtime.label, runtime.command, runtime.executionSupport, probe.authState, probe.authReason),
+        missingReason: installedRuntimeMissingReason(runtime.id, runtime.label, runtime.command, runtime.executionSupport, probe.authState, probe.authReason),
         version: probe.version,
         workload: 'idle',
       };
@@ -73,7 +74,7 @@ export function createAgentCliRuntimeStatusService(): AgentCliRuntimeStatusServi
   return new AgentCliRuntimeStatusService();
 }
 
-async function probeAgentCliCommand(command: string): Promise<{
+async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeId): Promise<{
   authReason?: string | null;
   authState?: AgentCliAuthState;
   installed: boolean;
@@ -89,11 +90,18 @@ async function probeAgentCliCommand(command: string): Promise<{
     };
   }
 
+  const authProbePromise = runtimeId === 'codex'
+    ? runProbe(command, ['login', 'status'])
+    : runtimeId === 'claude'
+      ? runProbe(command, ['auth', 'status'])
+      : Promise.resolve(null);
   const [versionProbe, authProbe] = await Promise.all([
     runProbe(command, ['--version']),
-    command === 'codex' ? runProbe(command, ['login', 'status']) : Promise.resolve(null),
+    authProbePromise,
   ]);
-  const authStatus = authProbe ? authStateFromLoginProbe(authProbe) : null;
+  const authStatus = authProbe
+    ? authStateFromLoginProbe(authProbe, { nonZeroMeansNeedsLogin: runtimeId === 'claude' })
+    : null;
   return {
     authReason: authStatus?.reason ?? null,
     authState: authStatus?.state,
@@ -105,6 +113,7 @@ async function probeAgentCliCommand(command: string): Promise<{
 }
 
 function installedRuntimeMissingReason(
+  runtimeId: AgentCliRuntimeId,
   label: string,
   command: string,
   executionSupport: 'manual_run' | 'status_only',
@@ -112,21 +121,29 @@ function installedRuntimeMissingReason(
   authReason: string | null | undefined,
 ): string | null {
   if (authState === 'ready') return null;
-  if (authState === 'needs_login') return `${label} is installed but not logged in; run ${command} login.`;
+  if (authState === 'needs_login') return `${label} is installed but not logged in; run ${loginCommandHint(runtimeId, command)}.`;
   if (authState === 'error') return authReason ?? `${label} login status could not be checked.`;
   return executionSupport === 'manual_run'
-    ? `Authentication is managed by ${label}; run ${command} login if execution reports a login error.`
+    ? `Authentication is managed by ${label}; run ${loginCommandHint(runtimeId, command)} if execution reports a login error.`
     : `${label} detection is status-only in this version.`;
+}
+
+function loginCommandHint(runtimeId: AgentCliRuntimeId, command: string): string {
+  if (runtimeId === 'claude') return `${command} auth login`;
+  return `${command} login`;
 }
 
 function authStateFromLoginProbe(probe: {
   exitCode: number | null;
   stdout: string;
   stderr: string;
-}): { reason: string | null; state: AgentCliAuthState } {
+}, options: { nonZeroMeansNeedsLogin?: boolean } = {}): { reason: string | null; state: AgentCliAuthState } {
   const reason = firstLine(probe.stdout || probe.stderr);
   if (probe.exitCode === 0) {
     return { reason, state: 'ready' };
+  }
+  if (options.nonZeroMeansNeedsLogin) {
+    return { reason, state: 'needs_login' };
   }
   if (/not\s+logged\s+in|login|required|unauth/i.test(`${probe.stdout}\n${probe.stderr}`)) {
     return { reason, state: 'needs_login' };

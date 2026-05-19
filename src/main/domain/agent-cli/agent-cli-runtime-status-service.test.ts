@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
+import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status.js';
+
 import {
   AGENT_CLI_RUNTIME_FIXTURE_ENV,
   AgentCliRuntimeStatusService,
@@ -12,7 +14,9 @@ describe('agent cli runtime status service', () => {
   });
 
   it('detects Codex and Claude CLI availability through an injected probe', async () => {
-    const service = new AgentCliRuntimeStatusService(async (command) => {
+    const probed: Array<{ command: string; runtimeId: AgentCliRuntimeId }> = [];
+    const service = new AgentCliRuntimeStatusService(async (command, runtimeId) => {
+      probed.push({ command, runtimeId });
       if (command === 'codex') {
         return { installed: true, version: 'codex 0.42.0' };
       }
@@ -37,6 +41,10 @@ describe('agent cli runtime status service', () => {
       workload: 'blocked',
       missingReason: 'claude was not found on PATH.',
     });
+    expect(probed).toEqual([
+      { command: 'codex', runtimeId: 'codex' },
+      { command: 'claude', runtimeId: 'claude' },
+    ]);
   });
 
   it('marks Codex ready when the injected probe reports official CLI login status', async () => {
@@ -53,6 +61,24 @@ describe('agent cli runtime status service', () => {
       authState: 'ready',
       missingReason: null,
     });
+  });
+
+  it('reports Claude Code login state without enabling execution support', async () => {
+    const service = new AgentCliRuntimeStatusService(async (command) => ({
+      authState: command === 'claude' ? 'needs_login' : 'ready',
+      installed: true,
+      version: command === 'claude' ? 'claude 2.1.128' : 'codex 0.42.0',
+    }));
+
+    const status = await service.getStatus();
+
+    expect(status.runtimes.find((runtime) => runtime.id === 'claude')).toMatchObject({
+      authState: 'needs_login',
+      executionSupport: 'status_only',
+      installed: true,
+      missingReason: 'Claude Code is installed but not logged in; run claude auth login.',
+    });
+    expect(status.manualRunCount).toBe(1);
   });
 
   it('projects active Agent CLI runs into runtime workload status', async () => {
