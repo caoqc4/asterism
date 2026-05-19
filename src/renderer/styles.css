@@ -5598,6 +5598,19 @@ a { color: inherit; text-decoration: none; }
 .agent-cli-runtime-row.error {
   background: linear-gradient(90deg, oklch(98% 0.018 28), var(--bg-elev) 42%);
 }
+.agent-cli-runtime-row.api-preview {
+  background: var(--bg-sunk);
+  color: var(--ink-4);
+}
+.agent-cli-runtime-row.api-preview .agent-cli-runtime-card-title,
+.agent-cli-runtime-row.api-preview .agent-cli-runtime-card-command,
+.agent-cli-runtime-row.api-preview .agent-cli-runtime-row-version,
+.agent-cli-runtime-row.api-preview .agent-cli-runtime-row-detail {
+  color: var(--ink-4);
+}
+.agent-cli-runtime-row.api-preview .btn {
+  color: var(--ink-3);
+}
 .agent-cli-runtime-row-name {
   display: flex;
   flex-direction: column;
@@ -5641,6 +5654,11 @@ a { color: inherit; text-decoration: none; }
   color: oklch(48% 0.14 28);
   border-color: oklch(86% 0.08 28);
   background: oklch(96% 0.035 28);
+}
+.agent-cli-runtime-card-status.preview {
+  color: var(--ink-3);
+  border-color: var(--line);
+  background: var(--bg-elev);
 }
 .agent-cli-runtime-row-version,
 .agent-cli-runtime-row-detail,

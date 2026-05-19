@@ -498,18 +498,18 @@ function AgentCliRuntimeSection({
           onSelectRuntimeMode={onSelectRuntimeMode}
           runtimeMode={runtimeMode}
         />
-        <div className={`agent-cli-runtime-row ${apiConfigured ? 'ready' : 'missing'}`}>
+        <div className="agent-cli-runtime-row api-preview">
           <div className="agent-cli-runtime-row-name">
             <div className="agent-cli-runtime-card-title">
               <span>API Model</span>
             </div>
             <span className="agent-cli-runtime-card-command mono">{apiConfigured ? '已填写 Provider 密钥' : '需要先配置 Provider 密钥'}</span>
           </div>
-          <span className={`agent-cli-runtime-card-status ${apiConfigured ? 'ready' : 'missing'}`}>
-            {apiConfigured ? '已配置' : '未配置'}
+          <span className="agent-cli-runtime-card-status preview">
+            开发中
           </span>
           <span className="agent-cli-runtime-row-version">{apiProviderSummary ?? '未完成'}</span>
-          <span className="agent-cli-runtime-row-detail">{apiConfigured ? '配置预留' : '先配置'}</span>
+          <span className="agent-cli-runtime-row-detail">暂不可选</span>
           <div className="agent-cli-runtime-row-actions">
             <button
               className={`btn sm${apiConfigured ? ' ghost' : ' primary'}`}

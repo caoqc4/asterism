@@ -1119,7 +1119,8 @@ describe('App redesign v1', () => {
     expect(screen.getAllByRole('button', { name: '更新' }).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '修改配置' }));
     expect(screen.getByText(/API Model 配置/)).toBeTruthy();
-    expect(screen.getByText('配置预留')).toBeTruthy();
+    expect(screen.getByText('开发中')).toBeTruthy();
+    expect(screen.getByText('暂不可选')).toBeTruthy();
     expect(screen.getByText(/当前使用/)).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
     expect(screen.queryByText(/Safety Details/)).toBeNull();
