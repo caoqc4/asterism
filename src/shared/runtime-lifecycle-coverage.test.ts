@@ -85,6 +85,7 @@ describe('runtime lifecycle coverage matrix', () => {
   it('tracks service-boundary task completion and waiting-state guards', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
+    expect(text).toContain('AgentCliRunService run subtask_start target-readiness checks');
     expect(text).toContain('completion transitions require task_completion memory coverage');
     expect(text).toContain('ignores Run and completion-check evidence older than the latest completion-criteria update');
     expect(text).toContain('waiting transitions require a waiting reason');

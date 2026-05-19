@@ -132,6 +132,7 @@ describe('agent principles compliance matrix', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 
     expect(text).toContain('parent is an open top-level project task');
+    expect(text).toContain('AgentCliRunService run subtask_start target-readiness checks');
   });
 
   it('records that phase closeout uses the same pending-memory boundary', () => {

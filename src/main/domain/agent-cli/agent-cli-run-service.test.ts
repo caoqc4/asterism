@@ -353,6 +353,35 @@ describe('AgentCliRunService', () => {
     expect(executor).not.toHaveBeenCalled();
   });
 
+  it('blocks Agent CLI execution for a completed target task before creating a run', async () => {
+    const taskService = buildTaskService();
+    vi.mocked(taskService.getDetail).mockResolvedValue({
+      ...buildTask(),
+      state: 'completed',
+      title: 'Completed task',
+    });
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn();
+    const service = new AgentCliRunService(
+      taskService,
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Start Codex on a completed task.',
+      taskId: 'task_1',
+    })).rejects.toThrow('目标任务「Completed task」已完成或已归档，不能作为待开始子任务。');
+
+    expect(runRepository.create).not.toHaveBeenCalled();
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(executor).not.toHaveBeenCalled();
+  });
+
   it('uses the resolved executable path when the runtime status provides one', async () => {
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,
