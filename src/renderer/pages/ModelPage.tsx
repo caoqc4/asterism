@@ -386,43 +386,48 @@ function AgentCliRuntimeSection({
       ? `当前可执行：${readyRuntime.label}`
       : '等待官方 CLI 登录或安装';
   const runnable = Boolean(workspaceReady && readyRuntime);
+  const nextAction = !readyRuntime
+    ? {
+        label: '在终端登录 Codex',
+        title: '先登录 Codex CLI',
+        detail: '打开终端运行 codex login，登录完成后回到这里点重新检测。',
+      }
+    : !workspaceReady
+      ? {
+          label: '保存工作目录',
+          title: '选择这个任务要操作的项目目录',
+          detail: '填项目根目录。Agent CLI 会从这里读取代码和上下文。',
+        }
+      : {
+          label: '去任务里运行',
+          title: 'AI Runtime 已准备好',
+          detail: '打开一个任务，在右侧输入框切到 Codex，然后发送你的需求。',
+        };
 
   return (
     <section className="agent-cli-section">
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">Agent CLI</div>
-          <p className="model-section-copy">主执行路径。完成下面 3 步后，在任务右侧面板选择 Codex 或 Claude 发送即可启动后台 run。</p>
+          <p className="model-section-copy">用官方 CLI 账号在任务里启动后台 Agent run。</p>
         </div>
         <div className={`agent-cli-primary-state${readyRuntime && workspaceReady ? ' ready' : ''}`}>
           {primaryStatus}
         </div>
       </div>
 
-      <div className="agent-cli-setup">
-        <SetupStep
-          index={1}
-          title="登录官方 CLI"
-          state={readyRuntime ? 'done' : 'todo'}
-          detail={readyRuntime ? `${readyRuntime.label} 已可用。` : '在终端运行 codex login，完成后点右上角重新检测。'}
-        />
-        <SetupStep
-          index={2}
-          title="设置工作目录"
-          state={workspaceReady ? 'done' : 'todo'}
-          detail={workspaceReady ? 'Agent CLI 会从这个目录启动。' : '填写项目根目录，例如 /Users/name/git/project。'}
-        />
-        <SetupStep
-          index={3}
-          title="到任务里运行"
-          state={runnable ? 'done' : 'locked'}
-          detail={runnable ? '打开一个任务，在右侧输入框切到 Codex 或 Claude。' : '前两步完成后才会启用任务里的 Agent CLI 按钮。'}
-        />
+      <div className={`agent-cli-action ${runnable ? 'ready' : ''}`}>
+        <div className="agent-cli-action-icon">{runnable ? '✓' : readyRuntime ? '2' : '1'}</div>
+        <div className="agent-cli-action-copy">
+          <strong>{nextAction.title}</strong>
+          <span>{nextAction.detail}</span>
+        </div>
+        <div className="agent-cli-action-state">{nextAction.label}</div>
       </div>
 
       <div className="agent-cli-workspace">
         <div className="agent-cli-workspace-head">
-          <label className="settings-label" htmlFor="agent-cli-workspace-root">Workspace root</label>
+          <label className="settings-label" htmlFor="agent-cli-workspace-root">项目目录</label>
           <button
             className={`btn sm primary${saveDisabled ? ' disabled' : ''}`}
             type="button"
@@ -442,37 +447,39 @@ function AgentCliRuntimeSection({
             onChange={(event) => onWorkspaceRootChange(event.target.value)}
           />
         </div>
-        <p className="settings-hint">这是 Agent CLI 的启动目录。Taskplane 第一版只做只读 run，不自动改代码、不自动提交。</p>
-      </div>
-
-      <div className="agent-cli-grid">
-        {runtimes.length > 0 ? runtimes.map((runtime) => (
-          <div key={runtime.id} className={`agent-cli-row ${runtime.installed ? 'installed' : 'missing'}`}>
-            <div className="agent-cli-runtime-main">
-              <span className="agent-cli-runtime-name">{runtime.label}</span>
-              <span className="agent-cli-runtime-command mono">{runtime.command}</span>
-              {runtime.id === 'codex' && <span className="model-tag">主路径</span>}
-              {runtime.id === 'claude' && <span className="agent-cli-pill">可选 Plan 模式</span>}
-            </div>
-            <div className="agent-cli-runtime-meta">
-              <span className={`agent-cli-status ${runtime.installed ? 'ok' : 'muted'}`}>
-                {runtime.installed ? authStateLabel(runtime.authState) : '未安装'}
-              </span>
-              <span>{runtime.version ?? '版本未知'}</span>
-              <span>{workloadLabel(runtime.workload)}</span>
-            </div>
-            {runtime.missingReason && (
-              <p className="agent-cli-runtime-note">{runtime.missingReason}</p>
-            )}
-            <p className="agent-cli-runtime-note">{agentCliRuntimeNextStep(runtime)}</p>
-          </div>
-        )) : (
-          <div className="agent-cli-empty">Agent CLI 状态尚未生成。</div>
-        )}
+        <p className="settings-hint">第一版只读运行，不会自动改代码或提交。</p>
       </div>
 
       <div className="agent-cli-boundary">
-        <span>账号不在这里配置。Taskplane 不保存 CLI 账号；登录请在终端运行 <span className="mono">codex login</span> 或 <span className="mono">claude auth login</span>，完成后点击重新检测。</span>
+        <span>账号不在这里配置。Codex 登录用 <span className="mono">codex login</span>；Claude 登录用 <span className="mono">claude auth login</span>。</span>
+        <details className="agent-cli-debug">
+          <summary>CLI 明细</summary>
+          <div className="agent-cli-grid">
+            {runtimes.length > 0 ? runtimes.map((runtime) => (
+              <div key={runtime.id} className={`agent-cli-row ${runtime.installed ? 'installed' : 'missing'}`}>
+                <div className="agent-cli-runtime-main">
+                  <span className="agent-cli-runtime-name">{runtime.label}</span>
+                  <span className="agent-cli-runtime-command mono">{runtime.command}</span>
+                  {runtime.id === 'codex' && <span className="model-tag">主路径</span>}
+                  {runtime.id === 'claude' && <span className="agent-cli-pill">可选</span>}
+                </div>
+                <div className="agent-cli-runtime-meta">
+                  <span className={`agent-cli-status ${runtime.installed ? 'ok' : 'muted'}`}>
+                    {runtime.installed ? authStateLabel(runtime.authState) : '未安装'}
+                  </span>
+                  <span>{runtime.version ?? '版本未知'}</span>
+                  <span>{workloadLabel(runtime.workload)}</span>
+                </div>
+                {runtime.missingReason && (
+                  <p className="agent-cli-runtime-note">{runtime.missingReason}</p>
+                )}
+                <p className="agent-cli-runtime-note">{agentCliRuntimeNextStep(runtime)}</p>
+              </div>
+            )) : (
+              <div className="agent-cli-empty">Agent CLI 状态尚未生成。</div>
+            )}
+          </div>
+        </details>
         <details className="agent-cli-debug">
           <summary>调试详情</summary>
           <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
@@ -490,28 +497,6 @@ function AgentCliRuntimeSection({
         </details>
       </div>
     </section>
-  );
-}
-
-function SetupStep({
-  detail,
-  index,
-  state,
-  title,
-}: {
-  detail: string;
-  index: number;
-  state: 'done' | 'locked' | 'todo';
-  title: string;
-}) {
-  return (
-    <div className={`agent-cli-step ${state}`}>
-      <div className="agent-cli-step-index">{state === 'done' ? '✓' : index}</div>
-      <div className="agent-cli-step-copy">
-        <strong>{title}</strong>
-        <span>{detail}</span>
-      </div>
-    </div>
   );
 }
 

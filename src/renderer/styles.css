@@ -5465,55 +5465,58 @@ a { color: inherit; text-decoration: none; }
   background: oklch(96% 0.03 145);
   border-color: oklch(86% 0.06 145);
 }
-.agent-cli-setup {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.agent-cli-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 16px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-sunk);
 }
-.agent-cli-step {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  min-width: 0;
-  padding: 14px 16px;
-  border-right: 1px solid var(--line);
-}
-.agent-cli-step:last-child { border-right: none; }
-.agent-cli-step-index {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
+.agent-cli-action-icon {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
   background: var(--bg-elev);
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 650;
 }
-.agent-cli-step.done .agent-cli-step-index {
+.agent-cli-action.ready .agent-cli-action-icon {
   color: oklch(42% 0.13 145);
   border-color: oklch(84% 0.07 145);
   background: oklch(96% 0.03 145);
 }
-.agent-cli-step.locked { opacity: 0.62; }
-.agent-cli-step-copy {
+.agent-cli-action-copy {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
-.agent-cli-step-copy strong {
-  font-size: 12.5px;
+.agent-cli-action-copy strong {
+  font-size: 15px;
   color: var(--ink-1);
   font-weight: 650;
 }
-.agent-cli-step-copy span {
-  font-size: 11.5px;
+.agent-cli-action-copy span {
+  font-size: 12.5px;
   color: var(--ink-3);
   line-height: 1.45;
+}
+.agent-cli-action-state {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  border-radius: 999px;
+  padding: 6px 10px;
 }
 .agent-cli-counts {
   display: flex;
@@ -5784,9 +5787,8 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 760px) {
   .model-page { padding: 24px 18px; }
   .agent-cli-head { flex-direction: column; }
-  .agent-cli-setup { grid-template-columns: 1fr; }
-  .agent-cli-step { border-right: none; border-bottom: 1px solid var(--line); }
-  .agent-cli-step:last-child { border-bottom: none; }
+  .agent-cli-action { align-items: flex-start; }
+  .agent-cli-action-state { display: none; }
   .agent-cli-counts { justify-content: flex-start; }
   .agent-cli-row { grid-template-columns: 1fr; }
   .agent-cli-runtime-meta { grid-template-columns: 72px minmax(0, 1fr) 56px; }

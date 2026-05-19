@@ -1091,15 +1091,16 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
     expect(screen.getByText(/账号登录在官方 CLI 中完成/)).toBeTruthy();
     expect(screen.getByText(/当前可执行/)).toBeTruthy();
-    expect(screen.getByText('登录官方 CLI')).toBeTruthy();
-    expect(screen.getByText('设置工作目录')).toBeTruthy();
-    expect(screen.getByText('到任务里运行')).toBeTruthy();
-    expect(screen.getByText('Codex CLI')).toBeTruthy();
-    expect(screen.getByText('Claude Code')).toBeTruthy();
-    expect(screen.getByLabelText('Workspace root')).toBeTruthy();
-    expect(screen.getByText(/第一版只做只读 run/)).toBeTruthy();
+    expect(screen.getByText('AI Runtime 已准备好')).toBeTruthy();
+    expect(screen.getByText(/切到 Codex/)).toBeTruthy();
+    expect(screen.getByLabelText('项目目录')).toBeTruthy();
+    expect(screen.getByText(/第一版只读运行/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /保存 Workspace root/ })).toBeTruthy();
     expect(screen.getAllByText(/codex login/).length).toBeGreaterThan(0);
+    expect(screen.getByText('CLI 明细')).toBeTruthy();
+    await user.click(screen.getByText('CLI 明细'));
+    expect(screen.getByText('Codex CLI')).toBeTruthy();
+    expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByText(/Auxiliary API Model/)).toBeTruthy();
     expect(screen.getByText(/辅助 API 当前/)).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
@@ -1114,7 +1115,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
-    const workspaceInput = await screen.findByLabelText('Workspace root');
+    const workspaceInput = await screen.findByLabelText('项目目录');
     await user.clear(workspaceInput);
     await user.type(workspaceInput, '/Users/example/project');
     await user.click(screen.getByRole('button', { name: '保存 AI Runtime 配置' }));
