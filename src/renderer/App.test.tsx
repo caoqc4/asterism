@@ -1091,10 +1091,14 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
     expect(screen.getByText(/账号登录在官方 CLI 中完成/)).toBeTruthy();
     expect(screen.getByText(/当前可执行/)).toBeTruthy();
+    expect(screen.getByText('登录官方 CLI')).toBeTruthy();
+    expect(screen.getByText('设置工作目录')).toBeTruthy();
+    expect(screen.getByText('到任务里运行')).toBeTruthy();
     expect(screen.getByText('Codex CLI')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByLabelText('Workspace root')).toBeTruthy();
-    expect(screen.getByText(/修改后点击页面底部保存 AI Runtime 配置/)).toBeTruthy();
+    expect(screen.getByText(/第一版只做只读 run/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /保存 Workspace root/ })).toBeTruthy();
     expect(screen.getAllByText(/codex login/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Auxiliary API Model/)).toBeTruthy();
     expect(screen.getByText(/辅助 API 当前/)).toBeTruthy();

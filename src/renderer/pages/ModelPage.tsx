@@ -227,6 +227,9 @@ export function ModelPage() {
         status={agentCliStatus}
         safety={agentCliSafety}
         capabilitySummary={agentCliCapability?.summary ?? null}
+        onSave={() => void save()}
+        saveLabel={saving ? '保存中…' : saveResult === 'ok' ? '已保存' : '保存 Workspace root'}
+        saveDisabled={saving}
       />
 
       <section className="model-api-section">
@@ -354,12 +357,18 @@ export function ModelPage() {
 function AgentCliRuntimeSection({
   workspaceRoot,
   onWorkspaceRootChange,
+  onSave,
+  saveDisabled,
+  saveLabel,
   status,
   safety,
   capabilitySummary,
 }: {
   workspaceRoot: string;
   onWorkspaceRootChange: (value: string) => void;
+  onSave: () => void;
+  saveDisabled: boolean;
+  saveLabel: string;
   status: AiConfigStatus['agentCliRuntimeStatus'] | null;
   safety: ConfigurationSafetySurface | null;
   capabilitySummary: string | null;
@@ -376,30 +385,64 @@ function AgentCliRuntimeSection({
     : readyRuntime
       ? `当前可执行：${readyRuntime.label}`
       : '等待官方 CLI 登录或安装';
+  const runnable = Boolean(workspaceReady && readyRuntime);
 
   return (
     <section className="agent-cli-section">
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">Agent CLI</div>
-          <p className="model-section-copy">主执行路径。账号在官方 CLI 里登录；Taskplane 只识别本机 CLI、配置工作目录并启动只读任务 run。</p>
+          <p className="model-section-copy">主执行路径。完成下面 3 步后，在任务右侧面板选择 Codex 或 Claude 发送即可启动后台 run。</p>
         </div>
         <div className={`agent-cli-primary-state${readyRuntime && workspaceReady ? ' ready' : ''}`}>
           {primaryStatus}
         </div>
       </div>
 
-      <div className="agent-cli-workspace">
-        <label className="settings-label" htmlFor="agent-cli-workspace-root">Workspace root</label>
-        <input
-          id="agent-cli-workspace-root"
-          className="settings-input mono"
-          type="text"
-          value={workspaceRoot}
-          placeholder="/absolute/path/to/workspace"
-          onChange={(event) => onWorkspaceRootChange(event.target.value)}
+      <div className="agent-cli-setup">
+        <SetupStep
+          index={1}
+          title="登录官方 CLI"
+          state={readyRuntime ? 'done' : 'todo'}
+          detail={readyRuntime ? `${readyRuntime.label} 已可用。` : '在终端运行 codex login，完成后点右上角重新检测。'}
         />
-        <p className="settings-hint">Agent CLI run 从这个目录启动并保持只读；不设置时不会执行。修改后点击页面底部保存 AI Runtime 配置。</p>
+        <SetupStep
+          index={2}
+          title="设置工作目录"
+          state={workspaceReady ? 'done' : 'todo'}
+          detail={workspaceReady ? 'Agent CLI 会从这个目录启动。' : '填写项目根目录，例如 /Users/name/git/project。'}
+        />
+        <SetupStep
+          index={3}
+          title="到任务里运行"
+          state={runnable ? 'done' : 'locked'}
+          detail={runnable ? '打开一个任务，在右侧输入框切到 Codex 或 Claude。' : '前两步完成后才会启用任务里的 Agent CLI 按钮。'}
+        />
+      </div>
+
+      <div className="agent-cli-workspace">
+        <div className="agent-cli-workspace-head">
+          <label className="settings-label" htmlFor="agent-cli-workspace-root">Workspace root</label>
+          <button
+            className={`btn sm primary${saveDisabled ? ' disabled' : ''}`}
+            type="button"
+            onClick={onSave}
+            disabled={saveDisabled}
+          >
+            {saveLabel}
+          </button>
+        </div>
+        <div className="agent-cli-workspace-row">
+          <input
+            id="agent-cli-workspace-root"
+            className="settings-input mono"
+            type="text"
+            value={workspaceRoot}
+            placeholder="/Users/you/git/project"
+            onChange={(event) => onWorkspaceRootChange(event.target.value)}
+          />
+        </div>
+        <p className="settings-hint">这是 Agent CLI 的启动目录。Taskplane 第一版只做只读 run，不自动改代码、不自动提交。</p>
       </div>
 
       <div className="agent-cli-grid">
@@ -429,7 +472,7 @@ function AgentCliRuntimeSection({
       </div>
 
       <div className="agent-cli-boundary">
-        <span>Taskplane 不保存 CLI 账号；登录请在终端运行 <span className="mono">codex login</span> 或 <span className="mono">claude auth login</span>，完成后点击重新检测。</span>
+        <span>账号不在这里配置。Taskplane 不保存 CLI 账号；登录请在终端运行 <span className="mono">codex login</span> 或 <span className="mono">claude auth login</span>，完成后点击重新检测。</span>
         <details className="agent-cli-debug">
           <summary>调试详情</summary>
           <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
@@ -447,6 +490,28 @@ function AgentCliRuntimeSection({
         </details>
       </div>
     </section>
+  );
+}
+
+function SetupStep({
+  detail,
+  index,
+  state,
+  title,
+}: {
+  detail: string;
+  index: number;
+  state: 'done' | 'locked' | 'todo';
+  title: string;
+}) {
+  return (
+    <div className={`agent-cli-step ${state}`}>
+      <div className="agent-cli-step-index">{state === 'done' ? '✓' : index}</div>
+      <div className="agent-cli-step-copy">
+        <strong>{title}</strong>
+        <span>{detail}</span>
+      </div>
+    </div>
   );
 }
 
