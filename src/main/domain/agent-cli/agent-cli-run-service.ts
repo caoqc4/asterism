@@ -177,9 +177,9 @@ export class AgentCliRunService {
     }
 
     const sandboxMode = request.sandboxMode ?? 'read-only';
-    const workspaceRoot = aiStatus.workspaceRoot?.trim();
+    const workspaceRoot = aiStatus.workspaceRoot?.trim() || aiStatus.suggestedWorkspaceRoot?.trim();
     if (!workspaceRoot) {
-      throw new Error('Agent CLI run requires a configured workspace root.');
+      throw new Error('Agent CLI run requires an available runtime workspace.');
     }
     if (!fs.existsSync(workspaceRoot) || !fs.statSync(workspaceRoot).isDirectory()) {
       throw new Error(`Agent CLI workspace root is not a readable directory: ${workspaceRoot}`);

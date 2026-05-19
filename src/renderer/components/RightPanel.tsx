@@ -881,9 +881,8 @@ export function RightPanel({
       setCompressionThreshold(
         status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
       );
-      const workspaceConfigured = Boolean(status.workspaceRoot?.trim());
       const nextAvailability = AGENT_CLI_PANEL_RUNTIMES.reduce<Record<AgentCliRuntimeId, boolean>>((acc, runtimeId) => {
-        acc[runtimeId] = workspaceConfigured && Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
+        acc[runtimeId] = Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
           runtime.id === runtimeId
           && runtime.installed
           && runtime.authState === 'ready'
@@ -2381,7 +2380,7 @@ export function RightPanel({
                   disabled={!canUseRuntime}
                   title={canUseRuntime
                     ? `通过 ${runtimeLabel} 创建只读 Agent run`
-                    : `${runtimeLabel} 需要任务上下文、workspace root、本机检测和官方 CLI 登录 ready`}
+                    : `${runtimeLabel} 需要任务上下文、本机检测和官方 CLI 登录 ready`}
                 >
                   {runtimeId === 'codex' ? 'Codex' : 'Claude'}
                 </button>

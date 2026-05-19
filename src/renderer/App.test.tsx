@@ -1096,17 +1096,17 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
-    expect(screen.getByText(/账号登录在官方 CLI 中完成/)).toBeTruthy();
-    expect(screen.getByText(/当前可执行/)).toBeTruthy();
+    expect(screen.getByText(/账号由官方 CLI 管理/)).toBeTruthy();
+    expect(screen.getByText('1/2 已登录')).toBeTruthy();
     expect(screen.getByText(/自动检测：发现 1 个 CLI，1 个已登录/)).toBeTruthy();
-    expect(screen.getByText('AI Runtime 已准备好')).toBeTruthy();
-    expect(screen.getByText(/切到 Codex/)).toBeTruthy();
+    expect(screen.getByText('可以在任务里使用')).toBeTruthy();
+    expect(screen.getByText(/文件上下文由具体任务决定/)).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
-    expect(screen.getByText(/工作区默认自动处理/)).toBeTruthy();
-    await user.click(screen.getByText('高级：更改工作区'));
-    expect(screen.getByLabelText('工作区路径')).toBeTruthy();
+    expect(screen.getByText(/第一版只读运行/)).toBeTruthy();
+    await user.click(screen.getByText('高级：运行目录'));
+    expect(screen.getByLabelText('内部运行目录')).toBeTruthy();
     expect(screen.getByText('CLI 明细')).toBeTruthy();
     await user.click(screen.getByText('CLI 明细'));
     expect(screen.getAllByText('Codex CLI').length).toBeGreaterThan(0);
@@ -1120,13 +1120,13 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/secret value is not exposed/)).toBeTruthy();
   });
 
-  it('saves the Agent CLI workspace root through AI Runtime config', async () => {
+  it('keeps the Agent CLI runtime directory in advanced AI Runtime config', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
-    await user.click(await screen.findByText('高级：更改工作区'));
-    const workspaceInput = await screen.findByLabelText('工作区路径');
+    await user.click(await screen.findByText('高级：运行目录'));
+    const workspaceInput = await screen.findByLabelText('内部运行目录');
     await user.clear(workspaceInput);
     await user.type(workspaceInput, '/Users/example/project');
     await user.click(screen.getByRole('button', { name: '保存 AI Runtime 配置' }));
@@ -1166,7 +1166,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
-    expect(await screen.findByText('先登录一个 Agent CLI')).toBeTruthy();
+    expect(await screen.findByText('先登录一个官方 CLI')).toBeTruthy();
     expect(screen.getByText(/自动检测：发现 1 个 CLI，0 个已登录/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '登录 Codex' }));
 
@@ -1436,7 +1436,7 @@ describe('App redesign v1', () => {
     });
   });
 
-  it('does not treat Agent CLI login alone as setup without a workspace root', async () => {
+  it('treats Agent CLI login as setup without a configured workspace root', async () => {
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValueOnce(buildAiStatus({
       apiKeyStored: false,
       configured: false,
@@ -1445,7 +1445,9 @@ describe('App redesign v1', () => {
     }));
     render(<App />);
 
-    expect(await screen.findByText(/AI Runtime 尚未配置/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByText(/AI Runtime 尚未配置/)).toBeNull();
+    });
   });
 
   it('clarifies enabled Skills are catalogue intent until a real service exposes tools', async () => {
@@ -2091,7 +2093,7 @@ describe('App redesign v1', () => {
     });
   });
 
-  it('keeps Codex CLI mode disabled until a workspace root is configured', async () => {
+  it('allows Codex CLI mode when the official CLI is ready without a configured workspace root', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
       apiKeyStored: false,
@@ -2105,13 +2107,15 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
     const codexButton = screen.getByRole('button', { name: 'Codex' }) as HTMLButtonElement;
-    expect(codexButton.disabled).toBe(true);
+    expect(codexButton.disabled).toBe(false);
     await user.click(codexButton);
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
-    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
-    expect(harness.api.chatWithAI).toHaveBeenCalled();
+    expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith(expect.objectContaining({
+      runtimeId: 'codex',
+      taskId: 'task_risk',
+    }));
   });
 
   it('summarizes a background Codex CLI run when the terminal run event arrives', async () => {

@@ -511,11 +511,11 @@ describe('AgentCliRunService', () => {
     expect(runRepository.create).not.toHaveBeenCalled();
   });
 
-  it('blocks execution before creating a run when workspace root is missing', async () => {
+  it('blocks execution before creating a run when no runtime workspace is available', async () => {
     const runRepository = buildRunRepository();
     const service = new AgentCliRunService(
       buildTaskService(),
-      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({ workspaceRoot: null })) },
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({ suggestedWorkspaceRoot: null, workspaceRoot: null })) },
       runRepository,
       buildRunStepRepository(),
       vi.fn(),
@@ -525,7 +525,7 @@ describe('AgentCliRunService', () => {
       operatorConfirmed: true,
       prompt: 'Run Codex.',
       taskId: 'task_1',
-    })).rejects.toThrow('Agent CLI run requires a configured workspace root.');
+    })).rejects.toThrow('Agent CLI run requires an available runtime workspace.');
     expect(runRepository.create).not.toHaveBeenCalled();
   });
 

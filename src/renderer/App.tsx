@@ -48,10 +48,7 @@ export function App() {
       .then((status) => {
         setAiConfigured(Boolean(
           status.configured
-          || (
-            (status.agentCliRuntimeStatus?.readyManualRunCount ?? 0) > 0
-            && Boolean(status.workspaceRoot?.trim())
-          ),
+          || (status.agentCliRuntimeStatus?.readyManualRunCount ?? 0) > 0,
         ));
       })
       .catch(() => setAiConfigured(false));

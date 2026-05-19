@@ -218,8 +218,8 @@ export function ModelPage() {
       <div className="model-page-head">
         <div>
           <h2 className="model-page-title">AI Runtime</h2>
-          <p className="model-page-subtitle">优先使用本机官方 Agent CLI；API 模型只作为辅助配置。</p>
-          <p className="model-page-boundary">账号登录在官方 CLI 中完成，Taskplane 只检测本机状态、配置工作目录并记录运行证据。</p>
+          <p className="model-page-subtitle">优先使用本机官方 Agent CLI；API 模型只作为辅助。</p>
+          <p className="model-page-boundary">账号由官方 CLI 管理，Taskplane 只检测状态并记录运行证据。</p>
         </div>
         <button
           className={`btn sm ghost${refreshingStatus ? ' disabled' : ''}`}
@@ -238,7 +238,6 @@ export function ModelPage() {
         status={agentCliStatus}
         safety={agentCliSafety}
         capabilitySummary={agentCliCapability?.summary ?? null}
-        configuredWorkspaceRoot={status?.workspaceRoot ?? null}
         suggestedWorkspaceRoot={status?.suggestedWorkspaceRoot ?? null}
         onOpenLogin={(runtimeId) => void openAgentCliLogin(runtimeId)}
         openingLogin={openingLogin}
@@ -377,7 +376,6 @@ function AgentCliRuntimeSection({
   openingLogin,
   saveDisabled,
   saveLabel,
-  configuredWorkspaceRoot,
   suggestedWorkspaceRoot,
   status,
   safety,
@@ -390,7 +388,6 @@ function AgentCliRuntimeSection({
   openingLogin: boolean;
   saveDisabled: boolean;
   saveLabel: string;
-  configuredWorkspaceRoot: string | null;
   suggestedWorkspaceRoot: string | null;
   status: AiConfigStatus['agentCliRuntimeStatus'] | null;
   safety: ConfigurationSafetySurface | null;
@@ -399,71 +396,34 @@ function AgentCliRuntimeSection({
   const runtimes = status?.runtimes ?? [];
   const codexRuntime = runtimes.find((runtime) => runtime.id === 'codex') ?? null;
   const claudeRuntime = runtimes.find((runtime) => runtime.id === 'claude') ?? null;
-  const readyRuntime = runtimes.find((runtime) => (
-    runtime.installed
-    && runtime.authState === 'ready'
-    && runtime.executionSupport === 'manual_run'
-  )) ?? null;
-  const workspaceConfigured = Boolean(configuredWorkspaceRoot?.trim());
-  const displayedWorkspaceRoot = configuredWorkspaceRoot?.trim() || suggestedWorkspaceRoot?.trim() || workspaceRoot.trim();
-  const workspaceReady = workspaceConfigured;
-  const primaryStatus = !readyRuntime
-    ? '需要登录 Codex'
-    : !workspaceReady
-    ? '使用自动工作区'
-      : `当前可执行：${readyRuntime.label}`;
-  const runnable = Boolean(workspaceReady && readyRuntime);
-  const nextAction = readyRuntime && !workspaceReady
-      ? {
-          button: saveLabel === '保存中…' ? saveLabel : '使用默认工作区',
-          title: '使用自动工作区',
-          detail: displayedWorkspaceRoot
-            ? 'Taskplane 会使用自动工作区；通常不需要手动选择路径。'
-            : '暂时没有检测到自动工作区；需要在高级设置里填一次。',
-        }
-      : {
-          button: '已就绪',
-          title: readyRuntime ? 'AI Runtime 已准备好' : '先登录一个 Agent CLI',
-          detail: readyRuntime
-            ? '打开一个任务，在右侧输入框切到 Codex 或 Claude，然后发送你的需求。'
-            : '选择下方 Codex 或 Claude 的登录按钮，Taskplane 会打开终端并填好官方登录命令。',
-        };
   const readyCount = runtimes.filter((runtime) => runtime.installed && runtime.authState === 'ready').length;
   const detectedCount = status?.detectedCount ?? runtimes.filter((runtime) => runtime.installed).length;
+  const catalogueCount = status?.catalogueCount ?? 2;
+  const hasReadyRuntime = readyCount > 0;
 
   return (
     <section className="agent-cli-section">
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">Agent CLI</div>
-          <p className="model-section-copy">Taskplane 会自动检测本机官方 CLI，不在这里保存账号。</p>
+          <p className="model-section-copy">自动检测本机 CLI；未登录时可打开官方登录流程。</p>
         </div>
-        <div className={`agent-cli-primary-state${readyRuntime && workspaceReady ? ' ready' : ''}`}>
-          {primaryStatus}
+        <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
+          {readyCount}/{catalogueCount} 已登录
         </div>
       </div>
 
-      <div className={`agent-cli-action ${runnable ? 'ready' : ''}`}>
-        <div className="agent-cli-action-icon">{runnable ? '✓' : readyRuntime ? '2' : '1'}</div>
+      <div className={`agent-cli-action ${hasReadyRuntime ? 'ready' : ''}`}>
+        <div className="agent-cli-action-icon">{hasReadyRuntime ? '✓' : '1'}</div>
         <div className="agent-cli-action-copy">
           <span className="agent-cli-detection">自动检测：发现 {detectedCount} 个 CLI，{readyCount} 个已登录。</span>
-          <strong>{nextAction.title}</strong>
-          <span>{nextAction.detail}</span>
+          <strong>{hasReadyRuntime ? '可以在任务里使用' : '先登录一个官方 CLI'}</strong>
+          <span>{hasReadyRuntime ? '打开任务，在右侧选择 Codex 或 Claude；文件上下文由具体任务决定。' : '点击下方登录按钮，Taskplane 会打开终端并填好官方命令。'}</span>
         </div>
-        {readyRuntime && !runnable && (
-          <button
-            className={`btn sm primary${saveDisabled ? ' disabled' : ''}`}
-            type="button"
-            onClick={onSave}
-            disabled={saveDisabled}
-          >
-            {nextAction.button}
-          </button>
-        )}
       </div>
 
-      <div className="agent-cli-runtime-cards" aria-label="Agent CLI runtimes">
-        <AgentCliRuntimeCard
+      <div className="agent-cli-runtime-list" aria-label="Agent CLI runtimes">
+        <AgentCliRuntimeRow
           runtime={codexRuntime}
           fallback={{
             command: 'codex',
@@ -474,7 +434,7 @@ function AgentCliRuntimeSection({
           onOpenLogin={onOpenLogin}
           primary
         />
-        <AgentCliRuntimeCard
+        <AgentCliRuntimeRow
           runtime={claudeRuntime}
           fallback={{
             command: 'claude',
@@ -487,14 +447,12 @@ function AgentCliRuntimeSection({
       </div>
 
       <div className="agent-cli-boundary">
-        <span>
-          工作区默认自动处理，不是 Taskplane.app 的安装路径；第一版只读运行，不会自动改代码或提交。
-        </span>
+        <span>第一版只读运行，不会自动改代码或提交。</span>
         <details className="agent-cli-debug">
-          <summary>高级：更改工作区</summary>
+          <summary>高级：运行目录</summary>
           <div className="agent-cli-workspace">
             <div className="agent-cli-workspace-head">
-              <label className="settings-label" htmlFor="agent-cli-workspace-root">工作区路径</label>
+              <label className="settings-label" htmlFor="agent-cli-workspace-root">内部运行目录</label>
               <button
                 className={`btn sm ghost${saveDisabled ? ' disabled' : ''}`}
                 type="button"
@@ -514,7 +472,7 @@ function AgentCliRuntimeSection({
                 onChange={(event) => onWorkspaceRootChange(event.target.value)}
               />
             </div>
-            <p className="settings-hint">这里不是 Taskplane.app 的安装路径，而是 Agent CLI 读取任务资料或项目文件时使用的运行目录。普通使用可以保持自动默认。</p>
+            <p className="settings-hint">通常保持自动即可；具体文件读取会在任务上下文里决定。</p>
           </div>
         </details>
         <details className="agent-cli-debug">
@@ -565,7 +523,7 @@ function AgentCliRuntimeSection({
   );
 }
 
-function AgentCliRuntimeCard({
+function AgentCliRuntimeRow({
   fallback,
   onOpenLogin,
   openingLogin,
@@ -586,42 +544,35 @@ function AgentCliRuntimeCard({
   const ready = installed && runtime?.authState === 'ready';
   const needsLogin = installed && runtime?.authState !== 'ready';
   const statusLabel = ready ? '已登录' : installed ? '需登录' : '未安装';
-  const detail = ready
-    ? '可在任务右侧面板使用。'
-    : needsLogin
-      ? `点击登录，Taskplane 会打开终端并输入 ${fallback.id === 'claude' ? 'claude auth login' : 'codex login'}。`
-      : fallback.id === 'claude'
-        ? '可选。安装 Claude Code 后可用于 Plan 模式。'
-        : '未检测到 Codex CLI；安装后点击重新检测。';
+  const detail = ready ? workloadLabel(runtime.workload) : installed ? '等待登录' : '未检测到';
 
   return (
-    <div className={`agent-cli-runtime-card ${ready ? 'ready' : installed ? 'needs-login' : 'missing'}`}>
-      <div className="agent-cli-runtime-card-main">
-        <div>
-          <div className="agent-cli-runtime-card-title">
-            <span>{fallback.label}</span>
-            {primary && <span className="model-tag">主路径</span>}
-          </div>
-          <div className="agent-cli-runtime-card-command mono">{runtime?.command ?? fallback.command}</div>
+    <div className={`agent-cli-runtime-row ${ready ? 'ready' : installed ? 'needs-login' : 'missing'}`}>
+      <div className="agent-cli-runtime-row-name">
+        <div className="agent-cli-runtime-card-title">
+          <span>{fallback.label}</span>
+          {primary && <span className="model-tag">主路径</span>}
+          {!primary && <span className="agent-cli-pill">可选</span>}
         </div>
-        <span className={`agent-cli-runtime-card-status ${ready ? 'ready' : installed ? 'needs-login' : 'missing'}`}>
-          {statusLabel}
-        </span>
+        <span className="agent-cli-runtime-card-command mono">{runtime?.command ?? fallback.command}</span>
       </div>
-      <p>{detail}</p>
-      <div className="agent-cli-runtime-card-foot">
-        <span>{runtime?.version ?? '版本未知'}</span>
-        {!ready && installed && (
-          <button
-            className={`btn sm primary${openingLogin ? ' disabled' : ''}`}
-            type="button"
-            onClick={() => onOpenLogin(fallback.id)}
-            disabled={openingLogin}
-          >
-            {openingLogin ? '正在打开…' : fallback.id === 'claude' ? '登录 Claude' : '登录 Codex'}
-          </button>
-        )}
-      </div>
+      <span className={`agent-cli-runtime-card-status ${ready ? 'ready' : installed ? 'needs-login' : 'missing'}`}>
+        {statusLabel}
+      </span>
+      <span className="agent-cli-runtime-row-version">{runtime?.version ?? '版本未知'}</span>
+      <span className="agent-cli-runtime-row-detail">{detail}</span>
+      {!ready && installed ? (
+        <button
+          className={`btn sm primary${openingLogin ? ' disabled' : ''}`}
+          type="button"
+          onClick={() => onOpenLogin(fallback.id)}
+          disabled={openingLogin}
+        >
+          {openingLogin ? '正在打开…' : fallback.id === 'claude' ? '登录 Claude' : '登录 Codex'}
+        </button>
+      ) : (
+        <span className="agent-cli-runtime-row-action">{ready ? '可用' : '安装后检测'}</span>
+      )}
     </div>
   );
 }
