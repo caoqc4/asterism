@@ -541,6 +541,61 @@ describe('runtime event record projection', () => {
     });
   });
 
+  it('projects runtime-native goal audit runs as readable non-forwarded evidence', () => {
+    const events = projectRuntimeEvents({
+      runs: [{
+        id: 'run-native-goal-audit',
+        taskId: 'task-1',
+        type: 'agent',
+        status: 'completed',
+        instructions: 'Runtime native goal request (Codex CLI): packaged native audit',
+        output: 'Runtime-native goal request recorded without forwarding.',
+        outputSource: 'system',
+        failureReason: null,
+        createdAt: '2026-05-14T10:00:00.000Z',
+        updatedAt: '2026-05-14T10:01:00.000Z',
+      }],
+      runStepsByRunId: {
+        'run-native-goal-audit': [{
+          id: 'step-native-goal-audit',
+          runId: 'run-native-goal-audit',
+          index: 1,
+          kind: 'plan',
+          status: 'skipped',
+          title: 'Runtime Native Goal 请求审计',
+          input: JSON.stringify({
+            forwarded: false,
+            objective: 'packaged native audit',
+            reason: 'Adapter native goal capability is disabled.',
+            runtimeLabel: 'Codex CLI',
+          }),
+          output: 'Taskplane kept this as audit evidence; no CLI command was executed.',
+          error: null,
+          createdAt: '2026-05-14T10:00:30.000Z',
+          updatedAt: '2026-05-14T10:00:30.000Z',
+        }],
+      },
+    });
+    const group = groupRuntimeEventsForReplay(events).find((item) => item.kind === 'execution_recovery');
+
+    expect(events.map((event) => event.title)).toEqual([
+      'Codex CLI Native Goal 请求已审计',
+      'Codex CLI Native Goal 未透传',
+    ]);
+    expect(events[0]?.detail).toBe(
+      'objective=packaged native audit / forwarded=no / Runtime-native goal request recorded without forwarding.',
+    );
+    expect(events[1]).toMatchObject({
+      detail: '目标：packaged native audit / 未透传 / 原因：Adapter native goal capability is disabled.',
+      priority: 'p3',
+      sourceType: 'run_step',
+    });
+    expect(group).toMatchObject({
+      title: '执行与恢复',
+      eventIds: ['run_step:step-native-goal-audit', 'run:run-native-goal-audit'],
+    });
+  });
+
   it('groups completion checks as quality gates instead of generic task state', () => {
     const events = projectRuntimeEvents({
       timeline: [{

@@ -310,12 +310,13 @@ function projectRunEvents(run: RunRecord, params: {
   steps: RunStepRecord[];
 }): RuntimeEventRecord[] {
   const agentCli = parseAgentCliRunDescriptor(run);
+  const nativeGoalAudit = parseRuntimeNativeGoalAuditDescriptor(run);
   const events: RuntimeEventRecord[] = [{
     id: `run:${run.id}`,
     taskId: run.taskId,
     type: `run.${run.status}`,
-    title: formatRunEventTitle(run, agentCli),
-    detail: formatRunEventDetail(run, agentCli),
+    title: formatRunEventTitle(run, agentCli, nativeGoalAudit),
+    detail: formatRunEventDetail(run, agentCli, nativeGoalAudit),
     sourceType: 'run',
     sourceId: run.id,
     priority: run.status === 'failed' ? 'p1' : run.status === 'paused' ? 'p2' : 'p3',
@@ -341,7 +342,7 @@ function projectRunEvents(run: RunRecord, params: {
     });
   }
 
-  events.push(...params.steps.map((step) => projectRunStepEvent(run, step, agentCli)));
+  events.push(...params.steps.map((step) => projectRunStepEvent(run, step, agentCli, nativeGoalAudit)));
 
   return events;
 }
@@ -350,13 +351,14 @@ function projectRunStepEvent(
   run: RunRecord,
   step: RunStepRecord,
   agentCli: AgentCliRunDescriptor | null,
+  nativeGoalAudit: RuntimeNativeGoalAuditDescriptor | null,
 ): RuntimeEventRecord {
   return {
     id: `run_step:${step.id}`,
     taskId: run.taskId,
     type: `run_step.${step.kind}.${step.status}`,
-    title: formatRunStepTitle(step, agentCli),
-    detail: formatRunStepDetail(step, agentCli),
+    title: formatRunStepTitle(step, agentCli, nativeGoalAudit),
+    detail: formatRunStepDetail(step, agentCli, nativeGoalAudit),
     sourceType: 'run_step',
     sourceId: step.id,
     priority: step.status === 'failed' ? 'p1' : step.kind === 'decision' || step.kind === 'checkpoint' ? 'p2' : 'p3',
@@ -371,6 +373,11 @@ type AgentCliRunDescriptor = {
   userPrompt: string | null;
 };
 
+type RuntimeNativeGoalAuditDescriptor = {
+  label: string;
+  objective: string | null;
+};
+
 function parseAgentCliRunDescriptor(run: RunRecord): AgentCliRunDescriptor | null {
   const instructions = run.instructions ?? '';
   const match = instructions.match(/^Agent CLI \(([^)]+)\) ([^:]+):\s*([\s\S]*)$/);
@@ -382,7 +389,22 @@ function parseAgentCliRunDescriptor(run: RunRecord): AgentCliRunDescriptor | nul
   };
 }
 
-function formatRunEventTitle(run: RunRecord, agentCli: AgentCliRunDescriptor | null): string {
+function parseRuntimeNativeGoalAuditDescriptor(run: RunRecord): RuntimeNativeGoalAuditDescriptor | null {
+  const instructions = run.instructions ?? '';
+  const match = instructions.match(/^Runtime native goal request \(([^)]+)\):\s*([\s\S]*)$/);
+  if (!match) return null;
+  return {
+    label: match[1]?.trim() || 'Runtime',
+    objective: match[2]?.trim() || null,
+  };
+}
+
+function formatRunEventTitle(
+  run: RunRecord,
+  agentCli: AgentCliRunDescriptor | null,
+  nativeGoalAudit: RuntimeNativeGoalAuditDescriptor | null,
+): string {
+  if (nativeGoalAudit) return `${nativeGoalAudit.label} Native Goal 请求已审计`;
   if (agentCli) {
     if (run.status === 'completed') return `${agentCli.label} 已完成`;
     if (run.status === 'failed') return `${agentCli.label} 执行失败`;
@@ -401,7 +423,18 @@ function formatRunEventTitle(run: RunRecord, agentCli: AgentCliRunDescriptor | n
           : 'Run 状态更新';
 }
 
-function formatRunEventDetail(run: RunRecord, agentCli: AgentCliRunDescriptor | null): string | null {
+function formatRunEventDetail(
+  run: RunRecord,
+  agentCli: AgentCliRunDescriptor | null,
+  nativeGoalAudit: RuntimeNativeGoalAuditDescriptor | null,
+): string | null {
+  if (nativeGoalAudit) {
+    return [
+      nativeGoalAudit.objective ? `objective=${nativeGoalAudit.objective}` : null,
+      'forwarded=no',
+      run.output,
+    ].filter((value): value is string => Boolean(value)).join(' / ') || null;
+  }
   if (!agentCli) return run.failureReason ?? run.output ?? run.instructions;
   const parts = [
     `sandbox=${agentCli.sandboxMode}`,
@@ -413,7 +446,14 @@ function formatRunEventDetail(run: RunRecord, agentCli: AgentCliRunDescriptor | 
   return parts.join(' / ') || null;
 }
 
-function formatRunStepTitle(step: RunStepRecord, agentCli: AgentCliRunDescriptor | null): string {
+function formatRunStepTitle(
+  step: RunStepRecord,
+  agentCli: AgentCliRunDescriptor | null,
+  nativeGoalAudit: RuntimeNativeGoalAuditDescriptor | null,
+): string {
+  if (nativeGoalAudit && step.title === 'Runtime Native Goal 请求审计') {
+    return `${nativeGoalAudit.label} Native Goal 未透传`;
+  }
   if (!agentCli) return `Run Step · ${step.title}`;
   if (step.title === 'agent cli run accepted') return `${agentCli.label} 已接收`;
   if (step.title === 'codex cli completed' || step.title === 'claude code completed') return `${agentCli.label} 输出`;
@@ -421,7 +461,23 @@ function formatRunStepTitle(step: RunStepRecord, agentCli: AgentCliRunDescriptor
   return `${agentCli.label} · ${step.title}`;
 }
 
-function formatRunStepDetail(step: RunStepRecord, agentCli: AgentCliRunDescriptor | null): string | null {
+function formatRunStepDetail(
+  step: RunStepRecord,
+  agentCli: AgentCliRunDescriptor | null,
+  nativeGoalAudit: RuntimeNativeGoalAuditDescriptor | null,
+): string | null {
+  if (nativeGoalAudit && step.title === 'Runtime Native Goal 请求审计') {
+    const payload = parsePayload(step.input);
+    const objective = typeof payload?.objective === 'string' && payload.objective.trim()
+      ? `目标：${payload.objective.trim()}`
+      : nativeGoalAudit.objective ? `目标：${nativeGoalAudit.objective}` : null;
+    const forwarded = payload?.forwarded === true ? '已透传' : '未透传';
+    const reason = typeof payload?.reason === 'string' && payload.reason.trim()
+      ? `原因：${payload.reason.trim()}`
+      : null;
+    const detail = [objective, forwarded, reason].filter(Boolean).join(' / ');
+    return detail || (step.output ?? null);
+  }
   if (!agentCli) return step.error ?? step.output ?? step.input;
   const parts = [
     step.error ? `错误：${step.error}` : null,
