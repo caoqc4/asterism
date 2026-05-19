@@ -66,7 +66,7 @@ describe('agent cli runtime status service', () => {
     });
   });
 
-  it('reports Claude Code login state without enabling execution support', async () => {
+  it('reports Claude Code login state for the manual-run adapter', async () => {
     const service = new AgentCliRuntimeStatusService(async (command) => ({
       authState: command === 'claude' ? 'needs_login' : 'ready',
       installed: true,
@@ -77,11 +77,11 @@ describe('agent cli runtime status service', () => {
 
     expect(status.runtimes.find((runtime) => runtime.id === 'claude')).toMatchObject({
       authState: 'needs_login',
-      executionSupport: 'status_only',
+      executionSupport: 'manual_run',
       installed: true,
       missingReason: 'Claude Code is installed but not logged in; run claude auth login.',
     });
-    expect(status.manualRunCount).toBe(1);
+    expect(status.manualRunCount).toBe(2);
   });
 
   it('projects active Agent CLI runs into runtime workload status', async () => {

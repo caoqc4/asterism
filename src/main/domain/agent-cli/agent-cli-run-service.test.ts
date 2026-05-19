@@ -547,8 +547,17 @@ describe('AgentCliRunService', () => {
     expect(runRepository.create).not.toHaveBeenCalled();
   });
 
-  it('keeps Claude Code status-only until a run adapter is enabled', async () => {
+  it('runs Claude Code through the dedicated plan-mode adapter', async () => {
     const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Claude Code plan.',
+      summary: 'Agent CLI execution completed.',
+    });
     const service = new AgentCliRunService(
       buildTaskService(),
       { getStatus: vi.fn().mockResolvedValue(buildAiStatus({
@@ -556,9 +565,9 @@ describe('AgentCliRunService', () => {
           catalogueCount: 2,
           detectedCount: 2,
           errorCount: 0,
-          manualRunCount: 1,
-          readyCount: 1,
-          readyManualRunCount: 1,
+          manualRunCount: 2,
+          readyCount: 2,
+          readyManualRunCount: 2,
           runningCount: 0,
           updatedAt: '2026-05-19T00:00:00.000Z',
           runtimes: [
@@ -579,26 +588,50 @@ describe('AgentCliRunService', () => {
               command: 'claude',
               installed: true,
               version: 'claude 1.0.0',
-              authState: 'unknown',
-              executionSupport: 'status_only',
+              authState: 'ready',
+              executionSupport: 'manual_run',
               workload: 'idle',
-              missingReason: 'Claude Code detection is status-only in this version.',
+              missingReason: null,
             },
           ],
         },
       })) },
       runRepository,
-      buildRunStepRepository(),
-      vi.fn(),
+      runStepRepository,
+      executor,
+      { upsert: vi.fn() },
     );
 
-    await expect(service.trigger({
+    const result = await service.trigger({
       operatorConfirmed: true,
       prompt: 'Run Claude.',
       runtimeId: 'claude',
       taskId: 'task_1',
-    })).rejects.toThrow('claude CLI execution is not enabled in this version.');
-    expect(runRepository.create).not.toHaveBeenCalled();
+    });
+
+    expect(result).toMatchObject({
+      id: 'run_agent_cli_1',
+      status: 'running',
+    });
+    expect(runRepository.create).toHaveBeenCalledWith({
+      instructions: 'Agent CLI (Claude Code) read-only: Run Claude.',
+      taskId: 'task_1',
+      type: 'agent',
+    });
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      args: ['-p', '--permission-mode', 'plan', '--output-format', 'text'],
+      command: 'claude',
+      cwd: workspaceRoot,
+      input: expect.stringContaining('Claude Code is launched with --permission-mode plan.'),
+    }));
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'model',
+        status: 'completed',
+        title: 'claude code completed',
+        output: 'Claude Code plan.',
+      }));
+    });
   });
 
   it('requires explicit operator confirmation', async () => {

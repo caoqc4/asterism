@@ -7,10 +7,10 @@ import {
 } from './agent-cli-runtime-status.js';
 
 describe('agent cli runtime status', () => {
-  it('defines Codex as the first manual-run runtime and Claude Code as status-only', () => {
+  it('defines Codex and Claude Code as first manual-run runtimes', () => {
     expect(DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE).toEqual([
       expect.objectContaining({ id: 'codex', command: 'codex', executionSupport: 'manual_run' }),
-      expect.objectContaining({ id: 'claude', command: 'claude', executionSupport: 'status_only' }),
+      expect.objectContaining({ id: 'claude', command: 'claude', executionSupport: 'manual_run' }),
     ]);
   });
 
@@ -45,7 +45,7 @@ describe('agent cli runtime status', () => {
         installed: true,
         version: null,
         authState: 'error',
-        executionSupport: 'status_only',
+        executionSupport: 'manual_run',
         workload: 'idle',
         missingReason: 'Login failed.',
       },
@@ -55,7 +55,7 @@ describe('agent cli runtime status', () => {
       catalogueCount: 2,
       detectedCount: 2,
       readyCount: 1,
-      manualRunCount: 1,
+      manualRunCount: 2,
       readyManualRunCount: 1,
       runningCount: 1,
       errorCount: 1,

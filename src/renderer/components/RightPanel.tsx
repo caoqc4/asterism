@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
+import type { AgentCliRuntimeId } from '@shared/agent-cli-runtime-status';
 import type { RunStepRecord } from '@shared/types/run';
 import {
   selectBlockingTaskMemoryGuidance,
@@ -63,12 +64,26 @@ import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 
 type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
-type PanelExecutionMode = 'chat' | 'codex';
+type PanelExecutionMode = 'chat' | AgentCliRuntimeId;
 type ActiveAgentCliRunState = {
   runId: string;
+  runtimeId: AgentCliRuntimeId;
+  runtimeLabel: string;
   status: 'running' | 'cancelling';
   taskId: string;
 };
+
+const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
+  claude: 'Claude Code',
+  codex: 'Codex CLI',
+};
+
+const AGENT_CLI_PANEL_RUNTIME_HINTS: Record<AgentCliRuntimeId, string> = {
+  claude: 'Claude Code · Plan',
+  codex: 'Codex CLI · 只读',
+};
+
+const AGENT_CLI_PANEL_RUNTIMES: AgentCliRuntimeId[] = ['codex', 'claude'];
 
 interface Message {
   id: string;
@@ -829,7 +844,10 @@ export function RightPanel({
   const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
   const [executionMode, setExecutionMode] = useState<PanelExecutionMode>('chat');
   const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
-  const [codexCliAvailable, setCodexCliAvailable] = useState(false);
+  const [agentCliAvailability, setAgentCliAvailability] = useState<Record<AgentCliRuntimeId, boolean>>({
+    claude: false,
+    codex: false,
+  });
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
   );
@@ -863,12 +881,17 @@ export function RightPanel({
       setCompressionThreshold(
         status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
       );
-      setCodexCliAvailable(Boolean(status.workspaceRoot?.trim()) && Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
-        runtime.id === 'codex'
-        && runtime.installed
-        && runtime.authState === 'ready'
-        && runtime.executionSupport === 'manual_run'
-      ))));
+      const workspaceConfigured = Boolean(status.workspaceRoot?.trim());
+      const nextAvailability = AGENT_CLI_PANEL_RUNTIMES.reduce<Record<AgentCliRuntimeId, boolean>>((acc, runtimeId) => {
+        acc[runtimeId] = workspaceConfigured && Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
+          runtime.id === runtimeId
+          && runtime.installed
+          && runtime.authState === 'ready'
+          && runtime.executionSupport === 'manual_run'
+        )));
+        return acc;
+      }, { claude: false, codex: false });
+      setAgentCliAvailability(nextAvailability);
     }).catch(() => {});
   }, []);
 
@@ -942,7 +965,7 @@ export function RightPanel({
             : detail.status;
         const output = detail.output?.trim() || detail.failureReason || '终态已记录。';
         appendSysMsg([
-          `Codex CLI run ${statusText}。`,
+          `${current.runtimeLabel} run ${statusText}。`,
           output,
           `Run: ${detail.id}`,
         ].join('\n\n'));
@@ -952,7 +975,7 @@ export function RightPanel({
   }, []);
 
   useEffect(() => {
-    if (!activeTaskId && executionMode === 'codex') {
+    if (!activeTaskId && executionMode !== 'chat') {
       setExecutionMode('chat');
     }
   }, [activeTaskId, executionMode]);
@@ -1766,29 +1789,32 @@ export function RightPanel({
 
     let replyText: string;
     try {
-      if (executionMode === 'codex' && activeTaskId && window.api?.triggerAgentCliRun) {
+      if (executionMode !== 'chat' && activeTaskId && window.api?.triggerAgentCliRun) {
+        const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[executionMode];
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
           prompt: text,
-          runtimeId: 'codex',
+          runtimeId: executionMode,
           sandboxMode: 'read-only',
           taskId: activeTaskId,
         });
         const detail = await window.api.getRunDetail(run.id).catch(() => null);
-        const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || 'Codex CLI run 已记录。';
+        const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || `${runtimeLabel} run 已记录。`;
         if (run.status === 'running') {
           setActiveAgentCliRun({
             runId: run.id,
+            runtimeId: executionMode,
+            runtimeLabel,
             status: 'running',
             taskId: activeTaskId,
           });
         }
         replyText = [
           run.status === 'running'
-            ? 'Codex CLI run 已在后台启动。'
+            ? `${runtimeLabel} run 已在后台启动。`
             : run.status === 'completed'
-              ? 'Codex CLI run 已完成。'
-              : `Codex CLI run ${run.status}。`,
+              ? `${runtimeLabel} run 已完成。`
+              : `${runtimeLabel} run ${run.status}。`,
           output,
           `Run: ${run.id}`,
         ].join('\n\n');
@@ -1823,8 +1849,8 @@ export function RightPanel({
         replyText = generateReply(text, activeTaskId);
       }
     } catch (error) {
-      replyText = executionMode === 'codex'
-        ? `Codex CLI run 未启动：${error instanceof Error ? error.message : '未知错误'}`
+      replyText = executionMode !== 'chat'
+        ? `${AGENT_CLI_PANEL_RUNTIME_LABELS[executionMode]} run 未启动：${error instanceof Error ? error.message : '未知错误'}`
         : generateReply(text, activeTaskId);
     }
 
@@ -1838,17 +1864,17 @@ export function RightPanel({
     try {
       const result = await window.api.cancelAgentCliRun({
         operatorConfirmed: true,
-        reason: 'Operator cancelled the Codex CLI run from Taskplane.',
+        reason: `Operator cancelled the ${activeAgentCliRun.runtimeLabel} run from Taskplane.`,
         runId: activeAgentCliRun.runId,
       });
       if (!result.cancelled) {
-        appendSysMsg(`Codex CLI run 取消请求未生效：${result.summary}`);
+        appendSysMsg(`${activeAgentCliRun.runtimeLabel} run 取消请求未生效：${result.summary}`);
         setActiveAgentCliRun(null);
         return;
       }
-      appendSysMsg(`Codex CLI run 取消请求已发送。\n\nRun: ${activeAgentCliRun.runId}`);
+      appendSysMsg(`${activeAgentCliRun.runtimeLabel} run 取消请求已发送。\n\nRun: ${activeAgentCliRun.runId}`);
     } catch (error) {
-      appendSysMsg(`Codex CLI run 取消失败：${error instanceof Error ? error.message : '未知错误'}`);
+      appendSysMsg(`${activeAgentCliRun.runtimeLabel} run 取消失败：${error instanceof Error ? error.message : '未知错误'}`);
       setActiveAgentCliRun((value) => value?.runId === activeAgentCliRun.runId
         ? { ...value, status: 'running' }
         : value);
@@ -1934,7 +1960,8 @@ export function RightPanel({
     : null;
   const canCloseoutActiveTaskPhase = Boolean(!phaseCloseoutSaved && phaseCloseoutPreStep.canProceed);
   const canProposeTaskFileWrite = Boolean(!taskFileProposal && taskFileWriteEvaluation.allowed);
-  const canUseCodexCli = Boolean(activeTaskId && codexCliAvailable && window.api?.triggerAgentCliRun);
+  const canUseAgentCliRuntime = (runtimeId: AgentCliRuntimeId) =>
+    Boolean(activeTaskId && agentCliAvailability[runtimeId] && window.api?.triggerAgentCliRun);
   const activeTaskAgentCliRun = activeAgentCliRun && activeAgentCliRun.taskId === activeTaskId
     ? activeAgentCliRun
     : null;
@@ -2247,13 +2274,13 @@ export function RightPanel({
         </div>
         {activeTaskAgentCliRun && (
           <div className="panel-agent-cli-run">
-            <span>Codex CLI 后台运行 · {activeTaskAgentCliRun.runId}</span>
+            <span>{activeTaskAgentCliRun.runtimeLabel} 后台运行 · {activeTaskAgentCliRun.runId}</span>
             <button
               className={`btn sm ghost${activeTaskAgentCliRun.status === 'cancelling' ? ' disabled' : ''}`}
               onClick={() => void cancelActiveAgentCliRun()}
               disabled={activeTaskAgentCliRun.status === 'cancelling'}
             >
-              {activeTaskAgentCliRun.status === 'cancelling' ? '取消中…' : '取消 Codex run'}
+              {activeTaskAgentCliRun.status === 'cancelling' ? '取消中…' : `取消 ${activeTaskAgentCliRun.runtimeLabel} run`}
             </button>
           </div>
         )}
@@ -2338,17 +2365,26 @@ export function RightPanel({
             >
               Chat
             </button>
-            <button
-              type="button"
-              className={`panel-send-mode-btn${executionMode === 'codex' ? ' active' : ''}`}
-              onClick={() => canUseCodexCli && setExecutionMode('codex')}
-              disabled={!canUseCodexCli}
-              title={canUseCodexCli ? '通过 Codex CLI 创建只读 Agent run' : 'Codex CLI 需要任务上下文、本机检测和官方 CLI 登录 ready'}
-            >
-              Codex
-            </button>
+            {AGENT_CLI_PANEL_RUNTIMES.map((runtimeId) => {
+              const canUseRuntime = canUseAgentCliRuntime(runtimeId);
+              const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[runtimeId];
+              return (
+                <button
+                  key={runtimeId}
+                  type="button"
+                  className={`panel-send-mode-btn${executionMode === runtimeId ? ' active' : ''}`}
+                  onClick={() => canUseRuntime && setExecutionMode(runtimeId)}
+                  disabled={!canUseRuntime}
+                  title={canUseRuntime
+                    ? `通过 ${runtimeLabel} 创建只读 Agent run`
+                    : `${runtimeLabel} 需要任务上下文、workspace root、本机检测和官方 CLI 登录 ready`}
+                >
+                  {runtimeId === 'codex' ? 'Codex' : 'Claude'}
+                </button>
+              );
+            })}
           </div>
-          <span className="panel-hint muted">{executionMode === 'codex' ? 'Codex CLI · 只读' : '⏎ 发送  ⇧⏎ 换行'}</span>
+          <span className="panel-hint muted">{executionMode !== 'chat' ? AGENT_CLI_PANEL_RUNTIME_HINTS[executionMode] : '⏎ 发送  ⇧⏎ 换行'}</span>
           <button
             className={`btn sm primary${!input.trim() || thinking ? ' disabled' : ''}`}
             onClick={() => void send()}

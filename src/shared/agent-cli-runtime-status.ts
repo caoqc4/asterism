@@ -48,7 +48,7 @@ export const DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE: Array<Pick<AgentCliRuntimeReco
     id: 'claude',
     label: 'Claude Code',
     command: 'claude',
-    executionSupport: 'status_only',
+    executionSupport: 'manual_run',
   },
 ];
 

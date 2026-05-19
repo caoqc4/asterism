@@ -427,7 +427,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
           installed: false,
           version: null,
           authState: 'unknown',
-          executionSupport: 'status_only',
+          executionSupport: 'manual_run',
           workload: 'blocked',
           missingReason: 'claude was not found on PATH.',
         },
@@ -1878,13 +1878,75 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText(/run_agent_cli_created/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Codex CLI 后台运行/)).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: '取消 Codex run' }));
+    await user.click(screen.getByRole('button', { name: '取消 Codex CLI run' }));
     expect(harness.api.cancelAgentCliRun).toHaveBeenCalledWith({
       operatorConfirmed: true,
       reason: 'Operator cancelled the Codex CLI run from Taskplane.',
       runId: 'run_agent_cli_created',
     });
     expect(await screen.findByText(/Codex CLI run 取消请求已发送/)).toBeTruthy();
+  });
+
+  it('can route a task-bound right-panel message through Claude Code plan mode', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      agentCliRuntimeStatus: {
+        catalogueCount: 2,
+        detectedCount: 2,
+        errorCount: 0,
+        manualRunCount: 2,
+        readyCount: 2,
+        readyManualRunCount: 2,
+        runningCount: 0,
+        updatedAt: '2026-05-19T00:00:00.000Z',
+        runtimes: [
+          {
+            id: 'codex',
+            label: 'Codex CLI',
+            command: 'codex',
+            installed: true,
+            version: 'codex 0.42.0',
+            authState: 'ready',
+            executionSupport: 'manual_run',
+            workload: 'idle',
+            missingReason: null,
+          },
+          {
+            id: 'claude',
+            label: 'Claude Code',
+            command: 'claude',
+            installed: true,
+            version: 'claude 2.1.128',
+            authState: 'ready',
+            executionSupport: 'manual_run',
+            workload: 'idle',
+            missingReason: null,
+          },
+        ],
+      },
+    }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    const claudeButton = screen.getByRole('button', { name: 'Claude' }) as HTMLButtonElement;
+    expect(claudeButton.disabled).toBe(false);
+    await user.click(claudeButton);
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Claude Code 看风险。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith({
+        operatorConfirmed: true,
+        prompt: '用 Claude Code 看风险。',
+        runtimeId: 'claude',
+        sandboxMode: 'read-only',
+        taskId: 'task_risk',
+      });
+    });
+    expect(await screen.findByText(/Claude Code run 已在后台启动/)).toBeTruthy();
+    expect(screen.getByText(/Claude Code 后台运行/)).toBeTruthy();
   });
 
   it('keeps Codex CLI mode disabled until the manual-run runtime is authenticated', async () => {

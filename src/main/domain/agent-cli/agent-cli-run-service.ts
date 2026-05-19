@@ -411,6 +411,7 @@ function normalizeCancelAgentCliRunInput(input: CancelAgentCliRunInput): Require
 
 function getAgentCliRunAdapter(runtimeId: AgentCliRuntimeId): AgentCliRunAdapter | null {
   if (runtimeId === 'codex') return codexCliRunAdapter;
+  if (runtimeId === 'claude') return claudeCodeRunAdapter;
   return null;
 }
 
@@ -432,6 +433,24 @@ const codexCliRunAdapter: AgentCliRunAdapter = {
   failedStepTitle: 'codex cli failed',
 };
 
+const claudeCodeRunAdapter: AgentCliRunAdapter = {
+  acceptedLabel: 'Claude Code',
+  buildExecution(params) {
+    return {
+      args: ['-p', '--permission-mode', 'plan', '--output-format', 'text'],
+      commandPreview: `claude -p --permission-mode plan --output-format text`,
+      input: buildClaudeCodePrompt({
+        contextSummary: params.contextSummary,
+        prompt: params.prompt,
+        sandboxMode: params.sandboxMode,
+        task: params.task,
+      }),
+    };
+  },
+  completedStepTitle: 'claude code completed',
+  failedStepTitle: 'claude code failed',
+};
+
 function buildCodexCliPrompt(params: {
   contextSummary: string;
   prompt: string;
@@ -442,6 +461,29 @@ function buildCodexCliPrompt(params: {
     'You are running as Codex CLI from inside Taskplane.',
     `Sandbox mode: ${params.sandboxMode}.`,
     'Do not modify files. Inspect and answer with a concrete plan, risks, and verification steps.',
+    '',
+    `Task: ${params.task.title}`,
+    params.task.summary ? `Summary: ${params.task.summary}` : null,
+    params.task.nextStep ? `Next step: ${params.task.nextStep}` : null,
+    params.task.riskNote ? `Risk: ${params.task.riskNote}` : null,
+    `Runtime context: ${params.contextSummary}`,
+    '',
+    'User request:',
+    params.prompt,
+  ].filter((line): line is string => line !== null).join('\n');
+}
+
+function buildClaudeCodePrompt(params: {
+  contextSummary: string;
+  prompt: string;
+  sandboxMode: AgentCliRunSandboxMode;
+  task: TaskDetail;
+}): string {
+  return [
+    'You are running as Claude Code from inside Taskplane.',
+    `Taskplane sandbox intent: ${params.sandboxMode}.`,
+    'Claude Code is launched with --permission-mode plan. Research and propose; do not edit files, write files, or ask to continue into an editing mode.',
+    'Return a concise answer with findings, recommended next steps, risks, and verification checks.',
     '',
     `Task: ${params.task.title}`,
     params.task.summary ? `Summary: ${params.task.summary}` : null,

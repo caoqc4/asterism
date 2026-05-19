@@ -416,8 +416,8 @@ function formatRunEventDetail(run: RunRecord, agentCli: AgentCliRunDescriptor | 
 function formatRunStepTitle(step: RunStepRecord, agentCli: AgentCliRunDescriptor | null): string {
   if (!agentCli) return `Run Step · ${step.title}`;
   if (step.title === 'agent cli run accepted') return `${agentCli.label} 已接收`;
-  if (step.title === 'codex cli completed') return `${agentCli.label} 输出`;
-  if (step.title === 'codex cli failed') return `${agentCli.label} 失败证据`;
+  if (step.title === 'codex cli completed' || step.title === 'claude code completed') return `${agentCli.label} 输出`;
+  if (step.title === 'codex cli failed' || step.title === 'claude code failed') return `${agentCli.label} 失败证据`;
   return `${agentCli.label} · ${step.title}`;
 }
 

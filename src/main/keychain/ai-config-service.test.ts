@@ -47,7 +47,7 @@ describe('AiConfigService', () => {
           installed: false,
           version: null,
           authState: 'unknown',
-          executionSupport: 'status_only',
+          executionSupport: 'manual_run',
           workload: 'blocked',
           missingReason: 'claude was not found on PATH.',
         },

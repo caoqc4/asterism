@@ -358,7 +358,7 @@ function AgentCliRuntimeSection({
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">Agent CLI</div>
-          <p className="model-section-copy">第一版优先检测 Codex CLI 和 Claude Code。Codex 作为手动执行入口，Claude Code 先做状态检测。</p>
+          <p className="model-section-copy">第一版优先检测 Codex CLI 和 Claude Code；两者都只通过官方 CLI 登录，Taskplane 负责本机检测、只读启动和运行记录。</p>
         </div>
         <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
           <span>{status?.detectedCount ?? 0} detected</span>
@@ -378,7 +378,7 @@ function AgentCliRuntimeSection({
           placeholder="/absolute/path/to/workspace"
           onChange={(event) => onWorkspaceRootChange(event.target.value)}
         />
-        <p className="settings-hint">Codex CLI runs stay read-only and start from this configured workspace root.</p>
+        <p className="settings-hint">Agent CLI runs stay read-only and start from this configured workspace root.</p>
       </div>
 
       <div className="agent-cli-grid">
@@ -388,7 +388,7 @@ function AgentCliRuntimeSection({
               <span className="agent-cli-runtime-name">{runtime.label}</span>
               <span className="agent-cli-runtime-command mono">{runtime.command}</span>
               {runtime.id === 'codex' && <span className="model-tag">推荐执行路径</span>}
-              {runtime.id === 'claude' && <span className="agent-cli-pill">状态检测</span>}
+              {runtime.id === 'claude' && <span className="agent-cli-pill">Plan 模式</span>}
             </div>
             <div className="agent-cli-runtime-meta">
               <span className={`agent-cli-status ${runtime.installed ? 'ok' : 'muted'}`}>

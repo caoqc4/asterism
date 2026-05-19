@@ -6,7 +6,7 @@ Taskplane should prioritize a thin Agent CLI runtime layer before continuing to 
 
 The current self-built API-agent work remains valuable, but its strongest parts are task memory, runtime gates, context assembly, provider safety, Decisions, and auditability. Rebuilding the full coding-agent execution layer would duplicate mature tools such as Codex CLI, Claude Code, Cursor Agent, Gemini CLI, OpenCode, and Kiro CLI.
 
-The next stage should therefore make Taskplane able to call a user-installed, user-authenticated official Agent CLI in the background, starting with Codex CLI.
+The next stage should therefore make Taskplane able to call a user-installed, user-authenticated official Agent CLI in the background, starting with Codex CLI and Claude Code.
 
 ## Current Self-Built API-Agent Status
 
@@ -68,7 +68,7 @@ Taskplane app
 
 ## MVP Scope
 
-First supported CLI: Codex CLI.
+First supported CLIs: Codex CLI and Claude Code.
 
 MVP capabilities:
 
@@ -93,8 +93,8 @@ Out of scope for the first pass:
 - automatic assignment or scheduler-triggered CLI runs;
 - direct ChatGPT web-session usage;
 - automatic commit/push/release;
-- broad multi-CLI abstraction before Codex CLI proves the path.
-- enabling Claude Code execution before its official non-interactive, read-only invocation contract is verified.
+- broad multi-CLI abstraction before Codex CLI and Claude Code prove the path.
+- enabling any CLI execution before its official non-interactive, read-only invocation contract is verified.
 
 ## Capability Model
 
@@ -145,7 +145,7 @@ installed/authenticated/ready does not mean model-visible or auto-executable.
 
 The CLI runtime is an execution backend, not a provider-native tool automatically exposed to the model.
 
-Capability Registry and ConfigurationSafetyReport must use `readyManualRunCount`, not only `readyCount` or `manualRunCount`, when deciding whether an Agent CLI execution backend is configured. A status-only Claude Code login must not make the Agent CLI capability available if no authenticated manual-run runtime is ready.
+Capability Registry and ConfigurationSafetyReport must use `readyManualRunCount`, not only `readyCount` or `manualRunCount`, when deciding whether an Agent CLI execution backend is configured. A status-only future CLI login must not make the Agent CLI capability available if no authenticated manual-run runtime is ready.
 
 ## Runtime Path
 
@@ -157,7 +157,7 @@ User starts agent CLI run
 -> Task memory coverage and context assembly checks run
 -> Taskplane builds a prompt/context bundle
 -> Taskplane creates a running Run and returns its id to the UI
--> Codex CLI subprocess starts in workspace root in the background
+-> selected Agent CLI subprocess starts in workspace root in the background
 -> stdout/stderr are captured into terminal Run steps
 -> result is summarized into artifact/task memory
 -> patches or risky writes require Decision/checkpoint review
@@ -177,15 +177,15 @@ The adapter should reuse existing concepts:
 
 ## Adapter Boundary
 
-The first implementation keeps Codex CLI as the only executable Agent CLI, but the run service now has an explicit runtime adapter boundary:
+The first implementation keeps each executable Agent CLI behind an explicit runtime adapter boundary:
 
 - each executable CLI must provide its own command args, command preview, prompt builder, and terminal step labels;
 - the shared run service owns Taskplane gates, task memory checks, context assembly, workload tracking, cancellation, and terminal persistence;
 - a detected runtime is not executable unless a run adapter is registered and the runtime reports `executionSupport: 'manual_run'`;
 - an executable runtime must also report `authState: 'ready'` before the UI or execution service can launch it;
-- Claude Code remains `status_only` until Taskplane verifies a safe official invocation path.
+- Claude Code uses its own read-only planning adapter instead of reusing Codex-specific flags.
 
-This avoids accidentally reusing Codex-specific flags for other CLIs. It also keeps the current product promise narrow: Taskplane can show Claude Code presence, but cannot launch it through the background Agent CLI lane yet.
+This avoids accidentally reusing Codex-specific flags for other CLIs. It also keeps the current product promise narrow: Taskplane can launch official CLIs only as background read-only planning runs, while file edits remain outside the first Agent CLI lane.
 
 ## Claude Code Evaluation
 
@@ -194,17 +194,19 @@ Official Claude Code docs currently expose two relevant surfaces:
 - status/authentication commands: `claude auth login`, `claude auth status`;
 - non-interactive execution: `claude -p` / `claude --print`, with permission modes such as `plan`, `dontAsk`, `acceptEdits`, and `bypassPermissions`.
 
-Taskplane should not enable Claude execution only because `claude -p` exists. Claude Code's scripted mode has its own permission and settings model, including bare mode and tool allow-lists. The safe next bridge is therefore:
+Taskplane should not enable Claude execution only because `claude -p` exists. Claude Code's scripted mode has its own permission and settings model, including permission modes and tool allow/deny rules. The safe bridge is therefore:
 
 - detect `claude` and `claude --version`;
 - check auth readiness with `claude auth status`;
-- keep `executionSupport: 'status_only'`;
+- mark Claude Code as `executionSupport: 'manual_run'` only when the dedicated adapter is present;
 - show `claude auth login` as the official login hint;
-- keep Capability Registry unavailable unless a ready manual-run runtime such as Codex is present;
+- launch Claude Code with `claude -p --permission-mode plan --output-format text`;
+- pass the Taskplane prompt through stdin and instruct Claude Code to research and propose without editing files or continuing into an editing mode;
+- keep Capability Registry unavailable unless at least one ready manual-run runtime is present and a workspace root is configured;
 - keep the RightPanel launch control disabled and reject execution requests unless the selected CLI is authenticated and ready;
 - show `readyManualRunCount` in AI Runtime status so users can distinguish detected CLIs from executable CLIs;
 - provide a manual AI Runtime re-detect action after users complete official CLI login in a terminal;
-- require a dedicated Claude adapter design before launching any background Claude run.
+- persist Claude Code runs through the same run steps, task annotations, verification records, workload tracking, and cancellation flow as Codex runs.
 
 Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com/docs/en/headless.
 
@@ -217,18 +219,19 @@ Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com
 5. Async run start with background terminal persistence.
 6. Run step/artifact persistence.
 7. Runtime gate and task memory integration.
-8. Manual read-only Codex CLI smoke, skipped by default unless explicitly enabled.
+8. Manual read-only Agent CLI smoke, skipped by default unless explicitly enabled.
 9. Cancellation/timeout handling.
 10. Runtime-specific adapter boundary for command/prompt/step labeling.
-11. Claude Code auth-status bridge while keeping execution status-only.
-12. Later: Claude Code and other CLI adapters after their official read-only/non-interactive command contracts are verified.
+11. Claude Code auth-status bridge.
+12. Claude Code read-only plan-mode adapter.
+13. Later: other CLI adapters after their official read-only/non-interactive command contracts are verified.
 
 ## Acceptance Criteria
 
-- A user can authenticate Codex CLI through the official CLI flow outside Taskplane.
+- A user can authenticate Codex CLI or Claude Code through the official CLI flow outside Taskplane.
 - Taskplane can detect the CLI and show a safe readiness state.
 - A ready CLI does not count as executable until a workspace root is configured.
-- A user can explicitly run a Taskplane task through Codex CLI.
+- A user can explicitly run a Taskplane task through Codex CLI or Claude Code.
 - The UI receives a Run id immediately after the gated run is accepted.
 - The UI can request cancellation for the active task-bound CLI run.
 - Taskplane stores logs and outputs in the run timeline.
@@ -237,10 +240,11 @@ Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com
 - Taskplane does not auto-run, auto-commit, or auto-push.
 - CLI execution cannot bypass existing runtime gates or task memory checks.
 - Active CLI subprocesses can be cancelled without leaving runtime workload status stuck.
-- A status-only CLI such as Claude Code cannot be launched until a dedicated run adapter is enabled.
+- A status-only future CLI cannot be launched until a dedicated run adapter is enabled.
 - Claude Code readiness uses the official `claude auth status` command and points users to `claude auth login`.
+- Claude Code execution uses official non-interactive print mode with `--permission-mode plan`.
 - Agent CLI launch controls and execution services require a ready manual-run runtime, not merely an installed CLI.
-- The real Codex CLI smoke is opt-in only:
+- The real Agent CLI smoke is opt-in only:
   `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke`.
 - Default local acceptance and tests must not call Agent CLIs or model providers.
 
@@ -248,4 +252,4 @@ Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com
 
 Taskplane should become the task-memory, context, judgment, and runtime-governance layer around mature coding agents.
 
-The self-built API-agent runtime remains useful for lightweight local tools and future non-coding workflows, but the next product milestone should be Agent CLI support, starting with Codex CLI.
+The self-built API-agent runtime remains useful for lightweight local tools and future non-coding workflows, but the next product milestone should be Agent CLI support, starting with Codex CLI and Claude Code.
