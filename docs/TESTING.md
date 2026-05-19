@@ -162,6 +162,19 @@ local `claude` command and valid account are available:
 TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-readonly-smoke
 ```
 
+The packaged task-bound Agent CLI smoke uses a fake Codex executable and fixture
+runtime status, so it does not require a real account by default:
+
+```bash
+npm run smoke:agent-cli-task:mac
+```
+
+That smoke covers the first-version Agent CLI product loop inside the packaged
+app: task-bound run creation, accepted and terminal run evidence, cancellation
+evidence, read-only workspace protection, task dynamics replay, Run Goal
+Contract/verifier/memory-proposal evidence, and explicit runtime-native goal
+audit requests that are recorded but not forwarded.
+
 The older self-built sandbox/API-agent lane remains gated and explicit. These
 commands are useful when maintaining that legacy/experimental runtime boundary,
 but they are not the first-run Agent CLI validation path:

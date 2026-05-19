@@ -312,7 +312,7 @@ First pass implemented on 2026-05-19:
 - RightPanel uses the same terminology: global chat is model-service assistance, unavailable CLI falls back to model-service assistance, and legacy `api` runtime mode is shown as `Agent API Runtime` in development rather than as an active API Model executor.
 - CapabilityRegistry and ConfigurationSafetyReport now include `agent_api.runtime` as a disabled peer execution runtime, so diagnostics and context manifests see Agent API as a real planned runtime rather than conflating it with model-service configuration.
 
-Remaining next steps are deciding whether any adapter should enable actual native-goal forwarding, and replacing the deterministic lightweight verifier with an optional API verifier subagent when the Agent API runtime is ready.
+Remaining next steps are deciding what evidence an adapter must provide before actual native-goal forwarding is allowed, and replacing the deterministic lightweight verifier with an optional API verifier subagent when the Agent API runtime is ready.
 
 ## Non-Goals For The Next Pass
 
@@ -322,10 +322,20 @@ Remaining next steps are deciding whether any adapter should enable actual nativ
 - Do not let unknown slash commands silently pass through to a runtime.
 - Do not treat future Agent API as a helper layer; it is a peer execution runtime once completed.
 
-## Open Questions
+## Resolved Constraints
 
-- Should `/goal <text>` immediately start execution, or only set the Task Goal and ask for confirmation?
-- Should native goal mode be selected per run, per task, or per runtime setting?
-- How much native CLI goal progress can Codex and Claude expose in non-interactive mode?
-- Should Taskplane support a local daemon process later, or is the Electron app enough for first-version local execution?
-- Should native CLI custom arguments be allowed through a guarded settings surface, similar to Multica `custom_args`, or kept adapter-owned only?
+- `/goal <text>` only sets or updates the durable Taskplane Task Goal. It does not auto-start execution.
+- A task-bound Agent run still starts from a normal task message after the user has the right task context open.
+- Runtime-native goal requests require an explicit namespace such as `/codex goal ...`, `/claude goal ...`, or `/runtime goal ...`.
+- Runtime-native goal requests are audit-only in the first Agent CLI version. Taskplane records evidence that the request was not forwarded, and does not call the CLI for that request.
+- Native goal routing is per explicit request for now. There is no global or per-task setting that silently forwards product `/goal` state into a runtime-native goal mode.
+- Taskplane remains the source of truth for task goal, session evidence, run logs, task dynamics, and user-confirmed memory writes.
+- The first-version Agent CLI harness keeps sandbox mode read-only for Codex and plan mode for Claude.
+
+## Remaining Decisions
+
+- What adapter-level evidence is required before actual runtime-native goal forwarding can be enabled for Codex or Claude.
+- How much native CLI goal progress Codex and Claude can expose in non-interactive task runs.
+- Whether a local daemon is needed later for richer session/checkpoint/replay behavior, or whether the Electron app process remains enough.
+- Whether guarded custom CLI arguments should be exposed through settings, or kept adapter-owned only.
+- How the future Agent API Runtime verifier/subagent replaces or augments the deterministic lightweight verifier contract.
