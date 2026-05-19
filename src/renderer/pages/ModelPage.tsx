@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ConfigurationSafetySurface } from '@shared/configuration-safety-report';
 import type { AiConfigStatus, AiProvider } from '@shared/types/settings';
 import { CONFIGURATION_SAFETY_STATE_LABELS, configurationSafetyProbePolicyLabel } from '../lib/configurationSafetyLabels';
@@ -122,13 +122,11 @@ export function ModelPage() {
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
   const [apiModelOpen, setApiModelOpen] = useState(false);
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const refreshingStatusRef = useRef(false);
 
-  useEffect(() => {
-    void refreshStatus();
-  }, []);
-
-  async function refreshStatus() {
-    if (!window.api || refreshingStatus) return;
+  const refreshStatus = useCallback(async () => {
+    if (!window.api || refreshingStatusRef.current) return;
+    refreshingStatusRef.current = true;
     setRefreshingStatus(true);
     try {
       const s = await window.api.getAiConfigStatus();
@@ -139,9 +137,27 @@ export function ModelPage() {
     } catch {
       // Keep the last known status visible when a manual probe fails.
     } finally {
+      refreshingStatusRef.current = false;
       setRefreshingStatus(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void refreshStatus();
+  }, [refreshStatus]);
+
+  useEffect(() => {
+    function refreshWhenVisible() {
+      if (document.visibilityState === 'visible') void refreshStatus();
+    }
+
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [refreshStatus]);
 
   function setKey(field: KeyField, value: string) {
     setKeys((prev) => ({ ...prev, [field]: value }));
