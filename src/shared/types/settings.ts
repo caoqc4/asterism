@@ -7,6 +7,7 @@ import type { ExternalAccessStatus } from '../external-access-status.js';
 import type { AgentCliRuntimeStatus } from '../agent-cli-runtime-status.js';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google' | 'deepseek' | 'groq' | 'fal-openrouter' | 'openai-compatible' | 'replicate';
+export type AiRuntimeMode = 'api' | 'codex' | 'claude';
 export type AiCommunicationStyle = 'concise' | 'balanced' | 'detailed';
 export type AiConfirmationThreshold = 'low' | 'normal' | 'high';
 
@@ -27,6 +28,7 @@ export type AppConfigFile = {
   aiProvider: AiProvider;
   aiModel: string;
   aiBaseUrl: string | null;
+  aiRuntimeMode: AiRuntimeMode;
   workspaceRoot: string | null;
   featureFlags: FeatureFlags;
   updatedAt: string;
@@ -50,6 +52,7 @@ export type AiProviderKeysInput = {
 export type AiConfigInput = {
   provider: AiProvider;
   model: string;
+  runtimeMode?: AiRuntimeMode;
   providerKeys?: AiProviderKeysInput;
   workspaceRoot?: string | null;
   featureFlags: FeatureFlags;
@@ -67,6 +70,7 @@ export type AiConfigStatus = {
     test: { available: boolean; reason: string };
   };
   codeAgentModelProducerEnabled?: boolean;
+  runtimeMode?: AiRuntimeMode;
   provider: AiProvider | null;
   model: string | null;
   baseUrl: string | null;

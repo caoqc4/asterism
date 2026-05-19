@@ -201,6 +201,7 @@ export class AiConfigService {
       configuredProviders,
       codeAgentWorkspaceChecks: detectCodeAgentWorkspaceChecks(config.workspaceRoot),
       codeAgentModelProducerEnabled: readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true,
+      runtimeMode: config.aiRuntimeMode,
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
@@ -233,6 +234,7 @@ export class AiConfigService {
       aiModel: input.model.trim(),
       aiBaseUrl: customBaseUrl || null,
       featureFlags: input.featureFlags,
+      ...(input.runtimeMode ? { aiRuntimeMode: input.runtimeMode } : {}),
     };
     const config = this.appConfigService.write(input.workspaceRoot !== undefined
       ? { ...configInput, workspaceRoot: input.workspaceRoot }
@@ -257,6 +259,7 @@ export class AiConfigService {
       configuredProviders,
       codeAgentWorkspaceChecks: detectCodeAgentWorkspaceChecks(config.workspaceRoot),
       codeAgentModelProducerEnabled: readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true,
+      runtimeMode: config.aiRuntimeMode,
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,

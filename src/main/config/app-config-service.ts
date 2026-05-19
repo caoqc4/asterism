@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
-import type { AiProvider, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
+import type { AiProvider, AiRuntimeMode, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
 import {
   AI_COMMUNICATION_STYLES,
   AI_CONFIRMATION_THRESHOLDS,
@@ -16,6 +16,7 @@ const DEFAULT_CONFIG: AppConfigFile = {
   aiProvider: 'anthropic',
   aiModel: 'claude-3-5-sonnet-latest',
   aiBaseUrl: null,
+  aiRuntimeMode: 'codex',
   workspaceRoot: null,
   featureFlags: DEFAULT_FEATURE_FLAGS,
   updatedAt: new Date(0).toISOString(),
@@ -32,6 +33,7 @@ const AI_PROVIDERS = new Set<AiProvider>([
   'openai-compatible',
   'replicate',
 ]);
+const AI_RUNTIME_MODES = new Set<AiRuntimeMode>(['api', 'codex', 'claude']);
 
 function defaultUserDataPathResolver(): string {
   if (process.env.TASKPLANE_USER_DATA_DIR) {
@@ -69,6 +71,9 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
       : DEFAULT_CONFIG.aiProvider,
     aiModel: input.aiModel?.trim() || DEFAULT_CONFIG.aiModel,
     aiBaseUrl: input.aiBaseUrl?.trim() || null,
+    aiRuntimeMode: AI_RUNTIME_MODES.has(input.aiRuntimeMode as AiRuntimeMode)
+      ? (input.aiRuntimeMode as AiRuntimeMode)
+      : DEFAULT_CONFIG.aiRuntimeMode,
     workspaceRoot: input.workspaceRoot?.trim() || null,
     featureFlags: {
       enableScheduler:
@@ -126,6 +131,7 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const aiProvider = readEnvValue('TASKPLANE_AI_PROVIDER');
   const aiModel = readEnvValue('TASKPLANE_AI_MODEL');
   const aiBaseUrl = readEnvValue('TASKPLANE_AI_BASE_URL');
+  const aiRuntimeMode = readEnvValue('TASKPLANE_AI_RUNTIME_MODE');
   const workspaceRoot = readEnvValue('TASKPLANE_WORKSPACE_ROOT');
   const enableScheduler = readEnvBoolean('TASKPLANE_ENABLE_SCHEDULER');
   const enableProviderNativeToolCalls = readEnvBoolean('TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS');
@@ -153,6 +159,7 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
     aiProvider: (aiProvider as AiProvider | null) ?? config.aiProvider,
     aiModel: aiModel ?? config.aiModel,
     aiBaseUrl: aiBaseUrl ?? config.aiBaseUrl,
+    aiRuntimeMode: (aiRuntimeMode as AiRuntimeMode | null) ?? config.aiRuntimeMode,
     workspaceRoot: workspaceRoot ?? config.workspaceRoot,
     featureFlags: {
       ...config.featureFlags,

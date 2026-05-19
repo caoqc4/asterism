@@ -388,6 +388,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
     suggestedWorkspaceRoot: '/tmp/taskplane-workspace',
     updatedAt: now,
     configPath: '/tmp/taskplane-config.json',
+    runtimeMode: 'api',
     featureFlags: {
       enableScheduler: false,
       enableProviderNativeToolCalls: true,
@@ -472,6 +473,7 @@ function createMockApi() {
       provider: input.provider,
       model: input.model,
       featureFlags: input.featureFlags,
+      runtimeMode: input.runtimeMode ?? 'codex',
       workspaceRoot: input.workspaceRoot ?? null,
     })),
     openAgentCliLogin: vi.fn().mockResolvedValue({
@@ -1104,27 +1106,19 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
     expect(screen.getByText(/账号由官方 CLI 管理/)).toBeTruthy();
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
-    expect(screen.getByText(/自动检测：发现 1 个 CLI，1 个已登录/)).toBeTruthy();
-    expect(screen.getByText('在任务右侧选择调用哪个 CLI')).toBeTruthy();
-    expect(screen.getByText(/右侧输入框下方有 Chat \/ Codex \/ Claude/)).toBeTruthy();
+    expect(screen.getByText(/选择默认执行方式/)).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '安装 Claude' })).toBeTruthy();
-    expect(screen.getByText(/第一版只读运行/)).toBeTruthy();
     await user.click(screen.getByText('高级：运行目录'));
     expect(screen.getByLabelText('内部运行目录')).toBeTruthy();
-    expect(screen.getByText('CLI 明细')).toBeTruthy();
-    await user.click(screen.getByText('CLI 明细'));
     expect(screen.getAllByText('Codex CLI').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Claude Code').length).toBeGreaterThan(0);
     expect(screen.getByText(/Auxiliary API Model/)).toBeTruthy();
     expect(screen.getByText(/辅助 API 当前/)).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
-    await user.click(screen.getByRole('button', { name: /Safety Details/ }));
-    expect(screen.getByText('model.provider')).toBeTruthy();
-    expect(screen.getByText('model.api_key')).toBeTruthy();
-    expect(screen.getByText(/secret value is not exposed/)).toBeTruthy();
+    expect(screen.queryByText(/Safety Details/)).toBeNull();
   });
 
   it('keeps the Agent CLI runtime directory in advanced AI Runtime config', async () => {
@@ -1173,8 +1167,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
-    expect(await screen.findByText('先登录一个官方 CLI')).toBeTruthy();
-    expect(screen.getByText(/自动检测：发现 1 个 CLI，0 个已登录/)).toBeTruthy();
+    expect(await screen.findByText('需登录')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '登录 Codex' }));
 
     expect(harness.api.openAgentCliLogin).toHaveBeenCalledWith({ runtimeId: 'codex' });
@@ -1260,10 +1253,12 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
-    expect(await screen.findByText('0 ready manual')).toBeTruthy();
+    expect(await screen.findByText('需登录')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '重新检测 CLI' }));
 
-    expect(await screen.findByText('1 ready manual')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getAllByText('当前默认').length).toBeGreaterThan(0);
+    });
     expect(harness.api.getAiConfigStatus).toHaveBeenCalledTimes(3);
   });
 
@@ -1299,11 +1294,13 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
-    expect(await screen.findByText('先登录一个官方 CLI')).toBeTruthy();
+    expect(await screen.findByText('需登录')).toBeTruthy();
 
     window.dispatchEvent(new Event('focus'));
 
-    expect(await screen.findByText('在任务右侧选择调用哪个 CLI')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getAllByText('当前默认').length).toBeGreaterThan(0);
+    });
     expect(harness.api.getAiConfigStatus).toHaveBeenCalledTimes(3);
   });
 
@@ -2001,12 +1998,13 @@ describe('App redesign v1', () => {
 
   it('can route a task-bound right-panel message through Codex CLI', async () => {
     const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Codex' }));
+    expect(await screen.findByText('Codex CLI · 只读')).toBeTruthy();
     const input = screen.getByPlaceholderText(/关于「董事会材料修订」/);
     await user.type(input, '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
@@ -2042,6 +2040,7 @@ describe('App redesign v1', () => {
   it('can route a task-bound right-panel message through Claude Code plan mode', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      runtimeMode: 'claude',
       agentCliRuntimeStatus: {
         catalogueCount: 2,
         detectedCount: 2,
@@ -2082,9 +2081,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    const claudeButton = screen.getByRole('button', { name: 'Claude' }) as HTMLButtonElement;
-    expect(claudeButton.disabled).toBe(false);
-    await user.click(claudeButton);
+    expect(await screen.findByText('Claude Code · Plan')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Claude Code 看风险。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2105,6 +2102,7 @@ describe('App redesign v1', () => {
   it('keeps Codex CLI mode disabled until the manual-run runtime is authenticated', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      runtimeMode: 'codex',
       agentCliRuntimeStatus: {
         catalogueCount: 2,
         detectedCount: 1,
@@ -2134,10 +2132,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    const codexButton = screen.getByRole('button', { name: 'Codex' }) as HTMLButtonElement;
-    expect(codexButton.disabled).toBe(true);
-    expect(codexButton.title).toContain('官方 CLI 登录 ready');
-    await user.click(codexButton);
+    expect(await screen.findByText('API Model · 当前 CLI 不可用')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2148,6 +2143,7 @@ describe('App redesign v1', () => {
   it('refreshes Codex CLI mode availability after AI Runtime settings change', async () => {
     const user = userEvent.setup();
     const needsLogin = buildAiStatus({
+      runtimeMode: 'codex',
       agentCliRuntimeStatus: {
         catalogueCount: 2,
         detectedCount: 1,
@@ -2177,20 +2173,20 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
-    const codexButton = screen.getByRole('button', { name: 'Codex' }) as HTMLButtonElement;
-    expect(codexButton.disabled).toBe(true);
+    expect(await screen.findByText('API Model · 当前 CLI 不可用')).toBeTruthy();
 
-    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus());
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     harness.emit('settings.changed');
 
     await waitFor(() => {
-      expect(codexButton.disabled).toBe(false);
+      expect(screen.getByText('Codex CLI · 只读')).toBeTruthy();
     });
   });
 
   it('allows Codex CLI mode when the official CLI is ready without a configured workspace root', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      runtimeMode: 'codex',
       apiKeyStored: false,
       configured: false,
       configuredProviders: [],
@@ -2201,9 +2197,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    const codexButton = screen.getByRole('button', { name: 'Codex' }) as HTMLButtonElement;
-    expect(codexButton.disabled).toBe(false);
-    await user.click(codexButton);
+    expect(await screen.findByText('Codex CLI · 只读')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2215,12 +2209,13 @@ describe('App redesign v1', () => {
 
   it('summarizes a background Codex CLI run when the terminal run event arrives', async () => {
     const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Codex' }));
+    expect(await screen.findByText('Codex CLI · 只读')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
     expect(await screen.findByText(/Codex CLI 后台运行 · 完成后写入任务动态/)).toBeTruthy();

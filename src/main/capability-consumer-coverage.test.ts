@@ -40,11 +40,9 @@ describe('capability consumer coverage', () => {
 
     expect(settingsSource).toContain('ConfigurationSafetySection');
     expect(settingsSource).toContain('configurationSafetyReport');
-    expect(modelSource).toContain('configurationSafetyReport');
-    expect(modelSource).toContain('agent_cli.runtimes');
+    expect(modelSource).toContain('runtimeMode');
     expect(modelSource).toContain('Agent CLI');
-    expect(modelSource).toContain('model.provider');
-    expect(modelSource).toContain('model.api_key');
+    expect(modelSource).toContain('API Model');
     expect(agentSummarySource).toContain('capabilityRegistry');
     expect(agentSummarySource).toContain('optional Skills/MCP capabilities');
   });

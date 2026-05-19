@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { ConfigurationSafetySurface } from '@shared/configuration-safety-report';
-import type { AiConfigStatus, AiProvider } from '@shared/types/settings';
-import { CONFIGURATION_SAFETY_STATE_LABELS, configurationSafetyProbePolicyLabel } from '../lib/configurationSafetyLabels';
+import type { AiConfigStatus, AiProvider, AiRuntimeMode } from '@shared/types/settings';
 
 interface ModelDef {
   id: string;
@@ -110,6 +108,7 @@ export function ModelPage() {
   const [status, setStatus] = useState<AiConfigStatus | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AiProvider>('fal-openrouter');
   const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-flash');
+  const [selectedRuntimeMode, setSelectedRuntimeMode] = useState<AiRuntimeMode>('codex');
   const [customModelId, setCustomModelId] = useState('');
   const [workspaceRoot, setWorkspaceRoot] = useState('');
   const [keys, setKeys] = useState<Partial<Record<KeyField, string>>>({});
@@ -121,7 +120,6 @@ export function ModelPage() {
   const [openingInstall, setOpeningInstall] = useState(false);
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
   const [apiModelOpen, setApiModelOpen] = useState(false);
-  const [safetyOpen, setSafetyOpen] = useState(false);
   const refreshingStatusRef = useRef(false);
 
   const refreshStatus = useCallback(async () => {
@@ -133,6 +131,7 @@ export function ModelPage() {
       setStatus(s);
       if (s.model) setSelectedModel(s.model);
       if (s.provider) setSelectedProvider(s.provider);
+      setSelectedRuntimeMode(s.runtimeMode ?? 'codex');
       setWorkspaceRoot(s.workspaceRoot ?? s.suggestedWorkspaceRoot ?? '');
     } catch {
       // Keep the last known status visible when a manual probe fails.
@@ -185,6 +184,7 @@ export function ModelPage() {
       const next = await window.api.setAiConfig({
         provider: selectedProvider,
         model: effectiveModel,
+        runtimeMode: selectedRuntimeMode,
         providerKeys: {
           anthropic:    keys.anthropic    || undefined,
           openai:       keys.openai       || undefined,
@@ -199,6 +199,7 @@ export function ModelPage() {
         featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
       });
       setStatus(next);
+      setSelectedRuntimeMode(next.runtimeMode ?? selectedRuntimeMode);
       setWorkspaceRoot(next.workspaceRoot ?? '');
       setKeys({});
       setSaveResult('ok');
@@ -230,15 +231,34 @@ export function ModelPage() {
     }
   }
 
+  async function saveRuntimeMode(runtimeMode: AiRuntimeMode) {
+    if (!window.api || saving) return;
+    setSaving(true);
+    setSaveResult(null);
+    try {
+      const next = await window.api.setAiConfig({
+        provider: selectedProvider,
+        model: selectedProvider === 'openai-compatible'
+          ? customModelId || selectedModel
+          : selectedModel,
+        runtimeMode,
+        providerKeys: {},
+        workspaceRoot,
+        featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
+      });
+      setStatus(next);
+      setSelectedRuntimeMode(next.runtimeMode ?? runtimeMode);
+      setSaveResult('ok');
+    } catch {
+      setSaveResult('error');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveResult(null), 2500);
+    }
+  }
+
   const configuredProviders = new Set(status?.configuredProviders ?? []);
-  const modelSafetySurfaces = status?.configurationSafetyReport?.surfaces
-    .filter((surface) => surface.id === 'model.provider' || surface.id === 'model.api_key')
-    ?? [];
   const agentCliStatus = status?.agentCliRuntimeStatus ?? null;
-  const agentCliSafety = status?.configurationSafetyReport?.surfaces
-    .find((surface) => surface.id === 'agent_cli.runtimes') ?? null;
-  const agentCliCapability = status?.capabilityRegistry
-    ?.find((entry) => entry.id === 'agent_cli.runtimes') ?? null;
 
   return (
     <div className="model-page">
@@ -263,8 +283,9 @@ export function ModelPage() {
         workspaceRoot={workspaceRoot}
         onWorkspaceRootChange={setWorkspaceRoot}
         status={agentCliStatus}
-        safety={agentCliSafety}
-        capabilitySummary={agentCliCapability?.summary ?? null}
+        runtimeMode={selectedRuntimeMode}
+        apiConfigured={Boolean(status?.configured)}
+        onSelectRuntimeMode={(runtimeMode) => void saveRuntimeMode(runtimeMode)}
         suggestedWorkspaceRoot={status?.suggestedWorkspaceRoot ?? null}
         onOpenLogin={(runtimeId) => void openAgentCliLogin(runtimeId)}
         onOpenInstall={(runtimeId, options) => void openAgentCliInstall(runtimeId, options)}
@@ -276,17 +297,26 @@ export function ModelPage() {
       />
 
       <section className="model-api-section">
-        <button
-          className="model-collapsible-head"
-          onClick={() => setApiModelOpen((value) => !value)}
-          type="button"
-        >
-          <span>
+        <div className="model-collapsible-head">
+          <button className="model-collapsible-copy" onClick={() => setApiModelOpen((value) => !value)} type="button">
             <span className="model-section-kicker">Auxiliary API Model</span>
             <span className="model-section-copy">可选。用于轻量 AI 辅助、摘要、草稿和内部工具；coding agent 优先走 Agent CLI。</span>
-          </span>
-          <span className="model-collapsible-state">{apiModelOpen ? '收起' : '展开'}</span>
-        </button>
+          </button>
+          <button
+            className={`btn sm${selectedRuntimeMode === 'api' ? ' disabled' : ''}`}
+            disabled={selectedRuntimeMode === 'api' || saving || !status?.configured}
+            onClick={(event) => {
+              event.stopPropagation();
+              void saveRuntimeMode('api');
+            }}
+            type="button"
+          >
+            {selectedRuntimeMode === 'api' ? '当前默认' : status?.configured ? '设为默认' : '配置后可选'}
+          </button>
+          <button className="model-collapsible-state" onClick={() => setApiModelOpen((value) => !value)} type="button">
+            {apiModelOpen ? '收起' : '展开'}
+          </button>
+        </div>
       </section>
 
       {apiModelOpen && PROVIDERS.map((section) => {
@@ -372,12 +402,6 @@ export function ModelPage() {
           );
         })}
 
-      <ModelConfigurationSafety
-        open={safetyOpen}
-        onToggle={() => setSafetyOpen((value) => !value)}
-        surfaces={modelSafetySurfaces}
-      />
-
       {/* Footer */}
       <div className="model-page-footer">
         <span className="muted" style={{ fontSize: 12 }}>
@@ -403,28 +427,30 @@ function AgentCliRuntimeSection({
   onSave,
   onOpenLogin,
   onOpenInstall,
+  onSelectRuntimeMode,
   openingInstall,
   openingLogin,
+  runtimeMode,
   saveDisabled,
   saveLabel,
   suggestedWorkspaceRoot,
   status,
-  safety,
-  capabilitySummary,
+  apiConfigured,
 }: {
   workspaceRoot: string;
   onWorkspaceRootChange: (value: string) => void;
   onSave: () => void;
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
   onOpenInstall: (runtimeId: 'codex' | 'claude', options?: { repair?: boolean }) => void;
+  onSelectRuntimeMode: (runtimeMode: AiRuntimeMode) => void;
+  apiConfigured: boolean;
   openingInstall: boolean;
   openingLogin: boolean;
+  runtimeMode: AiRuntimeMode;
   saveDisabled: boolean;
   saveLabel: string;
   suggestedWorkspaceRoot: string | null;
   status: AiConfigStatus['agentCliRuntimeStatus'] | null;
-  safety: ConfigurationSafetySurface | null;
-  capabilitySummary: string | null;
 }) {
   const runtimes = status?.runtimes ?? [];
   const codexRuntime = runtimes.find((runtime) => runtime.id === 'codex') ?? null;
@@ -439,19 +465,10 @@ function AgentCliRuntimeSection({
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">Agent CLI</div>
-          <p className="model-section-copy">自动检测本机 CLI；未登录时可打开官方登录流程。</p>
+          <p className="model-section-copy">选择默认执行方式；账号仍由官方 CLI 或 API Provider 管理。</p>
         </div>
         <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
           {readyCount}/{catalogueCount} 已登录
-        </div>
-      </div>
-
-      <div className={`agent-cli-action ${hasReadyRuntime ? 'ready' : ''}`}>
-        <div className="agent-cli-action-icon">{hasReadyRuntime ? '✓' : '1'}</div>
-        <div className="agent-cli-action-copy">
-          <span className="agent-cli-detection">自动检测：发现 {detectedCount} 个 CLI，{readyCount} 个已登录。</span>
-          <strong>{hasReadyRuntime ? '在任务右侧选择调用哪个 CLI' : '先登录一个官方 CLI'}</strong>
-          <span>{hasReadyRuntime ? '打开任一任务，右侧输入框下方有 Chat / Codex / Claude；点 Codex 或 Claude 后发送。' : '点击下方登录按钮，Taskplane 会打开终端并填好官方命令。'}</span>
         </div>
       </div>
 
@@ -467,7 +484,9 @@ function AgentCliRuntimeSection({
           openingInstall={openingInstall}
           onOpenLogin={onOpenLogin}
           onOpenInstall={onOpenInstall}
+          onSelectRuntimeMode={onSelectRuntimeMode}
           primary
+          runtimeMode={runtimeMode}
         />
         <AgentCliRuntimeRow
           runtime={claudeRuntime}
@@ -480,94 +499,79 @@ function AgentCliRuntimeSection({
           openingInstall={openingInstall}
           onOpenLogin={onOpenLogin}
           onOpenInstall={onOpenInstall}
+          onSelectRuntimeMode={onSelectRuntimeMode}
+          runtimeMode={runtimeMode}
         />
+        <div className={`agent-cli-runtime-row ${apiConfigured ? 'ready' : 'missing'}`}>
+          <div className="agent-cli-runtime-row-name">
+            <div className="agent-cli-runtime-card-title">
+              <span>API Model</span>
+              <span className="agent-cli-pill">辅助</span>
+            </div>
+            <span className="agent-cli-runtime-card-command mono">provider api</span>
+          </div>
+          <span className={`agent-cli-runtime-card-status ${apiConfigured ? 'ready' : 'missing'}`}>
+            {apiConfigured ? '已配置' : '未配置'}
+          </span>
+          <span className="agent-cli-runtime-row-version">见下方 API Model</span>
+          <span className="agent-cli-runtime-row-detail">{apiConfigured ? '可用' : '需配置'}</span>
+          <button
+            className={`btn sm${runtimeMode === 'api' ? ' disabled' : ''}`}
+            disabled={!apiConfigured || runtimeMode === 'api'}
+            onClick={() => onSelectRuntimeMode('api')}
+            type="button"
+          >
+            {runtimeMode === 'api' ? '当前默认' : apiConfigured ? '设为默认' : '配置后可选'}
+          </button>
+        </div>
       </div>
 
-      <div className="agent-cli-boundary">
-        <span>第一版只读运行，不会自动改代码或提交。</span>
-        <details className="agent-cli-debug">
-          <summary>高级：运行目录</summary>
-          <div className="agent-cli-workspace">
-            <div className="agent-cli-workspace-head">
-              <label className="settings-label" htmlFor="agent-cli-workspace-root">内部运行目录</label>
-              <button
-                className={`btn sm ghost${saveDisabled ? ' disabled' : ''}`}
-                type="button"
-                onClick={onSave}
-                disabled={saveDisabled}
-              >
-                {saveLabel}
-              </button>
-            </div>
-            <div className="agent-cli-workspace-row">
-              <input
-                id="agent-cli-workspace-root"
-                className="settings-input mono"
-                type="text"
-                value={workspaceRoot}
-                placeholder={suggestedWorkspaceRoot ?? '/Users/you/git/project'}
-                onChange={(event) => onWorkspaceRootChange(event.target.value)}
-              />
-            </div>
-            <p className="settings-hint">通常保持自动即可；具体文件读取会在任务上下文里决定。</p>
+      <details className="agent-cli-debug agent-cli-advanced">
+        <summary>高级：运行目录</summary>
+        <div className="agent-cli-workspace">
+          <div className="agent-cli-workspace-head">
+            <label className="settings-label" htmlFor="agent-cli-workspace-root">内部运行目录</label>
+            <button
+              className={`btn sm ghost${saveDisabled ? ' disabled' : ''}`}
+              type="button"
+              onClick={onSave}
+              disabled={saveDisabled}
+            >
+              {saveLabel}
+            </button>
           </div>
-        </details>
-        <details className="agent-cli-debug">
-          <summary>CLI 明细</summary>
-          <div className="agent-cli-grid">
-            {runtimes.length > 0 ? runtimes.map((runtime) => (
-              <div key={runtime.id} className={`agent-cli-row ${runtime.installed ? 'installed' : 'missing'}`}>
-                <div className="agent-cli-runtime-main">
-                  <span className="agent-cli-runtime-name">{runtime.label}</span>
-                  <span className="agent-cli-runtime-command mono">{runtime.command}</span>
-                  {runtime.id === 'codex' && <span className="model-tag">主路径</span>}
-                  {runtime.id === 'claude' && <span className="agent-cli-pill">可选</span>}
-                </div>
-                <div className="agent-cli-runtime-meta">
-                  <span className={`agent-cli-status ${runtime.installed ? 'ok' : 'muted'}`}>
-                    {runtime.installed ? authStateLabel(runtime.authState) : '未安装'}
-                  </span>
-                  <span>{runtime.version ?? '版本未知'}</span>
-                  <span>{workloadLabel(runtime.workload)}</span>
-                </div>
-                {runtime.missingReason && (
-                  <p className="agent-cli-runtime-note">{runtime.missingReason}</p>
-                )}
-                <p className="agent-cli-runtime-note">{agentCliRuntimeNextStep(runtime)}</p>
-              </div>
-            )) : (
-              <div className="agent-cli-empty">Agent CLI 状态尚未生成。</div>
-            )}
+          <div className="agent-cli-workspace-row">
+            <input
+              id="agent-cli-workspace-root"
+              className="settings-input mono"
+              type="text"
+              value={workspaceRoot}
+              placeholder={suggestedWorkspaceRoot ?? '/Users/you/git/project'}
+              onChange={(event) => onWorkspaceRootChange(event.target.value)}
+            />
           </div>
-        </details>
-        <details className="agent-cli-debug">
-          <summary>调试详情</summary>
-          <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
-            <span>{status?.detectedCount ?? 0} detected</span>
-            <span>{status?.manualRunCount ?? 0} manual</span>
-            <span>{status?.readyManualRunCount ?? 0} ready manual</span>
-            <span>{status?.runningCount ?? 0} running</span>
-          </div>
-          {safety && (
-            <span>
-              安全：{CONFIGURATION_SAFETY_STATE_LABELS[safety.state]} · 探测：{configurationSafetyProbePolicyLabel(safety.startupProbePolicy)}
-            </span>
-          )}
-          {capabilitySummary && <span className="mono">{capabilitySummary}</span>}
-        </details>
-      </div>
+          <p className="settings-hint">通常保持自动即可；具体文件读取会在任务上下文里决定。</p>
+        </div>
+        <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
+          <span>{detectedCount} detected</span>
+          <span>{status?.readyManualRunCount ?? 0} ready manual</span>
+          <span>{status?.runningCount ?? 0} running</span>
+        </div>
+      </details>
     </section>
   );
 }
 
 function AgentCliRuntimeRow({
   fallback,
+  onSelectRuntimeMode,
   onOpenLogin,
   onOpenInstall,
   openingInstall,
   openingLogin,
   primary = false,
   runtime,
+  runtimeMode,
 }: {
   fallback: {
     command: 'codex' | 'claude';
@@ -576,10 +580,12 @@ function AgentCliRuntimeRow({
   };
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
   onOpenInstall: (runtimeId: 'codex' | 'claude', options?: { repair?: boolean }) => void;
+  onSelectRuntimeMode: (runtimeMode: AiRuntimeMode) => void;
   openingInstall: boolean;
   openingLogin: boolean;
   primary?: boolean;
   runtime: NonNullable<AiConfigStatus['agentCliRuntimeStatus']>['runtimes'][number] | null;
+  runtimeMode: AiRuntimeMode;
 }) {
   const installed = runtime?.installed ?? false;
   const ready = installed && runtime?.authState === 'ready';
@@ -632,84 +638,17 @@ function AgentCliRuntimeRow({
           {openingInstall ? '正在打开…' : fallback.id === 'claude' ? '安装 Claude' : '安装 Codex'}
         </button>
       ) : (
-        <span className="agent-cli-runtime-row-action">任务侧可选</span>
+        <button
+          className={`btn sm${runtimeMode === fallback.id ? ' disabled' : ''}`}
+          type="button"
+          onClick={() => onSelectRuntimeMode(fallback.id)}
+          disabled={runtimeMode === fallback.id}
+        >
+          {runtimeMode === fallback.id ? '当前默认' : '设为默认'}
+        </button>
       )}
     </div>
   );
-}
-
-function ModelConfigurationSafety({
-  open,
-  onToggle,
-  surfaces,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  surfaces: ConfigurationSafetySurface[];
-}) {
-  if (surfaces.length === 0) {
-    return (
-      <section className="settings-section model-safety-section">
-        <button className="model-collapsible-head" onClick={onToggle} type="button">
-          <span>
-            <span className="model-section-kicker">Safety Details</span>
-            <span className="model-section-copy">内部安全报告。当前没有可显示的模型配置项。</span>
-          </span>
-          <span className="model-collapsible-state">{open ? '收起' : '展开'}</span>
-        </button>
-        <p className="settings-hint">模型安全报告尚未生成；AI Runtime 页不会主动探测外部服务或读取密钥明文。</p>
-      </section>
-    );
-  }
-
-  return (
-    <section className="settings-section model-safety-section">
-      <button className="model-collapsible-head" onClick={onToggle} type="button">
-        <span>
-          <span className="model-section-kicker">Safety Details</span>
-          <span className="model-section-copy">默认收起。用于检查密钥暴露、探测策略和配置安全边界。</span>
-        </span>
-        <span className="model-collapsible-state">{open ? '收起' : '展开'}</span>
-      </button>
-      {open && (
-        <div className="settings-safety-list">
-          {surfaces.map((surface) => (
-            <div key={surface.id} className="settings-safety-row">
-              <div className="settings-safety-main">
-                <span className={`settings-safety-state ${surface.state}`}>
-                  {CONFIGURATION_SAFETY_STATE_LABELS[surface.state]}
-                </span>
-                <span className="settings-safety-id">{surface.id}</span>
-              </div>
-              <div className="settings-safety-detail">
-                <span>{surface.reason}</span>
-                <span>
-                  探测：{configurationSafetyProbePolicyLabel(surface.startupProbePolicy)}
-                  {surface.requiresApproval ? ' · 需用户确认' : ''}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function agentCliRuntimeNextStep(runtime: NonNullable<AiConfigStatus['agentCliRuntimeStatus']>['runtimes'][number]) {
-  if (!runtime.installed) {
-    return runtime.id === 'claude'
-      ? '可选：安装 Claude Code 并在终端登录；当前 Codex CLI 是第一版主路径。'
-      : '安装 Codex CLI 后在终端运行 codex login，再点击重新检测。';
-  }
-  if (runtime.authState === 'ready') return '已通过官方 CLI 登录；Taskplane 不接管或保存账号。';
-  if (runtime.authState === 'needs_login') {
-    return runtime.id === 'claude'
-      ? '在终端运行 claude auth login 后点击重新检测。'
-      : '在终端运行 codex login 后点击重新检测。';
-  }
-  if (runtime.authState === 'error') return '官方 CLI 登录状态异常；请在终端检查后重新检测。';
-  return '如果已完成官方 CLI 登录，点击重新检测同步状态。';
 }
 
 function authStateLabel(state: 'unknown' | 'ready' | 'needs_login' | 'error') {

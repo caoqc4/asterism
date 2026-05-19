@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
 import type { AgentCliRuntimeId } from '@shared/agent-cli-runtime-status';
+import type { AiRuntimeMode } from '@shared/types/settings';
 import type { RunStepRecord } from '@shared/types/run';
 import {
   selectBlockingTaskMemoryGuidance,
@@ -64,7 +65,6 @@ import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 
 type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
-type PanelExecutionMode = 'chat' | AgentCliRuntimeId;
 type ActiveAgentCliRunState = {
   runId: string;
   runtimeId: AgentCliRuntimeId;
@@ -842,7 +842,7 @@ export function RightPanel({
   const [fullScreen, setFullScreen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
-  const [executionMode, setExecutionMode] = useState<PanelExecutionMode>('chat');
+  const [runtimeMode, setRuntimeMode] = useState<AiRuntimeMode>('codex');
   const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
   const [agentCliAvailability, setAgentCliAvailability] = useState<Record<AgentCliRuntimeId, boolean>>({
     claude: false,
@@ -881,6 +881,7 @@ export function RightPanel({
       setCompressionThreshold(
         status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
       );
+      setRuntimeMode(status.runtimeMode ?? 'codex');
       const nextAvailability = AGENT_CLI_PANEL_RUNTIMES.reduce<Record<AgentCliRuntimeId, boolean>>((acc, runtimeId) => {
         acc[runtimeId] = Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
           runtime.id === runtimeId
@@ -973,12 +974,6 @@ export function RightPanel({
       }).catch(() => undefined);
     });
   }, []);
-
-  useEffect(() => {
-    if (!activeTaskId && executionMode !== 'chat') {
-      setExecutionMode('chat');
-    }
-  }, [activeTaskId, executionMode]);
 
   useEffect(() => {
     if (!autoSendDraftPrompt || !draftPrompt || taskId !== activeTaskId) return;
@@ -1789,12 +1784,12 @@ export function RightPanel({
 
     let replyText: string;
     try {
-      if (executionMode !== 'chat' && activeTaskId && window.api?.triggerAgentCliRun) {
-        const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[executionMode];
+      if (activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun) {
+        const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
           prompt: text,
-          runtimeId: executionMode,
+          runtimeId: activeAgentCliRuntimeMode,
           sandboxMode: 'read-only',
           taskId: activeTaskId,
         });
@@ -1803,7 +1798,7 @@ export function RightPanel({
         if (run.status === 'running') {
           setActiveAgentCliRun({
             runId: run.id,
-            runtimeId: executionMode,
+            runtimeId: activeAgentCliRuntimeMode,
             runtimeLabel,
             status: 'running',
             taskId: activeTaskId,
@@ -1852,8 +1847,8 @@ export function RightPanel({
         replyText = generateReply(text, activeTaskId);
       }
     } catch (error) {
-      replyText = executionMode !== 'chat'
-        ? `${AGENT_CLI_PANEL_RUNTIME_LABELS[executionMode]} run 未启动：${error instanceof Error ? error.message : '未知错误'}`
+      replyText = activeAgentCliRuntimeMode
+        ? `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} run 未启动：${error instanceof Error ? error.message : '未知错误'}`
         : generateReply(text, activeTaskId);
     }
 
@@ -1965,6 +1960,12 @@ export function RightPanel({
   const canProposeTaskFileWrite = Boolean(!taskFileProposal && taskFileWriteEvaluation.allowed);
   const canUseAgentCliRuntime = (runtimeId: AgentCliRuntimeId) =>
     Boolean(activeTaskId && agentCliAvailability[runtimeId] && window.api?.triggerAgentCliRun);
+  const activeAgentCliRuntimeMode: AgentCliRuntimeId | null = runtimeMode === 'codex' || runtimeMode === 'claude'
+    ? runtimeMode
+    : null;
+  const shouldUseAgentCliRuntime = Boolean(
+    activeAgentCliRuntimeMode && canUseAgentCliRuntime(activeAgentCliRuntimeMode),
+  );
   const activeTaskAgentCliRun = activeAgentCliRun && activeAgentCliRun.taskId === activeTaskId
     ? activeAgentCliRun
     : null;
@@ -2360,34 +2361,16 @@ export function RightPanel({
           onKeyDown={handleKeyDown}
         />
         <div className="panel-input-foot">
-          <div className="panel-send-mode" aria-label="执行方式">
-            <button
-              type="button"
-              className={`panel-send-mode-btn${executionMode === 'chat' ? ' active' : ''}`}
-              onClick={() => setExecutionMode('chat')}
-            >
-              Chat
-            </button>
-            {AGENT_CLI_PANEL_RUNTIMES.map((runtimeId) => {
-              const canUseRuntime = canUseAgentCliRuntime(runtimeId);
-              const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[runtimeId];
-              return (
-                <button
-                  key={runtimeId}
-                  type="button"
-                  className={`panel-send-mode-btn${executionMode === runtimeId ? ' active' : ''}`}
-                  onClick={() => canUseRuntime && setExecutionMode(runtimeId)}
-                  disabled={!canUseRuntime}
-                  title={canUseRuntime
-                    ? `通过 ${runtimeLabel} 创建只读 Agent run`
-                    : `${runtimeLabel} 需要任务上下文、本机检测和官方 CLI 登录 ready`}
-                >
-                  {runtimeId === 'codex' ? 'Codex' : 'Claude'}
-                </button>
-              );
-            })}
-          </div>
-          <span className="panel-hint muted">{executionMode !== 'chat' ? AGENT_CLI_PANEL_RUNTIME_HINTS[executionMode] : '⏎ 发送  ⇧⏎ 换行'}</span>
+          <span className="panel-runtime-chip">
+            {shouldUseAgentCliRuntime && activeAgentCliRuntimeMode
+              ? AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode]
+              : runtimeMode === 'api'
+                ? 'API Model'
+                : activeTaskId
+                  ? 'API Model · 当前 CLI 不可用'
+                  : 'API Model · 全局对话'}
+          </span>
+          <span className="panel-hint muted">⏎ 发送  ⇧⏎ 换行</span>
           <button
             className={`btn sm primary${!input.trim() || thinking ? ' disabled' : ''}`}
             onClick={() => void send()}
