@@ -426,6 +426,54 @@ describe('runtime event record projection', () => {
     });
   });
 
+  it('groups completed Agent CLI runs as execution recovery evidence', () => {
+    const events = projectRuntimeEvents({
+      runs: [{
+        id: 'run-agent-cli-completed',
+        taskId: 'task-1',
+        type: 'agent',
+        status: 'completed',
+        instructions: 'Agent CLI (Codex CLI) read-only: Inspect the next step.',
+        output: 'Review looks safe. Next step: run focused tests.',
+        outputSource: 'ai',
+        failureReason: null,
+        createdAt: '2026-05-14T09:00:00.000Z',
+        updatedAt: '2026-05-14T09:03:00.000Z',
+      }],
+      runStepsByRunId: {
+        'run-agent-cli-completed': [
+          {
+            id: 'step-terminal-completed',
+            runId: 'run-agent-cli-completed',
+            index: 1,
+            kind: 'model',
+            status: 'completed',
+            title: 'codex cli completed',
+            input: 'codex exec --sandbox read-only --cd /workspace -\nexitCode=0',
+            output: 'Review looks safe. Next step: run focused tests.',
+            error: null,
+            createdAt: '2026-05-14T09:02:00.000Z',
+            updatedAt: '2026-05-14T09:02:00.000Z',
+          },
+        ],
+      },
+    });
+    const group = groupRuntimeEventsForReplay(events).find((item) => item.kind === 'execution_recovery');
+
+    expect(events.map((event) => event.title)).toEqual([
+      'Codex CLI 已完成',
+      'Codex CLI 输出',
+    ]);
+    expect(events[0]?.detail).toBe(
+      'sandbox=read-only / auth=official CLI / request=Inspect the next step. / Review looks safe. Next step: run focused tests.',
+    );
+    expect(group).toMatchObject({
+      title: '执行与恢复',
+      eventIds: ['run_step:step-terminal-completed', 'run:run-agent-cli-completed'],
+      sourceTypes: ['run_step', 'run'],
+    });
+  });
+
   it('groups completion checks as quality gates instead of generic task state', () => {
     const events = projectRuntimeEvents({
       timeline: [{

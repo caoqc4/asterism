@@ -17,6 +17,7 @@ export type RuntimeEventRecord = {
   sourceType: 'timeline' | 'run' | 'run_step' | 'task_record' | 'decision' | 'runtime_projection';
   sourceId: string;
   priority: RuntimeEventPriority;
+  runId?: string | null;
   relatedTaskId?: string | null;
   createdAt: string;
 };
@@ -169,7 +170,7 @@ function classifyRuntimeReplayEvent(event: RuntimeEventRecord): {
     || event.type.includes('checkpoint')
   ) {
     return {
-      bucket: event.sourceId,
+      bucket: event.runId ?? event.sourceId,
       kind: 'execution_recovery',
       summary: '执行过程、检查点或恢复路径。',
       title: '执行与恢复',
@@ -318,6 +319,7 @@ function projectRunEvents(run: RunRecord, params: {
     sourceType: 'run',
     sourceId: run.id,
     priority: run.status === 'failed' ? 'p1' : run.status === 'paused' ? 'p2' : 'p3',
+    runId: run.id,
     createdAt: run.updatedAt,
   }];
 
@@ -358,6 +360,7 @@ function projectRunStepEvent(
     sourceType: 'run_step',
     sourceId: step.id,
     priority: step.status === 'failed' ? 'p1' : step.kind === 'decision' || step.kind === 'checkpoint' ? 'p2' : 'p3',
+    runId: run.id,
     createdAt: step.updatedAt,
   };
 }

@@ -11,6 +11,7 @@ describe('AgentCliRunService', () => {
     const runRepository = buildRunRepository();
     const runStepRepository = buildRunStepRepository();
     const taskService = buildTaskService();
+    const runVerificationRepository = { upsert: vi.fn() };
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,
       failureReason: null,
@@ -25,7 +26,7 @@ describe('AgentCliRunService', () => {
       runRepository,
       runStepRepository,
       executor,
-      { upsert: vi.fn() },
+      runVerificationRepository,
     );
 
     const result = await service.trigger({
@@ -70,6 +71,19 @@ describe('AgentCliRunService', () => {
       'ai',
     );
     expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_agent_cli_1');
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_agent_cli_1',
+      targetType: 'step',
+      tone: 'pass',
+      label: '执行后检查通过',
+    }));
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_agent_cli_1',
+      targetType: 'run',
+      targetId: 'run_agent_cli_1',
+      tone: 'pass',
+      label: 'Run 验证通过',
+    }));
   });
 
   it('notifies the app when an async Agent CLI run reaches a terminal state', async () => {
@@ -206,13 +220,14 @@ describe('AgentCliRunService', () => {
     const runStepRepository = buildRunStepRepository();
     const taskService = buildTaskService();
     const workloadTracker = new AgentCliRuntimeWorkloadTracker();
+    const runVerificationRepository = { upsert: vi.fn() };
     const service = new AgentCliRunService(
       taskService,
       { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
       runRepository,
       runStepRepository,
       vi.fn().mockRejectedValue(new Error('spawn failed')),
-      { upsert: vi.fn() },
+      runVerificationRepository,
       workloadTracker,
     );
 
@@ -236,6 +251,21 @@ describe('AgentCliRunService', () => {
     });
     expect(taskService.annotateRunFailed).toHaveBeenCalledWith('task_1', 'spawn failed', 'run_agent_cli_1');
     expect(workloadTracker.getActiveRunCount('codex')).toBe(0);
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_agent_cli_1',
+      targetType: 'step',
+      tone: 'fail',
+      label: '执行后检查未通过',
+      detail: 'spawn failed',
+    }));
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_agent_cli_1',
+      targetType: 'run',
+      targetId: 'run_agent_cli_1',
+      tone: 'fail',
+      label: 'Run 检查未通过',
+      detail: 'spawn failed',
+    }));
   });
 
   it('cancels an active Agent CLI run through the workload control handle', async () => {
