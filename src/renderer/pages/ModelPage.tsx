@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import type { AiConfigStatus, AiProvider, AiRuntimeMode } from '@shared/types/settings';
 
 interface ModelDef {
@@ -259,6 +259,93 @@ export function ModelPage() {
 
   const configuredProviders = new Set(status?.configuredProviders ?? []);
   const agentCliStatus = status?.agentCliRuntimeStatus ?? null;
+  const apiConfigPanel = apiModelOpen ? (
+    <div className="agent-cli-api-config-panel">
+      <div className="agent-cli-api-config-title">API Model 配置</div>
+      {PROVIDERS.map((section) => {
+        const isConfigured = configuredProviders.has(section.provider);
+        const isSelected = selectedProvider === section.provider;
+        const keyVal = keys[section.keyField] ?? '';
+        const isUnlocked = isConfigured || Boolean(keyVal);
+
+        return (
+          <div
+            key={section.provider}
+            className={`model-provider-block${isSelected ? ' active' : ''}`}
+            onClick={() => !isSelected && handleProviderClick(section.provider)}
+          >
+            <div className="model-provider-header">
+              <div className="model-provider-header-left">
+                <span className="model-provider-label">{section.label}</span>
+                {isConfigured && !keyVal && (
+                  <span className="model-provider-status configured">已配置 ✓</span>
+                )}
+              </div>
+              {isSelected && <span className="model-provider-active-dot" />}
+            </div>
+
+            {isSelected && (
+              <div className="model-provider-body">
+                {section.customBaseUrl && (
+                  <input
+                    className="settings-input"
+                    type="text"
+                    value={customBaseUrl}
+                    placeholder="Base URL  https://your-endpoint.com/v1"
+                    onChange={(e) => setCustomBaseUrl(e.target.value)}
+                    style={{ marginBottom: 6 }}
+                  />
+                )}
+                <div className="settings-api-row" style={{ marginBottom: 4 }}>
+                  <input
+                    className="settings-input"
+                    type={showKeys[section.keyField] ? 'text' : 'password'}
+                    value={keyVal}
+                    placeholder={isConfigured ? '（已存储，输入新值可覆盖）' : section.placeholder}
+                    onChange={(e) => setKey(section.keyField, e.target.value)}
+                  />
+                  <button className="btn sm ghost" onClick={() => toggleShow(section.keyField)}>
+                    {showKeys[section.keyField] ? '隐藏' : '显示'}
+                  </button>
+                </div>
+                <p className="settings-hint" style={{ marginBottom: 14 }}>{section.hint}</p>
+
+                {section.models.length > 0 ? (
+                  <div className="model-select-row">
+                    <label className="settings-label">默认模型</label>
+                    <select
+                      className="model-select"
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      disabled={!isUnlocked}
+                    >
+                      {section.models.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}{m.recommended ? ' ★' : ''} — {m.desc}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="model-select-id mono muted">{selectedModel}</span>
+                  </div>
+                ) : (
+                  <div className="model-select-row">
+                    <label className="settings-label">模型 ID</label>
+                    <input
+                      className="settings-input"
+                      type="text"
+                      value={customModelId}
+                      placeholder="例：mistral-7b-instruct"
+                      onChange={(e) => setCustomModelId(e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  ) : null;
 
   return (
     <div className="model-page">
@@ -268,133 +355,30 @@ export function ModelPage() {
           <p className="model-page-subtitle">选择任务默认使用的 AI 运行方式。</p>
           <p className="model-page-boundary">CLI 账号由官方工具管理；API 密钥保存在本机钥匙串。</p>
         </div>
-        <button
-          className={`btn sm model-refresh-btn${refreshingStatus ? ' disabled' : ''}`}
-          onClick={() => void refreshStatus()}
-          disabled={refreshingStatus}
-          title="重新检测官方 CLI 登录和本机运行状态"
-          type="button"
-        >
-          {refreshingStatus ? '检测中…' : '重新检测'}
-        </button>
       </div>
 
       <AgentCliRuntimeSection
+        apiConfigOpen={apiModelOpen}
+        apiConfigPanel={apiConfigPanel}
         workspaceRoot={workspaceRoot}
         onWorkspaceRootChange={setWorkspaceRoot}
         status={agentCliStatus}
         runtimeMode={selectedRuntimeMode}
         apiConfigured={Boolean(status?.configured)}
+        apiProviderSummary={status?.configured ? `${status.provider} / ${status.model}` : null}
+        onToggleApiConfig={() => setApiModelOpen((value) => !value)}
         onSelectRuntimeMode={(runtimeMode) => void saveRuntimeMode(runtimeMode)}
         suggestedWorkspaceRoot={status?.suggestedWorkspaceRoot ?? null}
         onOpenLogin={(runtimeId) => void openAgentCliLogin(runtimeId)}
         onOpenInstall={(runtimeId, options) => void openAgentCliInstall(runtimeId, options)}
-        onOpenApiConfig={() => setApiModelOpen(true)}
+        onRefresh={() => void refreshStatus()}
+        refreshing={refreshingStatus}
         openingInstall={openingInstall}
         openingLogin={openingLogin}
         onSave={() => void save()}
         saveLabel={saving ? '保存中…' : saveResult === 'ok' ? '已保存' : '保存工作区'}
         saveDisabled={saving}
       />
-
-      <section className="model-api-section">
-        <div className="model-collapsible-head">
-          <button className="model-collapsible-copy" onClick={() => setApiModelOpen((value) => !value)} type="button">
-            <span className="model-section-kicker">API Model 配置</span>
-            <span className="model-section-copy">
-              {status?.configured
-                ? <>当前：<span className="mono">{status.provider} / {status.model}</span></>
-                : '填写 Provider 密钥后，API Model 才能作为运行方式使用。'}
-            </span>
-          </button>
-          <button className="model-collapsible-state" onClick={() => setApiModelOpen((value) => !value)} type="button">
-            {apiModelOpen ? '收起配置' : status?.configured ? '修改配置' : '配置 API'}
-          </button>
-        </div>
-      </section>
-
-      {apiModelOpen && PROVIDERS.map((section) => {
-          const isConfigured = configuredProviders.has(section.provider);
-          const isSelected = selectedProvider === section.provider;
-          const keyVal = keys[section.keyField] ?? '';
-          const isUnlocked = isConfigured || Boolean(keyVal);
-
-          return (
-            <div
-              key={section.provider}
-              className={`model-provider-block${isSelected ? ' active' : ''}`}
-              onClick={() => !isSelected && handleProviderClick(section.provider)}
-            >
-              <div className="model-provider-header">
-                <div className="model-provider-header-left">
-                  <span className="model-provider-label">{section.label}</span>
-                  {isConfigured && !keyVal && (
-                    <span className="model-provider-status configured">已配置 ✓</span>
-                  )}
-                </div>
-                {isSelected && <span className="model-provider-active-dot" />}
-              </div>
-
-              {isSelected && (
-                <div className="model-provider-body">
-                  {section.customBaseUrl && (
-                    <input
-                      className="settings-input"
-                      type="text"
-                      value={customBaseUrl}
-                      placeholder="Base URL  https://your-endpoint.com/v1"
-                      onChange={(e) => setCustomBaseUrl(e.target.value)}
-                      style={{ marginBottom: 6 }}
-                    />
-                  )}
-                  <div className="settings-api-row" style={{ marginBottom: 4 }}>
-                    <input
-                      className="settings-input"
-                      type={showKeys[section.keyField] ? 'text' : 'password'}
-                      value={keyVal}
-                      placeholder={isConfigured ? '（已存储，输入新值可覆盖）' : section.placeholder}
-                      onChange={(e) => setKey(section.keyField, e.target.value)}
-                    />
-                    <button className="btn sm ghost" onClick={() => toggleShow(section.keyField)}>
-                      {showKeys[section.keyField] ? '隐藏' : '显示'}
-                    </button>
-                  </div>
-                  <p className="settings-hint" style={{ marginBottom: 14 }}>{section.hint}</p>
-
-                  {section.models.length > 0 ? (
-                    <div className="model-select-row">
-                      <label className="settings-label">默认模型</label>
-                      <select
-                        className="model-select"
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        disabled={!isUnlocked}
-                      >
-                        {section.models.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}{m.recommended ? ' ★' : ''} — {m.desc}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="model-select-id mono muted">{selectedModel}</span>
-                    </div>
-                  ) : (
-                    <div className="model-select-row">
-                      <label className="settings-label">模型 ID</label>
-                      <input
-                        className="settings-input"
-                        type="text"
-                        value={customModelId}
-                        placeholder="例：mistral-7b-instruct"
-                        onChange={(e) => setCustomModelId(e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
 
       {/* Footer */}
       <div className="model-page-footer">
@@ -412,15 +396,20 @@ export function ModelPage() {
 }
 
 function AgentCliRuntimeSection({
+  apiConfigOpen,
+  apiConfigPanel,
+  apiProviderSummary,
   workspaceRoot,
   onWorkspaceRootChange,
   onSave,
   onOpenLogin,
   onOpenInstall,
-  onOpenApiConfig,
+  onRefresh,
   onSelectRuntimeMode,
+  onToggleApiConfig,
   openingInstall,
   openingLogin,
+  refreshing,
   runtimeMode,
   saveDisabled,
   saveLabel,
@@ -428,16 +417,21 @@ function AgentCliRuntimeSection({
   status,
   apiConfigured,
 }: {
+  apiConfigOpen: boolean;
+  apiConfigPanel: ReactNode;
+  apiProviderSummary: string | null;
   workspaceRoot: string;
   onWorkspaceRootChange: (value: string) => void;
   onSave: () => void;
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
   onOpenInstall: (runtimeId: 'codex' | 'claude', options?: { repair?: boolean }) => void;
-  onOpenApiConfig: () => void;
+  onRefresh: () => void;
   onSelectRuntimeMode: (runtimeMode: AiRuntimeMode) => void;
+  onToggleApiConfig: () => void;
   apiConfigured: boolean;
   openingInstall: boolean;
   openingLogin: boolean;
+  refreshing: boolean;
   runtimeMode: AiRuntimeMode;
   saveDisabled: boolean;
   saveLabel: string;
@@ -459,8 +453,19 @@ function AgentCliRuntimeSection({
           <div className="model-section-kicker">运行方式</div>
           <p className="model-section-copy">选择任务默认调用 CLI 还是 API。</p>
         </div>
-        <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
-          {readyCount}/{catalogueCount} 已登录
+        <div className="agent-cli-head-actions">
+          <button
+            className={`btn sm model-refresh-btn${refreshing ? ' disabled' : ''}`}
+            onClick={onRefresh}
+            disabled={refreshing}
+            title="重新检测官方 CLI 登录和本机运行状态"
+            type="button"
+          >
+            {refreshing ? '检测中…' : '重新检测'}
+          </button>
+          <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
+            {readyCount}/{catalogueCount} 已登录
+          </div>
         </div>
       </div>
 
@@ -503,23 +508,29 @@ function AgentCliRuntimeSection({
           <span className={`agent-cli-runtime-card-status ${apiConfigured ? 'ready' : 'missing'}`}>
             {apiConfigured ? '已配置' : '未配置'}
           </span>
-          <span className="agent-cli-runtime-row-version">{apiConfigured ? '可用' : '未完成'}</span>
+          <span className="agent-cli-runtime-row-version">{apiProviderSummary ?? '未完成'}</span>
           <span className="agent-cli-runtime-row-detail">{runtimeMode === 'api' ? '正在使用' : apiConfigured ? '可选择' : '先配置'}</span>
-          {apiConfigured ? (
+          <div className="agent-cli-runtime-row-actions">
+            {apiConfigured && (
+              <button
+                className={`btn sm${runtimeMode === 'api' ? ' disabled' : ''}`}
+                disabled={runtimeMode === 'api'}
+                onClick={() => onSelectRuntimeMode('api')}
+                type="button"
+              >
+                {runtimeMode === 'api' ? '正在使用' : '使用此方式'}
+              </button>
+            )}
             <button
-              className={`btn sm${runtimeMode === 'api' ? ' disabled' : ''}`}
-              disabled={runtimeMode === 'api'}
-              onClick={() => onSelectRuntimeMode('api')}
+              className={`btn sm${apiConfigured ? ' ghost' : ' primary'}`}
+              onClick={onToggleApiConfig}
               type="button"
             >
-              {runtimeMode === 'api' ? '正在使用' : '使用此方式'}
+              {apiConfigOpen ? '收起配置' : apiConfigured ? '修改配置' : '配置 API'}
             </button>
-          ) : (
-            <button className="btn sm primary" onClick={onOpenApiConfig} type="button">
-              配置 API
-            </button>
-          )}
+          </div>
         </div>
+        {apiConfigPanel}
       </div>
 
       <details className="agent-cli-debug agent-cli-advanced">
@@ -600,7 +611,19 @@ function AgentCliRuntimeRow({
       <span className={`agent-cli-runtime-card-status ${rowState}`}>
         {statusLabel}
       </span>
-      <span className="agent-cli-runtime-row-version">{runtime?.version ?? '版本未知'}</span>
+      <span className="agent-cli-runtime-row-version">
+        {runtime?.version ?? '版本未知'}
+        {installed && !brokenInstall && (
+          <button
+            className="agent-cli-inline-action"
+            type="button"
+            onClick={() => onOpenInstall(fallback.id)}
+            disabled={openingInstall}
+          >
+            更新
+          </button>
+        )}
+      </span>
       <span className="agent-cli-runtime-row-detail">{detail}</span>
       {brokenInstall ? (
         <button
