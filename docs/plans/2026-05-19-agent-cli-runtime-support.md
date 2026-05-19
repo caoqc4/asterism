@@ -246,6 +246,8 @@ Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com
 - Agent CLI launch controls and execution services require a ready manual-run runtime, not merely an installed CLI.
 - The real Agent CLI smoke is opt-in only:
   `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke`.
+- The smoke defaults to Codex CLI. Claude Code can be checked explicitly with:
+  `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-readonly-smoke`.
 - Default local acceptance and tests must not call Agent CLIs or model providers.
 
 ## Strategic Summary

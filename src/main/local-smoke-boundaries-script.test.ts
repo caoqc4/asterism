@@ -14,6 +14,7 @@ const envKeys = [
   'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER',
   'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
   'TASKPLANE_ENV_FILE',
+  'TASKPLANE_AGENT_CLI_SMOKE_RUNTIME',
   'TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE',
@@ -367,9 +368,24 @@ describe('local smoke script default boundaries', () => {
 
     expect(result.status).toBe(0);
     expect(result.output).toContain('Agent CLI read-only smoke');
+    expect(result.output).toContain('runtime=codex');
     expect(result.output).toContain('status=skip');
     expect(result.output).toContain('cli=not-called');
     expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('validates the Agent CLI smoke runtime before calling a CLI', () => {
+    const result = runScript('scripts/agent-cli-readonly-smoke.mjs', '', {
+      TASKPLANE_AGENT_CLI_SMOKE_RUNTIME: 'unknown',
+      TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE: 'true',
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.output).toContain('Agent CLI read-only smoke');
+    expect(result.output).toContain('runtime=invalid');
+    expect(result.output).toContain('cli=invalid');
+    expect(result.output).toContain('workspace=unchanged');
+    expect(result.output).toContain('TASKPLANE_AGENT_CLI_SMOKE_RUNTIME must be codex or claude');
   });
 
   it('keeps Code Agent model producer preview smoke skipped without provider spend by default', () => {

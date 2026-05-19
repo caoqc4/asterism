@@ -6,19 +6,55 @@ import path from 'node:path';
 
 const ENABLED = process.env.TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE === 'true';
 const EXPECTED_PHRASE = 'TASKPLANE_AGENT_CLI_READONLY_SMOKE_OK';
+const RUNTIME = normalizeRuntime(process.env.TASKPLANE_AGENT_CLI_SMOKE_RUNTIME ?? 'codex');
+
+const RUNTIME_ADAPTERS = {
+  codex: {
+    authArgs: ['login', 'status'],
+    command: 'codex',
+    execArgs: (workspaceRoot) => [
+      'exec',
+      '--sandbox',
+      'read-only',
+      '--cd',
+      workspaceRoot,
+      '--skip-git-repo-check',
+      '-',
+    ],
+    label: 'Codex CLI',
+  },
+  claude: {
+    authArgs: ['auth', 'status'],
+    command: 'claude',
+    execArgs: () => ['-p', '--permission-mode', 'plan', '--output-format', 'text'],
+    label: 'Claude Code',
+  },
+};
 
 export function runAgentCliReadonlySmoke() {
   console.log('Agent CLI read-only smoke');
+  console.log(`runtime=${RUNTIME ?? 'invalid'}`);
 
   if (!ENABLED) {
     console.log('status=skip');
-    console.log('set TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true to run one Codex CLI read-only request');
+    console.log('set TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true to run one Agent CLI read-only request');
+    console.log('set TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=codex or claude to choose the CLI');
     console.log('cli=not-called');
     console.log('workspace=unchanged');
     return 0;
   }
 
-  const versionResult = runCommand('codex', ['--version']);
+  if (!RUNTIME) {
+    console.log('status=failed');
+    console.log('cli=invalid');
+    console.log('auth=unknown');
+    console.log('workspace=unchanged');
+    console.log('error=TASKPLANE_AGENT_CLI_SMOKE_RUNTIME must be codex or claude');
+    return 1;
+  }
+
+  const adapter = RUNTIME_ADAPTERS[RUNTIME];
+  const versionResult = runCommand(adapter.command, ['--version']);
 
   if (versionResult.error) {
     console.log('status=failed');
@@ -29,10 +65,11 @@ export function runAgentCliReadonlySmoke() {
     return 1;
   }
 
-  console.log('cli=codex');
+  console.log(`cli=${RUNTIME}`);
+  console.log(`label=${adapter.label}`);
   console.log(`version=${firstLine(versionResult.output) || '<unknown>'}`);
 
-  const loginResult = runCommand('codex', ['login', 'status']);
+  const loginResult = runCommand(adapter.command, adapter.authArgs);
 
   if (loginResult.status !== 0) {
     console.log('status=failed');
@@ -59,16 +96,12 @@ export function runAgentCliReadonlySmoke() {
       `Reply with the exact phrase: ${EXPECTED_PHRASE}`,
       'You may inspect README.md or TASK.md if helpful.',
       'Do not modify, create, delete, rename, or move any files.',
-    ].join('\n');
-    const execResult = runCommand('codex', [
-      'exec',
-      '--sandbox',
-      'read-only',
-      '--cd',
-      tempRoot,
-      '--skip-git-repo-check',
-      '-',
-    ], {
+      RUNTIME === 'claude'
+        ? 'You are running in Claude Code plan mode; do not ask to switch into editing mode.'
+        : null,
+    ].filter(Boolean).join('\n');
+    const execResult = runCommand(adapter.command, adapter.execArgs(tempRoot), {
+      cwd: tempRoot,
       input: prompt,
       timeout: 120_000,
     });
@@ -107,6 +140,7 @@ export function runAgentCliReadonlySmoke() {
 function runCommand(command, args, options = {}) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
+    cwd: options.cwd,
     input: options.input,
     maxBuffer: 128_000,
     timeout: options.timeout ?? 30_000,
@@ -146,6 +180,12 @@ function firstLine(text) {
 
 function preview(text) {
   return text.replace(/\s+/g, ' ').trim().slice(0, 500) || '<empty>';
+}
+
+function normalizeRuntime(value) {
+  const runtime = String(value).trim().toLowerCase();
+  if (runtime === 'codex' || runtime === 'claude') return runtime;
+  return null;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
