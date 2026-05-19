@@ -175,9 +175,9 @@ evidence, read-only workspace protection, task dynamics replay, Run Goal
 Contract/verifier/memory-proposal evidence, and explicit runtime-native goal
 audit requests that are recorded but not forwarded.
 
-The older self-built sandbox/API-agent lane remains gated and explicit. These
-commands are useful when maintaining that legacy/experimental runtime boundary,
-but they are not the first-run Agent CLI validation path:
+The Agent API / sandbox execution lane remains gated and explicit while it
+matures as a peer runtime. These commands are useful when maintaining that
+runtime boundary, but they are not the first-run Agent CLI validation path:
 
 ```bash
 npm run accept:agent-local

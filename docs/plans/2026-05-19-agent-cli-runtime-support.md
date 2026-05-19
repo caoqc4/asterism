@@ -2,9 +2,9 @@
 
 ## Decision
 
-Taskplane should prioritize a thin Agent CLI runtime layer as the first execution path before continuing to deepen the self-built API-agent runtime.
+Taskplane should prioritize a thin Agent CLI runtime layer as the first execution path before continuing to deepen the peer Agent API Runtime.
 
-Agent CLI and Agent API should be treated as peer execution-runtime choices in the long-term product model. The current self-built API-agent work remains valuable, but its strongest completed parts are task memory, runtime gates, context assembly, provider safety, Decisions, and auditability. Rebuilding the full coding-agent execution layer before validating the official-CLI path would duplicate mature tools such as Codex CLI, Claude Code, Cursor Agent, Gemini CLI, OpenCode, and Kiro CLI.
+Agent CLI and Agent API should be treated as peer execution-runtime choices in the long-term product model. The current Agent API work remains valuable, but its strongest completed parts are task memory, runtime gates, context assembly, provider safety, Decisions, and auditability. Rebuilding the full coding-agent execution layer before validating the official-CLI path would duplicate mature tools such as Codex CLI, Claude Code, Cursor Agent, Gemini CLI, OpenCode, and Kiro CLI.
 
 The next stage should therefore make Taskplane able to call a user-installed, user-authenticated official Agent CLI in the background, starting with Codex CLI and Claude Code.
 
@@ -41,7 +41,7 @@ Incomplete areas:
 - agent CLI account login support;
 - user-facing runtime observability comparable to dedicated agent tools.
 
-This means Taskplane can already decide whether work is safe and well-contextualized, but should not yet rely on the self-built API-agent path as the only route for real coding-agent execution.
+This means Taskplane can already decide whether work is safe and well-contextualized, but should not yet rely on the Agent API path as the only route for real coding-agent execution.
 
 ## Product Positioning
 
@@ -265,4 +265,4 @@ Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com
 
 Taskplane should become the task-memory, context, judgment, and runtime-governance layer around mature coding agents.
 
-The self-built API-agent runtime remains useful for lightweight local tools and future non-coding workflows, but the next product milestone should be Agent CLI support, starting with Codex CLI and Claude Code.
+Agent API remains a peer execution runtime to mature after the first Agent CLI milestone. It should reuse the same Taskplane harness, task memory, runtime gates, context assembly, verifier, and acceptance boundaries instead of becoming a separate task lifecycle.

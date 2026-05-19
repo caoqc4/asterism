@@ -221,7 +221,7 @@ function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
     <div className="setup-banner">
       <span className="setup-banner-icon">⚠</span>
       <span className="setup-banner-text">
-        AI Runtime 尚未配置；可先连接 Agent CLI 或添加辅助 API Key，任务管理仍可继续使用。
+        AI Runtime 尚未配置；可先连接 Agent CLI 或配置模型服务，任务管理仍可继续使用。
       </span>
       <button className="btn sm primary" onClick={onGoToModel}>
         前往 AI Runtime →

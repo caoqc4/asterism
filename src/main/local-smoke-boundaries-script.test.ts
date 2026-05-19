@@ -250,7 +250,7 @@ describe('local smoke script default boundaries', () => {
 
     expect(script).toContain('AI Runtime');
     expect(script).toContain('Agent CLI runtimes');
-    expect(script).toContain('辅助 API 配置');
+    expect(script).toContain('模型服务配置');
     expect(script).toContain('使用此方式');
     expect(script).toContain('重新检测');
     expect(script).toContain('配置 AI Provider 密钥');

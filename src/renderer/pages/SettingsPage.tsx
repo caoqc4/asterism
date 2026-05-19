@@ -174,7 +174,7 @@ export function SettingsPage() {
           </span>
         </div>
         <p className="settings-hint" style={{ marginTop: 6 }}>
-          修改辅助 API、设置 Workspace root 或查看 Agent CLI 状态请前往 <strong>AI Runtime</strong> 页。
+          修改模型服务配置、设置 Workspace root 或查看 Agent CLI / Agent API Runtime 状态请前往 <strong>AI Runtime</strong> 页。
         </p>
       </section>
 
