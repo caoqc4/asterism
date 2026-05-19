@@ -115,16 +115,27 @@ export function ModelPage() {
   const [customBaseUrl, setCustomBaseUrl] = useState('');
   const [showKeys, setShowKeys] = useState<Partial<Record<KeyField, boolean>>>({});
   const [saving, setSaving] = useState(false);
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
 
   useEffect(() => {
-    if (!window.api) return;
-    window.api.getAiConfigStatus().then((s) => {
+    void refreshStatus();
+  }, []);
+
+  async function refreshStatus() {
+    if (!window.api || refreshingStatus) return;
+    setRefreshingStatus(true);
+    try {
+      const s = await window.api.getAiConfigStatus();
       setStatus(s);
       if (s.model) setSelectedModel(s.model);
       if (s.provider) setSelectedProvider(s.provider);
-    }).catch(() => {});
-  }, []);
+    } catch {
+      // Keep the last known status visible when a manual probe fails.
+    } finally {
+      setRefreshingStatus(false);
+    }
+  }
 
   function setKey(field: KeyField, value: string) {
     setKeys((prev) => ({ ...prev, [field]: value }));
@@ -188,9 +199,20 @@ export function ModelPage() {
   return (
     <div className="model-page">
       <div className="model-page-head">
-        <h2 className="model-page-title">AI Runtime</h2>
-        <p className="model-page-subtitle">管理本机 Agent CLI、API 模型和执行安全边界。</p>
-        <p className="model-page-boundary">Agent CLI 使用你在官方 CLI 中完成的登录；Taskplane 只做本机检测、上下文装配和运行记录。</p>
+        <div>
+          <h2 className="model-page-title">AI Runtime</h2>
+          <p className="model-page-subtitle">管理本机 Agent CLI、API 模型和执行安全边界。</p>
+          <p className="model-page-boundary">Agent CLI 使用你在官方 CLI 中完成的登录；Taskplane 只做本机检测、上下文装配和运行记录。</p>
+        </div>
+        <button
+          className={`btn sm ghost${refreshingStatus ? ' disabled' : ''}`}
+          onClick={() => void refreshStatus()}
+          disabled={refreshingStatus}
+          title="重新检测官方 CLI 登录和本机运行状态"
+          type="button"
+        >
+          {refreshingStatus ? '检测中' : '重新检测'}
+        </button>
       </div>
 
       <AgentCliRuntimeSection

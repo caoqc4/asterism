@@ -197,6 +197,7 @@ Taskplane should not enable Claude execution only because `claude -p` exists. Cl
 - keep Capability Registry unavailable unless a ready manual-run runtime such as Codex is present;
 - keep the RightPanel launch control disabled and reject execution requests unless the selected CLI is authenticated and ready;
 - show `readyManualRunCount` in AI Runtime status so users can distinguish detected CLIs from executable CLIs;
+- provide a manual AI Runtime re-detect action after users complete official CLI login in a terminal;
 - require a dedicated Claude adapter design before launching any background Claude run.
 
 Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com/docs/en/headless.

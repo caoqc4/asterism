@@ -1097,6 +1097,45 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/secret value is not exposed/)).toBeTruthy();
   });
 
+  it('can manually refresh AI Runtime CLI readiness after official CLI login', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus)
+      .mockResolvedValueOnce(buildAiStatus())
+      .mockResolvedValueOnce(buildAiStatus({
+        agentCliRuntimeStatus: {
+          catalogueCount: 2,
+          detectedCount: 1,
+          readyCount: 0,
+          runningCount: 0,
+          errorCount: 0,
+          manualRunCount: 1,
+          readyManualRunCount: 0,
+          updatedAt: '2026-05-19T00:00:00.000Z',
+          runtimes: [{
+            id: 'codex',
+            label: 'Codex CLI',
+            command: 'codex',
+            installed: true,
+            version: 'codex 0.42.0',
+            authState: 'needs_login',
+            executionSupport: 'manual_run',
+            workload: 'idle',
+            missingReason: 'Codex CLI is installed but not logged in; run codex login.',
+          }],
+        },
+      }))
+      .mockResolvedValue(buildAiStatus());
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
+
+    expect(await screen.findByText('0 ready manual')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '重新检测' }));
+
+    expect(await screen.findByText('1 ready manual')).toBeTruthy();
+    expect(harness.api.getAiConfigStatus).toHaveBeenCalledTimes(3);
+  });
+
   it('renders structured External Access connector status from runtime config', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
