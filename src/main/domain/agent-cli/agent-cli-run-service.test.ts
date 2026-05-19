@@ -121,6 +121,44 @@ describe('AgentCliRunService', () => {
     });
   });
 
+  it('uses the resolved executable path when the runtime status provides one', async () => {
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Done.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+        agentCliRuntimeStatus: {
+          ...buildAiStatus().agentCliRuntimeStatus!,
+          runtimes: buildAiStatus().agentCliRuntimeStatus!.runtimes.map((runtime) => (
+            runtime.id === 'codex'
+              ? { ...runtime, executablePath: '/opt/homebrew/bin/codex' }
+              : runtime
+          )),
+        },
+      })) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+      { upsert: vi.fn() },
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run Codex.',
+      taskId: 'task_1',
+    });
+
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      command: '/opt/homebrew/bin/codex',
+    }));
+  });
+
   it('records the accepted run immediately before the executor completes', async () => {
     const workloadTracker = new AgentCliRuntimeWorkloadTracker();
     let resolveExecution!: (result: {

@@ -214,7 +214,7 @@ export class AgentCliRunService {
       runAdapter: adapter,
       runArgs: execution.args,
       run,
-      runtimeCommand: runtime.command,
+      runtimeCommand: runtime.executablePath ?? runtime.command,
       sandboxMode,
       task,
       workloadLease,

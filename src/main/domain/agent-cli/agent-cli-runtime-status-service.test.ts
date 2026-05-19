@@ -50,6 +50,7 @@ describe('agent cli runtime status service', () => {
   it('marks Codex ready when the injected probe reports official CLI login status', async () => {
     const service = new AgentCliRuntimeStatusService(async (command) => ({
       authState: command === 'codex' ? 'ready' : 'unknown',
+      executablePath: command === 'codex' ? '/opt/homebrew/bin/codex' : null,
       installed: command === 'codex',
       version: command === 'codex' ? 'codex 0.42.0' : null,
     }));
@@ -59,6 +60,8 @@ describe('agent cli runtime status service', () => {
     expect(status.readyCount).toBe(1);
     expect(status.runtimes.find((runtime) => runtime.id === 'codex')).toMatchObject({
       authState: 'ready',
+      command: 'codex',
+      executablePath: '/opt/homebrew/bin/codex',
       missingReason: null,
     });
   });

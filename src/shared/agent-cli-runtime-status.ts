@@ -16,6 +16,7 @@ export type AgentCliRuntimeRecord = {
   id: AgentCliRuntimeId;
   label: string;
   command: string;
+  executablePath?: string | null;
   installed: boolean;
   version: string | null;
   authState: AgentCliAuthState;

@@ -18,6 +18,7 @@ import {
 export type AgentCliCommandProbe = (command: string, runtimeId: AgentCliRuntimeId) => Promise<{
   authReason?: string | null;
   authState?: AgentCliAuthState;
+  executablePath?: string | null;
   installed: boolean;
   version: string | null;
   errorReason?: string | null;
@@ -52,6 +53,7 @@ export class AgentCliRuntimeStatusService {
       return {
         ...runtime,
         authState: probe.authState ?? 'unknown',
+        executablePath: probe.executablePath ?? null,
         installed: true,
         missingReason: installedRuntimeMissingReason(runtime.id, runtime.label, runtime.command, runtime.executionSupport, probe.authState, probe.authReason),
         version: probe.version,
@@ -77,11 +79,13 @@ export function createAgentCliRuntimeStatusService(): AgentCliRuntimeStatusServi
 async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeId): Promise<{
   authReason?: string | null;
   authState?: AgentCliAuthState;
+  executablePath?: string | null;
   installed: boolean;
   version: string | null;
   errorReason?: string | null;
 }> {
   const pathProbe = await runProbe('/bin/zsh', ['-lc', `command -v ${shellQuote(command)}`]);
+  const executablePath = firstLine(pathProbe.stdout);
   if (pathProbe.exitCode !== 0 || !pathProbe.stdout.trim()) {
     return {
       errorReason: `${command} was not found on PATH.`,
@@ -90,13 +94,14 @@ async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeI
     };
   }
 
+  const executable = executablePath ?? command;
   const authProbePromise = runtimeId === 'codex'
-    ? runProbe(command, ['login', 'status'])
+    ? runProbe(executable, ['login', 'status'])
     : runtimeId === 'claude'
-      ? runProbe(command, ['auth', 'status'])
+      ? runProbe(executable, ['auth', 'status'])
       : Promise.resolve(null);
   const [versionProbe, authProbe] = await Promise.all([
-    runProbe(command, ['--version']),
+    runProbe(executable, ['--version']),
     authProbePromise,
   ]);
   const authStatus = authProbe
@@ -105,6 +110,7 @@ async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeI
   return {
     authReason: authStatus?.reason ?? null,
     authState: authStatus?.state,
+    executablePath,
     installed: true,
     version: versionProbe.exitCode === 0
       ? firstLine(versionProbe.stdout || versionProbe.stderr)

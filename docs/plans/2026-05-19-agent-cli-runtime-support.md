@@ -119,6 +119,7 @@ type AgentCliRuntimeStatus = {
     cli: 'codex' | 'claude' | 'cursor' | 'gemini' | 'opencode' | 'kiro';
     label: string;
     command: string;
+    executablePath: string | null;
     installed: boolean;
     version: string | null;
     authState: 'unknown' | 'ready' | 'needs_login' | 'error';
@@ -130,6 +131,11 @@ type AgentCliRuntimeStatus = {
   }>;
 };
 ```
+
+`command` is the user-facing command name. `executablePath` is the resolved
+path from the user's shell environment and should be preferred by the execution
+adapter when present. This avoids a packaged Electron process detecting a CLI
+through a login shell and then failing to spawn it through a narrower app PATH.
 
 Important boundary:
 
