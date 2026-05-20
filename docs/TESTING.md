@@ -175,9 +175,9 @@ evidence, read-only workspace protection, task dynamics replay, Run Goal
 Contract/verifier/memory-proposal evidence, and explicit runtime-native goal
 audit requests that are recorded but not forwarded.
 
-Runtime-native goal discovery is manual and non-blocking. By default it only
-probes local CLI version/help output, so it can be used to inspect command
-shape without starting a goal:
+Runtime-native goal discovery is an optional compatibility track, not a
+first-version product gate. By default it only probes local CLI version/help
+output, so it can be used to inspect command shape without starting a goal:
 
 ```bash
 npm run manual:agent-cli-native-goal-discovery
@@ -214,7 +214,9 @@ npm run manual:agent-cli-native-goal-discovery
 The candidate command runs in a disposable workspace and fails if workspace
 files change. Use the captured command, stdout/stderr, status, cancellation
 behavior, and workspace result to compare against the Native Goal Forwarding
-Evidence Gate before enabling any runtime-native forwarding.
+Evidence Gate before enabling any runtime-native forwarding. First-version goal
+work should remain focused on Taskplane-owned durable goals, verifier evidence,
+and user-confirmed task-memory proposals.
 
 The Agent API / sandbox execution lane remains gated and explicit while it
 matures as a peer runtime. These commands are useful when maintaining that

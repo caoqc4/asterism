@@ -19,7 +19,7 @@ This matrix keeps local alpha acceptance grounded in first principles: protect t
 | Live provider execution | Real model-provider task execution | Provider-native live acceptance commands | Optional, requires credentials |
 | Docker/local sandbox mutation | Real local-container sandbox execution | `TASKPLANE_ENABLE_LOCAL_CONTAINER_SANDBOX=true` preflight/live commands | Optional, requires Docker and explicit env |
 | Real external connectors | Gmail/Calendar/GitHub style external access | Not in local alpha smoke | Deferred until connectors exist |
-| Runtime-native goal discovery | Codex/Claude native goal command-shape discovery | `npm run manual:agent-cli-native-goal-discovery` | Manual only; default probes help/version and candidate execution requires explicit env |
+| Runtime-native goal discovery | Optional Codex/Claude native goal compatibility discovery | `npm run manual:agent-cli-native-goal-discovery` | Manual only; not a first-version gate; default probes help/version and candidate execution requires explicit env |
 
 ## Acceptance Command
 

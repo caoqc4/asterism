@@ -10,13 +10,13 @@ The next stage should therefore make Taskplane able to call a user-installed, us
 
 ## Related Harness And Goal Design
 
-This document covers the first-version Agent CLI execution backend. The broader runtime harness, goal, slash-command routing, native CLI goal compatibility, and verifier-subagent constraints are captured in [2026-05-19-agent-runtime-harness-and-goals.md](2026-05-19-agent-runtime-harness-and-goals.md).
+This document covers the first-version Agent CLI execution backend. The broader runtime harness, Taskplane-owned goal loop, slash-command routing, optional native CLI goal compatibility, and verifier-subagent constraints are captured in [2026-05-19-agent-runtime-harness-and-goals.md](2026-05-19-agent-runtime-harness-and-goals.md).
 
 Key boundary:
 
 - Taskplane owns the durable product session, task goal, run goal contract, context gates, verification, memory proposals, Decisions, and context clearing.
 - Agent CLI and future Agent API are peer execution runtimes selected by the user.
-- CLI-native goal modes, such as Codex or Claude goal features, may be supported later as explicit runtime-native modes, but they must not silently replace Taskplane's task goal or session log.
+- CLI-native goal modes, such as Codex or Claude goal features, are not first-version blockers. They may be supported later as explicit runtime-native modes, but they must not silently replace Taskplane's task goal or session log.
 - Slash commands such as `/goal` should be product-owned by default; runtime-native forwarding should require an explicit namespace or UI mode and must be recorded in Taskplane's run history.
 
 ## Current Self-Built API-Agent Status
