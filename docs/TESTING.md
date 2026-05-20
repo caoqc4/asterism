@@ -175,6 +175,37 @@ evidence, read-only workspace protection, task dynamics replay, Run Goal
 Contract/verifier/memory-proposal evidence, and explicit runtime-native goal
 audit requests that are recorded but not forwarded.
 
+Runtime-native goal discovery is manual and non-blocking. By default it only
+probes local CLI version/help output, so it can be used to inspect command
+shape without starting a goal:
+
+```bash
+npm run manual:agent-cli-native-goal-discovery
+```
+
+Claude Code can be probed explicitly:
+
+```bash
+TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME=claude npm run manual:agent-cli-native-goal-discovery
+```
+
+To run one disposable candidate native-goal command, opt in explicitly and pass
+the exact argument vector as JSON. This may call the user's installed CLI and
+account, so keep it outside default smoke/acceptance paths:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY=true \
+TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME=codex \
+TASKPLANE_AGENT_CLI_NATIVE_GOAL_OBJECTIVE="inspect disposable goal support" \
+TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON='["goal","inspect disposable goal support"]' \
+npm run manual:agent-cli-native-goal-discovery
+```
+
+The candidate command runs in a disposable workspace and fails if workspace
+files change. Use the captured command, stdout/stderr, status, cancellation
+behavior, and workspace result to compare against the Native Goal Forwarding
+Evidence Gate before enabling any runtime-native forwarding.
+
 The Agent API / sandbox execution lane remains gated and explicit while it
 matures as a peer runtime. These commands are useful when maintaining that
 runtime boundary, but they are not the first-run Agent CLI validation path:

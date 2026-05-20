@@ -438,6 +438,7 @@ Remaining next steps are deciding whether native CLI progress is rich enough for
    - terminal status behavior;
    - cancellation behavior;
    - whether progress can be replayed without opening the native session.
+   Use `npm run manual:agent-cli-native-goal-discovery` for version/help probes, and enable `TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY=true` only for disposable candidate command execution.
 2. Compare those findings against the Native Goal Forwarding Evidence Gate before changing adapter flags.
 3. Keep local daemon work blocked unless a real requirement crosses the Local Daemon Decision Rule.
 4. If Agent API verifier work resumes, start in shadow mode and measure the API Verifier Default-On Threshold before changing user-visible decisions.
