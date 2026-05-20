@@ -1818,7 +1818,12 @@ export function RightPanel({
       });
       updateTaskFileProposal(null);
       appendSysMsg(taskFileProposal.taskMemoryProposal
-        ? `已补写任务记忆：\`${path}\`。`
+        ? [
+            `已确认并写入任务记忆：\`${path}\`。`,
+            '',
+            `目标：${taskFileProposal.surfaceLabel}。`,
+            '这条待处理的任务记忆提案已完成确认；后续任务 Agent run 不会再被这条 pending-memory gate 阻塞。',
+          ].join('\n')
         : `已写入任务文件：\`${path}\`。`);
     } finally {
       setSavingTaskFileProposal(false);

@@ -2598,6 +2598,9 @@ describe('App redesign v1', () => {
     expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
       content: expect.stringContaining('  - 任务记忆提案出现'),
     }));
+    expect(await screen.findByText(/已确认并写入任务记忆/)).toBeTruthy();
+    expect(screen.getByText(/目标：任务记录/)).toBeTruthy();
+    expect(screen.getByText(/后续任务 Agent run 不会再被这条 pending-memory gate 阻塞/)).toBeTruthy();
     expect(screen.queryByText(/Codex CLI 后台运行/)).toBeNull();
   });
 
@@ -2853,7 +2856,8 @@ describe('App redesign v1', () => {
         content: expect.stringContaining('最新任务记忆建议仍缺少对应写入'),
       }));
     });
-    expect(await screen.findByText(/已补写任务记忆/)).toBeTruthy();
+    expect(await screen.findByText(/已确认并写入任务记忆/)).toBeTruthy();
+    expect(screen.getByText(/pending-memory gate/)).toBeTruthy();
     expect(await screen.findByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
   });
 
