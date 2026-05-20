@@ -266,3 +266,19 @@ Reference: https://code.claude.com/docs/en/cli-usage and https://code.claude.com
 Taskplane should become the task-memory, context, judgment, and runtime-governance layer around mature coding agents.
 
 Agent API remains a peer execution runtime to mature after the first Agent CLI milestone. It should reuse the same Taskplane harness, task memory, runtime gates, context assembly, verifier, and acceptance boundaries instead of becoming a separate task lifecycle.
+
+When Agent API becomes executable, it should be registered as a `provider_visible_execution` runtime entrypoint, not as `provider_visible_assistance`. Its minimum gate set should match the first-version Agent CLI execution start path:
+
+- `runtime_action`
+- `runtime_context_assembly`
+- `task_memory_coverage`
+- `task_memory_guidance`
+- `pre_step`
+- `subtask_start`
+- `post_step`
+
+Any Agent API control or audit operations should stay separate, following the current Agent CLI split:
+
+- execution start: provider-visible execution with full task/run gates;
+- cancellation/control: local execution control with explicit operator confirmation;
+- runtime-native or backend-specific audit: runtime audit with explicit operator confirmation and no model/runtime execution.
