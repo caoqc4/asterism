@@ -316,6 +316,32 @@ describe('runtime event record projection', () => {
     });
   });
 
+  it('preserves received completion handoff source tasks for replay grouping', () => {
+    const events = projectRuntimeEvents({
+      taskId: 'task-b',
+      timeline: [
+        {
+          id: 'timeline-received-handoff',
+          taskId: 'task-b',
+          type: 'panel.completion_handoff',
+          payload: JSON.stringify({
+            previousTaskId: 'task-a',
+            previousTaskTitle: 'Task A',
+            recordPath: 'Task Records/2026-05-20-received-handoff.md',
+          }),
+          createdAt: '2026-05-14T08:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(events.map((event) => event.relatedTaskId)).toEqual(['task-a']);
+    expect(groupRuntimeEventsForReplay(events).find((group) => group.kind === 'handoff')).toMatchObject({
+      taskId: 'task-b',
+      relatedTaskIds: ['task-a'],
+      eventIds: ['timeline:timeline-received-handoff'],
+    });
+  });
+
   it('groups projected events into replay-oriented stories without UI assumptions', () => {
     const events = projectRuntimeEvents({
       taskId: 'task-1',

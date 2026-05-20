@@ -750,7 +750,7 @@ function extractRelatedTaskId(type: string, payload: string | null): string | nu
   try {
     const parsed = JSON.parse(payload) as Record<string, unknown>;
     const candidate = type === 'panel.completion_handoff'
-      ? parsed.nextTaskId
+      ? parsed.nextTaskId ?? parsed.previousTaskId
       : type === 'panel.context_switch_accepted'
         ? parsed.toTaskId
         : type === 'panel.project_membership_changed'
