@@ -128,6 +128,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryRetrieval attaches include/caution/exclude decisions and reasons, excluding archived, stale, or duplicate sources by default and surfacing selected files with caution when they are otherwise weak.',
       'TaskMemoryRetrieval applies SourceFreshnessEvaluation and SourceMaterialQualityEvaluation together so retrieval read order cannot treat stale source materials as current evidence.',
       'RuntimeContextManifest now consumes TaskMemoryRetrieval and emits a compact memory_retrieval line for provider-visible step context.',
+      'RuntimeContextManifest retrieval tests cover received completion handoff Task Records, so next-task execution context can recover why it was entered after a completed predecessor.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must explain why context was included or excluded, not only what Agent should read.',
