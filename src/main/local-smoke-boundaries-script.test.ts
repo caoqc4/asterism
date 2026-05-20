@@ -526,6 +526,9 @@ describe('local smoke script default boundaries', () => {
 
     expect(plan).toContain('The first-version Taskplane-owned goal loop is now stabilized for the Agent CLI path');
     expect(plan).toContain('packaged-app Codex live smoke');
+    expect(plan).toContain('active task-bound Agent CLI run as a read-only execution card');
+    expect(plan).toContain('summarizes Task Memory write proposals before the editable draft');
+    expect(plan).toContain('pending-memory gate clearance in the panel message');
     expect(plan).toContain('Remaining work should stay in preservation or deferred tracks');
     expect(plan).not.toContain('Remaining next steps are hardening the Taskplane-owned goal loop');
     expect(matrix).toContain('Updated: 2026-05-20');

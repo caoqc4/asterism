@@ -428,6 +428,9 @@ First pass implemented on 2026-05-19:
 - Agent CLI Task Record suggestions now also list the concrete completion conditions reviewed by the verifier, so accepted memory proposals preserve more than a condition count.
 - The confirmed Task Memory write plan preserves structured suggested Task Record content, including runtime boundary and objective fields, all the way into the final create input.
 - Confirming the Task Memory write proposal preserves goal acceptance-condition details in the created Task Record and clears the pending-memory blocker for the next task-bound Agent run.
+- RightPanel now shows an active task-bound Agent CLI run as a read-only execution card with runtime label, run id, task-dynamics persistence, memory-proposal boundary, and cancellation behavior before the terminal step arrives.
+- RightPanel now summarizes Task Memory write proposals before the editable draft, so users can inspect key findings, next step, risks, verification result, and links before confirming a Task Record write.
+- Confirming a Task Memory write proposal now reports the target, written path, and pending-memory gate clearance in the panel message instead of only saying the write completed.
 - Agent CLI run_start now has explicit regression coverage for the Task Memory gate: a previous `任务记忆建议` that still needs Task Record confirmation blocks the next CLI run before Taskplane creates a run or calls the executor.
 - Agent CLI now has explicit service-level regressions for the shared target-readiness and context-assembly gates: completed/archived tasks or missing Task.md recovery context stop execution before Taskplane creates a run or calls the CLI.
 - Agent CLI cancellation is tracked as local execution control rather than a new execution start: the registered gate is explicit operator confirmation, and terminal evidence still lands through the already-gated run path.
