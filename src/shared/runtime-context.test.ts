@@ -232,6 +232,32 @@ describe('runtime context manifest', () => {
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('task_md/Task.md/include');
   });
 
+  it('surfaces received completion handoff records in task-bound memory retrieval', () => {
+    const workingContext = buildWorkingContext();
+    workingContext.taskFiles = [
+      ...workingContext.taskFiles,
+      {
+        path: 'Task Records/2026-05-20-received-handoff.md',
+        kind: 'file',
+        updatedAt: '2026-05-20T00:00:00.000Z',
+        contentPreview: '# Record: Task Completion Handoff\n\n## From\n- Previous task\n\n## To\n- Launch task',
+      },
+    ];
+
+    const manifest = buildRuntimeContextManifest({ workingContext });
+    const handoff = manifest.memoryRetrieval?.topResults.find((item) => item.id === 'Task Records/2026-05-20-received-handoff.md');
+
+    expect(handoff).toMatchObject({
+      kind: 'task_record',
+      decision: 'include',
+      reasons: expect.arrayContaining(['current_task_scope']),
+      title: '2026-05-20-received-handoff.md',
+    });
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain(
+      'task_record/Task Records/2026-05-20-received-handoff.md/include/current_task_scope',
+    );
+  });
+
   it('preserves source quality metadata from agent working context sources', () => {
     const workingContext = buildWorkingContext();
     workingContext.sources = [
