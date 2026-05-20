@@ -176,6 +176,19 @@ Contract/verifier/memory-proposal evidence, Taskplane-owned `/goal`
 completion conditions flowing into the run contract and memory proposal, and
 explicit runtime-native goal audit requests that are recorded but not forwarded.
 
+Latest focused verification for this loop:
+
+```bash
+npm exec vitest run src/shared/agent-runtime-goal.test.ts src/shared/agent-runtime-verifier.test.ts src/main/domain/agent-cli/agent-cli-run-service.test.ts src/renderer/App.test.tsx -t "goal|Agent CLI|任务记忆写入提案|verifier"
+npm exec vitest run src/main/local-smoke-boundaries-script.test.ts
+npm run smoke:agent-cli-task:mac
+npm run manual:agent-cli-readonly-smoke
+```
+
+The default manual read-only smoke must report `status=skip`, `cli=not-called`,
+and `workspace=unchanged` unless `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true`
+is explicitly set.
+
 Runtime-native goal discovery is an optional compatibility track, not a
 first-version product gate. By default it only probes local CLI version/help
 output, so it can be used to inspect command shape without starting a goal:
