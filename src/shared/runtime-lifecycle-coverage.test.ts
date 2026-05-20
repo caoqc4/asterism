@@ -101,6 +101,8 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('Taskplane-owned /goal is registered as a durable harness entrypoint');
     expect(text).toContain('without invoking Agent CLI or future Agent API execution');
     expect(text).toContain('Agent API execution can remain deferred');
+    expect(text).toContain('future Agent API execution as a deferred provider_visible_execution contract with the same gate set as Agent CLI');
+    expect(text).toContain('cannot be treated as model-service assistance or bypass the harness');
     expect(text).toContain('task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints');
   });
 

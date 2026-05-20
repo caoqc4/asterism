@@ -49,6 +49,21 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('registers future Agent API execution as the same gated runtime class as Agent CLI', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.triggerAgentApi.future');
+    const agentCli = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.triggerAgentCli');
+
+    expect(entry).toBeTruthy();
+    expect(agentCli).toBeTruthy();
+    expect(entry?.kind).toBe('provider_visible_execution');
+    expect(entry?.requiredGates).toEqual(agentCli?.requiredGates);
+    expect(entry?.coveredGates).toEqual(agentCli?.coveredGates);
+    expect(entry?.ipcChannels).toBeUndefined();
+    expect(entry?.notes).toContain('future peer execution runtime');
+    expect(entry?.notes).toContain('not model-service assistance');
+    expect(entry?.notes).toContain('before exposing any IPC channel');
+  });
+
   it('requires provider-visible planning to stay draft-only and pass subtask draft checks', () => {
     expect(requiredRuntimeEntrypointGatesForKind('provider_visible_planning')).toEqual([
       'simplicity_check',
@@ -362,6 +377,7 @@ describe('runtime entrypoint coverage', () => {
       'run.continuePaused',
       'run.recordRuntimeNativeGoalRequest',
       'run.trigger',
+      'run.triggerAgentApi.future',
       'run.triggerAgentCli',
       'run.triggerCodeAgent',
       'run.triggerOperatorStarted',

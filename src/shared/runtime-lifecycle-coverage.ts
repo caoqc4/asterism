@@ -231,6 +231,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeEventRecord replay grouping separates completion checks into quality_gate groups, so phase closeout and verification records do not collapse into generic task-state changes.',
       'TaskService recordTimelineEvent now guards panel.* task dynamic writes with task_mutation before appending timeline events.',
       'RuntimeEntrypointCoverage keeps retained execution, planning, assistance, resume, capability-probe, context-transition, task-capture, task-metadata, ordinary task-transition, running/completion transition, completion-check records, project-decomposition, decision-draft, decision-write, decision-action, agent-tool, product-configuration, preference-memory, method-library, and durable-write entrypoints explicit with required runtime gates.',
+      'RuntimeEntrypointCoverage registers future Agent API execution as a deferred provider_visible_execution contract with the same gate set as Agent CLI and no IPC channel yet, so it cannot be treated as model-service assistance or bypass the harness when implemented.',
       'RuntimeEntrypointCoverage also defines kind-level gate baselines so future entrypoints cannot register below their class minimum without a failing regression test.',
       'RuntimeEntrypointCoverage requires simplicity_check across every retained entrypoint and kind baseline, so new execution or durable-write surfaces must declare the smallest-state-change boundary before they are considered covered.',
       'RuntimeEntrypointCoverage tests map retained IPC handlers to registered entrypoint channel claims or explicit read-only exemptions, so new IPC surfaces cannot silently bypass classification.',
@@ -242,6 +243,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the smallest matching pre_step, post_step, and subtask_start gates.',
       'Agent API execution can remain deferred, but task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints.',
+      'Future Agent API execution is represented only as a deferred entrypoint contract; implementing it still requires a real service/IPC path that satisfies the provider_visible_execution baseline and existing runtime harness.',
       'Future API verifier subagent work must first persist inspectable shadow verifier evidence and pass local readiness thresholds before it can affect assist-mode or user-visible acceptance decisions.',
       'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained task-dynamics surfaces must reuse the same projection.',
       'Task dynamics replay grouping now has explicit handoff, project structure, execution recovery, decision, quality gate, durable record, source context, task state, and general groups.',
