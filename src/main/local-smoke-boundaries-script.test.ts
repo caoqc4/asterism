@@ -415,6 +415,9 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('enabled=false');
     expect(result.output).toContain('status=skip');
     expect(result.output).toContain('default discovery only probes version/help');
+    expect(result.output).toContain('candidateExample=');
+    expect(result.output).not.toContain('probe=codex goal --help');
+    expect(result.output).not.toContain('probe=codex goals --help');
     expect(result.output).not.toContain('candidateCommand=');
   });
 

@@ -18,21 +18,22 @@ const RUNTIME_ADAPTERS = {
       ['--version'],
       ['--help'],
       ['exec', '--help'],
-      ['goal', '--help'],
-      ['goals', '--help'],
     ],
     label: 'Codex CLI',
+    candidateExamples: [
+      'TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON=\'["exec","--sandbox","read-only","/goal inspect disposable goal support"]\'',
+    ],
   },
   claude: {
     command: 'claude',
     helpProbes: [
       ['--version'],
       ['--help'],
-      ['-p', '--help'],
-      ['goal', '--help'],
-      ['goals', '--help'],
     ],
     label: 'Claude Code',
+    candidateExamples: [
+      'TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON=\'["-p","/goal inspect disposable goal support","--permission-mode","plan","--output-format","text"]\'',
+    ],
   },
 };
 
@@ -60,6 +61,9 @@ export function runAgentCliNativeGoalDiscovery() {
     console.log('note=default discovery only probes version/help. Set TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY=true to run one explicit disposable candidate command.');
     console.log('required=TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON');
     console.log('required=TASKPLANE_AGENT_CLI_NATIVE_GOAL_OBJECTIVE');
+    for (const example of adapter.candidateExamples) {
+      console.log(`candidateExample=${example}`);
+    }
     return 0;
   }
 

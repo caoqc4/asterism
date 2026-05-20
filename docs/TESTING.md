@@ -197,7 +197,17 @@ account, so keep it outside default smoke/acceptance paths:
 TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY=true \
 TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME=codex \
 TASKPLANE_AGENT_CLI_NATIVE_GOAL_OBJECTIVE="inspect disposable goal support" \
-TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON='["goal","inspect disposable goal support"]' \
+TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON='["exec","--sandbox","read-only","/goal inspect disposable goal support"]' \
+npm run manual:agent-cli-native-goal-discovery
+```
+
+For Claude Code, use the documented non-interactive slash-command form:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY=true \
+TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME=claude \
+TASKPLANE_AGENT_CLI_NATIVE_GOAL_OBJECTIVE="inspect disposable goal support" \
+TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON='["-p","/goal inspect disposable goal support","--permission-mode","plan","--output-format","text"]' \
 npm run manual:agent-cli-native-goal-discovery
 ```
 
