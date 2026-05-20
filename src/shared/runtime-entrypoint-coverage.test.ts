@@ -135,6 +135,20 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('keeps runtime audit entries operator-confirmed and non-executing', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('runtime_audit')).toEqual([
+      'simplicity_check',
+      'operator_confirmation',
+    ]);
+    for (const entry of runtimeEntrypointsByKind('runtime_audit')) {
+      expect(entry.requiredGates).toContain('operator_confirmation');
+      expect(entry.requiredGates).not.toContain('runtime_action');
+      expect(entry.requiredGates).not.toContain('runtime_context_assembly');
+      expect(entry.requiredGates).not.toContain('pre_step');
+      expect(entry.requiredGates).not.toContain('post_step');
+    }
+  });
+
   it('requires resumed execution paths to check handoff or decision state before continuing', () => {
     const resumed = [
       ...runtimeEntrypointsByKind('execution_resume'),
@@ -216,6 +230,7 @@ describe('runtime entrypoint coverage', () => {
       'project.decompositionDraft',
       'run.cancelAgentCli',
       'run.continuePaused',
+      'run.recordRuntimeNativeGoalRequest',
       'run.trigger',
       'run.triggerAgentCli',
       'run.triggerCodeAgent',

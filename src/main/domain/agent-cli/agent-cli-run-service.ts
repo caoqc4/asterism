@@ -537,9 +537,13 @@ function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): Required<Crea
 function normalizeRuntimeNativeGoalRequestInput(
   input: RecordRuntimeNativeGoalRequestInput,
 ): RecordRuntimeNativeGoalRequestInput {
+  const objective = input.objective?.trim() ?? '';
+  if (!objective) {
+    throw new Error('Runtime-native goal audit requires an objective.');
+  }
   return {
     forwarded: false,
-    objective: input.objective?.trim() ?? '',
+    objective,
     operatorConfirmed: input.operatorConfirmed === true,
     reason: input.reason?.trim() || 'Runtime-native goal request was not forwarded by Taskplane policy.',
     runtimeId: input.runtimeId ?? 'selected',

@@ -230,6 +230,34 @@ describe('AgentCliRunService', () => {
     expect(result.outputSource).toBe('system');
   });
 
+  it('requires an objective before recording runtime-native goal audit evidence', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn();
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+    );
+
+    await expect(service.recordNativeGoalRequest({
+      forwarded: false,
+      objective: '   ',
+      operatorConfirmed: true,
+      reason: 'Adapter native goal capability is disabled.',
+      runtimeId: 'codex',
+      runtimeLabel: 'Codex CLI',
+      supportsNativeGoalMode: false,
+      taskId: 'task_1',
+    })).rejects.toThrow('Runtime-native goal audit requires an objective.');
+
+    expect(runRepository.create).not.toHaveBeenCalled();
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(executor).not.toHaveBeenCalled();
+  });
+
   it('does not project a paused Task Goal into the next Agent CLI run contract', async () => {
     const taskService = buildTaskService();
     vi.mocked(taskService.getDetail).mockResolvedValue({

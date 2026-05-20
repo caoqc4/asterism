@@ -8,6 +8,7 @@ export type RuntimeEntrypointKind =
   | 'preference_memory'
   | 'method_library'
   | 'capability_probe'
+  | 'runtime_audit'
   | 'execution_resume'
   | 'decision_resume'
   | 'decision_draft'
@@ -117,6 +118,10 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
   capability_probe: [
     'simplicity_check',
     'capability_probe_boundary',
+  ],
+  runtime_audit: [
+    'simplicity_check',
+    'operator_confirmation',
   ],
   execution_resume: [
     'simplicity_check',
@@ -295,6 +300,22 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'operator_confirmation',
     ],
     notes: 'Cancellation does not start new work or expose model tools; it requires an explicit operator-confirmed run id, interrupts an already-gated local Agent CLI run, and terminal evidence is recorded through the trigger path.',
+  },
+  {
+    id: 'run.recordRuntimeNativeGoalRequest',
+    owner: 'AgentCliRunService.recordNativeGoalRequest',
+    kind: 'runtime_audit',
+    description: 'Audit-only record for explicit runtime-native goal requests that are not forwarded to the CLI.',
+    ipcChannels: ['run:recordRuntimeNativeGoalRequest'],
+    requiredGates: [
+      'simplicity_check',
+      'operator_confirmation',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'operator_confirmation',
+    ],
+    notes: 'This creates system-output audit evidence only; runtime-native goal passthrough remains closed and no CLI command is executed.',
   },
   {
     id: 'run.triggerOperatorStarted',
