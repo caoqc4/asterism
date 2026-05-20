@@ -99,6 +99,28 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('registers completion handoff as the task-to-task entry boundary', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('task_to_task_handoff')).toEqual([
+      'simplicity_check',
+      'task_completion',
+      'task_memory_coverage',
+      'subtask_start',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ]);
+
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'task.completionHandoff');
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('task_to_task_handoff');
+    expect(entry?.requiredGates).toContain('task_completion');
+    expect(entry?.requiredGates).toContain('subtask_start');
+    expect(entry?.requiredGates).toContain('panel_event_allowlist');
+    expect(entry?.ipcChannels).toEqual(['task:transition', 'taskFile:create', 'task:recordTimelineEvent', 'ai:chat']);
+    expect(entry?.notes).toContain('TasksPage evaluates the target child with subtask_start before writing handoff records');
+  });
+
   it('requires hidden local execution to keep memory and start gates without provider context assembly', () => {
     for (const entry of runtimeEntrypointsByKind('hidden_local_execution')) {
       expect(entry.requiredGates).toContain('simplicity_check');
@@ -292,6 +314,7 @@ describe('runtime entrypoint coverage', () => {
       'settings.sandboxBackendProbe',
       'task.capture',
       'task.completionCheckRecord',
+      'task.completionHandoff',
       'task.completionTransition',
       'task.fileAndArtifactWrites',
       'task.goalControl',

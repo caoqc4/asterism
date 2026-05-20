@@ -408,7 +408,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime end-to-end scenario tests now verify that project phase closeout hands off to an existing child, pending task-memory guidance blocks handoff, and new follow-up tasks are not auto-created during closeout.',
       'Runtime end-to-end scenario tests verify that task switching is blocked until recoverable current-task discussion has been archived.',
       'Runtime end-to-end scenario tests verify that pending Decisions block run start, task switching, and automatic context refresh until the user judgment is resolved.',
-      'TasksPage completion handoff reads the next task detail and checks task memory, completion criteria or next step through subtask_start before entering the next child task.',
+      'TasksPage completion handoff is registered as the task_to_task_handoff entry boundary: it relies on task_completion coverage for the completed task, checks the next child through subtask_start, then writes completion/received handoff records and timeline replay events before opening the next task context.',
       'TasksPage completion handoff now writes durable handoff records on both the completed task and the next task, so the next task can recover why it was entered without relying on the transient panel prompt.',
       'RuntimeHandoffPreview now turns handoff plus archive snapshot data into reusable manual-refresh preview text instead of leaving the archive preview assembled only in RightPanel.',
       'RightPanel context refresh, manual refresh, global conversation reset, leave-task-context, task switch confirmation, and phase-closeout handoff now consume RuntimeHandoff results.',

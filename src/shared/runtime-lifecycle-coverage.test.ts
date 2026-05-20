@@ -121,6 +121,14 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('using subtask_draft rather than subtask_start because confirming child tasks does not start execution');
   });
 
+  it('tracks completion handoff as the task-to-task entry boundary', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('TasksPage completion handoff is registered as the task_to_task_handoff entry boundary');
+    expect(text).toContain('checks the next child through subtask_start');
+    expect(text).toContain('writes completion/received handoff records and timeline replay events before opening the next task context');
+  });
+
   it('tracks pending-memory checks for phase closeout handoff', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 

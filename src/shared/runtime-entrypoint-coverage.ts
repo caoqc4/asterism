@@ -17,6 +17,7 @@ export type RuntimeEntrypointKind =
   | 'decision_action'
   | 'task_capture'
   | 'task_state_transition'
+  | 'task_to_task_handoff'
   | 'durable_write'
   | 'context_transition';
 
@@ -176,6 +177,16 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'simplicity_check',
     'runtime_action',
     'pre_step',
+  ],
+  task_to_task_handoff: [
+    'simplicity_check',
+    'task_completion',
+    'task_memory_coverage',
+    'subtask_start',
+    'task_mutation',
+    'pre_step',
+    'post_step',
+    'panel_event_allowlist',
   ],
   durable_write: [
     'simplicity_check',
@@ -533,6 +544,34 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'project_verification',
       'pre_step',
     ],
+  },
+  {
+    id: 'task.completionHandoff',
+    owner: 'TasksPage completion handoff',
+    kind: 'task_to_task_handoff',
+    description: 'After a task completion check, write completion/received handoff records and enter the next existing child task only after subtask_start passes.',
+    ipcChannels: ['task:transition', 'taskFile:create', 'task:recordTimelineEvent', 'ai:chat'],
+    requiredGates: [
+      'simplicity_check',
+      'task_completion',
+      'task_memory_coverage',
+      'subtask_start',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'task_completion',
+      'task_memory_coverage',
+      'subtask_start',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ],
+    notes: 'TaskService owns the completed-state transition and task_completion memory coverage; TasksPage evaluates the target child with subtask_start before writing handoff records, timeline replay events, and opening the next task context.',
   },
   {
     id: 'decision.action',
