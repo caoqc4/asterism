@@ -187,6 +187,8 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).not.toContain('subtask_start');
     expect(entry?.notes).toContain('future API verifier subagent may augment this entrypoint');
     expect(entry?.notes).toContain('same persisted Run Goal Contract');
+    expect(entry?.notes).toContain('lightweight and ai_verifier run-level records');
+    expect(entry?.notes).toContain('API verifier shadow readiness thresholds');
   });
 
   it('keeps product configuration, preference memory, and method-library writes out of task mutation gates', () => {

@@ -196,6 +196,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Run verification persistence now writes step verifications through post_step verification.',
       'runtime-step-effect-evaluator infers durable step changes and recovery-note presence before post_step verification.',
       'Run acceptance verification is registered as a non-executing verification_harness entrypoint: it consumes terminal evidence and Run Goal Contract through post_step, and future API verifier subagents may only augment that boundary rather than become a second execution runtime.',
+      'API verifier shadow readiness is modeled as a non-executing projection: persisted lightweight and ai_verifier run-level records can be projected into representative shadow samples, and assist-mode promotion remains blocked until the local readiness thresholds pass.',
       'RunService checks completed Run output artifact writes with post_step durable-change verification before persisting generated output.',
       'Sandbox patch review and browser evidence persisters check artifact writes with post_step durable-change verification before persisting generated evidence artifacts.',
       'RightPanel phase closeout now passes through pre_step before saving and post_step before quality-check handoff.',
@@ -241,6 +242,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the smallest matching pre_step, post_step, and subtask_start gates.',
       'Agent API execution can remain deferred, but task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints.',
+      'Future API verifier subagent work must first persist inspectable shadow verifier evidence and pass local readiness thresholds before it can affect assist-mode or user-visible acceptance decisions.',
       'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained task-dynamics surfaces must reuse the same projection.',
       'Task dynamics replay grouping now has explicit handoff, project structure, execution recovery, decision, quality gate, durable record, source context, task state, and general groups.',
       'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',

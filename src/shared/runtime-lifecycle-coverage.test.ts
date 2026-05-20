@@ -110,6 +110,9 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('Run acceptance verification is registered as a non-executing verification_harness entrypoint');
     expect(text).toContain('future API verifier subagents may only augment that boundary');
     expect(text).toContain('rather than become a second execution runtime');
+    expect(text).toContain('API verifier shadow readiness is modeled as a non-executing projection');
+    expect(text).toContain('persisted lightweight and ai_verifier run-level records');
+    expect(text).toContain('pass local readiness thresholds before it can affect assist-mode or user-visible acceptance decisions');
   });
 
   it('tracks service-boundary hierarchy ownership guards', () => {

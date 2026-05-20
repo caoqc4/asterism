@@ -360,7 +360,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'post_step',
     ],
-    notes: 'The current lightweight verifier is local and deterministic; a future API verifier subagent may augment this entrypoint in shadow/assist mode only, using the same persisted Run Goal Contract, terminal output, task memory guidance, and post-step evidence.',
+    notes: 'The current lightweight verifier is local and deterministic; a future API verifier subagent may augment this entrypoint in shadow/assist mode only, using the same persisted Run Goal Contract, terminal output, task memory guidance, and post-step evidence. Assist-mode promotion requires persisted lightweight and ai_verifier run-level records that can be projected into shadow samples and pass the API verifier shadow readiness thresholds.',
   },
   {
     id: 'run.triggerOperatorStarted',
