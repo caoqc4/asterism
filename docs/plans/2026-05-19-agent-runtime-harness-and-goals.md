@@ -429,3 +429,15 @@ Remaining next steps are deciding whether native CLI progress is rich enough for
 - How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate.
 - Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.
 - Which measured shadow-mode results satisfy the API Verifier Default-On Threshold.
+
+## Next Evaluation Checklist
+
+1. Run a manual Codex/Claude native-goal discovery pass outside the default smoke path, using fake or disposable tasks, and capture:
+   - exact command forms;
+   - stdout/stderr shape;
+   - terminal status behavior;
+   - cancellation behavior;
+   - whether progress can be replayed without opening the native session.
+2. Compare those findings against the Native Goal Forwarding Evidence Gate before changing adapter flags.
+3. Keep local daemon work blocked unless a real requirement crosses the Local Daemon Decision Rule.
+4. If Agent API verifier work resumes, start in shadow mode and measure the API Verifier Default-On Threshold before changing user-visible decisions.
