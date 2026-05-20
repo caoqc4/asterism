@@ -115,6 +115,7 @@ describe('task memory write proposal', () => {
             '- Runtime mode: Codex CLI / read-only.',
             '- Run objective: Review implementation path.',
             '- Completion conditions checked: 1',
+            '  - Output is reviewable.',
             '',
             '## Next',
             'Run focused tests.',
@@ -131,6 +132,7 @@ describe('task memory write proposal', () => {
     expect(proposals[0]!.contentTemplate).toContain('- Runtime mode: Codex CLI / read-only.');
     expect(proposals[0]!.contentTemplate).toContain('- Run objective: Review implementation path.');
     expect(proposals[0]!.contentTemplate).toContain('- Completion conditions checked: 1');
+    expect(proposals[0]!.contentTemplate).toContain('  - Output is reviewable.');
     expect(proposals[0]!.contentTemplate).toContain('## Next\nRun focused tests.');
 
     const applyPlan = buildTaskMemoryWriteApplyPlan({

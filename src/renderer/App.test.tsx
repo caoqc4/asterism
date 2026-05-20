@@ -2510,7 +2510,17 @@ describe('App redesign v1', () => {
   it('summarizes a background Codex CLI run when the terminal run event arrives', async () => {
     const user = userEvent.setup();
     const pendingProposal: TaskMemoryWriteProposal = {
-      contentTemplate: '# Task Record: 董事会材料修订\n\n## Summary\nCodex CLI final answer.',
+      contentTemplate: [
+        '# Task Record: 董事会材料修订',
+        '',
+        '## Summary',
+        'Codex CLI final answer.',
+        '',
+        '## Confirmed',
+        '- Completion conditions checked: 2',
+        '  - Run Goal Contract 包含目标',
+        '  - 任务记忆提案出现',
+      ].join('\n'),
       operation: 'create',
       path: 'Task Records/2026-01-01-memory-guidance.md',
       reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
@@ -2549,6 +2559,17 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/生成了待确认的任务记忆写入提案/)).toBeTruthy();
     expect(await screen.findByText('任务记忆写入提案')).toBeTruthy();
     expect(screen.getByText('建议归类：任务记录')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认补写记忆' }));
+    await waitFor(() => {
+      expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+        path: 'Task Records/2026-01-01-memory-guidance.md',
+        content: expect.stringContaining('  - Run Goal Contract 包含目标'),
+      }));
+    });
+    expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+      content: expect.stringContaining('  - 任务记忆提案出现'),
+    }));
     expect(screen.queryByText(/Codex CLI 后台运行/)).toBeNull();
   });
 
