@@ -157,6 +157,15 @@ function queryRunStepRows(runId) {
   }
 }
 
+function queryCompletionCriteriaRows() {
+  const database = new Database(dbPath, { fileMustExist: true });
+  try {
+    return database.prepare('SELECT * FROM completion_criteria WHERE task_id = ? ORDER BY created_at ASC').all(taskId);
+  } finally {
+    database.close();
+  }
+}
+
 async function openTaskPanel(page) {
   await page.getByRole('button', { name: 'Tasks' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
@@ -234,6 +243,19 @@ try {
   await openTaskPanel(page);
   await page.getByText(/(?:任务 Agent · )?Codex CLI · 只读/).waitFor();
 
+  await sendPanelMessage(page, [
+    '/goal Complete packaged Agent CLI task smoke',
+    '验收:',
+    '- Run Goal Contract includes packaged smoke objective',
+    '- Task memory proposal preserves packaged smoke conditions',
+  ].join('\n'));
+  await page.getByText(/已设置 Taskplane Task Goal/).waitFor({ timeout: timeoutMs });
+  await waitFor(() => {
+    const criteria = queryCompletionCriteriaRows();
+    return criteria.some((item) => item.text === 'Run Goal Contract includes packaged smoke objective')
+      && criteria.some((item) => item.text === 'Task memory proposal preserves packaged smoke conditions');
+  }, 'persisted packaged Task Goal completion criteria');
+
   await sendPanelMessage(page, 'Hold for cancellation.');
   await waitFor(() => queryRunRows().length >= 1, 'created cancellable Agent CLI run');
   await page.getByRole('button', { name: '取消 Codex CLI run' }).click();
@@ -272,6 +294,9 @@ try {
   if (!completedSteps.some((step) => step.title === 'Agent CLI 目标契约' && /taskGoal=active/.test(step.output ?? '') && /objective=/.test(step.output ?? ''))) {
     throw new Error(`Missing Agent CLI run contract evidence. steps=${completedSteps.map((step) => `${step.title}:${String(step.output ?? '').slice(0, 80)}`).join(' | ')}`);
   }
+  if (!completedSteps.some((step) => step.title === 'Agent CLI 目标契约' && /Complete packaged Agent CLI task smoke/.test(step.input ?? '') && /Run Goal Contract includes packaged smoke objective/.test(step.input ?? '') && /Task memory proposal preserves packaged smoke conditions/.test(step.input ?? ''))) {
+    throw new Error('Missing packaged Task Goal objective or completion conditions in Run Goal Contract.');
+  }
   if (!completedSteps.some((step) => step.title === 'codex cli completed')) {
     throw new Error('Missing Agent CLI terminal run step.');
   }
@@ -283,6 +308,9 @@ try {
   }
   if (!completedSteps.some((step) => step.title === '任务记忆建议' && /"decision":"accept_for_review"/.test(step.input ?? '') && /Verifier decision: accept_for_review/.test(step.output ?? ''))) {
     throw new Error('Missing Agent CLI task memory guidance step.');
+  }
+  if (!completedSteps.some((step) => step.title === '任务记忆建议' && /Run Goal Contract includes packaged smoke objective/.test(step.input ?? '') && /Task memory proposal preserves packaged smoke conditions/.test(step.input ?? '') && /Completion conditions: Run Goal Contract includes packaged smoke objective \| Task memory proposal preserves packaged smoke conditions/.test(step.output ?? ''))) {
+    throw new Error('Missing packaged Task Goal completion conditions in memory proposal.');
   }
 
   await sendPanelMessage(page, '/codex goal packaged native audit');
