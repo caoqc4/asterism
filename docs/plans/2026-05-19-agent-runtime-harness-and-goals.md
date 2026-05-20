@@ -214,6 +214,20 @@ Possible explicit forms:
 
 The exact surface can be decided later. The product rule is that native command forwarding must be explicit and auditable.
 
+### Native Goal Forwarding Evidence Gate
+
+Runtime-native goal passthrough must stay audit-only until a runtime adapter proves all of the following:
+
+- **Command shape**: the adapter owns an explicit non-interactive command form for native goal execution. Taskplane must not infer hidden flags from free text or shell aliases.
+- **State reflection**: Taskplane can record the forwarded objective, runtime id, command preview, run id, terminal status, and whether the runtime accepted or rejected native goal mode.
+- **Progress evidence**: the runtime exposes enough stdout, structured progress, or checkpoint text for task dynamics to show what happened without opening the native runtime session.
+- **Control boundary**: Taskplane can cancel or time out the forwarded native goal request and persist cancellation/failure evidence in the same run.
+- **Memory boundary**: successful terminal evidence still goes through the verifier and user-confirmed Task Memory proposal path. Native runtime memory cannot replace Taskplane Task Records.
+- **No silent source of truth shift**: Taskplane `/goal` remains product-owned. Native goal mode is per explicit request or explicit UI toggle, never a background side effect of the durable Task Goal.
+- **Packaged smoke**: the adapter has a deterministic fake-runtime packaged smoke that proves audit, forwarding, cancellation, terminal evidence, task dynamics, and no unexpected workspace writes.
+
+Until every item is satisfied, `/codex goal ...`, `/claude goal ...`, and `/runtime goal ...` remain runtime-audit entries that do not call the CLI.
+
 ### Plain text fallback
 
 If a slash command is unknown or unsupported by the current runtime, Taskplane should not guess. It should explain what is supported and offer to send the text as a normal task message.
@@ -345,8 +359,7 @@ Remaining next steps are deciding what evidence an adapter must provide before a
 
 ## Remaining Decisions
 
-- What adapter-level evidence is required before actual runtime-native goal forwarding can be enabled for Codex or Claude.
-- How much native CLI goal progress Codex and Claude can expose in non-interactive task runs.
+- How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate.
 - Whether a local daemon is needed later for richer session/checkpoint/replay behavior, or whether the Electron app process remains enough.
 - Whether guarded custom CLI arguments should be exposed through settings, or kept adapter-owned only.
 - How the future Agent API Runtime verifier/subagent replaces or augments the deterministic lightweight verifier contract.
