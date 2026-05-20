@@ -103,6 +103,9 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('Agent API execution can remain deferred');
     expect(text).toContain('future Agent API execution as a deferred provider_visible_execution contract with the same gate set as Agent CLI');
     expect(text).toContain('cannot be treated as model-service assistance or bypass the harness');
+    expect(text).toContain('Runtime-native goal audit is registered as a non-executing runtime_audit entrypoint');
+    expect(text).toContain('future passthrough remains blocked until the native goal forwarding readiness gate proves');
+    expect(text).toContain('first-version runtime-native goal requests stay audit-only');
     expect(text).toContain('task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints');
   });
 

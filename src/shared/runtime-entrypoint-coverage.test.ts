@@ -251,6 +251,10 @@ describe('runtime entrypoint coverage', () => {
       expect(entry.requiredGates).not.toContain('pre_step');
       expect(entry.requiredGates).not.toContain('post_step');
     }
+    const nativeGoalAudit = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'run.recordRuntimeNativeGoalRequest');
+    expect(nativeGoalAudit?.notes).toContain('runtime-native goal passthrough remains closed');
+    expect(nativeGoalAudit?.notes).toContain('native goal forwarding readiness gate');
+    expect(nativeGoalAudit?.notes).toContain('packaged fake-runtime smoke');
   });
 
   it('requires resumed execution paths to check handoff or decision state before continuing', () => {
