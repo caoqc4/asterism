@@ -1925,7 +1925,7 @@ export function RightPanel({
               : `${runtimeLabel} run ${run.status}。`,
           output,
           run.status === 'running'
-            ? '完成后会写入当前任务动态。'
+            ? '只读执行中；完成后会写入当前任务动态，并在需要时生成待确认任务记忆提案。'
             : '完整执行记录已进入当前任务动态。',
           `Run: ${run.id}`,
         ].join('\n\n');
@@ -2784,7 +2784,16 @@ export function RightPanel({
         )}
         {activeTaskAgentCliRun && (
           <div className="panel-agent-cli-run">
-            <span>{activeTaskAgentCliRun.runtimeLabel} 后台运行 · 完成后写入任务动态 · {activeTaskAgentCliRun.runId}</span>
+            <div className="panel-agent-cli-run-main">
+              <strong>{activeTaskAgentCliRun.runtimeLabel} 后台运行</strong>
+              <span>{activeTaskAgentCliRun.runId}</span>
+            </div>
+            <div className="panel-agent-cli-run-facts" aria-label="Agent CLI run 状态">
+              <span>只读执行</span>
+              <span>完成后写入任务动态</span>
+              <span>有价值输出会提议补写记忆</span>
+              <span>取消不会生成记忆提案</span>
+            </div>
             <button
               className={`btn sm ghost${activeTaskAgentCliRun.status === 'cancelling' ? ' disabled' : ''}`}
               onClick={() => void cancelActiveAgentCliRun()}

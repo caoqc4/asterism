@@ -2072,9 +2072,14 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/Codex CLI run 已在后台启动/)).toBeTruthy();
-    expect(screen.getByText(/完成后会写入当前任务动态/)).toBeTruthy();
+    expect(screen.getByText(/只读执行中；完成后会写入当前任务动态/)).toBeTruthy();
     expect(screen.getAllByText(/run_agent_cli_created/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Codex CLI 后台运行 · 完成后写入任务动态/)).toBeTruthy();
+    expect(screen.getByText('Codex CLI 后台运行')).toBeTruthy();
+    expect(screen.getByLabelText('Agent CLI run 状态')).toBeTruthy();
+    expect(screen.getByText('只读执行')).toBeTruthy();
+    expect(screen.getByText('完成后写入任务动态')).toBeTruthy();
+    expect(screen.getByText('有价值输出会提议补写记忆')).toBeTruthy();
+    expect(screen.getByText('取消不会生成记忆提案')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '取消 Codex CLI run' }));
     expect(harness.api.cancelAgentCliRun).toHaveBeenCalledWith({
@@ -2395,8 +2400,9 @@ describe('App redesign v1', () => {
       });
     });
     expect(await screen.findByText(/Claude Code run 已在后台启动/)).toBeTruthy();
-    expect(screen.getByText(/完成后会写入当前任务动态/)).toBeTruthy();
-    expect(screen.getByText(/Claude Code 后台运行 · 完成后写入任务动态/)).toBeTruthy();
+    expect(screen.getByText(/只读执行中；完成后会写入当前任务动态/)).toBeTruthy();
+    expect(screen.getByText('Claude Code 后台运行')).toBeTruthy();
+    expect(screen.getByText('完成后写入任务动态')).toBeTruthy();
   });
 
   it('keeps Codex CLI mode disabled until the manual-run runtime is authenticated', async () => {
@@ -2555,7 +2561,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('任务 Agent · Codex CLI · 只读')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
-    expect(await screen.findByText(/Codex CLI 后台运行 · 完成后写入任务动态/)).toBeTruthy();
+    expect(await screen.findByText('Codex CLI 后台运行')).toBeTruthy();
 
     const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
     expect(run).toBeTruthy();
