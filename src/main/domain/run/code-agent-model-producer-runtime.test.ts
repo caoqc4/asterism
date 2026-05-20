@@ -100,6 +100,7 @@ describe('prepareCodeAgentModelProducerRuntime', () => {
       },
       allowProviderCalls: true,
       generateText,
+      retainedContextManifest: 'task_file:Task.md:Task.md:content=yes',
       sourceContext: {
         items: [
           {
@@ -138,6 +139,10 @@ describe('prepareCodeAgentModelProducerRuntime', () => {
     expect(generateText).toHaveBeenCalledWith(
       runtimeConfig,
       expect.stringContaining('--- source context: Runtime source (source_context_1)'),
+    );
+    expect(generateText).toHaveBeenCalledWith(
+      runtimeConfig,
+      expect.stringContaining('task_file:Task.md:Task.md:content=yes'),
     );
     await expect(fs.readFile(path.join(stagingRoot, 'docs/runtime-note.md'), 'utf8')).resolves.toBe('note\n');
     expect(result).toMatchObject({

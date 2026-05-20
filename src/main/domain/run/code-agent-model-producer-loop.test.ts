@@ -46,8 +46,23 @@ describe('buildCodeAgentModelProducerPrompt', () => {
     expect(prompt).toContain('Allowed checks after staging: lint, test');
     expect(prompt).toContain('Network policy: disabled');
     expect(prompt).toContain('Promotion policy: Decision review is required');
+    expect(prompt).toContain('No retained Taskplane runtime context manifest was provided for this run.');
     expect(prompt).toContain('No workspace file context was provided for this run.');
     expect(prompt).toContain('No source-context content was included for this run.');
+  });
+
+  it('includes retained runtime context as read-only Taskplane execution memory', () => {
+    const prompt = buildCodeAgentModelProducerPrompt(request, {
+      retainedContextManifest: [
+        'RuntimeContextManifest / surface=task / items=2 / task=Docs update',
+        'memory_retrieval:total=2:included=2:caution=0:excluded=0:top=task_record/task_record_received_handoff/include/current_task_scope',
+        'task_file:Task Records/2026-05-20-received-handoff.md:Task Records/2026-05-20-received-handoff.md:content=no',
+      ].join('\n'),
+    });
+
+    expect(prompt).toContain('Taskplane retained runtime context manifest:');
+    expect(prompt).toContain('task_record/task_record_received_handoff/include/current_task_scope');
+    expect(prompt).toContain('End Taskplane retained runtime context manifest.');
   });
 
   it('includes explicitly selected workspace context as read-only evidence', () => {

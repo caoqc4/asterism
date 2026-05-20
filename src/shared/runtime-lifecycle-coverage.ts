@@ -130,14 +130,15 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeContextManifest now consumes TaskMemoryRetrieval and emits a compact memory_retrieval line for provider-visible step context.',
       'RuntimeContextManifest retrieval tests cover received completion handoff Task Records, so next-task execution context can recover why it was entered after a completed predecessor.',
       'Agent CLI accepted run evidence now persists the formatted RuntimeContextManifest, including memory_retrieval rows for received handoff Task Records that are also sent to the CLI prompt.',
+      'Code Agent model-producer runs persist a retained runtime context manifest and pass it into the provider prompt, so future Agent API execution inherits the same task memory retrieval and received handoff evidence as Agent CLI.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must explain why context was included or excluded, not only what Agent should read.',
       'Runtime must handle UI visibility, model visibility, and durable context separately.',
     ],
     gaps: [
-      'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points must also pass full context metadata.',
-      'RuntimeContextManifest consumes TaskMemoryRetrieval for retained context assembly paths; future provider-visible entry points must keep using this manifest instead of rebuilding read-order lists.',
+      'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but any new provider-visible entrypoint must still prove it passes full context metadata.',
+      'RuntimeContextManifest consumes TaskMemoryRetrieval for retained context assembly paths; new provider-visible entry points must keep using this manifest instead of rebuilding read-order lists.',
       'Explicit source quality signals exist for retained source contexts and a connector ingestion plan exists; local inbox and Gmail call that plan before persistence, and future connector services must keep using it.',
     ],
     nextImplementation: [

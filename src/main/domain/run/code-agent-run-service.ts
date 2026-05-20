@@ -20,6 +20,7 @@ import {
 import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
+  formatRuntimeContextManifestForStep,
 } from '../../../shared/runtime-context.js';
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type {
@@ -221,9 +222,8 @@ export class CodeAgentRunService {
       );
     }
 
-    if (modelProducerOptIn) {
-      const contextAssembly = buildRuntimeContextAssemblyPolicy({
-        manifest: buildRuntimeContextManifest({
+    const retainedContextManifest = modelProducerOptIn
+      ? buildRuntimeContextManifest({
           currentRunId: run.id,
           sourceContexts: selectedSourceContexts.items.map((source) => ({
             ...source,
@@ -232,7 +232,15 @@ export class CodeAgentRunService {
           })),
           task,
           taskFiles: task.taskFiles ?? [],
-        }),
+        })
+      : null;
+    const retainedContextManifestForStep = retainedContextManifest
+      ? formatRuntimeContextManifestForStep(retainedContextManifest)
+      : null;
+
+    if (modelProducerOptIn && retainedContextManifest) {
+      const contextAssembly = buildRuntimeContextAssemblyPolicy({
+        manifest: retainedContextManifest,
       });
       if (!contextAssembly.canExecuteTaskWork) {
         return this.updateRunResult(
@@ -319,6 +327,15 @@ export class CodeAgentRunService {
     }
 
     if (modelProducerOptIn) {
+      await this.runStepRepository.create({
+        input: retainedContextManifestForStep ?? '',
+        kind: 'plan',
+        output: retainedContextManifestForStep ?? '',
+        runId: run.id,
+        status: 'completed',
+        title: 'Code Agent retained runtime context manifest',
+      });
+
       const contextManifest = buildCodeAgentProviderVisibleContextManifest({
         artifacts: selectedArtifacts.items,
         sourceContexts: selectedSourceContexts.items.map((item) => ({
@@ -356,6 +373,7 @@ export class CodeAgentRunService {
 
     const producerLoop = modelRuntime.status === 'ready'
       ? modelRuntime.createLoop({
+          retainedContextManifest: retainedContextManifestForStep,
           sourceContext: sourceContextContent.status === 'collected'
             ? sourceContextContent.snapshot
             : null,

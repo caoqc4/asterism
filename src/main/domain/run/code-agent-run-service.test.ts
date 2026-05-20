@@ -583,6 +583,58 @@ describe('CodeAgentRunService', () => {
     expect(result).toBe(failedRun);
   });
 
+  it('carries received handoff retrieval evidence into the retained Code Agent runtime manifest', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'taskplane-code-agent-run-service-'));
+    await fs.mkdir(path.join(workspaceRoot, 'docs'), { recursive: true });
+    await fs.writeFile(path.join(workspaceRoot, 'docs/notes.md'), 'Use this workspace note.\n', 'utf8');
+    taskService.getDetail.mockResolvedValue({
+      ...buildTask(),
+      taskFiles: [
+        ...buildTask().taskFiles,
+        {
+          content: '# Record: Task Completion Handoff\n\n## From\n- Previous task\n\n## To\n- Task 1',
+          createdAt: '2026-05-20T00:00:00.000Z',
+          id: 'task_record_received_handoff',
+          kind: 'file',
+          name: '2026-05-20-received-handoff.md',
+          path: 'Task Records/2026-05-20-received-handoff.md',
+          taskId: 'task_1',
+          updatedAt: '2026-05-20T00:00:00.000Z',
+        },
+      ],
+    });
+    aiConfigService.getStatus.mockResolvedValue({
+      ...buildAiStatus(),
+      workspaceRoot,
+    });
+    const failedRun = buildFailedRun(
+      'Code Agent model producer runtime blocked: test runtime missing',
+      'test runtime missing',
+    );
+    aiConfigService.resolveRuntimeConfig.mockRejectedValue(new Error('test runtime missing'));
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      contextFiles: ['docs/notes.md'],
+      operatorConfirmed: true,
+      patchIntent: 'Continue from received handoff.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: expect.stringContaining('task_record/task_record_received_handoff/include/current_task_scope'),
+      title: 'Code Agent retained runtime context manifest',
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: expect.stringContaining('task_file:Task Records/2026-05-20-received-handoff.md:Task Records/2026-05-20-received-handoff.md'),
+      title: 'Code Agent retained runtime context manifest',
+    }));
+    expect(result).toBe(failedRun);
+  });
+
   it('blocks model-backed artifact selections that are not attached to the task', async () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     const failedRun = buildFailedRun(

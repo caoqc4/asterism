@@ -11,6 +11,7 @@ import type {
 } from './local-container-sandboxed-coding-producer-runner.js';
 
 type CreateCodeAgentModelProducerLoopOptions = {
+  retainedContextManifest?: string | null;
   sourceContext?: CodeAgentSourceContextSnapshot | null;
   workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
 };
@@ -35,6 +36,7 @@ export async function prepareCodeAgentModelProducerRuntime(params: {
   };
   allowProviderCalls?: boolean;
   generateText?: (config: RuntimeAiConfig, prompt: string) => Promise<string>;
+  retainedContextManifest?: string | null;
   sourceContext?: CodeAgentSourceContextSnapshot | null;
   workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
 }): Promise<CodeAgentModelProducerRuntime> {
@@ -66,6 +68,7 @@ export async function prepareCodeAgentModelProducerRuntime(params: {
   return {
     createLoop: (options = {}) => createCodeAgentModelProducerLoop({
       generatePlanText,
+      retainedContextManifest: options.retainedContextManifest ?? params.retainedContextManifest,
       sourceContext: options.sourceContext ?? params.sourceContext,
       workspaceContext: options.workspaceContext ?? params.workspaceContext,
     }),

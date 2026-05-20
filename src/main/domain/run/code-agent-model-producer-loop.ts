@@ -24,11 +24,13 @@ export type CodeAgentPlanTextGenerator = (params: {
 
 export function createCodeAgentModelProducerLoop(params: {
   generatePlanText: CodeAgentPlanTextGenerator;
+  retainedContextManifest?: string | null;
   sourceContext?: CodeAgentSourceContextSnapshot | null;
   workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
 }): LocalContainerSandboxedCodingProducerLoop {
   return async ({ emit, request, sessionId, stagingRoot }) => {
     const prompt = buildCodeAgentModelProducerPrompt(request, {
+      retainedContextManifest: params.retainedContextManifest,
       sourceContext: params.sourceContext,
       workspaceContext: params.workspaceContext,
     });
@@ -98,6 +100,7 @@ export function createCodeAgentModelProducerLoop(params: {
 export function buildCodeAgentModelProducerPrompt(
   request: NormalizedSandboxedCodingProducerRequest,
   options: {
+    retainedContextManifest?: string | null;
     sourceContext?: CodeAgentSourceContextSnapshot | null;
     workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
   } = {},
@@ -127,6 +130,8 @@ export function buildCodeAgentModelProducerPrompt(
     `Task: ${request.intent.taskTitle}`,
     `Instructions: ${request.intent.instructions}`,
     '',
+    ...formatRetainedRuntimeContextForPrompt(options.retainedContextManifest),
+    '',
     ...formatCodeAgentWorkspaceContextForPrompt(options.workspaceContext),
     '',
     ...formatCodeAgentSourceContextForPrompt(options.sourceContext),
@@ -138,4 +143,17 @@ export function buildCodeAgentModelProducerPrompt(
     `Network policy: ${request.executionPolicy.network}`,
     'Promotion policy: Decision review is required before any workspace mutation.',
   ].join('\n');
+}
+
+function formatRetainedRuntimeContextForPrompt(manifest?: string | null): string[] {
+  const trimmed = manifest?.trim();
+  if (!trimmed) {
+    return ['No retained Taskplane runtime context manifest was provided for this run.'];
+  }
+
+  return [
+    'Taskplane retained runtime context manifest:',
+    trimmed,
+    'End Taskplane retained runtime context manifest.',
+  ];
 }
