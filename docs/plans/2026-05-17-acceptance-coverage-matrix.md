@@ -13,7 +13,7 @@ This matrix keeps local alpha acceptance grounded in first principles: protect t
 | Runtime and agent execution core | Agent lifecycle, checkpoints, runtime gates, provider-native tool adapters, sandbox coding orchestration | `npm run accept:agent-local` | Covered |
 | Model-producer preflight | Verifies live-provider/Docker/workspace mutation gates before real execution | `npm run accept:sandbox-coding:model-producer-preflight` | Covered, environment-gated |
 | macOS packaged runtime | Builds packaged app and checks config, database schema, task-dynamics replay UI, packaged boot | `npm run smoke:release:mac` | Covered |
-| Packaged recovery paths | Brief recovery, project decomposition, work habits, code-agent UI, task-bound Agent CLI run/cancel/native-goal audit, run/decision recovery, settings config | `npm run accept:packaged-recovery:mac` | Covered |
+| Packaged recovery paths | Brief recovery, project decomposition, right-panel context refresh preservation, work habits, code-agent UI, task-bound Agent CLI run/cancel/native-goal audit, run/decision recovery, settings config | `npm run accept:packaged-recovery:mac` | Covered |
 | Supplemental product surface smoke | External Access empty/safety/fixture-connected/local-inbox state, Decisions judgment center, task file open/save | `npm run accept:product-surfaces:mac` | Added |
 | Release readiness | Developer ID, notarization, artifact upload/network checks | `npm run accept:release:mac-preflight` | Covered, expected `not-ready` without credentials |
 | Live provider execution | Real model-provider task execution | Provider-native live acceptance commands | Optional, requires credentials |
@@ -45,6 +45,7 @@ by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 - Decisions: verifies pending decisions render as a judgment center and can be resolved through the packaged UI.
 - Task files: verifies the task file explorer opens a persisted task file, classifies it as a normal file, saves through the packaged UI, and persists to SQLite.
 - Project decomposition and handoff: `smoke:project-decomposition:mac` verifies fresh projects do not get hard-coded child tasks before confirmation, persisted project child structure renders from SQLite, and completing one child can write completion/received Task Records plus `panel.completion_handoff` timeline events before opening the next child task.
+- Context refresh preservation: `smoke:context-refresh:mac` verifies a task-bound right-panel discussion can be manually archived before refresh, with a Task Record, Source Context, and `panel.context_refreshed` timeline event persisted in SQLite before the chat context is cleared.
 - Agent CLI task loop: `accept:packaged-recovery:mac` includes `smoke:agent-cli-task:mac`, which uses a fake Codex executable to verify task-bound execution evidence, cancellation evidence, Taskplane-owned `/goal` completion conditions in the run contract and memory proposal, task dynamics replay, native-goal audit evidence, and no workspace writes without requiring a live CLI account.
 
 ## Known Boundaries

@@ -272,6 +272,21 @@ describe('local smoke script default boundaries', () => {
     );
   });
 
+  it('keeps the packaged context refresh smoke in recovery acceptance', () => {
+    const scripts = readPackageScripts();
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/smoke-context-refresh-mac.mjs'), 'utf8');
+
+    expect(scripts['smoke:context-refresh:mac']).toBe('node scripts/smoke-context-refresh-mac.mjs');
+    expect(scripts['accept:packaged-recovery:mac']).toContain(
+      'npm run smoke:project-decomposition:mac && npm run smoke:context-refresh:mac && npm run smoke:context-learning:mac',
+    );
+    expect(script).toContain('panel.context_refreshed');
+    expect(script).toContain('context-refresh-handoff');
+    expect(script).toContain('会话刷新前保全');
+    expect(script).toContain('persisted context refresh Task Record');
+    expect(script).toContain('persisted context refresh source context');
+  });
+
   it('keeps the packaged project smoke covering completion handoff records', () => {
     const script = fs.readFileSync(path.join(process.cwd(), 'scripts/smoke-project-decomposition-mac.mjs'), 'utf8');
 
@@ -314,7 +329,7 @@ describe('local smoke script default boundaries', () => {
     const scripts = readPackageScripts();
 
     expect(scripts['accept:packaged-recovery:mac']).toBe(
-      'npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:context-learning:mac && npm run smoke:code-agent-ui:mac && npm run smoke:agent-cli-task:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
+      'npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:context-refresh:mac && npm run smoke:context-learning:mac && npm run smoke:code-agent-ui:mac && npm run smoke:agent-cli-task:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
     );
     expect(scripts['accept:product-surfaces:mac']).toBe(
       'npm run smoke:external-access:mac && npm run smoke:external-access-connected:mac && npm run smoke:external-access-local-inbox:mac && npm run smoke:decisions-center:mac && npm run smoke:task-files:mac',
