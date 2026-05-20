@@ -176,6 +176,24 @@ Contract/verifier/memory-proposal evidence, Taskplane-owned `/goal`
 completion conditions flowing into the run contract and memory proposal, and
 explicit runtime-native goal audit requests that are recorded but not forwarded.
 
+To manually validate the packaged app against the real local Codex CLI account,
+first build the unpacked macOS app, then opt in explicitly:
+
+```bash
+npm run dist:mac:dir
+TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac
+```
+
+This launches the packaged app with isolated user data and a temporary workspace,
+injects only the detected local Codex runtime status, runs one task-bound
+read-only Agent CLI request, checks the expected phrase in the terminal step, and
+fails if workspace files change. The default command stays skipped and must not
+call the CLI or launch the app.
+
+On 2026-05-20, this packaged-app live smoke passed locally with Codex CLI
+`codex-cli 0.125.0`, `auth=ready`, `workspace=unchanged`, `phrase=matched`, and
+`status=passed`.
+
 Latest focused verification for this loop:
 
 ```bash

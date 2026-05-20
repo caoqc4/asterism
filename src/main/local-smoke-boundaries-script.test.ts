@@ -294,6 +294,23 @@ describe('local smoke script default boundaries', () => {
     );
   });
 
+  it('keeps packaged Agent CLI live task smoke manual and skipped by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/manual-agent-cli-task-live-mac.mjs');
+    const testingDoc = fs.readFileSync(new URL('../../docs/TESTING.md', import.meta.url), 'utf8');
+
+    expect(scripts['manual:agent-cli-task-live:mac']).toBe('node scripts/manual-agent-cli-task-live-mac.mjs');
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Agent CLI packaged task live smoke');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('cli=not-called');
+    expect(result.output).toContain('packagedApp=not-launched');
+    expect(result.output).toContain('workspace=unchanged');
+    expect(testingDoc).toContain('TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac');
+    expect(testingDoc).toContain('The default command stays skipped and must not');
+    expect(testingDoc).toContain('packaged-app live smoke passed locally');
+  });
+
   it('keeps the packaged context refresh smoke in recovery acceptance', () => {
     const scripts = readPackageScripts();
     const script = fs.readFileSync(path.join(process.cwd(), 'scripts/smoke-context-refresh-mac.mjs'), 'utf8');
