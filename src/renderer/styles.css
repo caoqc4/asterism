@@ -522,6 +522,36 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-3);
   font-size: 11px;
 }
+.panel-memory-proposal-preview {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+}
+.panel-memory-proposal-preview-title {
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.panel-memory-proposal-preview-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.panel-memory-proposal-preview-row span {
+  color: var(--ink-4);
+}
+.panel-memory-proposal-preview-row strong {
+  color: var(--ink-2);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
 .panel-file-proposal-content {
   min-height: 120px;
   max-height: 220px;

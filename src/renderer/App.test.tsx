@@ -2520,6 +2520,18 @@ describe('App redesign v1', () => {
         '- Completion conditions checked: 2',
         '  - Run Goal Contract 包含目标',
         '  - 任务记忆提案出现',
+        '',
+        '## Next',
+        '- 继续检查任务动态里的验收记录。',
+        '',
+        '## Verification',
+        '- Agent CLI process exited successfully.',
+        '',
+        '## Risks',
+        '- 需要用户确认后才能写入任务记忆。',
+        '',
+        '## Links',
+        '- Run: run_agent_cli_created',
       ].join('\n'),
       operation: 'create',
       path: 'Task Records/2026-01-01-memory-guidance.md',
@@ -2559,6 +2571,16 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/生成了待确认的任务记忆写入提案/)).toBeTruthy();
     expect(await screen.findByText('任务记忆写入提案')).toBeTruthy();
     expect(screen.getByText('建议归类：任务记录')).toBeTruthy();
+    expect(screen.getByLabelText('任务记忆提案摘要')).toBeTruthy();
+    expect(screen.getByText('提案摘要')).toBeTruthy();
+    expect(screen.getByText('关键判断')).toBeTruthy();
+    expect(screen.getAllByText(/Codex CLI final answer/).length).toBeGreaterThan(0);
+    expect(screen.getByText('下一步')).toBeTruthy();
+    expect(screen.getAllByText(/继续检查任务动态里的验收记录/).length).toBeGreaterThan(0);
+    expect(screen.getByText('风险')).toBeTruthy();
+    expect(screen.getAllByText(/需要用户确认后才能写入任务记忆/).length).toBeGreaterThan(0);
+    expect(screen.getByText('验证')).toBeTruthy();
+    expect(screen.getAllByText(/Agent CLI process exited successfully/).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '确认补写记忆' }));
     await waitFor(() => {
       expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({

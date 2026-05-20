@@ -668,6 +668,51 @@ function taskMemoryProposalToFileProposal(proposal: TaskMemoryWriteProposal): Ta
   };
 }
 
+function taskMemoryProposalPreviewItems(content: string): Array<{ label: string; value: string }> {
+  const sections = markdownSections(content);
+  const candidates: Array<[string, string | undefined]> = [
+    ['关键判断', sections.get('summary')],
+    ['下一步', sections.get('next') ?? sections.get('next step')],
+    ['风险', sections.get('risks')],
+    ['验证', sections.get('verification')],
+    ['来源', sections.get('links') ?? sections.get('confirmed')],
+  ];
+  return candidates.flatMap(([label, value]) => {
+    const preview = previewMarkdownSection(value);
+    return preview ? [{ label, value: preview }] : [];
+  }).slice(0, 5);
+}
+
+function markdownSections(content: string): Map<string, string> {
+  const sections = new Map<string, string>();
+  let current: string | null = null;
+  let lines: string[] = [];
+
+  for (const line of content.replace(/\r\n/g, '\n').split('\n')) {
+    const heading = line.match(/^##\s+(.+?)\s*$/)?.[1]?.trim().toLowerCase() ?? null;
+    if (heading) {
+      if (current) sections.set(current, lines.join('\n').trim());
+      current = heading;
+      lines = [];
+      continue;
+    }
+    if (current) lines.push(line);
+  }
+
+  if (current) sections.set(current, lines.join('\n').trim());
+  return sections;
+}
+
+function previewMarkdownSection(value: string | undefined): string | null {
+  const lines = (value ?? '')
+    .split('\n')
+    .map((line) => line.replace(/^[-*]\s*/, '').trim())
+    .filter(Boolean);
+  if (!lines.length) return null;
+  const preview = lines.slice(0, 3).join(' · ');
+  return preview.length > 180 ? `${preview.slice(0, 177)}...` : preview;
+}
+
 function buildMinimalTaskRecord(taskName: string, importantFilePath: string): string {
   return [
     '# Task',
@@ -2610,6 +2655,17 @@ export function RightPanel({
               建议归类：{taskFileProposal.surfaceLabel}
             </div>
             <div className="panel-refresh-reason">{taskFileProposal.summary}</div>
+            {taskFileProposal.taskMemoryProposal && (
+              <div className="panel-memory-proposal-preview" aria-label="任务记忆提案摘要">
+                <div className="panel-memory-proposal-preview-title">提案摘要</div>
+                {taskMemoryProposalPreviewItems(taskFileProposal.content).map((item) => (
+                  <div className="panel-memory-proposal-preview-row" key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
             <textarea
               className="panel-file-proposal-content"
               value={taskFileProposal.content}
