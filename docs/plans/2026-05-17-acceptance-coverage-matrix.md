@@ -1,6 +1,6 @@
 # Alpha Acceptance Coverage Matrix
 
-Updated: 2026-05-17
+Updated: 2026-05-20
 
 This matrix keeps local alpha acceptance grounded in first principles: protect the durable task-management flows that make the product usable, and keep smoke coverage small enough that failures point to real product regressions instead of brittle script noise.
 
@@ -20,6 +20,7 @@ This matrix keeps local alpha acceptance grounded in first principles: protect t
 | Docker/local sandbox mutation | Real local-container sandbox execution | `TASKPLANE_ENABLE_LOCAL_CONTAINER_SANDBOX=true` preflight/live commands | Optional, requires Docker and explicit env |
 | Real external connectors | Gmail/Calendar/GitHub style external access | Not in local alpha smoke | Deferred until connectors exist |
 | Runtime-native goal discovery | Optional Codex/Claude native goal compatibility discovery | `npm run manual:agent-cli-native-goal-discovery` | Manual only; not a first-version gate; default probes help/version and candidate execution requires explicit env |
+| Packaged Codex live task run | Real local Codex account through packaged task panel with isolated app data and temporary workspace | `TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac` | Manual only; passed locally on 2026-05-20; default skipped |
 
 ## Acceptance Command
 

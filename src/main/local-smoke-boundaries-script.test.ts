@@ -520,6 +520,19 @@ describe('local smoke script default boundaries', () => {
     expect(testingDoc).toContain('future API verifier in shadow/assist mode');
   });
 
+  it('keeps the runtime harness plan aligned with stabilized first-version goal coverage', () => {
+    const plan = fs.readFileSync(path.join(process.cwd(), 'docs/plans/2026-05-19-agent-runtime-harness-and-goals.md'), 'utf8');
+    const matrix = fs.readFileSync(path.join(process.cwd(), 'docs/plans/2026-05-17-acceptance-coverage-matrix.md'), 'utf8');
+
+    expect(plan).toContain('The first-version Taskplane-owned goal loop is now stabilized for the Agent CLI path');
+    expect(plan).toContain('packaged-app Codex live smoke');
+    expect(plan).toContain('Remaining work should stay in preservation or deferred tracks');
+    expect(plan).not.toContain('Remaining next steps are hardening the Taskplane-owned goal loop');
+    expect(matrix).toContain('Updated: 2026-05-20');
+    expect(matrix).toContain('Packaged Codex live task run');
+    expect(matrix).toContain('Manual only; passed locally on 2026-05-20; default skipped');
+  });
+
   it('validates Agent CLI native-goal discovery runtime before candidate execution', () => {
     const result = runScript('scripts/agent-cli-native-goal-discovery.mjs', '', {
       TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME: 'unknown',

@@ -449,7 +449,7 @@ First pass implemented on 2026-05-19:
 - Context transitions are split into `context.refreshOrLeave` and `context.taskSwitch`, keeping ordinary refresh/leave/switch flows on RuntimeHandoff and task-memory checks without overstating them as completion, mutation, or subtask-start entrypoints.
 - Future Agent API execution should use the same entrypoint category as Agent CLI (`provider_visible_execution`) once it becomes executable. It must reuse runtime action, context assembly, task-memory coverage/guidance, pre-step, subtask-start, and post-step gates; Agent API cancellation/control and audit-only backend features should stay in separate control/audit entrypoint categories.
 
-Remaining next steps are hardening the Taskplane-owned goal loop and deciding when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier. Native CLI goal forwarding remains a later compatibility track, not a first-version product blocker.
+The first-version Taskplane-owned goal loop is now stabilized for the Agent CLI path: durable `/goal` state, completion conditions, explicit user-started runs, verifier evidence, task-memory proposals, cancellation handling, fake packaged smoke, CLI-only live smoke, and packaged-app Codex live smoke all have acceptance coverage. Remaining work should stay in preservation or deferred tracks unless a new product requirement appears: decide when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier, and keep native CLI goal forwarding as a later compatibility track rather than a first-version product blocker.
 
 ## Non-Goals For The Next Pass
 
@@ -486,6 +486,7 @@ Automatic continuation is not part of the first-version Agent CLI product loop. 
 - How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate. This is optional compatibility work, not the first-version goal-framework requirement.
 - Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.
 - Whether future shadow-mode verifier samples satisfy the concrete API Verifier Default-On Threshold.
+- Whether a future user-facing continuation feature is worth adding after the first-version bounded run loop has enough real usage evidence. Until then, automatic continuation remains outside the Agent CLI alpha.
 
 ## Next Evaluation Checklist
 
