@@ -104,9 +104,9 @@ The important product ideas for Taskplane:
 
 - `/goal` should be a Taskplane control-plane action by default, not an accidental raw prompt.
 - A conservative verifier should decide continue / pause / done.
-- User input should preempt automatic continuation.
+- If a future continuation loop is added, user input should preempt automatic continuation.
 - Goal state should persist outside a transient model context.
-- The loop needs a hard budget and explicit resume.
+- Any future loop needs a hard budget and explicit resume.
 
 ### OpenClaw
 
@@ -440,22 +440,33 @@ Remaining next steps are hardening the Taskplane-owned goal loop and deciding wh
 
 - `/goal <text>` only sets or updates the durable Taskplane Task Goal. It does not auto-start execution.
 - A task-bound Agent run still starts from a normal task message after the user has the right task context open.
+- The first-version Taskplane-owned goal loop is explicit and bounded: each Agent run must be user-started, and verifier output can propose the next run but cannot launch it automatically.
 - Runtime-native goal requests require an explicit namespace such as `/codex goal ...`, `/claude goal ...`, or `/runtime goal ...`.
 - Runtime-native goal requests are audit-only in the first Agent CLI version. Taskplane records evidence that the request was not forwarded, and does not call the CLI for that request.
 - Native goal routing is per explicit request for now. There is no global or per-task setting that silently forwards product `/goal` state into a runtime-native goal mode.
 - Taskplane remains the source of truth for task goal, session evidence, run logs, task dynamics, and user-confirmed memory writes.
 - The first-version Agent CLI harness keeps sandbox mode read-only for Codex and plan mode for Claude.
 
+## Future Automatic Continuation Gate
+
+Automatic continuation is not part of the first-version Agent CLI product loop. It can be reconsidered only after all of these conditions are true:
+
+- The run has an active Taskplane Task Goal, concrete completion conditions, and a deterministic continue / pause / done verifier result.
+- The next continuation prompt is visible as a proposed action before execution.
+- Pending decisions, open runtime gates, cancellation, timeout, failed terminal steps, and unwritten task-memory proposals all block continuation.
+- The loop has an explicit user-configured turn budget, a visible pause control, and a resume path that records why execution continued.
+- New user input preempts the queued continuation and is stored as the latest operator intent.
+- Packaged-app smoke coverage proves continuation preserves run evidence, task dynamics, task-memory proposals, and workspace write boundaries.
+
 ## Remaining Decisions
 
-- How much of the Taskplane-owned goal loop should become automatic continuation versus explicit user-started task runs.
 - How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate. This is optional compatibility work, not the first-version goal-framework requirement.
 - Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.
 - Which measured shadow-mode results satisfy the API Verifier Default-On Threshold.
 
 ## Next Evaluation Checklist
 
-1. Keep first-version `/goal` work focused on Taskplane-owned durable goal state, completion conditions, bounded execution evidence, verifier judgment, and user-confirmed task-memory proposals.
+1. Keep first-version `/goal` work focused on Taskplane-owned durable goal state, completion conditions, explicit user-started bounded runs, verifier judgment, and user-confirmed task-memory proposals.
 2. If native runtime goal compatibility becomes important, run a manual Codex/Claude native-goal discovery pass outside the default smoke path, using fake or disposable tasks, and capture:
    - exact command forms;
    - stdout/stderr shape;
