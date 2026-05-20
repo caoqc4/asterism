@@ -277,8 +277,8 @@ export class AgentCliRunService {
         `runtime=${runtime.id}`,
         `sandbox=${sandboxMode}`,
         contextGate.summary,
-        contextManifest.summary,
-      ].join(' / '),
+        formatRuntimeContextManifestForStep(contextManifest),
+      ].join('\n'),
     });
     await this.runStepRepository.create({
       runId: run.id,

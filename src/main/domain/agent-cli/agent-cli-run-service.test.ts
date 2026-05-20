@@ -463,6 +463,64 @@ describe('AgentCliRunService', () => {
     expect(executor).toHaveBeenCalled();
   });
 
+  it('persists received handoff retrieval evidence in the accepted Agent CLI run step', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const taskService = buildTaskService();
+    vi.mocked(taskService.getDetail).mockResolvedValue({
+      ...buildTask(),
+      taskFiles: [
+        ...buildTask().taskFiles,
+        {
+          content: '# Record: Task Completion Handoff\n\n## From\n- Previous task\n\n## To\n- Task 1',
+          createdAt: '2026-05-20T00:00:00.000Z',
+          id: 'task_record_received_handoff',
+          kind: 'file',
+          name: '2026-05-20-received-handoff.md',
+          path: 'Task Records/2026-05-20-received-handoff.md',
+          taskId: 'task_1',
+          updatedAt: '2026-05-20T00:00:00.000Z',
+        },
+      ],
+    });
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Codex CLI final answer.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      taskService,
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Continue from received handoff.',
+      taskId: 'task_1',
+    });
+
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'agent cli run accepted',
+      output: expect.stringContaining('task_record/task_record_received_handoff/include/current_task_scope'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'agent cli run accepted',
+      output: expect.stringContaining('task_file:Task Records/2026-05-20-received-handoff.md:Task Records/2026-05-20-received-handoff.md'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('task_record/task_record_received_handoff/include/current_task_scope'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('task_file:Task Records/2026-05-20-received-handoff.md:Task Records/2026-05-20-received-handoff.md'),
+    }));
+  });
+
   it('blocks Agent CLI execution for a completed target task before creating a run', async () => {
     const taskService = buildTaskService();
     vi.mocked(taskService.getDetail).mockResolvedValue({
