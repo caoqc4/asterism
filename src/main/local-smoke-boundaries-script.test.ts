@@ -182,6 +182,17 @@ describe('local smoke script default boundaries', () => {
     expect(missingScripts).toEqual([]);
   });
 
+  it('documents why ordinary task-switch packaged smoke remains deferred', () => {
+    const matrix = fs.readFileSync(
+      path.join(process.cwd(), 'docs/plans/2026-05-17-acceptance-coverage-matrix.md'),
+      'utf8',
+    );
+
+    expect(matrix).toContain('Ordinary task context switches are covered by renderer/runtime-handoff tests');
+    expect(matrix).toContain('deferred until the retained task detail UI exposes a stable cross-task navigation hook');
+    expect(matrix).toContain('instead of the context-switch safety boundary');
+  });
+
   it('keeps relative Markdown links pointing to existing files', () => {
     const files = collectRepoMarkdownFiles();
     const brokenLinks: string[] = [];

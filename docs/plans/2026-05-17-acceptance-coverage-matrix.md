@@ -53,3 +53,4 @@ by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 - Signing and notarization are intentionally reported by preflight rather than faked locally.
 - Live provider and Docker-backed mutation paths remain opt-in because they need external credentials or host capabilities.
 - The smoke suite does not attempt exhaustive UI layout verification; it protects high-value real workflows only.
+- Ordinary task context switches are covered by renderer/runtime-handoff tests and task-dynamics projection tests. A packaged task-switch smoke is intentionally deferred until the retained task detail UI exposes a stable cross-task navigation hook; otherwise the smoke would mostly test list navigation mechanics instead of the context-switch safety boundary.
