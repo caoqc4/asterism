@@ -44,7 +44,7 @@ by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 - External Access: verifies the no-connector state still communicates authorization boundaries and keeps connection actions disabled; a fixture-connected smoke verifies the structured connector status path reaches the packaged page, CapabilityRegistry, and ConfigurationSafetyReport without live external providers; a local-inbox smoke creates a packaged task, previews local inbox evidence through the source-review panel, confirms the write, and verifies the Source Context memory path without live providers.
 - Decisions: verifies pending decisions render as a judgment center and can be resolved through the packaged UI.
 - Task files: verifies the task file explorer opens a persisted task file, classifies it as a normal file, saves through the packaged UI, and persists to SQLite.
-- Agent CLI task loop: `accept:packaged-recovery:mac` includes `smoke:agent-cli-task:mac`, which uses a fake Codex executable to verify task-bound execution evidence, cancellation evidence, task dynamics replay, memory-proposal surfacing, native-goal audit evidence, and no workspace writes without requiring a live CLI account.
+- Agent CLI task loop: `accept:packaged-recovery:mac` includes `smoke:agent-cli-task:mac`, which uses a fake Codex executable to verify task-bound execution evidence, cancellation evidence, Taskplane-owned `/goal` completion conditions in the run contract and memory proposal, task dynamics replay, native-goal audit evidence, and no workspace writes without requiring a live CLI account.
 
 ## Known Boundaries
 

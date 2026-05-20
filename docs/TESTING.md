@@ -172,8 +172,9 @@ npm run smoke:agent-cli-task:mac
 That smoke covers the first-version Agent CLI product loop inside the packaged
 app: task-bound run creation, accepted and terminal run evidence, cancellation
 evidence, read-only workspace protection, task dynamics replay, Run Goal
-Contract/verifier/memory-proposal evidence, and explicit runtime-native goal
-audit requests that are recorded but not forwarded.
+Contract/verifier/memory-proposal evidence, Taskplane-owned `/goal`
+completion conditions flowing into the run contract and memory proposal, and
+explicit runtime-native goal audit requests that are recorded but not forwarded.
 
 Runtime-native goal discovery is an optional compatibility track, not a
 first-version product gate. By default it only probes local CLI version/help
