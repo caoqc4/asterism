@@ -193,6 +193,17 @@ describe('local smoke script default boundaries', () => {
     expect(matrix).toContain('instead of the context-switch safety boundary');
   });
 
+  it('documents deferred Agent API execution as a contract rather than an alpha smoke path', () => {
+    const matrix = fs.readFileSync(
+      path.join(process.cwd(), 'docs/plans/2026-05-17-acceptance-coverage-matrix.md'),
+      'utf8',
+    );
+
+    expect(matrix).toContain('Agent API execution is represented only as a deferred runtime-entrypoint contract');
+    expect(matrix).toContain('no packaged smoke or IPC execution path in the first Agent CLI alpha');
+    expect(matrix).toContain('same `provider_visible_execution` harness gates as Agent CLI');
+  });
+
   it('keeps relative Markdown links pointing to existing files', () => {
     const files = collectRepoMarkdownFiles();
     const brokenLinks: string[] = [];

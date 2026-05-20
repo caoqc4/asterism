@@ -354,7 +354,7 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
-  it('keeps the retained top-level runtime entrypoints explicit', () => {
+  it('keeps the registered top-level runtime entrypoints explicit', () => {
     expect(RUNTIME_ENTRYPOINT_COVERAGE.map((entry) => entry.id).sort()).toEqual([
       'agent.toolDurableWrites',
       'ai.taskChat',
