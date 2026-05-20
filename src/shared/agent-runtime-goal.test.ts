@@ -12,6 +12,7 @@ import {
 import { buildDefaultAgentCliRuntimeCapabilities } from './agent-cli-runtime-status.js';
 import type { RuntimeContextManifest } from './runtime-context.js';
 import type { TaskDetail } from './types/task.js';
+import { evaluateNativeGoalForwardingReadiness } from './native-goal-forwarding-readiness.js';
 
 describe('agent-runtime-goal', () => {
   it('keeps product /goal commands owned by Taskplane', () => {
@@ -107,6 +108,21 @@ describe('agent-runtime-goal', () => {
       policy: 'passthrough_entrypoint_closed',
       reason: 'Adapter declares native goal support, but Taskplane passthrough entrypoint is not open yet.',
       supportsNativeGoalMode: true,
+    });
+
+    expect(evaluateNativeGoalForwardingReadiness({
+      adapterId: 'codex',
+      commandShapeVerified: true,
+      controlBoundaryVerified: false,
+      memoryBoundaryVerified: true,
+      packagedSmokeVerified: false,
+      progressEvidenceVerified: true,
+      sourceOfTruthBoundaryVerified: true,
+      stateReflectionVerified: true,
+    })).toMatchObject({
+      ready: false,
+      status: 'audit_only',
+      missingEvidence: ['control boundary', 'packaged smoke'],
     });
   });
 
