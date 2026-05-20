@@ -115,6 +115,12 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('parent is an open top-level project task');
   });
 
+  it('tracks decomposition confirmation separately from child execution start', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('using subtask_draft rather than subtask_start because confirming child tasks does not start execution');
+  });
+
   it('tracks pending-memory checks for phase closeout handoff', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 

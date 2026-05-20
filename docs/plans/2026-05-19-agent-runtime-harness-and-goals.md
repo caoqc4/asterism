@@ -158,6 +158,8 @@ Task decomposition, context confirmation, task records, task acceptance, and con
 
 The practical rule for the next passes is: delaying Agent API execution does not delay the runtime task loop. Task Goal control, decomposition drafts, subtask-start checks, context assembly, run gates, verifier checks, task-memory proposals, completion checks, handoff records, and context clearing must keep working as Taskplane harness flows while Agent CLI is the first executable backend. When Agent API later becomes executable, it should plug into these harness contracts rather than bring a parallel task lifecycle.
 
+Project decomposition has two harness boundaries. Draft generation is provider-visible planning and must stay draft-only behind context assembly, task-memory guidance, and `subtask_draft` checks. User-confirmed child creation is a durable write and must recheck `subtask_draft`, task mutation, post-step evidence, and timeline allowlists. It should not claim `subtask_start` until Taskplane is actually entering or running a child task.
+
 ## Goal Model
 
 Taskplane should support three related but separate goal concepts:
@@ -433,6 +435,7 @@ First pass implemented on 2026-05-19:
 - Code Agent model-producer runs now persist a retained RuntimeContextManifest step and pass that formatted manifest into the provider prompt. This keeps future Agent API execution aligned with Agent CLI on task memory retrieval, received handoff recovery, and product-owned context bridge evidence even though Agent API remains a later peer execution runtime.
 - Product-owned `/goal` is now registered as a durable Taskplane harness entrypoint. It writes task nextStep, completion criteria, and `panel.task_goal_*` timeline events through task mutation guards, and it remains independent of the selected execution runtime.
 - Run acceptance verification is now registered separately as a non-executing `verification_harness` entrypoint. This keeps the lightweight verifier and future API verifier subagent inside Taskplane's harness, not inside the Agent API execution layer.
+- Project decomposition confirmation now records the correct gate boundary: it rechecks `subtask_draft` before creating real child tasks, while `subtask_start` remains reserved for entering or running an existing child.
 - Future Agent API execution should use the same entrypoint category as Agent CLI (`provider_visible_execution`) once it becomes executable. It must reuse runtime action, context assembly, task-memory coverage/guidance, pre-step, subtask-start, and post-step gates; Agent API cancellation/control and audit-only backend features should stay in separate control/audit entrypoint categories.
 
 Remaining next steps are hardening the Taskplane-owned goal loop and deciding when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier. Native CLI goal forwarding remains a later compatibility track, not a first-version product blocker.

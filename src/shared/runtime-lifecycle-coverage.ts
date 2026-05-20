@@ -217,7 +217,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Main IPC task-file and manual-artifact write boundaries guard task_mutation before repository writes.',
       'Tasks file content saves for Task.md/Task Records, task files, sources, and artifacts use durable panel action guards plus post-step completion checks, separate from structured task-state writes.',
       'Tasks project decomposition draft generation is registered as provider-visible planning and guarded by existing-child and subtask-draft checks before durable creation is possible.',
-      'Tasks project decomposition confirmation now guards child task creation, child planning transitions, dependency creation, parent updates, task records, and completion criteria writes.',
+      'Tasks project decomposition confirmation now guards child task creation, child planning transitions, dependency creation, parent updates, task records, and completion criteria writes, while using subtask_draft rather than subtask_start because confirming child tasks does not start execution.',
       'TaskService completion criteria creation and updates now reject empty, generic, or duplicate open completion criteria before persistence.',
       'TaskService dependency creation and updates now reject self-dependencies before persistence.',
       'TaskService blocker creation and updates now reject untitled blockers before persistence.',

@@ -642,7 +642,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_mutation',
       'pre_step',
       'post_step',
-      'subtask_start',
+      'subtask_draft',
       'panel_event_allowlist',
     ],
     coveredGates: [
@@ -650,9 +650,10 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_mutation',
       'pre_step',
       'post_step',
-      'subtask_start',
+      'subtask_draft',
       'panel_event_allowlist',
     ],
+    notes: 'Confirmation rechecks proposed child drafts before creating real child tasks. Starting or entering a child task remains a separate subtask_start boundary.',
   },
   {
     id: 'task.structuredStateWrites',

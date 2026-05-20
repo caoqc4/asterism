@@ -65,6 +65,27 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('separates project decomposition planning, confirmation, and child start gates', () => {
+    const draft = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'project.decompositionDraft');
+    const confirm = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'project.decompositionConfirm');
+
+    expect(draft).toBeTruthy();
+    expect(confirm).toBeTruthy();
+    expect(draft?.kind).toBe('provider_visible_planning');
+    expect(draft?.requiredGates).toContain('runtime_context_assembly');
+    expect(draft?.requiredGates).toContain('subtask_draft');
+    expect(draft?.requiredGates).not.toContain('task_mutation');
+    expect(draft?.requiredGates).not.toContain('runtime_action');
+
+    expect(confirm?.kind).toBe('durable_write');
+    expect(confirm?.requiredGates).toContain('task_mutation');
+    expect(confirm?.requiredGates).toContain('post_step');
+    expect(confirm?.requiredGates).toContain('subtask_draft');
+    expect(confirm?.requiredGates).not.toContain('runtime_context_assembly');
+    expect(confirm?.requiredGates).not.toContain('subtask_start');
+    expect(confirm?.notes).toContain('Starting or entering a child task remains a separate subtask_start boundary');
+  });
+
   it('requires provider-visible assistance to assemble context without execution gates', () => {
     expect(requiredRuntimeEntrypointGatesForKind('provider_visible_assistance')).toEqual([
       'simplicity_check',
