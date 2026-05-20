@@ -228,6 +228,20 @@ Runtime-native goal passthrough must stay audit-only until a runtime adapter pro
 
 Until every item is satisfied, `/codex goal ...`, `/claude goal ...`, and `/runtime goal ...` remain runtime-audit entries that do not call the CLI.
 
+### Local Daemon Decision Rule
+
+Do not add a local daemon for the first Agent CLI product loop. The Electron main process plus persisted run steps is enough while Taskplane only needs bounded task-bound runs, cancellation, terminal evidence, and packaged smoke coverage.
+
+A daemon becomes justified only if at least one of these requirements becomes real and cannot be handled safely in-process:
+
+- a runtime session must survive app restarts while preserving cancellation and checkpoint ownership;
+- multiple long-running agent sessions need scheduling, backpressure, or resource isolation beyond the current workload tracker;
+- native runtime progress must be streamed and replayed as structured events rather than terminal stdout/stderr;
+- workspace sandbox/checkpoint state needs a separate supervisor process with explicit recovery after crashes;
+- Agent API or CLI-native goal mode requires resumable harness/session semantics that the Electron process cannot own reliably.
+
+Until then, daemon work is deferred. The product should continue hardening the current harness contract, packaged smokes, and run evidence before adding another process boundary.
+
 ### Plain text fallback
 
 If a slash command is unknown or unsupported by the current runtime, Taskplane should not guess. It should explain what is supported and offer to send the text as a normal task message.
@@ -360,6 +374,6 @@ Remaining next steps are deciding what evidence an adapter must provide before a
 ## Remaining Decisions
 
 - How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate.
-- Whether a local daemon is needed later for richer session/checkpoint/replay behavior, or whether the Electron app process remains enough.
+- Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.
 - Whether guarded custom CLI arguments should be exposed through settings, or kept adapter-owned only.
 - How the future Agent API Runtime verifier/subagent replaces or augments the deterministic lightweight verifier contract.
