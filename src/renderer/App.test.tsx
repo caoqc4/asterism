@@ -2266,6 +2266,14 @@ describe('App redesign v1', () => {
       }),
     });
     expect(await screen.findByText(/验收条件：Run Goal Contract 包含目标；任务记忆提案出现/)).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText(/关于「董事会材料修订」/), {
+      target: { value: '/goal status' },
+    });
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(await screen.findByText(/当前目标：完成目标闭环/)).toBeTruthy();
+    expect(await screen.findAllByText(/验收条件：Run Goal Contract 包含目标；任务记忆提案出现/)).toHaveLength(2);
   });
 
   it('recognizes explicit native goal requests without forwarding them to the CLI yet', async () => {

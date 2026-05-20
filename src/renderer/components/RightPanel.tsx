@@ -546,6 +546,19 @@ function truncateMemoryLine(value: string, limit = 80): string {
   return singleLine.length > limit ? `${singleLine.slice(0, limit)}...` : singleLine;
 }
 
+function uniqueGoalConditionLabels(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const clean = value.trim();
+    const key = clean.toLowerCase();
+    if (!clean || seen.has(key)) continue;
+    seen.add(key);
+    result.push(clean);
+  }
+  return result;
+}
+
 function slugFilePart(value: string): string {
   const ascii = value
     .trim()
@@ -1920,6 +1933,11 @@ export function RightPanel({
       timeline: activeTaskDetail?.timeline,
     });
     const currentGoal = goalLifecycle.status === 'cleared' ? null : goalLifecycle.objective;
+    const currentGoalConditions = goalLifecycle.completionConditions.length
+      ? uniqueGoalConditionLabels(goalLifecycle.completionConditions)
+      : uniqueGoalConditionLabels((activeTaskDetail?.completionCriteria ?? [])
+        .filter((criteria) => criteria.status === 'open')
+        .map((criteria) => criteria.text));
     if (!activeTaskId) {
       if (command.kind === 'product_status') {
         return '当前是全局助手会话。Agent runtime 命令需要先进入具体任务；全局消息会继续作为普通助手问答处理。';
@@ -2000,6 +2018,9 @@ export function RightPanel({
         '',
         currentGoal ? `当前目标：${currentGoal}` : '当前还没有明确 Task Goal。可以用 `/goal <可验收的目标>` 设置。',
         `目标状态：${goalLifecycle.status === 'paused' ? '已暂停' : goalLifecycle.status === 'cleared' ? '已清除' : currentGoal ? '推进中' : '未设置'}`,
+        currentGoalConditions.length
+          ? `验收条件：${currentGoalConditions.join('；')}`
+          : '验收条件：未设置，可在 `/goal` 后添加 `验收:` 条目。',
         '',
         `执行 runtime：${executionRuntimeStatusLabel}`,
         shouldUseAgentCliRuntime
