@@ -453,6 +453,18 @@ describe('local smoke script default boundaries', () => {
     expect(configurationDoc).toContain('the default smoke path stays skipped unless the explicit environment flag is set');
   });
 
+  it('documents Claude Code live smoke as non-blocking when the provider account is not executable', () => {
+    const testingDoc = fs.readFileSync(new URL('../../docs/TESTING.md', import.meta.url), 'utf8');
+    const configurationDoc = fs.readFileSync(new URL('../../docs/CONFIGURATION.md', import.meta.url), 'utf8');
+
+    expect(testingDoc).toContain('Claude Code `2.1.144`');
+    expect(testingDoc).toContain('non-blocking secondary');
+    expect(testingDoc).toContain('account/organization error');
+    expect(testingDoc).toContain('workspace=unchanged');
+    expect(configurationDoc).toContain('non-blocking account-readiness gap');
+    expect(configurationDoc).toContain('Taskplane workspace safety');
+  });
+
   it('validates the Agent CLI smoke runtime before calling a CLI', () => {
     const result = runScript('scripts/agent-cli-readonly-smoke.mjs', '', {
       TASKPLANE_AGENT_CLI_SMOKE_RUNTIME: 'unknown',

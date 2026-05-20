@@ -198,6 +198,12 @@ passed the opt-in smoke with `auth=ready`, `workspace=unchanged`,
 TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=codex npm run manual:agent-cli-readonly-smoke
 ```
 
+The same local pass checked Claude Code `2.1.144` as a non-blocking secondary
+path. The CLI and auth status were detectable, but execution returned a provider
+account/organization error while preserving `workspace=unchanged`. Keep this as
+non-blocking evidence until a valid Claude account can pass the same opt-in
+read-only smoke.
+
 Runtime-native goal discovery is an optional compatibility track, not a
 first-version product gate. By default it only probes local CLI version/help
 output, so it can be used to inspect command shape without starting a goal:

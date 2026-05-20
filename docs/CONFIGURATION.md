@@ -394,6 +394,12 @@ keep Claude smoke non-blocking and continue validating the Codex path:
 TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-readonly-smoke
 ```
 
+The latest local Claude Code check on 2026-05-20 detected `claude` `2.1.144`
+and authenticated CLI status, but the read-only execution returned a provider
+account/organization error. The temporary workspace remained unchanged, so this
+is a non-blocking account-readiness gap rather than a Taskplane workspace safety
+failure.
+
 ## Scheduler Flag
 
 `featureFlags.enableScheduler`
