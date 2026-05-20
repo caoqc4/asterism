@@ -15,7 +15,13 @@ const envKeys = [
   'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
   'TASKPLANE_ENV_FILE',
   'TASKPLANE_AGENT_CLI_SMOKE_RUNTIME',
+  'TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON',
+  'TASKPLANE_AGENT_CLI_NATIVE_GOAL_OBJECTIVE',
+  'TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME',
+  'TASKPLANE_AGENT_CLI_NATIVE_GOAL_STDIN',
+  'TASKPLANE_AGENT_CLI_NATIVE_GOAL_TIMEOUT_MS',
   'TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE',
+  'TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE',
   'TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS',
@@ -397,6 +403,31 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('cli=invalid');
     expect(result.output).toContain('workspace=unchanged');
     expect(result.output).toContain('TASKPLANE_AGENT_CLI_SMOKE_RUNTIME must be codex or claude');
+  });
+
+  it('keeps Agent CLI native-goal discovery non-executing by default', () => {
+    const result = runScript('scripts/agent-cli-native-goal-discovery.mjs');
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Agent CLI native-goal discovery');
+    expect(result.output).toContain('runtime=codex');
+    expect(result.output).toContain('enabled=false');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('default discovery only probes version/help');
+    expect(result.output).not.toContain('candidateCommand=');
+  });
+
+  it('validates Agent CLI native-goal discovery runtime before candidate execution', () => {
+    const result = runScript('scripts/agent-cli-native-goal-discovery.mjs', '', {
+      TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME: 'unknown',
+      TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY: 'true',
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.output).toContain('Agent CLI native-goal discovery');
+    expect(result.output).toContain('runtime=invalid');
+    expect(result.output).toContain('TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME must be codex or claude');
+    expect(result.output).not.toContain('candidateCommand=');
   });
 
   it('keeps Code Agent model producer preview smoke skipped without provider spend by default', () => {
