@@ -62,6 +62,58 @@ describe('task memory guidance state', () => {
     });
   });
 
+  it('ignores generic completed run evidence that only mentions memory surfaces', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [
+        {
+          status: 'completed',
+          title: 'agent cli run accepted',
+          output: [
+            'runtime=codex',
+            '已包含 Task.md 主恢复文件。',
+            '没有相关 Task Records；仅在任务含糊、长期运行、刚清理或明确引用历史时必需。',
+          ].join('\n'),
+          createdAt: '2026-05-15T01:00:00.000Z',
+        },
+        {
+          status: 'completed',
+          title: 'Agent CLI 目标契约',
+          output: [
+            'Goal: inspect packaged smoke behavior.',
+            'Evidence should remain in Task.md or Task Record after user confirmation.',
+          ].join('\n'),
+          createdAt: '2026-05-15T01:01:00.000Z',
+        },
+      ],
+    })).toMatchObject({
+      outcome: 'none',
+      pendingTargets: [],
+    });
+  });
+
+  it('still accepts structured guidance targets from explicit proposal steps', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        input: JSON.stringify({
+          targets: ['task_record'],
+          suggestedContentByTarget: {
+            task_record: '## Agent CLI run\nKeep this reviewed result as task memory.',
+          },
+        }),
+        output: 'Verifier decision: accept_for_review',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      suggestedContentByTarget: {
+        task_record: '## Agent CLI run\nKeep this reviewed result as task memory.',
+      },
+    });
+  });
+
   it('keeps structured reference paths with the pending target', () => {
     expect(evaluateTaskMemoryGuidanceState({
       guidanceSignals: [{

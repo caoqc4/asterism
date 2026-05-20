@@ -181,6 +181,14 @@ async function sendPanelMessage(page, message) {
   await page.locator('.panel-input-foot').getByRole('button', { name: '发送' }).click();
 }
 
+async function panelDiagnostic(page) {
+  const bodyText = await page.locator('body').innerText({ timeout: 2_000 }).catch(() => '');
+  return [
+    `runs=${queryRunRows().map((run) => `${run.id}:${run.status}:${run.instructions}`).join(' | ')}`,
+    `panel=${bodyText.replace(/\s+/g, ' ').slice(0, 2000)}`,
+  ].join('\n');
+}
+
 async function assertTaskDynamicsShowsAgentCli(page) {
   await page.getByRole('button', { name: '任务动态' }).click();
   await page.getByText(/Codex CLI 已完成|Codex CLI 输出/).first().waitFor({ timeout: timeoutMs });
@@ -277,9 +285,14 @@ try {
   if (cancelledSteps.some((step) => step.title === '任务记忆建议')) {
     throw new Error('Cancellation must not create a task memory proposal.');
   }
+  await page.getByText(/(?:任务 Agent · )?Codex CLI · 只读/).waitFor({ timeout: timeoutMs });
 
   await sendPanelMessage(page, 'Run the packaged Agent CLI smoke.');
-  await waitFor(() => queryRunRows().length >= 2, 'created Agent CLI run');
+  try {
+    await waitFor(() => queryRunRows().length >= 2, 'created Agent CLI run');
+  } catch (error) {
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\n${await panelDiagnostic(page)}`);
+  }
   await waitFor(() => {
     const rows = queryRunRows();
     return rows.length >= 2 && rows[1]?.status === 'completed';

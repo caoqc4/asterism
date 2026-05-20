@@ -57,10 +57,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
       suggestedContentByTarget: parseStructuredGuidanceSuggestedContent(signal.input),
       targets: normalizeGuidanceTargets(signal.targets)
         ?? parseStructuredGuidanceTargets(signal.input)
-        ?? detectTaskMemoryGuidanceTargets([
-          signal.title ?? '',
-          signal.output ?? '',
-        ].join('\n')),
+        ?? detectImplicitTaskMemoryGuidanceTargets(signal),
     }))
     .filter((signal) => signal.targets.length > 0);
 
@@ -116,6 +113,19 @@ export function detectTaskMemoryGuidanceTargets(text: string): TaskMemoryGuidanc
     targets.push('task_record');
   }
   return uniqueTargets(targets);
+}
+
+function detectImplicitTaskMemoryGuidanceTargets(signal: TaskMemoryGuidanceSignal): TaskMemoryGuidanceTarget[] {
+  const text = [
+    signal.title ?? '',
+    signal.output ?? '',
+  ].join('\n');
+  if (!looksLikeTaskMemoryGuidance(text)) return [];
+  return detectTaskMemoryGuidanceTargets(text);
+}
+
+function looksLikeTaskMemoryGuidance(text: string): boolean {
+  return /任务记忆建议|任务记忆写入提案|写入提案|Task Memory|memory guidance|memory proposal|Task\.md update recommended|Task Record may be useful/i.test(text);
 }
 
 function parseStructuredGuidanceTargets(input?: string | null): TaskMemoryGuidanceTarget[] | null {
