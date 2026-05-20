@@ -95,11 +95,17 @@ export function parseAgentRuntimeSlashCommand(input: string): AgentRuntimeSlashC
   if (command === 'status') return { kind: 'product_status' };
   if (command === 'cancel') return { kind: 'product_cancel' };
 
-  if (command === 'runtime' && arg.toLowerCase().startsWith('goal ')) {
-    return { kind: 'runtime_native_goal', runtimeId: 'selected', objective: arg.slice(5).trim() };
+  if (command === 'runtime' && (arg.toLowerCase() === 'goal' || arg.toLowerCase().startsWith('goal '))) {
+    const objective = arg.slice(5).trim();
+    return objective
+      ? { kind: 'runtime_native_goal', runtimeId: 'selected', objective }
+      : { kind: 'unknown', command: '/runtime goal' };
   }
-  if ((command === 'codex' || command === 'claude') && arg.toLowerCase().startsWith('goal ')) {
-    return { kind: 'runtime_native_goal', runtimeId: command, objective: arg.slice(5).trim() };
+  if ((command === 'codex' || command === 'claude') && (arg.toLowerCase() === 'goal' || arg.toLowerCase().startsWith('goal '))) {
+    const objective = arg.slice(5).trim();
+    return objective
+      ? { kind: 'runtime_native_goal', runtimeId: command, objective }
+      : { kind: 'unknown', command: `/${command} goal` };
   }
 
   return { kind: 'unknown', command: `/${command}` };

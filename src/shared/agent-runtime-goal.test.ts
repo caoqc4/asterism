@@ -43,6 +43,17 @@ describe('agent-runtime-goal', () => {
     });
   });
 
+  it('requires a concrete objective for runtime-native goal requests', () => {
+    expect(parseAgentRuntimeSlashCommand('/codex goal ')).toEqual({
+      kind: 'unknown',
+      command: '/codex goal',
+    });
+    expect(parseAgentRuntimeSlashCommand('/runtime goal ')).toEqual({
+      kind: 'unknown',
+      command: '/runtime goal',
+    });
+  });
+
   it('does not guess unknown slash commands', () => {
     expect(parseAgentRuntimeSlashCommand('普通任务消息')).toEqual({ kind: 'none' });
     expect(parseAgentRuntimeSlashCommand('/unknown do work')).toEqual({

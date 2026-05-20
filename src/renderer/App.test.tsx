@@ -2241,6 +2241,24 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/显式 runtime-native goal 请求/)).toBeTruthy();
   });
 
+  it('does not create native goal audit evidence without an objective', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/codex goal ');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(harness.api.recordRuntimeNativeGoalRequest).not.toHaveBeenCalled();
+    expect(harness.api.recordTaskTimelineEvent).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: 'panel.runtime_native_goal_requested',
+    }));
+    expect(await screen.findByText(/暂不支持命令 \/codex goal/)).toBeTruthy();
+  });
+
   it('can route a task-bound right-panel message through Claude Code plan mode', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
