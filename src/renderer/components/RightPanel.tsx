@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
+import type { CompletionCriteriaRecord } from '@shared/types/completion-criteria';
 import {
   buildDefaultAgentCliRuntimeCapabilities,
   type AgentCliRuntimeId,
@@ -52,6 +53,7 @@ import {
   deriveTaskGoalLifecycleState,
   evaluateRuntimeNativeGoalForwarding,
   parseAgentRuntimeSlashCommand,
+  parseProductGoalDraft,
   type AgentRuntimeAdapterCapabilities,
 } from '@shared/agent-runtime-goal';
 import {
@@ -1926,7 +1928,8 @@ export function RightPanel({
     }
 
     if (command.kind === 'product_goal_set') {
-      if (!command.objective) {
+      const goalDraft = parseProductGoalDraft(command.objective);
+      if (!goalDraft.objective) {
         return 'Task Goal 不能为空。可以输入 `/goal <可验收的目标>`。';
       }
       if (!window.api?.updateTask) {
@@ -1934,25 +1937,58 @@ export function RightPanel({
       }
       const updated = await window.api.updateTask({
         id: activeTaskId,
-        nextStep: command.objective,
+        nextStep: goalDraft.objective,
       });
+      const createdCriteria: CompletionCriteriaRecord[] = [];
+      if (window.api.createCompletionCriteria) {
+        const existingOpenCriteria = new Set((activeTaskDetail?.completionCriteria ?? [])
+          .filter((criteria) => criteria.status === 'open')
+          .map((criteria) => criteria.text.trim().toLowerCase()));
+        for (const condition of goalDraft.completionConditions) {
+          if (existingOpenCriteria.has(condition.toLowerCase())) continue;
+          const created = await window.api.createCompletionCriteria({
+            taskId: activeTaskId,
+            text: condition,
+            verificationResponsibility: 'shared',
+            verificationResponsibilityLabel: 'Taskplane verifier',
+          }).catch(() => null);
+          if (created) {
+            existingOpenCriteria.add(created.text.trim().toLowerCase());
+            createdCriteria.push(created);
+          }
+        }
+      }
       await recordPanelTimelineEvent(activeTaskId, 'panel.task_goal_updated', {
-        objective: command.objective,
+        objective: goalDraft.objective,
+        ...(goalDraft.completionConditions.length ? { completionConditions: goalDraft.completionConditions } : {}),
         previousObjective: currentGoal,
         source: '/goal',
       });
       appendLocalTaskGoalEvent('panel.task_goal_updated', {
-        objective: command.objective,
+        objective: goalDraft.objective,
+        ...(goalDraft.completionConditions.length ? { completionConditions: goalDraft.completionConditions } : {}),
         previousObjective: currentGoal,
         source: '/goal',
       });
       setActiveTaskDetail((prev) => prev && prev.id === activeTaskId
-        ? { ...prev, nextStep: updated.nextStep ?? command.objective }
+        ? {
+          ...prev,
+          nextStep: updated.nextStep ?? goalDraft.objective,
+          completionCriteria: createdCriteria.length
+            ? [...prev.completionCriteria, ...createdCriteria]
+            : prev.completionCriteria,
+        }
         : prev);
       return [
         '已设置 Taskplane Task Goal。',
         '',
-        `目标：${command.objective}`,
+        `目标：${goalDraft.objective}`,
+        ...(goalDraft.completionConditions.length
+          ? [
+            '',
+            `验收条件：${goalDraft.completionConditions.join('；')}`,
+          ]
+          : []),
         '',
         '这次不会把 `/goal` 透传给 Codex CLI 或 Claude Code。下一次任务 Agent run 会把这个目标写入 Run Goal Contract，再由 Taskplane 做验收和任务记忆提案。',
       ].join('\n');

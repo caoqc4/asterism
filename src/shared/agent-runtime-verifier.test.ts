@@ -72,6 +72,7 @@ function buildContract(): RunGoalContract {
     taskTitle: 'Runtime closure',
     taskGoal: {
       objective: 'Finish runtime goal closure.',
+      completionConditions: [],
       previousObjective: null,
       source: '/goal',
       status: 'active',

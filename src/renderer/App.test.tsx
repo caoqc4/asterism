@@ -9,6 +9,7 @@ import type { BlockerRecord } from '@shared/types/blocker';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { AppEvent } from '@shared/types/events';
 import type { ElectronApi } from '@shared/types/ipc';
+import type { CompletionCriteriaRecord } from '@shared/types/completion-criteria';
 import type { AppliedProcessTemplateRecord, ProcessTemplateRecord } from '@shared/types/process-template';
 import type { RunDetailRecord, RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
@@ -190,7 +191,7 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         text: '确认最终材料',
         verificationResponsibility: 'unknown',
         verificationResponsibilityLabel: null,
-        status: 'open',
+        status: 'open' as const,
         createdAt: now,
         updatedAt: now,
         satisfiedAt: null,
@@ -704,7 +705,26 @@ function createMockApi() {
     createBlocker: vi.fn(),
     updateBlocker: vi.fn(),
     resolveBlocker: vi.fn(),
-    createCompletionCriteria: vi.fn(),
+    createCompletionCriteria: vi.fn().mockImplementation(async (input) => {
+      const created: CompletionCriteriaRecord = {
+        id: `criteria_${Object.values(details).reduce((count, detail) => count + detail.completionCriteria.length, 0) + 1}`,
+        taskId: input.taskId,
+        text: input.text,
+        verificationResponsibility: input.verificationResponsibility ?? null,
+        verificationResponsibilityLabel: input.verificationResponsibilityLabel ?? null,
+        status: 'open',
+        createdAt: now,
+        updatedAt: now,
+        satisfiedAt: null,
+      };
+      if (details[input.taskId]) {
+        details[input.taskId] = {
+          ...details[input.taskId],
+          completionCriteria: [...details[input.taskId].completionCriteria, created],
+        };
+      }
+      return created;
+    }),
     updateCompletionCriteria: vi.fn(),
     satisfyCompletionCriteria: vi.fn(),
     reopenCompletionCriteria: vi.fn(),
@@ -2196,6 +2216,56 @@ describe('App redesign v1', () => {
       },
     });
     expect(await screen.findByText(/已清除 Taskplane Task Goal/)).toBeTruthy();
+  });
+
+  it('creates completion criteria from product-owned /goal drafts', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText(/关于「董事会材料修订」/), {
+      target: {
+        value: [
+          '/goal 完成目标闭环',
+          '验收:',
+          '- Run Goal Contract 包含目标',
+          '- 任务记忆提案出现',
+        ].join('\n'),
+      },
+    });
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.updateTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        nextStep: '完成目标闭环',
+      });
+    });
+    expect(harness.api.createCompletionCriteria).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      text: 'Run Goal Contract 包含目标',
+      verificationResponsibility: 'shared',
+      verificationResponsibilityLabel: 'Taskplane verifier',
+    });
+    expect(harness.api.createCompletionCriteria).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      text: '任务记忆提案出现',
+      verificationResponsibility: 'shared',
+      verificationResponsibilityLabel: 'Taskplane verifier',
+    });
+    expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_risk',
+      type: 'panel.task_goal_updated',
+      payload: expect.objectContaining({
+        objective: '完成目标闭环',
+        completionConditions: ['Run Goal Contract 包含目标', '任务记忆提案出现'],
+        source: '/goal',
+      }),
+    });
+    expect(await screen.findByText(/验收条件：Run Goal Contract 包含目标；任务记忆提案出现/)).toBeTruthy();
   });
 
   it('recognizes explicit native goal requests without forwarding them to the CLI yet', async () => {

@@ -397,6 +397,7 @@ First pass implemented on 2026-05-19:
 - Agent CLI runs write the shared contract into the existing `Agent CLI 目标契约` run step.
 - RightPanel parses product-owned `/goal` commands before chat or Agent CLI execution.
 - `/goal <text>` updates the task `nextStep` as the first durable Task Goal projection.
+- `/goal` now accepts optional lightweight completion conditions with headings such as `验收:`, `完成条件:`, `acceptance:`, or bullet lines under those headings. Taskplane writes those conditions as completion criteria when possible, and also records them in the Task Goal timeline payload so the next Run Goal Contract can consume them before a detail refresh.
 - `/goal clear` clears that durable Task Goal projection when a goal exists, records the previous objective, and keeps the lifecycle visible in task dynamics.
 - `/goal pause` and `/goal resume` now persist Task Goal lifecycle control events. A paused Task Goal remains visible on the task, but is not projected as the next Run Goal Contract objective until resumed.
 - `RunGoalContract` now carries the derived Task Goal lifecycle state, so verifier/subagent code can distinguish an active durable Task Goal from a paused goal plus one-off user request.

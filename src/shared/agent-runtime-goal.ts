@@ -67,10 +67,16 @@ export type TaskGoalLifecycleStatus = 'unset' | 'active' | 'paused' | 'cleared';
 
 export type TaskGoalLifecycleState = {
   objective: string | null;
+  completionConditions: string[];
   previousObjective: string | null;
   source: string | null;
   status: TaskGoalLifecycleStatus;
   updatedAt: string | null;
+};
+
+export type ProductGoalDraft = {
+  objective: string;
+  completionConditions: string[];
 };
 
 export function parseAgentRuntimeSlashCommand(input: string): AgentRuntimeSlashCommand {
@@ -143,6 +149,35 @@ export function evaluateRuntimeNativeGoalForwarding(
   };
 }
 
+export function parseProductGoalDraft(input: string): ProductGoalDraft {
+  const lines = input.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const objectiveLines: string[] = [];
+  const completionConditions: string[] = [];
+  let readingConditions = false;
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^(?:验收|验收条件|完成条件|acceptance|acceptance criteria|done when)\s*[:：]\s*(.*)$/i);
+    if (headingMatch) {
+      readingConditions = true;
+      completionConditions.push(...splitGoalCompletionConditions(headingMatch[1] ?? ''));
+      continue;
+    }
+
+    const bulletMatch = line.match(/^[-*]\s+(.+)$/);
+    if (readingConditions && bulletMatch) {
+      completionConditions.push(...splitGoalCompletionConditions(bulletMatch[1] ?? ''));
+      continue;
+    }
+
+    objectiveLines.push(line);
+  }
+
+  return {
+    objective: objectiveLines.join('\n').trim(),
+    completionConditions: uniqueCleanStrings(completionConditions),
+  };
+}
+
 export function deriveTaskGoalLifecycleState(params: {
   fallbackGoal?: string | null;
   nextStep?: string | null;
@@ -161,6 +196,7 @@ export function deriveTaskGoalLifecycleState(params: {
   if (!latest) {
     return {
       objective: baseGoal,
+      completionConditions: [],
       previousObjective: null,
       source: null,
       status: baseGoal ? 'active' : 'unset',
@@ -170,12 +206,14 @@ export function deriveTaskGoalLifecycleState(params: {
 
   const payload = parseGoalLifecyclePayload(latest.payload);
   const objective = cleanGoal(payload.objective) ?? baseGoal;
+  const completionConditions = cleanGoalList(payload.completionConditions);
   const previousObjective = cleanGoal(payload.previousObjective);
   const source = cleanGoal(payload.source);
 
   if (latest.type === 'panel.task_goal_updated' && payload.cleared === true) {
     return {
       objective: null,
+      completionConditions,
       previousObjective: previousObjective ?? baseGoal,
       source,
       status: 'cleared',
@@ -185,6 +223,7 @@ export function deriveTaskGoalLifecycleState(params: {
   if (latest.type === 'panel.task_goal_paused') {
     return {
       objective: objective ?? previousObjective,
+      completionConditions,
       previousObjective,
       source,
       status: 'paused',
@@ -194,6 +233,7 @@ export function deriveTaskGoalLifecycleState(params: {
   if (latest.type === 'panel.task_goal_resumed') {
     return {
       objective,
+      completionConditions,
       previousObjective,
       source,
       status: objective ? 'active' : 'unset',
@@ -203,6 +243,7 @@ export function deriveTaskGoalLifecycleState(params: {
 
   return {
     objective,
+    completionConditions,
     previousObjective,
     source,
     status: objective ? 'active' : 'unset',
@@ -230,6 +271,10 @@ export function buildRunGoalContract(params: {
     timeline: params.task.timeline,
   });
   const activeGoal = taskGoal.status === 'active' ? taskGoal.objective : null;
+  const runCompletionConditions = uniqueCleanStrings([
+    ...completionConditions,
+    ...(taskGoal.status === 'active' ? taskGoal.completionConditions : []),
+  ]);
   return {
     id: params.runId,
     taskId: params.task.id,
@@ -241,8 +286,8 @@ export function buildRunGoalContract(params: {
     sandboxMode: params.sandboxMode,
     userRequest: params.prompt,
     objective: activeGoal || params.prompt,
-    completionConditions: completionConditions.length
-      ? completionConditions
+    completionConditions: runCompletionConditions.length
+      ? runCompletionConditions
       : ['本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'],
     validationEvidence: [
       'Agent terminal step exits successfully or records a failure reason.',
@@ -280,6 +325,31 @@ function parseGoalLifecyclePayload(payload: string | null): Record<string, unkno
 
 function cleanGoal(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function cleanGoalList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return uniqueCleanStrings(value.filter((item): item is string => typeof item === 'string'));
+}
+
+function splitGoalCompletionConditions(value: string): string[] {
+  return value
+    .split(/\s*(?:[;；]|\|)\s*/)
+    .map((item) => item.replace(/^[-*]\s+/, '').trim())
+    .filter(Boolean);
+}
+
+function uniqueCleanStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const clean = value.trim();
+    const key = clean.toLowerCase();
+    if (!clean || seen.has(key)) continue;
+    seen.add(key);
+    result.push(clean);
+  }
+  return result;
 }
 
 export function formatRunGoalContractForStep(contract: RunGoalContract): string {

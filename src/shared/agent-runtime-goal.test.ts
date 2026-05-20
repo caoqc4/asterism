@@ -7,6 +7,7 @@ import {
   formatRunGoalContractForPrompt,
   formatRunGoalContractForStep,
   parseAgentRuntimeSlashCommand,
+  parseProductGoalDraft,
 } from './agent-runtime-goal.js';
 import { buildDefaultAgentCliRuntimeCapabilities } from './agent-cli-runtime-status.js';
 import type { RuntimeContextManifest } from './runtime-context.js';
@@ -23,6 +24,24 @@ describe('agent-runtime-goal', () => {
     expect(parseAgentRuntimeSlashCommand('/goal pause')).toEqual({ kind: 'product_goal_pause' });
     expect(parseAgentRuntimeSlashCommand('/goal resume')).toEqual({ kind: 'product_goal_resume' });
     expect(parseAgentRuntimeSlashCommand('/goal clear')).toEqual({ kind: 'product_goal_clear' });
+  });
+
+  it('parses product goal drafts with optional completion conditions', () => {
+    expect(parseProductGoalDraft([
+      '完成 Agent CLI 目标闭环',
+      '验收:',
+      '- Run Goal Contract 写入目标',
+      '- verifier 给出下一步',
+      '完成条件: 任务记忆提案出现；测试通过',
+    ].join('\n'))).toEqual({
+      objective: '完成 Agent CLI 目标闭环',
+      completionConditions: [
+        'Run Goal Contract 写入目标',
+        'verifier 给出下一步',
+        '任务记忆提案出现',
+        '测试通过',
+      ],
+    });
   });
 
   it('requires explicit namespace for runtime-native goal forwarding', () => {
@@ -163,5 +182,45 @@ describe('agent-runtime-goal', () => {
     expect(contract.objective).toBe('Run a one-off inspection.');
     expect(formatRunGoalContractForStep(contract)).toContain('taskGoal=paused');
     expect(formatRunGoalContractForPrompt(contract)).toContain('Task Goal: status=paused');
+  });
+
+  it('uses Task Goal timeline completion conditions when task criteria are not persisted yet', () => {
+    const contract = buildRunGoalContract({
+      contextGateSummary: 'gate ready',
+      contextManifest: { summary: 'manifest ready' } as RuntimeContextManifest,
+      executionKind: 'cli',
+      prompt: 'Continue the durable goal.',
+      runId: 'run_1',
+      runtimeId: 'codex',
+      runtimeLabel: 'Codex CLI',
+      sandboxMode: 'read-only',
+      task: {
+        completionCriteria: [],
+        id: 'task_1',
+        nextStep: 'Durable goal with criteria.',
+        resumeCard: null,
+        timeline: [{
+          id: 'event_goal',
+          taskId: 'task_1',
+          type: 'panel.task_goal_updated',
+          payload: JSON.stringify({
+            objective: 'Durable goal with criteria.',
+            completionConditions: ['Verifier records evidence', 'Task memory proposal is surfaced'],
+            source: '/goal',
+          }),
+          createdAt: '2026-05-20T01:00:00.000Z',
+        }],
+        title: 'Task 1',
+      } as unknown as TaskDetail,
+    });
+
+    expect(contract.taskGoal.completionConditions).toEqual([
+      'Verifier records evidence',
+      'Task memory proposal is surfaced',
+    ]);
+    expect(contract.completionConditions).toEqual([
+      'Verifier records evidence',
+      'Task memory proposal is surfaced',
+    ]);
   });
 });
