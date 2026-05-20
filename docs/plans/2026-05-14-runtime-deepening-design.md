@@ -607,3 +607,68 @@ Reason:
 - It creates shared vocabulary for the rest of runtime deepening.
 
 After Package A, Package B should follow so context assembly and panel behavior stop drifting.
+
+## Status Update - 2026-05-20
+
+The first runtime-deepening pass has moved from "build the missing packages" to
+"preserve the product harness while adding future execution surfaces".
+
+Current baseline:
+
+- Taskplane owns the durable task goal loop. Product `/goal` writes task
+  `nextStep`, completion criteria, and `panel.task_goal_*` timeline evidence
+  through task-mutation and pre-step boundaries. It does not depend on whether
+  Agent CLI or future Agent API is selected as the execution runtime.
+- Agent CLI is the first executable runtime. It remains task-bound, read-only
+  for Codex, plan-mode for Claude, and produces Run/Run Step evidence plus
+  task-memory write proposals instead of silently editing `Task.md` or Task
+  Records.
+- Agent API remains a future peer execution runtime, not a lightweight helper.
+  The shared runtime harness around it is already useful today: goal state,
+  decomposition, context assembly, gates, verification, memory routing,
+  completion, handoff, and context clearing are Taskplane-owned product
+  boundaries and should be reused by both execution runtimes.
+- The lightweight model-service assistant is a separate product surface for
+  global help, summaries, and read-only Q&A. It should not be described as
+  Agent API execution.
+- Project decomposition is split into draft and confirmation boundaries.
+  Drafting is provider-visible planning; confirmation creates child tasks behind
+  child-draft, task-mutation, pre-step, and post-step checks. Confirming child
+  tasks is not the same as starting execution.
+- Verification is a harness boundary. The retained verifier consumes terminal
+  evidence and the Run Goal Contract through post-step verification. A future
+  API verifier subagent may augment this in shadow/assist mode, but it should
+  not become a second execution runtime or directly mutate task state.
+- Completion handoff, phase closeout handoff, same-task context refresh,
+  leaving task context, global conversation reset, and cross-task switching now
+  have separate registered entrypoints. This keeps refresh/switch/complete
+  semantics distinct instead of folding every context transition into one broad
+  "clear context" action.
+- Task dynamics and audit projection are shared through `RuntimeEventRecord` and
+  replay grouping. Retained task views consume it; future Run-side audit
+  surfaces should reuse it only when those surfaces are explicitly reintroduced.
+- Native Codex/Claude goal passthrough is intentionally low priority for the
+  first version. Taskplane should borrow the product shape of durable goals,
+  checkpoints, verification, and memory from native goal systems, while keeping
+  actual runtime-native goal forwarding audit-only until a disposable probe
+  proves command shape, progress output, cancellation, permission boundaries,
+  and memory/verifier integration.
+
+The practical next step is no longer Package A or Package B. Those foundations
+are implemented and covered by regression registries. The next work should be:
+
+1. Keep `RuntimeEntrypointCoverage`, `MemorySurfaceWriteCoverage`, and
+   `RuntimeLifecycleCoverage` as the regression source of truth for any new
+   creation, execution, durable-write, context-transition, or handoff surface.
+2. Prefer packaged smoke and acceptance coverage for high-value product loops:
+   task-bound Agent CLI run/cancel/memory proposal, decomposition draft/confirm,
+   context refresh/switch preservation, completion handoff, and source-ingestion
+   confirmation.
+3. When Agent API execution resumes, route it through the same harness contract
+   as Agent CLI: product goal, context manifest, runtime gates, Run Goal
+   Contract, verifier evidence, task-memory proposals, task dynamics, and
+   handoff/clearance checks.
+4. Keep native CLI goal compatibility as an optional, explicitly requested
+   audit/probe track until the product-owned goal loop is stable enough that
+   forwarding cannot bypass Taskplane memory, verifier, cancellation, or
+   permission boundaries.

@@ -2026,8 +2026,8 @@ export function RightPanel({
         shouldUseAgentCliRuntime
           ? `执行边界：${sandboxBoundaryLabel}`
           : runtimeMode === 'api'
-            ? '执行边界：Agent API Runtime 仍在开发中；当前仅使用模型服务辅助，不启动任务执行 runtime。'
-            : '执行边界：当前仅使用模型服务辅助，不启动 Agent CLI。',
+            ? '执行边界：Agent API Runtime 仍在开发中，当前不启动任务执行 runtime；模型服务只处理当前问答。'
+            : '执行边界：当前仅使用模型服务问答，不启动 Agent CLI。',
       ].join('\n');
     }
 
@@ -2350,7 +2350,7 @@ export function RightPanel({
         ? `任务 Agent · ${AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode]}`
         : '任务 Agent · CLI 不可用，转模型服务辅助'
       : isAgentApiRuntimeMode
-        ? 'Agent API Runtime · 开发中，转模型服务辅助'
+        ? 'Agent API Runtime · 开发中，未启动执行'
         : '模型服务辅助';
   const includedContextCount = runtimeContextManifest.items.filter((item) => item.contentIncluded).length;
   const sourceContextCount = runtimeContextManifest.items.filter((item) => item.kind === 'source_context').length;

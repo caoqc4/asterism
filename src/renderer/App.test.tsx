@@ -1153,7 +1153,7 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText(/模型服务配置/).length).toBeGreaterThan(0);
     expect(screen.getByText('Agent API Runtime')).toBeTruthy();
     expect(screen.getByText('当前配置')).toBeTruthy();
-    expect(screen.getByText(/当前配置会在任务面板转模型服务辅助/)).toBeTruthy();
+    expect(screen.getByText(/当前配置不会启动任务执行 runtime/)).toBeTruthy();
     expect(screen.getAllByText(/同级执行层/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/用于全局助手/).length).toBeGreaterThan(0);
     expect(screen.getByText(/第一版任务执行使用 Agent CLI/)).toBeTruthy();
@@ -2104,7 +2104,7 @@ describe('App redesign v1', () => {
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
   });
 
-  it('labels legacy API runtime mode as Agent API in development and falls back to model service assistance', async () => {
+  it('labels Agent API runtime mode as a peer execution runtime in development without starting execution', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
     render(<App />);
@@ -2112,7 +2112,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Agent API Runtime · 开发中，转模型服务辅助')).toBeTruthy();
+    expect(await screen.findByText('Agent API Runtime · 开发中，未启动执行')).toBeTruthy();
     expect(screen.getByText('Agent API 开发中')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/goal status');
     await user.click(screen.getByRole('button', { name: '发送' }));
@@ -2124,7 +2124,7 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/执行 runtime：Agent API Runtime（开发中）/)).toBeTruthy();
-    expect(screen.getByText(/当前仅使用模型服务辅助/)).toBeTruthy();
+    expect(screen.getByText(/Agent API Runtime 仍在开发中，当前不启动任务执行 runtime/)).toBeTruthy();
   });
 
   it('keeps /goal product-owned in task chat and persists it as the Taskplane task goal', async () => {

@@ -511,7 +511,7 @@ function AgentCliRuntimeSection({
           <span className="agent-cli-runtime-row-version">{runtimeMode === 'api' ? '不可执行' : '未开放'}</span>
           <span className="agent-cli-runtime-row-detail">
             {runtimeMode === 'api'
-              ? '当前配置会在任务面板转模型服务辅助'
+              ? '当前配置不会启动任务执行 runtime'
               : '任务执行 Runtime · 待完善'}
           </span>
           <div className="agent-cli-runtime-row-actions">
