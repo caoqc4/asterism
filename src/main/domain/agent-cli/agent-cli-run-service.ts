@@ -453,6 +453,9 @@ export class AgentCliRunService {
             '- Task Record may be useful: Agent CLI output should be reviewed and confirmed into task memory.',
             `- Verifier decision: ${verificationStep.verification.decision}`,
             `- Next action: ${verificationStep.verification.nextAction}`,
+            `- Completion conditions: ${verificationStep.verification.contract.completionConditions.length
+              ? verificationStep.verification.contract.completionConditions.join(' | ')
+              : 'none'}`,
             `- Runtime: ${params.runAdapter.runtimeLabel}`,
             `- Run: ${params.run.id}`,
           ].join('\n'),
@@ -724,6 +727,7 @@ function buildAgentCliTaskRecordSuggestion(params: {
     `- Runtime mode: ${params.runtimeLabel} / ${params.sandboxMode}.`,
     `- Run objective: ${params.verification.contract.objective}`,
     `- Completion conditions checked: ${params.verification.contract.completionConditionCount}`,
+    ...params.verification.contract.completionConditions.map((condition) => `  - ${condition}`),
     `- Verifier decision: ${params.verification.decision}.`,
     `- User confirmation required: ${params.verification.userConfirmationRequired ? 'yes' : 'no'}.`,
     `- Source run: ${params.runId}`,

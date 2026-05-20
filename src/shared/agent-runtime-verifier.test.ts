@@ -24,12 +24,15 @@ describe('agent-runtime-verifier', () => {
       canMarkTaskComplete: false,
       shouldProposeTaskMemory: true,
       contract: {
+        completionConditionCount: 1,
+        completionConditions: ['Output is reviewable.'],
         runId: 'run_1',
         objective: 'Finish runtime goal closure.',
       },
     });
     expect(formatAgentRuntimeVerifierResult(result)).toContain('Verdict: pass');
     expect(formatAgentRuntimeVerifierResult(result)).toContain('Decision: accept_for_review');
+    expect(formatAgentRuntimeVerifierResult(result)).toContain('Completion conditions: Output is reviewable.');
     expect(formatAgentRuntimeVerifierResult(result)).toContain('Can mark task complete: no');
   });
 

@@ -109,11 +109,16 @@ describe('AgentCliRunService', () => {
       input: expect.stringContaining('- Completion conditions checked: 1'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
+      input: expect.stringContaining('  - 本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'),
+      output: expect.stringContaining('Completion conditions: 本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'final',
       status: 'completed',
       title: '验收子 Agent 检查',
       input: expect.stringContaining('taskplane.verifier.lightweight'),
-      output: expect.stringContaining('Task Goal status: active'),
+      output: expect.stringContaining('Completion conditions: 本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: '验收子 Agent 检查',

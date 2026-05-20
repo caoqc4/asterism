@@ -22,6 +22,7 @@ export type AgentRuntimeVerifierResult = {
     taskGoalStatus: string;
     objective: string;
     completionConditionCount: number;
+    completionConditions: string[];
   };
 };
 
@@ -77,6 +78,7 @@ export function verifyRunGoalContractEvidence(params: {
     shouldProposeTaskMemory: decision === 'accept_for_review',
     contract: {
       completionConditionCount: params.contract.completionConditions.length,
+      completionConditions: params.contract.completionConditions,
       objective: params.contract.objective,
       runId: params.contract.id,
       runtimeLabel: params.contract.runtimeLabel,
@@ -98,6 +100,9 @@ export function formatAgentRuntimeVerifierResult(result: AgentRuntimeVerifierRes
     `Run: ${result.contract.runId}`,
     result.missingEvidence.length ? `Missing evidence: ${result.missingEvidence.join(' ')}` : null,
     `Task completion criteria available: ${result.contract.completionConditionCount}`,
+    result.contract.completionConditions.length
+      ? `Completion conditions: ${result.contract.completionConditions.join(' | ')}`
+      : null,
     `User confirmation required: ${result.userConfirmationRequired ? 'yes' : 'no'}`,
     `Can mark task complete: ${result.canMarkTaskComplete ? 'yes' : 'no'}`,
     `Should propose task memory: ${result.shouldProposeTaskMemory ? 'yes' : 'no'}`,
