@@ -10,6 +10,9 @@ import { ModelPage } from './pages/ModelPage';
 import { McpPage } from './pages/McpPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { RightPanel } from './components/RightPanel';
+import goalPilotLogo from './assets/brand/goalpilot-logo-ui.png';
+
+const PRODUCT_BRAND_NAME = 'GoalPilot';
 
 const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Brief',
@@ -249,8 +252,8 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
         <div className="tl-dot" />
       </div>
       <div className="sidebar-brand">
-        <div className="brand-glyph" />
-        <span className="brand-name">Taskplane</span>
+        <img className="brand-logo" src={goalPilotLogo} alt="" aria-hidden="true" />
+        <span className="brand-name">{PRODUCT_BRAND_NAME}</span>
       </div>
 
       <nav className="nav">
@@ -270,9 +273,9 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="avatar">T</div>
+        <div className="avatar">G</div>
         <div className="footer-meta">
-          <strong>Taskplane</strong>
+          <strong>{PRODUCT_BRAND_NAME}</strong>
           任务级 Agent · 通用任务流
         </div>
       </div>

@@ -129,25 +129,17 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
   -webkit-app-region: no-drag;
 }
-.brand-glyph {
-  width: 22px; height: 22px;
+.brand-logo {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
   border-radius: 6px;
-  background: var(--ink);
-  position: relative;
   flex-shrink: 0;
-}
-.brand-glyph::after {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border-radius: 2px;
-  background: var(--bg);
-  clip-path: polygon(0 0, 100% 0, 100% 30%, 30% 30%, 30% 100%, 0 100%);
 }
 .brand-name {
   font-weight: 600;
   font-size: 13.5px;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
 }
 
 .nav {

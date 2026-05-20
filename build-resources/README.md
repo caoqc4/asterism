@@ -2,9 +2,15 @@
 
 This directory holds packaging-time resources for Electron builds.
 
-Planned contents:
+Current contents:
 
-- app icons (`.icns`, `.ico`, `.png`)
-- installer backgrounds or assets if needed later
+- `icon.png`: macOS packaging icon generated from the GoalPilot brand mark.
 
-The current packaging setup intentionally starts without custom signed production assets so the local macOS build pipeline can be validated first.
+Source brand assets live under `src/renderer/assets/brand/`:
+
+- `goalpilot-logo.png`: app mark used in the UI and packaging icon.
+- `goalpilot-logo-ui.png`: small app mark generated for renderer UI imports.
+- `goalpilot-wordmark.png`: full GoalPilot wordmark for future branded surfaces.
+
+Keep package identity fields such as `appId` and release-data paths separate
+from visual branding until a migration plan is ready.
