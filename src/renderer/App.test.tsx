@@ -4412,6 +4412,19 @@ describe('App redesign v1', () => {
         path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-completion-handoff\.md$/),
         content: expect.stringContaining('## To'),
       }));
+      expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_handoff_second',
+        path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-received-handoff\.md$/),
+        content: expect.stringContaining('## From'),
+      }));
+      expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_handoff_second',
+        type: 'panel.completion_handoff',
+        payload: expect.objectContaining({
+          previousTaskId: 'task_handoff_first',
+          recordPath: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-received-handoff\.md$/),
+        }),
+      }));
       expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
         taskId: 'task_handoff_second',
         messages: expect.arrayContaining([

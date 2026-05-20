@@ -1981,12 +1981,28 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       kind: 'file',
       content,
     }).catch(() => undefined);
+    const receivedHandoffRecord = await window.api?.createTaskFile?.({
+      taskId: nextTask.id,
+      name: `${today}-received-handoff.md`,
+      path: `Task Records/${today}-received-handoff.md`,
+      kind: 'file',
+      content,
+    }).catch(() => undefined);
     await recordPanelTimelineEvent(completedTask.id, 'panel.completion_handoff', {
       nextTaskId: nextTask.id,
       nextTaskTitle: nextTask.title,
       parentTaskId: parentTask?.id ?? null,
       parentTaskTitle: parentTask?.title ?? null,
       recordPath: handoffRecord?.path ?? `Task Records/${today}-completion-handoff.md`,
+      receivedRecordPath: receivedHandoffRecord?.path ?? `Task Records/${today}-received-handoff.md`,
+      source: 'tasks_page',
+    });
+    await recordPanelTimelineEvent(nextTask.id, 'panel.completion_handoff', {
+      previousTaskId: completedTask.id,
+      previousTaskTitle: completedTask.title,
+      parentTaskId: parentTask?.id ?? null,
+      parentTaskTitle: parentTask?.title ?? null,
+      recordPath: receivedHandoffRecord?.path ?? `Task Records/${today}-received-handoff.md`,
       source: 'tasks_page',
     });
     setPostCompletionHandoff(null);
