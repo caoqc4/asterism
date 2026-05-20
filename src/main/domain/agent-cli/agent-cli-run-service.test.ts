@@ -382,6 +382,34 @@ describe('AgentCliRunService', () => {
     expect(executor).not.toHaveBeenCalled();
   });
 
+  it('blocks Agent CLI execution when required runtime context assembly is missing', async () => {
+    const taskService = buildTaskService();
+    vi.mocked(taskService.getDetail).mockResolvedValue({
+      ...buildTask(),
+      taskFiles: [],
+    });
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn();
+    const service = new AgentCliRunService(
+      taskService,
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Start Codex without recovery context.',
+      taskId: 'task_1',
+    })).rejects.toThrow('Agent CLI run context assembly gate blocked: Runtime context assembly missing required inputs: task_md.');
+
+    expect(runRepository.create).not.toHaveBeenCalled();
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(executor).not.toHaveBeenCalled();
+  });
+
   it('uses the resolved executable path when the runtime status provides one', async () => {
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,
