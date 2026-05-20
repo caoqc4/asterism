@@ -102,6 +102,23 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('keeps verifier and verifier-subagent work in a non-executing harness boundary', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('verification_harness')).toEqual([
+      'simplicity_check',
+      'post_step',
+    ]);
+
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.acceptanceVerification');
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('verification_harness');
+    expect(entry?.requiredGates).toEqual(['simplicity_check', 'post_step']);
+    expect(entry?.requiredGates).not.toContain('runtime_action');
+    expect(entry?.requiredGates).not.toContain('runtime_context_assembly');
+    expect(entry?.requiredGates).not.toContain('subtask_start');
+    expect(entry?.notes).toContain('future API verifier subagent may augment this entrypoint');
+    expect(entry?.notes).toContain('same persisted Run Goal Contract');
+  });
+
   it('keeps product configuration, preference memory, and method-library writes out of task mutation gates', () => {
     const boundaries = [
       ['product_configuration', 'product_config_boundary'],
@@ -241,6 +258,7 @@ describe('runtime entrypoint coverage', () => {
       'processTemplate.libraryWrites',
       'project.decompositionConfirm',
       'project.decompositionDraft',
+      'run.acceptanceVerification',
       'run.cancelAgentCli',
       'run.continuePaused',
       'run.recordRuntimeNativeGoalRequest',

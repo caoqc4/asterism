@@ -301,6 +301,8 @@ Safety boundaries:
 
 This keeps the verifier subagent as an acceptance helper rather than a second execution runtime or an automatic completion authority.
 
+Implementation boundary: run acceptance verification is now modeled as a non-executing `verification_harness` entrypoint. It consumes terminal run evidence and the Run Goal Contract through post-step verification. A future API verifier subagent can plug into that entrypoint in shadow or assist mode, but it must not start work, mutate task state, or bypass user-confirmed completion/memory writes.
+
 ### API Verifier Default-On Threshold
 
 Keep the API verifier subagent off by default until it satisfies all of these conditions:
@@ -430,6 +432,7 @@ First pass implemented on 2026-05-19:
 - Agent CLI accepted steps now persist the formatted RuntimeContextManifest, including `memory_retrieval` rows, so received completion handoff Task Records are visible both in run evidence and in the prompt sent to the selected CLI.
 - Code Agent model-producer runs now persist a retained RuntimeContextManifest step and pass that formatted manifest into the provider prompt. This keeps future Agent API execution aligned with Agent CLI on task memory retrieval, received handoff recovery, and product-owned context bridge evidence even though Agent API remains a later peer execution runtime.
 - Product-owned `/goal` is now registered as a durable Taskplane harness entrypoint. It writes task nextStep, completion criteria, and `panel.task_goal_*` timeline events through task mutation guards, and it remains independent of the selected execution runtime.
+- Run acceptance verification is now registered separately as a non-executing `verification_harness` entrypoint. This keeps the lightweight verifier and future API verifier subagent inside Taskplane's harness, not inside the Agent API execution layer.
 - Future Agent API execution should use the same entrypoint category as Agent CLI (`provider_visible_execution`) once it becomes executable. It must reuse runtime action, context assembly, task-memory coverage/guidance, pre-step, subtask-start, and post-step gates; Agent API cancellation/control and audit-only backend features should stay in separate control/audit entrypoint categories.
 
 Remaining next steps are hardening the Taskplane-owned goal loop and deciding when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier. Native CLI goal forwarding remains a later compatibility track, not a first-version product blocker.

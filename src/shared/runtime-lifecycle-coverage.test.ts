@@ -101,6 +101,14 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints');
   });
 
+  it('tracks verifier subagent as a harness boundary rather than an execution runtime', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('Run acceptance verification is registered as a non-executing verification_harness entrypoint');
+    expect(text).toContain('future API verifier subagents may only augment that boundary');
+    expect(text).toContain('rather than become a second execution runtime');
+  });
+
   it('tracks service-boundary hierarchy ownership guards', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 

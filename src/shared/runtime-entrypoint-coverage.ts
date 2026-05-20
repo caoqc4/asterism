@@ -4,6 +4,7 @@ export type RuntimeEntrypointKind =
   | 'provider_visible_assistance'
   | 'hidden_local_execution'
   | 'local_execution_control'
+  | 'verification_harness'
   | 'product_configuration'
   | 'preference_memory'
   | 'method_library'
@@ -102,6 +103,10 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
   local_execution_control: [
     'simplicity_check',
     'operator_confirmation',
+  ],
+  verification_harness: [
+    'simplicity_check',
+    'post_step',
   ],
   product_configuration: [
     'simplicity_check',
@@ -316,6 +321,21 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'operator_confirmation',
     ],
     notes: 'This creates system-output audit evidence only; runtime-native goal passthrough remains closed and no CLI command is executed.',
+  },
+  {
+    id: 'run.acceptanceVerification',
+    owner: 'AgentCliRunService / RunVerificationService',
+    kind: 'verification_harness',
+    description: 'Evaluate terminal run evidence against the Taskplane Run Goal Contract and persist verifier/run verification evidence without starting new work.',
+    requiredGates: [
+      'simplicity_check',
+      'post_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'post_step',
+    ],
+    notes: 'The current lightweight verifier is local and deterministic; a future API verifier subagent may augment this entrypoint in shadow/assist mode only, using the same persisted Run Goal Contract, terminal output, task memory guidance, and post-step evidence.',
   },
   {
     id: 'run.triggerOperatorStarted',
