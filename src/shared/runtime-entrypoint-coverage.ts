@@ -25,6 +25,7 @@ export type RuntimeEntrypointGate =
   | 'task_memory_coverage'
   | 'task_memory_guidance'
   | 'runtime_handoff'
+  | 'operator_confirmation'
   | 'pre_step'
   | 'post_step'
   | 'subtask_start'
@@ -99,8 +100,7 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
   ],
   local_execution_control: [
     'simplicity_check',
-    'runtime_action',
-    'pre_step',
+    'operator_confirmation',
   ],
   product_configuration: [
     'simplicity_check',
@@ -288,15 +288,13 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ipcChannels: ['run:cancelAgentCli'],
     requiredGates: [
       'simplicity_check',
-      'runtime_action',
-      'pre_step',
+      'operator_confirmation',
     ],
     coveredGates: [
       'simplicity_check',
-      'runtime_action',
-      'pre_step',
+      'operator_confirmation',
     ],
-    notes: 'Cancellation does not expose new model tools; it interrupts an already-gated local Agent CLI run and terminal evidence is recorded through the trigger path.',
+    notes: 'Cancellation does not start new work or expose model tools; it requires an explicit operator-confirmed run id, interrupts an already-gated local Agent CLI run, and terminal evidence is recorded through the trigger path.',
   },
   {
     id: 'run.triggerOperatorStarted',

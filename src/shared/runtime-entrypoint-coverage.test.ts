@@ -89,6 +89,19 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('keeps local execution control limited to explicit operator confirmation', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('local_execution_control')).toEqual([
+      'simplicity_check',
+      'operator_confirmation',
+    ]);
+    for (const entry of runtimeEntrypointsByKind('local_execution_control')) {
+      expect(entry.requiredGates).toContain('operator_confirmation');
+      expect(entry.requiredGates).not.toContain('runtime_action');
+      expect(entry.requiredGates).not.toContain('pre_step');
+      expect(entry.requiredGates).not.toContain('runtime_context_assembly');
+    }
+  });
+
   it('keeps product configuration, preference memory, and method-library writes out of task mutation gates', () => {
     const boundaries = [
       ['product_configuration', 'product_config_boundary'],
