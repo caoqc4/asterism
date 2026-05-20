@@ -303,13 +303,14 @@ This keeps the verifier subagent as an acceptance helper rather than a second ex
 
 Keep the API verifier subagent off by default until it satisfies all of these conditions:
 
-- **Shadow mode first**: run it beside the lightweight verifier without changing user-visible decisions for a representative set of Agent CLI and future Agent API runs.
-- **Structured validity**: invalid, partial, or schema-mismatched verifier outputs stay below a small, explicitly tracked threshold. Any invalid output must fall back to `taskplane.verifier.lightweight`.
-- **Decision compatibility**: when the API verifier disagrees with the lightweight verifier, Taskplane records the disagreement as evidence and chooses the more conservative next action.
+- **Shadow mode first**: run it beside the lightweight verifier without changing user-visible decisions for at least 30 representative runs before it can affect product behavior. The sample must include successful Agent CLI runs, failed/timeout/cancelled CLI runs, missing-evidence runs, runs with Task Goal completion conditions, runs with pending task-memory proposals, and future Agent API runs once that runtime becomes executable.
+- **Structured validity**: schema-invalid, partial, or unparsable verifier outputs must be 0 in the last 20 shadow runs and below 2% across the full tracked sample. Any invalid output must fall back to `taskplane.verifier.lightweight`.
+- **Decision compatibility**: when the API verifier disagrees with the lightweight verifier, Taskplane records the disagreement as evidence and chooses the more conservative next action. Unexplained disagreements must stay below 10% of the tracked sample, and every disagreement must be inspectable from persisted run evidence.
 - **No autonomous completion**: `canMarkTaskComplete` stays false unless a separate task-completion confirmation path is implemented and tested.
 - **Memory confirmation preserved**: `shouldProposeTaskMemory=true` may surface richer Task Record drafts, but user confirmation is still required before writing.
 - **Provider-off acceptance**: packaged and local default smokes still pass without any provider/API call.
-- **Operational budget**: timeout, retry, and cost limits are explicit and visible in run evidence.
+- **Operational budget**: timeout, retry, and cost limits are explicit and visible in run evidence. The first default-on candidate should use no automatic retries, a per-check timeout at or below 15 seconds, and a visible provider/model/cost estimate in the verification step.
+- **Rollout switch**: default-on must still be controlled by a runtime setting or feature flag for at least one release, so packaged/provider-off environments and enterprise/offline workflows can keep the lightweight verifier only.
 
 Only after those conditions are met should the API verifier become the default acceptance helper. Even then, the lightweight verifier remains the deterministic fallback.
 
@@ -462,7 +463,7 @@ Automatic continuation is not part of the first-version Agent CLI product loop. 
 
 - How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate. This is optional compatibility work, not the first-version goal-framework requirement.
 - Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.
-- Which measured shadow-mode results satisfy the API Verifier Default-On Threshold.
+- Whether future shadow-mode verifier samples satisfy the concrete API Verifier Default-On Threshold.
 
 ## Next Evaluation Checklist
 
