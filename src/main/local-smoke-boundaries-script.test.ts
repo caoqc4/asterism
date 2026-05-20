@@ -522,6 +522,10 @@ describe('local smoke script default boundaries', () => {
 
   it('keeps the runtime harness plan aligned with stabilized first-version goal coverage', () => {
     const plan = fs.readFileSync(path.join(process.cwd(), 'docs/plans/2026-05-19-agent-runtime-harness-and-goals.md'), 'utf8');
+    const runtimeDeepeningPlan = fs.readFileSync(
+      path.join(process.cwd(), 'docs/plans/2026-05-14-runtime-deepening-design.md'),
+      'utf8',
+    );
     const matrix = fs.readFileSync(path.join(process.cwd(), 'docs/plans/2026-05-17-acceptance-coverage-matrix.md'), 'utf8');
 
     expect(plan).toContain('The first-version Taskplane-owned goal loop is now stabilized for the Agent CLI path');
@@ -531,6 +535,8 @@ describe('local smoke script default boundaries', () => {
     expect(plan).toContain('pending-memory gate clearance in the panel message');
     expect(plan).toContain('Remaining work should stay in preservation or deferred tracks');
     expect(plan).not.toContain('Remaining next steps are hardening the Taskplane-owned goal loop');
+    expect(runtimeDeepeningPlan).toContain('The product-owned Agent CLI goal loop is now stable');
+    expect(runtimeDeepeningPlan).toContain('native forwarding should remain deferred');
     expect(matrix).toContain('Updated: 2026-05-20');
     expect(matrix).toContain('Packaged Codex live task run');
     expect(matrix).toContain('Manual only; passed locally on 2026-05-20; default skipped');

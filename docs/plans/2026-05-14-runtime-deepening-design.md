@@ -669,6 +669,7 @@ are implemented and covered by regression registries. The next work should be:
    Contract, verifier evidence, task-memory proposals, task dynamics, and
    handoff/clearance checks.
 4. Keep native CLI goal compatibility as an optional, explicitly requested
-   audit/probe track until the product-owned goal loop is stable enough that
-   forwarding cannot bypass Taskplane memory, verifier, cancellation, or
-   permission boundaries.
+   audit/probe track. The product-owned Agent CLI goal loop is now stable
+   enough for first-version use, so native forwarding should remain deferred
+   until adapter-specific probes prove it cannot bypass Taskplane memory,
+   verifier, cancellation, or permission boundaries.
