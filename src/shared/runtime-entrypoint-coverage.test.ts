@@ -121,6 +121,33 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('TasksPage evaluates the target child with subtask_start before writing handoff records');
   });
 
+  it('registers phase closeout as a handoff boundary without equating it to completion', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('phase_closeout_handoff')).toEqual([
+      'simplicity_check',
+      'runtime_action',
+      'runtime_handoff',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'task_completion',
+      'subtask_start',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ]);
+
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'rightPanel.phaseCloseoutHandoff');
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('phase_closeout_handoff');
+    expect(entry?.requiredGates).toContain('runtime_handoff');
+    expect(entry?.requiredGates).toContain('task_memory_guidance');
+    expect(entry?.requiredGates).toContain('task_completion');
+    expect(entry?.requiredGates).toContain('subtask_start');
+    expect(entry?.ipcChannels).toEqual(['taskFile:create', 'task:recordCompletionCheck', 'task:transition']);
+    expect(entry?.notes).toContain('Phase closeout is not task completion by itself');
+    expect(entry?.notes).toContain('subtask_start applies only when RuntimeHandoff chooses an existing next task');
+  });
+
   it('requires hidden local execution to keep memory and start gates without provider context assembly', () => {
     for (const entry of runtimeEntrypointsByKind('hidden_local_execution')) {
       expect(entry.requiredGates).toContain('simplicity_check');
@@ -301,6 +328,7 @@ describe('runtime entrypoint coverage', () => {
       'processTemplate.libraryWrites',
       'project.decompositionConfirm',
       'project.decompositionDraft',
+      'rightPanel.phaseCloseoutHandoff',
       'run.acceptanceVerification',
       'run.cancelAgentCli',
       'run.continuePaused',

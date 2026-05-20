@@ -397,7 +397,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeHandoff resume_run also blocks pending Decisions, active blockers, and active short-term reasoning before restoring checkpoint execution.',
       'Approved Decision checkpoint resume passes through pending TaskMemoryGuidanceState checks before checkpoint execution.',
       'Task-bound Decision actions preflight task memory annotation before changing Decision status, so decision effects do not bypass task memory writes.',
-      'Phase closeout writes Task Records and can hand off to existing child tasks.',
+      'RightPanel phase closeout is registered as a phase_closeout_handoff boundary: it writes Task Records, records lightweight completion-check evidence, consumes RuntimeHandoff, and only uses subtask_start when it is about to enter an existing child or successor.',
       'Phase closeout requires TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState checks to pass before chat refresh or next-task handoff.',
       'Phase closeout keeps unresolved blocker, dependency, user-confirmation, and follow-up-confirmation outcomes from clearing task chat even after a phase record is written.',
       'Task closeout evaluation can hand off to existing successors when no child task is available, and new follow-up proposals require evidence plus confirmation instead of automatic creation.',

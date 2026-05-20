@@ -18,6 +18,7 @@ export type RuntimeEntrypointKind =
   | 'task_capture'
   | 'task_state_transition'
   | 'task_to_task_handoff'
+  | 'phase_closeout_handoff'
   | 'durable_write'
   | 'context_transition';
 
@@ -182,6 +183,19 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'simplicity_check',
     'task_completion',
     'task_memory_coverage',
+    'subtask_start',
+    'task_mutation',
+    'pre_step',
+    'post_step',
+    'panel_event_allowlist',
+  ],
+  phase_closeout_handoff: [
+    'simplicity_check',
+    'runtime_action',
+    'runtime_handoff',
+    'task_memory_coverage',
+    'task_memory_guidance',
+    'task_completion',
     'subtask_start',
     'task_mutation',
     'pre_step',
@@ -572,6 +586,40 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'panel_event_allowlist',
     ],
     notes: 'TaskService owns the completed-state transition and task_completion memory coverage; TasksPage evaluates the target child with subtask_start before writing handoff records, timeline replay events, and opening the next task context.',
+  },
+  {
+    id: 'rightPanel.phaseCloseoutHandoff',
+    owner: 'RightPanel phase closeout',
+    kind: 'phase_closeout_handoff',
+    description: 'Archive phase context, record closeout evidence, run task-closeout/handoff checks, and optionally enter the next existing task.',
+    ipcChannels: ['taskFile:create', 'task:recordCompletionCheck', 'task:transition'],
+    requiredGates: [
+      'simplicity_check',
+      'runtime_action',
+      'runtime_handoff',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'task_completion',
+      'subtask_start',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_action',
+      'runtime_handoff',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'task_completion',
+      'subtask_start',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ],
+    notes: 'Phase closeout is not task completion by itself: task_closeout verification decides whether to refresh, pause, or hand off; subtask_start applies only when RuntimeHandoff chooses an existing next task.',
   },
   {
     id: 'decision.action',

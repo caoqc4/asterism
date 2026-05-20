@@ -129,6 +129,14 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('writes completion/received handoff records and timeline replay events before opening the next task context');
   });
 
+  it('tracks phase closeout as a separate handoff boundary', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('RightPanel phase closeout is registered as a phase_closeout_handoff boundary');
+    expect(text).toContain('records lightweight completion-check evidence');
+    expect(text).toContain('only uses subtask_start when it is about to enter an existing child or successor');
+  });
+
   it('tracks pending-memory checks for phase closeout handoff', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
