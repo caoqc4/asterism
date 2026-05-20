@@ -381,6 +381,11 @@ Codex CLI is the current primary verified path:
 TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true npm run manual:agent-cli-readonly-smoke
 ```
 
+The latest local live validation recorded on 2026-05-20 used Codex CLI
+`codex-cli 0.125.0` and passed with `auth=ready`, `workspace=unchanged`,
+`phrase=matched`, and `status=passed`. Treat this as manual acceptance evidence;
+the default smoke path stays skipped unless the explicit environment flag is set.
+
 Claude Code support is implemented but its real smoke requires a local
 `claude` command and a valid Claude account. If that account is unavailable,
 keep Claude smoke non-blocking and continue validating the Codex path:

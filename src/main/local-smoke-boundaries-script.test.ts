@@ -440,6 +440,19 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('workspace=unchanged');
   });
 
+  it('documents opt-in Codex CLI read-only live evidence without making it a default smoke requirement', () => {
+    const testingDoc = fs.readFileSync(new URL('../../docs/TESTING.md', import.meta.url), 'utf8');
+    const configurationDoc = fs.readFileSync(new URL('../../docs/CONFIGURATION.md', import.meta.url), 'utf8');
+
+    expect(testingDoc).toContain('2026-05-20');
+    expect(testingDoc).toContain('codex-cli 0.125.0');
+    expect(testingDoc).toContain('TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=codex npm run manual:agent-cli-readonly-smoke');
+    expect(testingDoc).toContain('workspace=unchanged');
+    expect(testingDoc).toContain('status=passed');
+    expect(configurationDoc).toContain('Treat this as manual acceptance evidence');
+    expect(configurationDoc).toContain('the default smoke path stays skipped unless the explicit environment flag is set');
+  });
+
   it('validates the Agent CLI smoke runtime before calling a CLI', () => {
     const result = runScript('scripts/agent-cli-readonly-smoke.mjs', '', {
       TASKPLANE_AGENT_CLI_SMOKE_RUNTIME: 'unknown',

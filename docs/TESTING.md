@@ -189,6 +189,15 @@ The default manual read-only smoke must report `status=skip`, `cli=not-called`,
 and `workspace=unchanged` unless `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true`
 is explicitly set.
 
+Manual live evidence is intentionally recorded as historical validation, not as
+a default CI requirement. On 2026-05-20, local Codex CLI `codex-cli 0.125.0`
+passed the opt-in smoke with `auth=ready`, `workspace=unchanged`,
+`phrase=matched`, and `status=passed` using:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=codex npm run manual:agent-cli-readonly-smoke
+```
+
 Runtime-native goal discovery is an optional compatibility track, not a
 first-version product gate. By default it only probes local CLI version/help
 output, so it can be used to inspect command shape without starting a goal:
