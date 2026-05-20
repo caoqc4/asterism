@@ -281,6 +281,20 @@ Safety boundaries:
 
 This keeps the verifier subagent as an acceptance helper rather than a second execution runtime or an automatic completion authority.
 
+### API Verifier Default-On Threshold
+
+Keep the API verifier subagent off by default until it satisfies all of these conditions:
+
+- **Shadow mode first**: run it beside the lightweight verifier without changing user-visible decisions for a representative set of Agent CLI and future Agent API runs.
+- **Structured validity**: invalid, partial, or schema-mismatched verifier outputs stay below a small, explicitly tracked threshold. Any invalid output must fall back to `taskplane.verifier.lightweight`.
+- **Decision compatibility**: when the API verifier disagrees with the lightweight verifier, Taskplane records the disagreement as evidence and chooses the more conservative next action.
+- **No autonomous completion**: `canMarkTaskComplete` stays false unless a separate task-completion confirmation path is implemented and tested.
+- **Memory confirmation preserved**: `shouldProposeTaskMemory=true` may surface richer Task Record drafts, but user confirmation is still required before writing.
+- **Provider-off acceptance**: packaged and local default smokes still pass without any provider/API call.
+- **Operational budget**: timeout, retry, and cost limits are explicit and visible in run evidence.
+
+Only after those conditions are met should the API verifier become the default acceptance helper. Even then, the lightweight verifier remains the deterministic fallback.
+
 ### Plain text fallback
 
 If a slash command is unknown or unsupported by the current runtime, Taskplane should not guess. It should explain what is supported and offer to send the text as a normal task message.
@@ -414,4 +428,4 @@ Remaining next steps are deciding whether native CLI progress is rich enough for
 
 - How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate.
 - Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.
-- What provider/model reliability threshold is required before enabling the optional API verifier subagent by default.
+- Which measured shadow-mode results satisfy the API Verifier Default-On Threshold.
