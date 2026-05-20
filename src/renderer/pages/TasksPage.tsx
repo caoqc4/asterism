@@ -794,8 +794,8 @@ const TASK_TYPE_LABELS: Record<TaskType, string> = {
   routine:   '常设',
 };
 
-function formatTaskTypeForDisplay(task: Task): string {
-  if (task.parentTaskId) return task.type === 'project' ? '子项目型' : '项目子任务';
+function formatTaskTypeForDisplay(task: Task, parentTask: Task | null): string {
+  if (parentTask) return task.type === 'project' ? '子项目型' : '项目子任务';
   return task.facets.length > 1 ? `${TASK_TYPE_LABELS[task.type]} · 复合` : TASK_TYPE_LABELS[task.type];
 }
 
@@ -3429,7 +3429,7 @@ function TaskTimelineView({
         <span className={`tag lane-${task.lane}`}>{LANE_LABELS[task.lane]}</span>
         <h3 className="task-preview-title">{task.title}</h3>
         <div className="task-preview-type-row">
-          <span className="tag">{formatTaskTypeForDisplay(task)}</span>
+          <span className="tag">{formatTaskTypeForDisplay(task, parentTask)}</span>
           {formatSecondaryFacets(task).map((facet) => (
             <span className="tag subtle" key={facet}>{facet}</span>
           ))}
@@ -4292,7 +4292,7 @@ function TaskPreview({
   const [activeRelatedCategory, setActiveRelatedCategory] = useState<RelatedFileCategory>('task');
   const hasNonDefaultTaskFiles = taskFiles.some((file) => !['records_folder', 'local_folder', 'task_record'].includes(file.kind));
   const completedCriteria = completionCriteria.filter((criterion) => criterion.status === 'satisfied').length;
-  const orderedChildren = task.type === 'project' ? orderedTaskChildren(task, childTasks) : childTasks;
+  const orderedChildren = childTasks;
   const completedChildren = orderedChildren.filter((child) => child.status === 'done').length;
   const projectVerificationResult = projectVerification?.project ?? null;
   const needsProjectDecomposition = task.type === 'project' && childTasks.length === 0;
@@ -4411,7 +4411,7 @@ function TaskPreview({
           <h3 className="task-preview-title">{task.title}</h3>
           <div className="task-preview-type-row">
             <span className={`tag ${taskStatusTone(task)}`}>{taskStatusLabel(task)}</span>
-            <span className="tag">{formatTaskTypeForDisplay(task)}</span>
+            <span className="tag">{formatTaskTypeForDisplay(task, parentTask)}</span>
             {formatSecondaryFacets(task).map((facet) => (
               <span className="tag subtle" key={facet}>{facet}</span>
             ))}

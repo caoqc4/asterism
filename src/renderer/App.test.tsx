@@ -3166,7 +3166,7 @@ describe('App redesign v1', () => {
     });
   });
 
-  it('does not silently repair phase follow-up tasks from title patterns', async () => {
+  it('projects legacy phase follow-up tasks under the matching project without writing local hierarchy repair', async () => {
     const project = buildTask({
       id: 'task_project_repair',
       title: '开发小程序',
@@ -3185,7 +3185,6 @@ describe('App redesign v1', () => {
     harness.details[project.id] = buildTaskDetail(project);
     for (const task of followups) {
       harness.details[task.id] = buildTaskDetail(task);
-      saveTaskAttributes(task.id, { type: 'project', typeConfirmed: true });
     }
     saveTaskAttributes(project.id, {
       type: 'project',
@@ -3198,6 +3197,19 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     expect(await screen.findByText('开发小程序')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /一次性任务/ }));
+    expect(screen.queryByText('拆解下一步：开发小程序')).toBeNull();
+    expect(screen.queryByText('实现调整：开发小程序')).toBeNull();
+    expect(screen.queryByText('验收回归：开发小程序')).toBeNull();
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    const projectTitle = (await screen.findAllByText('开发小程序'))
+      .find((element) => element.className === 'task-row-title');
+    expect(projectTitle).toBeTruthy();
+    await user.click(projectTitle!);
+    expect(await screen.findByText('项目结构')).toBeTruthy();
+    expect(screen.getByText('拆解下一步：开发小程序')).toBeTruthy();
+    expect(screen.getByText('实现调整：开发小程序')).toBeTruthy();
+    expect(screen.getByText('验收回归：开发小程序')).toBeTruthy();
 
     const attrs = loadTaskAttributes();
     expect(project.childTaskIds).toEqual([
@@ -3209,11 +3221,7 @@ describe('App redesign v1', () => {
     ]);
     expect(attrs.task_project_repair).not.toHaveProperty('childTaskIds');
     for (const task of followups) {
-      expect(attrs[task.id]).toMatchObject({
-        type: 'project',
-        typeConfirmed: true,
-      });
-      expect(attrs[task.id]).not.toHaveProperty('parentTaskId');
+      expect(attrs[task.id]).toBeUndefined();
     }
   });
 

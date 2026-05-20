@@ -25,7 +25,7 @@ function node(partial: Partial<TaskHierarchyNode>): TaskHierarchyNode {
 }
 
 describe('task hierarchy helpers', () => {
-  it('treats legacy phase follow-up tasks as children only when parent field is absent', () => {
+  it('treats legacy phase follow-up tasks as children when a matching project parent exists', () => {
     const project = node({ id: 'project_1', title: '开发小程序', type: 'project' });
     const followup = node({ id: 'followup_1', title: '拆解下一步：开发小程序', type: 'simple' });
 
@@ -33,7 +33,7 @@ describe('task hierarchy helpers', () => {
     expect(isTopLevelTask(followup, [project, followup])).toBe(false);
   });
 
-  it('does not infer a legacy parent when the record explicitly has no parent', () => {
+  it('still infers a legacy parent when older records explicitly stored no parent', () => {
     const project = node({ id: 'project_1', title: '开发小程序', type: 'project', parentTaskId: null });
     const followup = node({
       id: 'followup_1',
@@ -42,11 +42,11 @@ describe('task hierarchy helpers', () => {
       parentTaskId: null,
     });
 
-    expect(effectiveParentTaskId(followup, [project, followup])).toBeNull();
-    expect(isTopLevelTask(followup, [project, followup])).toBe(true);
+    expect(effectiveParentTaskId(followup, [project, followup])).toBe(project.id);
+    expect(isTopLevelTask(followup, [project, followup])).toBe(false);
   });
 
-  it('does not include explicit top-level phase follow-ups as project children', () => {
+  it('includes legacy phase follow-ups as project children in hierarchy projection', () => {
     const project = node({ id: 'project_1', title: '开发小程序', type: 'project', parentTaskId: null });
     const followup = node({
       id: 'followup_1',
@@ -55,7 +55,7 @@ describe('task hierarchy helpers', () => {
       parentTaskId: null,
     });
 
-    expect(orderedTaskChildren(project, [project, followup])).toEqual([]);
+    expect(orderedTaskChildren(project, [project, followup])).toEqual([followup]);
   });
 
   it('orders children by parent child ids before falling back to update time', () => {
@@ -75,6 +75,8 @@ describe('task hierarchy helpers', () => {
     const project = node({ id: 'project_1', title: '开发小程序', type: 'project', childTaskIds: ['child_1'] });
     const child = node({ id: 'child_1', title: '需求分析', parentTaskId: null });
 
+    expect(effectiveParentTaskId(child, [project, child])).toBe(project.id);
+    expect(isTopLevelTask(child, [project, child])).toBe(false);
     expect(orderedTaskChildren(project, [project, child]).map((task) => task.id)).toEqual(['child_1']);
   });
 
