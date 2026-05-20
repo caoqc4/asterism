@@ -156,6 +156,8 @@ Agent CLI and Agent API are peers in the execution runtime layer. They are a use
 
 Task decomposition, context confirmation, task records, task acceptance, and context clearing are not "Agent API runtime" features. They are Taskplane harness features. Some of them may call a model service internally, but that does not make them the selected execution runtime.
 
+The practical rule for the next passes is: delaying Agent API execution does not delay the runtime task loop. Task Goal control, decomposition drafts, subtask-start checks, context assembly, run gates, verifier checks, task-memory proposals, completion checks, handoff records, and context clearing must keep working as Taskplane harness flows while Agent CLI is the first executable backend. When Agent API later becomes executable, it should plug into these harness contracts rather than bring a parallel task lifecycle.
+
 ## Goal Model
 
 Taskplane should support three related but separate goal concepts:
@@ -427,6 +429,7 @@ First pass implemented on 2026-05-19:
 - RuntimeContextManifest includes the selected runtime label, kind, executable flag, and reason in the `runtime_capabilities` item, so Agent CLI accepted steps and context bridges carry the same runtime boundary shown in diagnostics.
 - Agent CLI accepted steps now persist the formatted RuntimeContextManifest, including `memory_retrieval` rows, so received completion handoff Task Records are visible both in run evidence and in the prompt sent to the selected CLI.
 - Code Agent model-producer runs now persist a retained RuntimeContextManifest step and pass that formatted manifest into the provider prompt. This keeps future Agent API execution aligned with Agent CLI on task memory retrieval, received handoff recovery, and product-owned context bridge evidence even though Agent API remains a later peer execution runtime.
+- Product-owned `/goal` is now registered as a durable Taskplane harness entrypoint. It writes task nextStep, completion criteria, and `panel.task_goal_*` timeline events through task mutation guards, and it remains independent of the selected execution runtime.
 - Future Agent API execution should use the same entrypoint category as Agent CLI (`provider_visible_execution`) once it becomes executable. It must reuse runtime action, context assembly, task-memory coverage/guidance, pre-step, subtask-start, and post-step gates; Agent API cancellation/control and audit-only backend features should stay in separate control/audit entrypoint categories.
 
 Remaining next steps are hardening the Taskplane-owned goal loop and deciding when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier. Native CLI goal forwarding remains a later compatibility track, not a first-version product blocker.

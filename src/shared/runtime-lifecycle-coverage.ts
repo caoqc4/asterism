@@ -212,6 +212,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Tasks and Brief task state transitions now use shared renderer runtime guards backed by pre_step verification.',
       'Tasks special mutation paths for Task.md sync, risk updates, project moves, and project parent updates now use shared mutation guards.',
       'Tasks file actions for create, rename, move, delete, source key toggles, source archive, and artifact creation now use durable panel action guards.',
+      'Taskplane-owned /goal is registered as a durable harness entrypoint that writes task nextStep, completion criteria, and panel.task_goal_* events through task_mutation/pre_step boundaries without invoking Agent CLI or future Agent API execution.',
       'Main IPC task-file and manual-artifact write boundaries guard task_mutation before repository writes.',
       'Tasks file content saves for Task.md/Task Records, task files, sources, and artifacts use durable panel action guards plus post-step completion checks, separate from structured task-state writes.',
       'Tasks project decomposition draft generation is registered as provider-visible planning and guarded by existing-child and subtask-draft checks before durable creation is possible.',
@@ -238,6 +239,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the smallest matching pre_step, post_step, and subtask_start gates.',
+      'Agent API execution can remain deferred, but task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints.',
       'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained task-dynamics surfaces must reuse the same projection.',
       'Task dynamics replay grouping now has explicit handoff, project structure, execution recovery, decision, quality gate, durable record, source context, task state, and general groups.',
       'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',

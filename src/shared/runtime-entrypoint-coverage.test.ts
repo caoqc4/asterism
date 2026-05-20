@@ -189,6 +189,19 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('keeps product-owned task goals in the Taskplane harness instead of an execution runtime', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'task.goalControl');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('durable_write');
+    expect(entry?.ipcChannels).toEqual(['task:update', 'completionCriteria:create', 'task:recordTimelineEvent']);
+    expect(entry?.requiredGates).toContain('task_mutation');
+    expect(entry?.requiredGates).toContain('panel_event_allowlist');
+    expect(entry?.requiredGates).not.toContain('runtime_context_assembly');
+    expect(entry?.requiredGates).not.toContain('subtask_start');
+    expect(entry?.notes).toContain('independent of whether Agent CLI or future Agent API is selected');
+  });
+
   it('requires task capture and decision actions to use their own runtime boundaries', () => {
     for (const entry of runtimeEntrypointsByKind('task_capture')) {
       expect(entry.requiredGates).toContain('simplicity_check');
@@ -242,6 +255,7 @@ describe('runtime entrypoint coverage', () => {
       'task.completionCheckRecord',
       'task.completionTransition',
       'task.fileAndArtifactWrites',
+      'task.goalControl',
       'task.hierarchyMaintenance',
       'task.metadataUpdate',
       'task.stateTransition',

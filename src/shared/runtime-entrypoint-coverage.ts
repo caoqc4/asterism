@@ -573,6 +573,26 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     notes: 'Completion-check records are durable audit events and can count toward task completion memory coverage; completion state transition remains a separate task_completion gate.',
   },
   {
+    id: 'task.goalControl',
+    owner: 'RightPanel / TaskService product-owned /goal',
+    kind: 'durable_write',
+    description: 'Set, pause, resume, or clear a Taskplane-owned Task Goal and optional completion conditions without invoking an execution runtime.',
+    ipcChannels: ['task:update', 'completionCriteria:create', 'task:recordTimelineEvent'],
+    requiredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+      'panel_event_allowlist',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+      'panel_event_allowlist',
+    ],
+    notes: 'Product /goal is Taskplane harness state: it writes task nextStep, completion criteria, and panel.task_goal_* timeline events through guarded task mutation boundaries. It is independent of whether Agent CLI or future Agent API is selected for execution.',
+  },
+  {
     id: 'project.decompositionDraft',
     owner: 'IPC ai:decomposeProject',
     kind: 'provider_visible_planning',

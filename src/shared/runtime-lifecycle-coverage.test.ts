@@ -92,6 +92,15 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('guard task_mutation before repository writes');
   });
 
+  it('tracks product-owned goals as harness flow rather than execution runtime work', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('Taskplane-owned /goal is registered as a durable harness entrypoint');
+    expect(text).toContain('without invoking Agent CLI or future Agent API execution');
+    expect(text).toContain('Agent API execution can remain deferred');
+    expect(text).toContain('task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints');
+  });
+
   it('tracks service-boundary hierarchy ownership guards', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
