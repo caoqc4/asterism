@@ -280,7 +280,6 @@ function taskHasProjectDependencySignal(task: Task, allTasks: Task[], projectKey
       && (
         candidate.blockedByTaskId === task.id
         || candidateDependencyText.includes(taskTitle)
-        || candidateDependencyText.includes(projectKey)
       );
   });
 }

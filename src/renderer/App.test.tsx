@@ -3271,8 +3271,16 @@ describe('App redesign v1', () => {
       }),
       state: 'planned',
     });
-    harness.tasks.unshift(project, requirement, development, testing);
-    for (const task of [project, requirement, development, testing]) {
+    const unrelated = buildTask({
+      id: 'task_orphan_unrelated',
+      title: '小程序资料归档',
+      taskType: 'simple',
+      parentTaskId: null,
+      childTaskIds: [],
+      state: 'planned',
+    });
+    harness.tasks.unshift(project, requirement, development, testing, unrelated);
+    for (const task of [project, requirement, development, testing, unrelated]) {
       harness.details[task.id] = buildTaskDetail(task);
     }
 
@@ -3282,14 +3290,15 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     const cards = Array.from(document.querySelectorAll('.execution-queue-card')) as HTMLElement[];
     const orderedTitles = cards.map((card) => card.textContent ?? '').filter((text) => text.includes('小程序'));
-    expect(orderedTitles).toHaveLength(1);
-    expect(orderedTitles[0]).toContain('开发小程序');
-    expect(orderedTitles[0]).not.toContain('小程序前后端开发与联调');
-    expect(orderedTitles[0]).not.toContain('小程序测试、安全加固与性能优化');
+    expect(orderedTitles.some((text) => text.includes('开发小程序'))).toBe(true);
+    expect(orderedTitles.some((text) => text.includes('小程序资料归档'))).toBe(true);
+    expect(orderedTitles.some((text) => text.includes('小程序前后端开发与联调'))).toBe(false);
+    expect(orderedTitles.some((text) => text.includes('小程序测试、安全加固与性能优化'))).toBe(false);
 
     await user.click(screen.getByRole('button', { name: /一次性任务/ }));
     const taskTypeChildren = document.querySelector('.task-type-children') as HTMLElement | null;
     expect(taskTypeChildren?.querySelector('[data-title="开发小程序"]')).toBeTruthy();
+    expect(taskTypeChildren?.querySelector('[data-title="小程序资料归档"]')).toBeTruthy();
     expect(taskTypeChildren?.querySelector('[data-title="小程序前后端开发与联调"]')).toBeNull();
     expect(taskTypeChildren?.querySelector('[data-title="小程序测试、安全加固与性能优化"]')).toBeNull();
 
@@ -3302,6 +3311,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('小程序需求分析与功能设计')).toBeTruthy();
     expect(screen.getByText('小程序前后端开发与联调')).toBeTruthy();
     expect(screen.getByText('小程序测试、安全加固与性能优化')).toBeTruthy();
+    expect(screen.queryByText('小程序资料归档')).toBeNull();
   });
 
   it('suggests a fresh task session when recent AI replies stay generic', async () => {
