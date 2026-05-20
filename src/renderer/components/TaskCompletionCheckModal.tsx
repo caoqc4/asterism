@@ -46,7 +46,11 @@ function verificationToCheck(record: RunVerificationRecord): RuntimeVerification
   };
 }
 
-function buildRunCheck(run: RunRecord, detail: RunDetailRecord | null): RuntimeVerificationResult {
+function isPendingMemoryRunVerification(record: RunVerificationRecord): boolean {
+  return record.tone === 'warn' && /任务记忆待处理/.test(record.label);
+}
+
+export function buildRunCheck(run: RunRecord, detail: RunDetailRecord | null): RuntimeVerificationResult {
   if (detail?.taskMemoryGuidance?.outcome === 'pending') {
     return evaluateRuntimeVerification({
       mode: 'run',
@@ -57,7 +61,8 @@ function buildRunCheck(run: RunRecord, detail: RunDetailRecord | null): RuntimeV
   const persisted = detail?.verifications?.find((item) => (
     item.targetType === 'run' && item.targetId === run.id
   ));
-  return persisted ? verificationToCheck(persisted) : evaluateRuntimeVerification({
+  if (persisted && !isPendingMemoryRunVerification(persisted)) return verificationToCheck(persisted);
+  return evaluateRuntimeVerification({
     mode: 'run',
     run,
     detail,

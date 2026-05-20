@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildTaskCompletionMemoryCoverage } from './TaskCompletionCheckModal';
+import { buildRunCheck, buildTaskCompletionMemoryCoverage } from './TaskCompletionCheckModal';
 import type { RuntimeVerificationResult } from '@shared/runtime-verification';
+import type { RunDetailRecord, RunRecord } from '@shared/types/run';
 import type { TaskDetail } from '@shared/types/task';
 
 const now = '2026-05-15T01:00:00.000Z';
@@ -87,6 +88,36 @@ function runCheck(tone: RuntimeVerificationResult['tone']): RuntimeVerificationR
   };
 }
 
+function buildRun(partial: Partial<RunRecord> = {}): RunRecord {
+  return {
+    id: partial.id ?? 'run-1',
+    taskId: partial.taskId ?? 'task-1',
+    type: partial.type ?? 'agent',
+    status: partial.status ?? 'completed',
+    instructions: partial.instructions ?? 'Run the task.',
+    output: partial.output ?? 'Completed with evidence.',
+    outputSource: partial.outputSource ?? 'ai',
+    failureReason: partial.failureReason ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+  };
+}
+
+function buildRunDetail(
+  run: RunRecord,
+  partial: Partial<RunDetailRecord> = {},
+): RunDetailRecord {
+  return {
+    ...run,
+    agentSessions: partial.agentSessions ?? [],
+    artifacts: partial.artifacts ?? [],
+    checkpoints: partial.checkpoints ?? [],
+    steps: partial.steps ?? [],
+    taskMemoryGuidance: partial.taskMemoryGuidance,
+    verifications: partial.verifications ?? [],
+  };
+}
+
 describe('buildTaskCompletionMemoryCoverage', () => {
   it('keeps timeline-derived completed run evidence when no recent run check is loaded', () => {
     const coverage = buildTaskCompletionMemoryCoverage(buildDetail({
@@ -147,6 +178,70 @@ describe('buildTaskCompletionMemoryCoverage', () => {
     expect(coverage).toMatchObject({
       outcome: 'needs_memory_write',
       canProceed: false,
+    });
+  });
+});
+
+describe('buildRunCheck', () => {
+  it('recomputes stale pending-memory run verification after memory guidance is resolved', () => {
+    const run = buildRun();
+    const check = buildRunCheck(run, buildRunDetail(run, {
+      taskMemoryGuidance: {
+        latestGuidanceAt: now,
+        outcome: 'satisfied',
+        pendingTargets: [],
+        reason: '任务记忆建议已有对应写入。',
+        targets: ['task_record'],
+      },
+      verifications: [{
+        id: 'verification-1',
+        runId: run.id,
+        targetType: 'run',
+        targetId: run.id,
+        tone: 'warn',
+        label: 'Run 任务记忆待处理',
+        detail: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        source: 'lightweight_rule_engine',
+        createdAt: now,
+        updatedAt: now,
+      }],
+    }));
+
+    expect(check).toMatchObject({
+      tone: 'pass',
+      label: 'Run 验证通过',
+      detail: '执行结果已有输出或步骤证据，可进入人工审查。',
+    });
+  });
+
+  it('preserves non-memory persisted run verification results', () => {
+    const run = buildRun();
+    const check = buildRunCheck(run, buildRunDetail(run, {
+      taskMemoryGuidance: {
+        latestGuidanceAt: now,
+        outcome: 'satisfied',
+        pendingTargets: [],
+        reason: '任务记忆建议已有对应写入。',
+        targets: ['task_record'],
+      },
+      verifications: [{
+        id: 'verification-1',
+        runId: run.id,
+        targetType: 'run',
+        targetId: run.id,
+        tone: 'fail',
+        label: 'Run 检查未通过',
+        detail: '最近执行失败。',
+        source: 'lightweight_rule_engine',
+        createdAt: now,
+        updatedAt: now,
+      }],
+    }));
+
+    expect(check).toMatchObject({
+      tone: 'fail',
+      label: 'Run 检查未通过',
+      detail: '最近执行失败。',
     });
   });
 });
