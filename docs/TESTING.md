@@ -179,7 +179,7 @@ explicit runtime-native goal audit requests that are recorded but not forwarded.
 Latest focused verification for this loop:
 
 ```bash
-npm exec vitest run src/shared/agent-runtime-goal.test.ts src/shared/agent-runtime-verifier.test.ts src/main/domain/agent-cli/agent-cli-run-service.test.ts src/renderer/App.test.tsx -t "goal|Agent CLI|任务记忆写入提案|verifier"
+npm exec vitest run src/shared/agent-runtime-goal.test.ts src/shared/agent-runtime-verifier.test.ts src/shared/native-goal-forwarding-readiness.test.ts src/shared/agent-runtime-verifier-shadow-readiness.test.ts src/main/domain/agent-cli/agent-cli-run-service.test.ts src/renderer/App.test.tsx -t "goal|Agent CLI|任务记忆写入提案|verifier"
 npm exec vitest run src/main/local-smoke-boundaries-script.test.ts
 npm run smoke:agent-cli-task:mac
 npm run manual:agent-cli-readonly-smoke
@@ -231,6 +231,16 @@ behavior, and workspace result to compare against the Native Goal Forwarding
 Evidence Gate before enabling any runtime-native forwarding. First-version goal
 work should remain focused on Taskplane-owned durable goals, verifier evidence,
 and user-confirmed task-memory proposals.
+
+The shared readiness gates are local contract tests, not live-provider tests:
+
+```bash
+npm exec vitest run src/shared/native-goal-forwarding-readiness.test.ts src/shared/agent-runtime-verifier-shadow-readiness.test.ts
+```
+
+They keep native goal forwarding audit-only until the evidence gate is complete,
+and keep the future API verifier in shadow/assist mode until representative
+persisted samples satisfy the default-on threshold.
 
 The Agent API / sandbox execution lane remains gated and explicit while it
 matures as a peer runtime. These commands are useful when maintaining that

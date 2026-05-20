@@ -469,6 +469,15 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).not.toContain('candidateCommand=');
   });
 
+  it('documents native goal and verifier shadow readiness as local contract tests', () => {
+    const testingDoc = fs.readFileSync(path.join(process.cwd(), 'docs/TESTING.md'), 'utf8');
+
+    expect(testingDoc).toContain('src/shared/native-goal-forwarding-readiness.test.ts');
+    expect(testingDoc).toContain('src/shared/agent-runtime-verifier-shadow-readiness.test.ts');
+    expect(testingDoc).toContain('They keep native goal forwarding audit-only until the evidence gate is complete');
+    expect(testingDoc).toContain('future API verifier in shadow/assist mode');
+  });
+
   it('validates Agent CLI native-goal discovery runtime before candidate execution', () => {
     const result = runScript('scripts/agent-cli-native-goal-discovery.mjs', '', {
       TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME: 'unknown',
