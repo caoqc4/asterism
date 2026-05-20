@@ -63,7 +63,7 @@ async function assertExternalAccessLocalInboxSurface(page) {
   await connectedRow.getByText('Local Inbox', { exact: true }).waitFor();
   await connectedRow.getByText(path.basename(inboxPath)).waitFor();
   await connectedRow.getByText('已连接').waitFor();
-  await page.getByText('连接器状态').waitFor();
+  await page.getByText('连接器状态', { exact: true }).waitFor();
   await page.getByText('探测策略').waitFor();
   await page.getByText('入库边界').waitFor();
   await page.getByText('先质检，再确认').waitFor();
@@ -84,7 +84,9 @@ async function assertExternalAccessLocalInboxSurface(page) {
   await page.getByText(/已写入 1 条来源/).waitFor();
   await page.getByText('可用').waitFor();
   await page.getByText('connected=1 / pending=0 / errors=0').waitFor();
-  await page.getByRole('button', { name: '+ 连接来源' }).waitFor();
+  await page.getByText('系统默认可选功能').waitFor();
+  await page.getByText('默认展示，不会自动授权、探测或同步').waitFor();
+  await page.getByRole('button', { name: '授权' }).first().waitFor();
 }
 
 if (process.platform !== 'darwin') {

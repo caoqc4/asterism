@@ -43,7 +43,7 @@ async function assertExternalAccessSurface(page) {
   await page.getByRole('heading', { name: 'External Access' }).waitFor();
   await page.getByText('尚未连接任何来源。').waitFor();
   await page.getByText('授权后只处理相关新信号').waitFor();
-  await page.getByText('连接器状态').waitFor();
+  await page.getByText('连接器状态', { exact: true }).waitFor();
   await page.getByText('探测策略').waitFor();
   await page.getByText('入库边界').waitFor();
   await page.getByText('先质检，再确认').waitFor();
@@ -60,11 +60,10 @@ async function assertExternalAccessSurface(page) {
     throw new Error('External Access source preview should stay disabled without a target task.');
   }
   await page.getByText(/未接入|未连接|已关闭|未知/).first().waitFor();
-  await page.getByRole('button', { name: '+ 连接来源' }).waitFor();
-  const connectButton = page.getByRole('button', { name: '+ 连接来源' });
-  if (!(await connectButton.isDisabled())) {
-    throw new Error('External Access connect button should stay disabled without connector configuration.');
-  }
+  await page.getByText('系统默认可选功能').waitFor();
+  await page.getByText('默认展示，不会自动授权、探测或同步').waitFor();
+  await page.getByText('Gmail').first().waitFor();
+  await page.getByRole('button', { name: '授权' }).first().waitFor();
 }
 
 if (process.platform !== 'darwin') {
