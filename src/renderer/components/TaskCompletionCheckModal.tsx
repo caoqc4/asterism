@@ -69,6 +69,44 @@ export function buildRunCheck(run: RunRecord, detail: RunDetailRecord | null): R
   });
 }
 
+export function selectRunCheckSource(
+  runs: RunRecord[],
+  details: Array<RunDetailRecord | null>,
+): { run: RunRecord; detail: RunDetailRecord | null } | null {
+  const recentRun = runs[0] ?? null;
+  if (!recentRun) return null;
+  const blockingGuidance = selectBlockingTaskMemoryGuidance(
+    details.map((runDetail) => runDetail?.taskMemoryGuidance),
+  );
+  if (blockingGuidance) {
+    const blockingDetail = details.find((detail) => detail?.taskMemoryGuidance === blockingGuidance) ?? null;
+    const blockingRun = blockingDetail
+      ? runs.find((run) => run.id === blockingDetail.id) ?? recentRun
+      : recentRun;
+    return {
+      run: blockingRun,
+      detail: blockingDetail
+        ? {
+          ...blockingDetail,
+          taskMemoryGuidance: blockingGuidance,
+        }
+        : {
+          ...blockingRun,
+          agentSessions: [],
+          artifacts: [],
+          checkpoints: [],
+          steps: [],
+          taskMemoryGuidance: blockingGuidance,
+          verifications: [],
+        },
+    };
+  }
+  return {
+    run: recentRun,
+    detail: details[0] ?? null,
+  };
+}
+
 function buildWaitingReason(detail: TaskDetail | null, runCheck: RuntimeVerificationResult | null): string {
   const openCount = detail?.completionCriteria.filter((item) => item.status === 'open').length ?? 0;
   if (openCount > 0) return `完成检查未通过：仍有 ${openCount} 条完成标准未满足`;
@@ -186,16 +224,8 @@ export function TaskCompletionCheckModal({
           const runDetails = await Promise.all(
             taskRuns.map((run) => api.getRunDetail(run.id).catch(() => null)),
           );
-          const blockingGuidance = selectBlockingTaskMemoryGuidance(
-            runDetails.map((runDetail) => runDetail?.taskMemoryGuidance),
-          );
-          const runDetail = blockingGuidance
-            ? {
-              ...(runDetails.find((detail) => detail?.taskMemoryGuidance === blockingGuidance) ?? recentRun),
-              taskMemoryGuidance: blockingGuidance,
-            }
-            : runDetails[0] ?? null;
-          if (!cancelled) setRecentRunCheck(buildRunCheck(recentRun, runDetail));
+          const source = selectRunCheckSource(taskRuns, runDetails);
+          if (!cancelled) setRecentRunCheck(source ? buildRunCheck(source.run, source.detail) : null);
         } else {
           setRecentRunCheck(null);
         }

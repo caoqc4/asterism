@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildRunCheck, buildTaskCompletionMemoryCoverage } from './TaskCompletionCheckModal';
+import { buildRunCheck, buildTaskCompletionMemoryCoverage, selectRunCheckSource } from './TaskCompletionCheckModal';
 import type { RuntimeVerificationResult } from '@shared/runtime-verification';
 import type { RunDetailRecord, RunRecord } from '@shared/types/run';
 import type { TaskDetail } from '@shared/types/task';
@@ -243,5 +243,44 @@ describe('buildRunCheck', () => {
       label: 'Run 检查未通过',
       detail: '最近执行失败。',
     });
+  });
+});
+
+describe('selectRunCheckSource', () => {
+  it('uses the older run that owns pending memory guidance instead of the newest run', () => {
+    const newer = buildRun({ id: 'run-newer', updatedAt: '2026-05-15T01:10:00.000Z' });
+    const older = buildRun({ id: 'run-older', updatedAt: '2026-05-15T01:00:00.000Z' });
+    const pendingGuidance = {
+      latestGuidanceAt: now,
+      outcome: 'pending' as const,
+      pendingTargets: ['task_record' as const],
+      reason: '旧 run 的任务记忆建议仍缺少对应写入。',
+      targets: ['task_record' as const],
+    };
+
+    const source = selectRunCheckSource(
+      [newer, older],
+      [
+        buildRunDetail(newer),
+        buildRunDetail(older, { taskMemoryGuidance: pendingGuidance }),
+      ],
+    );
+
+    expect(source?.run.id).toBe('run-older');
+    expect(source?.detail?.id).toBe('run-older');
+    expect(source?.detail?.taskMemoryGuidance).toBe(pendingGuidance);
+  });
+
+  it('uses the newest run when no pending memory guidance blocks completion', () => {
+    const newer = buildRun({ id: 'run-newer', updatedAt: '2026-05-15T01:10:00.000Z' });
+    const older = buildRun({ id: 'run-older', updatedAt: '2026-05-15T01:00:00.000Z' });
+
+    const source = selectRunCheckSource(
+      [newer, older],
+      [buildRunDetail(newer), buildRunDetail(older)],
+    );
+
+    expect(source?.run.id).toBe('run-newer');
+    expect(source?.detail?.id).toBe('run-newer');
   });
 });
