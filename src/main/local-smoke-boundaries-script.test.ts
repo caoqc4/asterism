@@ -332,6 +332,7 @@ describe('local smoke script default boundaries', () => {
     expect(scripts['accept:alpha-local']).not.toContain('model-producer-preview-smoke');
     expect(scripts['accept:alpha-local']).not.toContain('producer-preview-smoke');
     expect(scripts['accept:alpha-local']).not.toContain('backend-preflight');
+    expect(scripts['accept:alpha-local']).not.toContain('agent-cli-native-goal-discovery');
     expect(scripts['accept:alpha-local']).not.toContain('dist:mac ');
   });
 
