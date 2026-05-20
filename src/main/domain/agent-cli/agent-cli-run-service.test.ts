@@ -386,6 +386,83 @@ describe('AgentCliRunService', () => {
     expect(executor).not.toHaveBeenCalled();
   });
 
+  it('allows the next Agent CLI run after the pending memory proposal has a Task Record write', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    vi.mocked(runStepRepository.listForTask).mockResolvedValue([{
+      createdAt: '2026-05-20T00:00:00.000Z',
+      error: null,
+      id: 'run_step_pending_memory',
+      index: 0,
+      input: JSON.stringify({
+        suggestedContentByTarget: {
+          task_record: [
+            '## Confirmed',
+            '- Completion conditions checked: 1',
+            '  - Run Goal Contract 包含目标',
+          ].join('\n'),
+        },
+        targets: ['task_record'],
+      }),
+      kind: 'plan',
+      output: '- Task Record may be useful: agent_cli_summary',
+      runId: 'run_previous',
+      status: 'completed',
+      title: '任务记忆建议',
+      updatedAt: '2026-05-20T00:00:00.000Z',
+    }]);
+    const taskService = buildTaskService();
+    vi.mocked(taskService.getDetail).mockResolvedValue({
+      ...buildTask(),
+      taskFiles: [
+        ...buildTask().taskFiles,
+        {
+          content: [
+            '# Task Record: Task 1',
+            '',
+            '## Confirmed',
+            '- Completion conditions checked: 1',
+            '  - Run Goal Contract 包含目标',
+          ].join('\n'),
+          createdAt: '2026-05-20T00:01:00.000Z',
+          id: 'task_record_memory',
+          kind: 'file',
+          name: '2026-05-20-memory-guidance.md',
+          path: 'Task Records/2026-05-20-memory-guidance.md',
+          taskId: 'task_1',
+          updatedAt: '2026-05-20T00:01:00.000Z',
+        },
+      ],
+    });
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Next Codex CLI answer.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      taskService,
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+    );
+
+    await expect(service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Continue after memory write.',
+      taskId: 'task_1',
+    })).resolves.toMatchObject({ id: 'run_agent_cli_1' });
+
+    expect(runRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_1',
+      type: 'agent',
+    }));
+    expect(executor).toHaveBeenCalled();
+  });
+
   it('blocks Agent CLI execution for a completed target task before creating a run', async () => {
     const taskService = buildTaskService();
     vi.mocked(taskService.getDetail).mockResolvedValue({
