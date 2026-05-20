@@ -72,6 +72,9 @@ describe('runtime lifecycle coverage matrix', () => {
 
     expect(text).toContain('TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes');
     expect(text).toContain('task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness');
+    expect(text).toContain('context.refreshOrLeave');
+    expect(text).toContain('context.taskSwitch');
+    expect(text).toContain('without claiming task completion or subtask_start');
   });
 
   it('tracks pending-memory checks for new run start', () => {

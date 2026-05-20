@@ -1006,10 +1006,10 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
   },
   {
-    id: 'context.clearOrSwitch',
+    id: 'context.refreshOrLeave',
     owner: 'RightPanel / RuntimeHandoff',
     kind: 'context_transition',
-    description: 'Refresh, clear, leave, or switch task chat context.',
+    description: 'Refresh the current task chat, prepare a manual refresh, leave task context, or start a global conversation.',
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -1024,6 +1024,28 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_memory_coverage',
       'task_memory_guidance',
     ],
+    notes: 'RuntimeHandoff consumes AutoContextClearReadiness and blocks clearing when recoverable discussion, pending task-memory guidance, Decisions, blockers, or short-term reasoning still need preservation.',
+  },
+  {
+    id: 'context.taskSwitch',
+    owner: 'RightPanel / RuntimeHandoff',
+    kind: 'context_transition',
+    description: 'Switch the right-panel task context from one task to another without completing either task.',
+    requiredGates: [
+      'simplicity_check',
+      'runtime_action',
+      'runtime_handoff',
+      'task_memory_coverage',
+      'task_memory_guidance',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_action',
+      'runtime_handoff',
+      'task_memory_coverage',
+      'task_memory_guidance',
+    ],
+    notes: 'Task switching checks task_switch memory coverage and pending TaskMemoryGuidanceState before leaving the previous task; it does not use subtask_start unless another handoff boundary is actually entering work.',
   },
 ];
 

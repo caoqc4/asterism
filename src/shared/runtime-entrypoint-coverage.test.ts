@@ -305,6 +305,31 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('separates context refresh or leave from cross-task switching', () => {
+    const refreshOrLeave = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'context.refreshOrLeave');
+    const taskSwitch = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'context.taskSwitch');
+
+    expect(refreshOrLeave).toBeTruthy();
+    expect(taskSwitch).toBeTruthy();
+    expect(refreshOrLeave?.kind).toBe('context_transition');
+    expect(taskSwitch?.kind).toBe('context_transition');
+    for (const entry of [refreshOrLeave, taskSwitch]) {
+      expect(entry?.requiredGates).toEqual([
+        'simplicity_check',
+        'runtime_action',
+        'runtime_handoff',
+        'task_memory_coverage',
+        'task_memory_guidance',
+      ]);
+      expect(entry?.requiredGates).not.toContain('task_completion');
+      expect(entry?.requiredGates).not.toContain('subtask_start');
+      expect(entry?.requiredGates).not.toContain('task_mutation');
+    }
+    expect(refreshOrLeave?.notes).toContain('AutoContextClearReadiness');
+    expect(taskSwitch?.notes).toContain('pending TaskMemoryGuidanceState');
+    expect(taskSwitch?.notes).toContain('does not use subtask_start');
+  });
+
   it('requires every retained runtime entrypoint to declare the simplicity gate', () => {
     for (const entry of RUNTIME_ENTRYPOINT_COVERAGE) {
       expect(entry.requiredGates).toContain('simplicity_check');
@@ -316,7 +341,8 @@ describe('runtime entrypoint coverage', () => {
     expect(RUNTIME_ENTRYPOINT_COVERAGE.map((entry) => entry.id).sort()).toEqual([
       'agent.toolDurableWrites',
       'ai.taskChat',
-      'context.clearOrSwitch',
+      'context.refreshOrLeave',
+      'context.taskSwitch',
       'decision.action',
       'decision.approvedCheckpointResume',
       'decision.create',
