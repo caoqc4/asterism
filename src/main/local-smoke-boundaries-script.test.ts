@@ -272,6 +272,17 @@ describe('local smoke script default boundaries', () => {
     );
   });
 
+  it('keeps the packaged project smoke covering completion handoff records', () => {
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/smoke-project-decomposition-mac.mjs'), 'utf8');
+
+    expect(script).toContain('assertCompletionHandoff');
+    expect(script).toContain('panel.completion_handoff');
+    expect(script).toContain('completion-handoff\\.md');
+    expect(script).toContain('received-handoff\\.md');
+    expect(script).toContain('persisted completion handoff Task Records');
+    expect(script).toContain('persisted completion handoff timeline events');
+  });
+
   it('keeps the real-use path helper read-only and explicit about temporary overrides', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-real-use-path-test-'));
     const userDataPath = path.join(tempRoot, 'real-use-data');

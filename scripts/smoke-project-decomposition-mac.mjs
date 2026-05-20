@@ -130,10 +130,10 @@ function seedConfirmedProjectFixture() {
         '范围清单被确认。',
         'unknown',
         null,
-        'open',
+        'satisfied',
         '2026-05-03T08:21:00.000Z',
-        '2026-05-03T08:21:00.000Z',
-        null,
+        '2026-05-03T08:45:00.000Z',
+        '2026-05-03T08:45:00.000Z',
       );
       insertCriteria.run(
         'criteria_packaged_project_plan',
@@ -160,10 +160,10 @@ function seedConfirmedProjectFixture() {
           'task_packaged_project_plan',
           'task_packaged_project_scope',
           '确认 packaged 项目范围',
-          'active',
+          'resolved',
           '2026-05-03T08:30:00.000Z',
-          '2026-05-03T08:30:00.000Z',
-          null,
+          '2026-05-03T08:47:00.000Z',
+          '2026-05-03T08:47:00.000Z',
         );
 
       database
@@ -188,7 +188,104 @@ function seedConfirmedProjectFixture() {
           '2026-05-03T08:35:00.000Z',
           null,
         );
+
+      database
+        .prepare(`
+          INSERT INTO source_contexts (
+            id, task_id, title, kind, is_key, uri, content, note,
+            status, created_at, updated_at, archived_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'source_packaged_project_scope_evidence',
+          'task_packaged_project_scope',
+          'packaged 范围确认记录',
+          'note',
+          'true',
+          null,
+          '范围清单已经确认，可进入方案产出。',
+          '完成 packaged completion handoff smoke 的第一子任务证据。',
+          'active',
+          '2026-05-03T08:46:00.000Z',
+          '2026-05-03T08:46:00.000Z',
+          null,
+        );
+
+      const insertTaskFile = database.prepare(`
+        INSERT INTO task_files (
+          id, task_id, name, path, kind, content, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      insertTaskFile.run(
+        'task_file_packaged_project_scope_md',
+        'task_packaged_project_scope',
+        'Task.md',
+        'Task.md',
+        'file',
+        [
+          '# Task',
+          '',
+          '## Goal',
+          '确认 packaged 项目范围',
+          '',
+          '## Next Step',
+          '整理范围清单。',
+          '',
+        ].join('\n'),
+        '2026-05-03T08:05:00.000Z',
+        '2026-05-03T08:05:00.000Z',
+      );
+
+      insertTaskFile.run(
+        'task_file_packaged_project_plan_md',
+        'task_packaged_project_plan',
+        'Task.md',
+        'Task.md',
+        'file',
+        [
+          '# Task',
+          '',
+          '## Goal',
+          '产出 packaged 项目方案',
+          '',
+          '## Next Step',
+          '等待范围确认后产出方案。',
+          '',
+        ].join('\n'),
+        '2026-05-03T08:10:00.000Z',
+        '2026-05-03T08:10:00.000Z',
+      );
     })();
+  } finally {
+    database.close();
+  }
+}
+
+function queryTaskRow(taskId) {
+  const database = new Database(dbPath, { fileMustExist: true });
+  try {
+    return database.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+  } finally {
+    database.close();
+  }
+}
+
+function queryTaskFiles(taskId) {
+  const database = new Database(dbPath, { fileMustExist: true });
+  try {
+    return database.prepare('SELECT * FROM task_files WHERE task_id = ? ORDER BY created_at ASC').all(taskId);
+  } finally {
+    database.close();
+  }
+}
+
+function queryTimelineEvents(taskId) {
+  const database = new Database(dbPath, { fileMustExist: true });
+  try {
+    return database.prepare('SELECT * FROM timeline_events WHERE task_id = ? ORDER BY created_at ASC').all(taskId);
   } finally {
     database.close();
   }
@@ -269,6 +366,68 @@ async function assertConfirmedProjectStructure(page) {
   await page.getByText('产出 packaged 项目方案').waitFor();
 }
 
+async function assertCompletionHandoff(page) {
+  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: /项目型/ }).click();
+  await page.getByRole('button', { name: '任务目录' }).click();
+
+  const projectGroup = page.locator('.task-directory-group', { hasText: 'Packaged Project parent fixture' });
+  await projectGroup.locator('.task-row', { hasText: 'Packaged Project parent fixture' }).click();
+  await page.getByRole('heading', { name: 'Packaged Project parent fixture' }).waitFor();
+
+  const childList = page.locator('.project-child-list');
+  await childList.getByRole('button', { name: /确认 packaged 项目范围/ }).click();
+  await page.getByRole('heading', { name: '确认 packaged 项目范围' }).waitFor();
+  await page.getByRole('button', { name: '完成', exact: true }).click();
+  await page.locator('.completion-check-modal').getByRole('button', { name: '完成', exact: true }).click();
+  await page.getByText('任务已完成').waitFor({ timeout: timeoutMs });
+  await page.getByRole('button', { name: '进入下一任务' }).click();
+
+  try {
+    await waitFor(() => queryTaskRow('task_packaged_project_scope')?.state === 'completed', 'completed first packaged child');
+  } catch (error) {
+    const row = queryTaskRow('task_packaged_project_scope');
+    const events = queryTimelineEvents('task_packaged_project_scope');
+    throw new Error([
+      error instanceof Error ? error.message : 'Timed out waiting for completed first packaged child.',
+      `taskState=${row?.state ?? '<missing>'}`,
+      `timeline=${events.map((event) => `${event.type}:${event.payload}`).join(' | ')}`,
+    ].join('\n'));
+  }
+  try {
+    await waitFor(() => (
+      queryTaskFiles('task_packaged_project_scope').some((file) => /completion-handoff\.md$/.test(file.path))
+      && queryTaskFiles('task_packaged_project_plan').some((file) => /received-handoff\.md$/.test(file.path))
+    ), 'persisted completion handoff Task Records');
+  } catch (error) {
+    throw new Error([
+      error instanceof Error ? error.message : 'Timed out waiting for persisted completion handoff Task Records.',
+      `scopeFiles=${queryTaskFiles('task_packaged_project_scope').map((file) => file.path).join(',')}`,
+      `planFiles=${queryTaskFiles('task_packaged_project_plan').map((file) => file.path).join(',')}`,
+      `scopeTimeline=${queryTimelineEvents('task_packaged_project_scope').map((event) => `${event.type}:${event.payload}`).join(' | ')}`,
+      `planTimeline=${queryTimelineEvents('task_packaged_project_plan').map((event) => `${event.type}:${event.payload}`).join(' | ')}`,
+    ].join('\n'));
+  }
+  await waitFor(() => (
+    queryTimelineEvents('task_packaged_project_scope').some((event) => (
+      event.type === 'panel.completion_handoff'
+      && /task_packaged_project_plan/.test(event.payload ?? '')
+    ))
+    && queryTimelineEvents('task_packaged_project_plan').some((event) => (
+      event.type === 'panel.completion_handoff'
+      && /task_packaged_project_scope/.test(event.payload ?? '')
+    ))
+  ), 'persisted completion handoff timeline events');
+
+  const receivedRecord = queryTaskFiles('task_packaged_project_plan')
+    .find((file) => /received-handoff\.md$/.test(file.path));
+  if (!receivedRecord || !/## From/.test(receivedRecord.content) || !/确认 packaged 项目范围/.test(receivedRecord.content)) {
+    throw new Error('Received handoff Task Record is missing source recovery content.');
+  }
+
+  await page.getByRole('heading', { name: '产出 packaged 项目方案' }).waitFor({ timeout: timeoutMs });
+}
+
 if (process.platform !== 'darwin') {
   fail('macOS packaged project decomposition smoke requires macOS.');
 }
@@ -301,6 +460,7 @@ try {
 
   await assertFreshProjectDoesNotCreateTemplateChildren(page);
   await assertConfirmedProjectStructure(page);
+  await assertCompletionHandoff(page);
 
   await app.close();
   cleanup();

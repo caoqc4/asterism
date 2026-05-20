@@ -304,7 +304,7 @@ export class TaskService {
   private async attachArtifacts(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const artifacts = this.artifactRepository
       ? await this.artifactRepository.listRecentForTask(detail.id)
-      : [];
+      : detail.artifacts;
 
     return {
       ...detail,
@@ -315,7 +315,7 @@ export class TaskService {
   private async attachSourceContexts(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const sourceContexts = this.sourceContextRepository
       ? await this.sourceContextRepository.listActiveForTask(detail.id)
-      : [];
+      : detail.sourceContexts;
 
     return {
       ...detail,
@@ -326,7 +326,7 @@ export class TaskService {
   private async attachDecisions(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const decisions = this.decisionRepository
       ? await this.decisionRepository.listByTask(detail.id)
-      : [];
+      : detail.decisions;
 
     return {
       ...detail,
@@ -337,7 +337,7 @@ export class TaskService {
   private async attachTaskFiles(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const taskFiles = this.taskFileRepository
       ? await this.taskFileRepository.listForTask(detail.id)
-      : [];
+      : detail.taskFiles;
 
     return {
       ...detail,
@@ -348,10 +348,10 @@ export class TaskService {
   private async attachProcessTemplates(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const applied = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTask(detail.id)
-      : [];
+      : detail.processTemplates;
     const available = this.processTemplateRepository
       ? await this.processTemplateRepository.listActive()
-      : [];
+      : detail.availableProcessTemplates;
     const appliedIds = new Set(applied.map((item) => item.id));
 
     return {
@@ -364,12 +364,26 @@ export class TaskService {
   private async attachCompletionCriteria(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const completionCriteria = this.completionCriteriaRepository
       ? await this.completionCriteriaRepository.listForTask(detail.id)
-      : [];
+      : detail.completionCriteria;
 
     return {
       ...detail,
       completionCriteria,
     };
+  }
+
+  private async attachLifecycleGateDetail(detail: TaskDetailBase): Promise<TaskDetailBase> {
+    return this.attachTaskFiles(
+      await this.attachDecisions(
+        await this.attachSourceContexts(
+          await this.attachCompletionCriteria(
+            await this.attachArtifacts(
+              await this.attachDetailDependencyReevaluation(await this.attachDetailWaitingItem(detail)),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   private buildResumeCard(detail: TaskDetailBase): TaskResumeCardRecord {
@@ -601,7 +615,7 @@ export class TaskService {
   }
 
   private async assertTaskCanEnterRunning(detail: TaskDetailBase): Promise<void> {
-    const target = await this.attachDetailWaitingItem(detail);
+    const target = await this.attachLifecycleGateDetail(detail);
     const verification = evaluateRuntimeVerification({
       mode: 'subtask_start',
       targetTask: target,
@@ -628,13 +642,14 @@ export class TaskService {
   }
 
   private async assertTaskCanComplete(detail: TaskDetailBase): Promise<void> {
+    const enriched = await this.attachLifecycleGateDetail(detail);
     const memoryCoverage = evaluateTaskMemoryCoverage(
-      buildTaskMemoryCoverageInputForTask('task_completion', detail),
+      buildTaskMemoryCoverageInputForTask('task_completion', enriched),
     );
     if (!memoryCoverage.canProceed) {
       throw new Error(memoryCoverage.reason);
     }
-    await this.assertProjectCanComplete(detail);
+    await this.assertProjectCanComplete(enriched);
   }
 
   private async assertProjectCanComplete(detail: TaskDetailBase): Promise<void> {

@@ -1781,6 +1781,67 @@ describe('TaskService', () => {
     expect(result.state).toBe('completed');
   });
 
+  it('uses repository-backed task memory surfaces when completing a task', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('running'),
+        completionCriteria: [],
+        sourceContexts: [],
+        timeline: [{
+          id: 'event_1',
+          taskId: 'task_1',
+          type: 'task.completion_check',
+          payload: JSON.stringify({ action: 'passed' }),
+          createdAt: '2026-05-15T01:01:00.000Z',
+        }],
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn().mockResolvedValue(buildRecord('completed')),
+    };
+    const completionCriteria = {
+      listForTask: vi.fn().mockResolvedValue([buildCompletionCriteriaRecord({
+        status: 'satisfied',
+        satisfiedAt: '2026-05-15T01:00:00.000Z',
+        updatedAt: '2026-05-15T01:00:00.000Z',
+      })]),
+    };
+    const sourceContexts = {
+      listActiveForTask: vi.fn().mockResolvedValue([buildSourceContextRecord({ isKey: true })]),
+    };
+    const service = new TaskService(
+      repository as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+        upsertActive: vi.fn(),
+        resolveActive: vi.fn(),
+      } as never,
+      null,
+      sourceContexts as never,
+      null,
+      null,
+      null,
+      null,
+      completionCriteria as never,
+    );
+
+    const result = await service.transition({
+      id: 'task_1',
+      nextState: 'completed',
+    });
+
+    expect(completionCriteria.listForTask).toHaveBeenCalledWith('task_1');
+    expect(sourceContexts.listActiveForTask).toHaveBeenCalledWith('task_1');
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'completed',
+      waitingReason: null,
+    });
+    expect(result.state).toBe('completed');
+  });
+
   it('blocks project completion when child tasks are still open', async () => {
     const project = {
       ...buildDetail('running'),
