@@ -442,3 +442,7 @@ Remaining next steps are deciding whether native CLI progress is rich enough for
 2. Compare those findings against the Native Goal Forwarding Evidence Gate before changing adapter flags.
 3. Keep local daemon work blocked unless a real requirement crosses the Local Daemon Decision Rule.
 4. If Agent API verifier work resumes, start in shadow mode and measure the API Verifier Default-On Threshold before changing user-visible decisions.
+
+## Discovery Notes
+
+- 2026-05-20 local Codex CLI help probe (`codex-cli 0.125.0`) showed `exec`, `review`, `login`, `logout`, `mcp`, `plugin`, `mcp-server`, `app-server`, `app`, and `completion` as top-level commands. `codex goal --help` and `codex goals --help` returned the top-level help shape rather than an explicit native goal subcommand. This is evidence to keep Codex native goal passthrough audit-only until a concrete non-interactive command shape is found.
