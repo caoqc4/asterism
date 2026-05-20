@@ -242,6 +242,45 @@ A daemon becomes justified only if at least one of these requirements becomes re
 
 Until then, daemon work is deferred. The product should continue hardening the current harness contract, packaged smokes, and run evidence before adding another process boundary.
 
+### CLI Argument Exposure Rule
+
+Do not expose arbitrary custom CLI arguments in first-version settings. Runtime command shape stays adapter-owned:
+
+- Codex remains `codex exec --sandbox read-only --cd <workspace> --skip-git-repo-check -`.
+- Claude remains `claude -p --permission-mode plan --output-format text`.
+- Workspace-write or editing modes remain rejected at the service boundary.
+
+Guarded custom arguments can be considered only when each flag is modeled as a typed capability or policy field, not a free-form string. A future flag must declare:
+
+- which adapter owns it;
+- whether it changes workspace write capability, network/tool access, account scope, model spend, or persistence;
+- how it appears in command preview and run evidence;
+- which packaged fake-runtime smoke proves it does not bypass sandbox, cancellation, context assembly, task memory, or verifier gates.
+
+Until then, adapter code is the only place CLI arguments may be changed.
+
+### API Verifier Subagent Rule
+
+The future Agent API verifier subagent should augment, not replace, the current harness contract. It must consume the same persisted inputs the lightweight verifier already uses:
+
+- Run Goal Contract;
+- terminal step output, stderr/failure reason, and status;
+- task completion criteria and Task Goal lifecycle state;
+- task-memory guidance/proposal state;
+- selected execution runtime boundary and sandbox/permission mode.
+
+It must emit the same decision shape as `taskplane.verifier.lightweight`: verdict, decision, reason, evidence, missing evidence, next action, `shouldProposeTaskMemory`, `userConfirmationRequired`, and `canMarkTaskComplete`.
+
+Safety boundaries:
+
+- The API verifier may add richer evidence analysis, but it cannot mark a task complete by itself in the first version.
+- `userConfirmationRequired` remains true for Task Memory writes and task completion.
+- If the API verifier is unavailable, times out, or emits invalid structure, Taskplane falls back to the deterministic lightweight verifier.
+- API verifier output must be persisted as run verification evidence, not hidden chat text.
+- Packaged/non-provider smokes must continue to pass with the lightweight verifier only.
+
+This keeps the verifier subagent as an acceptance helper rather than a second execution runtime or an automatic completion authority.
+
 ### Plain text fallback
 
 If a slash command is unknown or unsupported by the current runtime, Taskplane should not guess. It should explain what is supported and offer to send the text as a normal task message.
@@ -351,7 +390,7 @@ First pass implemented on 2026-05-19:
 - RuntimeContextManifest includes the selected runtime label, kind, executable flag, and reason in the `runtime_capabilities` item, so Agent CLI accepted steps and context bridges carry the same runtime boundary shown in diagnostics.
 - Future Agent API execution should use the same entrypoint category as Agent CLI (`provider_visible_execution`) once it becomes executable. It must reuse runtime action, context assembly, task-memory coverage/guidance, pre-step, subtask-start, and post-step gates; Agent API cancellation/control and audit-only backend features should stay in separate control/audit entrypoint categories.
 
-Remaining next steps are deciding what evidence an adapter must provide before actual native-goal forwarding is allowed, and replacing the deterministic lightweight verifier with an optional API verifier subagent when the Agent API runtime is ready.
+Remaining next steps are deciding whether native CLI progress is rich enough for the Native Goal Forwarding Evidence Gate, and when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier.
 
 ## Non-Goals For The Next Pass
 
@@ -375,5 +414,4 @@ Remaining next steps are deciding what evidence an adapter must provide before a
 
 - How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate.
 - Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.
-- Whether guarded custom CLI arguments should be exposed through settings, or kept adapter-owned only.
-- How the future Agent API Runtime verifier/subagent replaces or augments the deterministic lightweight verifier contract.
+- What provider/model reliability threshold is required before enabling the optional API verifier subagent by default.
