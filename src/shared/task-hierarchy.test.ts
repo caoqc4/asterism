@@ -48,6 +48,21 @@ describe('task hierarchy helpers', () => {
     expect(isTopLevelTask(followup, [project, followup])).toBe(false);
   });
 
+  it('projects legacy phase follow-ups under an older simple parent with the exact title', () => {
+    const project = node({ id: 'project_1', title: '开发小程序', type: 'simple', state: 'captured', parentTaskId: null });
+    const followup = node({
+      id: 'followup_1',
+      title: '验收回归：开发小程序',
+      type: 'simple',
+      parentTaskId: null,
+      updatedAtIso: '2026-01-02T00:00:00.000Z',
+    });
+
+    expect(effectiveParentTaskId(followup, [project, followup])).toBe(project.id);
+    expect(isTopLevelTask(followup, [project, followup])).toBe(false);
+    expect(orderedChildrenForTask(project, [project, followup])).toEqual([followup]);
+  });
+
   it('includes legacy phase follow-ups as project children in hierarchy projection', () => {
     const project = node({ id: 'project_1', title: '开发小程序', type: 'project', parentTaskId: null });
     const followup = node({

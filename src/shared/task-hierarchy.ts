@@ -58,12 +58,18 @@ export function legacyPhaseFollowupParentForTask<T extends TaskHierarchyNode>(ta
   const match = LEGACY_PHASE_FOLLOWUP_PREFIX.exec(task.title.trim());
   const parentTitle = match?.[2]?.trim();
   if (!parentTitle) return null;
-  return allTasks.find((candidate) => (
+  const candidates = allTasks.filter((candidate) => (
     candidate.id !== task.id
-    && candidate.type === 'project'
     && !candidate.parentTaskId
+    && !isClosedTask(candidate)
     && candidate.title.trim() === parentTitle
-  )) ?? null;
+    && !LEGACY_PHASE_FOLLOWUP_PREFIX.test(candidate.title.trim())
+  ));
+  return candidates.sort((left, right) => {
+    if (left.type === 'project' && right.type !== 'project') return -1;
+    if (left.type !== 'project' && right.type === 'project') return 1;
+    return comparableUpdatedAt(right).localeCompare(comparableUpdatedAt(left));
+  })[0] ?? null;
 }
 
 export function inferredProjectParentForTask<T extends TaskHierarchyNode>(task: T, allTasks: T[]): T | null {
