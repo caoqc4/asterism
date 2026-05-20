@@ -37,6 +37,24 @@ Therefore Taskplane should:
 - record native goal commands and terminal outcomes in Taskplane's run history;
 - keep Taskplane's Run Goal Contract and verifier as the acceptance source of truth.
 
+For the first product version, the priority is borrowing the goal pattern, not forwarding native goal commands. The useful framework is durable objective state, explicit completion conditions, bounded continuation, pause/resume/clear controls, verifier judgment, and memory handoff. Native Codex/Claude goal invocation is a later adapter optimization after Taskplane's own task loop is stable.
+
+### DeepSeek As CLI Backend
+
+DeepSeek currently presents itself primarily as an OpenAI/Anthropic-compatible API provider rather than a standalone official coding-agent CLI. Its official docs show direct `curl`/SDK calls against `https://api.deepseek.com`, and an Agent Integrations guide explains how to point Claude Code at the DeepSeek Anthropic-compatible endpoint with environment variables such as `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic` and `ANTHROPIC_AUTH_TOKEN=<DeepSeek API Key>`.
+
+References:
+
+- https://api-docs.deepseek.com/
+- https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code
+
+For Taskplane, that means DeepSeek should be treated as:
+
+- a future Agent API/model provider candidate through the OpenAI/Anthropic-compatible API surface;
+- or a configured backend behind an existing CLI runtime such as Claude Code, if the user chooses that local CLI setup.
+
+It should not be modeled as a first-version peer Agent CLI runtime unless DeepSeek ships or documents a stable official CLI with task execution, cancellation, stdout/progress, and permission semantics comparable to Codex CLI or Claude Code.
+
 ### Anthropic Managed Agents
 
 Anthropic describes Managed Agents as a decoupled architecture with:
@@ -404,7 +422,7 @@ First pass implemented on 2026-05-19:
 - RuntimeContextManifest includes the selected runtime label, kind, executable flag, and reason in the `runtime_capabilities` item, so Agent CLI accepted steps and context bridges carry the same runtime boundary shown in diagnostics.
 - Future Agent API execution should use the same entrypoint category as Agent CLI (`provider_visible_execution`) once it becomes executable. It must reuse runtime action, context assembly, task-memory coverage/guidance, pre-step, subtask-start, and post-step gates; Agent API cancellation/control and audit-only backend features should stay in separate control/audit entrypoint categories.
 
-Remaining next steps are deciding whether native CLI progress is rich enough for the Native Goal Forwarding Evidence Gate, and when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier.
+Remaining next steps are hardening the Taskplane-owned goal loop and deciding when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier. Native CLI goal forwarding remains a later compatibility track, not a first-version product blocker.
 
 ## Non-Goals For The Next Pass
 
@@ -426,22 +444,24 @@ Remaining next steps are deciding whether native CLI progress is rich enough for
 
 ## Remaining Decisions
 
-- How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate.
+- How much of the Taskplane-owned goal loop should become automatic continuation versus explicit user-started task runs.
+- How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate. This is optional compatibility work, not the first-version goal-framework requirement.
 - Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.
 - Which measured shadow-mode results satisfy the API Verifier Default-On Threshold.
 
 ## Next Evaluation Checklist
 
-1. Run a manual Codex/Claude native-goal discovery pass outside the default smoke path, using fake or disposable tasks, and capture:
+1. Keep first-version `/goal` work focused on Taskplane-owned durable goal state, completion conditions, bounded execution evidence, verifier judgment, and user-confirmed task-memory proposals.
+2. If native runtime goal compatibility becomes important, run a manual Codex/Claude native-goal discovery pass outside the default smoke path, using fake or disposable tasks, and capture:
    - exact command forms;
    - stdout/stderr shape;
    - terminal status behavior;
    - cancellation behavior;
    - whether progress can be replayed without opening the native session.
    Use `npm run manual:agent-cli-native-goal-discovery` for version/help probes, and enable `TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY=true` only for disposable candidate command execution.
-2. Compare those findings against the Native Goal Forwarding Evidence Gate before changing adapter flags.
-3. Keep local daemon work blocked unless a real requirement crosses the Local Daemon Decision Rule.
-4. If Agent API verifier work resumes, start in shadow mode and measure the API Verifier Default-On Threshold before changing user-visible decisions.
+3. Compare those findings against the Native Goal Forwarding Evidence Gate before changing adapter flags.
+4. Keep local daemon work blocked unless a real requirement crosses the Local Daemon Decision Rule.
+5. If Agent API verifier work resumes, start in shadow mode and measure the API Verifier Default-On Threshold before changing user-visible decisions.
 
 ## Discovery Notes
 
