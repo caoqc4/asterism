@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ApiVerifierShadowSample } from './agent-runtime-verifier-shadow-readiness.js';
-import { evaluateApiVerifierShadowReadiness } from './agent-runtime-verifier-shadow-readiness.js';
+import {
+  buildApiVerifierShadowSampleFromRunDetail,
+  evaluateApiVerifierShadowReadiness,
+} from './agent-runtime-verifier-shadow-readiness.js';
+import type { RunDetailRecord, RunVerificationRecord } from './types/run.js';
 
 describe('agent-runtime-verifier-shadow-readiness', () => {
   it('blocks default-on verifier behavior until representative shadow evidence exists', () => {
@@ -93,6 +97,78 @@ describe('agent-runtime-verifier-shadow-readiness', () => {
     expect(currentOnly.missingKinds).toEqual(['agent_api']);
     expect(withAgentApi.ready).toBe(true);
   });
+
+  it('projects a future API verifier shadow sample from persisted run detail evidence', () => {
+    const detail = runDetail({
+      status: 'completed',
+      taskMemoryGuidance: {
+        latestGuidanceAt: '2026-05-20T00:02:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_record'],
+        reason: '待确认任务记忆。',
+        targets: ['task_record'],
+      },
+      verifications: [
+        runVerification({
+          source: 'lightweight_rule_engine',
+          tone: 'pass',
+          updatedAt: '2026-05-20T00:03:00.000Z',
+        }),
+        runVerification({
+          source: 'ai_verifier',
+          tone: 'pass',
+          updatedAt: '2026-05-20T00:04:00.000Z',
+        }),
+      ],
+    });
+
+    expect(buildApiVerifierShadowSampleFromRunDetail(detail)).toMatchObject({
+      id: 'run_1:api_verifier_shadow',
+      createdAtIso: '2026-05-20T00:04:00.000Z',
+      lightweightDecision: 'accept_for_review',
+      apiDecision: 'accept_for_review',
+      apiOutputValid: true,
+      disagreementInspectable: true,
+      kinds: ['successful_agent_cli', 'task_goal_conditions', 'pending_task_memory'],
+    });
+  });
+
+  it('marks invalid API verifier output as unusable shadow evidence without comparing decisions', () => {
+    const detail = runDetail({
+      verifications: [
+        runVerification({ source: 'lightweight_rule_engine', tone: 'warn' }),
+        runVerification({
+          source: 'ai_verifier',
+          tone: 'pass',
+          label: 'AI verifier structured output invalid',
+          detail: 'schema invalid',
+        }),
+      ],
+    });
+
+    expect(buildApiVerifierShadowSampleFromRunDetail(detail)).toMatchObject({
+      apiDecision: null,
+      apiOutputValid: false,
+      kinds: ['successful_agent_cli', 'missing_evidence', 'task_goal_conditions'],
+      lightweightDecision: 'needs_evidence',
+    });
+  });
+
+  it('does not project a shadow sample until both verifier records exist for an Agent CLI run', () => {
+    expect(buildApiVerifierShadowSampleFromRunDetail(runDetail({
+      instructions: 'Manual run',
+      steps: [],
+      verifications: [
+        runVerification({ source: 'lightweight_rule_engine', tone: 'pass' }),
+        runVerification({ source: 'ai_verifier', tone: 'pass' }),
+      ],
+    }))).toBeNull();
+    expect(buildApiVerifierShadowSampleFromRunDetail(runDetail({
+      verifications: [
+        runVerification({ source: 'lightweight_rule_engine', tone: 'pass' }),
+      ],
+    }))).toBeNull();
+  });
 });
 
 function buildCompleteSampleSet(): ApiVerifierShadowSample[] {
@@ -120,5 +196,53 @@ function sample(
     id: `sample_${number}`,
     kinds,
     lightweightDecision: decision,
+  };
+}
+
+function runDetail(partial: Partial<RunDetailRecord> = {}): RunDetailRecord {
+  return {
+    agentSessions: [],
+    artifacts: [],
+    checkpoints: [],
+    createdAt: '2026-05-20T00:00:00.000Z',
+    failureReason: null,
+    id: 'run_1',
+    instructions: partial.instructions ?? 'Agent CLI (Codex CLI) read-only: inspect task',
+    output: null,
+    outputSource: null,
+    status: partial.status ?? 'completed',
+    steps: partial.steps ?? [{
+      createdAt: '2026-05-20T00:01:00.000Z',
+      error: null,
+      id: 'step_contract',
+      index: 0,
+      input: null,
+      kind: 'plan',
+      output: 'completionConditions=2\n- 验收条件 A',
+      runId: 'run_1',
+      status: 'completed',
+      title: 'Agent CLI 目标契约',
+      updatedAt: '2026-05-20T00:01:00.000Z',
+    }],
+    taskId: 'task_1',
+    taskMemoryGuidance: partial.taskMemoryGuidance,
+    type: 'agent',
+    updatedAt: '2026-05-20T00:02:00.000Z',
+    verifications: partial.verifications ?? [],
+  };
+}
+
+function runVerification(partial: Partial<RunVerificationRecord>): RunVerificationRecord {
+  return {
+    createdAt: '2026-05-20T00:02:00.000Z',
+    detail: partial.detail ?? 'Verifier evidence is inspectable.',
+    id: partial.id ?? `verification_${partial.source ?? 'lightweight_rule_engine'}`,
+    label: partial.label ?? 'Run verifier',
+    runId: 'run_1',
+    source: partial.source ?? 'lightweight_rule_engine',
+    targetId: 'run_1',
+    targetType: 'run',
+    tone: partial.tone ?? 'pass',
+    updatedAt: partial.updatedAt ?? '2026-05-20T00:02:00.000Z',
   };
 }
