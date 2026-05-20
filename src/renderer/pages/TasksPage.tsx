@@ -27,9 +27,8 @@ import {
   type RuntimeReplayGroup,
 } from '@shared/runtime-event-record';
 import {
-  effectiveParentTaskId,
+  effectiveParentTaskId as sharedEffectiveParentTaskId,
   findNextOpenChildAfter,
-  isTopLevelTask,
   orderedChildrenForTask,
   orderedTaskChildren,
 } from '@shared/task-hierarchy';
@@ -255,6 +254,56 @@ function deriveStatus(r: TaskListItemRecord): TaskStatus {
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return `更新 ${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+function compactTaskTitle(value: string): string {
+  return value.replace(/[\s:：,，.。/\\|()[\]（）【】_-]+/g, '').trim();
+}
+
+function projectTaskKeyword(value: string): string {
+  return compactTaskTitle(value).replace(/^(开发|实现|建设|搭建|制作|设计|优化|测试|上线|发布|完成|推进)/, '');
+}
+
+function taskDependencyText(task: Task): string {
+  return compactTaskTitle(task.waitingOn ?? '');
+}
+
+function taskHasProjectDependencySignal(task: Task, allTasks: Task[], projectKey: string): boolean {
+  const taskTitle = compactTaskTitle(task.title);
+  const dependencyText = taskDependencyText(task);
+  if (dependencyText.includes(projectKey)) return true;
+
+  return allTasks.some((candidate) => {
+    const candidateTitle = compactTaskTitle(candidate.title);
+    const candidateDependencyText = taskDependencyText(candidate);
+    return candidateTitle.includes(projectKey)
+      && (
+        candidate.blockedByTaskId === task.id
+        || candidateDependencyText.includes(taskTitle)
+        || candidateDependencyText.includes(projectKey)
+      );
+  });
+}
+
+function rendererInferredProjectParentTaskId(task: Task, allTasks: Task[]): string | null {
+  if (task.parentTaskId) return null;
+  const taskTitle = compactTaskTitle(task.title);
+  if (!taskTitle) return null;
+  return allTasks.find((candidate) => {
+    if (candidate.id === task.id || candidate.parentTaskId || candidate.status === 'done') return false;
+    const key = projectTaskKeyword(candidate.title);
+    if (key.length < 2 || !taskTitle.includes(key)) return false;
+    return taskHasProjectDependencySignal(task, allTasks, key);
+  })?.id ?? null;
+}
+
+function effectiveParentTaskId(task: Task, allTasks: Task[]): string | null {
+  return sharedEffectiveParentTaskId(task, allTasks)
+    ?? rendererInferredProjectParentTaskId(task, allTasks);
+}
+
+function isTopLevelRuntimeTask(task: Task, allTasks: Task[]): boolean {
+  return !effectiveParentTaskId(task, allTasks);
 }
 
 function isTaskTypeLens(lens: Lens): boolean {
@@ -1064,30 +1113,30 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   }, [showCapture]);
 
   const activeTasks = allTasks.filter((task) => task.status !== 'done');
-  const projectParents = activeTasks.filter((task) => task.type === 'project' && isTopLevelTask(task, allTasks));
+  const projectParents = activeTasks.filter((task) => task.type === 'project' && isTopLevelRuntimeTask(task, allTasks));
   const taskTypeGroups: Array<{ key: string; label: string; lens: Lens; icon: string; tasks: Task[] }> = [
-    { key: 'simple', label: '一次性任务', lens: 'simple', icon: '•', tasks: activeTasks.filter((task) => task.type === 'simple' && isTopLevelTask(task, allTasks)) },
-    { key: 'project', label: '项目型', lens: 'project', icon: '▰', tasks: activeTasks.filter((task) => task.type === 'project' && isTopLevelTask(task, allTasks)) },
-    { key: 'scheduled', label: '定时任务', lens: 'scheduled', icon: '↻', tasks: activeTasks.filter((task) => task.type === 'scheduled' && isTopLevelTask(task, allTasks)) },
-    { key: 'event', label: '事件触发', lens: 'event', icon: '⚡', tasks: activeTasks.filter((task) => task.type === 'event' && isTopLevelTask(task, allTasks)) },
-    { key: 'routine', label: '常设任务', lens: 'routine', icon: '∞', tasks: activeTasks.filter((task) => task.type === 'routine' && isTopLevelTask(task, allTasks)) },
-    { key: 'composite', label: '复合任务', lens: 'composite', icon: '◈', tasks: activeTasks.filter((task) => task.facets.length > 1 && isTopLevelTask(task, allTasks)) },
+    { key: 'simple', label: '一次性任务', lens: 'simple', icon: '•', tasks: activeTasks.filter((task) => task.type === 'simple' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'project', label: '项目型', lens: 'project', icon: '▰', tasks: activeTasks.filter((task) => task.type === 'project' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'scheduled', label: '定时任务', lens: 'scheduled', icon: '↻', tasks: activeTasks.filter((task) => task.type === 'scheduled' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'event', label: '事件触发', lens: 'event', icon: '⚡', tasks: activeTasks.filter((task) => task.type === 'event' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'routine', label: '常设任务', lens: 'routine', icon: '∞', tasks: activeTasks.filter((task) => task.type === 'routine' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'composite', label: '复合任务', lens: 'composite', icon: '◈', tasks: activeTasks.filter((task) => task.facets.length > 1 && isTopLevelRuntimeTask(task, allTasks)) },
   ];
   const pendingDecisionTaskIds = new Set(pendingDecisions.map((decision) => decision.taskId));
   const tasksWithPendingDecision = allTasks.filter((task) => task.status !== 'done' && pendingDecisionTaskIds.has(task.id));
   const filtered = allTasks.filter((t) => {
     if (lens === 'all') return t.status !== 'done';
-    if (lens === 'running') return isProgressingTask(t) && isTopLevelTask(t, allTasks);
+    if (lens === 'running') return isProgressingTask(t) && isTopLevelRuntimeTask(t, allTasks);
     if (lens === 'waiting') return t.status === 'waiting';
     if (lens === 'blocked') return t.status === 'blocked';
     if (lens === 'clarify') return isClarifyTask(t);
     if (lens === 'needsDecision') return tasksWithPendingDecision.some((task) => task.id === t.id);
-    if (lens === 'simple') return t.status !== 'done' && t.type === 'simple' && isTopLevelTask(t, allTasks);
-    if (lens === 'project') return t.status !== 'done' && t.type === 'project' && isTopLevelTask(t, allTasks);
-    if (lens === 'scheduled') return t.status !== 'done' && t.type === 'scheduled' && isTopLevelTask(t, allTasks);
-    if (lens === 'event') return t.status !== 'done' && t.type === 'event' && isTopLevelTask(t, allTasks);
-    if (lens === 'routine') return t.status !== 'done' && t.type === 'routine' && isTopLevelTask(t, allTasks);
-    if (lens === 'composite') return t.status !== 'done' && t.facets.length > 1 && isTopLevelTask(t, allTasks);
+    if (lens === 'simple') return t.status !== 'done' && t.type === 'simple' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'project') return t.status !== 'done' && t.type === 'project' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'scheduled') return t.status !== 'done' && t.type === 'scheduled' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'event') return t.status !== 'done' && t.type === 'event' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'routine') return t.status !== 'done' && t.type === 'routine' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'composite') return t.status !== 'done' && t.facets.length > 1 && isTopLevelRuntimeTask(t, allTasks);
     if (lens === 'done') return t.status === 'done';
     if (lens.startsWith('project:')) {
       const projectId = lens.slice('project:'.length);
@@ -4294,6 +4343,8 @@ function TaskPreview({
   const completedCriteria = completionCriteria.filter((criterion) => criterion.status === 'satisfied').length;
   const orderedChildren = childTasks;
   const completedChildren = orderedChildren.filter((child) => child.status === 'done').length;
+  const hasChildTaskStructure = childTasks.length > 0;
+  const isProjectLikeTask = task.type === 'project' || hasChildTaskStructure;
   const projectVerificationResult = projectVerification?.project ?? null;
   const needsProjectDecomposition = task.type === 'project' && childTasks.length === 0;
   const isFreshProject = needsProjectDecomposition && !projectDraft;
@@ -4304,7 +4355,7 @@ function TaskPreview({
     && task.status !== 'blocked'
     && task.status !== 'waiting'
     && (completionCriteria.length > 0 || hasExecutionContext || runCount > 0 || task.type === 'scheduled' || task.type === 'event' || task.type === 'routine');
-  const hasStructureContent = task.type === 'project'
+  const hasStructureContent = isProjectLikeTask
     || task.type === 'routine'
     || completionCriteria.length > 0
     || Boolean(task.schedule)
@@ -4345,7 +4396,7 @@ function TaskPreview({
               disabled: false,
               tone: 'plan' as const,
             }
-          : task.type === 'project' && childTasks.length > 0
+          : isProjectLikeTask && childTasks.length > 0
             ? {
                 label: '推进子任务 →',
                 onClick: onOpenPanel,
@@ -4415,7 +4466,7 @@ function TaskPreview({
             {formatSecondaryFacets(task).map((facet) => (
               <span className="tag subtle" key={facet}>{facet}</span>
             ))}
-            {task.type === 'project' && <span className="preview-type-hint">可在项目型视图查看</span>}
+            {isProjectLikeTask && <span className="preview-type-hint">可在项目结构中查看子任务</span>}
             {task.type === 'scheduled' && <span className="preview-type-hint">周期触发</span>}
             {task.type === 'event' && <span className="preview-type-hint">监听外部条件</span>}
             {task.type === 'routine' && <span className="preview-type-hint">长期维护</span>}
@@ -4501,11 +4552,11 @@ function TaskPreview({
 
       <section className={`task-detail-layer structure${hasStructureContent ? '' : ' quiet'}`}>
         <div className="task-detail-layer-head">
-          <span className="preview-label">{task.type === 'project' ? '项目结构' : '结构'}</span>
+          <span className="preview-label">{isProjectLikeTask ? '项目结构' : '结构'}</span>
           {!hasStructureContent && <span className="preview-type-hint">按需建立</span>}
         </div>
 
-        {task.type === 'project' ? (
+        {isProjectLikeTask ? (
           <>
             <div className="task-detail-grid">
               <div className="task-detail-stat">

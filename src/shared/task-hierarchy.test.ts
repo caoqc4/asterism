@@ -4,6 +4,7 @@ import {
   effectiveParentTaskId,
   findNextOpenChildAfter,
   isTopLevelTask,
+  orderedChildrenForTask,
   orderedTaskChildren,
   type TaskHierarchyNode,
 } from './task-hierarchy.js';
@@ -15,6 +16,7 @@ function node(partial: Partial<TaskHierarchyNode>): TaskHierarchyNode {
     type: partial.type ?? 'simple',
     state: partial.state ?? 'planned',
     status: partial.status ?? 'idle',
+    blockedByTaskId: partial.blockedByTaskId,
     childTaskIds: partial.childTaskIds ?? [],
     updatedAtIso: partial.updatedAtIso ?? '2026-01-01T00:00:00.000Z',
   };
@@ -90,5 +92,37 @@ describe('task hierarchy helpers', () => {
       nextTask: second,
       parentTask: project,
     });
+  });
+
+  it('projects old dependency-chain project work under a matching top-level parent', () => {
+    const project = node({ id: 'project_1', title: '开发小程序', type: 'simple' });
+    const requirement = node({ id: 'child_1', title: '小程序需求分析与功能设计' });
+    const development = node({
+      id: 'child_2',
+      title: '小程序前后端开发与联调',
+      blockedByTaskId: requirement.id,
+    });
+    const testing = node({
+      id: 'child_3',
+      title: '小程序测试、安全加固与性能优化',
+      blockedByTaskId: development.id,
+    });
+
+    expect(effectiveParentTaskId(requirement, [project, requirement, development, testing])).toBe(project.id);
+    expect(effectiveParentTaskId(development, [project, requirement, development, testing])).toBe(project.id);
+    expect(effectiveParentTaskId(testing, [project, requirement, development, testing])).toBe(project.id);
+    expect(orderedChildrenForTask(project, [project, requirement, development, testing]).map((task) => task.id)).toEqual([
+      'child_1',
+      'child_2',
+      'child_3',
+    ]);
+  });
+
+  it('does not infer a project parent for an unrelated standalone task with a matching word', () => {
+    const project = node({ id: 'project_1', title: '开发小程序', type: 'simple' });
+    const standalone = node({ id: 'task_2', title: '小程序资料归档' });
+
+    expect(effectiveParentTaskId(standalone, [project, standalone])).toBeNull();
+    expect(isTopLevelTask(standalone, [project, standalone])).toBe(true);
   });
 });

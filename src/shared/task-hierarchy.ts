@@ -8,6 +8,10 @@ export type TaskHierarchyNode = {
   status?: TaskHierarchyState;
   parentTaskId?: string | null;
   childTaskIds?: string[];
+  blockedByTaskId?: string | null;
+  activeDependency?: {
+    blockedByTaskId?: string | null;
+  } | null;
   updatedAt?: string | null;
   updatedAtIso?: string | null;
 };
@@ -20,6 +24,33 @@ function comparableUpdatedAt(task: TaskHierarchyNode): string {
 
 function isClosedTask(task: TaskHierarchyNode): boolean {
   return task.status === 'done' || task.state === 'completed' || task.state === 'archived';
+}
+
+function compactTitle(value: string): string {
+  return value.replace(/[\s:：,，.。/\\|()[\]（）【】_-]+/g, '').trim();
+}
+
+function projectKeyword(value: string): string {
+  return compactTitle(value).replace(/^(开发|实现|建设|搭建|制作|设计|优化|测试|上线|发布|完成|推进)/, '');
+}
+
+function dependencyUpstreamTaskId(task: TaskHierarchyNode): string | null {
+  return task.blockedByTaskId ?? task.activeDependency?.blockedByTaskId ?? null;
+}
+
+function taskLooksConnectedToProjectWork<T extends TaskHierarchyNode>(
+  task: T,
+  allTasks: T[],
+  projectKey: string,
+): boolean {
+  const upstreamTaskId = dependencyUpstreamTaskId(task);
+  const upstreamTask = upstreamTaskId ? allTasks.find((candidate) => candidate.id === upstreamTaskId) : null;
+  const downstreamTask = allTasks.find((candidate) => dependencyUpstreamTaskId(candidate) === task.id);
+
+  return Boolean(
+    upstreamTask?.title && compactTitle(upstreamTask.title).includes(projectKey)
+    || downstreamTask?.title && compactTitle(downstreamTask.title).includes(projectKey),
+  );
 }
 
 export function legacyPhaseFollowupParentForTask<T extends TaskHierarchyNode>(task: T, allTasks: T[]): T | null {
@@ -35,13 +66,29 @@ export function legacyPhaseFollowupParentForTask<T extends TaskHierarchyNode>(ta
   )) ?? null;
 }
 
+export function inferredProjectParentForTask<T extends TaskHierarchyNode>(task: T, allTasks: T[]): T | null {
+  if (task.parentTaskId) return null;
+  const taskTitle = compactTitle(task.title);
+  if (!taskTitle) return null;
+
+  return allTasks.find((candidate) => {
+    if (candidate.id === task.id || candidate.parentTaskId || isClosedTask(candidate)) return false;
+    const key = projectKeyword(candidate.title);
+    if (key.length < 2 || !taskTitle.includes(key)) return false;
+    return taskLooksConnectedToProjectWork(task, allTasks, key);
+  }) ?? null;
+}
+
 export function effectiveParentTaskId<T extends TaskHierarchyNode>(task: T, allTasks: T[]): string | null {
   if (task.parentTaskId) return task.parentTaskId;
   const parentSideLink = allTasks.find((candidate) => (
     candidate.id !== task.id
     && (candidate.childTaskIds ?? []).includes(task.id)
   ));
-  return parentSideLink?.id ?? legacyPhaseFollowupParentForTask(task, allTasks)?.id ?? null;
+  return parentSideLink?.id
+    ?? legacyPhaseFollowupParentForTask(task, allTasks)?.id
+    ?? inferredProjectParentForTask(task, allTasks)?.id
+    ?? null;
 }
 
 export function isTopLevelTask<T extends TaskHierarchyNode>(task: T, allTasks: T[]): boolean {

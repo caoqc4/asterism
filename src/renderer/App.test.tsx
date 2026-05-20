@@ -3225,6 +3225,85 @@ describe('App redesign v1', () => {
     }
   });
 
+  it('keeps orphaned project dependency-chain tasks out of the top-level simple group', async () => {
+    const project = buildTask({
+      id: 'task_project_orphan_chain',
+      title: '开发小程序',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      childTaskIds: [],
+      nextStep: '确认项目拆解后继续推进。',
+      state: 'planned',
+    });
+    const requirement = buildTask({
+      id: 'task_orphan_requirement',
+      title: '小程序需求分析与功能设计',
+      taskType: 'simple',
+      parentTaskId: null,
+      childTaskIds: [],
+      state: 'planned',
+    });
+    const development = buildTask({
+      id: 'task_orphan_development',
+      title: '小程序前后端开发与联调',
+      taskType: 'simple',
+      parentTaskId: null,
+      childTaskIds: [],
+      activeDependency: buildTaskDependency({
+        id: 'dependency_orphan_development',
+        taskId: 'task_orphan_development',
+        blockedByTaskId: requirement.id,
+        blockedByTaskTitle: requirement.title,
+      }),
+      state: 'planned',
+    });
+    const testing = buildTask({
+      id: 'task_orphan_testing',
+      title: '小程序测试、安全加固与性能优化',
+      taskType: 'simple',
+      parentTaskId: null,
+      childTaskIds: [],
+      activeDependency: buildTaskDependency({
+        id: 'dependency_orphan_testing',
+        taskId: 'task_orphan_testing',
+        blockedByTaskId: development.id,
+        blockedByTaskTitle: development.title,
+      }),
+      state: 'planned',
+    });
+    harness.tasks.unshift(project, requirement, development, testing);
+    for (const task of [project, requirement, development, testing]) {
+      harness.details[task.id] = buildTaskDetail(task);
+    }
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    const cards = Array.from(document.querySelectorAll('.execution-queue-card')) as HTMLElement[];
+    const orderedTitles = cards.map((card) => card.textContent ?? '').filter((text) => text.includes('小程序'));
+    expect(orderedTitles).toHaveLength(1);
+    expect(orderedTitles[0]).toContain('开发小程序');
+    expect(orderedTitles[0]).not.toContain('小程序前后端开发与联调');
+    expect(orderedTitles[0]).not.toContain('小程序测试、安全加固与性能优化');
+
+    await user.click(screen.getByRole('button', { name: /一次性任务/ }));
+    const taskTypeChildren = document.querySelector('.task-type-children') as HTMLElement | null;
+    expect(taskTypeChildren?.querySelector('[data-title="开发小程序"]')).toBeTruthy();
+    expect(taskTypeChildren?.querySelector('[data-title="小程序前后端开发与联调"]')).toBeNull();
+    expect(taskTypeChildren?.querySelector('[data-title="小程序测试、安全加固与性能优化"]')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /当前建议/ }));
+    const projectCard = Array.from(document.querySelectorAll('.execution-queue-card'))
+      .find((card) => card.textContent?.includes('开发小程序')) as HTMLElement | undefined;
+    expect(projectCard).toBeTruthy();
+    await user.click(projectCard!);
+    expect(await screen.findByText('项目结构')).toBeTruthy();
+    expect(screen.getByText('小程序需求分析与功能设计')).toBeTruthy();
+    expect(screen.getByText('小程序前后端开发与联调')).toBeTruthy();
+    expect(screen.getByText('小程序测试、安全加固与性能优化')).toBeTruthy();
+  });
+
   it('suggests a fresh task session when recent AI replies stay generic', async () => {
     vi.mocked(harness.api.chatWithAI!).mockResolvedValue({
       text: '我会基于任务上下文给出下一步建议。你希望我重点关注哪个方向？',
