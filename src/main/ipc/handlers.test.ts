@@ -676,7 +676,7 @@ describe('registerIpcHandlers', () => {
 
     const handler = getRegisteredHandler<
       [{ messages: Array<{ role: 'user' | 'assistant'; content: string }>; taskId?: string | null }],
-      { text: string }
+      { text: string; invocation?: { phase: string; layer: string; runtime: { mode: string; label: string }; status: string; summary: string } }
     >('ai:chat');
 
     const result = await handler({}, {
@@ -685,6 +685,16 @@ describe('registerIpcHandlers', () => {
     });
 
     expect(result.text).toBe('AI response');
+    expect(result.invocation).toMatchObject({
+      phase: 'global_assistant',
+      layer: 'api_runtime',
+      runtime: {
+        mode: 'api',
+        label: 'Agent API Runtime · openai / gpt-test',
+      },
+      status: 'completed',
+      summary: '已生成全局 API Runtime 回答。',
+    });
     expect(getLanguageModelMock).toHaveBeenCalledWith(expect.objectContaining({
       model: 'gpt-test',
     }));
@@ -746,9 +756,19 @@ describe('registerIpcHandlers', () => {
       { text: string }
     >('ai:chat');
 
-    await handler({}, {
+    const result = await handler({}, {
       taskId: 'task_1',
       messages: [{ role: 'user', content: '现在该看什么？' }],
+    });
+    expect(result.invocation).toMatchObject({
+      phase: 'task_assistant',
+      layer: 'api_runtime',
+      runtime: {
+        mode: 'api',
+        label: 'Agent API Runtime · openai / gpt-test',
+      },
+      status: 'completed',
+      summary: '已生成任务上下文 API Runtime 回答。',
     });
 
     const system = generateTextMock.mock.calls[0]?.[0]?.system as string;

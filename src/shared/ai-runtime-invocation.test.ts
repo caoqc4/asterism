@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildApiRuntimeChatAssistantInvocation,
   buildApiRuntimeDecisionDraftInvocation,
   buildApiRuntimeDecompositionDraftInvocation,
   buildLocalTaskTypeReviewInvocation,
@@ -121,5 +122,29 @@ describe('ai runtime invocation contract', () => {
       },
       status: 'skipped',
     });
+  });
+
+  it('wraps API-runtime chat assistant responses with phase provenance', () => {
+    const globalInvocation = buildApiRuntimeChatAssistantInvocation({
+      phase: 'global_assistant',
+      runtimeLabel: 'Agent API Runtime · openai / gpt-test',
+      text: '今天先看阻塞。',
+    });
+    const taskInvocation = buildApiRuntimeChatAssistantInvocation({
+      phase: 'task_assistant',
+      text: '下一步是补齐验收标准。',
+    });
+
+    expect(globalInvocation).toMatchObject({
+      phase: 'global_assistant',
+      layer: 'api_runtime',
+      runtime: {
+        mode: 'api',
+        label: 'Agent API Runtime · openai / gpt-test',
+      },
+      status: 'completed',
+      text: '今天先看阻塞。',
+    });
+    expect(taskInvocation.summary).toContain('任务上下文');
   });
 });

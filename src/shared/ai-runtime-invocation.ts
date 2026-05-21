@@ -67,6 +67,12 @@ export type DecisionDraftInvocationResult = RuntimeInvocationBase & {
   draft: DecisionDraftRecord;
 };
 
+export type ChatAssistantInvocationResult = RuntimeInvocationBase & {
+  phase: 'global_assistant' | 'task_assistant';
+  layer: 'api_runtime';
+  text: string;
+};
+
 export function buildLocalTaskTypeReviewInvocation(
   input: TaskTypeReviewInvocationInput,
 ): TaskTypeReviewInvocationResult {
@@ -135,5 +141,28 @@ export function buildProductHarnessDecisionDraftInvocation(params: {
     status: 'skipped',
     summary: params.summary ?? 'AI Runtime 不可用，已生成本地待确认 Decision 草稿。',
     draft: params.draft,
+  };
+}
+
+export function buildApiRuntimeChatAssistantInvocation(params: {
+  phase: 'global_assistant' | 'task_assistant';
+  text: string;
+  runtimeLabel?: string;
+  summary?: string;
+}): ChatAssistantInvocationResult {
+  return {
+    phase: params.phase,
+    layer: 'api_runtime',
+    runtime: {
+      mode: 'api',
+      label: params.runtimeLabel ?? 'Agent API Runtime 助手',
+    },
+    status: 'completed',
+    summary: params.summary ?? (
+      params.phase === 'task_assistant'
+        ? '已生成任务上下文 API Runtime 回答。'
+        : '已生成全局 API Runtime 回答。'
+    ),
+    text: params.text,
   };
 }

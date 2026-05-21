@@ -22,6 +22,16 @@ export type ChatInput = {
 
 export type ChatResponse = {
   text: string;
+  invocation?: {
+    phase: 'global_assistant' | 'task_assistant';
+    layer: 'api_runtime';
+    runtime: {
+      mode: 'api';
+      label: string;
+    };
+    status: 'completed';
+    summary: string;
+  };
 };
 
 export type ProjectDecompositionInput = {

@@ -511,7 +511,7 @@ This pass checks the corrected product model against the actual code. The produc
 
 | Runtime phase | Current implementation | Current invocation layer | Evaluation | Next action |
 | --- | --- | --- | --- | --- |
-| Global chat / global helper | `RightPanel.send` uses `window.api.chatWithAI` only for the selected API runtime path; selected CLI global chat is marked not-yet-wired rather than falling through. `ipcMain.handle('ai:chat')` calls `generateText`. | API runtime path where selected; unsupported selected-CLI phase otherwise. | Better aligned with the two-choice runtime model. The remaining gap is implementing a CLI adapter for global assistant or explicitly leaving it unsupported. | Add an explicit `global_assistant` phase in the invocation contract and wire CLI support only when command shape, cancellation, and evidence are clear. |
+| Global chat / global helper | `RightPanel.send` uses `window.api.chatWithAI` only for the selected API runtime path; selected CLI global chat is marked not-yet-wired rather than falling through. `ipcMain.handle('ai:chat')` calls `generateText` and returns `global_assistant` or `task_assistant` provenance. | API runtime path where selected; unsupported selected-CLI phase otherwise. | Better aligned with the two-choice runtime model. The remaining gap is implementing a CLI adapter for global assistant or explicitly leaving it unsupported. | Wire CLI support only when command shape, cancellation, and evidence are clear. |
 | Task-bound chat when Agent CLI is ready | `RightPanel.send` calls `window.api.triggerAgentCliRun`; `AgentCliRunService` runs Codex/Claude with task context and read-only/plan boundaries. | Selected Agent CLI runtime. | This is the first-version selected-runtime path and is aligned. | Preserve behavior; future Agent API execution should implement the same phase contract instead of a separate product flow. |
 | Task-bound chat when selected runtime is unavailable | `RightPanel.send` now returns selected-runtime unavailable guidance and does not call `chatWithAI`. | Unsupported selected runtime phase. | Aligned. This prevents hidden cross-runtime execution and makes the user fix installation/login/runtime choice deliberately. | Preserve this behavior; add a future explicit "run with another runtime" user action if product needs it. |
 | Product `/goal` | `RightPanel` parses slash commands and writes task goal state/timeline through Taskplane handlers before chat or CLI forwarding. | Product harness, no selected runtime call. | Correct. Goal state belongs to Taskplane and should remain runtime-independent. | Keep native CLI goal forwarding as optional audit-only compatibility until adapter evidence exists. |
@@ -543,6 +543,10 @@ Project decomposition draft now uses the shared `decomposition_draft` invocation
 ### 2026-05-21 Decision Draft Invocation Update
 
 Decision drafts now carry optional `decision_draft` invocation provenance. Provider-backed drafts are labeled `api_runtime` with the configured provider/model; local fallback drafts are labeled `product_harness` with `skipped` status. Decision creation remains a separate user-confirmed write through `decision.create`.
+
+### 2026-05-21 Chat Assistant Invocation Update
+
+API Runtime chat responses now carry optional invocation provenance. Global chat is labeled `global_assistant`; task-bound API assistance is labeled `task_assistant`. Selected Agent CLI global chat remains unsupported rather than falling through to API Runtime.
 
 ## Non-Goals For The Next Pass
 

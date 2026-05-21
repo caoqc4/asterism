@@ -137,6 +137,14 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('TasksPage evaluates the target child with subtask_start before writing handoff records');
   });
 
+  it('records API runtime provenance for provider-visible chat assistance', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'ai.taskChat');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('provider_visible_assistance');
+    expect(entry?.notes).toContain('global_assistant or task_assistant invocation provenance');
+  });
+
   it('registers phase closeout as a handoff boundary without equating it to completion', () => {
     expect(requiredRuntimeEntrypointGatesForKind('phase_closeout_handoff')).toEqual([
       'simplicity_check',

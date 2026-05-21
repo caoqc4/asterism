@@ -63,6 +63,10 @@ import type { ApplyTaskHierarchyManualResolutionInput } from '../../shared/task-
 
 import { generateText } from 'ai';
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
+import {
+  buildApiRuntimeChatAssistantInvocation,
+  buildApiRuntimeDecompositionDraftInvocation,
+} from '../../shared/ai-runtime-invocation.js';
 import { getServices } from '../bootstrap/services.js';
 import { getLanguageModel } from '../executors/ai-client.js';
 import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
@@ -84,7 +88,6 @@ import {
   extractJsonObjectFromText,
   normalizeProjectDecompositionDraft,
 } from '../../shared/project-decomposition-draft.js';
-import { buildApiRuntimeDecompositionDraftInvocation } from '../../shared/ai-runtime-invocation.js';
 import { GmailOAuthControlService } from '../domain/external-access/gmail-oauth-control-service.js';
 
 const PING_CHANNEL = 'app:ping';
@@ -757,7 +760,25 @@ export function registerIpcHandlers(): void {
       })),
     });
 
-    return { text: result.text };
+    const invocation = buildApiRuntimeChatAssistantInvocation({
+      phase: input.taskId ? 'task_assistant' : 'global_assistant',
+      runtimeLabel: `Agent API Runtime · ${config.provider} / ${config.model}`,
+      text: result.text,
+    });
+
+    return {
+      text: invocation.text,
+      invocation: {
+        phase: invocation.phase,
+        layer: invocation.layer,
+        runtime: {
+          mode: 'api',
+          label: invocation.runtime.label,
+        },
+        status: invocation.status,
+        summary: invocation.summary,
+      },
+    };
   });
 
   ipcMain.handle('ai:decomposeProject', async (_event, input: ProjectDecompositionInput) => {
