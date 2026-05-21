@@ -184,7 +184,7 @@ describe('capability registry', () => {
       visibility: 'hidden',
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
-      summary: 'executionKind=api / status=development / executable=false',
+      summary: expect.stringContaining('executionKind=api / status=development / executable=false'),
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
@@ -404,6 +404,7 @@ function aiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
     configured: true,
     apiKeyStored: true,
     apiKeySource: 'env',
+    runtimeMode: 'api',
     provider: 'anthropic',
     model: 'claude-3-5-sonnet-latest',
     baseUrl: null,

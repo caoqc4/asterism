@@ -97,7 +97,7 @@ describe('runtime capability snapshot', () => {
     expect(snapshot.summary).toContain('runtime=unknown');
     expect(snapshot.summary).toContain('model=configured');
     expect(snapshot.summary).toContain('sandbox=not_probed');
-    expect(capabilitySnapshotAllowsModelExecution(snapshot)).toBe(true);
+    expect(capabilitySnapshotAllowsModelExecution(snapshot)).toBe(false);
     expect(capabilitySnapshotAllowsWorkspaceVerification(snapshot)).toBe(true);
   });
 
@@ -125,6 +125,8 @@ describe('runtime capability snapshot', () => {
     expect(agentApiSnapshot.summary).toContain('runtime=api');
     expect(agentApiSnapshot.summary).toContain('runtimeKind=agent_api');
     expect(agentApiSnapshot.summary).toContain('runtimeExecutable=no');
+    expect(capabilitySnapshotAllowsModelExecution(agentApiSnapshot)).toBe(true);
+    expect(capabilitySnapshotAllowsModelExecution(buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'codex' }) }))).toBe(false);
   });
 
   it('keeps missing capability state explicit', () => {

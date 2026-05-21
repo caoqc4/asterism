@@ -90,6 +90,7 @@ function buildAiStatus() {
     configured: true,
     apiKeyStored: true,
     apiKeySource: 'env',
+    runtimeMode: 'api',
     provider: 'fal-openrouter',
     model: 'google/gemini-2.5-flash',
     baseUrl: null,

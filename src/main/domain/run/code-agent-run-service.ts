@@ -118,7 +118,7 @@ export class CodeAgentRunService {
         hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || input.patchIntent?.trim()),
       })),
       taskMemoryGuidance,
-      requiresModelExecution: input.useModelProducer === true,
+      requiresModelExecution: input.useModelProducer === true && aiStatus.runtimeMode === 'api',
       requiresWorkspaceVerification: true,
     });
     if (!preStepVerification.canProceed) {

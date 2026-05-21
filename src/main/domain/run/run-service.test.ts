@@ -97,6 +97,7 @@ function buildConfiguredAiStatus(partial: Record<string, unknown> = {}) {
     configured: true,
     apiKeyStored: true,
     apiKeySource: 'env',
+    runtimeMode: 'api',
     provider: 'anthropic',
     model: 'claude-3-5-sonnet-latest',
     baseUrl: null,
@@ -1021,6 +1022,7 @@ describe('RunService', () => {
     const aiConfigService = {
       getStatus: vi.fn().mockResolvedValue({
         configured: true,
+        runtimeMode: 'api',
         provider: 'anthropic',
         model: 'claude-3-5-sonnet-latest',
         workspaceRoot: null,

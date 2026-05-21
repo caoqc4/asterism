@@ -235,11 +235,17 @@ export function buildCapabilityRegistry(params: {
 export function capabilityRegistryAllowsModelExecution(
   registry: CapabilityRegistryEntry[],
 ): boolean {
-  return registry.some((entry) => (
+  const providerConfigured = registry.some((entry) => (
     entry.id === 'model.provider'
     && entry.status === 'available'
     && entry.requiredGate === 'runtime_context_assembly'
   ));
+  const selectedAgentApiRuntime = registry.some((entry) => (
+    entry.id === 'agent_api.runtime'
+    && entry.summary.includes('selected=true')
+  ));
+
+  return providerConfigured && selectedAgentApiRuntime;
 }
 
 export function capabilityRegistryAllowsWorkspaceVerification(

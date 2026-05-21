@@ -253,6 +253,40 @@ describe('runtime verification', () => {
       mode: 'pre_step',
       tone: 'fail',
       label: '执行前缺少模型能力',
+      detail: '当前动作需要模型执行，但模型或 API Key 尚未配置。',
+      canProceed: false,
+      suggestedNextAction: 'inspect',
+    });
+  });
+
+  it('blocks model-required pre-step execution when Agent CLI is selected', () => {
+    expect(evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: evaluateRuntimeAction({
+        action: 'run_start',
+        fromTaskId: 'task_1',
+      }),
+      capabilities: buildRuntimeCapabilitySnapshot({
+        aiStatus: {
+          configured: true,
+          apiKeyStored: true,
+          apiKeySource: 'env',
+          runtimeMode: 'codex',
+          provider: 'openai',
+          model: 'gpt-test',
+          baseUrl: null,
+          workspaceRoot: null,
+          updatedAt: null,
+          configPath: null,
+          featureFlags: { enableScheduler: false },
+        },
+      }),
+      requiresModelExecution: true,
+    })).toMatchObject({
+      mode: 'pre_step',
+      tone: 'fail',
+      label: '执行前缺少模型能力',
+      detail: '当前动作需要 Agent API Runtime 模型执行，但当前选中的 AI Runtime 不是 Agent API。',
       canProceed: false,
       suggestedNextAction: 'inspect',
     });

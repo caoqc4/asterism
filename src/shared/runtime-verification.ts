@@ -271,11 +271,14 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
         && input.capabilities
         && !capabilityRegistryAllowsModelExecution(buildCapabilityRegistry({ snapshot: input.capabilities }))
       ) {
+        const detail = input.capabilities.model.configured && input.capabilities.executionRuntime.kind !== 'agent_api'
+          ? '当前动作需要 Agent API Runtime 模型执行，但当前选中的 AI Runtime 不是 Agent API。'
+          : '当前动作需要模型执行，但模型或 API Key 尚未配置。';
         return {
           mode: input.mode,
           tone: 'fail',
           label: '执行前缺少模型能力',
-          detail: '当前动作需要模型执行，但模型或 API Key 尚未配置。',
+          detail,
           source: 'lightweight_rule_engine',
           canProceed: false,
           requiresUserConfirmation: false,

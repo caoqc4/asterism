@@ -182,7 +182,7 @@ function summarizeCapabilityRegistry(registry: CapabilityRegistryEntry[]): Runti
 }
 
 export function capabilitySnapshotAllowsModelExecution(snapshot: RuntimeCapabilitySnapshot): boolean {
-  return snapshot.model.configured;
+  return snapshot.executionRuntime.kind === 'agent_api' && snapshot.model.configured;
 }
 
 export function capabilitySnapshotAllowsWorkspaceVerification(snapshot: RuntimeCapabilitySnapshot): boolean {
