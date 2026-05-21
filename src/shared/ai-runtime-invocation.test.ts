@@ -6,6 +6,8 @@ import {
   buildApiRuntimeDecompositionDraftInvocation,
   buildLocalTaskTypeReviewInvocation,
   buildProductHarnessDecisionDraftInvocation,
+  buildProductHarnessMemoryProposalInvocation,
+  buildProductHarnessVerificationAssistInvocation,
 } from './ai-runtime-invocation.js';
 
 describe('ai runtime invocation contract', () => {
@@ -146,5 +148,55 @@ describe('ai runtime invocation contract', () => {
       text: '今天先看阻塞。',
     });
     expect(taskInvocation.summary).toContain('任务上下文');
+  });
+
+  it('wraps product-harness verification and memory proposal phases', () => {
+    const verification = buildProductHarnessVerificationAssistInvocation({
+      verification: {
+        evaluator: 'taskplane.verifier.lightweight',
+        verdict: 'pass',
+        decision: 'accept_for_review',
+        reason: 'Runtime produced evidence.',
+        evidence: ['stdout=present'],
+        missingEvidence: [],
+        nextAction: 'review_memory_proposal',
+        userConfirmationRequired: true,
+        canMarkTaskComplete: false,
+        shouldProposeTaskMemory: true,
+        contract: {
+          completionConditionCount: 1,
+          completionConditions: ['回答用户请求'],
+          objective: '检查实现路径',
+          runId: 'run_1',
+          runtimeLabel: 'Codex CLI',
+          taskGoalStatus: 'active',
+          taskId: 'task_1',
+        },
+      },
+    });
+    const memory = buildProductHarnessMemoryProposalInvocation({
+      sourceRunId: 'run_1',
+      targets: ['task_record'],
+      userConfirmationRequired: true,
+    });
+
+    expect(verification).toMatchObject({
+      phase: 'verification_assist',
+      layer: 'product_harness',
+      runtime: {
+        mode: 'product_harness',
+        label: 'Taskplane lightweight verifier',
+      },
+      status: 'completed',
+    });
+    expect(memory).toMatchObject({
+      phase: 'memory_proposal',
+      layer: 'product_harness',
+      proposal: {
+        sourceRunId: 'run_1',
+        targets: ['task_record'],
+        userConfirmationRequired: true,
+      },
+    });
   });
 });

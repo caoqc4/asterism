@@ -209,6 +209,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).not.toContain('runtime_action');
     expect(entry?.requiredGates).not.toContain('runtime_context_assembly');
     expect(entry?.requiredGates).not.toContain('subtask_start');
+    expect(entry?.notes).toContain('verification_assist product-harness provenance');
     expect(entry?.notes).toContain('future API verifier subagent may augment this entrypoint');
     expect(entry?.notes).toContain('same persisted Run Goal Contract');
     expect(entry?.notes).toContain('lightweight and ai_verifier run-level records');

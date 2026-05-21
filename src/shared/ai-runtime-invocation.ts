@@ -1,4 +1,5 @@
 import type { AiRuntimeMode } from './types/settings.js';
+import type { AgentRuntimeVerifierResult } from './agent-runtime-verifier.js';
 import type { DecisionDraftRecord } from './types/decision.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
@@ -71,6 +72,22 @@ export type ChatAssistantInvocationResult = RuntimeInvocationBase & {
   phase: 'global_assistant' | 'task_assistant';
   layer: 'api_runtime';
   text: string;
+};
+
+export type VerificationAssistInvocationResult = RuntimeInvocationBase & {
+  phase: 'verification_assist';
+  layer: 'product_harness';
+  verification: AgentRuntimeVerifierResult;
+};
+
+export type MemoryProposalInvocationResult = RuntimeInvocationBase & {
+  phase: 'memory_proposal';
+  layer: 'product_harness';
+  proposal: {
+    sourceRunId: string;
+    targets: string[];
+    userConfirmationRequired: boolean;
+  };
 };
 
 export function buildLocalTaskTypeReviewInvocation(
@@ -164,5 +181,47 @@ export function buildApiRuntimeChatAssistantInvocation(params: {
         : '已生成全局 API Runtime 回答。'
     ),
     text: params.text,
+  };
+}
+
+export function buildProductHarnessVerificationAssistInvocation(params: {
+  verification: AgentRuntimeVerifierResult;
+  runtimeLabel?: string;
+  summary?: string;
+}): VerificationAssistInvocationResult {
+  return {
+    phase: 'verification_assist',
+    layer: 'product_harness',
+    runtime: {
+      mode: 'product_harness',
+      label: params.runtimeLabel ?? 'Taskplane lightweight verifier',
+    },
+    status: 'completed',
+    summary: params.summary ?? `Verifier decision: ${params.verification.decision}.`,
+    verification: params.verification,
+  };
+}
+
+export function buildProductHarnessMemoryProposalInvocation(params: {
+  sourceRunId: string;
+  targets: string[];
+  userConfirmationRequired: boolean;
+  runtimeLabel?: string;
+  summary?: string;
+}): MemoryProposalInvocationResult {
+  return {
+    phase: 'memory_proposal',
+    layer: 'product_harness',
+    runtime: {
+      mode: 'product_harness',
+      label: params.runtimeLabel ?? 'Taskplane Task Memory proposal',
+    },
+    status: 'completed',
+    summary: params.summary ?? '已生成待用户确认的任务记忆写入提案。',
+    proposal: {
+      sourceRunId: params.sourceRunId,
+      targets: params.targets,
+      userConfirmationRequired: params.userConfirmationRequired,
+    },
   };
 }

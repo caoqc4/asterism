@@ -548,6 +548,10 @@ Decision drafts now carry optional `decision_draft` invocation provenance. Provi
 
 API Runtime chat responses now carry optional invocation provenance. Global chat is labeled `global_assistant`; task-bound API assistance is labeled `task_assistant`. Selected Agent CLI global chat remains unsupported rather than falling through to API Runtime.
 
+### 2026-05-21 Verification And Memory Proposal Invocation Update
+
+Agent CLI terminal verification and task-memory proposals now carry product-harness invocation provenance in their run step input. The verifier step is labeled `verification_assist` and remains `product_harness`; the memory guidance step is labeled `memory_proposal` and remains a user-confirmed proposal, not a write.
+
 ## Non-Goals For The Next Pass
 
 - Do not enable workspace-write Agent CLI mode by default.

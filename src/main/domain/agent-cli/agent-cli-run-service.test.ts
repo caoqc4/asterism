@@ -98,6 +98,10 @@ describe('AgentCliRunService', () => {
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: '任务记忆建议',
+      input: expect.stringContaining('"phase":"memory_proposal"'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
       input: expect.stringContaining('- Runtime mode: Codex CLI / read-only.'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -119,6 +123,10 @@ describe('AgentCliRunService', () => {
       title: '验收子 Agent 检查',
       input: expect.stringContaining('taskplane.verifier.lightweight'),
       output: expect.stringContaining('Completion conditions: 本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '验收子 Agent 检查',
+      input: expect.stringContaining('"phase": "verification_assist"'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: '验收子 Agent 检查',

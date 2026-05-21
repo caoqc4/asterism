@@ -22,6 +22,10 @@ import {
 } from '../../../shared/agent-runtime-verifier.js';
 import { buildRuntimeCapabilitySnapshot } from '../../../shared/runtime-capability-snapshot.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
+import {
+  buildProductHarnessMemoryProposalInvocation,
+  buildProductHarnessVerificationAssistInvocation,
+} from '../../../shared/ai-runtime-invocation.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
 import {
   buildTaskMemoryGuidanceStateForTaskFiles,
@@ -426,6 +430,11 @@ export class AgentCliRunService {
         error: verificationStep.error,
       });
       if (verificationStep.verification.shouldProposeTaskMemory) {
+        const memoryInvocation = buildProductHarnessMemoryProposalInvocation({
+          sourceRunId: params.run.id,
+          targets: ['task_record'],
+          userConfirmationRequired: verificationStep.verification.userConfirmationRequired,
+        });
         await this.runStepRepository.create({
           runId: params.run.id,
           kind: 'plan',
@@ -433,6 +442,16 @@ export class AgentCliRunService {
           title: '任务记忆建议',
           input: JSON.stringify({
             decision: verificationStep.verification.decision,
+            invocation: {
+              phase: memoryInvocation.phase,
+              layer: memoryInvocation.layer,
+              runtime: {
+                mode: 'product_harness',
+                label: memoryInvocation.runtime.label,
+              },
+              status: memoryInvocation.status,
+              summary: memoryInvocation.summary,
+            },
             nextAction: verificationStep.verification.nextAction,
             source: 'agent_cli',
             sourceRunId: params.run.id,
@@ -676,12 +695,26 @@ function buildAgentCliGoalVerificationStep(params: {
     stdout: params.execution.stdout,
     terminalStatus: params.execution.status,
   });
+  const invocation = buildProductHarnessVerificationAssistInvocation({
+    runtimeLabel: 'Taskplane lightweight verifier',
+    verification,
+  });
   return {
     status: params.execution.status === 'failed' ? 'failed' : 'completed',
     input: JSON.stringify({
       canMarkTaskComplete: verification.canMarkTaskComplete,
       decision: verification.decision,
       evaluator: verification.evaluator,
+      invocation: {
+        phase: invocation.phase,
+        layer: invocation.layer,
+        runtime: {
+          mode: 'product_harness',
+          label: invocation.runtime.label,
+        },
+        status: invocation.status,
+        summary: invocation.summary,
+      },
       nextAction: verification.nextAction,
       runId: params.runId,
       runtimeLabel: params.runtimeLabel,
