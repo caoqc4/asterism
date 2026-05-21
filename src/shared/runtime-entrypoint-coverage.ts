@@ -307,7 +307,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'post_step',
     ],
-    notes: 'Code Agent model-producer mode is retained compatibility evidence for the future Agent API adapter: it must stay gated as provider-visible execution with shared context manifests, and must not be exposed as auxiliary provider assistance or an implicit fallback for selected Agent CLI runtimes.',
+    notes: 'Code Agent model-producer mode is retained compatibility evidence for the future Agent API adapter: it must stay gated as provider-visible execution with shared context manifests, blocks selected Agent CLI modes before resolving API config, and must not be exposed as auxiliary provider assistance or an implicit fallback for selected Agent CLI runtimes.',
   },
   {
     id: 'run.triggerAgentCli',

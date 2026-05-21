@@ -364,6 +364,39 @@ describe('CodeAgentRunService', () => {
     expect(result).toBe(failedRun);
   });
 
+  it('blocks model producer API adapter when Agent CLI is the selected runtime', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    aiConfigService.getStatus.mockResolvedValue({
+      ...buildAiStatus(),
+      runtimeMode: 'codex',
+    });
+    const failedRun = buildFailedRun(
+      'Code Agent model producer runtime blocked: 当前选择的是 Codex CLI，不会切换到 Agent API Runtime。',
+      '当前选择的是 Codex CLI，Code Agent model producer API adapter 不会切换到 Agent API Runtime。',
+    );
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      contextFiles: ['docs/notes.md'],
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent model producer runtime blocked: 当前选择的是 Codex CLI，不会切换到 Agent API Runtime。',
+      'system',
+      '当前选择的是 Codex CLI，Code Agent model producer API adapter 不会切换到 Agent API Runtime。',
+    );
+    expect(result).toBe(failedRun);
+  });
+
   it('blocks code-agent run start when the target task cannot start', async () => {
     taskService.getDetail.mockResolvedValue({
       ...buildTask(),

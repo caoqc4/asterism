@@ -212,6 +212,17 @@ export class CodeAgentRunService {
       );
     }
 
+    if (modelProducerRequested && aiStatus.runtimeMode && aiStatus.runtimeMode !== 'api') {
+      const selectedRuntimeLabel = aiStatus.runtimeMode === 'codex' ? 'Codex CLI' : 'Claude Code';
+      return this.updateRunResult(
+        run.id,
+        'failed',
+        `Code Agent model producer runtime blocked: 当前选择的是 ${selectedRuntimeLabel}，不会切换到 Agent API Runtime。`,
+        'system',
+        `当前选择的是 ${selectedRuntimeLabel}，Code Agent model producer API adapter 不会切换到 Agent API Runtime。`,
+      );
+    }
+
     if (modelProducerOptIn && !selectedContextFiles.length) {
       return this.updateRunResult(
         run.id,

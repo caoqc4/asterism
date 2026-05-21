@@ -72,6 +72,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).toContain('runtime_context_assembly');
     expect(entry?.requiredGates).toContain('task_memory_guidance');
     expect(entry?.notes).toContain('future Agent API adapter');
+    expect(entry?.notes).toContain('blocks selected Agent CLI modes before resolving API config');
     expect(entry?.notes).toContain('must not be exposed as auxiliary provider assistance');
     expect(entry?.notes).toContain('implicit fallback for selected Agent CLI runtimes');
   });
