@@ -5019,7 +5019,9 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByDisplayValue(/请推进子任务「明确网站目标与范围」/)).toBeTruthy();
     expect(screen.getByDisplayValue(/父任务：「开发一个网站」/)).toBeTruthy();
+    expect(screen.getByDisplayValue(/子任务摘要：确认网站类型、目标用户、核心价值和页面范围/)).toBeTruthy();
     expect(screen.queryByDisplayValue(/不要重新拆解父任务/)).toBeNull();
+    expect(screen.queryByDisplayValue(/审阅最新 agent 产物/)).toBeNull();
     expect(screen.getAllByText('明确网站目标与范围').length).toBeGreaterThan(0);
   });
 

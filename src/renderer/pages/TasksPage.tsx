@@ -869,11 +869,17 @@ function buildVisibleTaskPlanningDraft(taskTitle: string, type: TaskType): strin
 
 function buildChildTaskAdvanceDraft(child: Task, parent: Task): string {
   const nextStep = child.nextStep?.trim();
+  const usableNextStep = nextStep && !isGenericAgentReviewStep(nextStep) ? nextStep : null;
   return [
     `请推进子任务「${child.title}」。`,
     `父任务：「${parent.title}」。`,
-    nextStep ? `请按当前下一步推进：${nextStep}` : '请先确认这个子任务的目标、验收标准和第一步行动。',
+    child.whyNow ? `子任务摘要：${child.whyNow}` : null,
+    usableNextStep ? `请按当前下一步推进：${usableNextStep}` : '请先和我确认这个子任务的目标、验收标准和第一步行动。',
   ].filter((line): line is string => Boolean(line)).join('\n');
+}
+
+function isGenericAgentReviewStep(value: string): boolean {
+  return /审阅最新\s*(agent|draft|run|执行|产物)|决定是否继续推进|review latest/i.test(value);
 }
 
 function formatTaskTypeForDisplay(task: Task, parentTask: Task | null, displayType: TaskType = task.type): string {

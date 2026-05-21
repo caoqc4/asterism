@@ -219,10 +219,16 @@ describe('AgentCliRunService', () => {
     });
 
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.not.stringContaining('TASKPLANE_DECOMPOSITION'),
+      input: expect.not.stringContaining('"type":"TASKPLANE_DECOMPOSITION"'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.not.stringContaining('This is a Taskplane task-decomposition request'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('This is a Taskplane child-task advancement request'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('Do not create a TASKPLANE_DECOMPOSITION JSON block.'),
     }));
   });
 

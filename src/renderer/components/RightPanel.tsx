@@ -2128,11 +2128,11 @@ export function RightPanel({
       { role: 'user', content: text },
     ];
 
+    setThinking(true);
     setMessages((prev) => [...prev, userMsg]);
     setRecentDecompositionConfirmedTaskId(null);
     setSessionInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-    setThinking(true);
 
     const slashCommand = parseAgentRuntimeSlashCommand(text);
     let replyText: string | null;
@@ -2590,7 +2590,8 @@ export function RightPanel({
     ? activeAgentCliRun
     : null;
   const suppressSecondaryTaskSuggestions = Boolean(
-    agentCliLaunchNotice
+    thinking
+    || agentCliLaunchNotice
     || activeTaskAgentCliRun
     || taskDecompositionDraft
     || recentDecompositionConfirmedTaskId === activeTaskId

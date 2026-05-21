@@ -873,11 +873,12 @@ function buildCodexCliPrompt(params: {
   task: TaskDetail;
 }): string {
   const decompositionInstructions = buildTaskDecompositionPromptInstructions(params.prompt);
+  const childTaskInstructions = buildChildTaskAdvancePromptInstructions(params.prompt);
   return [
     'You are running as Codex CLI from inside Taskplane.',
     `Sandbox mode: ${params.sandboxMode}.`,
     'Do not modify files.',
-    decompositionInstructions ?? 'Answer with a concrete plan, risks, and verification steps. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
+    decompositionInstructions ?? childTaskInstructions ?? 'Answer with a concrete plan, risks, and verification steps. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
     '',
     `Task: ${params.task.title}`,
     params.task.summary ? `Summary: ${params.task.summary}` : null,
@@ -897,11 +898,12 @@ function buildClaudeCodePrompt(params: {
   task: TaskDetail;
 }): string {
   const decompositionInstructions = buildTaskDecompositionPromptInstructions(params.prompt);
+  const childTaskInstructions = buildChildTaskAdvancePromptInstructions(params.prompt);
   return [
     'You are running as Claude Code from inside Taskplane.',
     `Taskplane sandbox intent: ${params.sandboxMode}.`,
     'Claude Code is launched with --permission-mode plan. Research and propose; do not edit files, write files, or ask to continue into an editing mode.',
-    decompositionInstructions ?? 'Return a concise answer with findings, recommended next steps, risks, and verification checks. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
+    decompositionInstructions ?? childTaskInstructions ?? 'Return a concise answer with findings, recommended next steps, risks, and verification checks. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
     '',
     `Task: ${params.task.title}`,
     params.task.summary ? `Summary: ${params.task.summary}` : null,
@@ -930,9 +932,25 @@ function buildTaskDecompositionPromptInstructions(prompt: string): string | null
   ].join('\n');
 }
 
+function buildChildTaskAdvancePromptInstructions(prompt: string): string | null {
+  if (!isChildTaskAdvancementRequest(prompt)) return null;
+  return [
+    'This is a Taskplane child-task advancement request, not a decomposition request and not a parent-task review.',
+    'Focus on the current child task title, summary, and user request.',
+    'Do not create a TASKPLANE_DECOMPOSITION JSON block.',
+    'Return a concise Chinese response that helps the user confirm this child task: goal, acceptance criteria, first action, open questions, and risks.',
+    'Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
+  ].join('\n');
+}
+
 function isTaskDecompositionRequest(prompt: string): boolean {
   const normalized = prompt.replace(/\s+/g, ' ').trim();
   return /拆解|拆分|拆成|分解|任务方案|子任务方案|子任务草案|生成.{0,12}子任务|创建.{0,12}子任务|规划.{0,12}子任务|decompos|break\s*down|split.{0,24}(task|subtask)|subtask.{0,16}(plan|draft|breakdown)/i.test(normalized);
+}
+
+function isChildTaskAdvancementRequest(prompt: string): boolean {
+  const normalized = prompt.replace(/\s+/g, ' ').trim();
+  return /推进子任务|开始.{0,8}子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
 }
 
 export function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promise<AgentCliExecutionResult> {
