@@ -441,7 +441,9 @@ export class AgentCliRunService {
         output: verificationStep.output,
         error: verificationStep.error,
       });
-      if (verificationStep.verification.shouldProposeTaskMemory) {
+      const shouldCreateTaskMemoryProposal = verificationStep.verification.shouldProposeTaskMemory
+        && !isChildTaskAdvancementRequest(params.runContract.userRequest);
+      if (shouldCreateTaskMemoryProposal) {
         const memoryInvocation = buildProductHarnessMemoryProposalInvocation({
           sourceRunId: params.run.id,
           targets: ['task_record'],
@@ -527,8 +529,8 @@ export class AgentCliRunService {
         message,
       ).catch(() => null);
       if (failed) {
-        await this.taskService.annotateRunFailed(params.task.id, message, failed.id).catch(() => undefined);
-        await this.notifyTerminalRun(failed).catch(() => undefined);
+        await Promise.resolve(this.taskService.annotateRunFailed(params.task.id, message, failed.id)).catch(() => undefined);
+        await Promise.resolve(this.notifyTerminalRun(failed)).catch(() => undefined);
       }
     }
   }
@@ -938,7 +940,10 @@ function buildChildTaskAdvancePromptInstructions(prompt: string): string | null 
     'This is a Taskplane child-task advancement request, not a decomposition request and not a parent-task review.',
     'Focus on the current child task title, summary, and user request.',
     'Do not create a TASKPLANE_DECOMPOSITION JSON block.',
-    'Return a concise Chinese response that helps the user confirm this child task: goal, acceptance criteria, first action, open questions, and risks.',
+    'Drive the discussion one step at a time.',
+    'Return a concise Chinese response with a short analysis of the child task, then ask exactly one most important question for the user to answer next.',
+    'Do not list every missing field at once. Do not produce a checklist unless the user asks for one.',
+    'After the user answers, Taskplane will continue the next question or action in a later run.',
     'Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
   ].join('\n');
 }

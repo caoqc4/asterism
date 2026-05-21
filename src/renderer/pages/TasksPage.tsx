@@ -874,7 +874,9 @@ function buildChildTaskAdvanceDraft(child: Task, parent: Task): string {
     `请推进子任务「${child.title}」。`,
     `父任务：「${parent.title}」。`,
     child.whyNow ? `子任务摘要：${child.whyNow}` : null,
-    usableNextStep ? `请按当前下一步推进：${usableNextStep}` : '请先和我确认这个子任务的目标、验收标准和第一步行动。',
+    usableNextStep
+      ? `当前下一步：${usableNextStep}`
+      : '请先判断当前最需要确认的一件事，只问我一个问题，等我回答后再继续。',
   ].filter((line): line is string => Boolean(line)).join('\n');
 }
 
@@ -2914,7 +2916,6 @@ function resetCaptureDraft() {
                     nextChildTask.id,
                     buildChildTaskAdvanceDraft(nextChildTask, selectedTask),
                     nextChildTask.title,
-                    false,
                     true,
                     true,
                   );

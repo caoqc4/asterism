@@ -76,6 +76,7 @@ type ActiveAgentCliRunState = {
   runtimeId: AgentCliRuntimeId;
   runtimeLabel: string;
   status: 'running' | 'cancelling';
+  suppressMemoryProposal?: boolean;
   taskId: string;
 };
 const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
@@ -754,6 +755,11 @@ function parseAgentCliDecompositionDraft(output: string, runId: string): TaskDec
   return fallback && fallback.subtasks.length >= 2 ? fallback : null;
 }
 
+function isChildTaskAdvancementText(value: string): boolean {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  return /推进子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
+}
+
 function parseDecompositionJson(value: string, runId: string): TaskDecompositionDraft | null {
   const start = value.indexOf('{');
   const end = value.lastIndexOf('}');
@@ -1232,7 +1238,8 @@ export function RightPanel({
             ? '失败'
             : detail.status;
         const output = detail.output?.trim() || detail.failureReason || '终态已记录。';
-        const proposal = detail.taskMemoryWriteProposals?.[0];
+        const suppressMemoryProposal = Boolean(current.suppressMemoryProposal);
+        const proposal = suppressMemoryProposal ? null : detail.taskMemoryWriteProposals?.[0];
         const decompositionDraft = parseAgentCliDecompositionDraft(output, detail.id);
         if (decompositionDraft) {
           setTaskDecompositionDraft(decompositionDraft);
@@ -1258,7 +1265,7 @@ export function RightPanel({
     const key = `${taskId ?? 'global'}:${draftPrompt}`;
     if (lastAutoSentDraftPromptRef.current === key) return;
     lastAutoSentDraftPromptRef.current = key;
-    void send(draftPrompt);
+    void send(draftPrompt, { displayUserMessage: false });
   }, [activeTaskId, aiRuntimeStatusLoaded, autoSendDraftPrompt, draftPrompt, taskId]);
 
   useEffect(() => {
@@ -2114,22 +2121,25 @@ export function RightPanel({
     }
   }
 
-  async function send(forcedText?: string) {
+  async function send(forcedText?: string, options: { displayUserMessage?: boolean } = {}) {
     const text = (forcedText ?? input).trim();
     if (!text || thinking) return;
+    const displayUserMessage = options.displayUserMessage ?? true;
     patchSession({
       manualRefreshReady: null,
       taskFileProposal: null,
     });
 
-    const userMsg: Message = { id: nextId(), role: 'user', text, ts: now() };
     const historyForAI: ChatMessage[] = [
       ...messages.map((m) => ({ role: m.role, content: m.text })),
       { role: 'user', content: text },
     ];
 
     setThinking(true);
-    setMessages((prev) => [...prev, userMsg]);
+    if (displayUserMessage) {
+      const userMsg: Message = { id: nextId(), role: 'user', text, ts: now() };
+      setMessages((prev) => [...prev, userMsg]);
+    }
     setRecentDecompositionConfirmedTaskId(null);
     setSessionInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -2164,6 +2174,7 @@ export function RightPanel({
             runtimeId: activeAgentCliRuntimeMode,
             runtimeLabel,
             status: 'running',
+            suppressMemoryProposal: isChildTaskAdvancementText(text),
             taskId: activeTaskId,
           });
         }
@@ -2171,7 +2182,7 @@ export function RightPanel({
           ? null
           : formatAgentCliRunMessage({
               output,
-              proposalCreated: Boolean(detail?.taskMemoryWriteProposals?.length),
+              proposalCreated: !isChildTaskAdvancementText(text) && Boolean(detail?.taskMemoryWriteProposals?.length),
               runId: run.id,
               runtimeLabel,
               statusText: run.status === 'completed' ? '已完成' : run.status,

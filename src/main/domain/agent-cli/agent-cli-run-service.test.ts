@@ -213,7 +213,7 @@ describe('AgentCliRunService', () => {
       prompt: [
         '请推进子任务「明确网站目标与范围」。',
         '父任务：「开发一个网站」。',
-        '请先确认这个子任务的目标、验收标准和第一步行动。',
+        '请先判断当前最需要确认的一件事，只问我一个问题，等我回答后再继续。',
       ].join('\n'),
       taskId: 'task_1',
     });
@@ -229,6 +229,9 @@ describe('AgentCliRunService', () => {
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('Do not create a TASKPLANE_DECOMPOSITION JSON block.'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('ask exactly one most important question'),
     }));
   });
 
@@ -417,6 +420,51 @@ describe('AgentCliRunService', () => {
         title: '验收子 Agent 检查',
         input: expect.stringContaining('"decision": "needs_evidence"'),
         output: expect.stringContaining('Should propose task memory: no'),
+      }));
+    });
+    expect(runStepRepository.create).not.toHaveBeenCalledWith(expect.objectContaining({
+      title: '任务记忆建议',
+    }));
+  });
+
+  it('keeps child task advancement conversational without creating a memory confirmation proposal', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: '请先确认网站类型：官网、作品集、产品页还是后台系统？',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: [
+        '请推进子任务「明确网站目标与范围」。',
+        '父任务：「开发一个网站」。',
+        '请先判断当前最需要确认的一件事，只问我一个问题，等我回答后再继续。',
+      ].join('\n'),
+      taskId: 'task_1',
+    });
+
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('ask exactly one most important question'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.not.stringContaining('TASKPLANE_DECOMPOSITION JSON block with this exact shape'),
+    }));
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'final',
+        title: '验收子 Agent 检查',
       }));
     });
     expect(runStepRepository.create).not.toHaveBeenCalledWith(expect.objectContaining({

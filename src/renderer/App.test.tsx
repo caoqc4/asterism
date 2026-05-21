@@ -4993,7 +4993,7 @@ describe('App redesign v1', () => {
       taskType: 'simple',
       taskFacets: ['simple'],
       summary: '确认网站类型、目标用户、核心价值和页面范围。',
-      nextStep: null,
+      nextStep: '',
     });
     const secondChild = buildTask({
       id: 'task_child_design',
@@ -5017,11 +5017,20 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
     await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
 
-    expect(await screen.findByDisplayValue(/请推进子任务「明确网站目标与范围」/)).toBeTruthy();
-    expect(screen.getByDisplayValue(/父任务：「开发一个网站」/)).toBeTruthy();
-    expect(screen.getByDisplayValue(/子任务摘要：确认网站类型、目标用户、核心价值和页面范围/)).toBeTruthy();
-    expect(screen.queryByDisplayValue(/不要重新拆解父任务/)).toBeNull();
-    expect(screen.queryByDisplayValue(/审阅最新 agent 产物/)).toBeNull();
+    await waitFor(() => {
+      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_child_scope',
+        messages: expect.arrayContaining([
+          expect.objectContaining({ content: expect.stringContaining('请推进子任务「明确网站目标与范围」') }),
+          expect.objectContaining({ content: expect.stringContaining('子任务摘要：确认网站类型、目标用户、核心价值和页面范围') }),
+          expect.objectContaining({ content: expect.stringContaining('只问我一个问题') }),
+        ]),
+      }));
+    });
+    expect(screen.queryByDisplayValue(/请推进子任务「明确网站目标与范围」/)).toBeNull();
+    expect(screen.queryByText(/请推进子任务「明确网站目标与范围」/)).toBeNull();
+    expect(screen.queryByText(/不要重新拆解父任务/)).toBeNull();
+    expect(screen.queryByText(/审阅最新 agent 产物/)).toBeNull();
     expect(screen.getAllByText('明确网站目标与范围').length).toBeGreaterThan(0);
   });
 
