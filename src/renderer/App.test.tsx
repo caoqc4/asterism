@@ -2652,28 +2652,16 @@ describe('App redesign v1', () => {
     });
     expect(await screen.findByText(/已捕获为任务/)).toBeTruthy();
     expect(screen.getByText(/确认后才进入 Tasks/)).toBeTruthy();
-    expect(screen.getByText(/真实子任务仍需你确认/)).toBeTruthy();
+    expect(screen.getByText(/如果需要调整类型、补齐上下文或拆解项目/)).toBeTruthy();
     expect(screen.getByText(/这是待确认任务/)).toBeTruthy();
     expect(screen.getByText(/放弃需要二次确认/)).toBeTruthy();
     expect(await screen.findByPlaceholderText(/关于「准备投资人沟通材料」/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '判断任务类型' }));
-    expect(await screen.findByLabelText('任务类型校验提案')).toBeTruthy();
-    expect(screen.getByText('当前类型')).toBeTruthy();
-    expect(screen.getAllByText('一次性').length).toBeGreaterThan(0);
-    expect(screen.getByText('本地结构化类型规则')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '判断任务类型' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /规划下一步|拆解项目结构/ })).toBeNull();
     expect(harness.api.transitionTask).not.toHaveBeenCalledWith({
       id: 'task_created',
       nextState: 'planned',
     });
-    await user.click(screen.getByRole('button', { name: '确认类型' }));
-    await waitFor(() => {
-      expect(harness.api.updateTask).toHaveBeenCalledWith({
-        id: 'task_created',
-        taskType: 'simple',
-        taskFacets: ['simple'],
-      });
-    });
-    expect(await screen.findByText(/已确认任务类型/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '确认加入 Tasks' }));
     await waitFor(() => {
       expect(harness.api.transitionTask).toHaveBeenCalledWith({
@@ -2804,6 +2792,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.click(await screen.findByText(/^上下文$/));
     await user.click(screen.getByRole('button', { name: '仅提醒' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
 
@@ -2825,6 +2814,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.click(await screen.findByText(/^上下文$/));
     await user.click(screen.getByRole('button', { name: '手动确认' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
     await user.type(input, '这轮先保留 Playwright 作为动态页面候选');

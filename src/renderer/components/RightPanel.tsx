@@ -57,18 +57,12 @@ import {
   type AgentRuntimeAdapterCapabilities,
 } from '@shared/agent-runtime-goal';
 import {
-  TASK_TYPE_REVIEW_LABELS,
-  type TaskTypeReviewProposal,
-} from '@shared/task-type-review-proposal';
-import { buildLocalTaskTypeReviewInvocation } from '@shared/ai-runtime-invocation';
-import {
   selectApplicableWorkHabitMatches,
   getPersistedWorkHabitStorageSnapshot,
   recordWorkHabitApplications,
   summarizeWorkHabitMatchesForPrompt,
 } from '../lib/workHabits';
 import {
-  buildTaskPlanningPrompt,
   getTaskAttributes,
   inferTaskTypeProfile,
   type TaskExecutionType,
@@ -930,8 +924,6 @@ export function RightPanel({
   const [abandoningCapturedTask, setAbandoningCapturedTask] = useState(false);
   const [savingPhaseCloseout, setSavingPhaseCloseout] = useState(false);
   const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
-  const [savingTaskTypeProposal, setSavingTaskTypeProposal] = useState(false);
-  const [taskTypeReviewProposal, setTaskTypeReviewProposal] = useState<TaskTypeReviewProposal | null>(null);
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -989,7 +981,6 @@ export function RightPanel({
 
   useEffect(() => {
     activeTaskIdRef.current = activeTaskId;
-    setTaskTypeReviewProposal(null);
   }, [activeTaskId]);
 
   useEffect(() => {
@@ -1479,7 +1470,7 @@ export function RightPanel({
       });
       setTitleCache((prev) => ({ ...prev, [created.id]: created.title }));
       onTaskCaptured?.(created.id);
-      appendSysMsg(`已捕获为任务：**${created.title}**（待确认）。接下来先让 AI 判断任务类型，必要时补齐上下文或拆解；确认后才进入 Tasks，真实子任务仍需你确认。`);
+      appendSysMsg(`已捕获为任务：**${created.title}**（待确认）。确认后才进入 Tasks；如果需要调整类型、补齐上下文或拆解项目，可以直接在聊天里说明。`);
     } catch {
       appendSysMsg('捕获任务失败，请稍后再试。');
     } finally {
@@ -1894,7 +1885,6 @@ export function RightPanel({
   async function send(forcedText?: string) {
     const text = (forcedText ?? input).trim();
     if (!text || thinking) return;
-    setTaskTypeReviewProposal(null);
     patchSession({
       manualRefreshReady: null,
       taskFileProposal: null,
@@ -2002,52 +1992,6 @@ export function RightPanel({
 
     setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: replyText, ts: now() }]);
     setThinking(false);
-  }
-
-  function proposeTaskTypeReview() {
-    if (!activeTaskId || !title) return;
-    const invocation = buildLocalTaskTypeReviewInvocation({
-      taskId: activeTaskId,
-      taskTitle: title,
-      currentType: activeTaskType ?? 'simple',
-    });
-    setTaskTypeReviewProposal(invocation.proposal);
-  }
-
-  async function confirmTaskTypeReviewProposal() {
-    if (!taskTypeReviewProposal || savingTaskTypeProposal) return;
-    if (!window.api?.updateTask) {
-      appendSysMsg('当前环境暂不支持写回任务类型。');
-      return;
-    }
-    setSavingTaskTypeProposal(true);
-    try {
-      const updated = await window.api.updateTask({
-        id: taskTypeReviewProposal.taskId,
-        taskType: taskTypeReviewProposal.suggestedType,
-        taskFacets: taskTypeReviewProposal.suggestedFacets,
-      });
-      setActiveTaskDetail((prev) => prev && prev.id === updated.id
-        ? {
-          ...prev,
-          taskType: updated.taskType,
-          taskFacets: updated.taskFacets,
-          updatedAt: updated.updatedAt,
-        }
-        : prev);
-      appendSysMsg([
-        '已确认任务类型。',
-        '',
-        `类型：${TASK_TYPE_REVIEW_LABELS[taskTypeReviewProposal.suggestedType]}`,
-        `来源：${taskTypeReviewProposal.sourceLabel}`,
-        `下一步：${taskTypeReviewProposal.nextAction}`,
-      ].join('\n'));
-      setTaskTypeReviewProposal(null);
-    } catch (error) {
-      appendSysMsg(`任务类型写回失败：${error instanceof Error ? error.message : '未知错误'}`);
-    } finally {
-      setSavingTaskTypeProposal(false);
-    }
   }
 
   async function handleAgentRuntimeSlashCommand(command: ReturnType<typeof parseAgentRuntimeSlashCommand>): Promise<string> {
@@ -2338,7 +2282,6 @@ export function RightPanel({
 
   const title = taskTitle(activeTaskId, titleCache);
   const activeAttrs = activeTaskId ? getTaskAttributes(activeTaskId) : null;
-  const activeTaskType = activeTaskDetail?.taskType ?? activeAttrs?.type ?? null;
   const userMessageTexts = messages
     .filter((message) => message.role === 'user')
     .map((message) => message.text.trim())
@@ -2513,24 +2456,6 @@ export function RightPanel({
     timeline: activeTaskDetail?.timeline,
   });
   const taskGoalLabel = taskGoalState.status === 'cleared' ? null : taskGoalState.objective;
-  const taskPlanningPrompt = activeTaskType && title
-    ? buildTaskPlanningPrompt(title, activeTaskType, 'panel')
-    : null;
-  const canReviewTaskType = Boolean(activeTaskId && title);
-  const quickPrompts = activeTaskId
-    ? [
-        ...(taskPlanningPrompt
-          ? [taskPlanningPrompt]
-          : []),
-        { label: '总结一下现在的状态', prompt: '总结一下现在的状态' },
-        { label: '下一步怎么推进？', prompt: '下一步怎么推进？' },
-        { label: '有什么风险需要注意？', prompt: '有什么风险需要注意？' },
-      ]
-    : [
-        { label: '今天重点处理什么？', prompt: '今天重点处理什么？' },
-        { label: '把待办整理成任务', prompt: '把这些待办整理成任务' },
-        { label: '最近有什么需要跟进的？', prompt: '最近有什么需要跟进的？' },
-      ];
   const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
 
   useEffect(() => {
@@ -2621,13 +2546,6 @@ export function RightPanel({
           <div className="panel-empty">
             <p>围绕任务或想法说一句…</p>
             <span className="muted">重要内容会进入任务记忆，不依赖聊天窗口长期保存。</span>
-            <div className="panel-prompts">
-              {quickPrompts.map((p) => (
-                <button key={p.label} className="panel-prompt-chip" onClick={() => { setSessionInput(p.prompt); textareaRef.current?.focus(); }}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
@@ -2708,43 +2626,6 @@ export function RightPanel({
             <button className="btn sm ghost" onClick={proposeTaskFileWrite}>
               生成文件提案
             </button>
-          </div>
-        )}
-
-        {taskTypeReviewProposal && (
-          <div className="panel-file-proposal" aria-label="任务类型校验提案">
-            <div className="panel-file-proposal-head">
-              <strong>任务类型校验提案</strong>
-              <span>确认后写回任务类型</span>
-            </div>
-            <div className="panel-memory-proposal-preview">
-              <div className="panel-memory-proposal-preview-row">
-                <span>当前类型</span>
-                <strong>{TASK_TYPE_REVIEW_LABELS[taskTypeReviewProposal.currentType]}</strong>
-              </div>
-              <div className="panel-memory-proposal-preview-row">
-                <span>建议类型</span>
-                <strong>{TASK_TYPE_REVIEW_LABELS[taskTypeReviewProposal.suggestedType]}</strong>
-              </div>
-              <div className="panel-memory-proposal-preview-row">
-                <span>来源</span>
-                <strong>{taskTypeReviewProposal.sourceLabel}</strong>
-              </div>
-            </div>
-            <div className="panel-refresh-reason">{taskTypeReviewProposal.reason}</div>
-            <div className="panel-refresh-reason">{taskTypeReviewProposal.nextAction}</div>
-            <div className="panel-refresh-actions">
-              <button className="btn sm ghost" onClick={() => setTaskTypeReviewProposal(null)}>
-                放弃
-              </button>
-              <button
-                className={`btn sm primary${savingTaskTypeProposal ? ' disabled' : ''}`}
-                onClick={() => void confirmTaskTypeReviewProposal()}
-                disabled={savingTaskTypeProposal}
-              >
-                {savingTaskTypeProposal ? '写回中…' : '确认类型'}
-              </button>
-            </div>
           </div>
         )}
 
@@ -2857,29 +2738,18 @@ export function RightPanel({
       {/* Input */}
       <div className="panel-input-wrap">
         {activeTaskId && (
-          <div className="panel-task-chip">
-            <IconTask style={{ width: 10, height: 10 }} />
-            {title ?? activeTaskId}
-          </div>
-        )}
-        <div
-          className="panel-context-manifest"
-          title={`${runtimeContextSnapshot.summary} / ${runtimeContextAssemblyPolicy.summary}`}
-        >
-          {runtimeContextManifest.userFacingSummary}
-        </div>
-        {activeTaskId && (
-          <div className="panel-task-goal">
-            <span>Task Goal{taskGoalState.status === 'paused' ? ' · 已暂停' : ''}</span>
-            <strong>{taskGoalLabel ?? '未设置，可输入 /goal <目标>'}</strong>
-          </div>
-        )}
-        {activeTaskId && (
           <details className="panel-run-context-preview">
             <summary>
-              <span>运行前上下文</span>
-              <strong>{runContextModeLabel}</strong>
+              <span>上下文</span>
+              <strong>
+                {runContextModeLabel} · 记忆 {taskMemoryContextCount} · 来源 {sourceContextCount}
+                {taskGoalLabel ? ' · Goal 已设置' : ''}
+              </strong>
             </summary>
+            <div className="panel-task-goal">
+              <span>Task Goal{taskGoalState.status === 'paused' ? ' · 已暂停' : ''}</span>
+              <strong>{taskGoalLabel ?? '未设置，可输入 /goal <目标>'}</strong>
+            </div>
             <div className="panel-run-context-grid">
               <div>
                 <span>任务记忆</span>
@@ -2899,9 +2769,33 @@ export function RightPanel({
               </div>
             </div>
             <div className="panel-run-context-lines">
+              <span title={`${runtimeContextSnapshot.summary} / ${runtimeContextAssemblyPolicy.summary}`}>
+                {runtimeContextManifest.userFacingSummary}
+              </span>
               <span>会带入：{runContextCarryLabel} · 已确认内容 {includedContextCount}</span>
-              <span>不会授予 External Access / Skills / MCP 的 live tool 权限。</span>
-              <span>完成后会写入 Run 证据；有价值输出会生成待确认任务记忆提案。</span>
+              <span>不会授予 External Access / Skills / MCP 的 live tool 权限；完成后会写入 Run 证据。</span>
+            </div>
+            <div className="panel-context-strategy" aria-label="上下文策略">
+              {([
+                ['auto', '自动检查'],
+                ['manual', '手动确认'],
+                ['reminder', '仅提醒'],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`panel-context-strategy-btn${contextStrategy === value ? ' active' : ''}`}
+                  onClick={() => {
+                    setContextStrategy(value);
+                    patchSession({
+                      manualRefreshReady: null,
+                      sessionRefreshDismissed: false,
+                    });
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </details>
         )}
@@ -2926,28 +2820,6 @@ export function RightPanel({
             </button>
           </div>
         )}
-        <div className="panel-context-strategy" aria-label="上下文策略">
-          {([
-            ['auto', '自动检查'],
-            ['manual', '手动确认'],
-            ['reminder', '仅提醒'],
-          ] as const).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={`panel-context-strategy-btn${contextStrategy === value ? ' active' : ''}`}
-              onClick={() => {
-                setContextStrategy(value);
-                patchSession({
-                  manualRefreshReady: null,
-                  sessionRefreshDismissed: false,
-                });
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
         {canManuallyRefreshTaskSession && (
           <div className="panel-manual-refresh">
             <span>
@@ -2967,26 +2839,6 @@ export function RightPanel({
             >
               {manualRefreshReady ? '确认刷新' : '整理归档'}
             </button>
-          </div>
-        )}
-        {activeTaskId && !input.trim() && (canReviewTaskType || taskPlanningPrompt) && (
-          <div className="panel-inline-prompts">
-            {canReviewTaskType && (
-              <button
-                className="panel-prompt-chip"
-                onClick={proposeTaskTypeReview}
-              >
-                判断任务类型
-              </button>
-            )}
-            {taskPlanningPrompt && (
-              <button
-                className="panel-prompt-chip"
-                onClick={() => { setSessionInput(taskPlanningPrompt.prompt); textareaRef.current?.focus(); }}
-              >
-                {taskPlanningPrompt.label}
-              </button>
-            )}
           </div>
         )}
         <textarea
