@@ -72,10 +72,10 @@ export function App() {
     setTaskFocusId(taskId);
   }, []);
 
-  const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt = false, forceTaskBinding = false) => {
+  const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt = false, forceTaskBinding = false, prefillDraftPrompt = false) => {
     setPanelTaskId(taskId);
     setPanelTaskTitle(taskTitle ?? null);
-    setPanelDraftPrompt(autoSendDraftPrompt ? draftPrompt ?? null : null);
+    setPanelDraftPrompt(autoSendDraftPrompt || prefillDraftPrompt ? draftPrompt ?? null : null);
     setPanelAutoSendDraftPrompt(autoSendDraftPrompt);
     setPanelSelectedFile(workspaceSelection.taskId === taskId ? workspaceSelection.selectedFile : null);
     if (forceTaskBinding) setPanelSessionKey((current) => current + 1);

@@ -851,6 +851,22 @@ const TASK_TYPE_LABELS: Record<TaskType, string> = {
   routine:   '常设',
 };
 
+function buildVisibleTaskPlanningDraft(taskTitle: string, type: TaskType): string {
+  if (type === 'project') {
+    return `请帮我拆解「${taskTitle}」，先给出子任务方案，不要直接创建。`;
+  }
+  if (type === 'scheduled') {
+    return `请帮我规划「${taskTitle}」的周期、触发时间和下一次执行前要确认的信息。`;
+  }
+  if (type === 'event') {
+    return `请帮我规划「${taskTitle}」的触发条件、处理边界和下一步确认项。`;
+  }
+  if (type === 'routine') {
+    return `请帮我规划「${taskTitle}」的维护范围、检查节奏和记录方式。`;
+  }
+  return `请帮我规划「${taskTitle}」的目标、验收标准和下一步行动。`;
+}
+
 function formatTaskTypeForDisplay(task: Task, parentTask: Task | null, displayType: TaskType = task.type): string {
   if (parentTask) return displayType === 'project' ? '子项目型' : '项目子任务';
   return task.facets.length > 1 && displayType === task.type
@@ -944,7 +960,7 @@ function confirmedTaskRecords(records: TaskListItemRecord[]): TaskListItemRecord
 }
 
 interface TasksPageProps {
-  onOpenPanel: (taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt?: boolean, forceTaskBinding?: boolean) => void;
+  onOpenPanel: (taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt?: boolean, forceTaskBinding?: boolean, prefillDraftPrompt?: boolean) => void;
   onOpenDecision: () => void;
   onSelectionContextChange?: (context: TaskWorkspaceSelectionContext) => void;
   focusTaskId?: string | null;
@@ -1478,8 +1494,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     if (clickTimer.current) clearTimeout(clickTimer.current);
     const task = allTasks.find((item) => item.id === id);
     if (!task) return;
-    const prompt = buildTaskPlanningPrompt(task.title, task.type, 'panel');
-    onOpenPanel(task.id, prompt.prompt, task.title);
+    onOpenPanel(task.id, buildVisibleTaskPlanningDraft(task.title, effectiveTaskType(task, allTasks)), task.title, false, false, true);
   }
 
   const persistedSelectedTaskFiles = selectedTask ? localTaskFiles[selectedTask.id] ?? [] : [];
@@ -2750,8 +2765,14 @@ function resetCaptureDraft() {
           <div className="capture-nudge">
             <span>✓ 已创建</span>
             <button className="btn sm primary" onClick={() => {
-              const followup = buildTaskPlanningPrompt(capturedTask.title, capturedTask.type);
-              onOpenPanel(capturedTask.id, followup.prompt, capturedTask.title);
+              onOpenPanel(
+                capturedTask.id,
+                buildVisibleTaskPlanningDraft(capturedTask.title, capturedTask.type),
+                capturedTask.title,
+                false,
+                false,
+                true,
+              );
               setCapturedTask(null);
             }}>
               {buildTaskPlanningPrompt(capturedTask.title, capturedTask.type).label} →
@@ -2871,7 +2892,14 @@ function resetCaptureDraft() {
               planningLabel={selectedTaskPlanningPrompt?.label ?? '规划讨论'}
               onOpenPanel={() => {
                 if (!selectedTaskPlanningPrompt) return;
-                onOpenPanel(selectedTask.id, selectedTaskPlanningPrompt.prompt, selectedTask.title);
+                onOpenPanel(
+                  selectedTask.id,
+                  buildVisibleTaskPlanningDraft(selectedTask.title, selectedEffectiveType ?? selectedTask.type),
+                  selectedTask.title,
+                  false,
+                  false,
+                  true,
+                );
               }}
               runCount={selectedRuns.length}
               onShowTaskDynamics={() => setTaskDetailViewMode('timeline')}
@@ -2883,7 +2911,14 @@ function resetCaptureDraft() {
               onResolveDependency={() => resolveReadyDependency(selectedTask)}
   onGenerateDecomposition={() => {
                 if (!selectedTaskPlanningPrompt) return;
-                onOpenPanel(selectedTask.id, selectedTaskPlanningPrompt.prompt, selectedTask.title, true);
+                onOpenPanel(
+                  selectedTask.id,
+                  buildVisibleTaskPlanningDraft(selectedTask.title, selectedEffectiveType ?? selectedTask.type),
+                  selectedTask.title,
+                  false,
+                  false,
+                  true,
+                );
               }}
               onCreateDraftChildren={() => createProjectChildren(selectedTask)}
               onDiscardDraft={() => setProjectDraft((current) => (

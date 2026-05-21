@@ -926,6 +926,7 @@ export function RightPanel({
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastAppliedDraftPromptRef = useRef<string | null>(null);
   const lastAutoSentDraftPromptRef = useRef<string | null>(null);
   const lastAutoRefreshKeyRef = useRef<string | null>(null);
   const autoRefreshInFlightRef = useRef(false);
@@ -1091,6 +1092,16 @@ export function RightPanel({
     lastAutoSentDraftPromptRef.current = key;
     void send(draftPrompt);
   }, [activeTaskId, aiRuntimeStatusLoaded, autoSendDraftPrompt, draftPrompt, taskId]);
+
+  useEffect(() => {
+    if (autoSendDraftPrompt || !draftPrompt || taskId !== activeTaskId) return;
+    if (input.trim()) return;
+    const key = `${taskId ?? 'global'}:${draftPrompt}`;
+    if (lastAppliedDraftPromptRef.current === key) return;
+    lastAppliedDraftPromptRef.current = key;
+    setSessionInput(draftPrompt);
+    requestAnimationFrame(() => autoResize());
+  }, [activeTaskId, autoSendDraftPrompt, draftPrompt, input, taskId]);
 
   // When taskId changes from outside (e.g. clicking a different task)
   useEffect(() => {

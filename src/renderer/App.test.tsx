@@ -4119,28 +4119,16 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('明确范围：官网改版项目')).toBeNull();
     expect(harness.api.createTask).toHaveBeenCalledTimes(1);
 
-    vi.mocked(harness.api.chatWithAI!).mockResolvedValueOnce({
-      text: '我会先给出一版项目拆解方案，并等待你补充边界后再创建子任务。',
-    });
+    const chatCallsBeforePlanning = vi.mocked(harness.api.chatWithAI!).mock.calls.length;
+    const agentCliCallsBeforePlanning = vi.mocked(harness.api.triggerAgentCliRun!).mock.calls.length;
     await user.click(screen.getByRole('button', { name: /拆解任务/ }));
     await waitFor(() => {
-      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
-        taskId: 'task_created',
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            role: 'user',
-            content: expect.stringContaining('官网改版项目'),
-          }),
-        ]),
-      }));
+      expect(screen.getByDisplayValue(/请帮我拆解「官网改版项目」/)).toBeTruthy();
     });
-    const chatCalls = vi.mocked(harness.api.chatWithAI!).mock.calls;
-    const lastChatCall = chatCalls[chatCalls.length - 1];
-    const lastChatInput = lastChatCall ? lastChatCall[0] : null;
-    const decompositionMessage = lastChatInput?.messages.at(-1)?.content ?? '';
-    expect(decompositionMessage).not.toContain('Taskplane Agent Operating Principles');
-    expect(decompositionMessage).not.toContain('## Task Creation Protocol');
-    expect(await screen.findByText(/我会先给出一版项目拆解方案/)).toBeTruthy();
+    expect(vi.mocked(harness.api.chatWithAI!).mock.calls.length).toBe(chatCallsBeforePlanning);
+    expect(vi.mocked(harness.api.triggerAgentCliRun!).mock.calls.length).toBe(agentCliCallsBeforePlanning);
+    expect(screen.queryByText(/Taskplane Agent Operating Principles/)).toBeNull();
+    expect(screen.queryByText(/## Task Creation Protocol/)).toBeNull();
     expect(screen.queryByText('AI 拆解草稿')).toBeNull();
     expect(harness.api.decomposeProject).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: /项目型/ }));
@@ -4913,22 +4901,14 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     await user.click(await screen.findByRole('button', { name: '改版项目' }));
 
-    vi.mocked(harness.api.chatWithAI!).mockResolvedValueOnce({
-      text: '拆解建议会先在这里讨论，确认后再落成任务结构。',
-    });
+    const chatCallsBeforePlanning = vi.mocked(harness.api.chatWithAI!).mock.calls.length;
+    const agentCliCallsBeforePlanning = vi.mocked(harness.api.triggerAgentCliRun!).mock.calls.length;
     await user.click(await screen.findByRole('button', { name: /拆解任务/ }));
     await waitFor(() => {
-      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
-        taskId: 'task_project_review',
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            role: 'user',
-            content: expect.stringContaining('改版项目'),
-          }),
-        ]),
-      }));
+      expect(screen.getByDisplayValue(/请帮我拆解「改版项目」/)).toBeTruthy();
     });
-    expect(await screen.findByText(/拆解建议会先在这里讨论/)).toBeTruthy();
+    expect(vi.mocked(harness.api.chatWithAI!).mock.calls.length).toBe(chatCallsBeforePlanning);
+    expect(vi.mocked(harness.api.triggerAgentCliRun!).mock.calls.length).toBe(agentCliCallsBeforePlanning);
     expect(screen.queryByText('AI 拆解草稿')).toBeNull();
     expect(harness.api.decomposeProject).not.toHaveBeenCalled();
   });
