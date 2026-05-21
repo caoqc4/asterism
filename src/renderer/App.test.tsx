@@ -5017,9 +5017,9 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
     await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
 
-    expect(await screen.findByDisplayValue(/请开始推进子任务「明确网站目标与范围」/)).toBeTruthy();
+    expect(await screen.findByDisplayValue(/请推进子任务「明确网站目标与范围」/)).toBeTruthy();
     expect(screen.getByDisplayValue(/父任务：「开发一个网站」/)).toBeTruthy();
-    expect(screen.getByDisplayValue(/不要重新拆解父任务/)).toBeTruthy();
+    expect(screen.queryByDisplayValue(/不要重新拆解父任务/)).toBeNull();
     expect(screen.getAllByText('明确网站目标与范围').length).toBeGreaterThan(0);
   });
 

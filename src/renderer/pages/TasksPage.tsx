@@ -870,10 +870,9 @@ function buildVisibleTaskPlanningDraft(taskTitle: string, type: TaskType): strin
 function buildChildTaskAdvanceDraft(child: Task, parent: Task): string {
   const nextStep = child.nextStep?.trim();
   return [
-    `请开始推进子任务「${child.title}」。`,
+    `请推进子任务「${child.title}」。`,
     `父任务：「${parent.title}」。`,
-    nextStep ? `当前下一步：${nextStep}` : '请先确认这个子任务的目标、验收标准和第一步行动。',
-    '请聚焦这个子任务本身，不要重新拆解父任务。',
+    nextStep ? `请按当前下一步推进：${nextStep}` : '请先确认这个子任务的目标、验收标准和第一步行动。',
   ].filter((line): line is string => Boolean(line)).join('\n');
 }
 
