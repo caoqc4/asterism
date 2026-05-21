@@ -81,6 +81,17 @@ export type DraftDecisionInput = {
   note?: string | null;
 };
 
+export type DecisionDraftInvocationSummary = {
+  phase: 'decision_draft';
+  layer: 'api_runtime' | 'product_harness';
+  runtime: {
+    mode: 'api' | 'product_harness';
+    label: string;
+  };
+  status: 'completed' | 'failed' | 'skipped';
+  summary: string;
+};
+
 export type DecisionDraftRecord = {
   taskId: string;
   title: string;
@@ -92,6 +103,7 @@ export type DecisionDraftRecord = {
   selectedTemplateIds: string[];
   selectedTemplateTitles: string[];
   selectionReason: string;
+  invocation?: DecisionDraftInvocationSummary;
 };
 
 export type DecisionActionInput = {

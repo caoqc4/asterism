@@ -492,7 +492,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'pre_step',
       'decision_draft_boundary',
     ],
-    notes: 'Drafting requires an existing task, selected/skipped process-template annotations now pass task_mutation, and Decision persistence remains behind decision.create.',
+    notes: 'Drafting requires an existing task, selected/skipped process-template annotations now pass task_mutation, provider-backed drafts are wrapped as decision_draft API-runtime invocations, local fallbacks are marked product_harness/skipped, and Decision persistence remains behind decision.create.',
   },
   {
     id: 'decision.create',

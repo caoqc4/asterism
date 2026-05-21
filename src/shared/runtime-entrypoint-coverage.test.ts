@@ -281,6 +281,7 @@ describe('runtime entrypoint coverage', () => {
       expect(entry.requiredGates).toContain('task_mutation');
       expect(entry.requiredGates).toContain('decision_draft_boundary');
       expect(entry.requiredGates).not.toContain('decision_action');
+      expect(entry.notes).toContain('decision_draft API-runtime invocations');
     }
     for (const entry of runtimeEntrypointsByKind('decision_write')) {
       expect(entry.requiredGates).toContain('decision_write_boundary');

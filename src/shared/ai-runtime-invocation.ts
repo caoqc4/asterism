@@ -1,4 +1,5 @@
 import type { AiRuntimeMode } from './types/settings.js';
+import type { DecisionDraftRecord } from './types/decision.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
 import {
@@ -60,6 +61,12 @@ export type DecompositionDraftInvocationResult = RuntimeInvocationBase & {
   draft: ProjectDecompositionResult;
 };
 
+export type DecisionDraftInvocationResult = RuntimeInvocationBase & {
+  phase: 'decision_draft';
+  layer: 'api_runtime' | 'product_harness';
+  draft: DecisionDraftRecord;
+};
+
 export function buildLocalTaskTypeReviewInvocation(
   input: TaskTypeReviewInvocationInput,
 ): TaskTypeReviewInvocationResult {
@@ -91,6 +98,42 @@ export function buildApiRuntimeDecompositionDraftInvocation(params: {
     },
     status: 'completed',
     summary: params.summary ?? `已生成 ${params.draft.subtasks.length} 个项目子任务草稿。`,
+    draft: params.draft,
+  };
+}
+
+export function buildApiRuntimeDecisionDraftInvocation(params: {
+  draft: DecisionDraftRecord;
+  runtimeLabel?: string;
+  summary?: string;
+}): DecisionDraftInvocationResult {
+  return {
+    phase: 'decision_draft',
+    layer: 'api_runtime',
+    runtime: {
+      mode: 'api',
+      label: params.runtimeLabel ?? 'Agent API Runtime 决策草稿',
+    },
+    status: 'completed',
+    summary: params.summary ?? '已生成待确认的 Decision 草稿。',
+    draft: params.draft,
+  };
+}
+
+export function buildProductHarnessDecisionDraftInvocation(params: {
+  draft: DecisionDraftRecord;
+  runtimeLabel?: string;
+  summary?: string;
+}): DecisionDraftInvocationResult {
+  return {
+    phase: 'decision_draft',
+    layer: 'product_harness',
+    runtime: {
+      mode: 'product_harness',
+      label: params.runtimeLabel ?? 'Taskplane 本地决策草稿',
+    },
+    status: 'skipped',
+    summary: params.summary ?? 'AI Runtime 不可用，已生成本地待确认 Decision 草稿。',
     draft: params.draft,
   };
 }

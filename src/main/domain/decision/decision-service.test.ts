@@ -405,6 +405,16 @@ describe('DecisionService', () => {
       selectedTemplateIds: ['process_template_1'],
       selectedTemplateTitles: ['Approval skill'],
       selectionReason: 'This task is waiting on stakeholder approval.',
+      invocation: {
+        phase: 'decision_draft',
+        layer: 'api_runtime',
+        runtime: {
+          mode: 'api',
+          label: 'Agent API Runtime · anthropic / claude-3-5-sonnet-latest',
+        },
+        status: 'completed',
+        summary: '已生成待确认的 Decision 草稿。',
+      },
     });
   });
 
@@ -447,6 +457,16 @@ describe('DecisionService', () => {
       suggestedKind: 'direction_choice',
       suggestedSourceType: 'manual',
       source: 'fallback',
+      invocation: {
+        phase: 'decision_draft',
+        layer: 'product_harness',
+        runtime: {
+          mode: 'product_harness',
+          label: 'Taskplane 本地决策草稿',
+        },
+        status: 'skipped',
+        summary: 'AI Runtime 不可用，已生成本地待确认 Decision 草稿。',
+      },
     });
   });
 

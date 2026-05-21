@@ -45,6 +45,10 @@ import {
   type DecisionProcessTemplateSelectionResult,
 } from './process-template-selector.js';
 import { normalizeCreateDecisionInput } from '../../../shared/runtime-surface-routing.js';
+import {
+  buildApiRuntimeDecisionDraftInvocation,
+  buildProductHarnessDecisionDraftInvocation,
+} from '../../../shared/ai-runtime-invocation.js';
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeHandoff } from '../../../shared/runtime-handoff.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
@@ -193,6 +197,7 @@ function buildDecisionDraftRecord(params: {
   note?: string | null;
   source: DecisionDraftRecord['source'];
   selection: DecisionProcessTemplateSelectionResult;
+  invocation?: DecisionDraftRecord['invocation'];
 }): DecisionDraftRecord {
   const suggestion = decisionDraftRoutingSuggestion(params);
   return {
@@ -206,6 +211,7 @@ function buildDecisionDraftRecord(params: {
     selectedTemplateIds: params.selection.selectedTemplates.map((item) => item.id),
     selectedTemplateTitles: params.selection.selectedTemplates.map((item) => item.title),
     selectionReason: params.selection.reason,
+    ...(params.invocation ? { invocation: params.invocation } : {}),
   };
 }
 
@@ -296,7 +302,7 @@ export class DecisionService {
         prompt: buildDraftPrompt(task, input, selection),
       });
 
-      return buildDecisionDraftRecord({
+      const draft = buildDecisionDraftRecord({
         taskId: input.taskId,
         title: object.title.trim(),
         rationale: object.rationale.trim(),
@@ -304,12 +310,29 @@ export class DecisionService {
         source: 'ai',
         selection,
       });
+      const invocation = buildApiRuntimeDecisionDraftInvocation({
+        draft,
+        runtimeLabel: `Agent API Runtime · ${runtimeConfig.provider} / ${runtimeConfig.model}`,
+      });
+      return {
+        ...invocation.draft,
+        invocation: {
+          phase: invocation.phase,
+          layer: invocation.layer,
+          runtime: {
+            mode: 'api',
+            label: invocation.runtime.label,
+          },
+          status: invocation.status,
+          summary: invocation.summary,
+        },
+      };
     } catch {
       const title = buildFallbackDraftTitle(task.title, input.note);
       const rationale = input.note?.trim()
         ? `建议围绕“${input.note.trim()}”尽快发起拍板，避免任务继续在当前状态下悬置。`
         : '建议尽快明确这条任务当前需要拍板的关键点，以便后续推进。';
-      return buildDecisionDraftRecord({
+      const draft = buildDecisionDraftRecord({
         taskId: input.taskId,
         title,
         rationale,
@@ -317,6 +340,20 @@ export class DecisionService {
         source: 'fallback',
         selection,
       });
+      const invocation = buildProductHarnessDecisionDraftInvocation({ draft });
+      return {
+        ...invocation.draft,
+        invocation: {
+          phase: invocation.phase,
+          layer: invocation.layer,
+          runtime: {
+            mode: 'product_harness',
+            label: invocation.runtime.label,
+          },
+          status: invocation.status,
+          summary: invocation.summary,
+        },
+      };
     }
   }
 
