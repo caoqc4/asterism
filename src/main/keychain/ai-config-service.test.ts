@@ -498,6 +498,7 @@ describe('AiConfigService', () => {
     appConfigService.write({
       aiProvider: 'google',
       aiModel: 'gemini-2.5-flash',
+      aiRuntimeMode: 'api',
     });
     const service = new AiConfigService(appConfigService);
 
@@ -521,6 +522,7 @@ describe('AiConfigService', () => {
     appConfigService.write({
       aiProvider: 'fal-openrouter',
       aiModel: 'google/gemini-2.5-flash',
+      aiRuntimeMode: 'api',
       workspaceRoot: '/tmp/taskplane-workspace',
     });
     const service = new AiConfigService(appConfigService);
@@ -571,10 +573,31 @@ describe('AiConfigService', () => {
     getPasswordMock.mockResolvedValue(null);
     const { AppConfigService } = await import('../config/app-config-service.js');
     const { AiConfigService } = await import('./ai-config-service.js');
-    const service = new AiConfigService(new AppConfigService(() => tempRoot));
+    const appConfigService = new AppConfigService(() => tempRoot);
+    appConfigService.write({
+      aiRuntimeMode: 'api',
+    });
+    const service = new AiConfigService(appConfigService);
 
     await expect(service.resolveRuntimeConfig()).rejects.toThrow(
       'AI API Key is not configured. Please add a key in Settings.',
+    );
+  });
+
+  it('rejects Agent API runtime config resolution when Agent CLI is selected', async () => {
+    process.env.TASKPLANE_AI_API_KEY = 'env-secret';
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const appConfigService = new AppConfigService(() => tempRoot);
+    appConfigService.write({
+      aiProvider: 'openai',
+      aiModel: 'gpt-test',
+      aiRuntimeMode: 'codex',
+    });
+    const service = new AiConfigService(appConfigService);
+
+    await expect(service.resolveRuntimeConfig()).rejects.toThrow(
+      'Agent API Runtime 配置不会在未确认的情况下被解析为当前 AI 调用层',
     );
   });
 });

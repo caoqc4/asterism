@@ -291,6 +291,10 @@ export class AiConfigService {
 
   async resolveRuntimeConfig(): Promise<RuntimeAiConfig> {
     const config = this.appConfigService.read();
+    if (config.aiRuntimeMode !== 'api') {
+      const selectedRuntimeLabel = config.aiRuntimeMode === 'codex' ? 'Codex CLI' : 'Claude Code';
+      throw new Error(`当前选择的是 ${selectedRuntimeLabel}。Agent API Runtime 配置不会在未确认的情况下被解析为当前 AI 调用层。`);
+    }
     const apiKey = await this.resolveKeyForProvider(config.aiProvider);
 
     if (!apiKey) throw new Error('AI API Key is not configured. Please add a key in Settings.');

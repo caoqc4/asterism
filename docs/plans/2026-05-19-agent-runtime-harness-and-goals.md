@@ -575,6 +575,8 @@ The older `run.trigger` path is now documented as a retained API Runtime / Agent
 
 `run.continuePaused` is also guarded at the IPC boundary. It belongs to the retained API Runtime checkpoint path, so when Codex CLI or Claude Code is selected, Taskplane refuses to continue that paused run until the user explicitly switches back to Agent API Runtime. This keeps paused-run recovery from becoming a quiet cross-runtime fallback.
 
+`AiConfigService.resolveRuntimeConfig` now has the same final safety boundary: it refuses to return provider/model/API-key config unless `aiRuntimeMode=api`. Individual entrypoints still keep their own user-facing gates, but the shared resolver prevents future provider-backed call sites from accidentally treating stored API credentials as a fallback while Agent CLI is selected.
+
 ### 2026-05-21 Agent Tool Boundary Update
 
 Agent tool durable writes are now explicitly documented as product-harness durable writes inside an already-gated run. Provider-native tool schemas stay narrower than text-prompt planning: they do not expose local command, file write, next-step update, source-context create, or artifact-create tools directly. `decision.draft` remains a draft/proposal tool; formal Decision persistence stays behind `decision.create`, and Decision approval/defer/cancel stays behind `decision.act`. Any future Agent API adapter must keep using the AgentToolRegistry boundary so task mutation, post-step verification, recovery guidance, and tool-permission checkpoints remain product-owned.
