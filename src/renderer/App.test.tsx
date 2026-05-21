@@ -3305,7 +3305,7 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /一次性任务/ }));
     const taskTypeChildren = document.querySelector('.task-type-children') as HTMLElement | null;
-    expect(taskTypeChildren?.querySelector('[data-title="开发小程序"]')).toBeTruthy();
+    expect(taskTypeChildren?.querySelector('[data-title="开发小程序"]')).toBeNull();
     expect(taskTypeChildren?.querySelector('[data-title="小程序资料归档"]')).toBeTruthy();
     expect(taskTypeChildren?.querySelector('[data-title="小程序前后端开发与联调"]')).toBeNull();
     expect(taskTypeChildren?.querySelector('[data-title="小程序测试、安全加固与性能优化"]')).toBeNull();
@@ -3313,11 +3313,17 @@ describe('App redesign v1', () => {
     expect(taskTypeChildren?.querySelector('[data-title="实现调整：开发小程序"]')).toBeNull();
     expect(taskTypeChildren?.querySelector('[data-title="拆解下一步：开发小程序"]')).toBeNull();
 
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    const projectTypeGroup = document.querySelector('.task-type-group .lens-item.active')?.closest('.task-type-group') as HTMLElement | null;
+    expect(projectTypeGroup?.querySelector('[data-title="开发小程序"]')).toBeTruthy();
+    expect(projectTypeGroup?.querySelector('[data-title="小程序资料归档"]')).toBeNull();
+
     await user.click(screen.getByRole('button', { name: /当前建议/ }));
     const projectCard = Array.from(document.querySelectorAll('.execution-queue-card'))
       .find((card) => card.textContent?.includes('开发小程序')) as HTMLElement | undefined;
     expect(projectCard).toBeTruthy();
     await user.click(projectCard!);
+    expect(await screen.findByText('项目型')).toBeTruthy();
     expect(await screen.findByText('项目结构')).toBeTruthy();
     expect(screen.getByText('小程序需求分析与功能设计')).toBeTruthy();
     expect(screen.getByText('小程序前后端开发与联调')).toBeTruthy();

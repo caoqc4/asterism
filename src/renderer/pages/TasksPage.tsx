@@ -305,6 +305,15 @@ function isTopLevelRuntimeTask(task: Task, allTasks: Task[]): boolean {
   return !effectiveParentTaskId(task, allTasks);
 }
 
+function hasTaskStructure(task: Task, allTasks: Task[]): boolean {
+  return orderedChildrenForTask(task, allTasks).some((child) => child.status !== 'done');
+}
+
+function effectiveTaskType(task: Task, allTasks: Task[]): TaskType {
+  if (!effectiveParentTaskId(task, allTasks) && hasTaskStructure(task, allTasks)) return 'project';
+  return task.type;
+}
+
 function isTaskTypeLens(lens: Lens): boolean {
   return lens === 'simple'
     || lens === 'project'
@@ -842,16 +851,22 @@ const TASK_TYPE_LABELS: Record<TaskType, string> = {
   routine:   '常设',
 };
 
-function formatTaskTypeForDisplay(task: Task, parentTask: Task | null): string {
-  if (parentTask) return task.type === 'project' ? '子项目型' : '项目子任务';
-  return task.facets.length > 1 ? `${TASK_TYPE_LABELS[task.type]} · 复合` : TASK_TYPE_LABELS[task.type];
+function formatTaskTypeForDisplay(task: Task, parentTask: Task | null, displayType: TaskType = task.type): string {
+  if (parentTask) return displayType === 'project' ? '子项目型' : '项目子任务';
+  return task.facets.length > 1 && displayType === task.type
+    ? `${TASK_TYPE_LABELS[displayType]} · 复合`
+    : TASK_TYPE_LABELS[displayType];
 }
 
-function formatSecondaryFacets(task: Task): string[] {
-  return task.facets.filter((facet) => facet !== task.type).map((facet) => TASK_TYPE_LABELS[facet]);
+function formatSecondaryFacets(task: Task, displayType: TaskType = task.type): string[] {
+  return task.facets
+    .filter((facet) => facet !== displayType && !(displayType === 'project' && facet === 'simple'))
+    .map((facet) => TASK_TYPE_LABELS[facet]);
 }
 
-function lensForTaskType(task: Task): Lens {
+function lensForTaskType(task: Task, allTasks: Task[]): Lens {
+  const displayType = effectiveTaskType(task, allTasks);
+  if (displayType !== task.type) return displayType;
   if (task.facets.length > 1) return 'composite';
   return task.type;
 }
@@ -1112,14 +1127,14 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   }, [showCapture]);
 
   const activeTasks = allTasks.filter((task) => task.status !== 'done');
-  const projectParents = activeTasks.filter((task) => task.type === 'project' && isTopLevelRuntimeTask(task, allTasks));
+  const projectParents = activeTasks.filter((task) => effectiveTaskType(task, allTasks) === 'project' && isTopLevelRuntimeTask(task, allTasks));
   const taskTypeGroups: Array<{ key: string; label: string; lens: Lens; icon: string; tasks: Task[] }> = [
-    { key: 'simple', label: '一次性任务', lens: 'simple', icon: '•', tasks: activeTasks.filter((task) => task.type === 'simple' && isTopLevelRuntimeTask(task, allTasks)) },
-    { key: 'project', label: '项目型', lens: 'project', icon: '▰', tasks: activeTasks.filter((task) => task.type === 'project' && isTopLevelRuntimeTask(task, allTasks)) },
-    { key: 'scheduled', label: '定时任务', lens: 'scheduled', icon: '↻', tasks: activeTasks.filter((task) => task.type === 'scheduled' && isTopLevelRuntimeTask(task, allTasks)) },
-    { key: 'event', label: '事件触发', lens: 'event', icon: '⚡', tasks: activeTasks.filter((task) => task.type === 'event' && isTopLevelRuntimeTask(task, allTasks)) },
-    { key: 'routine', label: '常设任务', lens: 'routine', icon: '∞', tasks: activeTasks.filter((task) => task.type === 'routine' && isTopLevelRuntimeTask(task, allTasks)) },
-    { key: 'composite', label: '复合任务', lens: 'composite', icon: '◈', tasks: activeTasks.filter((task) => task.facets.length > 1 && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'simple', label: '一次性任务', lens: 'simple', icon: '•', tasks: activeTasks.filter((task) => effectiveTaskType(task, allTasks) === 'simple' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'project', label: '项目型', lens: 'project', icon: '▰', tasks: activeTasks.filter((task) => effectiveTaskType(task, allTasks) === 'project' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'scheduled', label: '定时任务', lens: 'scheduled', icon: '↻', tasks: activeTasks.filter((task) => effectiveTaskType(task, allTasks) === 'scheduled' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'event', label: '事件触发', lens: 'event', icon: '⚡', tasks: activeTasks.filter((task) => effectiveTaskType(task, allTasks) === 'event' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'routine', label: '常设任务', lens: 'routine', icon: '∞', tasks: activeTasks.filter((task) => effectiveTaskType(task, allTasks) === 'routine' && isTopLevelRuntimeTask(task, allTasks)) },
+    { key: 'composite', label: '复合任务', lens: 'composite', icon: '◈', tasks: activeTasks.filter((task) => task.facets.length > 1 && effectiveTaskType(task, allTasks) === task.type && isTopLevelRuntimeTask(task, allTasks)) },
   ];
   const pendingDecisionTaskIds = new Set(pendingDecisions.map((decision) => decision.taskId));
   const tasksWithPendingDecision = allTasks.filter((task) => task.status !== 'done' && pendingDecisionTaskIds.has(task.id));
@@ -1130,12 +1145,12 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     if (lens === 'blocked') return t.status === 'blocked';
     if (lens === 'clarify') return isClarifyTask(t);
     if (lens === 'needsDecision') return tasksWithPendingDecision.some((task) => task.id === t.id);
-    if (lens === 'simple') return t.status !== 'done' && t.type === 'simple' && isTopLevelRuntimeTask(t, allTasks);
-    if (lens === 'project') return t.status !== 'done' && t.type === 'project' && isTopLevelRuntimeTask(t, allTasks);
-    if (lens === 'scheduled') return t.status !== 'done' && t.type === 'scheduled' && isTopLevelRuntimeTask(t, allTasks);
-    if (lens === 'event') return t.status !== 'done' && t.type === 'event' && isTopLevelRuntimeTask(t, allTasks);
-    if (lens === 'routine') return t.status !== 'done' && t.type === 'routine' && isTopLevelRuntimeTask(t, allTasks);
-    if (lens === 'composite') return t.status !== 'done' && t.facets.length > 1 && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'simple') return t.status !== 'done' && effectiveTaskType(t, allTasks) === 'simple' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'project') return t.status !== 'done' && effectiveTaskType(t, allTasks) === 'project' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'scheduled') return t.status !== 'done' && effectiveTaskType(t, allTasks) === 'scheduled' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'event') return t.status !== 'done' && effectiveTaskType(t, allTasks) === 'event' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'routine') return t.status !== 'done' && effectiveTaskType(t, allTasks) === 'routine' && isTopLevelRuntimeTask(t, allTasks);
+    if (lens === 'composite') return t.status !== 'done' && t.facets.length > 1 && effectiveTaskType(t, allTasks) === t.type && isTopLevelRuntimeTask(t, allTasks);
     if (lens === 'done') return t.status === 'done';
     if (lens.startsWith('project:')) {
       const projectId = lens.slice('project:'.length);
@@ -1149,9 +1164,10 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const selectedParentTask = selectedParentTaskId
     ? allTasks.find((task) => task.id === selectedParentTaskId) ?? null
     : null;
+  const selectedEffectiveType = selectedTask ? effectiveTaskType(selectedTask, allTasks) : null;
   const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
   const selectedTaskPlanningPrompt = selectedTask
-    ? buildTaskPlanningPrompt(selectedTask.title, selectedTask.type, 'panel')
+    ? buildTaskPlanningPrompt(selectedTask.title, selectedEffectiveType ?? selectedTask.type, 'panel')
     : null;
   const captureSopSuggestions = captureTitle.trim()
     ? selectApplicableWorkHabitsFromList(workHabits, {
@@ -1391,13 +1407,13 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       const nextParentTask = nextParentTaskId
         ? allTasks.find((task) => task.id === nextParentTaskId) ?? null
         : null;
-      if (nextParentTask?.type === 'project') {
+      if (nextParentTask && effectiveTaskType(nextParentTask, allTasks) === 'project') {
         setLens('project');
         setOpenGroups((current) => ({ ...current, type: true }));
         setOpenTypeGroups((current) => ({ ...current, project: true }));
       }
       if (options.syncLensToTaskType && nextTask && !nextParentTask) {
-        const nextLens = lensForTaskType(nextTask);
+        const nextLens = lensForTaskType(nextTask, allTasks);
         setLens(nextLens);
         setViewMode('list');
         setOpenGroups((current) => ({ ...current, type: true }));
@@ -1470,7 +1486,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const directChildTasks = selectedTask
     ? orderedChildrenForTask(selectedTask, allTasks)
     : [];
-  const selectedProjectVerification = selectedTask && selectedTaskDetail && selectedTask.type === 'project'
+  const selectedProjectVerification = selectedTask && selectedTaskDetail && selectedEffectiveType === 'project'
     ? evaluateRuntimeVerification({
         mode: 'project',
         task: selectedTaskDetail,
@@ -2829,6 +2845,7 @@ function resetCaptureDraft() {
             <TaskTimelineView
               task={selectedTask}
               parentTask={selectedParentTask}
+              displayType={selectedEffectiveType ?? selectedTask.type}
               events={runtimeEvents}
               runCount={selectedRuns.length}
               onSelectParent={selectTask}
@@ -2838,6 +2855,7 @@ function resetCaptureDraft() {
               task={selectedTask}
               parentTask={selectedParentTask}
               childTasks={directChildTasks}
+              displayType={selectedEffectiveType ?? selectedTask.type}
               completionCriteria={selectedTaskDetail?.completionCriteria ?? []}
               taskFiles={taskFiles}
               relatedFiles={relatedFiles}
@@ -3446,12 +3464,14 @@ function FileWorkspace({
 function TaskTimelineView({
   task,
   parentTask,
+  displayType,
   events,
   runCount,
   onSelectParent,
 }: {
   task: Task;
   parentTask: Task | null;
+  displayType: TaskType;
   events: RuntimeEventRecord[];
   runCount: number;
   onSelectParent: (taskId: string) => void;
@@ -3462,7 +3482,7 @@ function TaskTimelineView({
   const eventById = new Map(ordered.map((event) => [event.id, event]));
   const scopeCopy = parentTask
     ? `当前显示子任务动态；父任务「${parentTask.title}」保留项目层汇总。任务动态由任务事件、执行、任务记录和拍板项统一投影。`
-    : task.type === 'project'
+    : displayType === 'project'
       ? '当前显示父任务的项目层任务动态；子任务细节进入对应子任务查看。任务动态由任务事件、执行、任务记录和拍板项统一投影。'
       : '当前显示此任务自己的任务动态，包含任务事件、执行、任务记录和拍板项。';
 
@@ -3477,8 +3497,8 @@ function TaskTimelineView({
         <span className={`tag lane-${task.lane}`}>{LANE_LABELS[task.lane]}</span>
         <h3 className="task-preview-title">{task.title}</h3>
         <div className="task-preview-type-row">
-          <span className="tag">{formatTaskTypeForDisplay(task, parentTask)}</span>
-          {formatSecondaryFacets(task).map((facet) => (
+          <span className="tag">{formatTaskTypeForDisplay(task, parentTask, displayType)}</span>
+          {formatSecondaryFacets(task, displayType).map((facet) => (
             <span className="tag subtle" key={facet}>{facet}</span>
           ))}
           {runCount > 0 && <span className="preview-type-hint">{runCount} 条执行记录</span>}
@@ -4275,6 +4295,7 @@ interface TaskPreviewProps {
   task: Task;
   parentTask: Task | null;
   childTasks: Task[];
+  displayType: TaskType;
   completionCriteria: TaskDetail['completionCriteria'];
   taskFiles: VirtualTaskFile[];
   relatedFiles: RelatedTaskFileItem[];
@@ -4308,6 +4329,7 @@ function TaskPreview({
   task,
   parentTask,
   childTasks,
+  displayType,
   completionCriteria,
   taskFiles,
   relatedFiles,
@@ -4343,7 +4365,7 @@ function TaskPreview({
   const orderedChildren = childTasks;
   const completedChildren = orderedChildren.filter((child) => child.status === 'done').length;
   const hasChildTaskStructure = childTasks.length > 0;
-  const isProjectLikeTask = task.type === 'project' || hasChildTaskStructure;
+  const isProjectLikeTask = displayType === 'project' || hasChildTaskStructure;
   const projectVerificationResult = projectVerification?.project ?? null;
   const needsProjectDecomposition = task.type === 'project' && childTasks.length === 0;
   const isFreshProject = needsProjectDecomposition && !projectDraft;
@@ -4461,8 +4483,8 @@ function TaskPreview({
           <h3 className="task-preview-title">{task.title}</h3>
           <div className="task-preview-type-row">
             <span className={`tag ${taskStatusTone(task)}`}>{taskStatusLabel(task)}</span>
-            <span className="tag">{formatTaskTypeForDisplay(task, parentTask)}</span>
-            {formatSecondaryFacets(task).map((facet) => (
+            <span className="tag">{formatTaskTypeForDisplay(task, parentTask, displayType)}</span>
+            {formatSecondaryFacets(task, displayType).map((facet) => (
               <span className="tag subtle" key={facet}>{facet}</span>
             ))}
             {isProjectLikeTask && <span className="preview-type-hint">可在项目结构中查看子任务</span>}
@@ -4482,8 +4504,8 @@ function TaskPreview({
               <span>当前状态</span>
             </div>
             <div>
-              <strong>{task.type === 'project' ? `${completedChildren}/${childTasks.length}` : `${completedCriteria}/${completionCriteria.length}`}</strong>
-              <span>{task.type === 'project' ? '子任务完成' : '标准满足'}</span>
+              <strong>{isProjectLikeTask ? `${completedChildren}/${childTasks.length}` : `${completedCriteria}/${completionCriteria.length}`}</strong>
+              <span>{isProjectLikeTask ? '子任务完成' : '标准满足'}</span>
             </div>
             <div>
               <strong>{runCount}</strong>
