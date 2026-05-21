@@ -915,7 +915,7 @@ function buildClaudeCodePrompt(params: {
 }
 
 function buildTaskDecompositionPromptInstructions(prompt: string): string | null {
-  if (!/拆解|子任务|任务方案|decompos|subtask|break\s*down/i.test(prompt)) return null;
+  if (!isTaskDecompositionRequest(prompt)) return null;
   return [
     'This is a Taskplane task-decomposition request, not a repository inspection request.',
     'Do not run shell commands unless the user explicitly asks to inspect code or files.',
@@ -928,6 +928,11 @@ function buildTaskDecompositionPromptInstructions(prompt: string): string | null
     '{"type":"TASKPLANE_DECOMPOSITION","subtasks":[{"title":"...","summary":"...","acceptanceCriteria":"...","dependency":"..."}],"review":"...","nextStep":"..."}',
     '```',
   ].join('\n');
+}
+
+function isTaskDecompositionRequest(prompt: string): boolean {
+  const normalized = prompt.replace(/\s+/g, ' ').trim();
+  return /拆解|拆分|拆成|分解|任务方案|子任务方案|子任务草案|生成.{0,12}子任务|创建.{0,12}子任务|规划.{0,12}子任务|decompos|break\s*down|split.{0,24}(task|subtask)|subtask.{0,16}(plan|draft|breakdown)/i.test(normalized);
 }
 
 export function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promise<AgentCliExecutionResult> {

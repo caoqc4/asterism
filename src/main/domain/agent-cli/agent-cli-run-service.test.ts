@@ -190,6 +190,71 @@ describe('AgentCliRunService', () => {
     });
   });
 
+  it('does not treat child-task advancement as another decomposition request', async () => {
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Child task plan.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+      { upsert: vi.fn() },
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: [
+        '请推进子任务「明确网站目标与范围」。',
+        '父任务：「开发一个网站」。',
+        '请先确认这个子任务的目标、验收标准和第一步行动。',
+      ].join('\n'),
+      taskId: 'task_1',
+    });
+
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.not.stringContaining('TASKPLANE_DECOMPOSITION'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.not.stringContaining('This is a Taskplane task-decomposition request'),
+    }));
+  });
+
+  it('uses decomposition instructions only for explicit decomposition requests', async () => {
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Decomposition draft.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+      { upsert: vi.fn() },
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '请帮我拆解「开发一个网站」，先给出子任务方案，不要直接创建。',
+      taskId: 'task_1',
+    });
+
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('TASKPLANE_DECOMPOSITION'),
+    }));
+  });
+
   it('records explicit runtime-native goal requests as skipped audit runs without executing CLI', async () => {
     const runRepository = buildRunRepository();
     const runStepRepository = buildRunStepRepository();
