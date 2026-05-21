@@ -457,22 +457,28 @@ function agentCliCapability(
 
 function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): CapabilityRegistryEntry {
   const selected = snapshot?.executionRuntime.kind === 'agent_api';
+  const providerConfigured = Boolean(snapshot?.model.configured);
+  const availableForSelectedProviderPhases = selected && providerConfigured;
   return {
     id: 'agent_api.runtime',
     label: 'Agent API Runtime',
     family: 'agent_api',
-    status: 'disabled',
-    configured: false,
-    missingReason: 'Agent API Runtime is a peer execution runtime planned for a later version; it is not executable yet.',
+    status: availableForSelectedProviderPhases ? 'available' : 'disabled',
+    configured: availableForSelectedProviderPhases,
+    missingReason: availableForSelectedProviderPhases
+      ? null
+      : 'Agent API Runtime is a peer AI invocation runtime; supported provider-backed phases require selecting API Runtime and configuring a provider key. Full task execution remains in development.',
     visibility: 'hidden',
     access: 'mutating',
     requiresApproval: true,
     requiredGate: 'runtime_pre_step',
     summary: [
       'executionKind=api',
-      'status=development',
-      'executable=false',
+      availableForSelectedProviderPhases ? 'status=partial' : 'status=development',
+      'supportedPhases=chat,decomposition,decision,scheduled_brief',
+      'executionRun=development',
       selected ? 'selected=true' : null,
+      providerConfigured ? 'provider=configured' : 'provider=missing',
     ].filter(Boolean).join(' / '),
   };
 }

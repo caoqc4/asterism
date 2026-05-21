@@ -170,7 +170,18 @@ describe('configuration safety report', () => {
     });
     expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
       state: 'disabled_by_policy',
-      reason: 'Agent API Runtime is a peer execution runtime planned for a later version; it is not executable yet.',
+      reason: 'Agent API Runtime is a peer AI invocation runtime; supported provider-backed phases require selecting API Runtime and configuring a provider key. Full task execution remains in development.',
+    });
+  });
+
+  it('shows selected Agent API Runtime as approval-required for supported phases', () => {
+    const report = buildConfigurationSafetyReport(withRegistry(aiStatus({ runtimeMode: 'api' })));
+
+    expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
+      state: 'approval_required',
+      reason: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=development / selected=true / provider=configured',
+      requiresApproval: true,
+      startupProbePolicy: 'never',
     });
   });
 

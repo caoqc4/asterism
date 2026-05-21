@@ -120,8 +120,8 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'executionKind=api / status=development / executable=false',
-      missingReason: 'Agent API Runtime is a peer execution runtime planned for a later version; it is not executable yet.',
+      summary: 'executionKind=api / status=development / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=development / provider=missing',
+      missingReason: 'Agent API Runtime is a peer AI invocation runtime; supported provider-backed phases require selecting API Runtime and configuring a provider key. Full task execution remains in development.',
     });
     expect(status.externalAccessStatus).toEqual({
       sources: [],
@@ -164,7 +164,7 @@ describe('AiConfigService', () => {
     });
     expect(status.configurationSafetyReport?.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
       state: 'disabled_by_policy',
-      reason: 'Agent API Runtime is a peer execution runtime planned for a later version; it is not executable yet.',
+      reason: 'Agent API Runtime is a peer AI invocation runtime; supported provider-backed phases require selecting API Runtime and configuring a provider key. Full task execution remains in development.',
       startupProbePolicy: 'never',
       exposesSecretValue: false,
     });

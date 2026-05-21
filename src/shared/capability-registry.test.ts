@@ -178,13 +178,13 @@ describe('capability registry', () => {
       summary: 'detected=1 / ready=1 / manualRun=1 / readyManualRun=1 / running=0 / errors=0 / catalogue=2',
     });
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
-      status: 'disabled',
-      configured: false,
+      status: 'available',
+      configured: true,
       family: 'agent_api',
       visibility: 'hidden',
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
-      summary: expect.stringContaining('executionKind=api / status=development / executable=false'),
+      summary: expect.stringContaining('executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=development / selected=true / provider=configured'),
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
@@ -208,17 +208,17 @@ describe('capability registry', () => {
     });
   });
 
-  it('marks Agent API Runtime as selected in diagnostics without making it executable', () => {
+  it('marks selected Agent API Runtime as available for supported provider-backed phases', () => {
     const registry = buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'api' }) }),
     });
 
     expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')?.summary).not.toContain('selected=');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
-      status: 'disabled',
-      configured: false,
-      missingReason: 'Agent API Runtime is a peer execution runtime planned for a later version; it is not executable yet.',
-      summary: 'executionKind=api / status=development / executable=false / selected=true',
+      status: 'available',
+      configured: true,
+      missingReason: null,
+      summary: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=development / selected=true / provider=configured',
     });
   });
 
