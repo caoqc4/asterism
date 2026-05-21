@@ -941,8 +941,9 @@ function buildChildTaskAdvancePromptInstructions(prompt: string): string | null 
     'Focus on the current child task title, summary, and user request.',
     'Do not create a TASKPLANE_DECOMPOSITION JSON block.',
     'Drive the discussion one step at a time.',
-    'Return a concise Chinese response with a short analysis of the child task, then ask exactly one most important question for the user to answer next.',
+    'Return at most two short Chinese sentences: a brief acknowledgement or judgment, then exactly one natural question for the user to answer next.',
     'Do not list every missing field at once. Do not produce a checklist unless the user asks for one.',
+    'Do not use English section headings such as Key Findings, Recommended Next Step, Risks, or Verification Checks.',
     'After the user answers, Taskplane will continue the next question or action in a later run.',
     'Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
   ].join('\n');
@@ -955,7 +956,7 @@ function isTaskDecompositionRequest(prompt: string): boolean {
 
 function isChildTaskAdvancementRequest(prompt: string): boolean {
   const normalized = prompt.replace(/\s+/g, ' ').trim();
-  return /推进子任务|开始.{0,8}子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
+  return /推进子任务|正在推进子任务|当前子任务|开始.{0,8}子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
 }
 
 export function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promise<AgentCliExecutionResult> {

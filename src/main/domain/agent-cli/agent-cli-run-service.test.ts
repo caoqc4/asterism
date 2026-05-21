@@ -231,7 +231,7 @@ describe('AgentCliRunService', () => {
       input: expect.stringContaining('Do not create a TASKPLANE_DECOMPOSITION JSON block.'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.stringContaining('ask exactly one most important question'),
+      input: expect.stringContaining('exactly one natural question'),
     }));
   });
 
@@ -456,7 +456,7 @@ describe('AgentCliRunService', () => {
     });
 
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.stringContaining('ask exactly one most important question'),
+      input: expect.stringContaining('exactly one natural question'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.not.stringContaining('TASKPLANE_DECOMPOSITION JSON block with this exact shape'),

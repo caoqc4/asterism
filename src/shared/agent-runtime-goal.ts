@@ -275,6 +275,7 @@ export function buildRunGoalContract(params: {
     ...completionConditions,
     ...(taskGoal.status === 'active' ? taskGoal.completionConditions : []),
   ]);
+  const childTaskConversation = isChildTaskConversationRequest(params.prompt);
   return {
     id: params.runId,
     taskId: params.task.id,
@@ -288,7 +289,9 @@ export function buildRunGoalContract(params: {
     objective: activeGoal || params.prompt,
     completionConditions: runCompletionConditions.length
       ? runCompletionConditions
-      : ['本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'],
+      : childTaskConversation
+        ? ['本次 Agent run 应围绕当前子任务推进一轮简短对话，只问一个问题。']
+        : ['本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'],
     validationEvidence: [
       'Agent terminal step exits successfully or records a failure reason.',
       'Run output is persisted as run evidence.',
@@ -305,12 +308,16 @@ export function buildRunGoalContract(params: {
     contextManifestSummary: params.contextManifest.summary,
     contextGateSummary: params.contextGateSummary,
     expectedOutput: [
-      'Key findings',
-      'Recommended next step',
-      'Risks or open questions',
-      'Verification checks',
+      ...(childTaskConversation
+        ? ['简短判断', '一个问题']
+        : ['Key findings', 'Recommended next step', 'Risks or open questions', 'Verification checks']),
     ],
   };
+}
+
+function isChildTaskConversationRequest(prompt: string): boolean {
+  const normalized = prompt.replace(/\s+/g, ' ').trim();
+  return /推进子任务|正在推进子任务|当前子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
 }
 
 function parseGoalLifecyclePayload(payload: string | null): Record<string, unknown> {

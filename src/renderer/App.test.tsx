@@ -5034,6 +5034,62 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText('明确网站目标与范围').length).toBeGreaterThan(0);
   });
 
+  it('keeps later child-task chat turns scoped and concise for Agent CLI', async () => {
+    const project = buildTask({
+      id: 'task_project_child_chat',
+      title: '开发一个网站',
+      state: 'planned',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_child_scope_chat'],
+      nextStep: '推进第一个子任务。',
+    });
+    const child = buildTask({
+      id: 'task_child_scope_chat',
+      title: '明确网站目标与范围',
+      parentTaskId: project.id,
+      state: 'planned',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      summary: '确认网站类型、目标用户、核心价值和页面范围。',
+      nextStep: '',
+    });
+    harness.tasks.unshift(child, project);
+    harness.details[project.id] = buildTaskDetail(project);
+    harness.details[child.id] = buildTaskDetail(child);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
+    await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith(expect.objectContaining({
+        prompt: expect.stringContaining('请推进子任务「明确网站目标与范围」'),
+        taskId: 'task_child_scope_chat',
+      }));
+    });
+
+    const input = await screen.findByPlaceholderText(/关于「明确网站目标与范围」/);
+    await user.type(input, '关于一个 AI 生图的工具站');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
+        prompt: expect.stringContaining('用户刚补充：关于一个 AI 生图的工具站'),
+        taskId: 'task_child_scope_chat',
+      }));
+    });
+    expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
+      prompt: expect.stringContaining('只问一个最自然的下一问'),
+    }));
+    expect(screen.queryByText(/Key Findings/)).toBeNull();
+  });
+
   it('uses Plan as the primary action until an ordinary task has execution context', async () => {
     const task = buildTask({
       id: 'task_plain_plan',

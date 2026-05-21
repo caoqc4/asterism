@@ -757,7 +757,21 @@ function parseAgentCliDecompositionDraft(output: string, runId: string): TaskDec
 
 function isChildTaskAdvancementText(value: string): boolean {
   const normalized = value.replace(/\s+/g, ' ').trim();
-  return /推进子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
+  return /推进子任务|正在推进子任务|当前子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
+}
+
+function buildChildTaskConversationPrompt(params: {
+  parentTaskTitle?: string | null;
+  taskTitle: string | null;
+  userText: string;
+}): string {
+  return [
+    `正在推进子任务「${params.taskTitle ?? '当前子任务'}」。`,
+    params.parentTaskTitle ? `父任务：「${params.parentTaskTitle}」。` : null,
+    `用户刚补充：${params.userText}`,
+    '请基于这次补充继续推进这个子任务，不要重新拆解父任务。',
+    '请最多用两句中文回复：先简短确认或判断，再只问一个最自然的下一问，引导用户说想法。',
+  ].filter((line): line is string => Boolean(line)).join('\n');
 }
 
 function parseDecompositionJson(value: string, runId: string): TaskDecompositionDraft | null {
@@ -1370,6 +1384,17 @@ export function RightPanel({
     ]);
   }
 
+  function isChildTaskContext(taskId: string | null): boolean {
+    if (!taskId) return false;
+    if (activeTaskDetail?.id === taskId && activeTaskDetail.parentTaskId) return true;
+    return Boolean(getTaskAttributes(taskId)?.parentTaskId);
+  }
+
+  function parentTitleForActiveChild(): string | null {
+    const parentTaskId = activeTaskDetail?.parentTaskId ?? activeAttrs?.parentTaskId ?? null;
+    return parentTaskId ? titleCache[parentTaskId] ?? null : null;
+  }
+
   async function archiveTaskConversationIfNeeded() {
     const taskName = title ?? (activeTaskId ? titleCache[activeTaskId] ?? activeTaskId : null);
     const userMessages = messages
@@ -1396,6 +1421,7 @@ export function RightPanel({
 
   async function getBlockingTaskMemoryGuidance(taskId: string | null): Promise<TaskMemoryGuidanceState | null> {
     if (!taskId || !window.api?.listRuns || !window.api?.getRunDetail) return null;
+    if (isChildTaskContext(taskId)) return null;
     const runs = await window.api.listRuns().catch(() => []);
     const taskRuns = runs
       .filter((run) => run.taskId === taskId)
@@ -2125,6 +2151,14 @@ export function RightPanel({
     const text = (forcedText ?? input).trim();
     if (!text || thinking) return;
     const displayUserMessage = options.displayUserMessage ?? true;
+    const childTaskConversation = isChildTaskContext(activeTaskId);
+    const runtimeText = childTaskConversation && !isChildTaskAdvancementText(text)
+      ? buildChildTaskConversationPrompt({
+          parentTaskTitle: parentTitleForActiveChild(),
+          taskTitle: title,
+          userText: text,
+        })
+      : text;
     patchSession({
       manualRefreshReady: null,
       taskFileProposal: null,
@@ -2132,7 +2166,7 @@ export function RightPanel({
 
     const historyForAI: ChatMessage[] = [
       ...messages.map((m) => ({ role: m.role, content: m.text })),
-      { role: 'user', content: text },
+      { role: 'user', content: runtimeText },
     ];
 
     setThinking(true);
@@ -2156,7 +2190,7 @@ export function RightPanel({
         setAgentCliLaunchNotice(`正在启动 ${runtimeLabel} run。已锁定当前任务上下文，等待 CLI 接收任务。`);
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
-          prompt: text,
+          prompt: runtimeText,
           runtimeId: activeAgentCliRuntimeMode,
           sandboxMode: 'read-only',
           taskId: activeTaskId,
@@ -2174,7 +2208,7 @@ export function RightPanel({
             runtimeId: activeAgentCliRuntimeMode,
             runtimeLabel,
             status: 'running',
-            suppressMemoryProposal: isChildTaskAdvancementText(text),
+            suppressMemoryProposal: childTaskConversation || isChildTaskAdvancementText(runtimeText),
             taskId: activeTaskId,
           });
         }
@@ -2182,7 +2216,7 @@ export function RightPanel({
           ? null
           : formatAgentCliRunMessage({
               output,
-              proposalCreated: !isChildTaskAdvancementText(text) && Boolean(detail?.taskMemoryWriteProposals?.length),
+              proposalCreated: !childTaskConversation && !isChildTaskAdvancementText(runtimeText) && Boolean(detail?.taskMemoryWriteProposals?.length),
               runId: run.id,
               runtimeLabel,
               statusText: run.status === 'completed' ? '已完成' : run.status,
@@ -3066,26 +3100,21 @@ export function RightPanel({
 
 function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === 'user';
-  const lines = message.text.split('\n').filter(Boolean);
+  const parts = message.text.split(/(\*\*[^*]+\*\*|\n)/g);
   return (
     <div className={`msg${isUser ? ' msg-user' : ' msg-ai'}`}>
       {!isUser && (
         <div className="msg-avatar-ai">AI</div>
       )}
       <div className="msg-body">
-        {lines.map((line, i) => {
-          // Basic bold markdown: **text**
-          const parts = line.split(/(\*\*[^*]+\*\*)/g);
-          return (
-            <p key={i}>
-              {parts.map((part, j) =>
-                part.startsWith('**') && part.endsWith('**')
-                  ? <strong key={j}>{part.slice(2, -2)}</strong>
-                  : part
-              )}
-            </p>
-          );
-        })}
+        <p>
+          {parts.map((part, index) => {
+            if (part === '\n') return <br key={index} />;
+            return part.startsWith('**') && part.endsWith('**')
+              ? <strong key={index}>{part.slice(2, -2)}</strong>
+              : part;
+          })}
+        </p>
         <span className="msg-ts">{message.ts}</span>
       </div>
     </div>
