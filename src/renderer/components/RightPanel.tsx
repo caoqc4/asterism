@@ -65,6 +65,7 @@ import {
 import {
   buildTaskPlanningPrompt,
   getTaskAttributes,
+  inferTaskTypeProfile,
   type TaskExecutionType,
 } from '../lib/taskAttributes';
 import {
@@ -1451,9 +1452,12 @@ export function RightPanel({
     }
     setCapturingTask(true);
     try {
+      const typeProfile = inferTaskTypeProfile(candidateTitle);
       const created = await window.api.createTask({
         title: candidateTitle,
         summary: `${PANEL_CAPTURE_SUMMARY_PREFIX}${lastUserText}`,
+        taskType: typeProfile.primaryType,
+        taskFacets: typeProfile.facets,
       });
       verifyDurablePanelActionCompleted({
         title: '捕获任务',

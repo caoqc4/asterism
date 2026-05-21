@@ -635,6 +635,10 @@ function createMockApi() {
         id: createCounter === 0 ? 'task_created' : `task_created_${createCounter}`,
         title: input.title,
         summary: input.summary ?? null,
+        taskType: input.taskType,
+        taskFacets: input.taskFacets,
+        parentTaskId: input.parentTaskId,
+        childTaskIds: input.childTaskIds,
         state: 'captured',
         nextStep: null,
       });
@@ -2628,6 +2632,8 @@ describe('App redesign v1', () => {
       expect(harness.api.createTask).toHaveBeenCalledWith({
         title: '准备投资人沟通材料',
         summary: '从右侧面板捕获：准备投资人沟通材料',
+        taskType: 'simple',
+        taskFacets: ['simple'],
       });
     });
     expect(await screen.findByText(/已捕获为任务/)).toBeTruthy();
@@ -2652,6 +2658,28 @@ describe('App redesign v1', () => {
       });
     });
     expect(await screen.findByText(/已确认加入 Tasks/)).toBeTruthy();
+  });
+
+  it('persists inferred project type when capturing project-like global discussion', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Search or ask/ }));
+    const input = await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/);
+    await user.type(input, '创建任务：开发小程序');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(await screen.findByText(/这段讨论可以先捕获为任务/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '捕获为任务' }));
+
+    await waitFor(() => {
+      expect(harness.api.createTask).toHaveBeenCalledWith({
+        title: '创建任务：开发小程序',
+        summary: '从右侧面板捕获：创建任务：开发小程序',
+        taskType: 'project',
+        taskFacets: ['project'],
+      });
+    });
   });
 
   it('keeps unconfirmed right-panel captures out of the Tasks main list', async () => {
