@@ -31,6 +31,7 @@ import {
   buildTaskMemoryGuidanceStateForTaskFiles,
   type TaskMemoryGuidanceState,
 } from '../../../shared/task-memory-guidance-state.js';
+import { isTaskMdPath } from '../../../shared/task-memory-path.js';
 import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status.js';
 import type {
   CancelAgentCliRunInput,
@@ -222,6 +223,7 @@ export class AgentCliRunService {
       throw new Error(preStepVerification.detail);
     }
 
+    const taskFilesForContext = buildAgentCliTaskFilesForContext(task);
     const contextManifest = buildRuntimeContextManifest({
       capabilities: buildRuntimeCapabilitySnapshot({ aiStatus }),
       capabilityRegistry: aiStatus.capabilityRegistry ?? [],
@@ -232,7 +234,7 @@ export class AgentCliRunService {
         selected: source.isKey,
       })),
       task,
-      taskFiles: task.taskFiles ?? [],
+      taskFiles: taskFilesForContext,
     });
     const contextAssembly = buildRuntimeContextAssemblyPolicy({ manifest: contextManifest });
     const contextGate = evaluateRuntimeContextAssemblyGate({
@@ -298,6 +300,7 @@ export class AgentCliRunService {
         contract: runContract,
         manifest: contextManifest,
         task,
+        taskFilesForContext,
       }),
       prompt: request.prompt,
       sandboxMode,
@@ -638,6 +641,7 @@ function buildAgentCliContextBridge(params: {
   contract: RunGoalContract;
   manifest: RuntimeContextManifest;
   task: TaskDetail;
+  taskFilesForContext: ReturnType<typeof buildAgentCliTaskFilesForContext>;
 }): string {
   const includedSourceIds = new Set(params.manifest.items
     .filter((item) => item.kind === 'source_context' && item.contentIncluded)
@@ -657,6 +661,13 @@ function buildAgentCliContextBridge(params: {
       source.note ? `note=${truncateAgentCliContextLine(source.note, 240)}` : null,
       source.content ? `preview=${truncateAgentCliContextLine(source.content, 600)}` : null,
     ].filter(Boolean).join(' / '));
+  const taskFilePreviews = params.taskFilesForContext
+    .filter((file) => isTaskMdPath(file.path) || isTaskMdPath(file.name ?? ''))
+    .slice(0, 1)
+    .map((file) => [
+      `- ${file.path}`,
+      file.contentPreview ? truncateAgentCliContextLine(file.contentPreview, 900) : null,
+    ].filter(Boolean).join('\n'));
 
   return [
     'Taskplane run contract:',
@@ -666,6 +677,9 @@ function buildAgentCliContextBridge(params: {
     '',
     'Runtime context manifest:',
     formatRuntimeContextManifestForStep(params.manifest),
+    taskFilePreviews.length ? '' : null,
+    taskFilePreviews.length ? 'Task recovery context preview:' : null,
+    ...taskFilePreviews,
     sourcePreviews.length ? '' : null,
     sourcePreviews.length ? 'Confirmed source previews:' : null,
     ...sourcePreviews,
@@ -674,6 +688,55 @@ function buildAgentCliContextBridge(params: {
     '- External Access, Skills, and MCP entries are context-only unless Taskplane exposes explicit tools in this run.',
     '- Do not claim live connector/tool access from these summaries; use them to understand available context and safety boundaries.',
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function buildAgentCliTaskFilesForContext(task: TaskDetail): Array<{
+  contentPreview: string | null;
+  id: string;
+  kind: string | null;
+  name: string | null;
+  path: string;
+  taskId: string | null;
+  updatedAt: string | null;
+}> {
+  const files = (task.taskFiles ?? []).map((file) => ({
+    contentPreview: file.content?.slice(0, 1600) ?? null,
+    id: file.id,
+    kind: file.kind,
+    name: file.name,
+    path: file.path,
+    taskId: file.taskId,
+    updatedAt: file.updatedAt,
+  }));
+  if (files.some((file) => isTaskMdPath(file.path) || isTaskMdPath(file.name ?? ''))) {
+    return files;
+  }
+  const syntheticTaskMd = [
+    `# ${task.title}`,
+    '',
+    task.summary?.trim() ? `Summary: ${task.summary.trim()}` : null,
+    task.nextStep?.trim() ? `Next step: ${task.nextStep.trim()}` : null,
+    task.resumeCard?.nextSuggestedMove?.trim() ? `Suggested move: ${task.resumeCard.nextSuggestedMove.trim()}` : null,
+    `State: ${task.state}`,
+    `Risk: ${task.riskLevel}${task.riskNote?.trim() ? ` / ${task.riskNote.trim()}` : ''}`,
+    task.parentTaskId ? `Parent task: ${task.parentTaskId}` : null,
+    task.childTaskIds?.length ? `Child tasks: ${task.childTaskIds.length}` : null,
+    '',
+    'This Task.md context was synthesized from structured Taskplane task state because no persisted Task.md exists yet.',
+    'Use it as read-only recovery context for planning; do not create or edit files unless the user confirms a write proposal.',
+  ].filter((line): line is string => line !== null).join('\n');
+  return [
+    ...files,
+    {
+      contentPreview: syntheticTaskMd,
+      id: `synthetic_task_md:${task.id}`,
+      kind: 'file',
+      name: 'Task.md',
+      path: 'Task.md',
+      taskId: task.id,
+      updatedAt: task.updatedAt ?? task.createdAt ?? null,
+    },
+  ];
 }
 
 function buildAgentCliGoalVerificationStep(params: {

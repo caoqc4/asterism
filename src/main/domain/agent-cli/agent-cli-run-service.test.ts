@@ -558,7 +558,7 @@ describe('AgentCliRunService', () => {
     expect(executor).not.toHaveBeenCalled();
   });
 
-  it('blocks Agent CLI execution when required runtime context assembly is missing', async () => {
+  it('synthesizes read-only Task.md context when a new task has no persisted task file yet', async () => {
     const taskService = buildTaskService();
     vi.mocked(taskService.getDetail).mockResolvedValue({
       ...buildTask(),
@@ -566,7 +566,14 @@ describe('AgentCliRunService', () => {
     });
     const runRepository = buildRunRepository();
     const runStepRepository = buildRunStepRepository();
-    const executor = vi.fn();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Planning answer.',
+      summary: 'Agent CLI execution completed.',
+    });
     const service = new AgentCliRunService(
       taskService,
       { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
@@ -579,11 +586,20 @@ describe('AgentCliRunService', () => {
       operatorConfirmed: true,
       prompt: 'Start Codex without recovery context.',
       taskId: 'task_1',
-    })).rejects.toThrow('Agent CLI run context assembly gate blocked: Runtime context assembly missing required inputs: task_md.');
+    })).resolves.toMatchObject({
+      id: 'run_agent_cli_1',
+      status: 'running',
+    });
 
-    expect(runRepository.create).not.toHaveBeenCalled();
-    expect(runStepRepository.create).not.toHaveBeenCalled();
-    expect(executor).not.toHaveBeenCalled();
+    expect(runRepository.create).toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: expect.stringContaining('task_file:Task.md:Task.md:content=yes'),
+      status: 'completed',
+      title: 'agent cli run accepted',
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('This Task.md context was synthesized from structured Taskplane task state'),
+    }));
   });
 
   it('uses the resolved executable path when the runtime status provides one', async () => {
