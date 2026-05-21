@@ -57,6 +57,11 @@ import {
   type AgentRuntimeAdapterCapabilities,
 } from '@shared/agent-runtime-goal';
 import {
+  buildLocalTaskTypeReviewProposal,
+  TASK_TYPE_REVIEW_LABELS,
+  type TaskTypeReviewProposal,
+} from '@shared/task-type-review-proposal';
+import {
   selectApplicableWorkHabitMatches,
   getPersistedWorkHabitStorageSnapshot,
   recordWorkHabitApplications,
@@ -66,7 +71,6 @@ import {
   buildTaskPlanningPrompt,
   getTaskAttributes,
   inferTaskTypeProfile,
-  normalizeTaskTypeFacets,
   type TaskExecutionType,
 } from '../lib/taskAttributes';
 import {
@@ -86,17 +90,6 @@ type ActiveAgentCliRunState = {
   status: 'running' | 'cancelling';
   taskId: string;
 };
-type TaskTypeReviewProposal = {
-  taskId: string;
-  taskTitle: string;
-  currentType: TaskExecutionType;
-  suggestedType: TaskExecutionType;
-  suggestedFacets: TaskExecutionType[];
-  reason: string;
-  nextAction: string;
-  sourceLabel: string;
-};
-
 const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
   claude: 'Claude Code',
   codex: 'Codex CLI',
@@ -263,14 +256,6 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
   routine:   '常设任务',
 };
 
-const TASK_TYPE_REVIEW_NEXT_ACTION: Record<TaskExecutionType, string> = {
-  simple: '保持单条任务推进，必要时补齐下一步和验收标准。',
-  project: '按项目型任务处理，先确认拆解边界，再由用户确认真实子任务。',
-  scheduled: '确认周期、触发时间和每次执行的验收口径。',
-  event: '确认外部触发来源、进入条件和触发后的处理动作。',
-  routine: '确认长期维护范围、复盘节奏和信息更新边界。',
-};
-
 const MIN_SESSION_REFRESH_MESSAGE_LIMIT = 3;
 const REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP = 10;
 const GENERIC_ASSISTANT_REPLY_PATTERNS = [
@@ -317,28 +302,6 @@ const GENERIC_HANDOFF_PATTERNS = [
   /^再看来源$/,
   /^最后看下一步$/,
 ];
-
-function buildTaskTypeReviewProposal(params: {
-  taskId: string;
-  taskTitle: string;
-  currentType: TaskExecutionType;
-}): TaskTypeReviewProposal {
-  const profile = inferTaskTypeProfile(params.taskTitle);
-  const suggestedFacets = normalizeTaskTypeFacets(profile.facets, profile.primaryType);
-  const reason = profile.primaryType === params.currentType
-    ? `当前类型已经与标题规则判断一致：${TASK_TYPE_HABIT_LABELS[profile.primaryType]}。`
-    : `标题规则建议从「${TASK_TYPE_HABIT_LABELS[params.currentType]}」调整为「${TASK_TYPE_HABIT_LABELS[profile.primaryType]}」。`;
-  return {
-    taskId: params.taskId,
-    taskTitle: params.taskTitle,
-    currentType: params.currentType,
-    suggestedType: profile.primaryType,
-    suggestedFacets,
-    reason,
-    nextAction: TASK_TYPE_REVIEW_NEXT_ACTION[profile.primaryType],
-    sourceLabel: '本地结构化类型规则',
-  };
-}
 
 function normalizeUserMessage(text: string): string {
   return text
@@ -2019,7 +1982,7 @@ export function RightPanel({
 
   function proposeTaskTypeReview() {
     if (!activeTaskId || !title) return;
-    setTaskTypeReviewProposal(buildTaskTypeReviewProposal({
+    setTaskTypeReviewProposal(buildLocalTaskTypeReviewProposal({
       taskId: activeTaskId,
       taskTitle: title,
       currentType: activeTaskType ?? 'simple',
@@ -2050,7 +2013,7 @@ export function RightPanel({
       appendSysMsg([
         '已确认任务类型。',
         '',
-        `类型：${TASK_TYPE_HABIT_LABELS[taskTypeReviewProposal.suggestedType]}`,
+        `类型：${TASK_TYPE_REVIEW_LABELS[taskTypeReviewProposal.suggestedType]}`,
         `来源：${taskTypeReviewProposal.sourceLabel}`,
         `下一步：${taskTypeReviewProposal.nextAction}`,
       ].join('\n'));
@@ -2726,11 +2689,11 @@ export function RightPanel({
             <div className="panel-memory-proposal-preview">
               <div className="panel-memory-proposal-preview-row">
                 <span>当前类型</span>
-                <strong>{TASK_TYPE_HABIT_LABELS[taskTypeReviewProposal.currentType]}</strong>
+                <strong>{TASK_TYPE_REVIEW_LABELS[taskTypeReviewProposal.currentType]}</strong>
               </div>
               <div className="panel-memory-proposal-preview-row">
                 <span>建议类型</span>
-                <strong>{TASK_TYPE_HABIT_LABELS[taskTypeReviewProposal.suggestedType]}</strong>
+                <strong>{TASK_TYPE_REVIEW_LABELS[taskTypeReviewProposal.suggestedType]}</strong>
               </div>
               <div className="panel-memory-proposal-preview-row">
                 <span>来源</span>
