@@ -684,6 +684,37 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg-elev);
   color: var(--ink-2);
 }
+.panel-agent-run-inline {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 8px;
+  margin: 2px 8px 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-soft);
+}
+.panel-agent-run-inline strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.panel-agent-run-inline p {
+  margin: 0;
+  color: var(--ink-4);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.panel-agent-run-pulse {
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: thinking 1.2s ease-in-out infinite;
+}
 .panel-input-options .panel-context-strategy {
   width: 100%;
   margin-top: 3px;

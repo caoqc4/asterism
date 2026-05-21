@@ -659,6 +659,74 @@ function taskMemoryProposalToFileProposal(proposal: TaskMemoryWriteProposal): Ta
   };
 }
 
+function isDecompositionMemoryProposal(proposal: TaskFileWriteProposal): boolean {
+  if (!proposal.taskMemoryProposal) return false;
+  return /拆解|子任务|subtask|decomposition|project structure/i.test([
+    proposal.path,
+    proposal.summary,
+    proposal.content,
+  ].join('\n'));
+}
+
+function taskFileProposalTitle(proposal: TaskFileWriteProposal): string {
+  if (!proposal.taskMemoryProposal) return '任务文件写入提案';
+  return isDecompositionMemoryProposal(proposal) ? '拆解记录写入提案' : '任务记忆写入提案';
+}
+
+function taskFileProposalStatusCopy(proposal: TaskFileWriteProposal): string {
+  if (!proposal.taskMemoryProposal) return '新建文件，不覆盖现有文件';
+  if (isDecompositionMemoryProposal(proposal)) return '确认后保存记录，不会直接创建子任务';
+  return proposal.taskMemoryProposal.operation === 'update'
+    ? '确认后更新现有任务记忆'
+    : '确认后创建任务记忆';
+}
+
+function taskFileProposalConfirmLabel(proposal: TaskFileWriteProposal): string {
+  if (!proposal.taskMemoryProposal) return '确认写入文件';
+  return isDecompositionMemoryProposal(proposal) ? '保存拆解记录' : '确认补写记忆';
+}
+
+function formatAgentCliRunMessage(params: {
+  output: string;
+  proposalCreated: boolean;
+  runId: string;
+  runtimeLabel: string;
+  statusText: string;
+}): string {
+  const summary = summarizeAgentCliOutputForChat(params.output);
+  return [
+    `${params.runtimeLabel} run ${params.statusText}。`,
+    summary ? `结果摘要：\n${summary}` : null,
+    params.proposalCreated
+      ? '完整输出已进入任务动态，并生成了待确认的任务记录提案。'
+      : '完整输出已进入任务动态。',
+    `Run: ${params.runId}`,
+  ].filter((line): line is string => line !== null).join('\n\n');
+}
+
+function summarizeAgentCliOutputForChat(output: string): string | null {
+  const normalized = output.trim();
+  if (!normalized) return null;
+  const lines = normalized
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !/^[-*]?\s*`?(pwd|ls|sed)\b/i.test(line))
+    .filter((line) => !/^run[:：]/i.test(line));
+  const important = lines.filter((line) => (
+    /^#{1,3}\s+/.test(line)
+    || /key findings|子任务方案|recommended next step|verification checks|下一步|验证|风险|确认/i.test(line)
+    || /^[-*]\s+/.test(line)
+  ));
+  const selected = (important.length ? important : lines).slice(0, 8);
+  if (!selected.length) return null;
+  return selected
+    .map((line) => line.replace(/^#{1,3}\s+/, '').replace(/\*\*/g, ''))
+    .map((line) => line.length > 120 ? `${line.slice(0, 117)}...` : line)
+    .join('\n');
+}
+
 function taskMemoryProposalPreviewItems(content: string): Array<{ label: string; value: string }> {
   const sections = markdownSections(content);
   const candidates: Array<[string, string | undefined]> = [
@@ -924,6 +992,7 @@ export function RightPanel({
   const [savingPhaseCloseout, setSavingPhaseCloseout] = useState(false);
   const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [agentCliLaunchNotice, setAgentCliLaunchNotice] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastAppliedDraftPromptRef = useRef<string | null>(null);
@@ -1071,14 +1140,13 @@ export function RightPanel({
         if (proposal) {
           updateTaskFileProposal((value) => value ?? taskMemoryProposalToFileProposal(proposal));
         }
-        appendSysMsg([
-          `${current.runtimeLabel} run ${statusText}。`,
+        appendSysMsg(formatAgentCliRunMessage({
           output,
-          proposal
-            ? '完整执行记录已进入当前任务动态，并生成了待确认的任务记忆写入提案。'
-            : '完整执行记录已进入当前任务动态。',
-          `Run: ${detail.id}`,
-        ].join('\n\n'));
+          proposalCreated: Boolean(proposal),
+          runId: detail.id,
+          runtimeLabel: current.runtimeLabel,
+          statusText,
+        }));
         setActiveAgentCliRun((value) => value?.runId === detail.id ? null : value);
       }).catch(() => undefined);
     });
@@ -1919,6 +1987,7 @@ export function RightPanel({
         replyText = 'AI Runtime 状态仍在加载中，请稍后再发送。Taskplane 不会在未确认所选 Runtime 前调用 AI。';
       } else if (activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun) {
         const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
+        setAgentCliLaunchNotice(`正在启动 ${runtimeLabel} run。已锁定当前任务上下文，等待 CLI 接收任务。`);
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
           prompt: text,
@@ -1926,6 +1995,7 @@ export function RightPanel({
           sandboxMode: 'read-only',
           taskId: activeTaskId,
         });
+        setAgentCliLaunchNotice(null);
         const detail = await window.api.getRunDetail(run.id).catch(() => null);
         const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || `${runtimeLabel} run 已记录。`;
         if (run.status === 'running') {
@@ -1937,18 +2007,19 @@ export function RightPanel({
             taskId: activeTaskId,
           });
         }
-        replyText = [
-          run.status === 'running'
-            ? `${runtimeLabel} run 已在后台启动。`
-            : run.status === 'completed'
-              ? `${runtimeLabel} run 已完成。`
-              : `${runtimeLabel} run ${run.status}。`,
-          output,
-          run.status === 'running'
-            ? '只读执行中；完成后会写入当前任务动态，并在需要时生成待确认任务记忆提案。'
-            : '完整执行记录已进入当前任务动态。',
-          `Run: ${run.id}`,
-        ].join('\n\n');
+        replyText = run.status === 'running'
+          ? [
+              `${runtimeLabel} run 已在后台启动。`,
+              '只读执行中；完成后会整理结果、写入任务动态，并在需要时生成待确认任务记录提案。',
+              `Run: ${run.id}`,
+            ].join('\n\n')
+          : formatAgentCliRunMessage({
+              output,
+              proposalCreated: Boolean(detail?.taskMemoryWriteProposals?.length),
+              runId: run.id,
+              runtimeLabel,
+              statusText: run.status === 'completed' ? '已完成' : run.status,
+            });
       } else if (activeAgentCliRuntimeMode && !activeTaskId) {
         replyText = [
           `当前选择的是 ${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]}。`,
@@ -1992,6 +2063,7 @@ export function RightPanel({
         replyText = generateReply(text, activeTaskId);
       }
     } catch (error) {
+      setAgentCliLaunchNotice(null);
       replyText = slashCommand.kind !== 'none'
         ? `Runtime 命令执行失败：${error instanceof Error ? error.message : '未知错误'}`
         : activeAgentCliRuntimeMode
@@ -2571,14 +2643,8 @@ export function RightPanel({
         {taskFileProposal && (
           <div className="panel-file-proposal">
             <div className="panel-file-proposal-head">
-              <strong>{taskFileProposal.taskMemoryProposal ? '任务记忆写入提案' : '任务文件写入提案'}</strong>
-              <span>
-                {taskFileProposal.taskMemoryProposal
-                  ? taskFileProposal.taskMemoryProposal.operation === 'update'
-                    ? '确认后更新现有任务记忆'
-                    : '确认后创建任务记忆'
-                  : '新建文件，不覆盖现有文件'}
-              </span>
+              <strong>{taskFileProposalTitle(taskFileProposal)}</strong>
+              <span>{taskFileProposalStatusCopy(taskFileProposal)}</span>
             </div>
             <input
               className="panel-file-proposal-path"
@@ -2626,8 +2692,28 @@ export function RightPanel({
                 onClick={() => void confirmTaskFileWrite()}
                 disabled={savingTaskFileProposal}
               >
-                {savingTaskFileProposal ? '写入中…' : taskFileProposal.taskMemoryProposal ? '确认补写记忆' : '确认写入文件'}
+                {savingTaskFileProposal ? '写入中…' : taskFileProposalConfirmLabel(taskFileProposal)}
               </button>
+            </div>
+          </div>
+        )}
+
+        {agentCliLaunchNotice && (
+          <div className="panel-agent-run-inline" aria-live="polite">
+            <span className="panel-agent-run-pulse" />
+            <div>
+              <strong>正在启动任务 Agent</strong>
+              <p>{agentCliLaunchNotice}</p>
+            </div>
+          </div>
+        )}
+
+        {activeTaskAgentCliRun && (
+          <div className="panel-agent-run-inline" aria-live="polite">
+            <span className="panel-agent-run-pulse" />
+            <div>
+              <strong>{activeTaskAgentCliRun.runtimeLabel} 正在只读执行</strong>
+              <p>完成后会把结果整理进任务动态；如果输出值得沉淀，会生成待确认记录。</p>
             </div>
           </div>
         )}
@@ -2715,7 +2801,7 @@ export function RightPanel({
             <div className="panel-agent-cli-run-facts" aria-label="Agent CLI run 状态">
               <span>只读执行</span>
               <span>完成后写入任务动态</span>
-              <span>有价值输出会提议补写记忆</span>
+              <span>有价值输出会提议保存记录</span>
               <span>取消不会生成记忆提案</span>
             </div>
             <button

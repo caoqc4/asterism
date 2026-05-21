@@ -2089,14 +2089,15 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/Codex CLI run 已在后台启动/)).toBeTruthy();
-    expect(screen.getByText(/只读执行中；完成后会写入当前任务动态/)).toBeTruthy();
+    expect(screen.getByText(/只读执行中；完成后会整理结果/)).toBeTruthy();
     expect(screen.getAllByText(/run_agent_cli_created/).length).toBeGreaterThan(0);
     expect(screen.getByText('Codex CLI 后台运行')).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI run 状态')).toBeTruthy();
     expect(screen.getByText('只读执行')).toBeTruthy();
     expect(screen.getByText('完成后写入任务动态')).toBeTruthy();
-    expect(screen.getByText('有价值输出会提议补写记忆')).toBeTruthy();
+    expect(screen.getByText('有价值输出会提议保存记录')).toBeTruthy();
     expect(screen.getByText('取消不会生成记忆提案')).toBeTruthy();
+    expect(screen.getByText('Codex CLI 正在只读执行')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '取消 Codex CLI run' }));
     expect(harness.api.cancelAgentCliRun).toHaveBeenCalledWith({
@@ -2414,7 +2415,7 @@ describe('App redesign v1', () => {
       });
     });
     expect(await screen.findByText(/Claude Code run 已在后台启动/)).toBeTruthy();
-    expect(screen.getByText(/只读执行中；完成后会写入当前任务动态/)).toBeTruthy();
+    expect(screen.getByText(/只读执行中；完成后会整理结果/)).toBeTruthy();
     expect(screen.getByText('Claude Code 后台运行')).toBeTruthy();
     expect(screen.getByText('完成后写入任务动态')).toBeTruthy();
   });
@@ -2589,7 +2590,7 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText(/Codex CLI run 已完成/)).toBeTruthy();
     expect(screen.getAllByText(/Codex CLI final answer/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/生成了待确认的任务记忆写入提案/)).toBeTruthy();
+    expect(screen.getByText(/生成了待确认的任务记录提案/)).toBeTruthy();
     expect(await screen.findByText('任务记忆写入提案')).toBeTruthy();
     expect(screen.getByText('建议归类：任务记录')).toBeTruthy();
     expect(screen.getByLabelText('任务记忆提案摘要')).toBeTruthy();
