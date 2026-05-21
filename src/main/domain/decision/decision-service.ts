@@ -262,6 +262,11 @@ export class DecisionService {
     };
 
     try {
+      const status = await this.aiConfigService.getStatus();
+      if (status.runtimeMode && status.runtimeMode !== 'api') {
+        const selectedRuntimeLabel = status.runtimeMode === 'codex' ? 'Codex CLI' : 'Claude Code';
+        throw new Error(`当前选择的是 ${selectedRuntimeLabel}，Decision 草稿 API adapter 不会切换到 Agent API Runtime。`);
+      }
       const runtimeConfig = await this.aiConfigService.resolveRuntimeConfig();
 
       try {

@@ -341,6 +341,8 @@ describe('runtime entrypoint coverage', () => {
       expect(entry.requiredGates).toContain('decision_draft_boundary');
       expect(entry.requiredGates).not.toContain('decision_action');
       expect(entry.notes).toContain('decision_draft API-runtime invocations');
+      expect(entry.notes).toContain('only when API Runtime is selected');
+      expect(entry.notes).toContain('selected Agent CLI modes stay local product_harness/skipped');
     }
     for (const entry of runtimeEntrypointsByKind('decision_write')) {
       expect(entry.requiredGates).toContain('decision_write_boundary');

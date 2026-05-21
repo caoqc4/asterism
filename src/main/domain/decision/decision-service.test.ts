@@ -337,6 +337,7 @@ describe('DecisionService', () => {
       annotateProcessTemplateSkipped: vi.fn(),
     };
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({ runtimeMode: 'api' }),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'anthropic',
         model: 'claude-3-5-sonnet-latest',
@@ -357,6 +358,7 @@ describe('DecisionService', () => {
       aiConfigService as never,
       processTemplateSelector as never,
     );
+    generateObjectMock.mockClear();
 
     const result = await service.draft({
       taskId: 'task_1',
@@ -433,6 +435,7 @@ describe('DecisionService', () => {
       annotateProcessTemplateSkipped: vi.fn(),
     };
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({ runtimeMode: 'api' }),
       resolveRuntimeConfig: vi.fn().mockRejectedValue(new Error('Missing API key')),
     };
     const processTemplateSelector = {
@@ -444,6 +447,7 @@ describe('DecisionService', () => {
       aiConfigService as never,
       processTemplateSelector as never,
     );
+    generateObjectMock.mockClear();
 
     const result = await service.draft({
       taskId: 'task_1',
@@ -466,6 +470,58 @@ describe('DecisionService', () => {
         },
         status: 'skipped',
         summary: 'AI Runtime 不可用，已生成本地待确认 Decision 草稿。',
+      },
+    });
+  });
+
+  it('keeps decision draft local when Agent CLI is the selected runtime', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn(),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail()),
+      annotateDecisionApproved: vi.fn(),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({ runtimeMode: 'codex' }),
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const processTemplateSelector = {
+      select: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      aiConfigService as never,
+      processTemplateSelector as never,
+    );
+    generateObjectMock.mockClear();
+
+    const result = await service.draft({
+      taskId: 'task_1',
+      note: 'Need stakeholder sign-off',
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(processTemplateSelector.select).not.toHaveBeenCalled();
+    expect(generateObjectMock).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      taskId: 'task_1',
+      title: 'Task 1：Need stakeholder sign-off',
+      source: 'fallback',
+      invocation: {
+        phase: 'decision_draft',
+        layer: 'product_harness',
+        runtime: {
+          mode: 'product_harness',
+        },
+        status: 'skipped',
       },
     });
   });
