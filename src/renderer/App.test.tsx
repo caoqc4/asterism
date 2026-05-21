@@ -1156,14 +1156,30 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '修改配置' }));
     expect(screen.getAllByText(/Agent API Provider 配置/).length).toBeGreaterThan(0);
     expect(screen.getByText('Agent API Runtime')).toBeTruthy();
-    expect(screen.getByText('当前配置')).toBeTruthy();
-    expect(screen.getByText(/当前仅部分问答 \/ 规划阶段可走 API 调用/)).toBeTruthy();
+    expect(screen.getByText('部分可用')).toBeTruthy();
+    expect(screen.getByText(/当前问答 \/ 拆解 \/ 决策草稿等阶段走 Agent API/)).toBeTruthy();
     expect(screen.getAllByText(/同级 AI 调用层/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/不是 Agent CLI 的隐式兜底/).length).toBeGreaterThan(0);
     expect(screen.getByText(/第一版优先打通 Agent CLI/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '正在使用' })).toBeNull();
+    expect(screen.getByRole('button', { name: '正在使用' })).toBeTruthy();
     expect(screen.queryByText('model.provider')).toBeNull();
     expect(screen.queryByText(/Safety Details/)).toBeNull();
+  });
+
+  it('can explicitly select Agent API Runtime when provider config is available', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
+    await user.click(await screen.findByRole('button', { name: '使用此方式' }));
+
+    await waitFor(() => {
+      expect(harness.api.setAiConfig).toHaveBeenCalledWith(expect.objectContaining({
+        runtimeMode: 'api',
+      }));
+    });
+    expect(await screen.findByText(/当前问答 \/ 拆解 \/ 决策草稿等阶段走 Agent API/)).toBeTruthy();
   });
 
   it('keeps the Agent CLI runtime directory in advanced AI Runtime config', async () => {

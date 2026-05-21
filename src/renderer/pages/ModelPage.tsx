@@ -503,20 +503,27 @@ function AgentCliRuntimeSection({
             <div className="agent-cli-runtime-card-title">
               <span>Agent API Runtime</span>
             </div>
-            <span className="agent-cli-runtime-card-command mono">同级 AI 调用层 · 后续版本</span>
+            <span className="agent-cli-runtime-card-command mono">同级 AI 调用层 · 部分阶段</span>
           </div>
           <span className="agent-cli-runtime-card-status preview">
-            {runtimeMode === 'api' ? '当前配置' : '开发中'}
+            {runtimeMode === 'api' ? '正在使用' : apiConfigured ? '可选择' : '需配置'}
           </span>
-          <span className="agent-cli-runtime-row-version">{runtimeMode === 'api' ? '不可执行' : '未开放'}</span>
+          <span className="agent-cli-runtime-row-version">{apiConfigured ? '部分可用' : '缺少 Provider'}</span>
           <span className="agent-cli-runtime-row-detail">
             {runtimeMode === 'api'
-              ? '当前仅部分问答 / 规划阶段可走 API 调用'
-              : '同级 Runtime · 待完善'}
+              ? '当前问答 / 拆解 / 决策草稿等阶段走 Agent API；任务执行 run 仍待完善'
+              : apiConfigured
+                ? '可作为当前 AI 调用层；完整任务执行 run 仍待完善'
+                : '先配置 Provider 密钥后才能选择'}
           </span>
           <div className="agent-cli-runtime-row-actions">
-            <button className="btn sm disabled" type="button" disabled>
-              暂不可选
+            <button
+              className={`btn sm${runtimeMode === 'api' || !apiConfigured ? ' disabled' : ''}`}
+              type="button"
+              onClick={() => onSelectRuntimeMode('api')}
+              disabled={runtimeMode === 'api' || !apiConfigured}
+            >
+              {runtimeMode === 'api' ? '正在使用' : apiConfigured ? '使用此方式' : '先配置 Provider'}
             </button>
           </div>
         </div>

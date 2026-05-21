@@ -119,7 +119,7 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
     surfaceFromCapability('agent_api.runtime', registry, {
       id: 'agent_api.runtime',
       startupProbePolicy: 'never',
-      disabledReason: 'Agent API Runtime is a peer execution runtime planned for a later version.',
+      disabledReason: 'Agent API Runtime requires selecting API Runtime and configuring a provider before supported phases can run.',
       disabledState: 'disabled_by_policy',
     }),
     surfaceFromCapability('browser.operator', registry, {

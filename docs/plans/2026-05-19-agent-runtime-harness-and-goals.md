@@ -579,6 +579,8 @@ The older `run.trigger` path is now documented as a retained API Runtime / Agent
 
 Runtime capability checks now keep provider configuration separate from selected-runtime execution. `model.provider` can still show that an API provider is configured, but `capabilityRegistryAllowsModelExecution` only returns true when Agent API Runtime is the selected runtime. This lets settings and safety reports stay informative while pre-step gates prevent model-required actions from running under a selected Agent CLI mode.
 
+AI Runtime selection now reflects that same split in the renderer. Agent API Runtime is selectable when a provider is configured and is labeled as partial: provider-backed question, decomposition, decision draft, and scheduled-brief phases can use it, while full task execution run remains in development. If no provider is configured, the API runtime row stays blocked and points the user to Provider configuration rather than acting as a hidden fallback.
+
 ### 2026-05-21 Agent Tool Boundary Update
 
 Agent tool durable writes are now explicitly documented as product-harness durable writes inside an already-gated run. Provider-native tool schemas stay narrower than text-prompt planning: they do not expose local command, file write, next-step update, source-context create, or artifact-create tools directly. `decision.draft` remains a draft/proposal tool; formal Decision persistence stays behind `decision.create`, and Decision approval/defer/cancel stays behind `decision.act`. Any future Agent API adapter must keep using the AgentToolRegistry boundary so task mutation, post-step verification, recovery guidance, and tool-permission checkpoints remain product-owned.
