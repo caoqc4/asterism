@@ -486,6 +486,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'checkpoint_eligibility',
     ],
+    notes: 'Decision approval only resumes execution when DecisionService finds an open checkpoint linked to that Decision. Resume is limited to validated tool_permission, browser-controlled, or patch-promotion checkpoints, rechecks target task readiness and pending task-memory guidance, and does not turn ordinary Decision approval into arbitrary tool execution.',
   },
   {
     id: 'decision.draft',
@@ -1068,7 +1069,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'pre_step',
       'post_step',
     ],
-    notes: 'Provider-native tool schemas never expose local write, command, next-step, source-context, or artifact-write tools directly. Durable AgentToolRegistry writes still execute only inside an already-gated run, require task_mutation/pre-step checks, emit post-step verification and task-memory guidance, and create tool-permission checkpoints for high-risk or explicitly confirmed local command/file-write tools.',
+    notes: 'Provider-native tool schemas never expose local write, command, next-step, source-context, or artifact-write tools directly. The decision.draft tool returns a draft/proposal only; Decision persistence remains behind decision.create. Durable AgentToolRegistry writes still execute only inside an already-gated run, require task_mutation/pre-step checks, emit post-step verification and task-memory guidance, and create tool-permission checkpoints for high-risk or explicitly confirmed local command/file-write tools.',
   },
   {
     id: 'context.refreshOrLeave',

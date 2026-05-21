@@ -318,6 +318,11 @@ describe('runtime entrypoint coverage', () => {
       expect(entry.requiredGates).toContain('subtask_start');
       expect(entry.requiredGates).toContain('checkpoint_eligibility');
     }
+    const checkpointResume = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'decision.approvedCheckpointResume');
+    expect(checkpointResume?.notes).toContain('open checkpoint linked to that Decision');
+    expect(checkpointResume?.notes).toContain('validated tool_permission, browser-controlled, or patch-promotion checkpoints');
+    expect(checkpointResume?.notes).toContain('pending task-memory guidance');
+    expect(checkpointResume?.notes).toContain('does not turn ordinary Decision approval into arbitrary tool execution');
   });
 
   it('separates decision draft and decision creation from decision actions', () => {
@@ -353,6 +358,8 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).toContain('task_mutation');
     expect(entry?.requiredGates).toContain('post_step');
     expect(entry?.notes).toContain('Provider-native tool schemas never expose local write');
+    expect(entry?.notes).toContain('decision.draft tool returns a draft/proposal only');
+    expect(entry?.notes).toContain('Decision persistence remains behind decision.create');
     expect(entry?.notes).toContain('inside an already-gated run');
     expect(entry?.notes).toContain('task_mutation/pre-step checks');
     expect(entry?.notes).toContain('tool-permission checkpoints');
