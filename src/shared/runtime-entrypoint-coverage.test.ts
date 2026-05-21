@@ -84,6 +84,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).toContain('runtime_context_assembly');
     expect(entry?.requiredGates).toContain('subtask_start');
     expect(entry?.notes).toContain('provider-visible API Runtime / Agent API-like execution surface');
+    expect(entry?.notes).toContain('IPC boundary confirms API Runtime is selected');
     expect(entry?.notes).toContain('conservative local agent plan inside the same run');
     expect(entry?.notes).toContain('not the first-version Agent CLI entrypoint');
     expect(entry?.notes).toContain('must not be used as an implicit fallback');

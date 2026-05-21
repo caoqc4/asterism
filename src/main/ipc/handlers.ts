@@ -640,6 +640,11 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('run:trigger', async (_event, input: CreateRunInput) => {
+    const status = await getServices().aiConfigService.getStatus();
+    if (status.runtimeMode && status.runtimeMode !== 'api') {
+      const selectedRuntimeLabel = status.runtimeMode === 'codex' ? 'Codex CLI' : 'Claude Code';
+      throw new Error(`当前选择的是 ${selectedRuntimeLabel}。旧版 API Run 入口不会在未确认的情况下切换到 Agent API Runtime；请使用当前选中的 Agent CLI 任务执行入口。`);
+    }
     const created = await getServices().runService.trigger(input);
     emitAppEvent('run.changed', created.id);
     emitAppEvent('task.changed', created.taskId);

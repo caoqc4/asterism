@@ -1563,6 +1563,35 @@ describe('registerIpcHandlers', () => {
     expect(result.failureReason).toBe('Missing API key');
   });
 
+  it('does not trigger retained API runs when Agent CLI is the selected runtime', async () => {
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'keychain',
+      provider: 'openai',
+      model: 'gpt-test',
+      baseUrl: null,
+      workspaceRoot: null,
+      runtimeMode: 'codex',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/taskplane-config.json',
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+    const handler = getRegisteredHandler<
+      [{ taskId: string; type: 'draft' | 'summarize'; instructions?: string }],
+      Awaited<ReturnType<typeof servicesMock.runService.trigger>>
+    >('run:trigger');
+
+    await expect(handler({}, {
+      taskId: 'task_1',
+      type: 'summarize',
+      instructions: 'Retry summary',
+    })).rejects.toThrow('旧版 API Run 入口不会在未确认的情况下切换到 Agent API Runtime');
+    expect(servicesMock.runService.trigger).not.toHaveBeenCalled();
+  });
+
   it('emits run, task, and brief events after an operator-started run trigger', async () => {
     servicesMock.operatorStartedRunService.trigger.mockResolvedValue({
       id: 'run_operator_1',
