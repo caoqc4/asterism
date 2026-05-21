@@ -2067,7 +2067,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Codex · 只读')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI')).toBeTruthy();
     expect(screen.queryByText('运行前上下文')).toBeNull();
     expect(screen.queryByText(/不会授予 External Access \/ Skills \/ MCP 的 live tool 权限/)).toBeNull();
     const input = screen.getByPlaceholderText(/关于「董事会材料修订」/);
@@ -2114,7 +2114,7 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Search or ask/ }));
 
-    expect(await screen.findByText('Codex · 待接入')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI 待接入')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/搜索、提问或捕获任务想法/), '这个方案你怎么看？');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2131,7 +2131,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('API Runtime')).toBeTruthy();
+    expect(await screen.findByText('Agent API')).toBeTruthy();
     expect(screen.queryByText('Agent API 调用层')).toBeNull();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/goal status');
     await user.click(screen.getByRole('button', { name: '发送' }));
@@ -2400,7 +2400,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Claude Code · Plan')).toBeTruthy();
+    expect(await screen.findByText('Claude Code')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Claude Code 看风险。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2452,7 +2452,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Codex · 不可用')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI 不可用')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2494,13 +2494,13 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
-    expect(await screen.findByText('Codex · 不可用')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI 不可用')).toBeTruthy();
 
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     harness.emit('settings.changed');
 
     await waitFor(() => {
-      expect(screen.getByText('Codex · 只读')).toBeTruthy();
+      expect(screen.getByText('Codex CLI')).toBeTruthy();
     });
   });
 
@@ -2518,7 +2518,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Codex · 只读')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2573,7 +2573,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Codex · 只读')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
     expect(await screen.findByText('Codex CLI 后台运行')).toBeTruthy();
@@ -2789,7 +2789,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    await user.click(await screen.findByText('选项'));
+    await user.click(await screen.findByText('会话整理'));
     await user.click(screen.getByRole('button', { name: '仅提醒' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
 
@@ -2811,8 +2811,8 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    await user.click(await screen.findByText('选项'));
-    await user.click(screen.getByRole('button', { name: '手动确认' }));
+    await user.click(await screen.findByText('会话整理'));
+    await user.click(screen.getByRole('button', { name: '先询问' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
     await user.type(input, '这轮先保留 Playwright 作为动态页面候选');
     await user.click(screen.getByRole('button', { name: '发送' }));
@@ -4642,7 +4642,7 @@ describe('App redesign v1', () => {
           recordPath: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-received-handoff\.md$/),
         }),
       }));
-      expect(screen.getByText('API Runtime')).toBeTruthy();
+      expect(screen.getByText('Agent API')).toBeTruthy();
       expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
         taskId: 'task_handoff_second',
         messages: expect.arrayContaining([

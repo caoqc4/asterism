@@ -90,6 +90,12 @@ const AGENT_CLI_PANEL_RUNTIME_HINTS: Record<AgentCliRuntimeId, string> = {
 
 const AGENT_CLI_PANEL_RUNTIMES: AgentCliRuntimeId[] = ['codex', 'claude'];
 
+const CONTEXT_STRATEGY_LABELS: Record<ContextStrategy, string> = {
+  auto: '自动整理',
+  manual: '先询问',
+  reminder: '仅提醒',
+};
+
 interface Message {
   id: string;
   role: MessageRole;
@@ -2373,10 +2379,10 @@ export function RightPanel({
     ? 'Runtime 加载中'
     : activeAgentCliRuntimeMode
       ? shouldUseAgentCliRuntime
-        ? AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode].replace(' CLI', '')
-        : `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode].replace(' CLI', '')} · ${activeTaskId ? '不可用' : '待接入'}`
+        ? AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]
+        : `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} ${activeTaskId ? '不可用' : '待接入'}`
       : isAgentApiRuntimeMode
-        ? 'API Runtime'
+        ? 'Agent API'
         : 'Runtime 未选择';
   const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
 
@@ -2497,7 +2503,7 @@ export function RightPanel({
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
               {contextStrategy === 'reminder'
-                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要清理时可切回自动检查或手动确认。'
+                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要清理时可切回自动整理或先询问。'
                 : '这个任务的讨论已经有点长了，可以刷新当前任务会话。刷新前会先保全关键决策、偏好变化和未解决问题；只保存精选信号，不保存完整聊天全文。'}
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
@@ -2661,11 +2667,14 @@ export function RightPanel({
       <div className="panel-input-wrap">
         {activeTaskId && (
           <details className="panel-input-options">
-            <summary>选项</summary>
+            <summary>
+              <span>会话整理</span>
+              <strong>{CONTEXT_STRATEGY_LABELS[contextStrategy]}</strong>
+            </summary>
             <div className="panel-context-strategy" aria-label="上下文策略">
               {([
-                ['auto', '自动检查'],
-                ['manual', '手动确认'],
+                ['auto', '自动整理'],
+                ['manual', '先询问'],
                 ['reminder', '仅提醒'],
               ] as const).map(([value, label]) => (
                 <button
@@ -2712,7 +2721,7 @@ export function RightPanel({
             <span>
               {manualRefreshReady
                 ? '已归档关键记录；可以继续补充，或确认刷新当前任务会话。'
-                : '手动确认模式：先整理归档，再由你确认是否清理会话。'}
+                : '先询问模式：先整理归档，再由你确认是否清理会话。'}
             </span>
             <button
               className="btn sm ghost"
