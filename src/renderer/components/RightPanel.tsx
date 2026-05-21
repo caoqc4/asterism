@@ -2575,8 +2575,8 @@ export function RightPanel({
         hasSpecificHandoffSignal: hasSpecificConversationSignal,
       })
     : null;
-  const canCloseoutActiveTaskPhase = Boolean(!phaseCloseoutSaved && phaseCloseoutPreStep.canProceed);
-  const canProposeTaskFileWrite = Boolean(!taskFileProposal && taskFileWriteEvaluation.allowed);
+  const canCloseoutActiveTaskPhaseBase = Boolean(!phaseCloseoutSaved && phaseCloseoutPreStep.canProceed);
+  const canProposeTaskFileWriteBase = Boolean(!taskFileProposal && taskFileWriteEvaluation.allowed);
   const canUseAgentCliRuntime = (runtimeId: AgentCliRuntimeId) =>
     Boolean(activeTaskId && agentCliAvailability[runtimeId] && window.api?.triggerAgentCliRun);
   const activeAgentCliRuntimeMode: AgentCliRuntimeId | null = runtimeMode === 'codex' || runtimeMode === 'claude'
@@ -2589,6 +2589,19 @@ export function RightPanel({
   const activeTaskAgentCliRun = activeAgentCliRun && activeAgentCliRun.taskId === activeTaskId
     ? activeAgentCliRun
     : null;
+  const suppressSecondaryTaskSuggestions = Boolean(
+    agentCliLaunchNotice
+    || activeTaskAgentCliRun
+    || taskDecompositionDraft
+  );
+  const canCloseoutActiveTaskPhase = Boolean(
+    canCloseoutActiveTaskPhaseBase
+    && !suppressSecondaryTaskSuggestions
+  );
+  const canProposeTaskFileWrite = Boolean(
+    canProposeTaskFileWriteBase
+    && !suppressSecondaryTaskSuggestions
+  );
   const executionRuntimeStatusLabel = activeAgentCliRuntimeMode
     ? shouldUseAgentCliRuntime
       ? AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]
