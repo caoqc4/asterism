@@ -353,7 +353,7 @@ describe('AgentCliRunService', () => {
     }));
   });
 
-  it('blocks a new Agent CLI run when the previous memory proposal still needs Task Record confirmation', async () => {
+  it('warns but allows a new Agent CLI run when the previous memory proposal still needs Task Record confirmation', async () => {
     const runRepository = buildRunRepository();
     const runStepRepository = buildRunStepRepository();
     vi.mocked(runStepRepository.listForTask).mockResolvedValue([{
@@ -374,7 +374,14 @@ describe('AgentCliRunService', () => {
       title: '任务记忆建议',
       updatedAt: '2026-05-20T00:00:00.000Z',
     }]);
-    const executor = vi.fn();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Next planning result.',
+      summary: 'Agent CLI execution completed.',
+    });
     const service = new AgentCliRunService(
       buildTaskService(),
       { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
@@ -387,11 +394,18 @@ describe('AgentCliRunService', () => {
       operatorConfirmed: true,
       prompt: 'Start another Codex run.',
       taskId: 'task_1',
-    })).rejects.toThrow('最新任务记忆建议仍缺少对应写入：Task Record。');
+    })).resolves.toMatchObject({
+      id: 'run_agent_cli_1',
+      status: 'running',
+    });
 
-    expect(runRepository.create).not.toHaveBeenCalled();
-    expect(runStepRepository.create).not.toHaveBeenCalled();
-    expect(executor).not.toHaveBeenCalled();
+    expect(runRepository.create).toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: expect.stringContaining('pending_memory_warning=最新任务记忆建议仍缺少对应写入：Task Record。'),
+      status: 'completed',
+      title: 'agent cli run accepted',
+    }));
+    expect(executor).toHaveBeenCalled();
   });
 
   it('allows the next Agent CLI run after the pending memory proposal has a Task Record write', async () => {

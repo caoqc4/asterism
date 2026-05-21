@@ -219,8 +219,16 @@ export class AgentCliRunService {
       })),
       taskMemoryGuidance,
     });
+    const pendingMemoryWarning = taskMemoryGuidance.outcome === 'pending'
+      ? taskMemoryGuidance.reason
+      : null;
     if (!preStepVerification.canProceed) {
-      throw new Error(preStepVerification.detail);
+      if (pendingMemoryWarning && preStepVerification.label === '执行前任务记忆待处理') {
+        // Pending Agent CLI memory proposals are surfaced to the user, but should not
+        // make iterative planning feel broken. The next run still remains read-only.
+      } else {
+        throw new Error(preStepVerification.detail);
+      }
     }
 
     const taskFilesForContext = buildAgentCliTaskFilesForContext(task);
@@ -282,9 +290,10 @@ export class AgentCliRunService {
       output: [
         `runtime=${runtime.id}`,
         `sandbox=${sandboxMode}`,
+        pendingMemoryWarning ? `pending_memory_warning=${pendingMemoryWarning}` : null,
         contextGate.summary,
         formatRuntimeContextManifestForStep(contextManifest),
-      ].join('\n'),
+      ].filter((line): line is string => line !== null).join('\n'),
     });
     await this.runStepRepository.create({
       runId: run.id,
