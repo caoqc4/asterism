@@ -57,10 +57,10 @@ import {
   type AgentRuntimeAdapterCapabilities,
 } from '@shared/agent-runtime-goal';
 import {
-  buildLocalTaskTypeReviewProposal,
   TASK_TYPE_REVIEW_LABELS,
   type TaskTypeReviewProposal,
 } from '@shared/task-type-review-proposal';
+import { buildLocalTaskTypeReviewInvocation } from '@shared/ai-runtime-invocation';
 import {
   selectApplicableWorkHabitMatches,
   getPersistedWorkHabitStorageSnapshot,
@@ -1982,11 +1982,12 @@ export function RightPanel({
 
   function proposeTaskTypeReview() {
     if (!activeTaskId || !title) return;
-    setTaskTypeReviewProposal(buildLocalTaskTypeReviewProposal({
+    const invocation = buildLocalTaskTypeReviewInvocation({
       taskId: activeTaskId,
       taskTitle: title,
       currentType: activeTaskType ?? 'simple',
-    }));
+    });
+    setTaskTypeReviewProposal(invocation.proposal);
   }
 
   async function confirmTaskTypeReviewProposal() {
