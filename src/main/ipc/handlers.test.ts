@@ -866,10 +866,27 @@ describe('registerIpcHandlers', () => {
       unknown
     >('ai:decomposeProject');
 
-    await handler({}, { taskId: 'task_1' });
+    const result = await handler({}, { taskId: 'task_1' });
 
     const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
     const prompt = generateTextMock.mock.calls[0]?.[0]?.prompt as string;
+    expect(result).toMatchObject({
+      parentGoal: '完成董事会材料修订',
+      invocation: {
+        phase: 'decomposition_draft',
+        layer: 'api_runtime',
+        runtime: {
+          mode: 'api',
+          label: 'Agent API Runtime · openai / gpt-test',
+        },
+        status: 'completed',
+      },
+    });
+    expect(result).toMatchObject({
+      invocation: {
+        summary: '已生成 1 个项目子任务草稿。',
+      },
+    });
     expect(system).toContain('Taskplane Agent Operating Principles');
     expect(system).toContain('## Task Creation Protocol');
     expect(system).toContain('Subtasks remain drafts until the user confirms creation.');

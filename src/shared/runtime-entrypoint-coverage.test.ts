@@ -91,6 +91,7 @@ describe('runtime entrypoint coverage', () => {
     expect(draft?.requiredGates).toContain('subtask_draft');
     expect(draft?.requiredGates).not.toContain('task_mutation');
     expect(draft?.requiredGates).not.toContain('runtime_action');
+    expect(draft?.notes).toContain('decomposition_draft API-runtime invocation');
 
     expect(confirm?.kind).toBe('durable_write');
     expect(confirm?.requiredGates).toContain('task_mutation');

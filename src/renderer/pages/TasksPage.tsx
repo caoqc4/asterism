@@ -4159,6 +4159,9 @@ function ProjectDecompositionPanel({
             <div>
               <div className="project-empty-title">AI 拆解草稿</div>
               <div className="project-empty-copy">{draft.parentGoal}</div>
+              {draft.invocation && (
+                <small>Runtime：{draft.invocation.runtime.label} · {draft.invocation.layer}</small>
+              )}
             </div>
             <div className="project-draft-actions">
               <button className="btn sm ghost" onClick={onGenerate} disabled={busy || creating}>
@@ -4637,7 +4640,10 @@ function TaskPreview({
               <div ref={draftPanelRef} className="task-detail-project-draft">
                 <div className="task-detail-project-draft-head">
                   <strong>AI 拆解草稿</strong>
-                  <span>{projectDraft.subtasks.length} 个建议子任务</span>
+                  <span>
+                    {projectDraft.subtasks.length} 个建议子任务
+                    {projectDraft.invocation ? ` · ${projectDraft.invocation.runtime.label}` : ''}
+                  </span>
                 </div>
                 <div className="task-detail-project-draft-list">
                   {projectDraft.subtasks.slice(0, 3).map((subtask) => (

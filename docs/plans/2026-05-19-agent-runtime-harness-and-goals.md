@@ -536,6 +536,10 @@ Suggested implementation order:
 4. Inventory decision draft as a later selected-runtime candidate.
 5. Keep verification subagent/API work in shadow mode until it beats the deterministic verifier on the documented readiness gate.
 
+### 2026-05-21 Decomposition Invocation Update
+
+Project decomposition draft now uses the shared `decomposition_draft` invocation wrapper in `ai:decomposeProject`. The IPC result remains backward-compatible with the existing draft shape and adds optional provenance: phase, layer, runtime label, status, and summary. Current provider-backed generation is labeled as `api_runtime`; confirmed child creation remains a separate product harness write behind `project.decompositionConfirm`.
+
 ## Non-Goals For The Next Pass
 
 - Do not enable workspace-write Agent CLI mode by default.

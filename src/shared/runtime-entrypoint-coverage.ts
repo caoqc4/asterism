@@ -764,7 +764,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_memory_guidance',
       'subtask_draft',
     ],
-    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, then validates both existing children and proposed child drafts before returning JSON. Durable creation remains behind project.decompositionConfirm.',
+    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, wraps the result as a decomposition_draft API-runtime invocation, then validates both existing children and proposed child drafts before returning JSON. Durable creation remains behind project.decompositionConfirm.',
   },
   {
     id: 'project.decompositionConfirm',

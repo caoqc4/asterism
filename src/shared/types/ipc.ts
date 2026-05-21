@@ -29,6 +29,17 @@ export type ProjectDecompositionInput = {
   instructions?: string;
 };
 
+export type ProjectDecompositionInvocationSummary = {
+  phase: 'decomposition_draft';
+  layer: 'selected_runtime' | 'api_runtime';
+  runtime: {
+    mode: 'api' | 'codex' | 'claude';
+    label: string;
+  };
+  status: 'completed' | 'failed' | 'skipped';
+  summary: string;
+};
+
 export type ProjectSubtaskDraft = {
   title: string;
   summary: string;
@@ -42,6 +53,7 @@ export type ProjectDecompositionResult = {
   subtasks: ProjectSubtaskDraft[];
   review: string;
   nextStep: string;
+  invocation?: ProjectDecompositionInvocationSummary;
 };
 
 import type { HomeBriefData } from './brief.js';

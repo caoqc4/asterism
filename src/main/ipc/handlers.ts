@@ -84,6 +84,7 @@ import {
   extractJsonObjectFromText,
   normalizeProjectDecompositionDraft,
 } from '../../shared/project-decomposition-draft.js';
+import { buildApiRuntimeDecompositionDraftInvocation } from '../../shared/ai-runtime-invocation.js';
 import { GmailOAuthControlService } from '../domain/external-access/gmail-oauth-control-service.js';
 
 const PING_CHANNEL = 'app:ping';
@@ -848,6 +849,10 @@ export function registerIpcHandlers(): void {
     if (!draftEvaluation.allowed) {
       throw new Error(draftEvaluation.summary);
     }
+    const invocation = buildApiRuntimeDecompositionDraftInvocation({
+      draft: decomposition,
+      runtimeLabel: `Agent API Runtime · ${config.provider} / ${config.model}`,
+    });
     const appliedHabitIds = applicableWorkHabitMatches.map((match) => match.habit.id);
     if (appliedHabitIds.length > 0) {
       try {
@@ -856,6 +861,15 @@ export function registerIpcHandlers(): void {
         // Habit usage telemetry should never block project decomposition.
       }
     }
-    return decomposition;
+    return {
+      ...invocation.draft,
+      invocation: {
+        phase: invocation.phase,
+        layer: invocation.layer,
+        runtime: invocation.runtime,
+        status: invocation.status,
+        summary: invocation.summary,
+      },
+    };
   });
 }
