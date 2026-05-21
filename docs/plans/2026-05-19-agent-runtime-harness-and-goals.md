@@ -8,11 +8,11 @@ This note captures the product direction after evaluating Agent CLI, future Agen
 
 The main design correction is:
 
-- Agent CLI and Agent API are peer execution runtimes.
-- Taskplane's product runtime is the durable session and harness around those runtimes.
-- Goal, task decomposition, context assembly, verification, memory proposals, context clearing, and Decisions should belong to Taskplane's harness unless a specific runtime adapter explicitly owns a narrower execution detail.
+- Agent CLI and Agent API are peer AI invocation runtimes, not helper-vs-primary layers.
+- Taskplane's product runtime is the durable session and harness that decides which runtime phase is happening, which context and gates apply, and which selected AI invocation adapter should be used when that phase needs model work.
+- Goal, task type review, task decomposition, context assembly, execution, verification, memory proposals, context clearing, and Decisions should belong to Taskplane's harness unless a specific runtime adapter explicitly owns a narrower backend detail.
 
-This avoids treating the first-version Agent CLI path as the entire agent product, while still allowing Taskplane to ship a narrow and safe execution lane first.
+This avoids treating the first-version Agent CLI path as a code-execution-only feature, while still allowing Taskplane to ship the safest adapter first. Agent CLI is the first selected AI invocation layer; Agent API is the future peer selected AI invocation layer.
 
 ## External Signals
 
@@ -140,11 +140,12 @@ Product Session
   Durable task memory and audit log.
 
 Product Harness
-  Goal, planning, context, gates, verification, memory routing, Decisions,
-  command routing, and runtime adapter selection.
+  Goal, task type review, planning, decomposition, context, gates, execution
+  intent, verification, memory routing, Decisions, command routing, and runtime
+  adapter selection.
 
-Execution Runtime
-  User-selected backend for executing agent work.
+AI Invocation Runtime
+  User-selected backend for AI calls made by harness phases.
   First version: Agent CLI.
   Future version: Agent API.
 
@@ -152,11 +153,59 @@ Native Backend Mode
   Optional runtime-specific features such as Codex/Claude native goal mode.
 ```
 
-Agent CLI and Agent API are peers in the execution runtime layer. They are a user choice, not a helper-vs-primary split.
+Agent CLI and Agent API are peers in the AI invocation runtime layer. They are a user choice, not a helper-vs-primary split. Execution run is only one harness phase that may call the selected runtime; task type review, decomposition draft, verifier assist, and memory synthesis can also be AI-invocation phases.
 
-Task decomposition, context confirmation, task records, task acceptance, and context clearing are not "Agent API runtime" features. They are Taskplane harness features. Some of them may call a model service internally, but that does not make them the selected execution runtime.
+Task decomposition, context confirmation, task records, task acceptance, task type review, and context clearing are not "Agent API runtime" features. They are Taskplane harness features. When one of these phases needs AI, it should use the selected AI invocation runtime or explicitly declare that it is using a temporary model-service fallback because the selected adapter cannot yet satisfy that phase.
 
-The practical rule for the next passes is: delaying Agent API execution does not delay the runtime task loop. Task Goal control, decomposition drafts, subtask-start checks, context assembly, run gates, verifier checks, task-memory proposals, completion checks, handoff records, and context clearing must keep working as Taskplane harness flows while Agent CLI is the first executable backend. When Agent API later becomes executable, it should plug into these harness contracts rather than bring a parallel task lifecycle.
+The practical rule for the next passes is: delaying Agent API does not delay the runtime task loop, but it does require the Agent CLI path to be evaluated as the first selected AI invocation adapter across more than terminal execution. Task Goal control, task type review, decomposition drafts, subtask-start checks, context assembly, run gates, verifier checks, task-memory proposals, completion checks, handoff records, and context clearing must keep working as Taskplane harness flows while Agent CLI is the first selectable adapter. When Agent API later becomes selectable, it should plug into these harness contracts rather than bring a parallel task lifecycle.
+
+## AI Invocation Contract
+
+Runtime phases should call AI through an adapter-neutral contract:
+
+```text
+RuntimeInvocationRequest
+  phase:
+    task_type_review
+    decomposition_draft
+    task_planning
+    execution_run
+    verification_assist
+    memory_proposal
+    handoff_summary
+  task/session identity
+  selected runtime mode
+  context manifest
+  expected output contract
+  permission/sandbox boundary
+  persistence policy
+```
+
+Adapter responsibilities:
+
+- Agent CLI adapter: translate the request into Codex CLI or Claude Code command/prompt shape, preserve Taskplane context manifest and permission boundary, record stdout/stderr/run steps, and return structured evidence or a proposal when possible.
+- Agent API adapter: translate the same request into provider-native messages/tools, enforce the same context manifest, output contract, gates, and persistence policy, and return the same evidence/proposal shape.
+- Model-service fallback: allowed only when the selected AI invocation runtime is unavailable for that phase or when the product explicitly marks the surface as lightweight assistance. Fallback must be visible in product copy and must not be described as Agent API runtime execution.
+
+The first implementation target is not to make every phase use CLI immediately. The target is to remove hidden coupling: every model-facing phase should declare whether it uses selected runtime, model-service fallback, or no AI.
+
+## Current Implementation Assessment - 2026-05-21
+
+The current implementation is partly aligned with this model:
+
+- Taskplane already owns the durable harness concepts: task goals, Run Goal Contract, context manifest, runtime gates, task-memory guidance, verifier evidence, Decisions, handoff, and context clearing.
+- Agent CLI is wired for the `execution_run` phase: task-bound run start, context assembly, read-only/plan permission boundary, cancellation, terminal evidence, verifier result, and memory proposal.
+- Agent API is represented as a disabled peer runtime in capability/configuration state, but it is not yet an executable selected runtime.
+- Project decomposition already has draft and confirmation harness boundaries, but draft generation still needs an explicit selected-runtime invocation decision. If it uses model-service fallback, that fallback must be visible and temporary.
+- Task type review is not yet a structured runtime phase. Tasks creation uses local heuristic inference plus user confirmation, and RightPanel exposes a "判断任务类型" prompt that asks the current chat path for advice. It does not parse a structured recommendation, produce a user-confirmed type-change proposal, or write `taskType` through a guarded runtime mutation.
+- Global chat and some lightweight summaries can remain model-service assistance, but they must not be described as Agent API runtime. Agent API is reserved for the future peer selected runtime.
+
+Immediate cleanup target:
+
+1. Inventory every model-facing call site (`chatWithAI`, decomposition draft generation, task type review, verifier assist candidates, memory synthesis candidates).
+2. Mark each call as one of: selected AI invocation runtime, model-service fallback, or no AI.
+3. Add a small adapter-neutral `RuntimeInvocationRequest`/`RuntimeInvocationResult` contract before adding deeper features.
+4. Convert task type review into the first non-execution selected-runtime candidate: structured recommendation, reason, confidence, user confirmation, and guarded `taskType/taskFacets` writeback.
 
 Project decomposition has two harness boundaries. Draft generation is provider-visible planning and must stay draft-only behind context assembly, task-memory guidance, and `subtask_draft` checks. User-confirmed child creation is a durable write and must recheck `subtask_draft`, task mutation, post-step evidence, and timeline allowlists. It should not claim `subtask_start` until Taskplane is actually entering or running a child task.
 
@@ -183,7 +232,7 @@ The execution-time projection of a Task Goal into a specific run.
 It should include:
 
 - task id and title;
-- selected execution runtime;
+- selected AI invocation runtime;
 - sandbox or permission mode;
 - user request;
 - objective;
@@ -295,7 +344,7 @@ The future Agent API verifier subagent should augment, not replace, the current 
 - terminal step output, stderr/failure reason, and status;
 - task completion criteria and Task Goal lifecycle state;
 - task-memory guidance/proposal state;
-- selected execution runtime boundary and sandbox/permission mode.
+- selected AI invocation runtime boundary and sandbox/permission mode.
 
 It must emit the same decision shape as `taskplane.verifier.lightweight`: verdict, decision, reason, evidence, missing evidence, next action, `shouldProposeTaskMemory`, `userConfirmationRequired`, and `canMarkTaskComplete`.
 
@@ -378,17 +427,18 @@ The first subagent to productize should be the verifier. It has read-only scope 
 
 ## Compatibility With Current Taskplane Flows
 
-Existing product flows remain compatible with Agent CLI as the first execution runtime:
+Existing product flows remain compatible with Agent CLI as the first AI invocation runtime, but several still need adapter-neutral routing cleanup:
 
-- project decomposition remains a Taskplane harness planner flow;
+- project decomposition remains a Taskplane harness planner flow, but its model-facing draft generation should be routed through the selected AI invocation runtime or explicitly marked as model-service fallback until Agent CLI planning is wired;
+- task type review currently exists as a prompt-assisted chat affordance and rule-based creation hint; it needs a structured harness phase with proposal/confirmation/writeback;
 - subtask draft validation remains shared product logic;
 - subtask start and context readiness checks remain runtime gates;
 - Task Records and Task.md remain product memory surfaces;
 - run verification remains a product harness concern;
 - context clearing remains blocked by pending memory guidance;
-- Agent CLI provides terminal execution evidence and optional native backend capabilities.
+- Agent CLI provides terminal execution evidence today and should become the first selected adapter for any additional AI invocation phase that can be safely expressed through read-only/plan prompts.
 
-The main missing bridge is not another execution backend. It is making Task Goal, Run Goal Contract, command routing, and verifier subagent explicit shared concepts.
+The main missing bridge is not another backend. It is making Task Goal, Run Goal Contract, runtime invocation phase, command routing, task type review, decomposition draft, and verifier subagent explicit shared concepts.
 
 ## Recommended Implementation Order
 
@@ -435,24 +485,25 @@ First pass implemented on 2026-05-19:
 - Agent CLI now has explicit service-level regressions for the shared target-readiness and context-assembly gates: completed/archived tasks or missing Task.md recovery context stop execution before Taskplane creates a run or calls the CLI.
 - Agent CLI cancellation is tracked as local execution control rather than a new execution start: the registered gate is explicit operator confirmation, and terminal evidence still lands through the already-gated run path.
 - Runtime-native goal audit is registered as its own non-executing runtime-audit entrypoint. It requires explicit operator confirmation plus a non-empty objective, records system audit evidence, and still does not call the CLI.
-- AI Runtime configuration now separates three concepts in copy: first-version Agent CLI execution, future peer Agent API Runtime execution, and model-service configuration for global helper/summaries/lightweight model calls.
+- AI Runtime configuration now separates three concepts in copy: first-version Agent CLI invocation with execution as its first completed phase, future peer Agent API Runtime invocation, and model-service configuration for global helper/summaries/lightweight model calls.
 - RightPanel uses the same terminology: global chat is model-service assistance, unavailable CLI falls back to model-service assistance, and legacy `api` runtime mode is shown as `Agent API Runtime` in development rather than as an active model-service executor.
-- CapabilityRegistry and ConfigurationSafetyReport now include `agent_api.runtime` as a disabled peer execution runtime, so diagnostics and context manifests see Agent API as a real planned runtime rather than conflating it with model-service configuration.
-- RuntimeCapabilitySnapshot now records the selected execution runtime (`codex`, `claude`, or `api`), its runtime kind, and whether it is executable. CapabilityRegistry summaries surface the selected Agent CLI or selected-but-disabled Agent API state for diagnostics without changing execution behavior.
+- CapabilityRegistry and ConfigurationSafetyReport now include `agent_api.runtime` as a disabled peer AI invocation runtime, so diagnostics and context manifests see Agent API as a real planned runtime rather than conflating it with model-service configuration.
+- RuntimeCapabilitySnapshot now records the selected AI invocation runtime (`codex`, `claude`, or `api`), its runtime kind, and whether the relevant phase is executable. CapabilityRegistry summaries surface the selected Agent CLI or selected-but-disabled Agent API state for diagnostics without changing execution behavior.
 - ConfigurationSafetyReport keeps the user-facing safety reason separate from an optional diagnostic summary, so Settings and capability pages can show selected-runtime diagnostics without replacing the blocking reason.
 - RuntimeContextManifest includes the selected runtime label, kind, executable flag, and reason in the `runtime_capabilities` item, so Agent CLI accepted steps and context bridges carry the same runtime boundary shown in diagnostics.
 - Agent CLI accepted steps now persist the formatted RuntimeContextManifest, including `memory_retrieval` rows, so received completion handoff Task Records are visible both in run evidence and in the prompt sent to the selected CLI.
-- Code Agent model-producer runs now persist a retained RuntimeContextManifest step and pass that formatted manifest into the provider prompt. This keeps future Agent API execution aligned with Agent CLI on task memory retrieval, received handoff recovery, and product-owned context bridge evidence even though Agent API remains a later peer execution runtime.
-- Product-owned `/goal` is now registered as a durable Taskplane harness entrypoint. It writes task nextStep, completion criteria, and `panel.task_goal_*` timeline events through task mutation guards, and it remains independent of the selected execution runtime.
+- Code Agent model-producer runs now persist a retained RuntimeContextManifest step and pass that formatted manifest into the provider prompt. This keeps future Agent API invocation aligned with Agent CLI on task memory retrieval, received handoff recovery, and product-owned context bridge evidence even though Agent API remains a later peer AI invocation runtime.
+- Product-owned `/goal` is now registered as a durable Taskplane harness entrypoint. It writes task nextStep, completion criteria, and `panel.task_goal_*` timeline events through task mutation guards, and it remains independent of the selected AI invocation runtime.
 - Run acceptance verification is now registered separately as a non-executing `verification_harness` entrypoint. This keeps the lightweight verifier and future API verifier subagent inside Taskplane's harness, not inside the Agent API execution layer.
 - API verifier default-on criteria now have a local readiness evaluator. It does not call a provider or change user-visible decisions; it only checks whether persisted future shadow samples meet the documented sample count, representative-case, structured-validity, disagreement-rate, and inspectability thresholds. A pure projection can derive those samples from run detail once a future run has both lightweight and `ai_verifier` run-level verification records.
 - Project decomposition confirmation now records the correct gate boundary: it rechecks `subtask_draft` before creating real child tasks, while `subtask_start` remains reserved for entering or running an existing child.
 - Completion handoff is now registered as a `task_to_task_handoff` boundary: task completion coverage stays with the completed task, `subtask_start` guards the next task, and durable handoff records/timeline events are written only on that path.
 - Phase closeout is now registered as a separate `phase_closeout_handoff` boundary, so stage closeout, chat refresh, and optional next-task entry stay distinct from full task completion.
 - Context transitions are split into `context.refreshOrLeave` and `context.taskSwitch`, keeping ordinary refresh/leave/switch flows on RuntimeHandoff and task-memory checks without overstating them as completion, mutation, or subtask-start entrypoints.
-- Future Agent API execution should use the same entrypoint category as Agent CLI (`provider_visible_execution`) once it becomes executable. It must reuse runtime action, context assembly, task-memory coverage/guidance, pre-step, subtask-start, and post-step gates; Agent API cancellation/control and audit-only backend features should stay in separate control/audit entrypoint categories.
+- Future Agent API execution should use the same entrypoint category as Agent CLI (`provider_visible_execution`) once it becomes executable. More generally, future Agent API invocations should use the same harness phase contracts as Agent CLI invocations: runtime action, context assembly, task-memory coverage/guidance, pre-step, subtask-start where applicable, post-step, output contract validation, and user-confirmed persistence. Agent API cancellation/control and audit-only backend features should stay in separate control/audit entrypoint categories.
+- The 2026-05-21 architecture correction is that "execution runtime" is too narrow for the selected AI layer. The selected runtime is an AI invocation layer. Execution run is one phase; task type review, decomposition draft, verification assist, and memory proposal are also potential selected-runtime phases. Existing code still contains model-service and rule-based paths that should be inventoried before deeper feature work.
 
-The first-version Taskplane-owned goal loop is now stabilized for the Agent CLI path: durable `/goal` state, completion conditions, explicit user-started runs, verifier evidence, task-memory proposals, cancellation handling, fake packaged smoke, CLI-only live smoke, and packaged-app Codex live smoke all have acceptance coverage. Remaining work should stay in preservation or deferred tracks unless a new product requirement appears: decide when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier, and keep native CLI goal forwarding as a later compatibility track rather than a first-version product blocker.
+The first-version Taskplane-owned goal loop is now stabilized for the Agent CLI path: durable `/goal` state, completion conditions, explicit user-started runs, verifier evidence, task-memory proposals, cancellation handling, fake packaged smoke, CLI-only live smoke, and packaged-app Codex live smoke all have acceptance coverage. Remaining work should stay in preservation or adapter-neutral cleanup tracks unless a new product requirement appears: inventory all AI-facing runtime phases, route them through the selected AI invocation contract where feasible, decide when the Agent API verifier subagent has enough structured reliability to augment the deterministic lightweight verifier, and keep native CLI goal forwarding as a later compatibility track rather than a first-version product blocker.
 
 ## Non-Goals For The Next Pass
 
@@ -460,7 +511,7 @@ The first-version Taskplane-owned goal loop is now stabilized for the Agent CLI 
 - Do not make CLI-native goal state the Taskplane source of truth.
 - Do not add unbounded multi-agent execution.
 - Do not let unknown slash commands silently pass through to a runtime.
-- Do not treat future Agent API as a helper layer; it is a peer execution runtime once completed.
+- Do not treat future Agent API as a helper layer; it is a peer AI invocation runtime once completed.
 
 ## Resolved Constraints
 
