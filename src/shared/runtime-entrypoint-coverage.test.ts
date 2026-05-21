@@ -76,6 +76,19 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('implicit fallback for selected Agent CLI runtimes');
   });
 
+  it('classifies retained RunService execution as API Runtime-like, not Agent CLI fallback', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.trigger');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('provider_visible_execution');
+    expect(entry?.requiredGates).toContain('runtime_context_assembly');
+    expect(entry?.requiredGates).toContain('subtask_start');
+    expect(entry?.notes).toContain('provider-visible API Runtime / Agent API-like execution surface');
+    expect(entry?.notes).toContain('conservative local agent plan inside the same run');
+    expect(entry?.notes).toContain('not the first-version Agent CLI entrypoint');
+    expect(entry?.notes).toContain('must not be used as an implicit fallback');
+  });
+
   it('requires provider-visible planning to stay draft-only and pass subtask draft checks', () => {
     expect(requiredRuntimeEntrypointGatesForKind('provider_visible_planning')).toEqual([
       'simplicity_check',

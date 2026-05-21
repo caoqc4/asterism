@@ -279,6 +279,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'post_step',
     ],
+    notes: 'Current retained RunService path is a provider-visible API Runtime / Agent API-like execution surface: RunOrchestrator resolves RuntimeAiConfig, may expose provider-native tool schemas only behind feature flags, and may fall back to a conservative local agent plan inside the same run. It is not the first-version Agent CLI entrypoint and must not be used as an implicit fallback when a selected Agent CLI runtime is unavailable.',
   },
   {
     id: 'run.triggerCodeAgent',
