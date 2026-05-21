@@ -783,7 +783,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_memory_guidance',
       'subtask_draft',
     ],
-    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, wraps the result as a decomposition_draft API-runtime invocation for the currently implemented API path, then validates both existing children and proposed child drafts before returning JSON. It is not a hidden Agent CLI fallback and creates no child tasks; future CLI/API adapters must return the same draft contract before durable creation remains behind project.decompositionConfirm.',
+    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, wraps the result as a decomposition_draft API-runtime invocation for the currently implemented API path, then validates both existing children and proposed child drafts before returning JSON. The IPC handler rejects selected Agent CLI modes instead of silently switching runtimes. It is not a hidden Agent CLI fallback and creates no child tasks; future CLI/API adapters must return the same draft contract before durable creation remains behind project.decompositionConfirm.',
   },
   {
     id: 'project.decompositionConfirm',

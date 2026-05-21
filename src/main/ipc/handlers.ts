@@ -782,6 +782,11 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('ai:decomposeProject', async (_event, input: ProjectDecompositionInput) => {
+    const status = await getServices().aiConfigService.getStatus();
+    if (status.runtimeMode && status.runtimeMode !== 'api') {
+      const selectedRuntimeLabel = status.runtimeMode === 'codex' ? 'Codex CLI' : 'Claude Code';
+      throw new Error(`当前选择的是 ${selectedRuntimeLabel}。项目拆解草案的所选 runtime adapter 尚未接入；Taskplane 不会在未确认的情况下切换到 Agent API Runtime。`);
+    }
     const config = await getServices().aiConfigService.resolveRuntimeConfig();
     const model = getLanguageModel(config);
     const task = await getServices().taskService.getDetail(input.taskId);

@@ -118,6 +118,7 @@ describe('runtime entrypoint coverage', () => {
     expect(draft?.requiredGates).not.toContain('runtime_action');
     expect(draft?.notes).toContain('decomposition_draft API-runtime invocation');
     expect(draft?.notes).toContain('currently implemented API path');
+    expect(draft?.notes).toContain('rejects selected Agent CLI modes');
     expect(draft?.notes).toContain('not a hidden Agent CLI fallback');
     expect(draft?.notes).toContain('creates no child tasks');
     expect(draft?.notes).toContain('future CLI/API adapters must return the same draft contract');

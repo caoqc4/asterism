@@ -222,6 +222,21 @@ describe('registerIpcHandlers', () => {
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
     delete process.env.TASKPLANE_CODE_AGENT_CONTEXT_FILES;
     servicesMock.aiConfigService.resolveRuntimeConfig.mockReset();
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'keychain',
+      provider: 'openai',
+      model: 'gpt-test',
+      baseUrl: null,
+      workspaceRoot: null,
+      runtimeMode: 'api',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/taskplane-config.json',
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
     Object.values(servicesMock).forEach((service) => {
       Object.values(service).forEach((member) => {
         if (typeof member === 'function' && 'mockClear' in member) {
@@ -920,6 +935,35 @@ describe('registerIpcHandlers', () => {
     expect(prompt).not.toContain('待确认规则不进入拆解提示');
     expect(prompt).not.toContain('旧邮件');
     expect(servicesMock.workHabitService.recordApplications).toHaveBeenCalledWith(['habit_sop_board']);
+  });
+
+  it('does not generate project decomposition through API when Agent CLI is the selected runtime', async () => {
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'keychain',
+      provider: 'openai',
+      model: 'gpt-test',
+      baseUrl: null,
+      workspaceRoot: null,
+      runtimeMode: 'codex',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/taskplane-config.json',
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; instructions?: string | null }],
+      unknown
+    >('ai:decomposeProject');
+
+    await expect(handler({}, { taskId: 'task_1' })).rejects.toThrow(
+      'Taskplane 不会在未确认的情况下切换到 Agent API Runtime',
+    );
+    expect(servicesMock.aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(generateTextMock).not.toHaveBeenCalled();
   });
 
   it('blocks project decomposition when existing children are linked by parent task id', async () => {
