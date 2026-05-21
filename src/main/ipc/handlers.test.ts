@@ -723,6 +723,36 @@ describe('registerIpcHandlers', () => {
     expect(system).toContain('Ask for confirmation more often');
   });
 
+  it('does not route API chat when Agent CLI is the selected runtime', async () => {
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'keychain',
+      provider: 'openai',
+      model: 'gpt-test',
+      baseUrl: null,
+      workspaceRoot: null,
+      runtimeMode: 'claude',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/taskplane-config.json',
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+
+    const handler = getRegisteredHandler<
+      [{ messages: Array<{ role: 'user' | 'assistant'; content: string }>; taskId?: string | null }],
+      { text: string }
+    >('ai:chat');
+
+    await expect(handler({}, {
+      taskId: null,
+      messages: [{ role: 'user', content: '帮我规划今天' }],
+    })).rejects.toThrow('当前 API 聊天 adapter 不会在未确认的情况下切换到 Agent API Runtime');
+    expect(servicesMock.aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(generateTextMock).not.toHaveBeenCalled();
+  });
+
   it('uses the latest active key sources in task chat prompts', async () => {
     servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
       provider: 'openai',

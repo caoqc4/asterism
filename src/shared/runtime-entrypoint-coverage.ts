@@ -236,7 +236,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'runtime_context_assembly',
     ],
-    notes: 'Global assistance includes product principles. Task-bound assistance must load persisted task detail before model exposure and stays read-only. API Runtime chat responses carry global_assistant or task_assistant invocation provenance.',
+    notes: 'Global assistance includes product principles. Task-bound assistance must load persisted task detail before model exposure and stays read-only. API Runtime chat responses carry global_assistant or task_assistant invocation provenance, and the IPC handler rejects selected Agent CLI modes instead of silently switching runtimes.',
   },
   {
     id: 'brief.scheduledSnapshot',

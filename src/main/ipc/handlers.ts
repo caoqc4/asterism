@@ -697,6 +697,11 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('ai:chat', async (_event, input: ChatInput) => {
+    const status = await getServices().aiConfigService.getStatus();
+    if (status.runtimeMode && status.runtimeMode !== 'api') {
+      const selectedRuntimeLabel = status.runtimeMode === 'codex' ? 'Codex CLI' : 'Claude Code';
+      throw new Error(`当前选择的是 ${selectedRuntimeLabel}。当前 API 聊天 adapter 不会在未确认的情况下切换到 Agent API Runtime。`);
+    }
     const config = await getServices().aiConfigService.resolveRuntimeConfig();
     const model = getLanguageModel(config);
     const task = input.taskId

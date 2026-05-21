@@ -175,6 +175,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry).toBeTruthy();
     expect(entry?.kind).toBe('provider_visible_assistance');
     expect(entry?.notes).toContain('global_assistant or task_assistant invocation provenance');
+    expect(entry?.notes).toContain('rejects selected Agent CLI modes');
   });
 
   it('registers scheduled Brief generation as API Runtime assistance with local product-harness recovery', () => {
