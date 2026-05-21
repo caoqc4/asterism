@@ -1,5 +1,6 @@
 import type { AiRuntimeMode } from './types/settings.js';
 import type { TaskExecutionType } from './types/task.js';
+import type { ProjectDecompositionResult } from './types/ipc.js';
 import {
   buildLocalTaskTypeReviewProposal,
   type TaskTypeReviewProposal,
@@ -48,6 +49,17 @@ export type TaskTypeReviewInvocationResult = RuntimeInvocationBase & {
   proposal: TaskTypeReviewProposal;
 };
 
+export type DecompositionDraftInvocationInput = {
+  taskId: string;
+  instructions?: string | null;
+};
+
+export type DecompositionDraftInvocationResult = RuntimeInvocationBase & {
+  phase: 'decomposition_draft';
+  layer: 'selected_runtime' | 'model_service_fallback';
+  draft: ProjectDecompositionResult;
+};
+
 export function buildLocalTaskTypeReviewInvocation(
   input: TaskTypeReviewInvocationInput,
 ): TaskTypeReviewInvocationResult {
@@ -62,5 +74,23 @@ export function buildLocalTaskTypeReviewInvocation(
     status: 'completed',
     summary: proposal.reason,
     proposal,
+  };
+}
+
+export function buildModelServiceDecompositionDraftInvocation(params: {
+  draft: ProjectDecompositionResult;
+  runtimeLabel?: string;
+  summary?: string;
+}): DecompositionDraftInvocationResult {
+  return {
+    phase: 'decomposition_draft',
+    layer: 'model_service_fallback',
+    runtime: {
+      mode: 'model_service',
+      label: params.runtimeLabel ?? '模型服务规划',
+    },
+    status: 'completed',
+    summary: params.summary ?? `已生成 ${params.draft.subtasks.length} 个项目子任务草稿。`,
+    draft: params.draft,
   };
 }
