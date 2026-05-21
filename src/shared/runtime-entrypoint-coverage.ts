@@ -251,7 +251,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'runtime_context_assembly',
     ],
-    notes: 'HomeBriefService builds the bounded Brief context projection before provider exposure; BriefProcessTemplateSelector and BriefExecutor use the resolved API Runtime config only for scheduled brief generation. If API Runtime is unavailable or generation fails, SchedulerService writes a local product-harness brief snapshot with fallbackReason, not a hidden Agent CLI fallback or cross-runtime provider call.',
+    notes: 'HomeBriefService builds the bounded Brief context projection before provider exposure; BriefProcessTemplateSelector and BriefExecutor use the resolved API Runtime config only when API Runtime is selected for scheduled brief generation. Selected Agent CLI modes skip API config resolution and write a local product-harness brief snapshot with fallbackReason, not a hidden Agent CLI fallback or cross-runtime provider call.',
   },
   {
     id: 'run.trigger',

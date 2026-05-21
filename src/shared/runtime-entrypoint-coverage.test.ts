@@ -186,6 +186,8 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).toContain('runtime_context_assembly');
     expect(entry?.notes).toContain('bounded Brief context projection');
     expect(entry?.notes).toContain('resolved API Runtime config');
+    expect(entry?.notes).toContain('only when API Runtime is selected');
+    expect(entry?.notes).toContain('Selected Agent CLI modes skip API config resolution');
     expect(entry?.notes).toContain('local product-harness brief snapshot');
     expect(entry?.notes).toContain('not a hidden Agent CLI fallback');
   });

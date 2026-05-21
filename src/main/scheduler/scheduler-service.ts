@@ -92,6 +92,12 @@ export class SchedulerService {
     let fallbackReason: string | null = 'AI brief executor not attempted.';
 
     try {
+      const getStatus = (this.aiConfigService as { getStatus?: AiConfigService['getStatus'] }).getStatus;
+      const status = typeof getStatus === 'function' ? await getStatus.call(this.aiConfigService) : null;
+      if (status?.runtimeMode && status.runtimeMode !== 'api') {
+        const selectedRuntimeLabel = status.runtimeMode === 'codex' ? 'Codex CLI' : 'Claude Code';
+        throw new Error(`当前选择的是 ${selectedRuntimeLabel}，Scheduled Brief API adapter 不会切换到 Agent API Runtime。`);
+      }
       const runtimeConfig = await this.aiConfigService.resolveRuntimeConfig();
       if ((homeData.processTemplateCandidates?.length ?? 0) > 0) {
         try {

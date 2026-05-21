@@ -322,6 +322,55 @@ describe('SchedulerService', () => {
     );
   });
 
+  it('keeps scheduled brief local when Agent CLI is the selected runtime', async () => {
+    const briefSnapshotRepository = {
+      create: vi.fn().mockResolvedValue(undefined),
+    };
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({ runtimeMode: 'claude' }),
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const briefExecutor = {
+      execute: vi.fn(),
+    };
+    const briefProcessTemplateSelector = {
+      select: vi.fn(),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      briefSnapshotRepository as never,
+      {
+        listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+        updateResult: vi.fn(),
+      } as never,
+      aiConfigService as never,
+      briefExecutor as never,
+      briefProcessTemplateSelector as never,
+    );
+
+    await service.start();
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(briefProcessTemplateSelector.select).not.toHaveBeenCalled();
+    expect(briefExecutor.execute).not.toHaveBeenCalled();
+    expect(briefSnapshotRepository.create).toHaveBeenCalledWith(
+      'startup',
+      expect.stringContaining('Taskplane Brief (startup)'),
+      'fallback',
+      '当前选择的是 Claude Code，Scheduled Brief API adapter 不会切换到 Agent API Runtime。',
+    );
+  });
+
   it('falls back to plain brief generation when brief template selection fails', async () => {
     const homeData = {
       ...buildHomeData(),
