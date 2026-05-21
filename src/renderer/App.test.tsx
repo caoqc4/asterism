@@ -4975,6 +4975,54 @@ describe('App redesign v1', () => {
     expect(harness.api.decomposeProject).not.toHaveBeenCalled();
   });
 
+  it('opens the first unfinished child when advancing a decomposed project', async () => {
+    const project = buildTask({
+      id: 'task_project_with_children',
+      title: '开发一个网站',
+      state: 'planned',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_child_scope', 'task_child_design'],
+      nextStep: '审阅最新 agent 产物，并决定是否继续推进。',
+    });
+    const firstChild = buildTask({
+      id: 'task_child_scope',
+      title: '明确网站目标与范围',
+      parentTaskId: project.id,
+      state: 'planned',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      summary: '确认网站类型、目标用户、核心价值和页面范围。',
+      nextStep: null,
+    });
+    const secondChild = buildTask({
+      id: 'task_child_design',
+      title: '视觉方向与交互原型',
+      parentTaskId: project.id,
+      state: 'planned',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      summary: '确定视觉风格并产出核心页面原型。',
+    });
+    harness.tasks.unshift(secondChild, firstChild, project);
+    harness.details[project.id] = buildTaskDetail(project);
+    harness.details[firstChild.id] = buildTaskDetail(firstChild);
+    harness.details[secondChild.id] = buildTaskDetail(secondChild);
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
+    await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
+
+    expect(await screen.findByDisplayValue(/请开始推进子任务「明确网站目标与范围」/)).toBeTruthy();
+    expect(screen.getByDisplayValue(/父任务：「开发一个网站」/)).toBeTruthy();
+    expect(screen.getByDisplayValue(/不要重新拆解父任务/)).toBeTruthy();
+    expect(screen.getAllByText('明确网站目标与范围').length).toBeGreaterThan(0);
+  });
+
   it('uses Plan as the primary action until an ordinary task has execution context', async () => {
     const task = buildTask({
       id: 'task_plain_plan',

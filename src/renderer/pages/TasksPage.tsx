@@ -867,6 +867,16 @@ function buildVisibleTaskPlanningDraft(taskTitle: string, type: TaskType): strin
   return `请帮我规划「${taskTitle}」的目标、验收标准和下一步行动。`;
 }
 
+function buildChildTaskAdvanceDraft(child: Task, parent: Task): string {
+  const nextStep = child.nextStep?.trim();
+  return [
+    `请开始推进子任务「${child.title}」。`,
+    `父任务：「${parent.title}」。`,
+    nextStep ? `当前下一步：${nextStep}` : '请先确认这个子任务的目标、验收标准和第一步行动。',
+    '请聚焦这个子任务本身，不要重新拆解父任务。',
+  ].filter((line): line is string => Boolean(line)).join('\n');
+}
+
 function formatTaskTypeForDisplay(task: Task, parentTask: Task | null, displayType: TaskType = task.type): string {
   if (parentTask) return displayType === 'project' ? '子项目型' : '项目子任务';
   return task.facets.length > 1 && displayType === task.type
@@ -2892,6 +2902,19 @@ function resetCaptureDraft() {
               planningLabel={selectedTaskPlanningPrompt?.label ?? '规划讨论'}
               onOpenPanel={() => {
                 if (!selectedTaskPlanningPrompt) return;
+                const nextChildTask = directChildTasks.find((task) => task.status !== 'done') ?? null;
+                if (nextChildTask && (selectedEffectiveType === 'project' || directChildTasks.length > 0)) {
+                  selectTask(nextChildTask.id);
+                  onOpenPanel(
+                    nextChildTask.id,
+                    buildChildTaskAdvanceDraft(nextChildTask, selectedTask),
+                    nextChildTask.title,
+                    false,
+                    true,
+                    true,
+                  );
+                  return;
+                }
                 onOpenPanel(
                   selectedTask.id,
                   buildVisibleTaskPlanningDraft(selectedTask.title, selectedEffectiveType ?? selectedTask.type),
