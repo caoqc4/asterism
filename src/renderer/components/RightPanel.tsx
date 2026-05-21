@@ -66,6 +66,7 @@ import {
   buildTaskPlanningPrompt,
   getTaskAttributes,
   inferTaskTypeProfile,
+  normalizeTaskTypeFacets,
   type TaskExecutionType,
 } from '../lib/taskAttributes';
 import {
@@ -84,6 +85,16 @@ type ActiveAgentCliRunState = {
   runtimeLabel: string;
   status: 'running' | 'cancelling';
   taskId: string;
+};
+type TaskTypeReviewProposal = {
+  taskId: string;
+  taskTitle: string;
+  currentType: TaskExecutionType;
+  suggestedType: TaskExecutionType;
+  suggestedFacets: TaskExecutionType[];
+  reason: string;
+  nextAction: string;
+  sourceLabel: string;
 };
 
 const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
@@ -252,6 +263,14 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
   routine:   '常设任务',
 };
 
+const TASK_TYPE_REVIEW_NEXT_ACTION: Record<TaskExecutionType, string> = {
+  simple: '保持单条任务推进，必要时补齐下一步和验收标准。',
+  project: '按项目型任务处理，先确认拆解边界，再由用户确认真实子任务。',
+  scheduled: '确认周期、触发时间和每次执行的验收口径。',
+  event: '确认外部触发来源、进入条件和触发后的处理动作。',
+  routine: '确认长期维护范围、复盘节奏和信息更新边界。',
+};
+
 const MIN_SESSION_REFRESH_MESSAGE_LIMIT = 3;
 const REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP = 10;
 const GENERIC_ASSISTANT_REPLY_PATTERNS = [
@@ -299,12 +318,26 @@ const GENERIC_HANDOFF_PATTERNS = [
   /^最后看下一步$/,
 ];
 
-function buildTaskTypeReviewPrompt(taskName: string): string {
-  return [
-    `请判断「${taskName}」更适合哪种任务类型：一次性 / 定时重复 / 事件触发 / 项目型 / 常设任务。`,
-    '请先说明判断理由，再给出建议类型。',
-    '如果是项目型，请只给高层级拆解方向，不要直接生成真实子任务；如果不是项目型，请说明下一步需要补齐什么上下文。',
-  ].join('\n');
+function buildTaskTypeReviewProposal(params: {
+  taskId: string;
+  taskTitle: string;
+  currentType: TaskExecutionType;
+}): TaskTypeReviewProposal {
+  const profile = inferTaskTypeProfile(params.taskTitle);
+  const suggestedFacets = normalizeTaskTypeFacets(profile.facets, profile.primaryType);
+  const reason = profile.primaryType === params.currentType
+    ? `当前类型已经与标题规则判断一致：${TASK_TYPE_HABIT_LABELS[profile.primaryType]}。`
+    : `标题规则建议从「${TASK_TYPE_HABIT_LABELS[params.currentType]}」调整为「${TASK_TYPE_HABIT_LABELS[profile.primaryType]}」。`;
+  return {
+    taskId: params.taskId,
+    taskTitle: params.taskTitle,
+    currentType: params.currentType,
+    suggestedType: profile.primaryType,
+    suggestedFacets,
+    reason,
+    nextAction: TASK_TYPE_REVIEW_NEXT_ACTION[profile.primaryType],
+    sourceLabel: '本地结构化类型规则',
+  };
 }
 
 function normalizeUserMessage(text: string): string {
@@ -933,6 +966,8 @@ export function RightPanel({
   const [abandoningCapturedTask, setAbandoningCapturedTask] = useState(false);
   const [savingPhaseCloseout, setSavingPhaseCloseout] = useState(false);
   const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
+  const [savingTaskTypeProposal, setSavingTaskTypeProposal] = useState(false);
+  const [taskTypeReviewProposal, setTaskTypeReviewProposal] = useState<TaskTypeReviewProposal | null>(null);
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -982,6 +1017,7 @@ export function RightPanel({
 
   useEffect(() => {
     activeTaskIdRef.current = activeTaskId;
+    setTaskTypeReviewProposal(null);
   }, [activeTaskId]);
 
   useEffect(() => {
@@ -1885,6 +1921,7 @@ export function RightPanel({
   async function send(forcedText?: string) {
     const text = (forcedText ?? input).trim();
     if (!text || thinking) return;
+    setTaskTypeReviewProposal(null);
     patchSession({
       manualRefreshReady: null,
       taskFileProposal: null,
@@ -1978,6 +2015,51 @@ export function RightPanel({
 
     setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: replyText, ts: now() }]);
     setThinking(false);
+  }
+
+  function proposeTaskTypeReview() {
+    if (!activeTaskId || !title) return;
+    setTaskTypeReviewProposal(buildTaskTypeReviewProposal({
+      taskId: activeTaskId,
+      taskTitle: title,
+      currentType: activeTaskType ?? 'simple',
+    }));
+  }
+
+  async function confirmTaskTypeReviewProposal() {
+    if (!taskTypeReviewProposal || savingTaskTypeProposal) return;
+    if (!window.api?.updateTask) {
+      appendSysMsg('当前环境暂不支持写回任务类型。');
+      return;
+    }
+    setSavingTaskTypeProposal(true);
+    try {
+      const updated = await window.api.updateTask({
+        id: taskTypeReviewProposal.taskId,
+        taskType: taskTypeReviewProposal.suggestedType,
+        taskFacets: taskTypeReviewProposal.suggestedFacets,
+      });
+      setActiveTaskDetail((prev) => prev && prev.id === updated.id
+        ? {
+          ...prev,
+          taskType: updated.taskType,
+          taskFacets: updated.taskFacets,
+          updatedAt: updated.updatedAt,
+        }
+        : prev);
+      appendSysMsg([
+        '已确认任务类型。',
+        '',
+        `类型：${TASK_TYPE_HABIT_LABELS[taskTypeReviewProposal.suggestedType]}`,
+        `来源：${taskTypeReviewProposal.sourceLabel}`,
+        `下一步：${taskTypeReviewProposal.nextAction}`,
+      ].join('\n'));
+      setTaskTypeReviewProposal(null);
+    } catch (error) {
+      appendSysMsg(`任务类型写回失败：${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      setSavingTaskTypeProposal(false);
+    }
   }
 
   async function handleAgentRuntimeSlashCommand(command: ReturnType<typeof parseAgentRuntimeSlashCommand>): Promise<string> {
@@ -2268,6 +2350,7 @@ export function RightPanel({
 
   const title = taskTitle(activeTaskId, titleCache);
   const activeAttrs = activeTaskId ? getTaskAttributes(activeTaskId) : null;
+  const activeTaskType = activeTaskDetail?.taskType ?? activeAttrs?.type ?? null;
   const userMessageTexts = messages
     .filter((message) => message.role === 'user')
     .map((message) => message.text.trim())
@@ -2436,10 +2519,10 @@ export function RightPanel({
     timeline: activeTaskDetail?.timeline,
   });
   const taskGoalLabel = taskGoalState.status === 'cleared' ? null : taskGoalState.objective;
-  const taskPlanningPrompt = activeAttrs?.type && title
-    ? buildTaskPlanningPrompt(title, activeAttrs.type, 'panel')
+  const taskPlanningPrompt = activeTaskType && title
+    ? buildTaskPlanningPrompt(title, activeTaskType, 'panel')
     : null;
-  const taskTypeReviewPrompt = activeTaskId && title ? buildTaskTypeReviewPrompt(title) : null;
+  const canReviewTaskType = Boolean(activeTaskId && title);
   const quickPrompts = activeTaskId
     ? [
         ...(taskPlanningPrompt
@@ -2631,6 +2714,43 @@ export function RightPanel({
             <button className="btn sm ghost" onClick={proposeTaskFileWrite}>
               生成文件提案
             </button>
+          </div>
+        )}
+
+        {taskTypeReviewProposal && (
+          <div className="panel-file-proposal" aria-label="任务类型校验提案">
+            <div className="panel-file-proposal-head">
+              <strong>任务类型校验提案</strong>
+              <span>确认后写回任务类型</span>
+            </div>
+            <div className="panel-memory-proposal-preview">
+              <div className="panel-memory-proposal-preview-row">
+                <span>当前类型</span>
+                <strong>{TASK_TYPE_HABIT_LABELS[taskTypeReviewProposal.currentType]}</strong>
+              </div>
+              <div className="panel-memory-proposal-preview-row">
+                <span>建议类型</span>
+                <strong>{TASK_TYPE_HABIT_LABELS[taskTypeReviewProposal.suggestedType]}</strong>
+              </div>
+              <div className="panel-memory-proposal-preview-row">
+                <span>来源</span>
+                <strong>{taskTypeReviewProposal.sourceLabel}</strong>
+              </div>
+            </div>
+            <div className="panel-refresh-reason">{taskTypeReviewProposal.reason}</div>
+            <div className="panel-refresh-reason">{taskTypeReviewProposal.nextAction}</div>
+            <div className="panel-refresh-actions">
+              <button className="btn sm ghost" onClick={() => setTaskTypeReviewProposal(null)}>
+                放弃
+              </button>
+              <button
+                className={`btn sm primary${savingTaskTypeProposal ? ' disabled' : ''}`}
+                onClick={() => void confirmTaskTypeReviewProposal()}
+                disabled={savingTaskTypeProposal}
+              >
+                {savingTaskTypeProposal ? '写回中…' : '确认类型'}
+              </button>
+            </div>
           </div>
         )}
 
@@ -2855,12 +2975,12 @@ export function RightPanel({
             </button>
           </div>
         )}
-        {activeTaskId && !input.trim() && (taskTypeReviewPrompt || taskPlanningPrompt) && (
+        {activeTaskId && !input.trim() && (canReviewTaskType || taskPlanningPrompt) && (
           <div className="panel-inline-prompts">
-            {taskTypeReviewPrompt && (
+            {canReviewTaskType && (
               <button
                 className="panel-prompt-chip"
-                onClick={() => { setSessionInput(taskTypeReviewPrompt); textareaRef.current?.focus(); }}
+                onClick={proposeTaskTypeReview}
               >
                 判断任务类型
               </button>
