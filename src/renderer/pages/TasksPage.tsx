@@ -886,22 +886,6 @@ function shouldUpgradeLegacySimpleTaskType(
   );
 }
 
-const TASK_TYPE_CAPTURE_NEXT_STEP: Record<TaskType, string> = {
-  simple: '创建单条任务，进入 Tasks 后可直接执行或继续规划。',
-  project: '先创建项目父任务，再由 AI 拆解草稿；确认后才创建真实子任务。',
-  scheduled: '先创建单条定时任务，周期和触发条件可在任务详情中确认。',
-  event: '先创建单条事件触发任务，监听条件可在任务详情中确认。',
-  routine: '先创建一条长期维护任务，后续可补充维护范围、检查节奏和记录位置。',
-};
-
-const TASK_TYPE_CAPTURE_HINT: Record<TaskType, string> = {
-  simple: '一次性任务创建后可继续规划目标和验收标准',
-  project: '项目型任务创建后可让 AI 拆解并自检',
-  scheduled: '定时任务创建后可确认周期与执行节奏',
-  event: '事件触发任务创建后可确认来源与触发条件',
-  routine: '常设任务创建后可确认维护范围与复盘节奏',
-};
-
 const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
   { label: '高', value: 'high' },
   { label: '中', value: 'medium' },
@@ -1197,13 +1181,6 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         limit: 4,
       }).filter((habit): habit is WorkHabitRecord => habit.source === 'sop')
     : [];
-  const capturePhaseItems = buildCapturePhaseItems(
-    captureTitle,
-    captureType,
-    captureTypeTouched,
-    captureSopSuggestions.length,
-  );
-
   useEffect(() => {
     let cancelled = false;
     setSelectedTaskDetail(null);
@@ -2737,7 +2714,6 @@ function resetCaptureDraft() {
           ) : selectedObject === 'task-create' ? (
             <div className="tasks-toolbar-title">
               <strong>新增任务</strong>
-              <span>先创建父任务；需要拆解时再进入任务详情确认子任务。</span>
             </div>
           ) : selectedObject === 'task' && selectedTask ? (
             <div className="view-switcher">
@@ -2789,12 +2765,6 @@ function resetCaptureDraft() {
         <div className="task-list">
           {selectedObject === 'task-create' && showCapture ? (
             <div className="capture-form capture-form-page">
-              <div className="capture-form-header">
-                <div>
-                  <strong>创建一个新的父任务</strong>
-                  <span>输入一句任务目标，确认类型后再创建。项目型任务会先创建父任务，子任务在详情中确认。</span>
-                </div>
-              </div>
               <input
                 className="capture-input"
                 autoFocus
@@ -2815,7 +2785,7 @@ function resetCaptureDraft() {
                 }}
               />
               <div className="capture-type-suggestion">
-                <span>{captureTypeTouched ? '用户确认类型' : 'AI 建议类型'}</span>
+                <span>{captureTypeTouched ? '已确认' : '建议'}</span>
                 <strong>
                   {TASK_TYPE_LABELS[captureType]}
                   {captureFacets.length > 1
@@ -2837,27 +2807,13 @@ function resetCaptureDraft() {
                     {TASK_TYPE_LABELS[type]}
                   </button>
                 ))}
-                <input
-                  className="capture-commitment-input"
-                  placeholder="交付备注（可选）"
-                  value={captureCommitment}
-                  onChange={(e) => setCaptureCommitment(e.target.value)}
-                />
               </div>
-              <div className="capture-type-note">
-                类型由 AI 根据标题预判，你只需要确认或调整建议；点击创建即确认当前建议。定时/事件会先创建单条任务，周期和触发条件可在任务详情中确认；常设任务用于长期维护和日常管理；项目型先在 AI 面板讨论拆解方案，确认后才创建真实子任务。
-              </div>
-              <div className="capture-phase-flow" aria-label="任务创建阶段">
-                {capturePhaseItems.map((item, index) => (
-                  <div key={item.label} className={`capture-phase-item${item.active ? ' active' : ''}`}>
-                    <span className="capture-phase-index">{index + 1}</span>
-                    <div>
-                      <strong>{item.label}</strong>
-                      <span>{item.detail}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <input
+                className="capture-commitment-input"
+                placeholder="交付备注（可选）"
+                value={captureCommitment}
+                onChange={(e) => setCaptureCommitment(e.target.value)}
+              />
               {captureSopSuggestions.length > 0 && (
                 <div className="capture-sop-suggestions">
                   <span>可参考流程模板</span>
@@ -2874,9 +2830,6 @@ function resetCaptureDraft() {
                 <button className="btn sm ghost" onClick={closeTaskCreateView}>
                   取消
                 </button>
-                <span className="capture-ai-hint muted">
-                  {TASK_TYPE_CAPTURE_HINT[captureType]}
-                </span>
               </div>
             </div>
           ) : selectedObject === 'file' && selectedFile ? (
@@ -3837,39 +3790,6 @@ function TaskExplorerTreeItem({
       </button>
     </div>
   );
-}
-
-function buildCapturePhaseItems(title: string, type: TaskType, typeTouched: boolean, sopSuggestionCount: number): Array<{
-  label: string;
-  detail: string;
-  active: boolean;
-}> {
-  const hasTitle = Boolean(title.trim());
-  return [
-    {
-      label: '捕获意图',
-      detail: hasTitle
-        ? '已根据标题形成初步任务意图，后续可在右侧面板继续补上下文。'
-        : '先写下任务目标或外部线索，AI 会根据标题预判类型。',
-      active: true,
-    },
-    {
-      label: '确认类型',
-      detail: hasTitle
-        ? typeTouched
-          ? `你已确认为${TASK_TYPE_LABELS[type]}任务，可继续调整或直接创建。`
-          : `AI 建议为${TASK_TYPE_LABELS[type]}任务，你只需要确认或调整建议。`
-        : '输入标题后会给出一次性 / 项目型 / 定时 / 事件 / 常设建议。',
-      active: hasTitle,
-    },
-    {
-      label: '创建后推进',
-      detail: sopSuggestionCount > 0
-        ? `${TASK_TYPE_CAPTURE_NEXT_STEP[type]} 已发现可参考流程模板，创建后 AI 会建议是否加载。`
-        : TASK_TYPE_CAPTURE_NEXT_STEP[type],
-      active: hasTitle,
-    },
-  ];
 }
 
 function ExecutionQueueView({
