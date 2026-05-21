@@ -197,7 +197,12 @@ The current implementation is partly aligned with this model:
 - Agent CLI is wired for the `execution_run` phase: task-bound run start, context assembly, read-only/plan permission boundary, cancellation, terminal evidence, verifier result, and memory proposal.
 - Agent API is represented as a disabled peer runtime in capability/configuration state, but it is not yet an executable selected runtime.
 - Project decomposition already has draft and confirmation harness boundaries, but draft generation still needs an explicit selected-runtime invocation decision. The current provider-backed implementation should be treated as the API runtime path until the CLI adapter supports this phase.
-- Task type review is not yet a structured runtime phase. Tasks creation uses local heuristic inference plus user confirmation, and RightPanel exposes a "判断任务类型" prompt that asks the current chat path for advice. It does not parse a structured recommendation, produce a user-confirmed type-change proposal, or write `taskType` through a guarded runtime mutation.
+- Task type review now has a structured local-rule phase. Task capture uses
+  `inferTaskTypeProfile` immediately, so titles such as "开发小程序" become
+  project work at creation time. RightPanel's "判断任务类型" action returns a
+  structured proposal and writes `taskType/taskFacets` only after user
+  confirmation through guarded task metadata update. It does not call a hidden
+  API helper.
 - Global chat and lightweight summaries are AI invocation phases too. They should use the selected runtime where supported; current provider-backed behavior should be named as the API runtime path, not as a generic assistant fallback.
 
 Immediate cleanup target:
@@ -205,7 +210,10 @@ Immediate cleanup target:
 1. Inventory every model-facing call site (`chatWithAI`, decomposition draft generation, task type review, verifier assist candidates, memory synthesis candidates).
 2. Mark each call as one of: selected AI invocation runtime, API runtime path, local rule, or no AI.
 3. Add a small adapter-neutral `RuntimeInvocationRequest`/`RuntimeInvocationResult` contract before adding deeper features.
-4. Convert task type review into the first non-execution selected-runtime candidate: structured recommendation, reason, confidence, user confirmation, and guarded `taskType/taskFacets` writeback.
+4. Treat the existing local-rule task type review as the first non-execution
+   invocation shape: structured recommendation, reason, user confirmation, and
+   guarded `taskType/taskFacets` writeback. Future CLI/API adapters can add
+   confidence or richer reasoning without changing that boundary.
 
 Project decomposition has two harness boundaries. Draft generation is provider-visible planning and must stay draft-only behind context assembly, task-memory guidance, and `subtask_draft` checks. User-confirmed child creation is a durable write and must recheck `subtask_draft`, task mutation, post-step evidence, and timeline allowlists. It should not claim `subtask_start` until Taskplane is actually entering or running a child task.
 
@@ -430,7 +438,9 @@ The first subagent to productize should be the verifier. It has read-only scope 
 Existing product flows remain compatible with Agent CLI as the first AI invocation runtime, but several still need adapter-neutral routing cleanup:
 
 - project decomposition remains a Taskplane harness planner flow, but its model-facing draft generation should be routed through the selected AI invocation runtime; the current provider-backed implementation is the API runtime path, not an Agent CLI fallback;
-- task type review currently exists as a prompt-assisted chat affordance and rule-based creation hint; it needs a structured harness phase with proposal/confirmation/writeback;
+- task type review currently exists as a local-rule harness phase with
+  proposal/confirmation/writeback; future selected-runtime adapters may improve
+  judgment quality, but they must preserve the same proposal boundary;
 - subtask draft validation remains shared product logic;
 - subtask start and context readiness checks remain runtime gates;
 - Task Records and Task.md remain product memory surfaces;
@@ -517,7 +527,7 @@ This pass checks the corrected product model against the actual code. The produc
 | Retained ordinary RunService execution | `run:trigger` calls `RunService.trigger`, which uses `RunOrchestrator`, `RuntimeAiConfig`, `TextExecutor`, optional provider-native tool schemas, and a local conservative agent plan inside the same run when structured model proposals are unavailable or unsafe. | API Runtime / Agent API-like execution path, gated as provider-visible execution. | Compatible as a retained path, but it must not be mistaken for first-version Agent CLI execution or used as hidden fallback when selected CLI is unavailable. The word `fallback` in this path means local conservative planning within the same already-selected provider-visible run, not cross-runtime routing. | Keep registered as `run.trigger`; when Agent API becomes selectable, reconcile this path under the Agent API adapter contract. |
 | Product `/goal` | `RightPanel` parses slash commands and writes task goal state/timeline through Taskplane handlers before chat or CLI forwarding. | Product harness, no selected runtime call. | Correct. Goal state belongs to Taskplane and should remain runtime-independent. | Keep native CLI goal forwarding as optional audit-only compatibility until adapter evidence exists. |
 | Runtime-native goal request | `/codex goal`, `/claude goal`, and `/runtime goal` record audit evidence without forwarding. | Runtime audit, no selected runtime call. | Correct for first version. It borrows native goal ideas without giving native sessions source-of-truth authority. | Revisit only after disposable command-shape, progress, cancellation, permission, and memory-boundary probes pass. |
-| Task type review | RightPanel builds a structured local proposal from shared task-type rules and applies changes only after user confirmation. | Local rule invocation contract; future selected-runtime candidate. | Improved. It fixes the visible classification issue without pretending a different runtime made the judgment. | Add selected CLI/API adapters later while preserving the same proposal and confirmation boundary. |
+| Task capture and type review | RightPanel task capture uses `inferTaskTypeProfile` before `task:create`, so project-like titles such as "开发小程序" are created as project work. The separate "判断任务类型" action builds a structured local proposal through `buildLocalTaskTypeReviewInvocation` and writes `taskType/taskFacets` only after user confirmation. | Local rule invocation contract; future selected-runtime candidate. | Aligned for first version. It fixes the visible classification issue without pretending a different runtime made the judgment, and keeps AI二次校验 as a future selected-runtime enhancement rather than a hidden API call. | Add selected CLI/API adapters later while preserving the same proposal and confirmation boundary. |
 | Project decomposition draft | `TasksPage.generateProjectDecomposition` calls `window.api.decomposeProject`; `ipcMain.handle('ai:decomposeProject')` calls `generateText` and validates drafts with `evaluateRuntimeSubtaskDraft`. | API runtime path. | Mostly aligned at the harness level, but not yet adapter-neutral for selected CLI. It is a runtime phase that should eventually be invocable through Agent CLI or Agent API. | Introduce a `decomposition_draft` invocation contract; preserve existing validation and confirmation gates. |
 | Project decomposition confirmation | `TasksPage` confirms generated children and rechecks `subtask_draft` before creating durable subtasks. | Product harness / durable write. | Correct. Confirmation should not depend on AI provider choice. | Keep unchanged; use it as the write boundary for both CLI and API-generated drafts. |
 | Decision draft | `DecisionService.draft` and process-template selectors use provider-backed structured generation when available, then write through Decision boundaries. Draft records now carry optional `decision_draft` invocation provenance. | API runtime path inside the product harness; local fallback is product harness/skipped. | Better aligned. It is named as a runtime phase and keeps Decision persistence behind `decision.create`. | Later add selected CLI/API adapters for richer decision drafting without changing the confirmation/write boundary. |
@@ -529,12 +539,12 @@ This pass checks the corrected product model against the actual code. The produc
 
 ### Implementation Conclusion
 
-The first-version Agent CLI path is compatible with the existing task runtime flow because the harness already owns goal state, context assembly, decomposition confirmation, verification, memory proposal, handoff, and clearance. The remaining mismatch is not that Agent CLI "only executes"; it is that several AI-facing harness phases still call provider-backed APIs directly instead of going through a selected AI invocation contract. The practical next step is to introduce that contract gradually, starting with task type review because it is currently the weakest link and is already visible in the user's classification issue.
+The first-version Agent CLI path is compatible with the existing task runtime flow because the harness already owns goal state, context assembly, decomposition confirmation, verification, memory proposal, handoff, and clearance. The remaining mismatch is not that Agent CLI "only executes"; it is that several AI-facing harness phases still call provider-backed APIs directly instead of going through a selected AI invocation contract. The practical next step is to introduce that contract gradually, using the now-structured task type review proposal as the reference shape for future selected-runtime adapters.
 
 Suggested implementation order:
 
 1. Add shared phase names and request/result types for selected AI invocations, without changing behavior.
-2. Convert task type review into a structured, user-confirmed proposal that records invocation layer without cross-runtime fallback.
+2. Add selected-runtime task type review adapters only when they can return the existing structured, user-confirmed proposal shape without cross-runtime fallback.
 3. Convert project decomposition draft to the same invocation contract while keeping the existing `subtask_draft` and confirmation gates.
 4. Inventory decision draft as a later selected-runtime candidate.
 5. Keep verification subagent/API work in shadow mode until it beats the deterministic verifier on the documented readiness gate.

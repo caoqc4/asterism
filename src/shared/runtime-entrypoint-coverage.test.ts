@@ -385,6 +385,10 @@ describe('runtime entrypoint coverage', () => {
       expect(entry.requiredGates).toContain('task_memory_guidance');
       expect(entry.requiredGates).toContain('pre_step');
     }
+    const taskCapture = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'task.capture');
+    expect(taskCapture?.notes).toContain('inferTaskTypeProfile');
+    expect(taskCapture?.notes).toContain('without a hidden AI call');
+    expect(taskCapture?.notes).toContain('separate proposal and confirmation boundary');
     for (const entry of runtimeEntrypointsByKind('decision_action')) {
       expect(entry.requiredGates).toContain('simplicity_check');
       expect(entry.requiredGates).toContain('decision_action');
@@ -407,6 +411,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).toContain('task_memory_guidance');
     expect(entry?.requiredGates).not.toContain('task_mutation');
     expect(entry?.notes).toContain('proposal/confirmation split');
+    expect(entry?.notes).toContain('first-version task-type review contract');
     expect(entry?.notes).toContain('selected-runtime or API-runtime provenance');
   });
 

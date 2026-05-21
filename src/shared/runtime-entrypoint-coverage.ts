@@ -548,6 +548,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_memory_guidance',
       'pre_step',
     ],
+    notes: 'RightPanel task capture uses local inferTaskTypeProfile before task:create, so project-like software/build titles are created as project work without a hidden AI call. Any later AI type review must remain a separate proposal and confirmation boundary.',
   },
   {
     id: 'task.typeReview',
@@ -562,7 +563,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'task_memory_guidance',
     ],
-    notes: 'Current implementation uses local structured type rules and then writes through task.metadataUpdate only after user confirmation. Future Agent CLI or Agent API task_type_review invocations must keep this proposal/confirmation split and declare selected-runtime or API-runtime provenance before adding IPC.',
+    notes: 'Current implementation uses local structured type rules and then writes through task.metadataUpdate only after user confirmation. This is the first-version task-type review contract; future Agent CLI or Agent API task_type_review invocations must keep this proposal/confirmation split and declare selected-runtime or API-runtime provenance before adding IPC.',
   },
   {
     id: 'task.transitionToRunning',
