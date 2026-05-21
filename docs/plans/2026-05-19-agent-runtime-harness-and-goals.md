@@ -573,6 +573,8 @@ Scheduled Brief generation is now registered as `brief.scheduledSnapshot` in run
 
 The older `run.trigger` path is now documented as a retained API Runtime / Agent API-like execution surface. It remains a provider-visible execution entrypoint with context assembly, task-memory guidance, pre-step, subtask-start, and post-step gates, and now rejects selected CLI modes at the IPC boundary before `RunService.trigger` can resolve API config. Its local conservative `fallback` plan is an in-run safety behavior, not cross-runtime fallback and not a substitute for the selected Agent CLI entrypoint.
 
+`run.continuePaused` is also guarded at the IPC boundary. It belongs to the retained API Runtime checkpoint path, so when Codex CLI or Claude Code is selected, Taskplane refuses to continue that paused run until the user explicitly switches back to Agent API Runtime. This keeps paused-run recovery from becoming a quiet cross-runtime fallback.
+
 ### 2026-05-21 Agent Tool Boundary Update
 
 Agent tool durable writes are now explicitly documented as product-harness durable writes inside an already-gated run. Provider-native tool schemas stay narrower than text-prompt planning: they do not expose local command, file write, next-step update, source-context create, or artifact-create tools directly. `decision.draft` remains a draft/proposal tool; formal Decision persistence stays behind `decision.create`, and Decision approval/defer/cancel stays behind `decision.act`. Any future Agent API adapter must keep using the AgentToolRegistry boundary so task mutation, post-step verification, recovery guidance, and tool-permission checkpoints remain product-owned.
@@ -612,6 +614,8 @@ Automatic continuation is not part of the first-version Agent CLI product loop. 
 - Packaged-app smoke coverage proves continuation preserves run evidence, task dynamics, task-memory proposals, and workspace write boundaries.
 
 ## Remaining Decisions
+
+Remaining work should stay in preservation or deferred tracks unless a concrete adapter contract, evidence gate, or user-facing acceptance gap proves otherwise.
 
 - How much native CLI goal progress Codex and Claude can expose in non-interactive task runs, and whether that progress is rich enough to satisfy the Native Goal Forwarding Evidence Gate. This is optional compatibility work, not the first-version goal-framework requirement.
 - Which concrete future requirement, if any, crosses the Local Daemon Decision Rule.

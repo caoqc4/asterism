@@ -360,7 +360,7 @@ async function assertConfirmedProjectStructure(page) {
 
   await projectGroup.locator('.task-row', { hasText: 'Packaged Project parent fixture' }).click();
   await page.getByRole('heading', { name: 'Packaged Project parent fixture' }).waitFor();
-  await page.getByText('项目结构').waitFor();
+  await page.getByText('项目结构', { exact: true }).waitFor();
   await page.getByText('0/2').first().waitFor();
   await page.getByText('确认 packaged 项目范围').waitFor();
   await page.getByText('产出 packaged 项目方案').waitFor();

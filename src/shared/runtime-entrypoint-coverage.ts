@@ -25,6 +25,7 @@ export type RuntimeEntrypointKind =
 
 export type RuntimeEntrypointGate =
   | 'simplicity_check'
+  | 'runtime_selection'
   | 'runtime_action'
   | 'runtime_context_assembly'
   | 'task_memory_coverage'
@@ -445,6 +446,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ipcChannels: ['run:continuePaused'],
     requiredGates: [
       'simplicity_check',
+      'runtime_selection',
       'runtime_action',
       'runtime_handoff',
       'task_memory_guidance',
@@ -454,6 +456,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
     coveredGates: [
       'simplicity_check',
+      'runtime_selection',
       'runtime_action',
       'runtime_handoff',
       'task_memory_guidance',
@@ -461,6 +464,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'checkpoint_eligibility',
     ],
+    notes: 'IPC rejects selected Agent CLI modes before resuming this retained API Runtime checkpoint path, so paused runs cannot silently continue through another runtime.',
   },
   {
     id: 'decision.approvedCheckpointResume',

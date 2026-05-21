@@ -1798,4 +1798,29 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
     expect(result.status).toBe('completed');
   });
+
+  it('does not continue retained API paused runs when Agent CLI is the selected runtime', async () => {
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'keychain',
+      provider: 'openai',
+      model: 'gpt-test',
+      baseUrl: null,
+      workspaceRoot: null,
+      runtimeMode: 'codex',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/taskplane-config.json',
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+    const handler = getRegisteredHandler<
+      [string],
+      Awaited<ReturnType<typeof servicesMock.runService.continuePausedRun>>
+    >('run:continuePaused');
+
+    await expect(handler({}, 'run_1')).rejects.toThrow('旧版 API Run 续跑入口不会在未确认的情况下切换到 Agent API Runtime');
+    expect(servicesMock.runService.continuePausedRun).not.toHaveBeenCalled();
+  });
 });

@@ -694,6 +694,11 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('run:continuePaused', async (_event, runId: string) => {
+    const status = await getServices().aiConfigService.getStatus();
+    if (status.runtimeMode && status.runtimeMode !== 'api') {
+      const selectedRuntimeLabel = status.runtimeMode === 'codex' ? 'Codex CLI' : 'Claude Code';
+      throw new Error(`当前选择的是 ${selectedRuntimeLabel}。旧版 API Run 续跑入口不会在未确认的情况下切换到 Agent API Runtime；请在 AI Runtime 中切回 Agent API Runtime 后再继续这个 paused run。`);
+    }
     const updated = await getServices().runService.continuePausedRun(runId);
     emitAppEvent('run.changed', updated.id);
     emitAppEvent('task.changed', updated.taskId);
