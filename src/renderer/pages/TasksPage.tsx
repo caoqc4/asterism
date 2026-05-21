@@ -86,7 +86,7 @@ type TaskType = TaskExecutionType;
 type ViewMode = 'lane' | 'list' | 'timeline';
 type TaskDetailViewMode = 'manage' | 'timeline';
 type CapturedTaskSummary = { id: string; title: string; type: TaskType };
-type SelectedObject = 'task-list' | 'task' | 'file';
+type SelectedObject = 'task-list' | 'task' | 'file' | 'task-create';
 type TaskFileFilter = 'all' | 'task' | 'record' | 'ai_output' | 'artifact' | 'source' | 'file';
 type TaskFileClass = RuntimeFileSurfaceKind;
 type VirtualTaskFile = {
@@ -1445,6 +1445,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       setFileDirty(false);
       setFileDraft('');
       setSelectedObject(id ? 'task' : 'task-list');
+      setShowCapture(false);
       setTaskDetailViewMode('manage');
       setDeferOpenId(null);
     });
@@ -1459,9 +1460,29 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       setFileDirty(false);
       setFileDraft('');
       setSelectedObject('task-list');
+      setShowCapture(false);
       setTaskDetailViewMode('manage');
       setDeferOpenId(null);
     });
+  }
+
+  function openTaskCreateView() {
+    runObjectSwitch(() => {
+      resetCaptureDraft();
+      setShowCapture(true);
+      setSelectedFileId(null);
+      setFileDirty(false);
+      setFileDraft('');
+      setSelectedObject('task-create');
+      setTaskDetailViewMode('manage');
+      setDeferOpenId(null);
+    });
+  }
+
+  function closeTaskCreateView() {
+    resetCaptureDraft();
+    setShowCapture(false);
+    setSelectedObject(selectedId ? 'task' : 'task-list');
   }
 
   useEffect(() => {
@@ -2538,6 +2559,8 @@ function resetCaptureDraft() {
       }
       resetCaptureDraft();
       setShowCapture(false);
+      setSelectedId(newId);
+      setSelectedObject('task');
       setCapturedTask({ id: newId, title, type: selectedType });
     } finally {
       setCapturing(false);
@@ -2549,12 +2572,14 @@ function resetCaptureDraft() {
       <aside className="lenses-rail task-resource-explorer">
         <div className="task-explorer-head">
           <span>Tasks</span>
-          <button className="icon-btn" aria-label="+ 新建任务" title="新建任务" onClick={() => {
-            setShowCapture((visible) => {
-              if (visible) resetCaptureDraft();
-              return !visible;
-            });
-          }}>+</button>
+          <button
+            className="task-new-button"
+            aria-label="+ 新建任务"
+            title="新建任务"
+            onClick={openTaskCreateView}
+          >
+            新增
+          </button>
         </div>
 
         <ExplorerGroupHeader label="执行清单" open={openGroups.status} onClick={() => toggleGroup('status')} />
@@ -2709,6 +2734,11 @@ function resetCaptureDraft() {
               onMove={moveSelectedFile}
               onDelete={deleteSelectedFile}
             />
+          ) : selectedObject === 'task-create' ? (
+            <div className="tasks-toolbar-title">
+              <strong>新增任务</strong>
+              <span>先创建父任务；需要拆解时再进入任务详情确认子任务。</span>
+            </div>
           ) : selectedObject === 'task' && selectedTask ? (
             <div className="view-switcher">
               {([
@@ -2739,101 +2769,6 @@ function resetCaptureDraft() {
           )}
         </div>
 
-        {/* Capture form */}
-        {showCapture && (
-          <div className="capture-form">
-            <input
-              className="capture-input"
-              autoFocus
-              placeholder="任务标题… (Enter 快速创建)"
-              value={captureTitle}
-              onChange={(e) => {
-                const nextTitle = e.target.value;
-                setCaptureTitle(nextTitle);
-                if (!captureTypeTouched) {
-                  const profile = inferTaskTypeProfile(nextTitle);
-                  setCaptureType(profile.primaryType);
-                  setCaptureFacets(profile.facets);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void captureTask(); }
-                if (e.key === 'Escape') {
-                  setShowCapture(false);
-                  resetCaptureDraft();
-                }
-              }}
-            />
-            <div className="capture-type-suggestion">
-              <span>{captureTypeTouched ? '用户确认类型' : 'AI 建议类型'}</span>
-              <strong>
-                {TASK_TYPE_LABELS[captureType]}
-                {captureFacets.length > 1
-                  ? ` · 复合：${captureFacets.filter((facet) => facet !== captureType).map((facet) => TASK_TYPE_LABELS[facet]).join(' / ')}`
-                  : ''}
-              </strong>
-            </div>
-            <div className="capture-type-row">
-              {(['simple', 'project', 'scheduled', 'event', 'routine'] as TaskType[]).map((type) => (
-                <button
-                  key={type}
-                  className={`capture-type-btn${captureType === type ? ' active' : ''}`}
-                  onClick={() => {
-                    setCaptureType(type);
-                    setCaptureFacets([type]);
-                    setCaptureTypeTouched(true);
-                  }}
-                >
-                  {TASK_TYPE_LABELS[type]}
-                </button>
-              ))}
-              <input
-                className="capture-commitment-input"
-                placeholder="交付备注（可选）"
-                value={captureCommitment}
-                onChange={(e) => setCaptureCommitment(e.target.value)}
-              />
-            </div>
-            <div className="capture-type-note">
-              类型由 AI 根据标题预判，你只需要确认或调整建议；点击创建即确认当前建议。定时/事件会先创建单条任务，周期和触发条件可在任务详情中确认；常设任务用于长期维护和日常管理；项目型先在 AI 面板讨论拆解方案，确认后才创建真实子任务。
-            </div>
-            <div className="capture-phase-flow" aria-label="任务创建阶段">
-              {capturePhaseItems.map((item, index) => (
-                <div key={item.label} className={`capture-phase-item${item.active ? ' active' : ''}`}>
-                  <span className="capture-phase-index">{index + 1}</span>
-                  <div>
-                    <strong>{item.label}</strong>
-                    <span>{item.detail}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {captureSopSuggestions.length > 0 && (
-              <div className="capture-sop-suggestions">
-                <span>可参考流程模板</span>
-                {captureSopSuggestions.slice(0, 2).map((habit) => (
-                  <strong key={habit.id}>{habit.rule}</strong>
-                ))}
-                <small>创建后 AI 会在规划讨论中建议是否加载，不会自动套用。</small>
-              </div>
-            )}
-            <div className="capture-actions">
-              <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>
-                {capturing ? '创建中…' : '创建'}
-              </button>
-              <button className="btn sm ghost" onClick={() => {
-                setShowCapture(false);
-                resetCaptureDraft();
-              }}>
-                取消
-              </button>
-              <span className="capture-ai-hint muted">
-                {TASK_TYPE_CAPTURE_HINT[captureType]}
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Post-capture AI nudge */}
         {capturedTask && (
           <div className="capture-nudge">
@@ -2852,7 +2787,99 @@ function resetCaptureDraft() {
         )}
 
         <div className="task-list">
-          {selectedObject === 'file' && selectedFile ? (
+          {selectedObject === 'task-create' && showCapture ? (
+            <div className="capture-form capture-form-page">
+              <div className="capture-form-header">
+                <div>
+                  <strong>创建一个新的父任务</strong>
+                  <span>输入一句任务目标，确认类型后再创建。项目型任务会先创建父任务，子任务在详情中确认。</span>
+                </div>
+              </div>
+              <input
+                className="capture-input"
+                autoFocus
+                placeholder="任务标题… (Enter 快速创建)"
+                value={captureTitle}
+                onChange={(e) => {
+                  const nextTitle = e.target.value;
+                  setCaptureTitle(nextTitle);
+                  if (!captureTypeTouched) {
+                    const profile = inferTaskTypeProfile(nextTitle);
+                    setCaptureType(profile.primaryType);
+                    setCaptureFacets(profile.facets);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void captureTask(); }
+                  if (e.key === 'Escape') closeTaskCreateView();
+                }}
+              />
+              <div className="capture-type-suggestion">
+                <span>{captureTypeTouched ? '用户确认类型' : 'AI 建议类型'}</span>
+                <strong>
+                  {TASK_TYPE_LABELS[captureType]}
+                  {captureFacets.length > 1
+                    ? ` · 复合：${captureFacets.filter((facet) => facet !== captureType).map((facet) => TASK_TYPE_LABELS[facet]).join(' / ')}`
+                    : ''}
+                </strong>
+              </div>
+              <div className="capture-type-row">
+                {(['simple', 'project', 'scheduled', 'event', 'routine'] as TaskType[]).map((type) => (
+                  <button
+                    key={type}
+                    className={`capture-type-btn${captureType === type ? ' active' : ''}`}
+                    onClick={() => {
+                      setCaptureType(type);
+                      setCaptureFacets([type]);
+                      setCaptureTypeTouched(true);
+                    }}
+                  >
+                    {TASK_TYPE_LABELS[type]}
+                  </button>
+                ))}
+                <input
+                  className="capture-commitment-input"
+                  placeholder="交付备注（可选）"
+                  value={captureCommitment}
+                  onChange={(e) => setCaptureCommitment(e.target.value)}
+                />
+              </div>
+              <div className="capture-type-note">
+                类型由 AI 根据标题预判，你只需要确认或调整建议；点击创建即确认当前建议。定时/事件会先创建单条任务，周期和触发条件可在任务详情中确认；常设任务用于长期维护和日常管理；项目型先在 AI 面板讨论拆解方案，确认后才创建真实子任务。
+              </div>
+              <div className="capture-phase-flow" aria-label="任务创建阶段">
+                {capturePhaseItems.map((item, index) => (
+                  <div key={item.label} className={`capture-phase-item${item.active ? ' active' : ''}`}>
+                    <span className="capture-phase-index">{index + 1}</span>
+                    <div>
+                      <strong>{item.label}</strong>
+                      <span>{item.detail}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {captureSopSuggestions.length > 0 && (
+                <div className="capture-sop-suggestions">
+                  <span>可参考流程模板</span>
+                  {captureSopSuggestions.slice(0, 2).map((habit) => (
+                    <strong key={habit.id}>{habit.rule}</strong>
+                  ))}
+                  <small>创建后 AI 会在规划讨论中建议是否加载，不会自动套用。</small>
+                </div>
+              )}
+              <div className="capture-actions">
+                <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>
+                  {capturing ? '创建中…' : '创建'}
+                </button>
+                <button className="btn sm ghost" onClick={closeTaskCreateView}>
+                  取消
+                </button>
+                <span className="capture-ai-hint muted">
+                  {TASK_TYPE_CAPTURE_HINT[captureType]}
+                </span>
+              </div>
+            </div>
+          ) : selectedObject === 'file' && selectedFile ? (
             <FileWorkspace
               file={selectedFile}
               draft={fileDraft}
