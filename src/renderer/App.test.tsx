@@ -2146,7 +2146,7 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/执行 runtime：Agent API Runtime/)).toBeTruthy();
-    expect(screen.getByText(/Agent API Runtime 当前只接入部分问答 \/ 规划阶段/)).toBeTruthy();
+    expect(screen.getByText(/Agent API Runtime 当前接入问答 \/ 拆解 \/ 决策草稿等阶段/)).toBeTruthy();
   });
 
   it('keeps /goal product-owned in task chat and persists it as the Taskplane task goal', async () => {

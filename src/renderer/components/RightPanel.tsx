@@ -2150,7 +2150,7 @@ export function RightPanel({
         shouldUseAgentCliRuntime
           ? `执行边界：${sandboxBoundaryLabel}`
           : runtimeMode === 'api'
-            ? '执行边界：Agent API Runtime 当前只接入部分问答 / 规划阶段；任务执行 run 仍待完善。'
+            ? '执行边界：Agent API Runtime 当前接入问答 / 拆解 / 决策草稿等阶段；任务执行 run 仍待完善。'
             : '执行边界：所选 Agent CLI 未就绪或当前阶段未接入；不会隐式切换到其他 AI Runtime。',
       ].join('\n');
     }
