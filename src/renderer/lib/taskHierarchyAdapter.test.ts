@@ -99,7 +99,7 @@ describe('task hierarchy adapter', () => {
     });
     const followup = task({
       id: 'followup_1',
-      title: '拆解下一步：开发小程序',
+      title: '整理开发小程序资料',
       taskType: 'simple',
       parentTaskId: null,
       childTaskIds: [],

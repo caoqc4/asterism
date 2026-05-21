@@ -871,6 +871,21 @@ function lensForTaskType(task: Task, allTasks: Task[]): Lens {
   return task.type;
 }
 
+function shouldUpgradeLegacySimpleTaskType(
+  task: TaskListItemRecord,
+  attrs: TaskAttributeRecord | null | undefined,
+  inferredType: TaskType,
+): boolean {
+  if (inferredType === 'simple') return false;
+  if (attrs?.typeConfirmed === true) return false;
+  if (task.taskType !== 'simple') return false;
+  if (task.parentTaskId) return false;
+  const normalizedTitle = task.title.toLowerCase();
+  return /项目|开发|实现|建设|搭建|制作|设计|优化|测试|上线|发布|完成|推进|重构|完整|方案|计划|campaign|project|app|应用|软件/.test(
+    normalizedTitle,
+  );
+}
+
 const TASK_TYPE_CAPTURE_NEXT_STEP: Record<TaskType, string> = {
   simple: '创建单条任务，进入 Tasks 后可直接执行或继续规划。',
   project: '先创建项目父任务，再由 AI 拆解草稿；确认后才创建真实子任务。',
@@ -896,9 +911,15 @@ const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
 
 function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): Task {
   const inferredProfile = inferTaskTypeProfile(r.title);
-  const type = authoritativeTaskType(r, attrs) ?? inferredProfile.primaryType;
+  const authoritativeType = authoritativeTaskType(r, attrs);
+  const persistedTypeLooksLikeLegacyDefault = shouldUpgradeLegacySimpleTaskType(r, attrs, inferredProfile.primaryType);
+  const type = persistedTypeLooksLikeLegacyDefault
+    ? inferredProfile.primaryType
+    : authoritativeType ?? inferredProfile.primaryType;
   const facets = normalizeTaskTypeFacets(
-    authoritativeTaskFacets(r, attrs) ?? inferredProfile.facets,
+    persistedTypeLooksLikeLegacyDefault
+      ? inferredProfile.facets
+      : authoritativeTaskFacets(r, attrs) ?? inferredProfile.facets,
     type,
   );
   return {

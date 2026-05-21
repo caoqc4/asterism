@@ -783,7 +783,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_memory_guidance',
       'subtask_draft',
     ],
-    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, wraps the result as a decomposition_draft API-runtime invocation, then validates both existing children and proposed child drafts before returning JSON. Durable creation remains behind project.decompositionConfirm.',
+    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, wraps the result as a decomposition_draft API-runtime invocation for the currently implemented API path, then validates both existing children and proposed child drafts before returning JSON. It is not a hidden Agent CLI fallback and creates no child tasks; future CLI/API adapters must return the same draft contract before durable creation remains behind project.decompositionConfirm.',
   },
   {
     id: 'project.decompositionConfirm',
@@ -806,7 +806,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_draft',
       'panel_event_allowlist',
     ],
-    notes: 'Confirmation rechecks proposed child drafts before creating real child tasks. Starting or entering a child task remains a separate subtask_start boundary.',
+    notes: 'Confirmation is product-harness durable write: it rechecks proposed child drafts before creating real child tasks, criteria, dependencies, parent updates, and records. It does not depend on which AI runtime produced the draft. Starting or entering a child task remains a separate subtask_start boundary.',
   },
   {
     id: 'task.structuredStateWrites',

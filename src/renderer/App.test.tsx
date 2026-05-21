@@ -4317,6 +4317,35 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('一次性')).toBeTruthy();
   });
 
+  it('treats unconfirmed persisted simple project-like tasks as project work', async () => {
+    const task = buildTask({
+      id: 'task_legacy_simple_project_type',
+      title: '开发小程序',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      state: 'planned',
+    });
+    harness.tasks.unshift(task);
+    harness.details[task.id] = buildTaskDetail(task);
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+
+    await user.click(await screen.findByRole('button', { name: /一次性任务/ }));
+    const simpleGroup = document.querySelector('.task-type-group .lens-item.active')?.closest('.task-type-group') as HTMLElement | null;
+    expect(simpleGroup?.querySelector('[data-title="开发小程序"]')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    const projectGroup = document.querySelector('.task-type-group .lens-item.active')?.closest('.task-type-group') as HTMLElement | null;
+    expect(projectGroup?.querySelector('[data-title="开发小程序"]')).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: '开发小程序' }));
+    await waitFor(() => {
+      expect(screen.getAllByText('项目型').length).toBeGreaterThan(0);
+    });
+  });
+
   it('orders project child tasks by recorded execution order in the parent task workspace', async () => {
     const project = buildTask({
       id: 'task_project_order',

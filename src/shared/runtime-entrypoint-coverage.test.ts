@@ -117,6 +117,10 @@ describe('runtime entrypoint coverage', () => {
     expect(draft?.requiredGates).not.toContain('task_mutation');
     expect(draft?.requiredGates).not.toContain('runtime_action');
     expect(draft?.notes).toContain('decomposition_draft API-runtime invocation');
+    expect(draft?.notes).toContain('currently implemented API path');
+    expect(draft?.notes).toContain('not a hidden Agent CLI fallback');
+    expect(draft?.notes).toContain('creates no child tasks');
+    expect(draft?.notes).toContain('future CLI/API adapters must return the same draft contract');
 
     expect(confirm?.kind).toBe('durable_write');
     expect(confirm?.requiredGates).toContain('task_mutation');
@@ -124,6 +128,8 @@ describe('runtime entrypoint coverage', () => {
     expect(confirm?.requiredGates).toContain('subtask_draft');
     expect(confirm?.requiredGates).not.toContain('runtime_context_assembly');
     expect(confirm?.requiredGates).not.toContain('subtask_start');
+    expect(confirm?.notes).toContain('product-harness durable write');
+    expect(confirm?.notes).toContain('does not depend on which AI runtime produced the draft');
     expect(confirm?.notes).toContain('Starting or entering a child task remains a separate subtask_start boundary');
   });
 
