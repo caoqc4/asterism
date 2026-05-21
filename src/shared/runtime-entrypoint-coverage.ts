@@ -239,6 +239,21 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     notes: 'Global assistance includes product principles. Task-bound assistance must load persisted task detail before model exposure and stays read-only. API Runtime chat responses carry global_assistant or task_assistant invocation provenance.',
   },
   {
+    id: 'brief.scheduledSnapshot',
+    owner: 'SchedulerService.generateScheduledBrief',
+    kind: 'provider_visible_assistance',
+    description: 'Scheduled Brief snapshot generation through the API Runtime path, with local product-harness brief generation when provider execution is unavailable.',
+    requiredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+    ],
+    notes: 'HomeBriefService builds the bounded Brief context projection before provider exposure; BriefProcessTemplateSelector and BriefExecutor use the resolved API Runtime config only for scheduled brief generation. If API Runtime is unavailable or generation fails, SchedulerService writes a local product-harness brief snapshot with fallbackReason, not a hidden Agent CLI fallback or cross-runtime provider call.',
+  },
+  {
     id: 'run.trigger',
     owner: 'RunService.trigger',
     kind: 'provider_visible_execution',

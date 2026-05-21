@@ -157,6 +157,18 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('global_assistant or task_assistant invocation provenance');
   });
 
+  it('registers scheduled Brief generation as API Runtime assistance with local product-harness recovery', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'brief.scheduledSnapshot');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('provider_visible_assistance');
+    expect(entry?.requiredGates).toContain('runtime_context_assembly');
+    expect(entry?.notes).toContain('bounded Brief context projection');
+    expect(entry?.notes).toContain('resolved API Runtime config');
+    expect(entry?.notes).toContain('local product-harness brief snapshot');
+    expect(entry?.notes).toContain('not a hidden Agent CLI fallback');
+  });
+
   it('registers phase closeout as a handoff boundary without equating it to completion', () => {
     expect(requiredRuntimeEntrypointGatesForKind('phase_closeout_handoff')).toEqual([
       'simplicity_check',
@@ -401,6 +413,7 @@ describe('runtime entrypoint coverage', () => {
     expect(RUNTIME_ENTRYPOINT_COVERAGE.map((entry) => entry.id).sort()).toEqual([
       'agent.toolDurableWrites',
       'ai.taskChat',
+      'brief.scheduledSnapshot',
       'context.refreshOrLeave',
       'context.taskSwitch',
       'decision.action',
