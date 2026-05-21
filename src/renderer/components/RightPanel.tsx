@@ -7,7 +7,6 @@ import {
 } from '@shared/agent-cli-runtime-status';
 import type { AiRuntimeMode } from '@shared/types/settings';
 import type { RunStepRecord } from '@shared/types/run';
-import type { CapabilityRegistryEntry } from '@shared/capability-registry';
 import {
   selectBlockingTaskMemoryGuidance,
   type TaskMemoryGuidanceState,
@@ -25,11 +24,6 @@ import {
   evaluateRuntimeIntake,
   type RuntimeIntakeEvaluation,
 } from '@shared/runtime-intake-evaluator';
-import {
-  buildRuntimeContextAssemblyPolicy,
-  buildRuntimeContextManifest,
-  buildRuntimeContextSnapshot,
-} from '@shared/runtime-context';
 import {
   buildRuntimeHandoffPreview,
   buildRuntimeResumePlan,
@@ -907,7 +901,6 @@ export function RightPanel({
   const [aiRuntimeStatusLoaded, setAiRuntimeStatusLoaded] = useState(false);
   const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
   const [activeTaskDetail, setActiveTaskDetail] = useState<TaskDetail | null>(null);
-  const [capabilityRegistry, setCapabilityRegistry] = useState<CapabilityRegistryEntry[]>([]);
   const [agentCliAvailability, setAgentCliAvailability] = useState<Record<AgentCliRuntimeId, boolean>>({
     claude: false,
     codex: false,
@@ -956,7 +949,6 @@ export function RightPanel({
         status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
       );
       setRuntimeMode(status.runtimeMode ?? 'codex');
-      setCapabilityRegistry(status.capabilityRegistry ?? []);
       const nextAvailability = AGENT_CLI_PANEL_RUNTIMES.reduce<Record<AgentCliRuntimeId, boolean>>((acc, runtimeId) => {
         acc[runtimeId] = Boolean(status.agentCliRuntimeStatus?.runtimes.some((runtime) => (
           runtime.id === runtimeId
@@ -2295,60 +2287,6 @@ export function RightPanel({
       })
     : null;
   const hasSpecificConversationSignal = hasSpecificHandoffSignal(userMessageTexts);
-  const previewTaskDetail = activeTaskDetail?.id === activeTaskId ? activeTaskDetail : null;
-  const runtimeTaskPreview = activeTaskId
-    ? {
-        id: activeTaskId,
-        title: previewTaskDetail?.title ?? title ?? activeTaskId,
-        state: previewTaskDetail?.state ?? null,
-        summary: previewTaskDetail?.summary ?? null,
-        nextStep: previewTaskDetail?.nextStep ?? null,
-        riskLevel: previewTaskDetail?.riskLevel ?? null,
-        riskNote: previewTaskDetail?.riskNote ?? null,
-        createdAt: previewTaskDetail?.createdAt ?? null,
-        updatedAt: previewTaskDetail?.updatedAt ?? null,
-      }
-    : null;
-  const runtimeContextManifest = buildRuntimeContextManifest({
-    task: runtimeTaskPreview,
-    selectedFile,
-    sourceContexts: previewTaskDetail?.sourceContexts.map((source) => ({
-      capturedAt: source.capturedAt ?? null,
-      contentPreview: (source.content ?? source.note ?? '').slice(0, 800) || null,
-      createdAt: source.createdAt,
-      id: source.id,
-      isKey: source.isKey,
-      kind: source.kind,
-      note: source.note,
-      runId: source.runId ?? null,
-      selected: source.isKey,
-      sourceRole: source.sourceRole ?? null,
-      status: source.status,
-      credibility: source.credibility ?? null,
-      isDuplicate: source.isDuplicate,
-      containsSensitiveData: source.containsSensitiveData,
-      title: source.title,
-      updatedAt: source.updatedAt,
-      uri: source.uri,
-    })) ?? [],
-    taskFiles: previewTaskDetail?.taskFiles?.map((file) => ({
-      contentPreview: file.content.slice(0, 800) || null,
-      id: file.id,
-      kind: file.kind,
-      name: file.name,
-      path: file.path,
-      taskId: file.taskId,
-      updatedAt: file.updatedAt,
-    })) ?? [],
-    capabilityRegistry,
-  });
-  const runtimeContextSnapshot = buildRuntimeContextSnapshot({
-    task: runtimeTaskPreview,
-    selectedFile,
-  });
-  const runtimeContextAssemblyPolicy = buildRuntimeContextAssemblyPolicy({
-    manifest: runtimeContextManifest,
-  });
   const sessionRefreshSuggestion = activeTaskId && !sessionRefreshDismissed
     ? shouldSuggestSessionRefresh(messages, compressionThreshold)
     : null;
@@ -2426,36 +2364,20 @@ export function RightPanel({
       : isAgentApiRuntimeMode
         ? '任务助手 · Agent API Runtime'
         : '任务助手 · 未选择 AI Runtime';
-  const includedContextCount = runtimeContextManifest.items.filter((item) => item.contentIncluded).length;
-  const sourceContextCount = runtimeContextManifest.items.filter((item) => item.kind === 'source_context').length;
-  const taskFileContextCount = runtimeContextManifest.items.filter((item) => item.kind === 'task_file').length;
-  const capabilityBoundaryCount = runtimeContextManifest.items.filter((item) => item.kind === 'capability').length;
-  const taskMemoryContextCount = runtimeContextManifest.memoryRetrieval?.includedCount ?? 0;
-  const runContextModeLabel = shouldUseAgentCliRuntime
-    ? activeAgentCliRuntimeMode === 'claude'
-      ? '任务 Agent Plan 执行'
-      : '任务 Agent 只读执行'
-    : isAgentApiRuntimeMode
-      ? 'Agent API 调用层'
-      : '所选 Runtime 未就绪';
   const sandboxBoundaryLabel = shouldUseAgentCliRuntime
     ? activeAgentCliRuntimeMode === 'claude'
       ? 'Claude Plan'
       : 'read-only'
     : '无 CLI 执行';
-  const runContextCarryLabel = [
-    `任务状态 ${runtimeTaskPreview ? '1' : '0'}`,
-    `任务记忆 ${taskMemoryContextCount}`,
-    `来源 ${sourceContextCount}`,
-    `任务文件 ${taskFileContextCount}`,
-    `能力边界 ${capabilityBoundaryCount}`,
-  ].join(' · ');
-  const taskGoalState = deriveTaskGoalLifecycleState({
-    fallbackGoal: activeTaskDetail?.resumeCard?.nextSuggestedMove,
-    nextStep: activeTaskDetail?.nextStep,
-    timeline: activeTaskDetail?.timeline,
-  });
-  const taskGoalLabel = taskGoalState.status === 'cleared' ? null : taskGoalState.objective;
+  const footerRuntimeLabel = !aiRuntimeStatusLoaded
+    ? 'Runtime 加载中'
+    : activeAgentCliRuntimeMode
+      ? shouldUseAgentCliRuntime
+        ? AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode].replace(' CLI', '')
+        : `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode].replace(' CLI', '')} · ${activeTaskId ? '不可用' : '待接入'}`
+      : isAgentApiRuntimeMode
+        ? 'API Runtime'
+        : 'Runtime 未选择';
   const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
 
   useEffect(() => {
@@ -2738,43 +2660,8 @@ export function RightPanel({
       {/* Input */}
       <div className="panel-input-wrap">
         {activeTaskId && (
-          <details className="panel-run-context-preview">
-            <summary>
-              <span>上下文</span>
-              <strong>
-                {runContextModeLabel} · 记忆 {taskMemoryContextCount} · 来源 {sourceContextCount}
-                {taskGoalLabel ? ' · Goal 已设置' : ''}
-              </strong>
-            </summary>
-            <div className="panel-task-goal">
-              <span>Task Goal{taskGoalState.status === 'paused' ? ' · 已暂停' : ''}</span>
-              <strong>{taskGoalLabel ?? '未设置，可输入 /goal <目标>'}</strong>
-            </div>
-            <div className="panel-run-context-grid">
-              <div>
-                <span>任务记忆</span>
-                <strong>{taskMemoryContextCount ? `${taskMemoryContextCount} 条` : '无'}</strong>
-              </div>
-              <div>
-                <span>来源材料</span>
-                <strong>{sourceContextCount ? `${sourceContextCount} 个` : '无'}</strong>
-              </div>
-              <div>
-                <span>能力边界</span>
-                <strong>{capabilityBoundaryCount ? `${capabilityBoundaryCount} 项` : '无'}</strong>
-              </div>
-              <div>
-                <span>沙箱</span>
-                <strong>{sandboxBoundaryLabel}</strong>
-              </div>
-            </div>
-            <div className="panel-run-context-lines">
-              <span title={`${runtimeContextSnapshot.summary} / ${runtimeContextAssemblyPolicy.summary}`}>
-                {runtimeContextManifest.userFacingSummary}
-              </span>
-              <span>会带入：{runContextCarryLabel} · 已确认内容 {includedContextCount}</span>
-              <span>不会授予 External Access / Skills / MCP 的 live tool 权限；完成后会写入 Run 证据。</span>
-            </div>
+          <details className="panel-input-options">
+            <summary>选项</summary>
             <div className="panel-context-strategy" aria-label="上下文策略">
               {([
                 ['auto', '自动检查'],
@@ -2852,9 +2739,8 @@ export function RightPanel({
         />
         <div className="panel-input-foot">
           <span className="panel-runtime-chip">
-            {runtimeChipLabel}
+            {footerRuntimeLabel}
           </span>
-          <span className="panel-hint muted">⏎ 发送  ⇧⏎ 换行</span>
           <button
             className={`btn sm primary${!input.trim() || thinking ? ' disabled' : ''}`}
             onClick={() => void send()}
