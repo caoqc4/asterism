@@ -632,11 +632,12 @@ Current baseline:
   verification, memory routing, completion, handoff, and context clearing are
   Taskplane-owned product boundaries and should be reused by both invocation
   runtimes.
-- The lightweight model-service assistant is a separate product surface for
-  global help, summaries, and read-only Q&A. It should not be described as
-  Agent API runtime. Any runtime phase that still uses it must be explicitly
-  marked as a fallback or lightweight-assistance path rather than hidden behind
-  the selected runtime label.
+- API-backed model calls belong to the Agent API Runtime path. They are not an
+  auxiliary helper for Agent CLI and must not run as a hidden fallback when the
+  selected runtime is Codex or Claude. Any phase that is not yet supported by
+  the selected runtime should be marked unsupported, or the user should
+  explicitly switch to the API Runtime path before Taskplane makes that
+  provider-visible call.
 - Project decomposition is split into draft and confirmation boundaries.
   Drafting is provider-visible planning; confirmation creates child tasks behind
   child-draft, task-mutation, pre-step, and post-step checks. Confirming child
@@ -678,8 +679,9 @@ are implemented and covered by regression registries. The next work should be:
    as Agent CLI. More generally, introduce a selected-runtime AI invocation
    contract for task type review, decomposition draft, task planning, execution
    run, verifier assist, memory proposal, and handoff summary. Each phase should
-   declare whether it uses selected Agent CLI, future Agent API, model-service
-   fallback, or no AI.
+   declare whether it uses the selected Agent CLI adapter, the selected Agent API
+   adapter, local deterministic rules, or product-harness logic with no AI. Do
+   not introduce implicit cross-runtime fallback.
 4. Keep native CLI goal compatibility as an optional, explicitly requested
    audit/probe track. The product-owned Agent CLI goal loop is now stable
    enough for first-version use, so native forwarding should remain deferred

@@ -64,6 +64,18 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('before exposing any IPC channel');
   });
 
+  it('keeps Code Agent model producer classified as future Agent API compatibility, not helper fallback', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.triggerCodeAgent');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('provider_visible_execution');
+    expect(entry?.requiredGates).toContain('runtime_context_assembly');
+    expect(entry?.requiredGates).toContain('task_memory_guidance');
+    expect(entry?.notes).toContain('future Agent API adapter');
+    expect(entry?.notes).toContain('must not be exposed as auxiliary provider assistance');
+    expect(entry?.notes).toContain('implicit fallback for selected Agent CLI runtimes');
+  });
+
   it('requires provider-visible planning to stay draft-only and pass subtask draft checks', () => {
     expect(requiredRuntimeEntrypointGatesForKind('provider_visible_planning')).toEqual([
       'simplicity_check',

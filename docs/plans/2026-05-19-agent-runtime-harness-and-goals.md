@@ -352,7 +352,7 @@ Safety boundaries:
 
 - The API verifier may add richer evidence analysis, but it cannot mark a task complete by itself in the first version.
 - `userConfirmationRequired` remains true for Task Memory writes and task completion.
-- If the API verifier is unavailable, times out, or emits invalid structure, Taskplane falls back to the deterministic lightweight verifier.
+- If the API verifier is unavailable, times out, or emits invalid structure, Taskplane keeps the deterministic product-harness verifier as the authority for that run.
 - API verifier output must be persisted as run verification evidence, not hidden chat text.
 - Packaged/non-provider smokes must continue to pass with the lightweight verifier only.
 
@@ -373,9 +373,9 @@ Keep the API verifier subagent off by default until it satisfies all of these co
 - **Operational budget**: timeout, retry, and cost limits are explicit and visible in run evidence. The first default-on candidate should use no automatic retries, a per-check timeout at or below 15 seconds, and a visible provider/model/cost estimate in the verification step.
 - **Rollout switch**: default-on must still be controlled by a runtime setting or feature flag for at least one release, so packaged/provider-off environments and enterprise/offline workflows can keep the lightweight verifier only.
 
-Only after those conditions are met should the API verifier become the default acceptance helper. Even then, the lightweight verifier remains the deterministic fallback.
+Only after those conditions are met should the API verifier become the default acceptance helper. Even then, the lightweight verifier remains the deterministic product-harness authority for offline, invalid-output, timeout, or provider-disabled cases.
 
-### Plain text fallback
+### Plain Text Handling
 
 If a slash command is unknown or unsupported by the current runtime, Taskplane should not guess. It should explain what is supported and offer to send the text as a normal task message.
 
