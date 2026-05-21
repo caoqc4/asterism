@@ -1055,7 +1055,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     id: 'agent.toolDurableWrites',
     owner: 'AgentToolRegistry task/source/artifact tools',
     kind: 'durable_write',
-    description: 'Agent tool writes for task records, Task.md guidance, source context, and artifacts.',
+    description: 'Agent tool writes for task metadata, completion criteria, source context, artifacts, and memory guidance.',
     requiredGates: [
       'simplicity_check',
       'task_mutation',
@@ -1068,6 +1068,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'pre_step',
       'post_step',
     ],
+    notes: 'Provider-native tool schemas never expose local write, command, next-step, source-context, or artifact-write tools directly. Durable AgentToolRegistry writes still execute only inside an already-gated run, require task_mutation/pre-step checks, emit post-step verification and task-memory guidance, and create tool-permission checkpoints for high-risk or explicitly confirmed local command/file-write tools.',
   },
   {
     id: 'context.refreshOrLeave',

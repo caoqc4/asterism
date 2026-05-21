@@ -345,6 +345,19 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('keeps agent tool durable writes behind registry gates and out of provider-native direct exposure', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'agent.toolDurableWrites');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('durable_write');
+    expect(entry?.requiredGates).toContain('task_mutation');
+    expect(entry?.requiredGates).toContain('post_step');
+    expect(entry?.notes).toContain('Provider-native tool schemas never expose local write');
+    expect(entry?.notes).toContain('inside an already-gated run');
+    expect(entry?.notes).toContain('task_mutation/pre-step checks');
+    expect(entry?.notes).toContain('tool-permission checkpoints');
+  });
+
   it('keeps product-owned task goals in the Taskplane harness instead of an execution runtime', () => {
     const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'task.goalControl');
 
