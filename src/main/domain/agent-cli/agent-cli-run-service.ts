@@ -872,10 +872,12 @@ function buildCodexCliPrompt(params: {
   sandboxMode: AgentCliRunSandboxMode;
   task: TaskDetail;
 }): string {
+  const decompositionInstructions = buildTaskDecompositionPromptInstructions(params.prompt);
   return [
     'You are running as Codex CLI from inside Taskplane.',
     `Sandbox mode: ${params.sandboxMode}.`,
-    'Do not modify files. Inspect and answer with a concrete plan, risks, and verification steps.',
+    'Do not modify files.',
+    decompositionInstructions ?? 'Answer with a concrete plan, risks, and verification steps. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
     '',
     `Task: ${params.task.title}`,
     params.task.summary ? `Summary: ${params.task.summary}` : null,
@@ -894,11 +896,12 @@ function buildClaudeCodePrompt(params: {
   sandboxMode: AgentCliRunSandboxMode;
   task: TaskDetail;
 }): string {
+  const decompositionInstructions = buildTaskDecompositionPromptInstructions(params.prompt);
   return [
     'You are running as Claude Code from inside Taskplane.',
     `Taskplane sandbox intent: ${params.sandboxMode}.`,
     'Claude Code is launched with --permission-mode plan. Research and propose; do not edit files, write files, or ask to continue into an editing mode.',
-    'Return a concise answer with findings, recommended next steps, risks, and verification checks.',
+    decompositionInstructions ?? 'Return a concise answer with findings, recommended next steps, risks, and verification checks. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
     '',
     `Task: ${params.task.title}`,
     params.task.summary ? `Summary: ${params.task.summary}` : null,
@@ -909,6 +912,22 @@ function buildClaudeCodePrompt(params: {
     'User request:',
     params.prompt,
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function buildTaskDecompositionPromptInstructions(prompt: string): string | null {
+  if (!/拆解|子任务|任务方案|decompos|subtask|break\s*down/i.test(prompt)) return null;
+  return [
+    'This is a Taskplane task-decomposition request, not a repository inspection request.',
+    'Do not run shell commands unless the user explicitly asks to inspect code or files.',
+    'Return concise Chinese output for the user, then include one machine-readable JSON block.',
+    'The plan should contain 3-6 large-grained subtasks/phases. Avoid tiny implementation chores.',
+    'Each subtask must have: title, summary, acceptanceCriteria, dependency.',
+    'If one key product boundary is missing, still propose a sensible draft and put the question in nextStep.',
+    'End with exactly one fenced JSON block using this shape:',
+    '```json',
+    '{"type":"TASKPLANE_DECOMPOSITION","subtasks":[{"title":"...","summary":"...","acceptanceCriteria":"...","dependency":"..."}],"review":"...","nextStep":"..."}',
+    '```',
+  ].join('\n');
 }
 
 export function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]): Promise<AgentCliExecutionResult> {

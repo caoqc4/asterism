@@ -2091,12 +2091,6 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Codex CLI run 已在后台启动/)).toBeTruthy();
     expect(screen.getByText(/只读执行中；完成后会整理结果/)).toBeTruthy();
     expect(screen.getAllByText(/run_agent_cli_created/).length).toBeGreaterThan(0);
-    expect(screen.getByText('Codex CLI 后台运行')).toBeTruthy();
-    expect(screen.getByLabelText('Agent CLI run 状态')).toBeTruthy();
-    expect(screen.getByText('只读执行')).toBeTruthy();
-    expect(screen.getByText('完成后写入任务动态')).toBeTruthy();
-    expect(screen.getByText('有价值输出会提议保存记录')).toBeTruthy();
-    expect(screen.getByText('取消不会生成记忆提案')).toBeTruthy();
     expect(screen.getByText('Codex CLI 正在只读执行')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '取消 Codex CLI run' }));
@@ -2416,8 +2410,7 @@ describe('App redesign v1', () => {
     });
     expect(await screen.findByText(/Claude Code run 已在后台启动/)).toBeTruthy();
     expect(screen.getByText(/只读执行中；完成后会整理结果/)).toBeTruthy();
-    expect(screen.getByText('Claude Code 后台运行')).toBeTruthy();
-    expect(screen.getByText('完成后写入任务动态')).toBeTruthy();
+    expect(screen.getByText('Claude Code 正在只读执行')).toBeTruthy();
   });
 
   it('keeps Codex CLI mode disabled until the manual-run runtime is authenticated', async () => {
@@ -2577,7 +2570,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('Codex CLI')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
-    expect(await screen.findByText('Codex CLI 后台运行')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI 正在只读执行')).toBeTruthy();
 
     const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
     expect(run).toBeTruthy();
@@ -2617,7 +2610,72 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/已确认并写入任务记忆/)).toBeTruthy();
     expect(screen.getByText(/目标：任务记录/)).toBeTruthy();
     expect(screen.getByText(/后续任务 Agent run 不会再被这条 pending-memory gate 阻塞/)).toBeTruthy();
-    expect(screen.queryByText(/Codex CLI 后台运行/)).toBeNull();
+    expect(screen.queryByText(/Codex CLI 正在只读执行/)).toBeNull();
+  });
+
+  it('turns Agent CLI decomposition output into confirmable child tasks', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请拆解这个任务。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
+    expect(run).toBeTruthy();
+    Object.assign(run!, {
+      output: [
+        '已形成子任务草案。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_DECOMPOSITION',
+          review: '按交付阶段拆解，确认后创建子任务。',
+          nextStep: '确认后进入第一个子任务。',
+          subtasks: [
+            {
+              title: '确认材料边界',
+              summary: '梳理董事会材料范围、截止时间和关键输入。',
+              acceptanceCriteria: '范围和输入已确认。',
+              dependency: '父任务目标',
+            },
+            {
+              title: '完成初稿修订',
+              summary: '根据已确认边界完成第一版修订。',
+              acceptanceCriteria: '初稿可供审阅。',
+              dependency: '确认材料边界',
+            },
+          ],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText('子任务草案')).toBeTruthy();
+    expect(screen.getAllByText(/确认材料边界/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/完成初稿修订/).length).toBeGreaterThan(0);
+    expect(screen.queryByText('任务记忆写入提案')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '确认创建子任务' }));
+    await waitFor(() => {
+      expect(harness.api.createTask).toHaveBeenCalledWith(expect.objectContaining({
+        parentTaskId: 'task_risk',
+        taskFacets: ['simple'],
+        taskType: 'simple',
+        title: '确认材料边界',
+      }));
+    });
+    expect(harness.api.createTask).toHaveBeenCalledWith(expect.objectContaining({
+      parentTaskId: 'task_risk',
+      title: '完成初稿修订',
+    }));
+    expect(harness.api.transitionTask).toHaveBeenCalledWith(expect.objectContaining({
+      nextState: 'planned',
+    }));
+    expect(await screen.findByText(/已根据拆解草案创建 2 个子任务/)).toBeTruthy();
   });
 
   it('captures a global right-panel discussion as a task before planning', async () => {
@@ -2790,7 +2848,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    await user.click(await screen.findByText('会话整理'));
+    await user.click(await screen.findByRole('button', { name: '自动清理' }));
     await user.click(screen.getByRole('button', { name: '仅提醒' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
 
@@ -2812,7 +2870,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    await user.click(await screen.findByText('会话整理'));
+    await user.click(await screen.findByRole('button', { name: '自动清理' }));
     await user.click(screen.getByRole('button', { name: '先询问' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
     await user.type(input, '这轮先保留 Playwright 作为动态页面候选');

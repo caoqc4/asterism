@@ -707,6 +707,9 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.45;
 }
+.panel-agent-run-inline .btn {
+  margin-top: 7px;
+}
 .panel-agent-run-pulse {
   width: 7px;
   height: 7px;
@@ -714,6 +717,32 @@ a { color: inherit; text-decoration: none; }
   border-radius: 50%;
   background: var(--accent);
   animation: thinking 1.2s ease-in-out infinite;
+}
+.panel-decomposition-draft {
+  border-color: rgba(37, 99, 235, 0.28);
+}
+.panel-decomposition-list {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.panel-decomposition-item {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+}
+.panel-decomposition-item strong {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.panel-decomposition-item span,
+.panel-decomposition-item small {
+  color: var(--ink-4);
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 .panel-input-options .panel-context-strategy {
   width: 100%;

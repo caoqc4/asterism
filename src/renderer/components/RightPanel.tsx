@@ -91,7 +91,7 @@ const AGENT_CLI_PANEL_RUNTIME_HINTS: Record<AgentCliRuntimeId, string> = {
 const AGENT_CLI_PANEL_RUNTIMES: AgentCliRuntimeId[] = ['codex', 'claude'];
 
 const CONTEXT_STRATEGY_LABELS: Record<ContextStrategy, string> = {
-  auto: '自动整理',
+  auto: '自动清理',
   manual: '先询问',
   reminder: '仅提醒',
 };
@@ -119,6 +119,18 @@ interface TaskFileWriteProposal {
   surface: RuntimeSurfaceKind;
   surfaceLabel: string;
   taskMemoryProposal?: TaskMemoryWriteProposal | null;
+}
+
+interface TaskDecompositionDraft {
+  nextStep: string;
+  review: string;
+  runId: string;
+  subtasks: Array<{
+    acceptanceCriteria: string;
+    dependency?: string | null;
+    summary: string;
+    title: string;
+  }>;
 }
 
 interface PanelSessionState {
@@ -705,7 +717,9 @@ function formatAgentCliRunMessage(params: {
 }
 
 function summarizeAgentCliOutputForChat(output: string): string | null {
-  const normalized = output.trim();
+  const normalized = output
+    .replace(/```(?:json)?\s*[\s\S]*?TASKPLANE_DECOMPOSITION[\s\S]*?```/gi, '')
+    .trim();
   if (!normalized) return null;
   const lines = normalized
     .replace(/\r\n/g, '\n')
@@ -725,6 +739,86 @@ function summarizeAgentCliOutputForChat(output: string): string | null {
     .map((line) => line.replace(/^#{1,3}\s+/, '').replace(/\*\*/g, ''))
     .map((line) => line.length > 120 ? `${line.slice(0, 117)}...` : line)
     .join('\n');
+}
+
+function parseAgentCliDecompositionDraft(output: string, runId: string): TaskDecompositionDraft | null {
+  if (!/TASKPLANE_DECOMPOSITION|子任务草案|拆解/i.test(output)) return null;
+  const jsonCandidates = [
+    ...Array.from(output.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)).map((match) => match[1] ?? ''),
+    output,
+  ];
+  for (const candidate of jsonCandidates) {
+    const parsed = parseDecompositionJson(candidate, runId);
+    if (parsed) return parsed;
+  }
+  const fallback = parseDecompositionBullets(output, runId);
+  return fallback && fallback.subtasks.length >= 2 ? fallback : null;
+}
+
+function parseDecompositionJson(value: string, runId: string): TaskDecompositionDraft | null {
+  const start = value.indexOf('{');
+  const end = value.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(value.slice(start, end + 1)) as {
+      type?: unknown;
+      review?: unknown;
+      nextStep?: unknown;
+      subtasks?: Array<{
+        acceptanceCriteria?: unknown;
+        dependency?: unknown;
+        summary?: unknown;
+        title?: unknown;
+      }>;
+    };
+    if (parsed.type !== 'TASKPLANE_DECOMPOSITION' || !Array.isArray(parsed.subtasks)) return null;
+    const subtasks = parsed.subtasks
+      .map((item) => ({
+        acceptanceCriteria: normalizeDraftText(item.acceptanceCriteria) ?? '确认该环节交付物满足父任务目标。',
+        dependency: normalizeDraftText(item.dependency),
+        summary: normalizeDraftText(item.summary) ?? '',
+        title: normalizeDraftText(item.title) ?? '',
+      }))
+      .filter((item) => item.title && item.summary)
+      .slice(0, 8);
+    if (subtasks.length < 2) return null;
+    return {
+      nextStep: normalizeDraftText(parsed.nextStep) ?? '确认后创建这些子任务。',
+      review: normalizeDraftText(parsed.review) ?? '已按大块阶段拆解，确认后可创建子任务。',
+      runId,
+      subtasks,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseDecompositionBullets(output: string, runId: string): TaskDecompositionDraft | null {
+  const lines = output.replace(/\r\n/g, '\n').split('\n').map((line) => line.trim());
+  const subtasks = lines
+    .map((line) => line.match(/^(?:[-*]|\d+[.)、])\s*(.+?)[:：-]\s*(.+)$/))
+    .filter((match): match is RegExpMatchArray => Boolean(match))
+    .map((match) => ({
+      acceptanceCriteria: '确认该环节交付物满足父任务目标。',
+      dependency: null,
+      summary: truncateMemoryLine(match[2] ?? '', 160),
+      title: truncateMemoryLine((match[1] ?? '').replace(/^子任务\s*/i, ''), 48),
+    }))
+    .filter((item) => item.title && item.summary)
+    .slice(0, 6);
+  if (subtasks.length < 2) return null;
+  return {
+    nextStep: '确认后创建这些子任务。',
+    review: '从 Agent CLI 输出中提取了拆解草案，请确认标题和边界。',
+    runId,
+    subtasks,
+  };
+}
+
+function normalizeDraftText(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const text = value.replace(/\s+/g, ' ').trim();
+  return text || null;
 }
 
 function taskMemoryProposalPreviewItems(content: string): Array<{ label: string; value: string }> {
@@ -991,8 +1085,10 @@ export function RightPanel({
   const [abandoningCapturedTask, setAbandoningCapturedTask] = useState(false);
   const [savingPhaseCloseout, setSavingPhaseCloseout] = useState(false);
   const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
+  const [creatingDecompositionChildren, setCreatingDecompositionChildren] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [agentCliLaunchNotice, setAgentCliLaunchNotice] = useState<string | null>(null);
+  const [taskDecompositionDraft, setTaskDecompositionDraft] = useState<TaskDecompositionDraft | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastAppliedDraftPromptRef = useRef<string | null>(null);
@@ -1137,7 +1233,11 @@ export function RightPanel({
             : detail.status;
         const output = detail.output?.trim() || detail.failureReason || '终态已记录。';
         const proposal = detail.taskMemoryWriteProposals?.[0];
-        if (proposal) {
+        const decompositionDraft = parseAgentCliDecompositionDraft(output, detail.id);
+        if (decompositionDraft) {
+          setTaskDecompositionDraft(decompositionDraft);
+        }
+        if (proposal && !decompositionDraft) {
           updateTaskFileProposal((value) => value ?? taskMemoryProposalToFileProposal(proposal));
         }
         appendSysMsg(formatAgentCliRunMessage({
@@ -1801,6 +1901,60 @@ export function RightPanel({
     }));
   }
 
+  async function confirmTaskDecompositionDraft() {
+    if (!activeTaskId || !taskDecompositionDraft || creatingDecompositionChildren || !window.api?.createTask) return;
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'task_file_write_proposal',
+      fromTaskId: activeTaskId,
+      messageCount: messages.filter((message) => message.role === 'user').length,
+    });
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      hasRequiredContext: true,
+      confirmationSatisfied: true,
+    });
+    if (!preStepVerification.canProceed) {
+      appendSysMsg(`创建子任务已暂停：${preStepVerification.detail}`);
+      return;
+    }
+    setCreatingDecompositionChildren(true);
+    try {
+      const created = await Promise.all(taskDecompositionDraft.subtasks.map((subtask) => (
+        window.api!.createTask({
+          title: subtask.title,
+          summary: [
+            subtask.summary,
+            subtask.acceptanceCriteria ? `验收：${subtask.acceptanceCriteria}` : null,
+            subtask.dependency ? `依赖：${subtask.dependency}` : null,
+          ].filter(Boolean).join('\n'),
+          taskType: 'simple',
+          taskFacets: ['simple'],
+          parentTaskId: activeTaskId,
+        })
+      )));
+      await Promise.all(created.map((task) => (
+        window.api?.transitionTask?.({ id: task.id, nextState: 'planned' }).catch(() => task)
+      )));
+      await recordPanelTimelineEvent(activeTaskId, 'panel.task_record_written', {
+        source: 'agent_cli_decomposition',
+        runId: taskDecompositionDraft.runId,
+        subtaskCount: created.length,
+      });
+      verifyDurablePanelActionCompleted({
+        title: '创建项目子任务',
+        output: `已创建 ${created.length} 个子任务。`,
+      });
+      appendSysMsg(`已根据拆解草案创建 ${created.length} 个子任务。`);
+      setTaskDecompositionDraft(null);
+      onOpenTask?.(activeTaskId);
+    } catch (error) {
+      appendSysMsg(`创建子任务失败：${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      setCreatingDecompositionChildren(false);
+    }
+  }
+
   async function confirmTaskFileWrite() {
     if (!activeTaskId || !taskFileProposal || savingTaskFileProposal || !window.api?.createTaskFile) return;
     const normalizedInput = normalizeCreateTaskFileInput({
@@ -1998,6 +2152,10 @@ export function RightPanel({
         setAgentCliLaunchNotice(null);
         const detail = await window.api.getRunDetail(run.id).catch(() => null);
         const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || `${runtimeLabel} run 已记录。`;
+        const decompositionDraft = parseAgentCliDecompositionDraft(output, run.id);
+        if (decompositionDraft) {
+          setTaskDecompositionDraft(decompositionDraft);
+        }
         if (run.status === 'running') {
           setActiveAgentCliRun({
             runId: run.id,
@@ -2586,7 +2744,7 @@ export function RightPanel({
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
               {contextStrategy === 'reminder'
-                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要清理时可切回自动整理或先询问。'
+                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要清理时可切回自动清理或先询问。'
                 : '这个任务的讨论已经有点长了，可以刷新当前任务会话。刷新前会先保全关键决策、偏好变化和未解决问题；只保存精选信号，不保存完整聊天全文。'}
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
@@ -2714,6 +2872,45 @@ export function RightPanel({
             <div>
               <strong>{activeTaskAgentCliRun.runtimeLabel} 正在只读执行</strong>
               <p>完成后会把结果整理进任务动态；如果输出值得沉淀，会生成待确认记录。</p>
+              <button
+                className={`btn sm ghost${activeTaskAgentCliRun.status === 'cancelling' ? ' disabled' : ''}`}
+                onClick={() => void cancelActiveAgentCliRun()}
+                disabled={activeTaskAgentCliRun.status === 'cancelling'}
+              >
+                {activeTaskAgentCliRun.status === 'cancelling' ? '取消中…' : `取消 ${activeTaskAgentCliRun.runtimeLabel} run`}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {taskDecompositionDraft && (
+          <div className="panel-file-proposal panel-decomposition-draft">
+            <div className="panel-file-proposal-head">
+              <strong>子任务草案</strong>
+              <span>确认后创建为当前项目的子任务</span>
+            </div>
+            <div className="panel-decomposition-list">
+              {taskDecompositionDraft.subtasks.map((subtask, index) => (
+                <div className="panel-decomposition-item" key={`${subtask.title}-${index}`}>
+                  <strong>{index + 1}. {subtask.title}</strong>
+                  <span>{subtask.summary}</span>
+                  <small>验收：{subtask.acceptanceCriteria}</small>
+                  {subtask.dependency && <small>依赖：{subtask.dependency}</small>}
+                </div>
+              ))}
+            </div>
+            <div className="panel-refresh-reason">{taskDecompositionDraft.review}</div>
+            <div className="panel-refresh-actions">
+              <button className="btn sm ghost" onClick={() => setTaskDecompositionDraft(null)}>
+                放弃
+              </button>
+              <button
+                className={`btn sm primary${creatingDecompositionChildren ? ' disabled' : ''}`}
+                onClick={() => void confirmTaskDecompositionDraft()}
+                disabled={creatingDecompositionChildren}
+              >
+                {creatingDecompositionChildren ? '创建中…' : '确认创建子任务'}
+              </button>
             </div>
           </div>
         )}
@@ -2765,12 +2962,12 @@ export function RightPanel({
         {activeTaskId && (
           <details className="panel-input-options">
             <summary>
-              <span>会话整理</span>
+              <span>自动清理</span>
               <strong>{CONTEXT_STRATEGY_LABELS[contextStrategy]}</strong>
             </summary>
             <div className="panel-context-strategy" aria-label="上下文策略">
               {([
-                ['auto', '自动整理'],
+                ['auto', '自动清理'],
                 ['manual', '先询问'],
                 ['reminder', '仅提醒'],
               ] as const).map(([value, label]) => (
@@ -2791,27 +2988,6 @@ export function RightPanel({
               ))}
             </div>
           </details>
-        )}
-        {activeTaskAgentCliRun && (
-          <div className="panel-agent-cli-run">
-            <div className="panel-agent-cli-run-main">
-              <strong>{activeTaskAgentCliRun.runtimeLabel} 后台运行</strong>
-              <span>{activeTaskAgentCliRun.runId}</span>
-            </div>
-            <div className="panel-agent-cli-run-facts" aria-label="Agent CLI run 状态">
-              <span>只读执行</span>
-              <span>完成后写入任务动态</span>
-              <span>有价值输出会提议保存记录</span>
-              <span>取消不会生成记忆提案</span>
-            </div>
-            <button
-              className={`btn sm ghost${activeTaskAgentCliRun.status === 'cancelling' ? ' disabled' : ''}`}
-              onClick={() => void cancelActiveAgentCliRun()}
-              disabled={activeTaskAgentCliRun.status === 'cancelling'}
-            >
-              {activeTaskAgentCliRun.status === 'cancelling' ? '取消中…' : `取消 ${activeTaskAgentCliRun.runtimeLabel} run`}
-            </button>
-          </div>
         )}
         {canManuallyRefreshTaskSession && (
           <div className="panel-manual-refresh">

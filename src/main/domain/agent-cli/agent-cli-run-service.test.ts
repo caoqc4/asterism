@@ -1011,11 +1011,11 @@ describe('AgentCliRunService', () => {
     const controller = new AbortController();
     const execution = executeAgentCliCommand({
       args: ['-e', [
-        "process.stdout.write('started\\n');",
         "process.on('SIGTERM', () => {",
         "  process.stdout.write('cleanup-after-sigterm\\n');",
         '  setTimeout(() => process.exit(0), 40);',
         '});',
+        "process.stdout.write('started\\n');",
         'setInterval(() => {}, 1000);',
       ].join('')],
       command: process.execPath,
