@@ -326,6 +326,22 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('registers task type review as a proposal boundary before metadata writes', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'task.typeReview');
+
+    expect(requiredRuntimeEntrypointGatesForKind('task_type_review')).toEqual([
+      'simplicity_check',
+      'task_memory_guidance',
+    ]);
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('task_type_review');
+    expect(entry?.ipcChannels).toBeUndefined();
+    expect(entry?.requiredGates).toContain('task_memory_guidance');
+    expect(entry?.requiredGates).not.toContain('task_mutation');
+    expect(entry?.notes).toContain('proposal/confirmation split');
+    expect(entry?.notes).toContain('selected-runtime or fallback provenance');
+  });
+
   it('separates context refresh or leave from cross-task switching', () => {
     const refreshOrLeave = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'context.refreshOrLeave');
     const taskSwitch = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'context.taskSwitch');
@@ -399,6 +415,7 @@ describe('runtime entrypoint coverage', () => {
       'task.stateTransition',
       'task.structuredStateWrites',
       'task.transitionToRunning',
+      'task.typeReview',
       'workHabit.preferenceMemory',
     ]);
   });

@@ -16,6 +16,7 @@ export type RuntimeEntrypointKind =
   | 'decision_write'
   | 'decision_action'
   | 'task_capture'
+  | 'task_type_review'
   | 'task_state_transition'
   | 'task_to_task_handoff'
   | 'phase_closeout_handoff'
@@ -173,6 +174,10 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'runtime_action',
     'task_memory_guidance',
     'pre_step',
+  ],
+  task_type_review: [
+    'simplicity_check',
+    'task_memory_guidance',
   ],
   task_state_transition: [
     'simplicity_check',
@@ -525,6 +530,21 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_memory_guidance',
       'pre_step',
     ],
+  },
+  {
+    id: 'task.typeReview',
+    owner: 'RightPanel task type review proposal',
+    kind: 'task_type_review',
+    description: 'Generate a structured task-type review proposal before any user-confirmed task metadata write.',
+    requiredGates: [
+      'simplicity_check',
+      'task_memory_guidance',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'task_memory_guidance',
+    ],
+    notes: 'Current implementation uses local structured type rules and then writes through task.metadataUpdate only after user confirmation. Future Agent CLI or Agent API task_type_review invocations must keep this proposal/confirmation split and declare selected-runtime or fallback provenance before adding IPC.',
   },
   {
     id: 'task.transitionToRunning',

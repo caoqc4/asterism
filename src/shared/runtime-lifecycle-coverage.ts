@@ -47,6 +47,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'runtime-task-capture-evaluator blocks duplicate open-task captures and generic title-only task candidates before persistence.',
       'runtime-task-capture-evaluator also blocks generic phase-template task titles, generic phase-template child titles, and child titles that only repeat the parent.',
       'TasksPage explicit task creation and RightPanel conversation capture pass task candidates through the shared capture evaluator.',
+      'RightPanel conversation capture persists the inferred taskType/taskFacets, and task.typeReview is registered as a proposal boundary before any confirmed task metadata write.',
       'TasksPage explicit task creation passes the same summary used by the capture evaluator into TaskService.create.',
       'TaskService.create enforces the same task-capture evaluator at the service boundary before repository persistence.',
       'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',

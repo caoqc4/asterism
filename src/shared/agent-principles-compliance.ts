@@ -232,6 +232,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'RightPanel capture uses the shared intake evaluator, TasksPage explicit creation uses the shared task_capture guard, and TaskService.create enforces duplicate/generic candidate checks at the service boundary.',
+      'RightPanel capture persists inferred taskType/taskFacets, and task.typeReview keeps task-type correction as a proposal/confirmation boundary before task.metadataUpdate writes.',
       'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task capture remains global-only, and project child creation uses the subtask draft evaluator.',
       'Subtask creation has service-level generic child and parent-ownership guards; future child-task creation paths must keep using the same shared confirmation boundaries.',
     ],
