@@ -712,7 +712,6 @@ function formatAgentCliRunMessage(params: {
     params.proposalCreated
       ? '完整输出已进入任务动态，并生成了待确认的任务记录提案。'
       : '完整输出已进入任务动态。',
-    `Run: ${params.runId}`,
   ].filter((line): line is string => line !== null).join('\n\n');
 }
 
@@ -1089,6 +1088,7 @@ export function RightPanel({
   const [thinking, setThinking] = useState(false);
   const [agentCliLaunchNotice, setAgentCliLaunchNotice] = useState<string | null>(null);
   const [taskDecompositionDraft, setTaskDecompositionDraft] = useState<TaskDecompositionDraft | null>(null);
+  const [recentDecompositionConfirmedTaskId, setRecentDecompositionConfirmedTaskId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastAppliedDraftPromptRef = useRef<string | null>(null);
@@ -1947,6 +1947,7 @@ export function RightPanel({
       });
       appendSysMsg(`已根据拆解草案创建 ${created.length} 个子任务。`);
       setTaskDecompositionDraft(null);
+      setRecentDecompositionConfirmedTaskId(activeTaskId);
       onOpenTask?.(activeTaskId);
     } catch (error) {
       appendSysMsg(`创建子任务失败：${error instanceof Error ? error.message : '未知错误'}`);
@@ -2128,12 +2129,13 @@ export function RightPanel({
     ];
 
     setMessages((prev) => [...prev, userMsg]);
+    setRecentDecompositionConfirmedTaskId(null);
     setSessionInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setThinking(true);
 
     const slashCommand = parseAgentRuntimeSlashCommand(text);
-    let replyText: string;
+    let replyText: string | null;
     try {
       if (slashCommand.kind !== 'none') {
         replyText = await handleAgentRuntimeSlashCommand(slashCommand);
@@ -2166,11 +2168,7 @@ export function RightPanel({
           });
         }
         replyText = run.status === 'running'
-          ? [
-              `${runtimeLabel} run 已在后台启动。`,
-              '只读执行中；完成后会整理结果、写入任务动态，并在需要时生成待确认任务记录提案。',
-              `Run: ${run.id}`,
-            ].join('\n\n')
+          ? null
           : formatAgentCliRunMessage({
               output,
               proposalCreated: Boolean(detail?.taskMemoryWriteProposals?.length),
@@ -2229,7 +2227,9 @@ export function RightPanel({
         : generateReply(text, activeTaskId);
     }
 
-    setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: replyText, ts: now() }]);
+    if (replyText?.trim()) {
+      setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: replyText, ts: now() }]);
+    }
     setThinking(false);
   }
 
@@ -2593,6 +2593,7 @@ export function RightPanel({
     agentCliLaunchNotice
     || activeTaskAgentCliRun
     || taskDecompositionDraft
+    || recentDecompositionConfirmedTaskId === activeTaskId
   );
   const canCloseoutActiveTaskPhase = Boolean(
     canCloseoutActiveTaskPhaseBase

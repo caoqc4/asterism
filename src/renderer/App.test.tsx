@@ -2088,10 +2088,9 @@ describe('App redesign v1', () => {
         expect.objectContaining({ content: '用 Codex CLI 检查下一步。' }),
       ]),
     }));
-    expect(await screen.findByText(/Codex CLI run 已在后台启动/)).toBeTruthy();
-    expect(screen.getByText(/只读执行中；完成后会整理结果/)).toBeTruthy();
-    expect(screen.getAllByText(/run_agent_cli_created/).length).toBeGreaterThan(0);
-    expect(screen.getByText('Codex CLI 正在只读执行')).toBeTruthy();
+    expect(await screen.findByText('Codex CLI 正在只读执行')).toBeTruthy();
+    expect(screen.queryByText(/Codex CLI run 已在后台启动/)).toBeNull();
+    expect(screen.queryByText(/只读执行中；完成后会整理结果/)).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '取消 Codex CLI run' }));
     expect(harness.api.cancelAgentCliRun).toHaveBeenCalledWith({
@@ -2408,9 +2407,9 @@ describe('App redesign v1', () => {
         taskId: 'task_risk',
       });
     });
-    expect(await screen.findByText(/Claude Code run 已在后台启动/)).toBeTruthy();
-    expect(screen.getByText(/只读执行中；完成后会整理结果/)).toBeTruthy();
-    expect(screen.getByText('Claude Code 正在只读执行')).toBeTruthy();
+    expect(await screen.findByText('Claude Code 正在只读执行')).toBeTruthy();
+    expect(screen.queryByText(/Claude Code run 已在后台启动/)).toBeNull();
+    expect(screen.queryByText(/只读执行中；完成后会整理结果/)).toBeNull();
   });
 
   it('keeps Codex CLI mode disabled until the manual-run runtime is authenticated', async () => {
@@ -2658,6 +2657,8 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText(/确认材料边界/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/完成初稿修订/).length).toBeGreaterThan(0);
     expect(screen.queryByText('任务记忆写入提案')).toBeNull();
+    expect(screen.queryByRole('button', { name: '收尾本阶段' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '生成文件提案' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '确认创建子任务' }));
     await waitFor(() => {
@@ -2676,6 +2677,8 @@ describe('App redesign v1', () => {
       nextState: 'planned',
     }));
     expect(await screen.findByText(/已根据拆解草案创建 2 个子任务/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '收尾本阶段' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '生成文件提案' })).toBeNull();
   });
 
   it('captures a global right-panel discussion as a task before planning', async () => {
