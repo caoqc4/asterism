@@ -352,8 +352,8 @@ export function ModelPage() {
       <div className="model-page-head">
         <div>
           <h2 className="model-page-title">AI Runtime</h2>
-          <p className="model-page-subtitle">选择任务 Agent 默认使用的执行 Runtime。</p>
-          <p className="model-page-boundary">Agent CLI 是第一版执行层；Agent API 是后续同级执行层；模型服务配置用于全局助手、摘要和轻量模型调用。</p>
+          <p className="model-page-subtitle">选择 Taskplane 调用 AI 的默认 Runtime。</p>
+          <p className="model-page-boundary">Agent CLI 和 Agent API 是同级 AI 调用层；任务拆解、推进、验收、记忆等环节由 Taskplane harness 编排，再按所选 Runtime 调用。</p>
         </div>
       </div>
 
@@ -382,7 +382,7 @@ export function ModelPage() {
 
       {/* Footer */}
       <div className="model-page-footer">
-        <span className="muted" style={{ fontSize: 12 }}>第一版任务执行使用 Agent CLI；Agent API 后续同级接入</span>
+        <span className="muted" style={{ fontSize: 12 }}>第一版优先打通 Agent CLI；Agent API 作为同级 Runtime 后续补齐</span>
         <button
           className={`btn primary${saving ? ' disabled' : ''}${saveResult === 'ok' ? ' saved' : ''}${saveResult === 'error' ? ' danger' : ''}`}
           onClick={save}
@@ -451,7 +451,7 @@ function AgentCliRuntimeSection({
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">运行方式</div>
-          <p className="model-section-copy">选择第一版任务默认调用 Codex 或 Claude；Agent API 保持同级执行层定位，后续完善后可选。</p>
+          <p className="model-section-copy">选择 Taskplane 各 AI 阶段的默认调用层；当前优先打通 Codex / Claude CLI，Agent API 后续补齐同一套 harness 流程。</p>
         </div>
         <div className="agent-cli-head-actions">
           <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
@@ -503,7 +503,7 @@ function AgentCliRuntimeSection({
             <div className="agent-cli-runtime-card-title">
               <span>Agent API Runtime</span>
             </div>
-            <span className="agent-cli-runtime-card-command mono">同级执行层 · 后续版本</span>
+            <span className="agent-cli-runtime-card-command mono">同级 AI 调用层 · 后续版本</span>
           </div>
           <span className="agent-cli-runtime-card-status preview">
             {runtimeMode === 'api' ? '当前配置' : '开发中'}
@@ -511,8 +511,8 @@ function AgentCliRuntimeSection({
           <span className="agent-cli-runtime-row-version">{runtimeMode === 'api' ? '不可执行' : '未开放'}</span>
           <span className="agent-cli-runtime-row-detail">
             {runtimeMode === 'api'
-              ? '当前配置不会启动任务执行 runtime'
-              : '任务执行 Runtime · 待完善'}
+              ? '当前仅部分问答 / 规划阶段可走 API 调用'
+              : '同级 Runtime · 待完善'}
           </span>
           <div className="agent-cli-runtime-row-actions">
             <button className="btn sm disabled" type="button" disabled>
@@ -523,7 +523,7 @@ function AgentCliRuntimeSection({
         <div className="agent-cli-runtime-row api-preview">
           <div className="agent-cli-runtime-row-name">
             <div className="agent-cli-runtime-card-title">
-              <span>模型服务配置</span>
+              <span>Agent API Provider 配置</span>
             </div>
             <span className="agent-cli-runtime-card-command mono">{apiConfigured ? '已填写 Provider 密钥' : '需要先配置 Provider 密钥'}</span>
           </div>
@@ -531,14 +531,14 @@ function AgentCliRuntimeSection({
             配置项
           </span>
           <span className="agent-cli-runtime-row-version">{apiProviderSummary ?? '未完成'}</span>
-          <span className="agent-cli-runtime-row-detail">用于全局助手 / 摘要 / verifier 等模型调用</span>
+          <span className="agent-cli-runtime-row-detail">供 Agent API Runtime 调用；不是 Agent CLI 的隐式兜底</span>
           <div className="agent-cli-runtime-row-actions">
             <button
               className={`btn sm${apiConfigured ? ' ghost' : ' primary'}`}
               onClick={onToggleApiConfig}
               type="button"
             >
-              {apiConfigOpen ? '收起配置' : apiConfigured ? '修改配置' : '配置模型服务'}
+              {apiConfigOpen ? '收起配置' : apiConfigured ? '修改配置' : '配置 Provider'}
             </button>
           </div>
         </div>

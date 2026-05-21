@@ -60,7 +60,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.coveredGates).toEqual(agentCli?.coveredGates);
     expect(entry?.ipcChannels).toBeUndefined();
     expect(entry?.notes).toContain('future peer execution runtime');
-    expect(entry?.notes).toContain('not model-service assistance');
+    expect(entry?.notes).toContain('not auxiliary provider assistance');
     expect(entry?.notes).toContain('before exposing any IPC channel');
   });
 
@@ -339,7 +339,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).toContain('task_memory_guidance');
     expect(entry?.requiredGates).not.toContain('task_mutation');
     expect(entry?.notes).toContain('proposal/confirmation split');
-    expect(entry?.notes).toContain('selected-runtime or fallback provenance');
+    expect(entry?.notes).toContain('selected-runtime or API-runtime provenance');
   });
 
   it('separates context refresh or leave from cross-task switching', () => {

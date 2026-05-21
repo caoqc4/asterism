@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildApiRuntimeDecompositionDraftInvocation,
   buildLocalTaskTypeReviewInvocation,
-  buildModelServiceDecompositionDraftInvocation,
 } from './ai-runtime-invocation.js';
 
 describe('ai runtime invocation contract', () => {
@@ -31,8 +31,8 @@ describe('ai runtime invocation contract', () => {
     expect(invocation.summary).toContain('项目型');
   });
 
-  it('wraps model-service project decomposition drafts without turning them into writes', () => {
-    const invocation = buildModelServiceDecompositionDraftInvocation({
+  it('wraps API-runtime project decomposition drafts without turning them into writes', () => {
+    const invocation = buildApiRuntimeDecompositionDraftInvocation({
       draft: {
         parentGoal: '上线小程序',
         subtasks: [
@@ -51,10 +51,10 @@ describe('ai runtime invocation contract', () => {
 
     expect(invocation).toMatchObject({
       phase: 'decomposition_draft',
-      layer: 'model_service_fallback',
+      layer: 'api_runtime',
       runtime: {
-        mode: 'model_service',
-        label: '模型服务规划',
+        mode: 'api',
+        label: 'Agent API Runtime 规划',
       },
       status: 'completed',
     });

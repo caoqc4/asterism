@@ -345,7 +345,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'post_step',
     ],
-    notes: 'Deferred contract only: Agent API is a future peer execution runtime, not model-service assistance. When implemented, it must reuse the same Taskplane harness, context manifest, task-memory guidance, subtask_start, and post-step verification gates as Agent CLI before exposing any IPC channel.',
+    notes: 'Deferred contract only: Agent API is a future peer execution runtime, not auxiliary provider assistance. When implemented, it must reuse the same Taskplane harness, context manifest, task-memory guidance, subtask_start, and post-step verification gates as Agent CLI before exposing any IPC channel.',
   },
   {
     id: 'run.cancelAgentCli',
@@ -544,7 +544,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'task_memory_guidance',
     ],
-    notes: 'Current implementation uses local structured type rules and then writes through task.metadataUpdate only after user confirmation. Future Agent CLI or Agent API task_type_review invocations must keep this proposal/confirmation split and declare selected-runtime or fallback provenance before adding IPC.',
+    notes: 'Current implementation uses local structured type rules and then writes through task.metadataUpdate only after user confirmation. Future Agent CLI or Agent API task_type_review invocations must keep this proposal/confirmation split and declare selected-runtime or API-runtime provenance before adding IPC.',
   },
   {
     id: 'task.transitionToRunning',

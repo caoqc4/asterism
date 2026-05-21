@@ -1140,9 +1140,9 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
 
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
-    expect(screen.getByText(/Agent CLI 是第一版执行层/)).toBeTruthy();
+    expect(screen.getByText(/Agent CLI 和 Agent API 是同级 AI 调用层/)).toBeTruthy();
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
-    expect(screen.getByText(/选择第一版任务默认调用 Codex 或 Claude/)).toBeTruthy();
+    expect(screen.getByText(/选择 Taskplane 各 AI 阶段的默认调用层/)).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);
@@ -1154,13 +1154,13 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: '重新检测' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: '更新' }).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '修改配置' }));
-    expect(screen.getAllByText(/模型服务配置/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Agent API Provider 配置/).length).toBeGreaterThan(0);
     expect(screen.getByText('Agent API Runtime')).toBeTruthy();
     expect(screen.getByText('当前配置')).toBeTruthy();
-    expect(screen.getByText(/当前配置不会启动任务执行 runtime/)).toBeTruthy();
-    expect(screen.getAllByText(/同级执行层/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/用于全局助手/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/第一版任务执行使用 Agent CLI/)).toBeTruthy();
+    expect(screen.getByText(/当前仅部分问答 \/ 规划阶段可走 API 调用/)).toBeTruthy();
+    expect(screen.getAllByText(/同级 AI 调用层/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/不是 Agent CLI 的隐式兜底/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/第一版优先打通 Agent CLI/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: '正在使用' })).toBeNull();
     expect(screen.queryByText('model.provider')).toBeNull();
     expect(screen.queryByText(/Safety Details/)).toBeNull();
@@ -2094,22 +2094,19 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Codex CLI run 取消请求已发送/)).toBeTruthy();
   });
 
-  it('shows selected Codex CLI global chat as lightweight API assistance', async () => {
+  it('keeps selected Codex CLI global chat from falling through to API runtime', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Search or ask/ }));
 
-    expect(await screen.findByText('全局助手 · 模型服务辅助')).toBeTruthy();
+    expect(await screen.findByText('全局助手 · Codex CLI（待接入）')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/搜索、提问或捕获任务想法/), '这个方案你怎么看？');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
-    await waitFor(() => {
-      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
-        taskId: null,
-      }));
-    });
+    expect(await screen.findByText(/全局助手阶段尚未接入所选 Agent CLI 调用层/)).toBeTruthy();
+    expect(harness.api.chatWithAI).not.toHaveBeenCalled();
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
   });
 
@@ -2121,8 +2118,8 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('Agent API Runtime · 开发中，未启动执行')).toBeTruthy();
-    expect(screen.getByText('Agent API 开发中')).toBeTruthy();
+    expect(await screen.findByText('任务助手 · Agent API Runtime')).toBeTruthy();
+    expect(screen.getByText('Agent API 调用层')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/goal status');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -2132,8 +2129,8 @@ describe('App redesign v1', () => {
         expect.objectContaining({ content: '/goal status' }),
       ]),
     }));
-    expect(await screen.findByText(/执行 runtime：Agent API Runtime（开发中）/)).toBeTruthy();
-    expect(screen.getByText(/Agent API Runtime 仍在开发中，当前不启动任务执行 runtime/)).toBeTruthy();
+    expect(await screen.findByText(/执行 runtime：Agent API Runtime/)).toBeTruthy();
+    expect(screen.getByText(/Agent API Runtime 当前只接入部分问答 \/ 规划阶段/)).toBeTruthy();
   });
 
   it('keeps /goal product-owned in task chat and persists it as the Taskplane task goal', async () => {
@@ -2442,12 +2439,13 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
 
-    expect(await screen.findByText('任务 Agent · CLI 不可用，转模型服务辅助')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent · Codex CLI 不可用')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
-    expect(harness.api.chatWithAI).toHaveBeenCalled();
+    expect(harness.api.chatWithAI).not.toHaveBeenCalled();
+    expect(await screen.findByText(/不会在未说明的情况下切换到另一条 AI Runtime/)).toBeTruthy();
   });
 
   it('refreshes Codex CLI mode availability after AI Runtime settings change', async () => {
@@ -2483,7 +2481,7 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
-    expect(await screen.findByText('任务 Agent · CLI 不可用，转模型服务辅助')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent · Codex CLI 不可用')).toBeTruthy();
 
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
     harness.emit('settings.changed');
@@ -4612,6 +4610,7 @@ describe('App redesign v1', () => {
           recordPath: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-received-handoff\.md$/),
         }),
       }));
+      expect(screen.getByText('任务助手 · Agent API Runtime')).toBeTruthy();
       expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
         taskId: 'task_handoff_second',
         messages: expect.arrayContaining([

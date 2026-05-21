@@ -910,6 +910,7 @@ export function RightPanel({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
   const [runtimeMode, setRuntimeMode] = useState<AiRuntimeMode>('codex');
+  const [aiRuntimeStatusLoaded, setAiRuntimeStatusLoaded] = useState(false);
   const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
   const [activeTaskDetail, setActiveTaskDetail] = useState<TaskDetail | null>(null);
   const [capabilityRegistry, setCapabilityRegistry] = useState<CapabilityRegistryEntry[]>([]);
@@ -952,7 +953,13 @@ export function RightPanel({
   const activeTaskIdRef = useRef(activeTaskId);
   const activeAgentCliRunRef = useRef(activeAgentCliRun);
   const refreshAiRuntimeStatus = useCallback(() => {
-    window.api?.getAiConfigStatus().then((status) => {
+    const request = window.api?.getAiConfigStatus();
+    if (!request) {
+      setAiRuntimeStatusLoaded(true);
+      return;
+    }
+    setAiRuntimeStatusLoaded(false);
+    request.then((status) => {
       setCompressionThreshold(
         status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
       );
@@ -975,7 +982,9 @@ export function RightPanel({
       }, { claude: null, codex: null });
       setAgentCliAvailability(nextAvailability);
       setAgentCliCapabilities(nextCapabilities);
-    }).catch(() => {});
+    }).finally(() => {
+      setAiRuntimeStatusLoaded(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -1087,11 +1096,12 @@ export function RightPanel({
 
   useEffect(() => {
     if (!autoSendDraftPrompt || !draftPrompt || taskId !== activeTaskId) return;
+    if (!aiRuntimeStatusLoaded) return;
     const key = `${taskId ?? 'global'}:${draftPrompt}`;
     if (lastAutoSentDraftPromptRef.current === key) return;
     lastAutoSentDraftPromptRef.current = key;
     void send(draftPrompt);
-  }, [activeTaskId, autoSendDraftPrompt, draftPrompt, taskId]);
+  }, [activeTaskId, aiRuntimeStatusLoaded, autoSendDraftPrompt, draftPrompt, taskId]);
 
   // When taskId changes from outside (e.g. clicking a different task)
   useEffect(() => {
@@ -1906,6 +1916,8 @@ export function RightPanel({
     try {
       if (slashCommand.kind !== 'none') {
         replyText = await handleAgentRuntimeSlashCommand(slashCommand);
+      } else if (!aiRuntimeStatusLoaded) {
+        replyText = 'AI Runtime 状态仍在加载中，请稍后再发送。Taskplane 不会在未确认所选 Runtime 前调用 AI。';
       } else if (activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun) {
         const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
         const run = await window.api.triggerAgentCliRun({
@@ -1938,7 +1950,19 @@ export function RightPanel({
             : '完整执行记录已进入当前任务动态。',
           `Run: ${run.id}`,
         ].join('\n\n');
-      } else if (window.api?.chatWithAI) {
+      } else if (activeAgentCliRuntimeMode && !activeTaskId) {
+        replyText = [
+          `当前选择的是 ${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]}。`,
+          '全局助手阶段尚未接入所选 Agent CLI 调用层；请先进入具体任务后再发起任务 Agent run。',
+          'Taskplane 不会在未说明的情况下切换到另一条 AI Runtime。',
+        ].join('\n\n');
+      } else if (activeAgentCliRuntimeMode && activeTaskId && !shouldUseAgentCliRuntime) {
+        replyText = [
+          `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} 当前不可用，任务 Agent run 未启动。`,
+          '请到 AI Runtime 页完成安装、登录或重新检测后再试。',
+          'Taskplane 不会在未说明的情况下切换到另一条 AI Runtime。',
+        ].join('\n\n');
+      } else if (isAgentApiRuntimeMode && window.api?.chatWithAI) {
         const habitParams = {
           taskTitle: titleCache[activeTaskId ?? ''] ?? null,
           taskTypeLabel: activeAttrs ? TASK_TYPE_HABIT_LABELS[activeAttrs.type] : null,
@@ -2126,8 +2150,8 @@ export function RightPanel({
         shouldUseAgentCliRuntime
           ? `执行边界：${sandboxBoundaryLabel}`
           : runtimeMode === 'api'
-            ? '执行边界：Agent API Runtime 仍在开发中，当前不启动任务执行 runtime；模型服务只处理当前问答。'
-            : '执行边界：当前仅使用模型服务问答，不启动 Agent CLI。',
+            ? '执行边界：Agent API Runtime 当前只接入部分问答 / 规划阶段；任务执行 run 仍待完善。'
+            : '执行边界：所选 Agent CLI 未就绪或当前阶段未接入；不会隐式切换到其他 AI Runtime。',
       ].join('\n');
     }
 
@@ -2442,17 +2466,23 @@ export function RightPanel({
       ? AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]
       : `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]}（不可用）`
     : isAgentApiRuntimeMode
-      ? 'Agent API Runtime（开发中）'
-      : '模型服务辅助';
-  const runtimeChipLabel = !activeTaskId
-    ? '全局助手 · 模型服务辅助'
+      ? 'Agent API Runtime'
+      : '未选择 AI Runtime';
+  const runtimeChipLabel = !aiRuntimeStatusLoaded
+    ? 'AI Runtime 加载中'
+    : !activeTaskId
+    ? activeAgentCliRuntimeMode
+      ? `全局助手 · ${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]}（待接入）`
+      : isAgentApiRuntimeMode
+        ? '全局助手 · Agent API Runtime'
+        : '全局助手 · 未选择 AI Runtime'
     : activeAgentCliRuntimeMode
       ? shouldUseAgentCliRuntime
         ? `任务 Agent · ${AGENT_CLI_PANEL_RUNTIME_HINTS[activeAgentCliRuntimeMode]}`
-        : '任务 Agent · CLI 不可用，转模型服务辅助'
+        : `任务 Agent · ${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} 不可用`
       : isAgentApiRuntimeMode
-        ? 'Agent API Runtime · 开发中，未启动执行'
-        : '模型服务辅助';
+        ? '任务助手 · Agent API Runtime'
+        : '任务助手 · 未选择 AI Runtime';
   const includedContextCount = runtimeContextManifest.items.filter((item) => item.contentIncluded).length;
   const sourceContextCount = runtimeContextManifest.items.filter((item) => item.kind === 'source_context').length;
   const taskFileContextCount = runtimeContextManifest.items.filter((item) => item.kind === 'task_file').length;
@@ -2463,8 +2493,8 @@ export function RightPanel({
       ? '任务 Agent Plan 执行'
       : '任务 Agent 只读执行'
     : isAgentApiRuntimeMode
-      ? 'Agent API 开发中'
-      : '模型服务辅助';
+      ? 'Agent API 调用层'
+      : '所选 Runtime 未就绪';
   const sandboxBoundaryLabel = shouldUseAgentCliRuntime
     ? activeAgentCliRuntimeMode === 'claude'
       ? 'Claude Plan'

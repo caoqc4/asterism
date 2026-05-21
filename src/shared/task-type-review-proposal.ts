@@ -4,7 +4,7 @@ import {
   normalizeTaskTypeFacets,
 } from './task-type-profile.js';
 
-export type TaskTypeReviewProposalSource = 'local_rule' | 'selected_runtime' | 'model_service_fallback';
+export type TaskTypeReviewProposalSource = 'local_rule' | 'selected_runtime' | 'api_runtime';
 
 export type TaskTypeReviewProposal = {
   taskId: string;

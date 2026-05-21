@@ -18,14 +18,14 @@ export type RuntimeInvocationPhase =
 
 export type RuntimeInvocationLayer =
   | 'selected_runtime'
-  | 'model_service_fallback'
+  | 'api_runtime'
   | 'local_rule'
   | 'product_harness';
 
 export type RuntimeInvocationStatus = 'completed' | 'failed' | 'skipped';
 
 export type RuntimeInvocationRuntimeRef = {
-  mode: AiRuntimeMode | 'model_service' | 'local_rule' | 'product_harness';
+  mode: AiRuntimeMode | 'local_rule' | 'product_harness';
   label: string;
 };
 
@@ -45,7 +45,7 @@ export type TaskTypeReviewInvocationInput = {
 
 export type TaskTypeReviewInvocationResult = RuntimeInvocationBase & {
   phase: 'task_type_review';
-  layer: 'local_rule' | 'selected_runtime' | 'model_service_fallback';
+  layer: 'local_rule' | 'selected_runtime' | 'api_runtime';
   proposal: TaskTypeReviewProposal;
 };
 
@@ -56,7 +56,7 @@ export type DecompositionDraftInvocationInput = {
 
 export type DecompositionDraftInvocationResult = RuntimeInvocationBase & {
   phase: 'decomposition_draft';
-  layer: 'selected_runtime' | 'model_service_fallback';
+  layer: 'selected_runtime' | 'api_runtime';
   draft: ProjectDecompositionResult;
 };
 
@@ -77,17 +77,17 @@ export function buildLocalTaskTypeReviewInvocation(
   };
 }
 
-export function buildModelServiceDecompositionDraftInvocation(params: {
+export function buildApiRuntimeDecompositionDraftInvocation(params: {
   draft: ProjectDecompositionResult;
   runtimeLabel?: string;
   summary?: string;
 }): DecompositionDraftInvocationResult {
   return {
     phase: 'decomposition_draft',
-    layer: 'model_service_fallback',
+    layer: 'api_runtime',
     runtime: {
-      mode: 'model_service',
-      label: params.runtimeLabel ?? '模型服务规划',
+      mode: 'api',
+      label: params.runtimeLabel ?? 'Agent API Runtime 规划',
     },
     status: 'completed',
     summary: params.summary ?? `已生成 ${params.draft.subtasks.length} 个项目子任务草稿。`,
