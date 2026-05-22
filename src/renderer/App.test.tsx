@@ -5015,20 +5015,13 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
+    const chatCallsBeforeAdvance = vi.mocked(harness.api.chatWithAI!).mock.calls.length;
     await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
 
-    await waitFor(() => {
-      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
-        taskId: 'task_child_scope',
-        messages: expect.arrayContaining([
-          expect.objectContaining({ content: expect.stringContaining('请推进子任务「明确网站目标与范围」') }),
-          expect.objectContaining({ content: expect.stringContaining('子任务摘要：确认网站类型、目标用户、核心价值和页面范围') }),
-          expect.objectContaining({ content: expect.stringContaining('只问我一个问题') }),
-        ]),
-      }));
-    });
-    expect(screen.queryByDisplayValue(/请推进子任务「明确网站目标与范围」/)).toBeNull();
-    expect(screen.queryByText(/请推进子任务「明确网站目标与范围」/)).toBeNull();
+    expect(await screen.findByDisplayValue('请和我一起推进「明确网站目标与范围」。')).toBeTruthy();
+    expect(vi.mocked(harness.api.chatWithAI!).mock.calls.length).toBe(chatCallsBeforeAdvance);
+    expect(screen.queryByDisplayValue(/父任务：「开发一个网站」/)).toBeNull();
+    expect(screen.queryByDisplayValue(/子任务摘要/)).toBeNull();
     expect(screen.queryByText(/不要重新拆解父任务/)).toBeNull();
     expect(screen.queryByText(/审阅最新 agent 产物/)).toBeNull();
     expect(screen.getAllByText('明确网站目标与范围').length).toBeGreaterThan(0);
@@ -5067,14 +5060,11 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
     await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
 
-    await waitFor(() => {
-      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith(expect.objectContaining({
-        prompt: expect.stringContaining('请推进子任务「明确网站目标与范围」'),
-        taskId: 'task_child_scope_chat',
-      }));
-    });
+    expect(await screen.findByDisplayValue('请和我一起推进「明确网站目标与范围」。')).toBeTruthy();
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
 
     const input = await screen.findByPlaceholderText(/关于「明确网站目标与范围」/);
+    await user.clear(input);
     await user.type(input, '关于一个 AI 生图的工具站');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -5085,7 +5075,7 @@ describe('App redesign v1', () => {
       }));
     });
     expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
-      prompt: expect.stringContaining('只问一个最自然的下一问'),
+      prompt: expect.stringContaining('不要直接产出方案清单'),
     }));
     expect(screen.queryByText(/Key Findings/)).toBeNull();
   });

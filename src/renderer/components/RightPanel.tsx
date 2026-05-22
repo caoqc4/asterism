@@ -762,15 +762,18 @@ function isChildTaskAdvancementText(value: string): boolean {
 
 function buildChildTaskConversationPrompt(params: {
   parentTaskTitle?: string | null;
+  taskSummary?: string | null;
   taskTitle: string | null;
   userText: string;
 }): string {
   return [
     `正在推进子任务「${params.taskTitle ?? '当前子任务'}」。`,
     params.parentTaskTitle ? `父任务：「${params.parentTaskTitle}」。` : null,
+    params.taskSummary ? `子任务摘要：${params.taskSummary}` : null,
     `用户刚补充：${params.userText}`,
-    '请基于这次补充继续推进这个子任务，不要重新拆解父任务。',
-    '请最多用两句中文回复：先简短确认或判断，再只问一个最自然的下一问，引导用户说想法。',
+    '请基于这次补充继续推进这个子任务，不要重新拆解父任务，不要直接产出方案清单。',
+    '目标是先和用户讨论需求：如果用户只是说“推进/开始/一起推进”，请用一句话请用户描述他的想法或预期；如果用户已经给出具体想法，请先简短复述理解，再只问一个最自然的下一问。',
+    '请最多用两句中文回复，语气自然，不要使用列表、编号、标题或多段结构。',
   ].filter((line): line is string => Boolean(line)).join('\n');
 }
 
@@ -2152,9 +2155,10 @@ export function RightPanel({
     if (!text || thinking) return;
     const displayUserMessage = options.displayUserMessage ?? true;
     const childTaskConversation = isChildTaskContext(activeTaskId);
-    const runtimeText = childTaskConversation && !isChildTaskAdvancementText(text)
+    const runtimeText = childTaskConversation
       ? buildChildTaskConversationPrompt({
           parentTaskTitle: parentTitleForActiveChild(),
+          taskSummary: activeTaskDetail?.summary ?? null,
           taskTitle: title,
           userText: text,
         })

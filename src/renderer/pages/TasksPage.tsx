@@ -867,17 +867,8 @@ function buildVisibleTaskPlanningDraft(taskTitle: string, type: TaskType): strin
   return `请帮我规划「${taskTitle}」的目标、验收标准和下一步行动。`;
 }
 
-function buildChildTaskAdvanceDraft(child: Task, parent: Task): string {
-  const nextStep = child.nextStep?.trim();
-  const usableNextStep = nextStep && !isGenericAgentReviewStep(nextStep) ? nextStep : null;
-  return [
-    `请推进子任务「${child.title}」。`,
-    `父任务：「${parent.title}」。`,
-    child.whyNow ? `子任务摘要：${child.whyNow}` : null,
-    usableNextStep
-      ? `当前下一步：${usableNextStep}`
-      : '请先判断当前最需要确认的一件事，只问我一个问题，等我回答后再继续。',
-  ].filter((line): line is string => Boolean(line)).join('\n');
+function buildChildTaskAdvanceDraft(child: Task, _parent: Task): string {
+  return `请和我一起推进「${child.title}」。`;
 }
 
 function isGenericAgentReviewStep(value: string): boolean {
@@ -2916,6 +2907,7 @@ function resetCaptureDraft() {
                     nextChildTask.id,
                     buildChildTaskAdvanceDraft(nextChildTask, selectedTask),
                     nextChildTask.title,
+                    false,
                     true,
                     true,
                   );
