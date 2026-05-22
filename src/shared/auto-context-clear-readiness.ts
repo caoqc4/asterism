@@ -52,14 +52,14 @@ export function evaluateAutoContextClearReadiness(
   if (!input.hasTaskContext) {
     return result('not_applicable', {
       coverage,
-      reason: '当前是全局或未绑定任务上下文，不需要自动任务上下文清理。',
+      reason: '当前是全局或未绑定任务上下文，不需要整理任务会话。',
     });
   }
 
   if (input.hasOpenDecision) {
     return result('needs_user_decision', {
       coverage,
-      reason: '当前任务存在待拍板事项，不能通过自动清理掩盖判断边界。',
+      reason: '当前任务存在待拍板事项，不能通过会话整理掩盖判断边界。',
     });
   }
 
@@ -73,7 +73,7 @@ export function evaluateAutoContextClearReadiness(
   if (input.shortTermReasoningActive) {
     return result('keep_context', {
       coverage,
-      reason: '当前对话仍是短期推理现场，自动清理可能降低执行质量。',
+      reason: '当前对话仍是短期推理现场，清理会话可能降低执行质量。',
     });
   }
 
@@ -96,7 +96,7 @@ export function evaluateAutoContextClearReadiness(
   if (coverage.outcome === 'needs_user_clarification') {
     return result('keep_context', {
       coverage,
-      reason: '当前任务对话缺少明确可恢复信号，自动清理没有收益，应继续保留上下文。',
+      reason: '当前任务对话缺少明确可恢复信号，清理会话没有收益，应继续保留上下文。',
     });
   }
 

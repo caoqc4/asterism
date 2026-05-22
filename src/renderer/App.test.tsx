@@ -2593,6 +2593,10 @@ describe('App redesign v1', () => {
   it('turns Agent CLI decomposition output into confirmable child tasks', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    const task = harness.tasks.find((item) => item.id === 'task_risk')!;
+    task.taskType = 'project';
+    task.taskFacets = ['project'];
+    harness.details.task_risk = buildTaskDetail(task);
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
@@ -2813,8 +2817,7 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText(/自动刷新已暂停/)).toBeTruthy();
-    expect(screen.getByText(/缺少明确可恢复信号/)).toBeTruthy();
+    expect(screen.queryByText(/自动刷新/)).toBeNull();
     expect(harness.api.createSourceContext).not.toHaveBeenCalledWith(expect.objectContaining({
       title: '会话刷新前保全',
     }));
@@ -2829,7 +2832,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    await user.click(await screen.findByRole('button', { name: '自动清理' }));
+    await user.click(await screen.findByText('上下文整理'));
     await user.click(screen.getByRole('button', { name: '仅提醒' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
 
@@ -2851,8 +2854,6 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    await user.click(await screen.findByRole('button', { name: '自动清理' }));
-    await user.click(screen.getByRole('button', { name: '先询问' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
     await user.type(input, '这轮先保留 Playwright 作为动态页面候选');
     await user.click(screen.getByRole('button', { name: '发送' }));
@@ -3431,7 +3432,9 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText(/已自动整理并刷新/)).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: '整理归档' }));
+    await user.click(await screen.findByRole('button', { name: '确认刷新' }));
+    expect(await screen.findByText(/已整理并刷新/)).toBeTruthy();
     expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_risk',
       path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-context-refresh-handoff\.md$/),
@@ -3457,7 +3460,9 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText(/已自动整理并刷新/)).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: '整理归档' }));
+    await user.click(await screen.findByRole('button', { name: '确认刷新' }));
+    expect(await screen.findByText(/已整理并刷新/)).toBeTruthy();
     expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_risk',
       path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-context-refresh-handoff\.md$/),
@@ -3466,6 +3471,9 @@ describe('App redesign v1', () => {
   });
 
   it('uses the compression threshold preference for right-panel session refresh suggestions', async () => {
+    vi.mocked(harness.api.chatWithAI!).mockResolvedValue({
+      text: '已记录这条补充，我们先保持当前任务线继续推进。',
+    });
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
       featureFlags: {
         enableScheduler: false,
@@ -3481,19 +3489,25 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.click(await screen.findByText('上下文整理'));
+    await user.click(screen.getByRole('button', { name: '自动清理' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+    const longContextChunk = '这轮需要保留董事会材料的上下文：现金流页、CEO 批注、法务意见、截止时间、交付范围和风险说明都要一起考虑。'.repeat(38);
 
-    for (const prompt of ['先看风险', '再看来源', '最后看下一步']) {
-      await user.type(input, prompt);
+    for (const prompt of [1, 2, 3, 4]) {
+      fireEvent.change(input, {
+        target: { value: `${longContextChunk} 第 ${prompt} 段。` },
+      });
       await user.click(screen.getByRole('button', { name: '发送' }));
       await waitFor(() => {
         expect(harness.api.chatWithAI).toHaveBeenCalled();
       });
     }
 
-    expect(await screen.findByText(/自动刷新已暂停/)).toBeTruthy();
-    expect(screen.getByText(/达到会话检查阈值 3/)).toBeTruthy();
-    expect(screen.getByText(/缺少明确可恢复信号/)).toBeTruthy();
+    expect(await screen.findByText(/不会自动清空聊天/)).toBeTruthy();
+    expect(screen.getByText(/估算上下文占用约/)).toBeTruthy();
+    expect(screen.getByText(/达到 30% 阈值/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '整理归档' })).toBeTruthy();
   });
 
   it('persists selected task completion from the Tasks inline row action', async () => {
@@ -5005,6 +5019,70 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText('明确网站目标与范围').length).toBeGreaterThan(0);
   });
 
+  it('prefills child task advancement from recent task records when available', async () => {
+    const project = buildTask({
+      id: 'task_project_record_prefill',
+      title: '开发一个网站',
+      state: 'planned',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_child_record_prefill'],
+      nextStep: '推进第一个子任务。',
+    });
+    const child = buildTask({
+      id: 'task_child_record_prefill',
+      title: '明确网站目标与范围',
+      parentTaskId: project.id,
+      state: 'planned',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      summary: '确认网站类型、目标用户、核心价值和页面范围。',
+      nextStep: '',
+    });
+    harness.tasks.unshift(child, project);
+    harness.details[project.id] = buildTaskDetail(project);
+    harness.details[child.id] = buildTaskDetail(child);
+    harness.taskFiles[child.id] = [{
+      id: 'task_record_prefill',
+      taskId: child.id,
+      name: '会话刷新前保全.md',
+      path: 'Task Records/2026-05-22-context-refresh-handoff.md',
+      kind: 'file',
+      content: [
+        '# Record: 会话刷新前保全',
+        '',
+        '## Summary',
+        '任务：明确网站目标与范围',
+        '用户消息数：5',
+        '最近关注：个人知识内容聚合站，面向 Agent 初学者，偏入门教程学习类方向',
+        '',
+        '## Confirmed',
+        '- 先以内容教程聚合站作为首版方向',
+        '',
+        '## Open',
+        '- 是否优先做内站整理，而不是外部读者展示',
+      ].join('\n'),
+      createdAt: now,
+      updatedAt: now,
+    }];
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
+    await waitFor(() => {
+      expect(harness.api.listTaskFiles).toHaveBeenCalledWith(child.id);
+    });
+    await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
+
+    expect(await screen.findByDisplayValue(/基于已有任务记录继续推进「明确网站目标与范围」/)).toBeTruthy();
+    expect(screen.getByDisplayValue(/先收束首版目标、范围、非目标和下一步/)).toBeTruthy();
+    expect(screen.queryByDisplayValue(/个人知识内容聚合站/)).toBeNull();
+    expect(screen.queryByDisplayValue(/推进到可执行状态：确认目标、范围和下一步/)).toBeNull();
+  });
+
   it('keeps later child-task chat turns scoped and concise for Agent CLI', async () => {
     const project = buildTask({
       id: 'task_project_child_chat',
@@ -5047,9 +5125,105 @@ describe('App redesign v1', () => {
           'Codex CLI run 已完成。',
           '结果摘要：',
           'Key Findings',
-          '当前子任务的关键是先确认网站用途。',
-          '请先回答一个问题：这个网站首版主要想做成什么类型？例如：企业官网、个人作品集、产品介绍页、电商网站、内容博客、预约/报名网站、后台管理系统，或其他。',
+          '当前可暂定为：首版做一个面向 Agent 初学者的 Codex 基础教程网站，以基础教程和案例展示为主。',
+          '下一步建议：整理 Codex 官方文档和同类教程站，形成首版页面范围、内容结构和非目标。',
           '完整输出已进入任务动态，并生成了待确认的任务记录提案。',
+        ].join('\n'),
+        outputSource: 'ai',
+        status: 'completed',
+        taskId: input.taskId,
+        type: 'agent',
+      });
+      harness.runs.push(run);
+      return run;
+    });
+
+    const input = await screen.findByPlaceholderText(/关于「明确网站目标与范围」/);
+    await user.clear(input);
+    await user.type(input, '做一个 Codex 的基础教程网站，面向 Agent 初学者，偏基础教程和案例展示');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
+        prompt: expect.stringContaining('用户刚补充：做一个 Codex 的基础教程网站，面向 Agent 初学者，偏基础教程和案例展示'),
+        taskId: 'task_child_scope_chat',
+      }));
+    });
+    expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
+      prompt: expect.stringContaining('不要再问“个人看还是给别人看”“目录型还是学习路径型”'),
+    }));
+    expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
+      prompt: expect.stringContaining('默认先产出首版定位、页面/内容范围、非目标和下一步调研或搭建动作'),
+    }));
+
+    expect(await screen.findByText(/当前可暂定为：首版做一个面向 Agent 初学者的 Codex 基础教程网站/)).toBeTruthy();
+    expect(screen.getByText(/整理 Codex 官方文档和同类教程站/)).toBeTruthy();
+    expect(screen.queryByText(/你希望这个网站首版更偏/)).toBeNull();
+    expect(screen.queryByText(/个人看还是给别人看/)).toBeNull();
+    expect(screen.queryByText(/Key Findings/)).toBeNull();
+    expect(screen.queryByText(/Codex CLI run 已完成/)).toBeNull();
+    expect(screen.queryByText('任务记忆写入提案')).toBeNull();
+    expect(screen.queryByRole('button', { name: '收尾本阶段' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '生成文件提案' })).toBeNull();
+  });
+
+  it('does not turn child-task advancement output into nested subtask drafts', async () => {
+    const project = buildTask({
+      id: 'task_project_no_nested_draft',
+      title: '开发一个网站',
+      state: 'planned',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_child_scope_no_nested_draft'],
+      nextStep: '推进第一个子任务。',
+    });
+    const child = buildTask({
+      id: 'task_child_scope_no_nested_draft',
+      title: '明确网站目标与范围',
+      parentTaskId: project.id,
+      state: 'planned',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      summary: '确认网站类型、目标用户、核心价值和页面范围。',
+      nextStep: '',
+    });
+    harness.tasks.unshift(child, project);
+    harness.details[project.id] = buildTaskDetail(project);
+    harness.details[child.id] = buildTaskDetail(child);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
+    await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
+
+    vi.mocked(harness.api.triggerAgentCliRun!).mockImplementationOnce(async (input) => {
+      const run = buildRun({
+        id: 'run_child_nested_decomposition_ignored',
+        output: [
+          '已形成子任务草案。',
+          '```json',
+          JSON.stringify({
+            type: 'TASKPLANE_DECOMPOSITION',
+            subtasks: [
+              {
+                title: '确认网站用途与目标',
+                summary: '明确网站类型、主要目的、希望用户完成的关键动作。',
+                acceptanceCriteria: '已用一句话说明网站用途。',
+                dependency: null,
+              },
+              {
+                title: '定义目标用户与核心场景',
+                summary: '确认主要访问者是谁，以及他们进入网站时最常见的任务或问题。',
+                acceptanceCriteria: '已列出核心用户和主要使用场景。',
+                dependency: '确认网站用途与目标',
+              },
+            ],
+          }),
+          '```',
         ].join('\n'),
         outputSource: 'ai',
         status: 'completed',
@@ -5067,20 +5241,107 @@ describe('App redesign v1', () => {
 
     await waitFor(() => {
       expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
-        prompt: expect.stringContaining('用户刚补充：关于一个 AI 生图的工具站'),
-        taskId: 'task_child_scope_chat',
+        taskId: 'task_child_scope_no_nested_draft',
       }));
     });
-    expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
-      prompt: expect.stringContaining('不要直接产出方案清单'),
-    }));
+    expect(await screen.findByText(/已形成子任务草案/)).toBeTruthy();
+    expect(screen.queryByText('子任务草案')).toBeNull();
+    expect(screen.queryByRole('button', { name: '确认创建子任务' })).toBeNull();
+  });
 
-    expect(await screen.findByText(/这个网站首版主要想做成什么类型/)).toBeTruthy();
-    expect(screen.queryByText(/Key Findings/)).toBeNull();
-    expect(screen.queryByText(/Codex CLI run 已完成/)).toBeNull();
-    expect(screen.queryByText('任务记忆写入提案')).toBeNull();
-    expect(screen.queryByRole('button', { name: '收尾本阶段' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '生成文件提案' })).toBeNull();
+  it('allows explicit decomposition of a complex child task by upgrading it to a project', async () => {
+    const project = buildTask({
+      id: 'task_project_child_split',
+      title: '开发一个网站',
+      state: 'planned',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_child_code_split'],
+      nextStep: '推进代码实现。',
+    });
+    const child = buildTask({
+      id: 'task_child_code_split',
+      title: '代码实现',
+      parentTaskId: project.id,
+      state: 'planned',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      summary: '实现网站首版功能。',
+      nextStep: '',
+    });
+    harness.tasks.unshift(child, project);
+    harness.details[project.id] = buildTaskDetail(project);
+    harness.details[child.id] = buildTaskDetail(child);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
+    await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
+
+    vi.mocked(harness.api.triggerAgentCliRun!).mockImplementationOnce(async (input) => {
+      const run = buildRun({
+        id: 'run_child_explicit_decomposition',
+        output: [
+          '已形成子任务草案。',
+          '```json',
+          JSON.stringify({
+            type: 'TASKPLANE_DECOMPOSITION',
+            review: '代码实现需要拆成可独立推进的工程块。',
+            nextStep: '确认后从前端实现开始。',
+            subtasks: [
+              {
+                title: '前端实现',
+                summary: '实现首版页面结构和交互。',
+                acceptanceCriteria: '核心页面可以本地打开并完成主要交互。',
+                dependency: null,
+              },
+              {
+                title: 'API 接入',
+                summary: '接入生成、保存和状态查询接口。',
+                acceptanceCriteria: '前端能调用 API 并展示成功或失败状态。',
+                dependency: '前端实现',
+              },
+            ],
+          }),
+          '```',
+        ].join('\n'),
+        outputSource: 'ai',
+        status: 'completed',
+        taskId: input.taskId,
+        type: 'agent',
+      });
+      harness.runs.push(run);
+      return run;
+    });
+
+    const input = await screen.findByPlaceholderText(/关于「代码实现」/);
+    await user.clear(input);
+    await user.type(input, '这个实现任务太粗了，请拆细成前端和 API 接入两个子任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(await screen.findByText('子任务草案')).toBeTruthy();
+    expect(screen.getAllByText(/前端实现/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/API 接入/).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: '确认创建子任务' }));
+    await waitFor(() => {
+      expect(harness.api.updateTask).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'task_child_code_split',
+        taskType: 'project',
+      }));
+    });
+    expect(harness.api.createTask).toHaveBeenCalledWith(expect.objectContaining({
+      parentTaskId: 'task_child_code_split',
+      title: '前端实现',
+    }));
+    expect(harness.api.createTask).toHaveBeenCalledWith(expect.objectContaining({
+      parentTaskId: 'task_child_code_split',
+      title: 'API 接入',
+    }));
   });
 
   it('uses Plan as the primary action until an ordinary task has execution context', async () => {

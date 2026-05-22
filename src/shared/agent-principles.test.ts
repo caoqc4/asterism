@@ -15,7 +15,7 @@ describe('Taskplane Agent product principles', () => {
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Required reference: docs/specs/agent-output-contract.md');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Required reference: docs/specs/goalpilot-task-advancement-framework.md');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('before creating tasks, executing tasks, updating task memory, clearing context, delegating subagents, or closing work');
-    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Agents must follow the GoalPilot Task Advancement Framework');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Agents should use the GoalPilot Task Advancement Framework as a lightweight routing reference');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Agents must follow the Task Memory Spec');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Agents must follow the Agent Output Contract');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## User-Visible Output');

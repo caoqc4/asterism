@@ -794,19 +794,31 @@ export class TaskService {
       if (!this.findTaskInList(existingTasks, childTaskId)) {
         throw new Error(`Child task not found: ${childTaskId}`);
       }
+      if (this.wouldCreateHierarchyCycle(parentTaskId, childTaskId, existingTasks)) {
+        throw new Error('Task hierarchy cannot create a parent-child cycle');
+      }
     }
   }
 
   private assertTaskCanOwnChildren(parent: TaskRecord): void {
-    if (parent.parentTaskId) {
-      throw new Error(`父任务「${parent.title}」本身已经是子任务，不能继续创建第三层子任务`);
-    }
     if (parent.state === 'completed' || parent.state === 'archived') {
       throw new Error(`父任务「${parent.title}」已关闭，不能继续添加子任务`);
     }
     if (parent.taskType !== undefined && parent.taskType !== 'project') {
       throw new Error(`父任务「${parent.title}」必须是项目型任务，才能添加子任务`);
     }
+  }
+
+  private wouldCreateHierarchyCycle(parentTaskId: string, childTaskId: string, existingTasks: TaskRecord[]): boolean {
+    let cursor = this.findTaskInList(existingTasks, parentTaskId)?.parentTaskId ?? null;
+    const visited = new Set<string>([parentTaskId]);
+    while (cursor) {
+      if (cursor === childTaskId) return true;
+      if (visited.has(cursor)) return true;
+      visited.add(cursor);
+      cursor = this.findTaskInList(existingTasks, cursor)?.parentTaskId ?? null;
+    }
+    return false;
   }
 
   private async syncChildParentLinksAfterParentUpdate(params: {

@@ -17,6 +17,11 @@ It governs task rhythm and phase movement. It does not define user-visible
 wording, memory storage formats, tool permissions, or task-type-specific
 methods.
 
+The framework is necessary as a product-level router, not as a script. Its job
+is to choose the next kind of movement and keep task state recoverable. It must
+not override a capable runtime's normal reasoning, research, or execution
+abilities with unnecessary clarification rituals.
+
 ## Relationship To Core Specs
 
 - Taskplane Agent Operating Principles define execution rules, safety
@@ -30,16 +35,38 @@ methods.
 - Process Templates and Work Habits add task-type-specific methods and user
   preferences without replacing this framework.
 
-Agents must use this framework before deciding whether to clarify, shape,
-decompose, execute, verify, persist, hand off, switch tasks, pause, or close
-work.
+Agents should use this framework as a lightweight routing reference when the
+next movement is ambiguous, state-changing, or cross-task. For obvious low-risk
+turns, apply the smallest useful movement directly while preserving the same
+principles.
 
 ## First Principles
 
-Task advancement starts from one question:
+Task advancement starts from one decision point:
 
 What is the smallest movement that makes the task more clear, executable,
 verified, or recoverable without creating unnecessary structure?
+
+Prefer movement over interrogation. Mature agent runtimes usually gather
+context, act, and verify in short loops. GoalPilot should preserve that loop:
+use clarification only when it unlocks the next move, not as the default way to
+make progress.
+
+Clarification should stay focused, not artificially singular. Prefer one
+decisive question when it is enough. Ask two or three tightly related questions
+only when answering them together prevents another avoidable round trip, and
+make clear which decision point they serve.
+
+Do not ask questions just because a choice exists. If the user has already
+given enough signal to establish a reasonable default, state the default and
+move the task forward. Use research, source review, existing task memory, or a
+draft artifact before asking the user to decide secondary structure, style, or
+taxonomy.
+
+For product, website, document, or tutorial tasks, theme, target audience, and
+content shape are usually enough to advance. Do not ask whether the work is for
+private or public use, directory or learning path, or similar secondary product
+choices when those choices can be handled as adjustable defaults in the draft.
 
 Use the framework silently as a reasoning aid. Expose the reasoning only when a
 decision requires approval, the task is blocked, or the user asks why.
@@ -54,6 +81,8 @@ The Goal side understands the work:
 - What is the real goal?
 - Which task owns the current work: parent, child, successor, or new task?
 - Is the current boundary clear enough to act?
+- Would source review, web research, existing files, or prior task memory answer
+  the uncertainty better than asking the user?
 - What would count as success or acceptable progress?
 - What is uncertain: goal, scope, evidence, execution, risk, or ownership?
 - What blockers, dependencies, pending decisions, deadlines, sources, files, or
@@ -63,8 +92,8 @@ The Goal side understands the work:
 
 The Pilot side chooses the movement:
 
-- Should the Agent clarify, shape, decompose, select a next task, execute,
-  verify, persist, hand off, or pause?
+- Should the Agent clarify, research, shape, decompose, select a next task,
+  execute, verify, persist, hand off, or pause?
 - What is the smallest useful next movement?
 - Does the movement need user confirmation before changing durable state?
 - Does the movement need a task file, Decision, Task Record, source, artifact,
@@ -74,7 +103,8 @@ The Pilot side chooses the movement:
 
 ## Task Situation Map
 
-Classify the current situation before choosing a movement:
+When the next movement is not obvious, classify the current situation before
+choosing a movement:
 
 - Fuzzy intent: the user has a possible goal, but task ownership, outcome, or
   scope is not clear.
@@ -86,6 +116,8 @@ Classify the current situation before choosing a movement:
   creating another decomposition.
 - Child task needing clarification: the child is selected, but its own goal,
   scope, success standard, or parent constraint is not clear.
+- Research-dependent task: useful progress depends on outside facts, product
+  examples, current docs, source review, or comparable references.
 - Executable task: the task has enough context, next step, permissions, and
   criteria to act.
 - Blocked or waiting task: progress depends on a blocker, external wait,
@@ -102,6 +134,8 @@ Classify the current situation before choosing a movement:
 Choose one primary movement per turn or run:
 
 - Clarify: ask for the missing information that blocks useful progress.
+- Research: gather or request evidence from web, files, docs, sources, or
+  connectors before asking the user to decide details the Agent can investigate.
 - Shape: turn rough intent into goal, scope, acceptance criteria, next step, or
   constraints.
 - Decompose: propose independent child tasks for a project-sized task.
@@ -124,10 +158,12 @@ and applicable process templates:
 | Situation | Default movement | Check before moving |
 | --- | --- | --- |
 | Fuzzy intent | Clarify or Shape | Is there enough signal to create or update a task? |
-| Captured task missing goal, scope, criteria, or next step | Shape | Which single missing field blocks useful progress? |
+| Captured task missing goal, scope, criteria, or next step | Shape | Which missing field or tightly related set blocks useful progress? |
+| Product, website, document, or tutorial task with theme, audience, and content shape | Research or Shape | Can sources, examples, or a draft answer the remaining uncertainty? |
 | Project needing decomposition | Decompose | Is the task too broad for one execution loop? |
 | Project with existing children | Select next task or Verify | Are existing children still the right structure? |
 | Child task needing clarification | Clarify or Shape | Is the child boundary clean and parent-aligned? |
+| Research-dependent task | Research | What source or tool should be used before asking the user? |
 | Executable task | Execute | Are context, permissions, and acceptance criteria sufficient? |
 | Blocked or waiting task | Pause or surface Decision | What exact blocker, dependency, or approval prevents progress? |
 | Verification or closeout | Verify | What evidence proves or disproves completion? |
@@ -136,6 +172,29 @@ and applicable process templates:
 
 The map is not a script. If a smaller movement would reduce uncertainty or
 avoid unnecessary structure, choose the smaller movement.
+
+## Research Guidance
+
+Use Research when the task depends on current facts, public documentation,
+market or product examples, implementation references, or source material that
+the Agent can inspect more reliably than the user can describe from memory.
+
+Research may use web search, source ingestion, MCP/connectors, local files,
+confirmed task sources, or the selected Agent CLI runtime's native read-only
+research capabilities. Taskplane-managed tools and official CLI-native tools are
+separate capability layers; do not downgrade a capable CLI just because
+Taskplane did not inject a matching product-owned tool.
+
+If a live web, connector, or source tool is truly unavailable, do not invent
+citations or ask the user to make secondary product choices. State the missing
+research source as the next action and still produce a best-effort draft from
+available context.
+
+For website, tutorial, documentation, and product-planning tasks, the default
+after theme, audience, and content shape are known is Research or Shape, not
+Clarify. A good first movement is often: summarize the assumed positioning,
+identify useful sources to inspect, propose first-pass scope/non-goals, and
+name the next research or build action.
 
 ## Decomposition Guidance
 
@@ -168,9 +227,14 @@ When advancing a child task, focus on the child. Do not re-plan the parent or
 reopen decomposition unless the child boundary is wrong or parent context makes
 the child unsafe.
 
-If the user only asks to start or continue, clarify the most important missing
-piece. If the user already supplied concrete intent, restate the useful
-understanding briefly and ask only the next natural question when needed.
+If the user only asks to start or continue, use the child title, summary, task
+memory, and parent context to propose a reasonable first move. Ask only when the
+task state is too empty to advance usefully, the missing information changes a
+key risk, or it would materially alter the deliverable boundary.
+
+For website or tutorial child tasks with enough intent, the default next move is
+to produce a first-pass positioning, page/content scope, non-goals, and the next
+research or build action. Do not keep the task in clarification mode.
 
 ## Verification, Closeout, And Next Task
 

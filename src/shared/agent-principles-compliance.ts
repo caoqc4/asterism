@@ -227,7 +227,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage explicit task creation forwards the same task summary used by the capture evaluator to the service boundary.',
       'TaskService.create enforces the same duplicate/generic task-capture evaluator before repository persistence.',
       'TaskService.update reuses the same evaluator for title changes and parent moves, preventing duplicate sibling tasks.',
-      'TaskService blocks child creation and child moves unless the parent is an open top-level project task.',
+      'TaskService blocks child creation and child moves unless the parent is an open project task, allowing complex child work to be upgraded into a project before further decomposition.',
       'Project decomposition creates draft subtasks before real child task creation.',
     ],
     gaps: [
@@ -256,7 +256,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator so existing children block another decomposition round before new drafts appear.',
       'Project decomposition generation detects existing children from the full task list, including children linked only by parentTaskId.',
       'TaskService keeps child parentTaskId and parent childTaskIds synchronized when child tasks are created, moved, or changed from the parent child list.',
-      'TaskService blocks child creation, child moves, and parent child-list writes unless the parent is an open top-level project task.',
+      'TaskService blocks child creation, child moves, and parent child-list writes unless the parent is an open project task, while preventing hierarchy cycles.',
       'TaskService safe hierarchy repairs and explicit manual hierarchy resolutions pass parent/child structure writes through task_mutation guards.',
       'runtime-verification has an initial project mode for child completion, blocker/waiting counts, parent criteria, pending decisions, and risk confirmation.',
       'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for project verification.',

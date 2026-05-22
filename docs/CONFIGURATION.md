@@ -369,6 +369,28 @@ Current workspace tools are read-only:
 
 Patch creation and command execution are not enabled.
 
+## Agent CLI Capability Mode
+
+Taskplane defaults Agent CLI runs to `native` mode. In this mode Taskplane does
+not downgrade Codex CLI or Claude Code: the official CLI may use its own
+read-only search, browse, source, documentation, and reasoning capabilities
+according to that CLI's installed configuration and permission mode. Taskplane
+still owns task context, run records, verification, and memory proposals.
+
+The capability mode is stored in `featureFlags.agentCliCapabilityMode`:
+
+- `native`: default. Respect the official CLI's native read-only capabilities.
+- `audit_enhanced`: before research-like tasks, Taskplane may run a small OpenAI
+  web-search preflight, write a digest and source links into Source Contexts,
+  then hand that evidence to the official CLI. This requires the selected
+  Provider to be OpenAI and an available OpenAI key.
+- `restricted`: use only Taskplane-provided context. Do not use live web,
+  search, connector, or external tools unless their results were already
+  injected into the run context.
+
+Set `TASKPLANE_AGENT_CLI_CAPABILITY_MODE=native|audit_enhanced|restricted` to
+override the saved mode for local testing.
+
 ## Agent CLI Real Smoke
 
 Agent CLI smoke tests are opt-in and call the user's locally installed official

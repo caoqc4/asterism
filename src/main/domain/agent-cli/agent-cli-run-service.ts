@@ -48,6 +48,8 @@ import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 import type { AiConfigService } from '../../keychain/ai-config-service.js';
+import type { AgentCliCapabilityMode } from '../../../shared/types/settings.js';
+import type { CreateSourceContextInput } from '../../../shared/types/source-context.js';
 import type { TaskService } from '../task/task-service.js';
 import { persistTerminalRunVerifications } from '../run/run-verification-service.js';
 import {
@@ -76,9 +78,23 @@ export type AgentCliExecutor = (params: {
 
 export type AgentCliRunTerminalListener = (run: RunRecord) => void | Promise<void>;
 
+type AgentCliTaskService = Pick<TaskService, 'annotateRunCompleted' | 'annotateRunFailed' | 'getDetail'> & {
+  createSourceContext?: (input: CreateSourceContextInput) => Promise<unknown>;
+};
+
+type AgentCliAiConfigService = Pick<AiConfigService, 'getStatus'> & {
+  resolveOpenAiWebResearchConfig?: () => Promise<{
+    apiKey: string;
+    baseUrl?: string | null;
+    model: string;
+    provider: string;
+  }>;
+};
+
 type AgentCliRunAdapter = {
   acceptedLabel: string;
   buildExecution(params: {
+    capabilityMode: AgentCliCapabilityMode;
     contextSummary: string;
     prompt: string;
     sandboxMode: AgentCliRunSandboxMode;
@@ -100,8 +116,8 @@ const AGENT_CLI_TERMINATION_GRACE_MS = 1_500;
 
 export class AgentCliRunService {
   constructor(
-    private readonly taskService: Pick<TaskService, 'annotateRunCompleted' | 'annotateRunFailed' | 'getDetail'>,
-    private readonly aiConfigService: Pick<AiConfigService, 'getStatus'>,
+    private readonly taskService: AgentCliTaskService,
+    private readonly aiConfigService: AgentCliAiConfigService,
     private readonly runRepository: Pick<RunRepository, 'create' | 'updateResult'>,
     private readonly runStepRepository: Pick<RunStepRepository, 'create' | 'listForRun' | 'listForTask'>,
     private readonly executor: AgentCliExecutor = executeAgentCliCommand,
@@ -112,7 +128,7 @@ export class AgentCliRunService {
 
   async recordNativeGoalRequest(input: RecordRuntimeNativeGoalRequestInput): Promise<RunRecord> {
     const request = normalizeRuntimeNativeGoalRequestInput(input);
-    const task = await this.taskService.getDetail(request.taskId);
+    let task = await this.taskService.getDetail(request.taskId);
     if (!task) {
       throw new Error(`Task not found: ${request.taskId}`);
     }
@@ -166,7 +182,7 @@ export class AgentCliRunService {
     if (!request.prompt) {
       throw new Error('Agent CLI run requires a prompt.');
     }
-    const task = await this.taskService.getDetail(request.taskId);
+    let task = await this.taskService.getDetail(request.taskId);
     if (!task) {
       throw new Error(`Task not found: ${request.taskId}`);
     }
@@ -231,6 +247,12 @@ export class AgentCliRunService {
       }
     }
 
+    const capabilityMode = normalizeAgentCliCapabilityMode(aiStatus.featureFlags.agentCliCapabilityMode);
+    task = await this.prepareWebResearchSourceContext({
+      capabilityMode,
+      prompt: request.prompt,
+      task,
+    });
     const taskFilesForContext = buildAgentCliTaskFilesForContext(task);
     const contextManifest = buildRuntimeContextManifest({
       capabilities: buildRuntimeCapabilitySnapshot({ aiStatus }),
@@ -291,6 +313,7 @@ export class AgentCliRunService {
         `runtime=${runtime.id}`,
         `sandbox=${sandboxMode}`,
         pendingMemoryWarning ? `pending_memory_warning=${pendingMemoryWarning}` : null,
+        `capability_mode=${capabilityMode}`,
         contextGate.summary,
         formatRuntimeContextManifestForStep(contextManifest),
       ].filter((line): line is string => line !== null).join('\n'),
@@ -305,7 +328,9 @@ export class AgentCliRunService {
     });
 
     const execution = adapter.buildExecution({
+      capabilityMode,
       contextSummary: buildAgentCliContextBridge({
+        capabilityMode,
         contract: runContract,
         manifest: contextManifest,
         task,
@@ -384,6 +409,54 @@ export class AgentCliRunService {
       guidanceSignals: steps,
       taskFiles: task.taskFiles,
     });
+  }
+
+  private async prepareWebResearchSourceContext(params: {
+    capabilityMode: AgentCliCapabilityMode;
+    prompt: string;
+    task: TaskDetail;
+  }): Promise<TaskDetail> {
+    if (params.capabilityMode !== 'audit_enhanced') {
+      return params.task;
+    }
+    if (!shouldPrepareWebResearch(params.task, params.prompt)) {
+      return params.task;
+    }
+    if (!this.taskService.createSourceContext || !this.aiConfigService.resolveOpenAiWebResearchConfig) {
+      return params.task;
+    }
+
+    let config: Awaited<ReturnType<NonNullable<AgentCliAiConfigService['resolveOpenAiWebResearchConfig']>>>;
+    try {
+      config = await this.aiConfigService.resolveOpenAiWebResearchConfig();
+    } catch {
+      return params.task;
+    }
+
+    const query = buildWebResearchQuery(params.task, params.prompt);
+    const research = await runOpenAiWebResearch({
+      apiKey: config.apiKey,
+      model: config.model,
+      query,
+    }).catch(() => null);
+    if (!research?.sources.length && !research?.summary.trim()) {
+      return params.task;
+    }
+
+    const capturedAt = new Date().toISOString();
+    const batchId = `web-research:${params.task.id}:${capturedAt}`;
+    const createdInputs = buildWebResearchSourceInputs({
+      batchId,
+      capturedAt,
+      query,
+      research,
+      taskId: params.task.id,
+    });
+    for (const input of createdInputs) {
+      await this.taskService.createSourceContext(input).catch(() => null);
+    }
+
+    return await this.taskService.getDetail(params.task.id).catch(() => params.task) ?? params.task;
   }
 
   private async completeRunInBackground(params: {
@@ -570,6 +643,11 @@ function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): Required<Crea
   };
 }
 
+function normalizeAgentCliCapabilityMode(mode: AgentCliCapabilityMode | undefined): AgentCliCapabilityMode {
+  if (mode === 'audit_enhanced' || mode === 'restricted') return mode;
+  return 'native';
+}
+
 function normalizeRuntimeNativeGoalRequestInput(
   input: RecordRuntimeNativeGoalRequestInput,
 ): RecordRuntimeNativeGoalRequestInput {
@@ -617,6 +695,7 @@ const codexCliRunAdapter: AgentCliRunAdapter = {
       args: ['exec', '--sandbox', params.sandboxMode, '--cd', params.workspaceRoot, '--skip-git-repo-check', '-'],
       commandPreview: `codex exec --sandbox ${params.sandboxMode} --cd ${params.workspaceRoot} -`,
       input: buildCodexCliPrompt({
+        capabilityMode: params.capabilityMode,
         contextSummary: params.contextSummary,
         prompt: params.prompt,
         sandboxMode: params.sandboxMode,
@@ -636,6 +715,7 @@ const claudeCodeRunAdapter: AgentCliRunAdapter = {
       args: ['-p', '--permission-mode', 'plan', '--output-format', 'text'],
       commandPreview: `claude -p --permission-mode plan --output-format text`,
       input: buildClaudeCodePrompt({
+        capabilityMode: params.capabilityMode,
         contextSummary: params.contextSummary,
         prompt: params.prompt,
         sandboxMode: params.sandboxMode,
@@ -649,6 +729,7 @@ const claudeCodeRunAdapter: AgentCliRunAdapter = {
 };
 
 function buildAgentCliContextBridge(params: {
+  capabilityMode: AgentCliCapabilityMode;
   contract: RunGoalContract;
   manifest: RuntimeContextManifest;
   task: TaskDetail;
@@ -696,9 +777,29 @@ function buildAgentCliContextBridge(params: {
     ...sourcePreviews,
     '',
     'Capability bridge policy:',
-    '- External Access, Skills, and MCP entries are context-only unless Taskplane exposes explicit tools in this run.',
-    '- Do not claim live connector/tool access from these summaries; use them to understand available context and safety boundaries.',
+    ...buildAgentCliCapabilityBridgePolicy(params.capabilityMode),
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function buildAgentCliCapabilityBridgePolicy(mode: AgentCliCapabilityMode): string[] {
+  if (mode === 'restricted') {
+    return [
+      '- Taskplane-managed External Access, Skills, and MCP entries are context-only unless Taskplane exposes explicit tools in this run.',
+      '- Restricted mode: do not use live web, search, connector, or external tools. Answer from the confirmed Taskplane context and native reasoning only.',
+    ];
+  }
+  if (mode === 'audit_enhanced') {
+    return [
+      '- Taskplane-managed External Access, Skills, and MCP entries are context-only unless Taskplane exposes explicit tools in this run.',
+      '- Audit-enhanced mode may include Taskplane-captured source previews; treat them as reviewable evidence and cite them when relevant.',
+      '- This policy does not disable official CLI-native read-only tools. Use Codex CLI or Claude Code built-in search, browse, source, and documentation capabilities when the selected CLI exposes them.',
+    ];
+  }
+  return [
+    '- Taskplane-managed External Access, Skills, and MCP entries are context-only unless Taskplane exposes explicit tools in this run.',
+    '- Native mode: do not downgrade the selected official CLI. Use Codex CLI or Claude Code built-in search, browse, source, and documentation capabilities when the selected CLI exposes them.',
+    '- Workspace writes remain outside this Taskplane run unless the user explicitly chooses a write-capable flow.',
+  ];
 }
 
 function buildAgentCliTaskFilesForContext(task: TaskDetail): Array<{
@@ -817,6 +918,210 @@ function truncateAgentCliContextLine(value: string, limit: number): string {
   return `${normalized.slice(0, Math.max(0, limit - 3))}...`;
 }
 
+type WebResearchSource = {
+  title: string | null;
+  url: string;
+  snippet: string | null;
+};
+
+type WebResearchResult = {
+  query: string;
+  sources: WebResearchSource[];
+  summary: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function shouldPrepareWebResearch(task: TaskDetail, prompt: string): boolean {
+  const text = `${task.title}\n${task.summary ?? ''}\n${task.nextStep ?? ''}\n${prompt}`;
+  if (/不要联网|不要搜索|不需要调研|skip\s+(web|search|research)|no\s+(web|search|research)/i.test(text)) {
+    return false;
+  }
+  return /网站|教程|文档|资料|调研|案例|官方文档|竞品|产品规划|市场|当前|最新|Codex|Agent\s*初学者|web\s*research|search|browse|documentation/i.test(text);
+}
+
+function buildWebResearchQuery(task: TaskDetail, prompt: string): string {
+  return [
+    task.title,
+    task.summary,
+    task.nextStep,
+    prompt,
+  ].filter((line): line is string => Boolean(line?.trim())).join('\n');
+}
+
+async function runOpenAiWebResearch(params: {
+  apiKey: string;
+  model: string;
+  query: string;
+}): Promise<WebResearchResult | null> {
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    body: JSON.stringify({
+      input: [
+        'Research the user task using web search.',
+        'Return concise findings and include useful sources.',
+        'Focus on official documentation and high-signal reference pages.',
+        '',
+        params.query,
+      ].join('\n'),
+      model: params.model,
+      tools: [{ type: 'web_search' }],
+    }),
+    headers: {
+      Authorization: `Bearer ${params.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error(`OpenAI web research failed: ${response.status}`);
+  }
+  const body = await response.json() as unknown;
+  return parseOpenAiWebResearchResponse(body, params.query);
+}
+
+function parseOpenAiWebResearchResponse(body: unknown, query: string): WebResearchResult | null {
+  const text = extractOpenAiResponseText(body);
+  const sources = dedupeWebResearchSources([
+    ...extractOpenAiResponseSources(body),
+    ...extractOpenAiResponseUrlCitations(body),
+  ]).slice(0, 5);
+  if (!text && sources.length === 0) return null;
+  return {
+    query,
+    sources,
+    summary: text,
+  };
+}
+
+function extractOpenAiResponseText(value: unknown): string {
+  if (!isRecord(value)) return '';
+  if (typeof value.output_text === 'string') return value.output_text.trim();
+  const chunks: string[] = [];
+  collectOpenAiTextChunks(value, chunks);
+  return chunks.join('\n').trim();
+}
+
+function collectOpenAiTextChunks(value: unknown, chunks: string[]): void {
+  if (Array.isArray(value)) {
+    for (const item of value) collectOpenAiTextChunks(item, chunks);
+    return;
+  }
+  if (!isRecord(value)) return;
+  if ((value.type === 'output_text' || value.type === 'text') && typeof value.text === 'string') {
+    chunks.push(value.text);
+  }
+  for (const child of Object.values(value)) {
+    if (Array.isArray(child)) collectOpenAiTextChunks(child, chunks);
+  }
+}
+
+function extractOpenAiResponseSources(value: unknown): WebResearchSource[] {
+  if (!isRecord(value) || !Array.isArray(value.sources)) return [];
+  return value.sources
+    .filter(isRecord)
+    .map((source) => {
+      const url = typeof source.url === 'string' ? source.url.trim() : '';
+      if (!url) return null;
+      return {
+        snippet: typeof source.snippet === 'string' ? source.snippet.trim() : null,
+        title: typeof source.title === 'string' ? source.title.trim() : null,
+        url,
+      };
+    })
+    .filter((source): source is WebResearchSource => source !== null);
+}
+
+function extractOpenAiResponseUrlCitations(value: unknown): WebResearchSource[] {
+  const sources: WebResearchSource[] = [];
+  collectUrlCitations(value, sources);
+  return sources;
+}
+
+function collectUrlCitations(value: unknown, sources: WebResearchSource[]): void {
+  if (Array.isArray(value)) {
+    for (const item of value) collectUrlCitations(item, sources);
+    return;
+  }
+  if (!isRecord(value)) return;
+  if (
+    (value.type === 'url_citation' || value.type === 'citation')
+    && typeof value.url === 'string'
+    && value.url.trim()
+  ) {
+    sources.push({
+      snippet: null,
+      title: typeof value.title === 'string' ? value.title.trim() : null,
+      url: value.url.trim(),
+    });
+  }
+  for (const child of Object.values(value)) {
+    if (Array.isArray(child) || isRecord(child)) collectUrlCitations(child, sources);
+  }
+}
+
+function dedupeWebResearchSources(sources: WebResearchSource[]): WebResearchSource[] {
+  const seen = new Set<string>();
+  const result: WebResearchSource[] = [];
+  for (const source of sources) {
+    const key = source.url.trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(source);
+  }
+  return result;
+}
+
+function buildWebResearchSourceInputs(params: {
+  batchId: string;
+  capturedAt: string;
+  query: string;
+  research: WebResearchResult;
+  taskId: string;
+}): CreateSourceContextInput[] {
+  const summaryInput: CreateSourceContextInput = {
+    batchId: params.batchId,
+    capturedAt: params.capturedAt,
+    content: [
+      '# Web Research Summary',
+      '',
+      `Query:\n${params.query}`,
+      '',
+      params.research.summary ? `Findings:\n${params.research.summary}` : null,
+      '',
+      params.research.sources.length
+        ? [
+            'Sources:',
+            ...params.research.sources.map((source, index) => `${index + 1}. ${source.title || source.url} - ${source.url}`),
+          ].join('\n')
+        : null,
+    ].filter((line): line is string => line !== null).join('\n'),
+    credibility: 'unknown',
+    isKey: true,
+    kind: 'note',
+    note: 'AI web research digest created before an Agent CLI run. Review sources before treating conclusions as durable facts.',
+    sourceRole: 'digest',
+    taskId: params.taskId,
+    title: '联网调研摘要',
+    uri: null,
+  };
+  const sourceInputs = params.research.sources.map((source): CreateSourceContextInput => ({
+    batchId: params.batchId,
+    capturedAt: params.capturedAt,
+    content: source.snippet,
+    credibility: 'unknown',
+    isKey: true,
+    kind: 'link',
+    note: 'Source discovered by OpenAI web_search before an Agent CLI run.',
+    sourceRole: 'raw',
+    taskId: params.taskId,
+    title: source.title || source.url,
+    uri: source.url,
+  }));
+  return [summaryInput, ...sourceInputs];
+}
+
 function buildAgentCliTaskRecordSuggestion(params: {
   output: string;
   runId: string;
@@ -869,6 +1174,7 @@ function truncateAgentCliMemoryLine(value: string): string {
 }
 
 function buildCodexCliPrompt(params: {
+  capabilityMode: AgentCliCapabilityMode;
   contextSummary: string;
   prompt: string;
   sandboxMode: AgentCliRunSandboxMode;
@@ -880,6 +1186,7 @@ function buildCodexCliPrompt(params: {
     'You are running as Codex CLI from inside Taskplane.',
     `Sandbox mode: ${params.sandboxMode}.`,
     'Do not modify files.',
+    buildAgentCliCapabilityPromptInstruction(params.capabilityMode, 'Codex CLI'),
     decompositionInstructions ?? childTaskInstructions ?? 'Answer with a concrete plan, risks, and verification steps. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
     '',
     `Task: ${params.task.title}`,
@@ -894,6 +1201,7 @@ function buildCodexCliPrompt(params: {
 }
 
 function buildClaudeCodePrompt(params: {
+  capabilityMode: AgentCliCapabilityMode;
   contextSummary: string;
   prompt: string;
   sandboxMode: AgentCliRunSandboxMode;
@@ -905,6 +1213,7 @@ function buildClaudeCodePrompt(params: {
     'You are running as Claude Code from inside Taskplane.',
     `Taskplane sandbox intent: ${params.sandboxMode}.`,
     'Claude Code is launched with --permission-mode plan. Research and propose; do not edit files, write files, or ask to continue into an editing mode.',
+    buildAgentCliCapabilityPromptInstruction(params.capabilityMode, 'Claude Code'),
     decompositionInstructions ?? childTaskInstructions ?? 'Return a concise answer with findings, recommended next steps, risks, and verification checks. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
     '',
     `Task: ${params.task.title}`,
@@ -916,6 +1225,31 @@ function buildClaudeCodePrompt(params: {
     'User request:',
     params.prompt,
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function buildAgentCliCapabilityPromptInstruction(
+  mode: AgentCliCapabilityMode,
+  runtimeLabel: string,
+): string {
+  if (mode === 'restricted') {
+    return [
+      'Capability mode: restricted.',
+      'Do not use live web, search, browse, external connector, or MCP tools unless Taskplane explicitly injected their results into the prompt.',
+      'If external research is necessary, say what should be researched next instead of inventing sources.',
+    ].join(' ');
+  }
+  if (mode === 'audit_enhanced') {
+    return [
+      'Capability mode: audit-enhanced.',
+      'Use Taskplane-confirmed source previews when present, and also use the official CLI native read-only search, browse, source, or documentation tools when they are available in this runtime.',
+      'For research-dependent tasks, gather high-signal sources and cite them; do not ask the user to choose secondary product structure when research can resolve the next step.',
+    ].join(' ');
+  }
+  return [
+    'Capability mode: native.',
+    `Use ${runtimeLabel}'s native read-only capabilities as you normally would in the terminal, including search, browse, source, and documentation tools when available.`,
+    'For research-dependent tasks, gather high-signal sources and cite them; if the runtime truly has no live research capability, state that as a blocker or next action instead of over-asking the user.',
+  ].join(' ');
 }
 
 function buildTaskDecompositionPromptInstructions(prompt: string): string | null {
@@ -940,14 +1274,14 @@ function buildChildTaskAdvancePromptInstructions(prompt: string): string | null 
     'This is a Taskplane child-task advancement request, not a decomposition request and not a parent-task review.',
     'Focus on the current child task title, summary, and user request.',
     'Do not create a TASKPLANE_DECOMPOSITION JSON block.',
-    'Drive the discussion one step at a time.',
-    'Start by helping the user describe the requirement, not by producing a solution checklist.',
-    'If the user only says to start or advance the child task, ask them to describe their idea or expectation in one natural question.',
-    'If the user already gave a concrete idea, briefly reflect it and ask exactly one natural follow-up question.',
-    'Return at most two short Chinese sentences.',
-    'Do not list every missing field at once. Do not produce a checklist unless the user asks for one.',
+    'Do not keep the task in clarification mode when the user has already supplied a concrete direction.',
+    'If the user only says to start or advance the child task, use the task title and summary to propose a reasonable first move; ask for their initial idea only when the task state is too empty to advance usefully.',
+    'If the user gives a concrete idea, establish a reasonable default and move the task forward with a first-pass boundary, useful research/action step, or draft artifact.',
+    'For website, product, document, or tutorial tasks, theme/product + target audience + content shape/use case is enough to advance. Do not ask secondary choices such as private vs public use, directory vs learning path, or which display style before drafting.',
+    'When external knowledge would materially improve the answer, use available research/search/browse tools if the runtime exposes them. If no live web tool is available, state the research need as the next action instead of inventing sources or asking the user to choose structure.',
+    'Ask only when the missing information blocks the next action, changes a key risk, or materially changes the deliverable boundary. Ordinary product tradeoffs should be written as adjustable defaults.',
+    'For a tutorial/website scope task with enough intent, return a concise first-pass goal, scope, non-goals, and next research or build action.',
     'Do not use English section headings such as Key Findings, Recommended Next Step, Risks, or Verification Checks.',
-    'After the user answers, Taskplane will continue the next question or action in a later run.',
     'Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
   ].join('\n');
 }

@@ -470,7 +470,7 @@ describe('TaskService', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
-  it('blocks child task creation under an existing child task', async () => {
+  it('blocks child task creation under a non-project child task', async () => {
     const repository = {
       list: vi.fn().mockResolvedValue([
         {
@@ -503,10 +503,61 @@ describe('TaskService', () => {
 
     await expect(service.create({
       title: '三级任务',
-      summary: '不应创建第三层任务。',
+      summary: '普通子任务不能继续拆分。',
       parentTaskId: 'child_1',
-    })).rejects.toThrow('不能继续创建第三层子任务');
+    })).rejects.toThrow('必须是项目型任务');
     expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it('allows child task creation under a project child task', async () => {
+    const created = {
+      ...buildRecord('captured'),
+      id: 'grandchild_1',
+      title: '前端实现',
+      parentTaskId: 'child_1',
+    };
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'project_1',
+          title: '网站项目',
+          taskType: 'project',
+          parentTaskId: null,
+          childTaskIds: ['child_1'],
+        },
+        {
+          ...buildRecord('running'),
+          id: 'child_1',
+          title: '代码实现',
+          taskType: 'project',
+          parentTaskId: 'project_1',
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn().mockResolvedValue(created),
+      getDetail: vi.fn(),
+      update: vi.fn().mockResolvedValue(buildRecord('running')),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({
+      title: '前端实现',
+      summary: '实现网站前端页面。',
+      parentTaskId: 'child_1',
+    })).resolves.toMatchObject({
+      id: 'grandchild_1',
+      parentTaskId: 'child_1',
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'child_1',
+      childTaskIds: ['grandchild_1'],
+    });
   });
 
   it('returns hierarchy consistency diagnostics from current task records', async () => {

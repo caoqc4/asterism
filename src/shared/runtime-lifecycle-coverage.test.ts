@@ -123,7 +123,7 @@ describe('runtime lifecycle coverage matrix', () => {
   it('tracks service-boundary hierarchy ownership guards', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
-    expect(text).toContain('parent is an open top-level project task');
+    expect(text).toContain('parent is an open project task');
   });
 
   it('tracks decomposition confirmation separately from child execution start', () => {

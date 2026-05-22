@@ -308,6 +308,25 @@ export class AiConfigService {
       featureFlags: config.featureFlags,
     };
   }
+
+  async resolveOpenAiWebResearchConfig(): Promise<RuntimeAiConfig> {
+    const config = this.appConfigService.read();
+    if (config.aiProvider !== 'openai') {
+      throw new Error('OpenAI web research requires the OpenAI provider to be selected.');
+    }
+    const apiKey = await this.resolveKeyForProvider('openai');
+
+    if (!apiKey) throw new Error('OpenAI API Key is not configured. Please add a key in Settings.');
+
+    return {
+      provider: 'openai',
+      model: config.aiModel,
+      baseUrl: null,
+      workspaceRoot: config.workspaceRoot,
+      apiKey,
+      featureFlags: config.featureFlags,
+    };
+  }
 }
 
 async function withCapabilityRegistry(

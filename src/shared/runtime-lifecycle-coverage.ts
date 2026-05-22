@@ -453,7 +453,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Task data model now has taskType, taskFacets, parentTaskId, and childTaskIds.',
       'Task hierarchy helpers keep parent/child views and priority recommendations from duplicating children into top-level lists.',
       'TaskService.create and TaskService.update keep child parentTaskId and parent childTaskIds in sync at the service boundary, including parent-side child list updates.',
-      'TaskService blocks child creation, child moves, and parent child-list writes unless the parent is an open top-level project task.',
+      'TaskService blocks child creation, child moves, and parent child-list writes unless the parent is an open project task, while preventing hierarchy cycles.',
       'TaskHierarchyConsistencyEvaluation can diagnose historical hierarchy mismatches before a repair flow mutates old records, and TaskService exposes the diagnostics through IPC.',
       'TaskHierarchyRepairPlan can turn diagnostics into non-mutating safe repair actions or manual-review items before any confirmed maintenance writer exists.',
       'TaskService.applySafeHierarchyRepairs applies only revalidated safe TaskHierarchyRepairPlan actions through the service/IPC boundary and leaves manual-review items untouched.',

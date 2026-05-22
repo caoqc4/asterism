@@ -290,7 +290,7 @@ export function buildRunGoalContract(params: {
     completionConditions: runCompletionConditions.length
       ? runCompletionConditions
       : childTaskConversation
-        ? ['本次 Agent run 应围绕当前子任务推进一轮简短对话，只问一个问题。']
+        ? ['本次 Agent run 应围绕当前子任务推进一轮简短对话，聚焦一个决策点；优先问一个问题，必要时可问 2-3 个紧密相关的问题。']
         : ['本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'],
     validationEvidence: [
       'Agent terminal step exits successfully or records a failure reason.',
@@ -309,7 +309,7 @@ export function buildRunGoalContract(params: {
     contextGateSummary: params.contextGateSummary,
     expectedOutput: [
       ...(childTaskConversation
-        ? ['简短判断', '一个问题']
+        ? ['简短判断', '聚焦澄清问题']
         : ['Key findings', 'Recommended next step', 'Risks or open questions', 'Verification checks']),
     ],
   };

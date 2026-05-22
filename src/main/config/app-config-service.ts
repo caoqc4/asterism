@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import type { AiProvider, AiRuntimeMode, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
 import {
+  AGENT_CLI_CAPABILITY_MODES,
   AI_COMMUNICATION_STYLES,
   AI_CONFIRMATION_THRESHOLDS,
   CONTEXT_COMPRESSION_THRESHOLD,
@@ -84,6 +85,10 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
         typeof nextFeatureFlags.enableProviderNativeToolCalls === 'boolean'
           ? nextFeatureFlags.enableProviderNativeToolCalls
           : DEFAULT_FEATURE_FLAGS.enableProviderNativeToolCalls,
+      agentCliCapabilityMode:
+        AGENT_CLI_CAPABILITY_MODES.includes(nextFeatureFlags.agentCliCapabilityMode as never)
+          ? nextFeatureFlags.agentCliCapabilityMode
+          : DEFAULT_FEATURE_FLAGS.agentCliCapabilityMode,
       enableSandboxCodingAgent:
         typeof nextFeatureFlags.enableSandboxCodingAgent === 'boolean'
           ? nextFeatureFlags.enableSandboxCodingAgent
@@ -139,6 +144,7 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const enableSandboxPatchPromotionApply = readEnvBoolean('TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY');
   const enableSelfCheck = readEnvBoolean('TASKPLANE_ENABLE_SELF_CHECK');
   const enableSelfLearn = readEnvBoolean('TASKPLANE_ENABLE_SELF_LEARN');
+  const agentCliCapabilityMode = readEnvValue('TASKPLANE_AGENT_CLI_CAPABILITY_MODE');
   const contextCompressionThresholdRaw = readEnvValue('TASKPLANE_CONTEXT_COMPRESSION_THRESHOLD');
   const selfCheckRetryLimitRaw = readEnvValue('TASKPLANE_SELF_CHECK_RETRY_LIMIT');
   const contextCompressionThreshold = contextCompressionThresholdRaw
@@ -168,6 +174,11 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
         enableProviderNativeToolCalls
         ?? config.featureFlags.enableProviderNativeToolCalls
         ?? DEFAULT_FEATURE_FLAGS.enableProviderNativeToolCalls,
+      agentCliCapabilityMode:
+        AGENT_CLI_CAPABILITY_MODES.includes(agentCliCapabilityMode as never)
+          ? (agentCliCapabilityMode as FeatureFlags['agentCliCapabilityMode'])
+          : config.featureFlags.agentCliCapabilityMode
+            ?? DEFAULT_FEATURE_FLAGS.agentCliCapabilityMode,
       enableSandboxCodingAgent:
         enableSandboxCodingAgent
         ?? config.featureFlags.enableSandboxCodingAgent

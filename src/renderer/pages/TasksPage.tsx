@@ -867,7 +867,54 @@ function buildVisibleTaskPlanningDraft(taskTitle: string, type: TaskType): strin
   return `请帮我规划「${taskTitle}」的目标、验收标准和下一步行动。`;
 }
 
-function buildChildTaskAdvanceDraft(child: Task, _parent: Task): string {
+function extractTaskRecordLine(content: string, heading: string): string | null {
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const headingIndex = lines.findIndex((line) => line.trim().toLowerCase() === `## ${heading}`.toLowerCase());
+  if (headingIndex < 0) return null;
+  const collected: string[] = [];
+  for (const line of lines.slice(headingIndex + 1)) {
+    const trimmed = line.trim();
+    if (/^##\s+/.test(trimmed)) break;
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    collected.push(trimmed.replace(/^[-*]\s+/, ''));
+    if (collected.join(' ').length >= 120) break;
+  }
+  return collected.join(' ').trim() || null;
+}
+
+function latestTaskRecordSummary(files: LocalTaskFileRecord[]): {
+  confirmed: string | null;
+  focus: string | null;
+  open: string | null;
+} | null {
+  const records = files
+    .filter((file) => isTaskRecordPath(file.path))
+    .filter((file) => file.content.trim())
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const latest = records[0];
+  if (!latest) return null;
+  const summary = extractTaskRecordLine(latest.content, 'Summary');
+  const confirmed = extractTaskRecordLine(latest.content, 'Confirmed');
+  const open = extractTaskRecordLine(latest.content, 'Open');
+  const focus = summary?.match(/最近关注[：:]\s*(.+)$/m)?.[1]?.trim()
+    ?? summary
+    ?? confirmed
+    ?? open;
+  return {
+    confirmed,
+    focus,
+    open,
+  };
+}
+
+function buildChildTaskAdvanceDraft(child: Task, _parent: Task, files: LocalTaskFileRecord[] = []): string {
+  const record = latestTaskRecordSummary(files);
+  if (record?.focus || record?.confirmed || record?.open) {
+    return [
+      `基于已有任务记录继续推进「${child.title}」。`,
+      '先收束首版目标、范围、非目标和下一步；只有关键缺口会阻止推进时再提问。',
+    ].filter(Boolean).join('\n');
+  }
   return `先帮我把「${child.title}」推进到可执行状态：确认目标、范围和下一步。`;
 }
 
@@ -2905,7 +2952,7 @@ function resetCaptureDraft() {
                   selectTask(nextChildTask.id);
                   onOpenPanel(
                     nextChildTask.id,
-                    buildChildTaskAdvanceDraft(nextChildTask, selectedTask),
+                    buildChildTaskAdvanceDraft(nextChildTask, selectedTask, localTaskFiles[nextChildTask.id] ?? []),
                     nextChildTask.title,
                     false,
                     true,

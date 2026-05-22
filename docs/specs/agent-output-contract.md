@@ -79,7 +79,7 @@ movement.
 
 | Movement | Default surface | Output shape |
 | --- | --- | --- |
-| Clarify | Chat message | One or two short sentences; ask one natural question; do not list every possible requirement. |
+| Clarify | Chat message | One or two short sentences; ask only the key question or small set of questions that unblock the next useful move; when reasonable defaults exist, state them and proceed. |
 | Shape | Chat message or editable draft card | Briefly state the current understanding and propose goal, scope, acceptance criteria, or next step only as far as needed. |
 | Decompose | Decomposition draft | Use a structured draft card with child title, goal or summary, acceptance criterion, dependency, and confirmation action. |
 | Select next task | Chat message or task navigation affordance | Name the selected child or successor and the reason in one concise sentence. |
@@ -99,8 +99,8 @@ Use this when the Agent is helping the user clarify a task or subtask before
 execution.
 
 - Output one assistant message in one chat bubble.
-- Use one or two short sentences.
-- Ask at most one natural question.
+- Use one or two short sentences by default; use a short grouped question only when multiple answers are truly needed together.
+- Ask only what blocks the next useful move. Do not ask secondary preference questions when a reasonable default, research step, or first-pass draft would move the task forward.
 - Focus on the selected task or subtask.
 - Do not restate the full hidden prompt, parent task tree, runtime, or internal
   contract.
@@ -109,7 +109,7 @@ execution.
 Good shape:
 
 ```text
-这个子任务先确认网站用途就够了。你希望它更像作品展示、产品落地页，还是一个可登录使用的工具站？
+这个子任务已经能先按“Codex 基础教程站，面向 Agent 初学者”推进。我会先收束首版目标、页面范围和非目标；如果要偏离这个基调，再补充你的偏好。
 ```
 
 ### Task Planning

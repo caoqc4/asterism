@@ -213,7 +213,7 @@ describe('AgentCliRunService', () => {
       prompt: [
         '请推进子任务「明确网站目标与范围」。',
         '父任务：「开发一个网站」。',
-        '请先判断当前最需要确认的一件事，只问我一个问题，等我回答后再继续。',
+        '请先判断当前最需要确认的决策点，优先问一个问题；如果有 2-3 个紧密相关的问题能减少来回，可以一起问。',
       ].join('\n'),
       taskId: 'task_1',
     });
@@ -231,7 +231,175 @@ describe('AgentCliRunService', () => {
       input: expect.stringContaining('Do not create a TASKPLANE_DECOMPOSITION JSON block.'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.stringContaining('ask them to describe their idea'),
+      input: expect.stringContaining('Do not keep the task in clarification mode'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('theme/product + target audience + content shape/use case is enough to advance'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.not.stringContaining('ask exactly one natural follow-up question'),
+    }));
+  });
+
+  it('captures OpenAI web research sources before a research-dependent Codex CLI run', async () => {
+    const task = buildTask({
+      nextStep: '明确网站目标和范围。',
+      summary: '做一个 Codex 基础教程网站，面向 Agent 初学者，偏基础教程和案例展示。',
+      title: '明确网站目标与范围',
+    });
+    const createdSources: unknown[] = [];
+    const taskService = buildTaskService(task);
+    vi.mocked(taskService.createSourceContext).mockImplementation(async (input) => {
+      createdSources.push(input);
+      return input as never;
+    });
+    vi.mocked(taskService.getDetail).mockImplementation(async () => ({
+      ...task,
+      sourceContexts: createdSources.map((source, index) => ({
+        archivedAt: null,
+        capturedAt: '2026-05-19T00:00:00.000Z',
+        containsSensitiveData: false,
+        content: (source as { content?: string | null }).content ?? null,
+        createdAt: '2026-05-19T00:00:00.000Z',
+        credibility: (source as { credibility?: 'unknown' | null }).credibility ?? 'unknown',
+        id: `source_context_${index + 1}`,
+        isDuplicate: false,
+        isKey: true,
+        kind: (source as { kind?: 'link' | 'note' }).kind ?? 'link',
+        note: (source as { note?: string | null }).note ?? null,
+        sourceRole: (source as { sourceRole?: 'raw' | 'digest' }).sourceRole ?? 'raw',
+        status: 'active',
+        taskId: task.id,
+        title: (source as { title?: string }).title ?? 'Source',
+        updatedAt: '2026-05-19T00:00:00.000Z',
+        uri: (source as { uri?: string | null }).uri ?? null,
+      })),
+    }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        output_text: 'Codex 教程站应优先参考官方 Codex 文档和 CLI 使用说明。',
+        sources: [{
+          title: 'Codex docs',
+          url: 'https://developers.openai.com/codex',
+          snippet: 'Official Codex documentation.',
+        }],
+      }),
+      ok: true,
+      status: 200,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: '已基于来源形成首版范围。',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      taskService,
+      {
+        getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          featureFlags: {
+            enableScheduler: false,
+            enableProviderNativeToolCalls: true,
+            agentCliCapabilityMode: 'audit_enhanced',
+          },
+        })),
+        resolveOpenAiWebResearchConfig: vi.fn().mockResolvedValue({
+          apiKey: 'test-openai-key',
+          model: 'gpt-5-mini',
+          provider: 'openai',
+        }),
+      },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '做一个 Codex 的基础教程网站，面向 Agent 初学者，偏基础教程和案例展示。',
+      taskId: task.id,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith('https://api.openai.com/v1/responses', expect.objectContaining({
+      method: 'POST',
+    }));
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({
+      model: 'gpt-5-mini',
+      tools: [{ type: 'web_search' }],
+    });
+    expect(taskService.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'note',
+      sourceRole: 'digest',
+      title: '联网调研摘要',
+    }));
+    expect(taskService.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'link',
+      sourceRole: 'raw',
+      title: 'Codex docs',
+      uri: 'https://developers.openai.com/codex',
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('Confirmed source previews:'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('https://developers.openai.com/codex'),
+    }));
+  });
+
+  it('keeps research-dependent Agent CLI runs in native mode unless audit enhancement is selected', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: '会用 CLI 原生能力继续调研。',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(buildTask({
+        summary: '做一个 Codex 基础教程网站，面向 Agent 初学者。',
+        title: '明确网站目标与范围',
+      })),
+      {
+        getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          featureFlags: {
+            enableScheduler: false,
+            enableProviderNativeToolCalls: true,
+            agentCliCapabilityMode: 'native',
+          },
+        })),
+        resolveOpenAiWebResearchConfig: vi.fn().mockResolvedValue({
+          apiKey: 'test-openai-key',
+          model: 'gpt-5-mini',
+          provider: 'openai',
+        }),
+      },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '做一个 Codex 基础教程网站，面向 Agent 初学者。',
+      taskId: 'task_1',
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('Capability mode: native.'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('native read-only capabilities'),
     }));
   });
 
@@ -450,13 +618,19 @@ describe('AgentCliRunService', () => {
       prompt: [
         '请推进子任务「明确网站目标与范围」。',
         '父任务：「开发一个网站」。',
-        '请先判断当前最需要确认的一件事，只问我一个问题，等我回答后再继续。',
+        '做一个 Codex 的基础教程网站，面向 Agent 初学者，偏基础教程和案例展示。',
       ].join('\n'),
       taskId: 'task_1',
     });
 
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.stringContaining('ask them to describe their idea'),
+      input: expect.stringContaining('first-pass goal, scope, non-goals, and next research or build action'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('Do not ask secondary choices such as private vs public use, directory vs learning path'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.not.stringContaining('Return at most two short Chinese sentences'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.not.stringContaining('TASKPLANE_DECOMPOSITION JSON block with this exact shape'),
@@ -898,7 +1072,7 @@ describe('AgentCliRunService', () => {
     expect(prompt).toContain('Gmail launch digest');
     expect(prompt).toContain('Confirmed Gmail source says the launch note needs legal review.');
     expect(prompt).not.toContain('token=secret');
-    expect(prompt).toContain('Do not claim live connector/tool access');
+    expect(prompt).toContain('Native mode: do not downgrade the selected official CLI.');
   });
 
   it('records the accepted run immediately before the executor completes', async () => {
@@ -1439,6 +1613,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
     featureFlags: {
       enableScheduler: false,
       enableProviderNativeToolCalls: true,
+      agentCliCapabilityMode: 'native',
     },
     agentCliRuntimeStatus: {
       catalogueCount: 2,
@@ -1465,8 +1640,8 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
   };
 }
 
-function buildTask(): TaskDetail {
-  return {
+function buildTask(partial: Partial<TaskDetail> = {}): TaskDetail {
+  const task = {
     activeBlocker: null,
     activeWaitingItem: null,
     artifacts: [],
@@ -1536,13 +1711,18 @@ function buildTask(): TaskDetail {
     type: 'task',
     updatedAt: '2026-05-19T00:00:00.000Z',
   } as TaskDetail;
+  return {
+    ...task,
+    ...partial,
+  };
 }
 
-function buildTaskService() {
+function buildTaskService(task: TaskDetail = buildTask()) {
   return {
     annotateRunCompleted: vi.fn(),
     annotateRunFailed: vi.fn(),
-    getDetail: vi.fn().mockResolvedValue(buildTask()),
+    createSourceContext: vi.fn(),
+    getDetail: vi.fn().mockResolvedValue(task),
   };
 }
 

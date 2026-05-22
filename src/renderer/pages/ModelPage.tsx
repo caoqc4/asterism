@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
-import type { AiConfigStatus, AiProvider, AiRuntimeMode } from '@shared/types/settings';
+import type { AgentCliCapabilityMode, AiConfigStatus, AiProvider, AiRuntimeMode, FeatureFlags } from '@shared/types/settings';
 
 interface ModelDef {
   id: string;
@@ -19,6 +19,45 @@ interface ProviderSection {
 }
 
 type KeyField = 'falOpenRouter' | 'anthropic' | 'openai' | 'google' | 'deepseek' | 'groq' | 'customKey';
+
+const AGENT_CLI_CAPABILITY_MODE_OPTIONS: Array<{
+  description: string;
+  label: string;
+  mode: AgentCliCapabilityMode;
+}> = [
+  {
+    description: '尊重官方 CLI 的原生搜索、浏览、来源和文档能力；Taskplane 做上下文和记录。',
+    label: '原生优先',
+    mode: 'native',
+  },
+  {
+    description: '先由 Taskplane 做 OpenAI 联网调研并落来源，再交给官方 CLI 继续判断。',
+    label: '审计增强',
+    mode: 'audit_enhanced',
+  },
+  {
+    description: '只使用 Taskplane 已注入上下文，不允许实时联网或外部工具。',
+    label: '受限模式',
+    mode: 'restricted',
+  },
+];
+
+function normalizeAgentCliCapabilityMode(mode: FeatureFlags['agentCliCapabilityMode']): AgentCliCapabilityMode {
+  if (mode === 'audit_enhanced' || mode === 'restricted') return mode;
+  return 'native';
+}
+
+function buildNextFeatureFlags(
+  featureFlags: FeatureFlags | undefined,
+  agentCliCapabilityMode: AgentCliCapabilityMode,
+): FeatureFlags {
+  return {
+    enableScheduler: false,
+    enableProviderNativeToolCalls: true,
+    ...(featureFlags ?? {}),
+    agentCliCapabilityMode,
+  };
+}
 
 const PROVIDERS: ProviderSection[] = [
   {
@@ -109,6 +148,7 @@ export function ModelPage() {
   const [selectedProvider, setSelectedProvider] = useState<AiProvider>('fal-openrouter');
   const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-flash');
   const [selectedRuntimeMode, setSelectedRuntimeMode] = useState<AiRuntimeMode>('codex');
+  const [agentCliCapabilityMode, setAgentCliCapabilityMode] = useState<AgentCliCapabilityMode>('native');
   const [customModelId, setCustomModelId] = useState('');
   const [workspaceRoot, setWorkspaceRoot] = useState('');
   const [keys, setKeys] = useState<Partial<Record<KeyField, string>>>({});
@@ -132,6 +172,7 @@ export function ModelPage() {
       if (s.model) setSelectedModel(s.model);
       if (s.provider) setSelectedProvider(s.provider);
       setSelectedRuntimeMode(s.runtimeMode ?? 'codex');
+      setAgentCliCapabilityMode(normalizeAgentCliCapabilityMode(s.featureFlags.agentCliCapabilityMode));
       setWorkspaceRoot(s.workspaceRoot ?? s.suggestedWorkspaceRoot ?? '');
     } catch {
       // Keep the last known status visible when a manual probe fails.
@@ -196,7 +237,7 @@ export function ModelPage() {
           customBaseUrl: customBaseUrl    || undefined,
         },
         workspaceRoot,
-        featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
+        featureFlags: buildNextFeatureFlags(status?.featureFlags, agentCliCapabilityMode),
       });
       setStatus(next);
       setSelectedRuntimeMode(next.runtimeMode ?? selectedRuntimeMode);
@@ -244,7 +285,7 @@ export function ModelPage() {
         runtimeMode,
         providerKeys: {},
         workspaceRoot,
-        featureFlags: status?.featureFlags ?? { enableScheduler: false, enableProviderNativeToolCalls: true },
+        featureFlags: buildNextFeatureFlags(status?.featureFlags, agentCliCapabilityMode),
       });
       setStatus(next);
       setSelectedRuntimeMode(next.runtimeMode ?? runtimeMode);
@@ -259,6 +300,33 @@ export function ModelPage() {
 
   const configuredProviders = new Set(status?.configuredProviders ?? []);
   const agentCliStatus = status?.agentCliRuntimeStatus ?? null;
+  async function saveAgentCliCapabilityMode(mode: AgentCliCapabilityMode) {
+    if (!window.api || saving) return;
+    setAgentCliCapabilityMode(mode);
+    setSaving(true);
+    setSaveResult(null);
+    try {
+      const next = await window.api.setAiConfig({
+        provider: selectedProvider,
+        model: selectedProvider === 'openai-compatible'
+          ? customModelId || selectedModel
+          : selectedModel,
+        runtimeMode: selectedRuntimeMode,
+        providerKeys: {},
+        workspaceRoot,
+        featureFlags: buildNextFeatureFlags(status?.featureFlags, mode),
+      });
+      setStatus(next);
+      setAgentCliCapabilityMode(normalizeAgentCliCapabilityMode(next.featureFlags.agentCliCapabilityMode));
+      setSaveResult('ok');
+    } catch {
+      setAgentCliCapabilityMode(normalizeAgentCliCapabilityMode(status?.featureFlags.agentCliCapabilityMode));
+      setSaveResult('error');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveResult(null), 2500);
+    }
+  }
   const apiConfigPanel = apiModelOpen ? (
     <div className="agent-cli-api-config-panel">
       <div className="agent-cli-api-config-title">模型服务配置</div>
@@ -363,11 +431,13 @@ export function ModelPage() {
         workspaceRoot={workspaceRoot}
         onWorkspaceRootChange={setWorkspaceRoot}
         status={agentCliStatus}
+        capabilityMode={agentCliCapabilityMode}
         runtimeMode={selectedRuntimeMode}
         apiConfigured={Boolean(status?.configured)}
         apiProviderSummary={status?.configured ? `${status.provider} / ${status.model}` : null}
         onToggleApiConfig={() => setApiModelOpen((value) => !value)}
         onSelectRuntimeMode={(runtimeMode) => void saveRuntimeMode(runtimeMode)}
+        onSelectCapabilityMode={(mode) => void saveAgentCliCapabilityMode(mode)}
         suggestedWorkspaceRoot={status?.suggestedWorkspaceRoot ?? null}
         onOpenLogin={(runtimeId) => void openAgentCliLogin(runtimeId)}
         onOpenInstall={(runtimeId, options) => void openAgentCliInstall(runtimeId, options)}
@@ -399,12 +469,14 @@ function AgentCliRuntimeSection({
   apiConfigOpen,
   apiConfigPanel,
   apiProviderSummary,
+  capabilityMode,
   workspaceRoot,
   onWorkspaceRootChange,
   onSave,
   onOpenLogin,
   onOpenInstall,
   onRefresh,
+  onSelectCapabilityMode,
   onSelectRuntimeMode,
   onToggleApiConfig,
   openingInstall,
@@ -420,12 +492,14 @@ function AgentCliRuntimeSection({
   apiConfigOpen: boolean;
   apiConfigPanel: ReactNode;
   apiProviderSummary: string | null;
+  capabilityMode: AgentCliCapabilityMode;
   workspaceRoot: string;
   onWorkspaceRootChange: (value: string) => void;
   onSave: () => void;
   onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
   onOpenInstall: (runtimeId: 'codex' | 'claude', options?: { repair?: boolean }) => void;
   onRefresh: () => void;
+  onSelectCapabilityMode: (mode: AgentCliCapabilityMode) => void;
   onSelectRuntimeMode: (runtimeMode: AiRuntimeMode) => void;
   onToggleApiConfig: () => void;
   apiConfigured: boolean;
@@ -550,6 +624,26 @@ function AgentCliRuntimeSection({
           </div>
         </div>
         {apiConfigPanel}
+      </div>
+
+      <div className="agent-cli-capability-mode">
+        <div>
+          <div className="model-section-kicker">Agent CLI 能力模式</div>
+          <p className="model-section-copy">默认尊重 Codex / Claude 官方 CLI 的原生能力；Taskplane 只负责上下文、记录和验收。</p>
+        </div>
+        <div className="settings-segmented" role="group" aria-label="Agent CLI capability mode">
+          {AGENT_CLI_CAPABILITY_MODE_OPTIONS.map((option) => (
+            <button
+              key={option.mode}
+              className={`settings-segment${capabilityMode === option.mode ? ' active' : ''}`}
+              onClick={() => onSelectCapabilityMode(option.mode)}
+              title={option.description}
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <details className="agent-cli-debug agent-cli-advanced">

@@ -1,4 +1,4 @@
-import type { FeatureFlags } from './types/settings.js';
+import type { AgentCliCapabilityMode, FeatureFlags } from './types/settings.js';
 
 export const CONTEXT_COMPRESSION_THRESHOLD = {
   default: 45,
@@ -16,10 +16,12 @@ export const SELF_CHECK_RETRY_LIMIT = {
 
 export const AI_COMMUNICATION_STYLES = ['concise', 'balanced', 'detailed'] as const;
 export const AI_CONFIRMATION_THRESHOLDS = ['low', 'normal', 'high'] as const;
+export const AGENT_CLI_CAPABILITY_MODES: AgentCliCapabilityMode[] = ['native', 'audit_enhanced', 'restricted'];
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableScheduler: false,
   enableProviderNativeToolCalls: false,
+  agentCliCapabilityMode: 'native',
   enableSandboxCodingAgent: false,
   enableSandboxPatchPromotionApply: false,
   enableSelfCheck: true,

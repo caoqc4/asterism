@@ -21,6 +21,8 @@ describe('GoalPilot task advancement framework', () => {
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Decomposition Guidance');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Subtask Advancement Guidance');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Use the framework silently as a reasoning aid.');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('lightweight routing reference');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('official CLI-native tools are separate capability layers');
   });
 
   it('is injected into the shared core Agent context with operating principles', () => {

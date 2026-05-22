@@ -72,6 +72,7 @@ import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
 type ActiveAgentCliRunState = {
+  allowDecompositionDraft?: boolean;
   runId: string;
   runtimeId: AgentCliRuntimeId;
   runtimeLabel: string;
@@ -85,8 +86,8 @@ const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
 };
 
 const AGENT_CLI_PANEL_RUNTIME_HINTS: Record<AgentCliRuntimeId, string> = {
-  claude: 'Claude Code · Plan',
-  codex: 'Codex CLI · 只读',
+  claude: 'Claude Code · 原生能力',
+  codex: 'Codex CLI · 原生能力',
 };
 
 const AGENT_CLI_PANEL_RUNTIMES: AgentCliRuntimeId[] = ['codex', 'claude'];
@@ -222,7 +223,7 @@ function makeTaskSessionRefreshedMessage(taskTitle: string): Message {
   return {
     id: nextId(),
     role: 'assistant',
-    text: `已自动整理并刷新「${taskTitle}」的任务会话。关键恢复信息已写入任务记忆，接下来会从任务记忆重新组装上下文。`,
+    text: `已整理并刷新「${taskTitle}」的任务会话。关键恢复信息已写入任务记录，当前聊天已从任务记忆重新开始。`,
     ts: now(),
   };
 }
@@ -263,8 +264,7 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
   routine:   '常设任务',
 };
 
-const MIN_SESSION_REFRESH_MESSAGE_LIMIT = 3;
-const REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP = 10;
+const PANEL_CONTEXT_TOKEN_BUDGET = 12_000;
 const GENERIC_ASSISTANT_REPLY_PATTERNS = [
   /基于.*任务上下文/,
   /结合.*任务.*上下文/,
@@ -326,13 +326,23 @@ function looksLikeUserCorrection(text: string): boolean {
   return USER_CORRECTION_PATTERNS.some((pattern) => pattern.test(text));
 }
 
-function deriveSessionRefreshMessageLimit(
-  compressionThreshold: number = CONTEXT_COMPRESSION_THRESHOLD.default,
-): number {
-  return Math.max(
-    MIN_SESSION_REFRESH_MESSAGE_LIMIT,
-    Math.round(compressionThreshold / REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP),
-  );
+function estimateContextTokens(text: string): number {
+  const compact = text.trim();
+  if (!compact) return 0;
+  const cjkChars = compact.match(/[\u3400-\u9fff]/g)?.length ?? 0;
+  const nonCjkChars = compact.replace(/[\u3400-\u9fff]/g, '').length;
+  return Math.ceil(cjkChars + nonCjkChars / 4);
+}
+
+function estimatePanelTranscriptUsage(
+  messages: Message[],
+  tokenBudget: number = PANEL_CONTEXT_TOKEN_BUDGET,
+): { percent: number; tokens: number } {
+  const tokens = messages.reduce((total, message) => (
+    total + 6 + estimateContextTokens(`${message.role}: ${message.text}`)
+  ), 0);
+  const percent = tokenBudget > 0 ? Math.round((tokens / tokenBudget) * 100) : 0;
+  return { percent, tokens };
 }
 
 function shouldSuggestSessionRefresh(
@@ -343,7 +353,7 @@ function shouldSuggestSessionRefresh(
     .filter((message) => message.role === 'user')
     .map((message) => normalizeUserMessage(message.text))
     .filter(Boolean);
-  const messageLimit = deriveSessionRefreshMessageLimit(compressionThreshold);
+  const transcriptUsage = estimatePanelTranscriptUsage(messages);
 
   const counts = new Map<string, number>();
   for (const message of userMessages) {
@@ -353,8 +363,10 @@ function shouldSuggestSessionRefresh(
     }
     counts.set(message, next);
   }
-  if (userMessages.length >= messageLimit) {
-    return { reason: `触发原因：当前会话已有 ${userMessages.length} 条用户消息，达到会话检查阈值 ${messageLimit}。` };
+  if (transcriptUsage.percent >= compressionThreshold) {
+    return {
+      reason: `触发原因：估算上下文占用约 ${transcriptUsage.percent}%（约 ${transcriptUsage.tokens} tokens），达到 ${compressionThreshold}% 阈值。`,
+    };
   }
 
   const recentCorrectionCount = userMessages
@@ -753,12 +765,26 @@ function summarizeAgentCliOutputForChat(output: string, options: { maxLines?: nu
 
 function formatChildTaskConversationRunMessage(output: string): string {
   const normalized = output
-    .replace(/```[\s\S]*?```/g, '')
+    .replace(/```(?:json)?\s*[\s\S]*?TASKPLANE_DECOMPOSITION[\s\S]*?```/gi, '')
     .replace(/\b(Codex CLI|Claude Code|Agent API|API Runtime)\b/gi, '')
     .replace(/^(结果摘要|Key Findings|Recommended Next Step|Verification Checks)[:：]?$/gim, '')
     .replace(/完整输出已进入任务动态|生成了待确认的任务记录提案|任务记忆写入提案/g, '')
     .replace(/\r\n/g, '\n')
     .trim();
+  const lines = normalized
+    .split('\n')
+    .map((line) => line
+      .replace(/^[-*]\s+/, '')
+      .replace(/^\d+[.)、]\s+/, '')
+      .replace(/^(理解|明白|收到)[：:，,]\s*/, '')
+      .trim())
+    .filter(Boolean)
+    .filter((line) => !/^run[:：]/i.test(line))
+    .filter((line) => !/任务动态|任务记忆|stdout|stderr|sandbox/i.test(line));
+  const cleaned = lines.join('\n').trim();
+  if (cleaned) {
+    return cleaned;
+  }
   const sentences = normalized
     .split(/(?<=[。！？?])\s+|\n+/)
     .map((line) => line.replace(/^[-*]\s+/, '').replace(/^\d+[.)、]\s+/, '').trim())
@@ -778,7 +804,7 @@ function formatChildTaskConversationRunMessage(output: string): string {
       && !/[？?]/.test(line)
       && !/请先|请确认以下|下面|如下|列表|关键/.test(line)
     ));
-    return [intro, compactQuestion.length > 96 ? `${compactQuestion.slice(0, 93)}...` : compactQuestion]
+    return [intro, compactQuestion]
       .filter(Boolean)
       .join('\n');
   }
@@ -807,20 +833,33 @@ function isChildTaskAdvancementText(value: string): boolean {
   return /推进子任务|正在推进子任务|当前子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
 }
 
+function isExplicitDecompositionRequest(value: string): boolean {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  return /拆解|拆细|分解|拆成|子任务|前后端|前端|后端|模块|里程碑|break\s*down|split/i.test(normalized);
+}
+
 function buildChildTaskConversationPrompt(params: {
+  childTaskConversationTurnCount?: number;
   parentTaskTitle?: string | null;
   taskSummary?: string | null;
   taskTitle: string | null;
   userText: string;
 }): string {
+  const turnCount = params.childTaskConversationTurnCount ?? 1;
   return [
     `正在推进子任务「${params.taskTitle ?? '当前子任务'}」。`,
     params.parentTaskTitle ? `父任务：「${params.parentTaskTitle}」。` : null,
     params.taskSummary ? `子任务摘要：${params.taskSummary}` : null,
     `用户刚补充：${params.userText}`,
-    '请基于这次补充继续推进这个子任务，不要重新拆解父任务，不要直接产出方案清单。',
-    '目标是先和用户讨论需求：如果用户只是说“推进/开始/一起推进”，请用一句话请用户描述他的想法或预期；如果用户已经给出具体想法，请先简短复述理解，再只问一个最自然的下一问。',
-    '请最多用两句中文回复，语气自然，不要使用列表、编号、标题或多段结构。',
+    '请基于这次补充继续推进这个子任务，不要重新拆解父任务。',
+    turnCount <= 1
+      ? '如果用户只是说“推进/开始/一起推进”，请用一句自然的话请用户描述想法或预期；如果用户已经给出具体想法，请把它转成可确认的首版边界。'
+      : '用户已经补充过方向时，不要继续细碎追问分类或偏好；请先收束成一个可确认的任务边界，并主动给出下一步。',
+    '当用户已给出主题/产品、目标用户、内容形态或使用场景中的关键三项时，视为足够推进；不要再问“个人看还是给别人看”“目录型还是学习路径型”“更偏哪类展示”这类二级取舍。',
+    '回复要推动任务线：优先给出“当前可暂定为…”这类可确认判断；信息已足够时给出首版目标、范围、非目标、资料调研或执行下一步，而不是继续追问。',
+    '只有当缺口会阻止下一步行动、影响关键风险或改变交付边界时才提问；普通产品取舍先作为可调整默认项写进方案，不要提前变成用户选择题。',
+    '如果是网站/文档/教程类任务，默认先产出首版定位、页面/内容范围、非目标和下一步调研或搭建动作；不要停在连续澄清。',
+    '不要用“理解：”“明白：”“收到：”作固定开头。语气自然、简短；只有确实需要区分多个澄清点时才用列表。',
   ].filter((line): line is string => Boolean(line)).join('\n');
 }
 
@@ -1133,7 +1172,7 @@ export function RightPanel({
   const [messages, setMessages] = useState<Message[]>([]);
   const [fullScreen, setFullScreen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
+  const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('manual');
   const [runtimeMode, setRuntimeMode] = useState<AiRuntimeMode>('codex');
   const [aiRuntimeStatusLoaded, setAiRuntimeStatusLoaded] = useState(false);
   const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
@@ -1163,8 +1202,6 @@ export function RightPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastAppliedDraftPromptRef = useRef<string | null>(null);
   const lastAutoSentDraftPromptRef = useRef<string | null>(null);
-  const lastAutoRefreshKeyRef = useRef<string | null>(null);
-  const autoRefreshInFlightRef = useRef(false);
   const {
     abandonConfirmOpen,
     activeTaskId,
@@ -1303,7 +1340,9 @@ export function RightPanel({
             : detail.status;
         const output = detail.output?.trim() || detail.failureReason || '终态已记录。';
         const suppressMemoryProposal = Boolean(current.suppressMemoryProposal);
-        const decompositionDraft = parseAgentCliDecompositionDraft(output, detail.id);
+        const decompositionDraft = current.allowDecompositionDraft
+          ? parseAgentCliDecompositionDraft(output, detail.id)
+          : null;
         if (decompositionDraft) {
           setTaskDecompositionDraft(decompositionDraft);
         }
@@ -1437,6 +1476,15 @@ export function RightPanel({
     return Boolean(getTaskAttributes(taskId)?.parentTaskId);
   }
 
+  function canCreateDecompositionDraftForTask(taskId: string | null): boolean {
+    if (!taskId) return false;
+    if (activeTaskDetail?.id === taskId) {
+      return activeTaskDetail.taskType === 'project';
+    }
+    const attrs = getTaskAttributes(taskId);
+    return attrs?.type === 'project';
+  }
+
   function parentTitleForActiveChild(): string | null {
     const parentTaskId = activeTaskDetail?.parentTaskId ?? activeAttrs?.parentTaskId ?? null;
     return parentTaskId ? titleCache[parentTaskId] ?? null : null;
@@ -1486,11 +1534,11 @@ export function RightPanel({
     return selectBlockingTaskMemoryGuidance(details.map((detail) => detail?.taskMemoryGuidance));
   }
 
-  function clearTaskSessionAfterArchive(taskName: string | null, options: { auto?: boolean } = {}) {
+  function clearTaskSessionAfterArchive(taskName: string | null) {
     setMessages(taskName
       ? [
           makeWelcomeMessage(taskName),
-          ...(options.auto ? [makeTaskSessionRefreshedMessage(taskName)] : []),
+          makeTaskSessionRefreshedMessage(taskName),
         ]
       : []);
     setHistoryOpen(false);
@@ -1510,56 +1558,6 @@ export function RightPanel({
         '请先补充已确认结论、候选方案、未解决问题或下一步动作。',
       ].filter(Boolean).join(' '));
       patchSession({ sessionRefreshDismissed: true });
-    }
-  }
-
-  async function refreshTaskSession() {
-    const { taskName, archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
-    const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(activeTaskId);
-    const handoff = evaluateRuntimeHandoff({
-      intent: 'context_refresh',
-      fromTaskId: activeTaskId,
-      messageCount: userMessageCount,
-      hasSpecificHandoffSignal: hasSpecificSignal,
-      archived,
-      taskMemoryGuidance,
-    });
-    if (!handoff.canProceed) {
-      handleMissingRefreshArchive(handoff.reason);
-      return;
-    }
-    clearTaskSessionAfterArchive(taskName);
-  }
-
-  async function autoRefreshTaskSession(reason: string) {
-    if (!activeTaskId || autoRefreshInFlightRef.current) return;
-    autoRefreshInFlightRef.current = true;
-    const autoTaskId = activeTaskId;
-    try {
-      const { taskName, archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
-      const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(autoTaskId);
-      const handoff = evaluateRuntimeHandoff({
-        intent: 'context_refresh',
-        fromTaskId: autoTaskId,
-        messageCount: userMessageCount,
-        hasSpecificHandoffSignal: hasSpecificSignal,
-        archived,
-        taskMemoryGuidance,
-      });
-      if (activeTaskIdRef.current !== autoTaskId) return;
-      if (!handoff.canProceed) {
-        appendSysMsg(`自动刷新已暂停：${reason} ${handoff.reason}`);
-        patchSession({ sessionRefreshDismissed: true });
-        return;
-      }
-      if (!handoff.autoContextClear?.shouldAutoClear) {
-        appendSysMsg(`自动刷新已保留当前会话：${reason} ${handoff.autoContextClear?.reason ?? handoff.reason}`);
-        patchSession({ sessionRefreshDismissed: true });
-        return;
-      }
-      clearTaskSessionAfterArchive(taskName, { auto: true });
-    } finally {
-      autoRefreshInFlightRef.current = false;
     }
   }
 
@@ -2000,6 +1998,22 @@ export function RightPanel({
     }
     setCreatingDecompositionChildren(true);
     try {
+      if (activeTaskDetail?.id === activeTaskId && activeTaskDetail.taskType !== 'project') {
+        const previousType = activeTaskDetail.taskType ?? 'simple';
+        const nextFacets: TaskExecutionType[] = Array.from(
+          new Set<TaskExecutionType>(['project', previousType, ...(activeTaskDetail.taskFacets ?? [])]),
+        );
+        const updated = await window.api?.updateTask?.({
+          id: activeTaskId,
+          taskFacets: nextFacets,
+          taskType: 'project',
+        }).catch(() => null);
+        if (updated) {
+          setActiveTaskDetail((current) => current?.id === activeTaskId
+            ? { ...current, taskFacets: nextFacets, taskType: 'project' }
+            : current);
+        }
+      }
       const created = await Promise.all(taskDecompositionDraft.subtasks.map((subtask) => (
         window.api!.createTask({
           title: subtask.title,
@@ -2199,8 +2213,13 @@ export function RightPanel({
     if (!text || thinking) return;
     const displayUserMessage = options.displayUserMessage ?? true;
     const childTaskConversation = isChildTaskContext(activeTaskId);
+    const childTaskConversationTurnCount = childTaskConversation
+      ? messages.filter((message) => message.role === 'user').length + 1
+      : 0;
+    const allowDecompositionDraft = canCreateDecompositionDraftForTask(activeTaskId) || isExplicitDecompositionRequest(text);
     const runtimeText = childTaskConversation
       ? buildChildTaskConversationPrompt({
+          childTaskConversationTurnCount,
           parentTaskTitle: parentTitleForActiveChild(),
           taskSummary: activeTaskDetail?.summary ?? null,
           taskTitle: title,
@@ -2246,7 +2265,9 @@ export function RightPanel({
         setAgentCliLaunchNotice(null);
         const detail = await window.api.getRunDetail(run.id).catch(() => null);
         const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || `${runtimeLabel} run 已记录。`;
-        const decompositionDraft = parseAgentCliDecompositionDraft(output, run.id);
+        const decompositionDraft = allowDecompositionDraft
+          ? parseAgentCliDecompositionDraft(output, run.id)
+          : null;
         if (decompositionDraft) {
           setTaskDecompositionDraft(decompositionDraft);
         }
@@ -2255,6 +2276,7 @@ export function RightPanel({
             runId: run.id,
             runtimeId: activeAgentCliRuntimeMode,
             runtimeLabel,
+            allowDecompositionDraft,
             status: 'running',
             suppressMemoryProposal: childTaskConversation || isChildTaskAdvancementText(runtimeText),
             taskId: activeTaskId,
@@ -2725,8 +2747,8 @@ export function RightPanel({
         : '任务助手 · 未选择 AI Runtime';
   const sandboxBoundaryLabel = shouldUseAgentCliRuntime
     ? activeAgentCliRuntimeMode === 'claude'
-      ? 'Claude Plan'
-      : 'read-only'
+      ? 'Claude 原生能力'
+      : 'Codex 原生能力'
     : '无 CLI 执行';
   const footerRuntimeLabel = !aiRuntimeStatusLoaded
     ? 'Runtime 加载中'
@@ -2738,30 +2760,6 @@ export function RightPanel({
         ? 'Agent API'
         : 'Runtime 未选择';
   const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
-
-  useEffect(() => {
-    if (
-      !activeTaskId
-      || contextStrategy !== 'auto'
-      || !sessionRefreshSuggestion
-      || sessionRefreshDismissed
-      || thinking
-    ) {
-      return;
-    }
-    const userSignal = userMessageTexts.join('\n');
-    const refreshKey = `${activeTaskId}:${sessionRefreshSuggestion.reason}:${userSignal}`;
-    if (!userSignal || lastAutoRefreshKeyRef.current === refreshKey) return;
-    lastAutoRefreshKeyRef.current = refreshKey;
-    void autoRefreshTaskSession(sessionRefreshSuggestion.reason);
-  }, [
-    activeTaskId,
-    contextStrategy,
-    sessionRefreshDismissed,
-    sessionRefreshSuggestion,
-    thinking,
-    userMessageTexts,
-  ]);
 
   return (
     <div className={`right-panel${fullScreen ? ' fullscreen' : ''}${hidden ? ' hidden' : ''}`}>
@@ -2856,13 +2854,13 @@ export function RightPanel({
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
               {contextStrategy === 'reminder'
-                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要清理时可切回自动清理或先询问。'
-                : '这个任务的讨论已经有点长了，可以刷新当前任务会话。刷新前会先保全关键决策、偏好变化和未解决问题；只保存精选信号，不保存完整聊天全文。'}
+                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要整理时可切回自动清理或先询问。'
+                : '这个任务的讨论已经有点长了。可以先整理关键结论，再由你决定是否刷新当前会话；不会自动清空聊天。'}
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
             <div className="panel-refresh-actions">
               {contextStrategy === 'auto' && (
-                <button className="btn sm primary" onClick={() => void refreshTaskSession()}>刷新任务会话</button>
+                <button className="btn sm primary" onClick={() => void prepareManualTaskSessionRefresh()}>整理归档</button>
               )}
               <button className="btn sm ghost" onClick={() => patchSession({ sessionRefreshDismissed: true })}>继续当前会话</button>
             </div>
@@ -3074,7 +3072,7 @@ export function RightPanel({
         {activeTaskId && (
           <details className="panel-input-options">
             <summary>
-              <span>自动清理</span>
+              <span>上下文整理</span>
               <strong>{CONTEXT_STRATEGY_LABELS[contextStrategy]}</strong>
             </summary>
             <div className="panel-context-strategy" aria-label="上下文策略">

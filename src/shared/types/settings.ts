@@ -10,10 +10,12 @@ export type AiProvider = 'anthropic' | 'openai' | 'google' | 'deepseek' | 'groq'
 export type AiRuntimeMode = 'api' | 'codex' | 'claude';
 export type AiCommunicationStyle = 'concise' | 'balanced' | 'detailed';
 export type AiConfirmationThreshold = 'low' | 'normal' | 'high';
+export type AgentCliCapabilityMode = 'native' | 'audit_enhanced' | 'restricted';
 
 export type FeatureFlags = {
   enableScheduler: boolean;
   enableProviderNativeToolCalls?: boolean;
+  agentCliCapabilityMode?: AgentCliCapabilityMode;
   enableSandboxCodingAgent?: boolean;
   enableSandboxPatchPromotionApply?: boolean;
   enableSelfCheck?: boolean;

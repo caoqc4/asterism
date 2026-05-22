@@ -14,6 +14,7 @@ const envKeys = [
   'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS',
   'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
   'TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY',
+  'TASKPLANE_AGENT_CLI_CAPABILITY_MODE',
   'TASKPLANE_SELF_CHECK_RETRY_LIMIT',
 ];
 
@@ -45,6 +46,7 @@ describe('AppConfigService', () => {
     expect(config.workspaceRoot).toBeNull();
     expect(config.featureFlags.enableScheduler).toBe(false);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
+    expect(config.featureFlags.agentCliCapabilityMode).toBe('native');
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(false);
     expect(config.featureFlags.selfCheckRetryLimit).toBe(2);
@@ -76,6 +78,7 @@ describe('AppConfigService', () => {
       featureFlags: {
         enableScheduler: true,
         enableProviderNativeToolCalls: true,
+        agentCliCapabilityMode: 'audit_enhanced',
         enableSandboxCodingAgent: true,
         enableSandboxPatchPromotionApply: true,
         selfCheckRetryLimit: 4,
@@ -92,6 +95,7 @@ describe('AppConfigService', () => {
     expect(config.workspaceRoot).toBe('/Users/example/project');
     expect(config.featureFlags.enableScheduler).toBe(true);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
+    expect(config.featureFlags.agentCliCapabilityMode).toBe('audit_enhanced');
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(true);
     expect(config.featureFlags.selfCheckRetryLimit).toBe(4);
@@ -128,6 +132,7 @@ describe('AppConfigService', () => {
     process.env.TASKPLANE_WORKSPACE_ROOT = '/tmp/taskplane-workspace';
     process.env.TASKPLANE_ENABLE_SCHEDULER = 'true';
     process.env.TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS = 'true';
+    process.env.TASKPLANE_AGENT_CLI_CAPABILITY_MODE = 'restricted';
     process.env.TASKPLANE_ENABLE_SANDBOX_CODING_AGENT = 'true';
     process.env.TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY = 'true';
     process.env.TASKPLANE_SELF_CHECK_RETRY_LIMIT = '3';
@@ -155,6 +160,7 @@ describe('AppConfigService', () => {
     expect(config.workspaceRoot).toBe('/tmp/taskplane-workspace');
     expect(config.featureFlags.enableScheduler).toBe(true);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
+    expect(config.featureFlags.agentCliCapabilityMode).toBe('restricted');
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(true);
     expect(config.featureFlags.selfCheckRetryLimit).toBe(3);
@@ -170,6 +176,7 @@ describe('AppConfigService', () => {
         featureFlags: {
           enableScheduler: 'yes',
           enableProviderNativeToolCalls: 'yes',
+          agentCliCapabilityMode: 'loose',
           enableSandboxCodingAgent: 'yes',
           enableSandboxPatchPromotionApply: 'yes',
           selfCheckRetryLimit: 8,
@@ -186,6 +193,7 @@ describe('AppConfigService', () => {
     expect(config.aiProvider).toBe('openai');
     expect(config.featureFlags.enableScheduler).toBe(false);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
+    expect(config.featureFlags.agentCliCapabilityMode).toBe('native');
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(false);
     expect(config.featureFlags.selfCheckRetryLimit).toBe(2);
