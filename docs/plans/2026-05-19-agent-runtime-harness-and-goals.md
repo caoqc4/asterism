@@ -177,9 +177,20 @@ RuntimeInvocationRequest
   selected runtime mode
   context manifest
   expected output contract
+  user-visible output contract
   permission/sandbox boundary
   persistence policy
 ```
+
+Every AI-facing phase must declare both a result contract and a user-visible
+output contract. User-visible output follows
+`docs/specs/agent-output-contract.md`: runtime adapters may return raw terminal
+text or provider-native structure, but the harness owns chat formatting,
+progress cards, draft cards, task dynamics, memory proposal visibility, and
+normalization. Ordinary chat should not repeatedly mention Codex CLI, Claude
+Code, Agent API, sandbox mode, run ids, or hidden prompt contracts when those
+details already belong in the runtime footer, run detail, task dynamics, or a
+dedicated status/debug surface.
 
 Adapter responsibilities:
 

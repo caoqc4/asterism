@@ -42,7 +42,13 @@ Use the documents as a layered system:
 2. Agent Principles Compliance Matrix:
    A mapping from each principle section to implemented runtime behavior, gaps, and tests.
 
-3. Runtime Lifecycle Coverage:
+3. Agent Output Contract:
+   A narrow contract for user-visible Agent output shape across chat, progress
+   cards, drafts, proposals, verification, run evidence, and memory visibility.
+   The Agent principles should reference this contract instead of duplicating
+   detailed UI wording rules.
+
+4. Runtime Lifecycle Coverage:
    A broader product-runtime map that covers UI state, data state, execution state, capability state, and task lifecycle behavior beyond Agent execution.
 
 ## Additive Guidance
@@ -65,6 +71,12 @@ Runtime entrypoint gate guidance also belongs in the Agent document as an execut
 - every retained mutating, executing, context-clearing, checkpoint-resuming, or decision-changing entrypoint must be registered in `RuntimeEntrypointCoverage`;
 - provider-visible planning entrypoints that only produce drafts should use the planning baseline rather than masquerading as full execution, and any durable follow-up creation must remain a separate gated mutation;
 - `RuntimeEntrypointCoverage` remains a regression registry, not dynamic discovery.
+
+User-visible output guidance belongs in the Agent document only as a reference
+and hard boundary. Detailed rules for chat bubble shape, runtime-label
+visibility, progress cards, draft cards, memory proposal visibility, and
+phase-specific output length should live in
+`docs/specs/agent-output-contract.md`.
 
 When a new rule is about Agent behavior, add it through a clearly versioned addendum or a future version of the Agent principles.
 
