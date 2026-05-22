@@ -868,7 +868,7 @@ function buildVisibleTaskPlanningDraft(taskTitle: string, type: TaskType): strin
 }
 
 function buildChildTaskAdvanceDraft(child: Task, _parent: Task): string {
-  return `请和我一起推进「${child.title}」。`;
+  return `先帮我把「${child.title}」推进到可执行状态：确认目标、范围和下一步。`;
 }
 
 function isGenericAgentReviewStep(value: string): boolean {

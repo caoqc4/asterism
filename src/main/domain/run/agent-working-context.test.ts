@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { TaskDetail } from '../../../shared/types/task.js';
-import { TASKPLANE_AGENT_PRINCIPLES } from '../../../shared/agent-principles.js';
+import { TASKPLANE_CORE_AGENT_CONTEXT } from '../../../shared/core-agent-context.js';
 import { buildAgentRunRequest, buildAgentWorkingContext, formatAgentRunRequestForStep } from './agent-working-context.js';
 
 type SourceContext = TaskDetail['sourceContexts'][number];
@@ -191,7 +191,9 @@ describe('agent working context', () => {
     const task = buildTaskDetail();
     const context = buildAgentWorkingContext(task);
 
-    expect(context.productPrinciples).toBe(TASKPLANE_AGENT_PRINCIPLES);
+    expect(context.productPrinciples).toBe(TASKPLANE_CORE_AGENT_CONTEXT);
+    expect(context.productPrinciples).toContain('Taskplane Agent Operating Principles');
+    expect(context.productPrinciples).toContain('GoalPilot Task Advancement Framework');
     expect(context.task.title).toBe('Agent context task');
     expect(context.priorityLane).toBe('escalate_now');
     expect(context.completion).toMatchObject({

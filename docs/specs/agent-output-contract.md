@@ -71,6 +71,28 @@ Taskplane should choose the surface before rendering content:
 
 ## Phase Contracts
 
+### Advancement Move Output Contracts
+
+Use this section after the GoalPilot Task Advancement Framework chooses the
+primary movement. These contracts define output shape; they do not decide the
+movement.
+
+| Movement | Default surface | Output shape |
+| --- | --- | --- |
+| Clarify | Chat message | One or two short sentences; ask one natural question; do not list every possible requirement. |
+| Shape | Chat message or editable draft card | Briefly state the current understanding and propose goal, scope, acceptance criteria, or next step only as far as needed. |
+| Decompose | Decomposition draft | Use a structured draft card with child title, goal or summary, acceptance criterion, dependency, and confirmation action. |
+| Select next task | Chat message or task navigation affordance | Name the selected child or successor and the reason in one concise sentence. |
+| Execute | Run or progress card plus final chat summary | Keep chat user-meaningful; store tool details, stdout, run ids, and recovery evidence in run detail or task dynamics. |
+| Verify | Verification result | State pass, fail, or needs confirmation; include the most important evidence gap or risk. |
+| Persist | Task dynamics, memory proposal, Task.md, or Task Record | Do not expose routine writes in chat; show a proposal card only when confirmation is required. |
+| Handoff | Chat message plus durable handoff when needed | Say what is ready next and where recovery context was preserved; do not dump archived context. |
+| Pause | Chat message or Decision card | State the blocker, dependency, missing context, or approval needed, then give one recoverable next action. |
+
+If a turn combines movements, render the highest-risk or most user-visible
+movement first. For example, verification that requires approval should use the
+verification result or Decision surface, not an ordinary planning chat.
+
 ### Requirement Discussion And Child Task Advancement
 
 Use this when the Agent is helping the user clarify a task or subtask before

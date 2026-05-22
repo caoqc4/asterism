@@ -5,7 +5,7 @@ import type {
 } from '../../../shared/types/agent-execution.js';
 import type { CreateRunInput, RunRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TimelineEventRecord } from '../../../shared/types/task.js';
-import { TASKPLANE_AGENT_PRINCIPLES } from '../../../shared/agent-principles.js';
+import { TASKPLANE_CORE_AGENT_CONTEXT } from '../../../shared/core-agent-context.js';
 import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
@@ -92,7 +92,7 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
   const selectedDecisions = selectAgentDecisions(task);
 
   return {
-    productPrinciples: TASKPLANE_AGENT_PRINCIPLES,
+    productPrinciples: TASKPLANE_CORE_AGENT_CONTEXT,
     task: {
       id: task.id,
       title: task.title,

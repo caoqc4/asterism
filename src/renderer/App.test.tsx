@@ -4996,7 +4996,7 @@ describe('App redesign v1', () => {
     const chatCallsBeforeAdvance = vi.mocked(harness.api.chatWithAI!).mock.calls.length;
     await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
 
-    expect(await screen.findByDisplayValue('请和我一起推进「明确网站目标与范围」。')).toBeTruthy();
+    expect(await screen.findByDisplayValue('先帮我把「明确网站目标与范围」推进到可执行状态：确认目标、范围和下一步。')).toBeTruthy();
     expect(vi.mocked(harness.api.chatWithAI!).mock.calls.length).toBe(chatCallsBeforeAdvance);
     expect(screen.queryByDisplayValue(/父任务：「开发一个网站」/)).toBeNull();
     expect(screen.queryByDisplayValue(/子任务摘要/)).toBeNull();
@@ -5038,7 +5038,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: '开发一个网站' }));
     await user.click(await screen.findByRole('button', { name: /推进子任务/ }));
 
-    expect(await screen.findByDisplayValue('请和我一起推进「明确网站目标与范围」。')).toBeTruthy();
+    expect(await screen.findByDisplayValue('先帮我把「明确网站目标与范围」推进到可执行状态：确认目标、范围和下一步。')).toBeTruthy();
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
     vi.mocked(harness.api.triggerAgentCliRun!).mockImplementationOnce(async (input) => {
       const run = buildRun({

@@ -107,6 +107,9 @@ const WORKSPACE_COMMAND_DEFAULT_TIMEOUT_MS = 120_000;
 const WORKSPACE_COMMAND_MAX_TIMEOUT_MS = 300_000;
 const PRODUCT_PRINCIPLES_PROTECTED_FILES = new Set([
   'src/shared/agent-principles.ts',
+  'src/shared/task-advancement-framework.ts',
+  'src/shared/core-agent-context.ts',
+  'docs/specs/goalpilot-task-advancement-framework.md',
 ]);
 const sourceContextKinds = new Set<SourceContextKind>(['link', 'doc', 'issue', 'pr', 'website_list', 'note']);
 const sourceContextRoles = new Set<SourceContextRole>(['raw', 'digest', 'stable_reference']);

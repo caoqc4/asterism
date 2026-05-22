@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { generateTextMock } = vi.hoisted(() => ({
   generateTextMock: vi.fn(),
@@ -86,6 +86,58 @@ function buildTaskDetail(): TaskDetail {
 }
 
 describe('TextExecutor', () => {
+  beforeEach(() => {
+    generateTextMock.mockReset();
+  });
+
+  it('injects core Agent context into draft, summary, and agent prompts', async () => {
+    generateTextMock.mockResolvedValue({ text: '{"finalOutput":"Generated output","steps":[]}' });
+    const executor = new TextExecutor();
+
+    await executor.execute(
+      buildTaskDetail(),
+      { taskId: 'task_1', type: 'draft' },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: { enableScheduler: true },
+      },
+    );
+    await executor.execute(
+      buildTaskDetail(),
+      { taskId: 'task_1', type: 'summarize' },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: { enableScheduler: true },
+      },
+    );
+    await executor.execute(
+      buildTaskDetail(),
+      { taskId: 'task_1', type: 'agent' },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: { enableScheduler: true },
+      },
+    );
+
+    for (const call of generateTextMock.mock.calls) {
+      expect(call[0]).toEqual(expect.objectContaining({
+        prompt: expect.stringContaining('Taskplane Agent Operating Principles'),
+      }));
+      expect(call[0]).toEqual(expect.objectContaining({
+        prompt: expect.stringContaining('GoalPilot Task Advancement Framework'),
+      }));
+      expect(call[0]).toEqual(expect.objectContaining({
+        prompt: expect.stringContaining('Agent Output Contract'),
+      }));
+    }
+  });
+
   it('injects priority-lane guidance into run prompts', async () => {
     generateTextMock.mockResolvedValue({ text: 'Generated output' });
     const executor = new TextExecutor();

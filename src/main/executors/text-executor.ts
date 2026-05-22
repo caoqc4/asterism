@@ -2,6 +2,7 @@ import type { AppliedProcessTemplateRecord } from '../../shared/types/process-te
 import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 import type { CreateRunInput } from '../../shared/types/run.js';
 import type { TaskDetail } from '../../shared/types/task.js';
+import { TASKPLANE_CORE_AGENT_CONTEXT } from '../../shared/core-agent-context.js';
 import { generateRuntimeText, generateRuntimeTextResult, type RuntimeTextResult } from './text-generation.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../shared/working-context/priority-lanes.js';
 import type { ProviderNativeToolSchema } from '../domain/run/provider-native-tool-schema.js';
@@ -89,6 +90,8 @@ function buildPrompt(
 
       return [
         '请基于下面的任务信息，完成一轮受限本地 agent 推进。',
+        '执行前必须读取并遵循以下 Taskplane 核心 Agent 上下文；用它判断任务节奏、执行边界和输出形态，但不要把规范原文复述给用户：',
+        TASKPLANE_CORE_AGENT_CONTEXT,
         '你必须只输出一个合法 JSON 对象，不要输出 Markdown，不要输出额外解释。',
         'JSON 格式：',
         '{',
@@ -122,6 +125,8 @@ function buildPrompt(
 
     return [
       '请基于下面的任务信息，产出一份可直接继续编辑的工作草稿。',
+      '执行前必须读取并遵循以下 Taskplane 核心 Agent 上下文；用它判断任务节奏、执行边界和输出形态，但不要把规范原文复述给用户：',
+      TASKPLANE_CORE_AGENT_CONTEXT,
       '输出要求：',
       '1. 直接给出草稿正文，不要额外解释模型如何思考。',
       '2. 如果上下文不足，请先基于现有信息给出合理的初稿。',
@@ -139,6 +144,8 @@ function buildPrompt(
 
   return [
     '请基于下面的任务信息，产出一份简洁明确的工作摘要。',
+    '执行前必须读取并遵循以下 Taskplane 核心 Agent 上下文；用它判断任务节奏、执行边界和输出形态，但不要把规范原文复述给用户：',
+    TASKPLANE_CORE_AGENT_CONTEXT,
     '输出要求：',
     '1. 先给一句总体判断。',
     '2. 再给 3 到 5 条要点。',
