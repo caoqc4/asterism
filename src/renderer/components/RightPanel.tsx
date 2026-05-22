@@ -701,24 +701,33 @@ function taskFileProposalConfirmLabel(proposal: TaskFileWriteProposal): string {
 
 function formatAgentCliRunMessage(params: {
   output: string;
-  proposalCreated: boolean;
+  childTaskConversation?: boolean;
+  decompositionDraftCreated?: boolean;
   runId: string;
   runtimeLabel: string;
   statusText: string;
 }): string {
+  if (params.childTaskConversation) {
+    return formatChildTaskConversationRunMessage(params.output);
+  }
+  if (params.decompositionDraftCreated) {
+    return '已生成子任务草案。你确认后，我会把它们创建到当前项目下。';
+  }
+  if (params.statusText !== '已完成') {
+    const reason = summarizeAgentCliOutputForChat(params.output, { maxLines: 2 });
+    return reason ? `任务运行没有完成：${reason}` : '任务运行没有完成，详情已记录到任务动态。';
+  }
   const summary = summarizeAgentCliOutputForChat(params.output);
-  return [
-    `${params.runtimeLabel} run ${params.statusText}。`,
-    summary ? `结果摘要：\n${summary}` : null,
-    params.proposalCreated
-      ? '完整输出已进入任务动态，并生成了待确认的任务记录提案。'
-      : '完整输出已进入任务动态。',
-  ].filter((line): line is string => line !== null).join('\n\n');
+  return summary
+    ? `已完成，结果已记录到任务动态。\n${summary}`
+    : '已完成，结果已记录到任务动态。';
 }
 
-function summarizeAgentCliOutputForChat(output: string): string | null {
+function summarizeAgentCliOutputForChat(output: string, options: { maxLines?: number } = {}): string | null {
   const normalized = output
     .replace(/```(?:json)?\s*[\s\S]*?TASKPLANE_DECOMPOSITION[\s\S]*?```/gi, '')
+    .replace(/\b(Codex CLI|Claude Code|Agent API|API Runtime)\b/gi, '')
+    .replace(/\brun\s+已(完成|记录|启动|接收)/gi, '')
     .trim();
   if (!normalized) return null;
   const lines = normalized
@@ -726,19 +735,57 @@ function summarizeAgentCliOutputForChat(output: string): string | null {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
+    .filter((line) => !/^(结果摘要|Key Findings|Recommended Next Step|Verification Checks)[:：]?$/i.test(line))
+    .filter((line) => !/完整输出已进入任务动态|任务记忆|写入提案|Run:/i.test(line))
     .filter((line) => !/^[-*]?\s*`?(pwd|ls|sed)\b/i.test(line))
     .filter((line) => !/^run[:：]/i.test(line));
   const important = lines.filter((line) => (
-    /^#{1,3}\s+/.test(line)
-    || /key findings|子任务方案|recommended next step|verification checks|下一步|验证|风险|确认/i.test(line)
+    /下一步|验证|风险|确认|结论|建议/i.test(line)
     || /^[-*]\s+/.test(line)
   ));
-  const selected = (important.length ? important : lines).slice(0, 8);
+  const selected = (important.length ? important : lines).slice(0, options.maxLines ?? 4);
   if (!selected.length) return null;
   return selected
-    .map((line) => line.replace(/^#{1,3}\s+/, '').replace(/\*\*/g, ''))
-    .map((line) => line.length > 120 ? `${line.slice(0, 117)}...` : line)
+    .map((line) => line.replace(/^#{1,3}\s+/, '').replace(/^[-*]\s+/, '').replace(/\*\*/g, ''))
+    .map((line) => line.length > 96 ? `${line.slice(0, 93)}...` : line)
     .join('\n');
+}
+
+function formatChildTaskConversationRunMessage(output: string): string {
+  const normalized = output
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/\b(Codex CLI|Claude Code|Agent API|API Runtime)\b/gi, '')
+    .replace(/^(结果摘要|Key Findings|Recommended Next Step|Verification Checks)[:：]?$/gim, '')
+    .replace(/完整输出已进入任务动态|生成了待确认的任务记录提案|任务记忆写入提案/g, '')
+    .replace(/\r\n/g, '\n')
+    .trim();
+  const sentences = normalized
+    .split(/(?<=[。！？?])\s+|\n+/)
+    .map((line) => line.replace(/^[-*]\s+/, '').replace(/^\d+[.)、]\s+/, '').trim())
+    .filter(Boolean)
+    .filter((line) => !/^run[:：]/i.test(line))
+    .filter((line) => !/任务动态|任务记忆|stdout|stderr|sandbox/i.test(line));
+  const question = sentences.find((line) => /[？?]/.test(line) && line.length <= 90)
+    ?? sentences.find((line) => /[？?]/.test(line));
+  if (question) {
+    const questionIndex = sentences.indexOf(question);
+    const compactQuestion = question
+      .replace(/例如[:：].*$/i, '')
+      .replace(/^请先(?:回答)?(?:一个)?问题[:：]\s*/, '')
+      .trim();
+    const intro = sentences.slice(0, questionIndex).find((line) => (
+      line.length <= 64
+      && !/[？?]/.test(line)
+      && !/请先|请确认以下|下面|如下|列表|关键/.test(line)
+    ));
+    return [intro, compactQuestion.length > 96 ? `${compactQuestion.slice(0, 93)}...` : compactQuestion]
+      .filter(Boolean)
+      .join('\n');
+  }
+  const concise = sentences.find((line) => line.length <= 88);
+  return concise
+    ? `${concise}\n你先说说最想确认的一个点就好。`
+    : '这个子任务先从目标说起。你希望它最终解决什么问题？';
 }
 
 function parseAgentCliDecompositionDraft(output: string, runId: string): TaskDecompositionDraft | null {
@@ -1256,17 +1303,14 @@ export function RightPanel({
             : detail.status;
         const output = detail.output?.trim() || detail.failureReason || '终态已记录。';
         const suppressMemoryProposal = Boolean(current.suppressMemoryProposal);
-        const proposal = suppressMemoryProposal ? null : detail.taskMemoryWriteProposals?.[0];
         const decompositionDraft = parseAgentCliDecompositionDraft(output, detail.id);
         if (decompositionDraft) {
           setTaskDecompositionDraft(decompositionDraft);
         }
-        if (proposal && !decompositionDraft) {
-          updateTaskFileProposal((value) => value ?? taskMemoryProposalToFileProposal(proposal));
-        }
         appendSysMsg(formatAgentCliRunMessage({
+          childTaskConversation: suppressMemoryProposal,
+          decompositionDraftCreated: Boolean(decompositionDraft),
           output,
-          proposalCreated: Boolean(proposal),
           runId: detail.id,
           runtimeLabel: current.runtimeLabel,
           statusText,
@@ -2191,7 +2235,7 @@ export function RightPanel({
         replyText = 'AI Runtime 状态仍在加载中，请稍后再发送。Taskplane 不会在未确认所选 Runtime 前调用 AI。';
       } else if (activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun) {
         const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
-        setAgentCliLaunchNotice(`正在启动 ${runtimeLabel} run。已锁定当前任务上下文，等待 CLI 接收任务。`);
+        setAgentCliLaunchNotice('正在准备任务上下文，等待运行接收。');
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
           prompt: runtimeText,
@@ -2219,21 +2263,22 @@ export function RightPanel({
         replyText = run.status === 'running'
           ? null
           : formatAgentCliRunMessage({
+              childTaskConversation,
+              decompositionDraftCreated: Boolean(decompositionDraft),
               output,
-              proposalCreated: !childTaskConversation && !isChildTaskAdvancementText(runtimeText) && Boolean(detail?.taskMemoryWriteProposals?.length),
               runId: run.id,
               runtimeLabel,
               statusText: run.status === 'completed' ? '已完成' : run.status,
             });
       } else if (activeAgentCliRuntimeMode && !activeTaskId) {
         replyText = [
-          `当前选择的是 ${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]}。`,
-          '全局助手阶段尚未接入所选 Agent CLI 调用层；请先进入具体任务后再发起任务 Agent run。',
+          '当前是全局助手会话。',
+          '请先进入具体任务后再发起任务 Agent run。',
           'Taskplane 不会在未说明的情况下切换到另一条 AI Runtime。',
         ].join('\n\n');
       } else if (activeAgentCliRuntimeMode && activeTaskId && !shouldUseAgentCliRuntime) {
         replyText = [
-          `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} 当前不可用，任务 Agent run 未启动。`,
+          '当前任务运行方式不可用，任务 Agent run 未启动。',
           '请到 AI Runtime 页完成安装、登录或重新检测后再试。',
           'Taskplane 不会在未说明的情况下切换到另一条 AI Runtime。',
         ].join('\n\n');
@@ -2272,7 +2317,7 @@ export function RightPanel({
       replyText = slashCommand.kind !== 'none'
         ? `Runtime 命令执行失败：${error instanceof Error ? error.message : '未知错误'}`
         : activeAgentCliRuntimeMode
-        ? `${AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode]} run 未启动：${error instanceof Error ? error.message : '未知错误'}`
+        ? `任务运行未启动：${error instanceof Error ? error.message : '未知错误'}`
         : generateReply(text, activeTaskId);
     }
 
@@ -2508,9 +2553,9 @@ export function RightPanel({
     if (command.kind === 'product_cancel') {
       if (activeTaskAgentCliRun) {
         await cancelActiveAgentCliRun();
-        return `${activeTaskAgentCliRun.runtimeLabel} run 取消请求已发起。\n\nRun: ${activeTaskAgentCliRun.runId}`;
+        return '已发送取消请求。';
       }
-      return '当前任务没有正在运行的 Agent CLI run。';
+      return '当前任务没有正在运行的任务 Agent。';
     }
 
     if (command.kind === 'product_status') {
@@ -2555,13 +2600,13 @@ export function RightPanel({
         runId: activeAgentCliRun.runId,
       });
       if (!result.cancelled) {
-        appendSysMsg(`${activeAgentCliRun.runtimeLabel} run 取消请求未生效：${result.summary}`);
+        appendSysMsg(`取消请求未生效：${result.summary}`);
         setActiveAgentCliRun(null);
         return;
       }
-      appendSysMsg(`${activeAgentCliRun.runtimeLabel} run 取消请求已发送。\n\nRun: ${activeAgentCliRun.runId}`);
+      appendSysMsg('已发送取消请求。');
     } catch (error) {
-      appendSysMsg(`${activeAgentCliRun.runtimeLabel} run 取消失败：${error instanceof Error ? error.message : '未知错误'}`);
+      appendSysMsg(`取消失败：${error instanceof Error ? error.message : '未知错误'}`);
       setActiveAgentCliRun((value) => value?.runId === activeAgentCliRun.runId
         ? { ...value, status: 'running' }
         : value);
@@ -2638,6 +2683,7 @@ export function RightPanel({
   const activeTaskAgentCliRun = activeAgentCliRun && activeAgentCliRun.taskId === activeTaskId
     ? activeAgentCliRun
     : null;
+  const activeIsChildTaskContext = isChildTaskContext(activeTaskId);
   const suppressSecondaryTaskSuggestions = Boolean(
     thinking
     || agentCliLaunchNotice
@@ -2648,10 +2694,12 @@ export function RightPanel({
   const canCloseoutActiveTaskPhase = Boolean(
     canCloseoutActiveTaskPhaseBase
     && !suppressSecondaryTaskSuggestions
+    && !activeIsChildTaskContext
   );
   const canProposeTaskFileWrite = Boolean(
     canProposeTaskFileWriteBase
     && !suppressSecondaryTaskSuggestions
+    && !activeIsChildTaskContext
   );
   const executionRuntimeStatusLabel = activeAgentCliRuntimeMode
     ? shouldUseAgentCliRuntime
@@ -2934,14 +2982,14 @@ export function RightPanel({
           <div className="panel-agent-run-inline" aria-live="polite">
             <span className="panel-agent-run-pulse" />
             <div>
-              <strong>{activeTaskAgentCliRun.runtimeLabel} 正在只读执行</strong>
-              <p>完成后会把结果整理进任务动态；如果输出值得沉淀，会生成待确认记录。</p>
+              <strong>任务 Agent 正在执行</strong>
+              <p>完成后会把结果整理进任务动态。</p>
               <button
                 className={`btn sm ghost${activeTaskAgentCliRun.status === 'cancelling' ? ' disabled' : ''}`}
                 onClick={() => void cancelActiveAgentCliRun()}
                 disabled={activeTaskAgentCliRun.status === 'cancelling'}
               >
-                {activeTaskAgentCliRun.status === 'cancelling' ? '取消中…' : `取消 ${activeTaskAgentCliRun.runtimeLabel} run`}
+                {activeTaskAgentCliRun.status === 'cancelling' ? '取消中…' : '取消运行'}
               </button>
             </div>
           </div>

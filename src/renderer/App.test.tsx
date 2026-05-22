@@ -2088,17 +2088,17 @@ describe('App redesign v1', () => {
         expect.objectContaining({ content: '用 Codex CLI 检查下一步。' }),
       ]),
     }));
-    expect(await screen.findByText('Codex CLI 正在只读执行')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent 正在执行')).toBeTruthy();
     expect(screen.queryByText(/Codex CLI run 已在后台启动/)).toBeNull();
     expect(screen.queryByText(/只读执行中；完成后会整理结果/)).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: '取消 Codex CLI run' }));
+    await user.click(screen.getByRole('button', { name: '取消运行' }));
     expect(harness.api.cancelAgentCliRun).toHaveBeenCalledWith({
       operatorConfirmed: true,
       reason: 'Operator cancelled the Codex CLI run from Taskplane.',
       runId: 'run_agent_cli_created',
     });
-    expect(await screen.findByText(/Codex CLI run 取消请求已发送/)).toBeTruthy();
+    expect(await screen.findByText(/已发送取消请求/)).toBeTruthy();
   });
 
   it('keeps selected Codex CLI global chat from falling through to API runtime', async () => {
@@ -2112,7 +2112,7 @@ describe('App redesign v1', () => {
     await user.type(screen.getByPlaceholderText(/搜索、提问或捕获任务想法/), '这个方案你怎么看？');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
-    expect(await screen.findByText(/全局助手阶段尚未接入所选 Agent CLI 调用层/)).toBeTruthy();
+    expect(await screen.findByText(/请先进入具体任务后再发起任务 Agent run/)).toBeTruthy();
     expect(harness.api.chatWithAI).not.toHaveBeenCalled();
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
   });
@@ -2407,7 +2407,7 @@ describe('App redesign v1', () => {
         taskId: 'task_risk',
       });
     });
-    expect(await screen.findByText('Claude Code 正在只读执行')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent 正在执行')).toBeTruthy();
     expect(screen.queryByText(/Claude Code run 已在后台启动/)).toBeNull();
     expect(screen.queryByText(/只读执行中；完成后会整理结果/)).toBeNull();
   });
@@ -2569,7 +2569,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('Codex CLI')).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '用 Codex CLI 检查下一步。');
     await user.click(screen.getByRole('button', { name: '发送' }));
-    expect(await screen.findByText('Codex CLI 正在只读执行')).toBeTruthy();
+    expect(await screen.findByText('任务 Agent 正在执行')).toBeTruthy();
 
     const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
     expect(run).toBeTruthy();
@@ -2580,36 +2580,14 @@ describe('App redesign v1', () => {
     });
     harness.emit('run.changed', 'run_agent_cli_created');
 
-    expect(await screen.findByText(/Codex CLI run 已完成/)).toBeTruthy();
-    expect(screen.getAllByText(/Codex CLI final answer/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/生成了待确认的任务记录提案/)).toBeTruthy();
-    expect(await screen.findByText('任务记忆写入提案')).toBeTruthy();
-    expect(screen.getByText('建议归类：任务记录')).toBeTruthy();
-    expect(screen.getByLabelText('任务记忆提案摘要')).toBeTruthy();
-    expect(screen.getByText('提案摘要')).toBeTruthy();
-    expect(screen.getByText('关键判断')).toBeTruthy();
-    expect(screen.getAllByText(/Codex CLI final answer/).length).toBeGreaterThan(0);
-    expect(screen.getByText('下一步')).toBeTruthy();
-    expect(screen.getAllByText(/继续检查任务动态里的验收记录/).length).toBeGreaterThan(0);
-    expect(screen.getByText('风险')).toBeTruthy();
-    expect(screen.getAllByText(/需要用户确认后才能写入任务记忆/).length).toBeGreaterThan(0);
-    expect(screen.getByText('验证')).toBeTruthy();
-    expect(screen.getAllByText(/Agent CLI process exited successfully/).length).toBeGreaterThan(0);
-    await user.click(screen.getByRole('button', { name: '确认补写记忆' }));
-    await waitFor(() => {
-      expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
-        taskId: 'task_risk',
-        path: 'Task Records/2026-01-01-memory-guidance.md',
-        content: expect.stringContaining('  - Run Goal Contract 包含目标'),
-      }));
-    });
-    expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
-      content: expect.stringContaining('  - 任务记忆提案出现'),
+    expect(await screen.findByText(/已完成，结果已记录到任务动态/)).toBeTruthy();
+    expect(screen.queryByText(/Codex CLI run 已完成/)).toBeNull();
+    expect(screen.queryByText(/生成了待确认的任务记录提案/)).toBeNull();
+    expect(screen.queryByText('任务记忆写入提案')).toBeNull();
+    expect(harness.api.createTaskFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      path: 'Task Records/2026-01-01-memory-guidance.md',
     }));
-    expect(await screen.findByText(/已确认并写入任务记忆/)).toBeTruthy();
-    expect(screen.getByText(/目标：任务记录/)).toBeTruthy();
-    expect(screen.getByText(/后续任务 Agent run 不会再被这条 pending-memory gate 阻塞/)).toBeTruthy();
-    expect(screen.queryByText(/Codex CLI 正在只读执行/)).toBeNull();
+    expect(screen.queryByText(/任务 Agent 正在执行/)).toBeNull();
   });
 
   it('turns Agent CLI decomposition output into confirmable child tasks', async () => {
@@ -5062,6 +5040,25 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByDisplayValue('请和我一起推进「明确网站目标与范围」。')).toBeTruthy();
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    vi.mocked(harness.api.triggerAgentCliRun!).mockImplementationOnce(async (input) => {
+      const run = buildRun({
+        id: 'run_child_completed',
+        output: [
+          'Codex CLI run 已完成。',
+          '结果摘要：',
+          'Key Findings',
+          '当前子任务的关键是先确认网站用途。',
+          '请先回答一个问题：这个网站首版主要想做成什么类型？例如：企业官网、个人作品集、产品介绍页、电商网站、内容博客、预约/报名网站、后台管理系统，或其他。',
+          '完整输出已进入任务动态，并生成了待确认的任务记录提案。',
+        ].join('\n'),
+        outputSource: 'ai',
+        status: 'completed',
+        taskId: input.taskId,
+        type: 'agent',
+      });
+      harness.runs.push(run);
+      return run;
+    });
 
     const input = await screen.findByPlaceholderText(/关于「明确网站目标与范围」/);
     await user.clear(input);
@@ -5077,7 +5074,13 @@ describe('App redesign v1', () => {
     expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
       prompt: expect.stringContaining('不要直接产出方案清单'),
     }));
+
+    expect(await screen.findByText(/这个网站首版主要想做成什么类型/)).toBeTruthy();
     expect(screen.queryByText(/Key Findings/)).toBeNull();
+    expect(screen.queryByText(/Codex CLI run 已完成/)).toBeNull();
+    expect(screen.queryByText('任务记忆写入提案')).toBeNull();
+    expect(screen.queryByRole('button', { name: '收尾本阶段' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '生成文件提案' })).toBeNull();
   });
 
   it('uses Plan as the primary action until an ordinary task has execution context', async () => {
