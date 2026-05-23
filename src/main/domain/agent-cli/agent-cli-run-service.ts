@@ -110,6 +110,19 @@ type AgentCliRunAdapter = {
   runtimeLabel: string;
 };
 
+type AgentCliParsedEvent = {
+  input: string | null;
+  output: string;
+  status: 'completed' | 'failed' | 'skipped';
+  title: string;
+};
+
+type AgentCliParsedTranscript = {
+  events: AgentCliParsedEvent[];
+  finalText: string | null;
+  rawJsonLineCount: number;
+};
+
 const DEFAULT_AGENT_CLI_TIMEOUT_MS = 120_000;
 const DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES = 64_000;
 const AGENT_CLI_TERMINATION_GRACE_MS = 1_500;
@@ -248,11 +261,12 @@ export class AgentCliRunService {
     }
 
     const capabilityMode = normalizeAgentCliCapabilityMode(aiStatus.featureFlags.agentCliCapabilityMode);
-    task = await this.prepareWebResearchSourceContext({
+    const webResearchPreparation = await this.prepareWebResearchSourceContext({
       capabilityMode,
       prompt: request.prompt,
       task,
     });
+    task = webResearchPreparation.task;
     const taskFilesForContext = buildAgentCliTaskFilesForContext(task);
     const contextManifest = buildRuntimeContextManifest({
       capabilities: buildRuntimeCapabilitySnapshot({ aiStatus }),
@@ -317,6 +331,14 @@ export class AgentCliRunService {
         contextGate.summary,
         formatRuntimeContextManifestForStep(contextManifest),
       ].filter((line): line is string => line !== null).join('\n'),
+    });
+    await this.runStepRepository.create({
+      runId: run.id,
+      kind: 'tool_call',
+      status: webResearchPreparation.preparation.status === 'skipped' ? 'skipped' : 'completed',
+      title: 'Agent CLI 联网调研准备',
+      input: webResearchPreparation.preparation.query ?? request.prompt,
+      output: formatAgentCliWebResearchPreparation(webResearchPreparation.preparation),
     });
     await this.runStepRepository.create({
       runId: run.id,
@@ -415,32 +437,92 @@ export class AgentCliRunService {
     capabilityMode: AgentCliCapabilityMode;
     prompt: string;
     task: TaskDetail;
-  }): Promise<TaskDetail> {
-    if (params.capabilityMode !== 'audit_enhanced') {
-      return params.task;
+  }): Promise<{ preparation: AgentCliWebResearchPreparation; task: TaskDetail }> {
+    if (params.capabilityMode === 'restricted') {
+      return {
+        preparation: {
+          capabilityMode: params.capabilityMode,
+          query: null,
+          reason: 'Restricted mode disables live web/search preparation.',
+          sourceCount: 0,
+          status: 'skipped',
+        },
+        task: params.task,
+      };
     }
     if (!shouldPrepareWebResearch(params.task, params.prompt)) {
-      return params.task;
+      return {
+        preparation: {
+          capabilityMode: params.capabilityMode,
+          query: null,
+          reason: 'The selected task and user request do not appear to require fresh external research.',
+          sourceCount: 0,
+          status: 'not_needed',
+        },
+        task: params.task,
+      };
     }
     if (!this.taskService.createSourceContext || !this.aiConfigService.resolveOpenAiWebResearchConfig) {
-      return params.task;
-    }
-
-    let config: Awaited<ReturnType<NonNullable<AgentCliAiConfigService['resolveOpenAiWebResearchConfig']>>>;
-    try {
-      config = await this.aiConfigService.resolveOpenAiWebResearchConfig();
-    } catch {
-      return params.task;
+      return {
+        preparation: {
+          capabilityMode: params.capabilityMode,
+          query: null,
+          reason: 'Taskplane has no configured source-context writer or OpenAI web research bridge; the native CLI may still use its own research tools.',
+          sourceCount: 0,
+          status: 'skipped',
+        },
+        task: params.task,
+      };
     }
 
     const query = buildWebResearchQuery(params.task, params.prompt);
+    let config: Awaited<ReturnType<NonNullable<AgentCliAiConfigService['resolveOpenAiWebResearchConfig']>>>;
+    try {
+      config = await this.aiConfigService.resolveOpenAiWebResearchConfig();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        preparation: {
+          capabilityMode: params.capabilityMode,
+          query,
+          reason: `Taskplane web research bridge is unavailable: ${message}. The native CLI may still use its own research tools.`,
+          sourceCount: 0,
+          status: 'skipped',
+        },
+        task: params.task,
+      };
+    }
+
     const research = await runOpenAiWebResearch({
       apiKey: config.apiKey,
       model: config.model,
       query,
-    }).catch(() => null);
+    }).catch((error) => ({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+    if (research && 'error' in research) {
+      return {
+        preparation: {
+          capabilityMode: params.capabilityMode,
+          query,
+          reason: `Taskplane web research request failed: ${research.error}. The native CLI may still use its own research tools.`,
+          sourceCount: 0,
+          status: 'skipped',
+        },
+        task: params.task,
+      };
+    }
     if (!research?.sources.length && !research?.summary.trim()) {
-      return params.task;
+      return {
+        preparation: {
+          capabilityMode: params.capabilityMode,
+          query,
+          reason: 'Taskplane web research returned no usable summary or sources.',
+          sourceCount: 0,
+          status: 'skipped',
+        },
+        task: params.task,
+      };
     }
 
     const capturedAt = new Date().toISOString();
@@ -453,10 +535,19 @@ export class AgentCliRunService {
       taskId: params.task.id,
     });
     for (const input of createdInputs) {
-      await this.taskService.createSourceContext(input).catch(() => null);
+      await Promise.resolve(this.taskService.createSourceContext(input)).catch(() => null);
     }
 
-    return await this.taskService.getDetail(params.task.id).catch(() => params.task) ?? params.task;
+    return {
+      preparation: {
+        capabilityMode: params.capabilityMode,
+        query,
+        reason: 'Taskplane captured web research into Source Context before handing the task to the selected Agent CLI.',
+        sourceCount: createdInputs.length,
+        status: 'captured',
+      },
+      task: await this.taskService.getDetail(params.task.id).catch(() => params.task) ?? params.task,
+    };
   }
 
   private async completeRunInBackground(params: {
@@ -484,8 +575,44 @@ export class AgentCliRunService {
     }).finally(() => {
       params.workloadLease.finish();
     });
+    const parsedTranscript = parseAgentCliNativeTranscript({
+      runtimeLabel: params.runAdapter.runtimeLabel,
+      stderr: execution.stderr,
+      stdout: execution.stdout,
+    });
+    const evidenceOutput = parsedTranscript.finalText?.trim() || execution.stdout;
+    const modelOutput = evidenceOutput || execution.summary;
+    const normalizedExecution = {
+      ...execution,
+      stdout: evidenceOutput,
+      summary: modelOutput,
+    };
 
     try {
+      if (parsedTranscript.rawJsonLineCount > 0) {
+        await this.runStepRepository.create({
+          runId: params.run.id,
+          kind: 'tool_result',
+          status: 'completed',
+          title: `${params.runAdapter.runtimeLabel} 原生事件流`,
+          input: params.commandPreview,
+          output: [
+            `json_lines=${parsedTranscript.rawJsonLineCount}`,
+            `parsed_events=${parsedTranscript.events.length}`,
+            parsedTranscript.finalText ? `final_text=${truncateAgentCliContextLine(parsedTranscript.finalText, 600)}` : null,
+          ].filter((line): line is string => line !== null).join('\n'),
+        });
+      }
+      for (const event of parsedTranscript.events) {
+        await this.runStepRepository.create({
+          runId: params.run.id,
+          kind: 'tool_call',
+          status: event.status,
+          title: event.title,
+          input: event.input,
+          output: event.output,
+        });
+      }
       await this.runStepRepository.create({
         runId: params.run.id,
         kind: 'model',
@@ -495,12 +622,12 @@ export class AgentCliRunService {
           params.commandPreview,
           `exitCode=${execution.exitCode ?? 'unknown'}`,
         ].join('\n'),
-        output: execution.stdout || execution.summary,
+        output: modelOutput,
         error: execution.failureReason,
       });
       const verificationStep = buildAgentCliGoalVerificationStep({
         contract: params.runContract,
-        execution,
+        execution: normalizedExecution,
         runId: params.run.id,
         runtimeLabel: params.runAdapter.runtimeLabel,
         task: params.task,
@@ -546,7 +673,7 @@ export class AgentCliRunService {
             userConfirmationRequired: verificationStep.verification.userConfirmationRequired,
             suggestedContentByTarget: {
               task_record: buildAgentCliTaskRecordSuggestion({
-                output: execution.stdout,
+                output: modelOutput,
                 runId: params.run.id,
                 runtimeLabel: params.runAdapter.runtimeLabel,
                 sandboxMode: params.sandboxMode,
@@ -571,7 +698,7 @@ export class AgentCliRunService {
       const updated = await this.updateRunResult(
         params.run.id,
         execution.status,
-        execution.stdout || execution.summary,
+        modelOutput,
         execution.status === 'completed' ? 'ai' : 'system',
         execution.failureReason,
       );
@@ -580,7 +707,7 @@ export class AgentCliRunService {
         await this.taskService.annotateRunCompleted(
           params.task.id,
           'agent',
-          Boolean(execution.stdout.trim()),
+          Boolean(modelOutput.trim()),
           updated.id,
         );
       } else {
@@ -692,8 +819,8 @@ const codexCliRunAdapter: AgentCliRunAdapter = {
   acceptedLabel: 'Codex CLI',
   buildExecution(params) {
     return {
-      args: ['exec', '--sandbox', params.sandboxMode, '--cd', params.workspaceRoot, '--skip-git-repo-check', '-'],
-      commandPreview: `codex exec --sandbox ${params.sandboxMode} --cd ${params.workspaceRoot} -`,
+      args: ['exec', '--json', '--sandbox', params.sandboxMode, '--cd', params.workspaceRoot, '--skip-git-repo-check', '-'],
+      commandPreview: `codex exec --json --sandbox ${params.sandboxMode} --cd ${params.workspaceRoot} -`,
       input: buildCodexCliPrompt({
         capabilityMode: params.capabilityMode,
         contextSummary: params.contextSummary,
@@ -712,8 +839,8 @@ const claudeCodeRunAdapter: AgentCliRunAdapter = {
   acceptedLabel: 'Claude Code',
   buildExecution(params) {
     return {
-      args: ['-p', '--permission-mode', 'plan', '--output-format', 'text'],
-      commandPreview: `claude -p --permission-mode plan --output-format text`,
+      args: ['-p', '--permission-mode', 'plan', '--output-format', 'stream-json'],
+      commandPreview: `claude -p --permission-mode plan --output-format stream-json`,
       input: buildClaudeCodePrompt({
         capabilityMode: params.capabilityMode,
         contextSummary: params.contextSummary,
@@ -930,6 +1057,14 @@ type WebResearchResult = {
   summary: string;
 };
 
+type AgentCliWebResearchPreparation = {
+  capabilityMode: AgentCliCapabilityMode;
+  query: string | null;
+  reason: string;
+  sourceCount: number;
+  status: 'captured' | 'not_needed' | 'skipped';
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
@@ -940,6 +1075,16 @@ function shouldPrepareWebResearch(task: TaskDetail, prompt: string): boolean {
     return false;
   }
   return /网站|教程|文档|资料|调研|案例|官方文档|竞品|产品规划|市场|当前|最新|Codex|Agent\s*初学者|web\s*research|search|browse|documentation/i.test(text);
+}
+
+function formatAgentCliWebResearchPreparation(preparation: AgentCliWebResearchPreparation): string {
+  return [
+    `status=${preparation.status}`,
+    `capability_mode=${preparation.capabilityMode}`,
+    `sources=${preparation.sourceCount}`,
+    preparation.query ? `query=${truncateAgentCliContextLine(preparation.query, 600)}` : null,
+    `reason=${preparation.reason}`,
+  ].filter((line): line is string => line !== null).join('\n');
 }
 
 function buildWebResearchQuery(task: TaskDetail, prompt: string): string {
@@ -1181,7 +1326,9 @@ function buildCodexCliPrompt(params: {
   task: TaskDetail;
 }): string {
   const decompositionInstructions = buildTaskDecompositionPromptInstructions(params.prompt);
-  const childTaskInstructions = buildChildTaskAdvancePromptInstructions(params.prompt);
+  const childTaskInstructions = params.task.parentTaskId
+    ? buildNativeChildTaskContextInstructions()
+    : buildChildTaskAdvancePromptInstructions(params.prompt);
   return [
     'You are running as Codex CLI from inside Taskplane.',
     `Sandbox mode: ${params.sandboxMode}.`,
@@ -1208,7 +1355,9 @@ function buildClaudeCodePrompt(params: {
   task: TaskDetail;
 }): string {
   const decompositionInstructions = buildTaskDecompositionPromptInstructions(params.prompt);
-  const childTaskInstructions = buildChildTaskAdvancePromptInstructions(params.prompt);
+  const childTaskInstructions = params.task.parentTaskId
+    ? buildNativeChildTaskContextInstructions()
+    : buildChildTaskAdvancePromptInstructions(params.prompt);
   return [
     'You are running as Claude Code from inside Taskplane.',
     `Taskplane sandbox intent: ${params.sandboxMode}.`,
@@ -1225,6 +1374,16 @@ function buildClaudeCodePrompt(params: {
     'User request:',
     params.prompt,
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function buildNativeChildTaskContextInstructions(): string {
+  return [
+    'Taskplane context: the selected task is a child task.',
+    'Treat the user request as the source of intent; do not rewrite it or ask secondary preference questions when the task title, summary, memory, or parent context gives enough signal to move forward.',
+    'Focus on the child task boundary. Produce the smallest useful advancement: a first-pass goal, scope, non-goals, research/build action, or concrete next step.',
+    'Do not create a TASKPLANE_DECOMPOSITION JSON block unless the user explicitly asks to split this child task further.',
+    'Ask only when the missing information blocks useful progress, changes a key risk, or materially changes the deliverable boundary.',
+  ].join(' ');
 }
 
 function buildAgentCliCapabilityPromptInstruction(
@@ -1250,6 +1409,141 @@ function buildAgentCliCapabilityPromptInstruction(
     `Use ${runtimeLabel}'s native read-only capabilities as you normally would in the terminal, including search, browse, source, and documentation tools when available.`,
     'For research-dependent tasks, gather high-signal sources and cite them; if the runtime truly has no live research capability, state that as a blocker or next action instead of over-asking the user.',
   ].join(' ');
+}
+
+function parseAgentCliNativeTranscript(params: {
+  runtimeLabel: string;
+  stderr: string;
+  stdout: string;
+}): AgentCliParsedTranscript {
+  const events: AgentCliParsedEvent[] = [];
+  const finalCandidates: string[] = [];
+  let rawJsonLineCount = 0;
+
+  for (const line of params.stdout.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) continue;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(trimmed) as unknown;
+    } catch {
+      continue;
+    }
+    if (!isRecord(parsed)) continue;
+    rawJsonLineCount += 1;
+    const finalText = extractAgentCliFinalText(parsed);
+    if (finalText) {
+      finalCandidates.push(finalText);
+    }
+    const event = mapAgentCliJsonEventToRunStep(parsed, params.runtimeLabel);
+    if (event && events.length < 12) {
+      events.push(event);
+    }
+  }
+
+  return {
+    events,
+    finalText: finalCandidates.at(-1) ?? null,
+    rawJsonLineCount,
+  };
+}
+
+function mapAgentCliJsonEventToRunStep(event: Record<string, unknown>, runtimeLabel: string): AgentCliParsedEvent | null {
+  const kind = String(event.type ?? event.event ?? event.kind ?? '').toLowerCase();
+  const nestedToolUse = findAgentCliToolUse(event);
+  const name = String(event.name ?? event.tool_name ?? event.tool ?? event.subtype ?? nestedToolUse?.name ?? '').trim();
+  const text = extractAgentCliEventText(event);
+  if (!kind && !name && !text) return null;
+
+  const isToolLike = Boolean(nestedToolUse)
+    || /tool|call|command|bash|shell|search|browse|web|read|write|edit|hook|mcp/.test(`${kind} ${name}`);
+  if (!isToolLike) return null;
+
+  const label = name || humanizeAgentCliEventKind(kind) || 'native event';
+  return {
+    input: summarizeAgentCliEventInput(event) ?? summarizeAgentCliEventInput(nestedToolUse ?? {}),
+    output: text || truncateAgentCliContextLine(JSON.stringify(event), 1200),
+    status: /error|failed|failure/.test(kind) ? 'failed' : 'completed',
+    title: `${runtimeLabel} 原生事件：${label}`,
+  };
+}
+
+function extractAgentCliFinalText(event: Record<string, unknown>): string | null {
+  for (const key of ['result', 'final_answer', 'final_message', 'output_text']) {
+    const value = event[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  const kind = String(event.type ?? event.event ?? event.kind ?? '').toLowerCase();
+  if (/(assistant|message|response|completed|complete|final|result)/.test(kind)) {
+    const text = extractAgentCliEventText(event);
+    if (text) return text;
+  }
+  return null;
+}
+
+function extractAgentCliEventText(value: unknown): string {
+  const chunks: string[] = [];
+  collectAgentCliTextChunks(value, chunks);
+  return chunks.join('\n').trim();
+}
+
+function collectAgentCliTextChunks(value: unknown, chunks: string[]): void {
+  if (Array.isArray(value)) {
+    for (const item of value) collectAgentCliTextChunks(item, chunks);
+    return;
+  }
+  if (!isRecord(value)) return;
+  const type = String(value.type ?? '').toLowerCase();
+  if ((type === 'text' || type === 'output_text') && typeof value.text === 'string') {
+    chunks.push(value.text);
+  }
+  if (typeof value.message === 'string') chunks.push(value.message);
+  if (typeof value.summary === 'string') chunks.push(value.summary);
+  if (typeof value.content === 'string') chunks.push(value.content);
+  for (const child of Object.values(value)) {
+    if (Array.isArray(child) || isRecord(child)) collectAgentCliTextChunks(child, chunks);
+  }
+}
+
+function summarizeAgentCliEventInput(event: Record<string, unknown>): string | null {
+  const candidate = event.input ?? event.arguments ?? event.args ?? event.command ?? event.query ?? event.url;
+  if (typeof candidate === 'string' && candidate.trim()) return truncateAgentCliContextLine(candidate, 1200);
+  if (isRecord(candidate) || Array.isArray(candidate)) return truncateAgentCliContextLine(JSON.stringify(candidate), 1200);
+  return null;
+}
+
+function findAgentCliToolUse(value: unknown): { input?: unknown; name: string } | null {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findAgentCliToolUse(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!isRecord(value)) return null;
+  const type = String(value.type ?? '').toLowerCase();
+  const name = typeof value.name === 'string' ? value.name.trim() : '';
+  if ((type.includes('tool') || type.includes('call')) && name) {
+    return {
+      input: value.input ?? value.arguments ?? value.args,
+      name,
+    };
+  }
+  for (const child of Object.values(value)) {
+    if (Array.isArray(child) || isRecord(child)) {
+      const found = findAgentCliToolUse(child);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function humanizeAgentCliEventKind(kind: string): string | null {
+  if (!kind) return null;
+  return kind
+    .replace(/[_:.-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function buildTaskDecompositionPromptInstructions(prompt: string): string | null {

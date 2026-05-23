@@ -261,7 +261,7 @@ try {
   const page = await app.firstWindow({ timeout: timeoutMs });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await openTaskPanel(page);
-  await page.getByText(/(?:任务 Agent · )?Codex CLI · 只读/).waitFor({ timeout: timeoutMs });
+  await page.locator('.panel-runtime-chip', { hasText: 'Codex CLI' }).waitFor({ timeout: timeoutMs });
 
   await sendPanelMessage(page, [
     'Run a real packaged Codex CLI read-only smoke.',
@@ -271,7 +271,6 @@ try {
 
   await waitFor(() => queryRunRows().length >= 1, 'created Agent CLI live run');
   await waitFor(() => queryRunRows()[0]?.status === 'completed', 'completed Agent CLI live run');
-  await page.getByText(/Codex CLI run 已完成/).waitFor({ timeout: timeoutMs });
 
   const [run] = queryRunRows();
   const steps = queryRunStepRows(run.id);

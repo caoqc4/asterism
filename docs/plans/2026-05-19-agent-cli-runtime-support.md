@@ -89,7 +89,8 @@ MVP capabilities:
 - run one explicit, user-triggered background task;
 - restrict working directory to the configured workspace root;
 - pass a Taskplane-generated prompt/context bundle to the CLI;
-- capture stdout, stderr, exit code, start/end time, and timeout;
+- capture stdout, stderr, exit code, start/end time, timeout, and structured
+  CLI event streams when the selected adapter exposes them;
 - return the Run record immediately after the gated run is accepted;
 - project active CLI subprocesses back into runtime workload status;
 - accept operator-confirmed cancellation for active CLI subprocesses;
@@ -211,7 +212,7 @@ Taskplane should not enable Claude execution only because `claude -p` exists. Cl
 - check auth readiness with `claude auth status`;
 - mark Claude Code as `executionSupport: 'manual_run'` only when the dedicated adapter is present;
 - show `claude auth login` as the official login hint;
-- launch Claude Code with `claude -p --permission-mode plan --output-format text`;
+- launch Claude Code with `claude -p --permission-mode plan --output-format stream-json`;
 - pass the Taskplane prompt through stdin and instruct Claude Code to research and propose without editing files or continuing into an editing mode;
 - keep Capability Registry unavailable unless at least one ready manual-run runtime is present and a workspace root is configured;
 - keep the RightPanel launch control disabled and reject execution requests unless the selected CLI is authenticated and ready;

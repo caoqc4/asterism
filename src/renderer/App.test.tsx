@@ -5145,15 +5145,15 @@ describe('App redesign v1', () => {
 
     await waitFor(() => {
       expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
-        prompt: expect.stringContaining('用户刚补充：做一个 Codex 的基础教程网站，面向 Agent 初学者，偏基础教程和案例展示'),
+        prompt: '做一个 Codex 的基础教程网站，面向 Agent 初学者，偏基础教程和案例展示',
         taskId: 'task_child_scope_chat',
       }));
     });
     expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
-      prompt: expect.stringContaining('不要再问“个人看还是给别人看”“目录型还是学习路径型”'),
+      prompt: expect.not.stringContaining('不要再问“个人看还是给别人看”“目录型还是学习路径型”'),
     }));
     expect(harness.api.triggerAgentCliRun).toHaveBeenLastCalledWith(expect.objectContaining({
-      prompt: expect.stringContaining('默认先产出首版定位、页面/内容范围、非目标和下一步调研或搭建动作'),
+      prompt: expect.not.stringContaining('默认先产出首版定位、页面/内容范围、非目标和下一步调研或搭建动作'),
     }));
 
     expect(await screen.findByText(/当前可暂定为：首版做一个面向 Agent 初学者的 Codex 基础教程网站/)).toBeTruthy();

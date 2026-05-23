@@ -2217,7 +2217,7 @@ export function RightPanel({
       ? messages.filter((message) => message.role === 'user').length + 1
       : 0;
     const allowDecompositionDraft = canCreateDecompositionDraftForTask(activeTaskId) || isExplicitDecompositionRequest(text);
-    const runtimeText = childTaskConversation
+    const taskplaneConversationPrompt = childTaskConversation
       ? buildChildTaskConversationPrompt({
           childTaskConversationTurnCount,
           parentTaskTitle: parentTitleForActiveChild(),
@@ -2226,6 +2226,7 @@ export function RightPanel({
           userText: text,
         })
       : text;
+    const agentCliPrompt = text;
     patchSession({
       manualRefreshReady: null,
       taskFileProposal: null,
@@ -2233,7 +2234,7 @@ export function RightPanel({
 
     const historyForAI: ChatMessage[] = [
       ...messages.map((m) => ({ role: m.role, content: m.text })),
-      { role: 'user', content: runtimeText },
+      { role: 'user', content: taskplaneConversationPrompt },
     ];
 
     setThinking(true);
@@ -2254,10 +2255,10 @@ export function RightPanel({
         replyText = 'AI Runtime 状态仍在加载中，请稍后再发送。Taskplane 不会在未确认所选 Runtime 前调用 AI。';
       } else if (activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun) {
         const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
-        setAgentCliLaunchNotice('正在准备任务上下文，等待运行接收。');
+        setAgentCliLaunchNotice('正在准备任务上下文和可追溯来源，等待运行接收。');
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
-          prompt: runtimeText,
+          prompt: agentCliPrompt,
           runtimeId: activeAgentCliRuntimeMode,
           sandboxMode: 'read-only',
           taskId: activeTaskId,
@@ -2278,7 +2279,7 @@ export function RightPanel({
             runtimeLabel,
             allowDecompositionDraft,
             status: 'running',
-            suppressMemoryProposal: childTaskConversation || isChildTaskAdvancementText(runtimeText),
+            suppressMemoryProposal: childTaskConversation || isChildTaskAdvancementText(taskplaneConversationPrompt),
             taskId: activeTaskId,
           });
         }

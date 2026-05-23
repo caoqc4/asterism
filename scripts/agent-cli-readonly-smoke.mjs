@@ -14,6 +14,7 @@ const RUNTIME_ADAPTERS = {
     command: 'codex',
     execArgs: (workspaceRoot) => [
       'exec',
+      '--json',
       '--sandbox',
       'read-only',
       '--cd',
@@ -26,7 +27,7 @@ const RUNTIME_ADAPTERS = {
   claude: {
     authArgs: ['auth', 'status'],
     command: 'claude',
-    execArgs: () => ['-p', '--permission-mode', 'plan', '--output-format', 'text'],
+    execArgs: () => ['-p', '--permission-mode', 'plan', '--output-format', 'stream-json'],
     label: 'Claude Code',
   },
 };

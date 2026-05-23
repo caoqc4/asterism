@@ -64,7 +64,7 @@ describe('AgentCliRunService', () => {
       output: expect.stringContaining('objective=Review implementation path.'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      args: ['exec', '--sandbox', 'read-only', '--cd', workspaceRoot, '--skip-git-repo-check', '-'],
+      args: ['exec', '--json', '--sandbox', 'read-only', '--cd', workspaceRoot, '--skip-git-repo-check', '-'],
       command: 'codex',
       cwd: workspaceRoot,
       input: expect.stringContaining('Taskplane run contract:'),
@@ -190,6 +190,137 @@ describe('AgentCliRunService', () => {
     });
   });
 
+  it('projects Codex JSONL native events into run steps and keeps chat output human-readable', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: [
+        JSON.stringify({ type: 'session.started', id: 's1' }),
+        JSON.stringify({ type: 'tool.call', name: 'web_search', input: { query: 'Codex CLI docs' } }),
+        JSON.stringify({ type: 'tool.result', name: 'web_search', content: 'Found official Codex docs.' }),
+        JSON.stringify({ type: 'result', result: '整理完成：建议参考官方 Codex 文档。' }),
+      ].join('\n'),
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '调研 Codex CLI 文档。',
+      taskId: 'task_1',
+    });
+
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'tool_result',
+        title: 'Codex CLI 原生事件流',
+        output: expect.stringContaining('json_lines=4'),
+      }));
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_call',
+      title: 'Codex CLI 原生事件：web_search',
+      input: expect.stringContaining('Codex CLI docs'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_call',
+      title: 'Codex CLI 原生事件：web_search',
+      output: expect.stringContaining('Found official Codex docs.'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'model',
+      title: 'codex cli completed',
+      output: '整理完成：建议参考官方 Codex 文档。',
+    }));
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_agent_cli_1',
+      'completed',
+      '整理完成：建议参考官方 Codex 文档。',
+      'ai',
+    );
+  });
+
+  it('projects Claude stream-json tool events into run steps', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: [
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [{
+              type: 'tool_use',
+              name: 'WebSearch',
+              input: { query: 'Claude Code headless mode' },
+            }],
+          },
+        }),
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: '基于资料，Claude Code 支持 stream-json。' }],
+          },
+        }),
+        JSON.stringify({ type: 'result', result: '最终建议：使用 stream-json 捕获事件。' }),
+      ].join('\n'),
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+        agentCliRuntimeStatus: {
+          ...buildAiStatus().agentCliRuntimeStatus!,
+          runtimes: buildAiStatus().agentCliRuntimeStatus!.runtimes.map((runtime) => ({
+            ...runtime,
+            command: 'claude',
+            id: 'claude',
+            label: 'Claude Code',
+            version: 'claude 2.1.144',
+          })),
+        },
+      })) },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '调研 Claude Code headless 输出。',
+      runtimeId: 'claude',
+      taskId: 'task_1',
+    });
+
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      args: ['-p', '--permission-mode', 'plan', '--output-format', 'stream-json'],
+    }));
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'tool_call',
+        title: 'Claude Code 原生事件：WebSearch',
+        input: expect.stringContaining('Claude Code headless mode'),
+      }));
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'model',
+      title: 'claude code completed',
+      output: '最终建议：使用 stream-json 捕获事件。',
+    }));
+  });
+
   it('does not treat child-task advancement as another decomposition request', async () => {
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,
@@ -296,6 +427,7 @@ describe('AgentCliRunService', () => {
       stdout: '已基于来源形成首版范围。',
       summary: 'Agent CLI execution completed.',
     });
+    const runStepRepository = buildRunStepRepository();
     const service = new AgentCliRunService(
       taskService,
       {
@@ -315,7 +447,7 @@ describe('AgentCliRunService', () => {
         }),
       },
       buildRunRepository(),
-      buildRunStepRepository(),
+      runStepRepository,
       executor,
     );
 
@@ -343,6 +475,12 @@ describe('AgentCliRunService', () => {
       title: 'Codex docs',
       uri: 'https://developers.openai.com/codex',
     }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_call',
+      status: 'completed',
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('status=captured'),
+    }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('Confirmed source previews:'),
     }));
@@ -351,8 +489,20 @@ describe('AgentCliRunService', () => {
     }));
   });
 
-  it('keeps research-dependent Agent CLI runs in native mode unless audit enhancement is selected', async () => {
-    const fetchMock = vi.fn();
+  it('captures visible web research in native mode when the Taskplane bridge is configured', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        output_text: 'Codex CLI 教程站应参考官方文档。',
+        sources: [{
+          title: 'OpenAI Codex',
+          url: 'https://developers.openai.com/codex',
+          snippet: 'Codex official docs.',
+        }],
+      }),
+      ok: true,
+      status: 200,
+    });
     vi.stubGlobal('fetch', fetchMock);
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,
@@ -384,7 +534,7 @@ describe('AgentCliRunService', () => {
         }),
       },
       buildRunRepository(),
-      buildRunStepRepository(),
+      runStepRepository,
       executor,
     );
 
@@ -394,7 +544,13 @@ describe('AgentCliRunService', () => {
       taskId: 'task_1',
     });
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_call',
+      status: 'completed',
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('status=captured'),
+    }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('Capability mode: native.'),
     }));
@@ -570,7 +726,11 @@ describe('AgentCliRunService', () => {
       summary: 'Agent CLI execution completed without output.',
     });
     const service = new AgentCliRunService(
-      buildTaskService(),
+      buildTaskService(buildTask({
+        parentTaskId: 'task_parent_1',
+        summary: '确认网站类型、目标用户、核心价值和页面范围。',
+        title: '明确网站目标与范围',
+      })),
       { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
       buildRunRepository(),
       runStepRepository,
@@ -606,7 +766,11 @@ describe('AgentCliRunService', () => {
       summary: 'Agent CLI execution completed.',
     });
     const service = new AgentCliRunService(
-      buildTaskService(),
+      buildTaskService(buildTask({
+        parentTaskId: 'task_parent_1',
+        summary: '确认网站类型、目标用户、核心价值和页面范围。',
+        title: '明确网站目标与范围',
+      })),
       { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
       buildRunRepository(),
       runStepRepository,
@@ -624,10 +788,13 @@ describe('AgentCliRunService', () => {
     });
 
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.stringContaining('first-pass goal, scope, non-goals, and next research or build action'),
+      input: expect.stringContaining('first-pass goal, scope, non-goals, research/build action'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.stringContaining('Do not ask secondary choices such as private vs public use, directory vs learning path'),
+      input: expect.stringContaining('Taskplane context: the selected task is a child task.'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('Treat the user request as the source of intent'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.not.stringContaining('Return at most two short Chinese sentences'),
@@ -1545,7 +1712,7 @@ describe('AgentCliRunService', () => {
       type: 'agent',
     });
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      args: ['-p', '--permission-mode', 'plan', '--output-format', 'text'],
+      args: ['-p', '--permission-mode', 'plan', '--output-format', 'stream-json'],
       command: 'claude',
       cwd: workspaceRoot,
       input: expect.stringContaining('Claude Code is launched with --permission-mode plan.'),

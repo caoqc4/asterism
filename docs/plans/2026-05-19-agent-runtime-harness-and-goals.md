@@ -342,8 +342,8 @@ Until then, daemon work is deferred. The product should continue hardening the c
 
 Do not expose arbitrary custom CLI arguments in first-version settings. Runtime command shape stays adapter-owned:
 
-- Codex remains `codex exec --sandbox read-only --cd <workspace> --skip-git-repo-check -`.
-- Claude remains `claude -p --permission-mode plan --output-format text`.
+- Codex remains `codex exec --json --sandbox read-only --cd <workspace> --skip-git-repo-check -`.
+- Claude remains `claude -p --permission-mode plan --output-format stream-json`.
 - Workspace-write or editing modes remain rejected at the service boundary.
 
 Guarded custom arguments can be considered only when each flag is modeled as a typed capability or policy field, not a free-form string. A future flag must declare:
