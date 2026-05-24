@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { DEFAULT_SKILL_CATALOGUE_ITEMS } from '@shared/capability-product-surfaces';
+import {
+  DEFAULT_SKILL_CATALOGUE_ITEMS,
+  PRODUCT_RUNTIME_RULE_ITEMS,
+} from '@shared/capability-product-surfaces';
+import type { ProductRuntimeRuleItem } from '@shared/capability-product-surfaces';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { CapabilitySafetyStrip } from '../components/CapabilitySafetyStrip';
 
@@ -152,9 +156,9 @@ export function SkillsPage() {
       <div className="skills-head-row">
         <div>
           <h2 className="skills-title">Skills</h2>
-          <p className="skills-subtitle">AI 执行任务时可用的工具能力登记</p>
+          <p className="skills-subtitle">AI 执行任务时可用的产品级规则、流程和工具目录</p>
           <p className="skills-boundary">
-            当前页面只维护技能目录预览；真实工具暴露必须接入 Skills 服务，并通过运行时能力门禁后才会进入 AI 执行上下文。
+            产品级规则是内置运行约束，不可关闭；可选技能目录只记录使用意图，真实工具暴露必须接入 Skills 服务并通过运行时能力门禁。
           </p>
         </div>
         {selectedCatalogueItems.length > 0 && (
@@ -192,18 +196,35 @@ export function SkillsPage() {
       {activeTab === 'builtin' && (
         <div className="skills-panel">
           <p className="skills-panel-hint">
-            平台预置工具目录；选择状态只记录使用意图，不代表当前运行时已经暴露工具。
+            系统内置内容分为不可关闭的产品级规则，以及未来可按需暴露给模型的可选技能目录。
           </p>
-          <div className="skills-list">
-            {builtins.map((s) => (
-              <BuiltinRow
-                key={s.id}
-                skill={s}
-                expanded={expandedId === s.id}
-                onToggle={() => toggleBuiltin(s.id)}
-                onExpand={() => toggle(s.id)}
-              />
-            ))}
+          <div className="skills-section">
+            <div className="skills-section-label">
+              产品级规则
+              <span className="skills-section-count">{PRODUCT_RUNTIME_RULE_ITEMS.length}</span>
+            </div>
+            <div className="skills-list">
+              {PRODUCT_RUNTIME_RULE_ITEMS.map((rule) => (
+                <ProductRuleRow key={rule.id} rule={rule} />
+              ))}
+            </div>
+          </div>
+          <div className="skills-section">
+            <div className="skills-section-label">
+              可选技能目录
+              <span className="skills-section-count">{builtins.length}</span>
+            </div>
+            <div className="skills-list">
+              {builtins.map((s) => (
+                <BuiltinRow
+                  key={s.id}
+                  skill={s}
+                  expanded={expandedId === s.id}
+                  onToggle={() => toggleBuiltin(s.id)}
+                  onExpand={() => toggle(s.id)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -296,6 +317,33 @@ export function SkillsPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── Product runtime rule row ─── */
+
+function ProductRuleRow({ rule }: { rule: ProductRuntimeRuleItem }) {
+  return (
+    <div className="skill-row product-rule-row">
+      <div className="skill-row-main product-rule-row-main">
+        <div className="skill-row-info">
+          <div className="skill-row-name">
+            {rule.name}
+            <span className="skill-invoke-id">#{rule.invokeId}</span>
+          </div>
+          <div className="skill-row-desc product-rule-desc">{rule.desc}</div>
+          <div className="product-rule-meta">
+            <span>{rule.layer}</span>
+            <span>{rule.load}</span>
+            <span>{rule.enforcement}</span>
+          </div>
+          <div className="product-rule-path">{rule.path}</div>
+        </div>
+        <div className="skill-row-right">
+          <span className="product-rule-lock">内置</span>
+        </div>
+      </div>
     </div>
   );
 }

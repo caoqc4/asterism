@@ -1639,12 +1639,15 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Skills/ }));
 
-    expect(await screen.findByText(/AI 执行任务时可用的工具能力登记/)).toBeTruthy();
-    expect(screen.getByText(/当前页面只维护技能目录预览/)).toBeTruthy();
+    expect(await screen.findByText(/AI 执行任务时可用的产品级规则/)).toBeTruthy();
+    expect(screen.getByText(/产品级规则是内置运行约束/)).toBeTruthy();
+    expect(screen.getByText('产品级规则')).toBeTruthy();
+    expect(screen.getByText('GoalPilot Task Router')).toBeTruthy();
+    expect(screen.getByText('Agent Operating Principles')).toBeTruthy();
     expect(screen.getByText(/真实工具暴露必须接入 Skills 服务/)).toBeTruthy();
     expect(screen.getByText('Brainstorming')).toBeTruthy();
     expect(screen.getByText(/在创建功能、组件或修改行为前/)).toBeTruthy();
-    expect(screen.getByText(/选择状态只记录使用意图/)).toBeTruthy();
+    expect(screen.getByText(/可选技能目录只记录使用意图/)).toBeTruthy();
     await user.click(screen.getByRole('switch', { name: /选择目录项 Brainstorming/ }));
     expect(screen.getByText('已选择 1 个目录项')).toBeTruthy();
     expect(screen.queryByText(/技能已启用/)).toBeNull();
@@ -1733,11 +1736,11 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Skills/ }));
 
-    expect(await screen.findByText(/AI 执行任务时可用的工具能力登记/)).toBeTruthy();
+    expect(await screen.findByText(/AI 执行任务时可用的产品级规则/)).toBeTruthy();
     expect(screen.getByText('可用')).toBeTruthy();
     expect(screen.getByText('需确认')).toBeTruthy();
     expect(screen.getByText(/modelVisible=1/)).toBeTruthy();
-    expect(screen.getByText(/选择状态只记录使用意图/)).toBeTruthy();
+    expect(screen.getByText(/可选技能目录只记录使用意图/)).toBeTruthy();
     expect(screen.queryByText(/技能已启用/)).toBeNull();
   });
 

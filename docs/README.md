@@ -24,6 +24,16 @@ Taskplane specs are layered by load behavior:
 GoalPilot decides the movement and indexes the relevant rule set. Do not treat
 every spec as mandatory prompt context for every Agent turn.
 
+Native CLI adapters are intentionally thin:
+
+- [AGENTS.md](../AGENTS.md) lets Codex CLI discover the Taskplane runtime rule
+  stack.
+- [CLAUDE.md](../CLAUDE.md) lets Claude Code discover the same rule stack.
+
+These files point to canonical specs instead of copying them. Product-level
+runtime rules are also surfaced in the in-app Skills page as built-in rules
+that cannot be disabled; optional user skills remain separate catalogue entries.
+
 ## Documentation Scope
 
 This directory is intended for information that is useful to outside users,

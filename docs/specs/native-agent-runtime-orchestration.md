@@ -116,6 +116,27 @@ The runtime layer runs AI work and returns evidence:
 Runtime adapters must not decide durable task state. They may provide output,
 events, proposed intents, and execution evidence.
 
+## Product Rule Skills And Hooks
+
+Taskplane uses the word "skill" in two different product senses:
+
+- **Product runtime rules** are built-in specs that shape Taskplane-controlled
+  Agent runtime behavior. They include GoalPilot, Agent Operating Principles,
+  Agent Output Contract, Task Memory Spec, and this orchestration spec. They
+  may appear in the Skills page for transparency, but they are not optional
+  user tools and cannot be disabled from that page.
+- **Optional user skills** are reusable workflows or tools that may later be
+  enabled, configured, and exposed to a model through explicit runtime gates.
+
+GoalPilot is the only always-loaded product rule. Other product runtime rules
+are phase-loaded when GoalPilot or the runtime movement needs them.
+
+If a rule must always hold, it belongs in a deterministic hook, validator,
+service guard, confirmation gate, or test. Product-rule prose can guide an
+Agent, but it must not be the only enforcement for durable writes, task state
+transitions, child task creation, context clearing, source ingestion,
+completion claims, or external side effects.
+
 ## Current Implementation State
 
 ### Supported Now

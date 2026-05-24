@@ -4,6 +4,7 @@ import {
   DEFAULT_EXTERNAL_ACCESS_SOURCE_CATALOGUE_ITEMS,
   DEFAULT_MCP_SERVER_CATALOGUE_ITEMS,
   DEFAULT_SKILL_CATALOGUE_ITEMS,
+  PRODUCT_RUNTIME_RULE_ITEMS,
   defaultMcpProductSurfaceStatus,
   defaultSkillsProductSurfaceStatus,
   mcpStatusForCapability,
@@ -34,6 +35,22 @@ describe('capability product surfaces', () => {
       needsConfigCount: 0,
       catalogueCount: DEFAULT_SKILL_CATALOGUE_ITEMS.length,
     });
+  });
+
+  it('surfaces product runtime rules separately from optional skill catalogue entries', () => {
+    expect(PRODUCT_RUNTIME_RULE_ITEMS).toHaveLength(5);
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[0]).toMatchObject({
+      id: 'goalpilot.task_router',
+      name: 'GoalPilot Task Router',
+      path: 'docs/specs/goalpilot-task-advancement-framework.md',
+    });
+    expect(PRODUCT_RUNTIME_RULE_ITEMS.map((rule) => rule.id)).toEqual([
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'agent.output_contract',
+      'task.memory_rules',
+      'native.runtime_orchestration',
+    ]);
   });
 
   it('keeps default MCP catalogue data disconnected until a real service connects', () => {

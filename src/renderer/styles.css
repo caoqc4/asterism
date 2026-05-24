@@ -5228,6 +5228,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .skills-section { margin-bottom: 28px; }
+.skills-section:last-child { margin-bottom: 0; }
 .skills-section-label {
   font-size: 11px;
   font-weight: 600;
@@ -5273,6 +5274,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Skill list */
+.skills-list { display: flex; flex-direction: column; gap: 8px; }
 .skills-installed-list { display: flex; flex-direction: column; gap: 4px; }
 .skills-empty {
   padding: 28px 16px;
@@ -5311,6 +5313,46 @@ a { color: inherit; text-decoration: none; }
   transition: background 80ms;
 }
 .skill-row-main:hover { background: var(--bg-hover); }
+
+.product-rule-row { background: var(--bg); }
+.product-rule-row-main {
+  align-items: flex-start;
+  cursor: default;
+}
+.product-rule-row-main:hover { background: transparent; }
+.product-rule-desc {
+  white-space: normal;
+  line-height: 1.45;
+}
+.product-rule-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.product-rule-meta span,
+.product-rule-lock {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.product-rule-path {
+  margin-top: 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.product-rule-lock {
+  color: var(--ink-2);
+  background: var(--bg-elev);
+}
 
 .skill-row-folder-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; }
 .skill-row-info { flex: 1; min-width: 0; }
