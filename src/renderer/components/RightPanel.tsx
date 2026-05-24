@@ -40,14 +40,13 @@ import { isTaskMdPath, isTaskRecordPath } from '@shared/task-memory-path';
 import { evaluateRuntimeVerification } from '@shared/runtime-verification';
 import {
   extractTaskplaneWriteIntentsFromText,
-  type TaskplaneDecisionCreateIntent,
-  type TaskplaneTaskBlockedIntent,
-  type TaskplaneTaskCompleteIntent,
-  type TaskplaneTaskNextStepIntent,
-  type TaskplaneSourceContextCreateIntent,
-  type TaskplaneTaskRecordCreateIntent,
   validateTaskplaneWriteIntent,
 } from '@shared/taskplane-write-intent';
+import {
+  buildTaskplaneWritebackProposalsFromText,
+  type TaskplaneSourceContextWritebackProposal,
+  type TaskplaneStructuredWritebackProposal,
+} from '@shared/taskplane-writeback-proposal';
 import {
   classifyCreateTaskFileSurface,
   normalizeCreateTaskFileInput,
@@ -140,26 +139,9 @@ interface TaskFileWriteProposal {
   taskMemoryProposal?: TaskMemoryWriteProposal | null;
 }
 
-interface SourceContextWriteProposal {
-  evidenceRunId: string;
-  note: string;
-  title: string;
-  uri?: string | null;
-  credibility?: TaskplaneSourceContextCreateIntent['credibility'];
-}
+type SourceContextWriteProposal = TaskplaneSourceContextWritebackProposal;
 
-type StructuredWritebackIntent =
-  | TaskplaneDecisionCreateIntent
-  | TaskplaneTaskNextStepIntent
-  | TaskplaneTaskBlockedIntent
-  | TaskplaneTaskCompleteIntent;
-
-interface StructuredWritebackProposal {
-  detail: string;
-  evidenceRunId: string;
-  intent: StructuredWritebackIntent;
-  title: string;
-}
+type StructuredWritebackProposal = TaskplaneStructuredWritebackProposal;
 
 interface TaskDecompositionDraft {
   nextStep: string;
@@ -728,23 +710,6 @@ function taskMemoryProposalToFileProposal(proposal: TaskMemoryWriteProposal): Ta
   };
 }
 
-function taskRecordWriteIntentToFileProposal(params: {
-  intent: TaskplaneTaskRecordCreateIntent;
-  taskTitle: string;
-}): TaskFileWriteProposal {
-  const today = new Date().toISOString().slice(0, 10);
-  const path = `Task Records/${today}-${slugFilePart(params.taskTitle)}-agent-record.md`;
-  return {
-    content: params.intent.content,
-    evidenceRunId: params.intent.evidenceRunId,
-    intentSource: 'write_intent',
-    path,
-    summary: `Agent 建议保存为任务记录。confidence=${params.intent.confidence}`,
-    surface: 'task_record',
-    surfaceLabel: taskFileProposalSurfaceLabel('task_record'),
-  };
-}
-
 function isDecompositionMemoryProposal(proposal: TaskFileWriteProposal): boolean {
   if (!proposal.taskMemoryProposal) return false;
   return /拆解|子任务|subtask|decomposition|project structure/i.test([
@@ -952,18 +917,7 @@ function parseAgentCliTaskRecordWriteIntent(params: {
   taskId: string;
   taskTitle: string;
 }): TaskFileWriteProposal | null {
-  const intent = extractTaskplaneWriteIntentsFromText({
-    evidenceRunId: params.runId,
-    taskId: params.taskId,
-    text: params.output,
-  }).find((candidate) => candidate.type === 'task_record.create');
-  if (!intent || intent.type !== 'task_record.create') return null;
-  const validation = validateTaskplaneWriteIntent(intent);
-  if (validation.status !== 'ready') return null;
-  return taskRecordWriteIntentToFileProposal({
-    intent,
-    taskTitle: params.taskTitle,
-  });
+  return buildTaskplaneWritebackProposalsFromText(params).taskRecord;
 }
 
 function parseAgentCliSourceContextWriteIntent(params: {
@@ -971,21 +925,10 @@ function parseAgentCliSourceContextWriteIntent(params: {
   runId: string;
   taskId: string;
 }): SourceContextWriteProposal | null {
-  const intent = extractTaskplaneWriteIntentsFromText({
-    evidenceRunId: params.runId,
-    taskId: params.taskId,
-    text: params.output,
-  }).find((candidate) => candidate.type === 'source_context.create');
-  if (!intent || intent.type !== 'source_context.create') return null;
-  const validation = validateTaskplaneWriteIntent(intent);
-  if (validation.status !== 'ready') return null;
-  return {
-    credibility: intent.credibility,
-    evidenceRunId: intent.evidenceRunId,
-    note: intent.note,
-    title: intent.title,
-    uri: intent.uri ?? null,
-  };
+  return buildTaskplaneWritebackProposalsFromText({
+    ...params,
+    taskTitle: '',
+  }).sourceContext;
 }
 
 function parseAgentCliStructuredWritebackIntent(params: {
@@ -993,52 +936,10 @@ function parseAgentCliStructuredWritebackIntent(params: {
   runId: string;
   taskId: string;
 }): StructuredWritebackProposal | null {
-  const intent = extractTaskplaneWriteIntentsFromText({
-    evidenceRunId: params.runId,
-    taskId: params.taskId,
-    text: params.output,
-  }).find((candidate): candidate is StructuredWritebackIntent => (
-    candidate.type === 'decision.create'
-    || candidate.type === 'task.update_next_step'
-    || candidate.type === 'task.mark_blocked'
-    || candidate.type === 'task.complete.propose'
-  ));
-  if (!intent) return null;
-  const validation = validateTaskplaneWriteIntent(intent);
-  if (validation.status !== 'ready') return null;
-
-  switch (intent.type) {
-    case 'decision.create':
-      return {
-        detail: intent.rationale,
-        evidenceRunId: intent.evidenceRunId,
-        intent,
-        title: `决策提案：${intent.title}`,
-      };
-    case 'task.update_next_step':
-      return {
-        detail: intent.reason,
-        evidenceRunId: intent.evidenceRunId,
-        intent,
-        title: `下一步提案：${intent.nextStep}`,
-      };
-    case 'task.mark_blocked':
-      return {
-        detail: intent.unblockCondition
-          ? `${intent.reason}\n解除条件：${intent.unblockCondition}`
-          : intent.reason,
-        evidenceRunId: intent.evidenceRunId,
-        intent,
-        title: '阻塞提案',
-      };
-    case 'task.complete.propose':
-      return {
-        detail: intent.evidence,
-        evidenceRunId: intent.evidenceRunId,
-        intent,
-        title: '完成确认提案',
-      };
-  }
+  return buildTaskplaneWritebackProposalsFromText({
+    ...params,
+    taskTitle: '',
+  }).structured;
 }
 
 function isChildTaskAdvancementText(value: string): boolean {
