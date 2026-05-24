@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 
 import type { AgentCliRuntimeId } from '../../shared/agent-cli-runtime-status.js';
 import type {
+  ApplyTaskplaneWritebackInput,
   ChatInput,
   PingResponse,
   ProjectDecompositionInput,
@@ -197,6 +198,14 @@ function formatAiBehaviorPreferences(featureFlags: FeatureFlags): string {
   }[confirmation];
 
   return `\n\nAI behavior preferences:\n- Communication style: ${communicationInstruction}\n- Confirmation threshold: ${confirmationInstruction}`;
+}
+
+function emitTaskplaneWritebackEvents(input: ApplyTaskplaneWritebackInput): void {
+  emitAppEvent('task.changed', input.taskId);
+  if (input.plan.action === 'decision.create' || input.plan.action === 'completion_decision.create') {
+    emitAppEvent('decision.changed');
+    emitAppEvent('brief.changed');
+  }
 }
 
 async function assertTaskBoundMutationAllowed(taskId: string): Promise<void> {
@@ -399,6 +408,15 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('task:recordTimelineEvent', async (_event, input: RecordTaskTimelineEventInput) => {
     await getServices().taskService.recordTimelineEvent(input);
     emitAppEvent('task.changed', input.taskId);
+  });
+
+  ipcMain.handle('taskplaneWriteback:apply', async (_event, input: ApplyTaskplaneWritebackInput) => {
+    await assertTaskBoundMutationAllowed(input.taskId);
+    const result = await getServices().taskplaneWritebackDispatchService.dispatch(input);
+    if (result.status === 'completed') {
+      emitTaskplaneWritebackEvents(input);
+    }
+    return result;
   });
 
   ipcMain.handle('workHabit:getSnapshot', async () => getServices().workHabitService.getSnapshot());

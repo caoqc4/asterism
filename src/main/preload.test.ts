@@ -43,6 +43,7 @@ function getExposedApi() {
     transitionTask: (input: unknown) => Promise<unknown>;
     recordTaskCompletionCheck: (input: unknown) => Promise<unknown>;
     recordTaskTimelineEvent: (input: unknown) => Promise<unknown>;
+    applyTaskplaneWriteback?: (input: unknown) => Promise<unknown>;
     getWorkHabitSnapshot: () => Promise<unknown>;
     importLegacyWorkHabits: (input: unknown) => Promise<unknown>;
     updateWorkHabit: (input: unknown) => Promise<unknown>;
@@ -118,6 +119,25 @@ describe('preload bridge', () => {
     };
     const createTaskInput = { title: 'Ship preload tests' };
     const updateTaskInput = { id: 'task_1', title: 'Updated title' };
+    const taskplaneWritebackInput = {
+      plan: {
+        action: 'task.update_next_step',
+        input: {
+          id: 'task_1',
+          nextStep: '整理页面信息架构。',
+        },
+        nextStep: '整理页面信息架构。',
+        requiredApi: 'updateTask',
+        successMessage: '已确认并更新下一步：整理页面信息架构。',
+        timeline: {
+          payload: {
+            source: 'taskplane_write_intent',
+          },
+          type: 'panel.task_goal_updated',
+        },
+      },
+      taskId: 'task_1',
+    };
     const transitionTaskInput = { id: 'task_1', nextState: 'planned' };
     const completionCheckInput = {
       taskId: 'task_1',
@@ -277,6 +297,7 @@ describe('preload bridge', () => {
     await api.transitionTask(transitionTaskInput);
     await api.recordTaskCompletionCheck(completionCheckInput);
     await api.recordTaskTimelineEvent({ taskId: 'task_1', type: 'panel.context_refreshed', payload: { ok: true } });
+    await api.applyTaskplaneWriteback?.(taskplaneWritebackInput);
     await api.getWorkHabitSnapshot();
     await api.importLegacyWorkHabits(importLegacyWorkHabitsInput);
     await api.updateWorkHabit(updateWorkHabitInput);
@@ -353,6 +374,7 @@ describe('preload bridge', () => {
       ['task:transition', transitionTaskInput],
       ['task:recordCompletionCheck', completionCheckInput],
       ['task:recordTimelineEvent', { taskId: 'task_1', type: 'panel.context_refreshed', payload: { ok: true } }],
+      ['taskplaneWriteback:apply', taskplaneWritebackInput],
       ['workHabit:getSnapshot'],
       ['workHabit:importLegacy', importLegacyWorkHabitsInput],
       ['workHabit:update', updateWorkHabitInput],

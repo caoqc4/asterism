@@ -66,6 +66,8 @@ export type ProjectDecompositionResult = {
   invocation?: ProjectDecompositionInvocationSummary;
 };
 
+import type { TaskplaneWritebackApplyPlan } from '../taskplane-writeback-apply-plan.js';
+import type { TaskplaneWritebackDispatchResult } from '../taskplane-writeback-dispatch.js';
 import type { HomeBriefData } from './brief.js';
 import type {
   BlockerRecord,
@@ -169,6 +171,11 @@ import type {
   TaskHierarchyManualReviewPolicy,
 } from '../task-hierarchy-consistency.js';
 
+export type ApplyTaskplaneWritebackInput = {
+  plan: TaskplaneWritebackApplyPlan;
+  taskId: string;
+};
+
 export type ElectronApi = {
   ping: () => Promise<PingResponse>;
   getAiConfigStatus: () => Promise<AiConfigStatus>;
@@ -207,6 +214,9 @@ export type ElectronApi = {
   transitionTask: (input: TransitionTaskInput) => Promise<TaskListItemRecord>;
   recordTaskCompletionCheck: (input: RecordTaskCompletionCheckInput) => Promise<void>;
   recordTaskTimelineEvent: (input: RecordTaskTimelineEventInput) => Promise<void>;
+  applyTaskplaneWriteback?: (
+    input: ApplyTaskplaneWritebackInput,
+  ) => Promise<TaskplaneWritebackDispatchResult>;
   getWorkHabitSnapshot: () => Promise<WorkHabitStorageSnapshot>;
   importLegacyWorkHabits: (input: ImportLegacyWorkHabitsInput) => Promise<WorkHabitStorageSnapshot>;
   updateWorkHabit: (input: UpdateWorkHabitInput) => Promise<WorkHabitRecord[]>;

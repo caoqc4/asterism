@@ -2235,14 +2235,16 @@ export function RightPanel({
       taskId: activeTaskId,
     });
     try {
-      const result = await dispatchTaskplaneWritebackApplyPlan({
-        plan,
-        taskId: activeTaskId,
-        ports: {
-          createSourceContext: window.api?.createSourceContext,
-          recordTimelineEvent: recordPanelTimelineEvent,
-        },
-      });
+      const result = window.api?.applyTaskplaneWriteback
+        ? await window.api.applyTaskplaneWriteback({ plan, taskId: activeTaskId })
+        : await dispatchTaskplaneWritebackApplyPlan({
+          plan,
+          taskId: activeTaskId,
+          ports: {
+            createSourceContext: window.api?.createSourceContext,
+            recordTimelineEvent: recordPanelTimelineEvent,
+          },
+        });
       if (result.status === 'blocked') {
         appendSysMsg(result.message);
         return;
@@ -2262,16 +2264,18 @@ export function RightPanel({
       taskId: activeTaskId,
     });
     try {
-      const result = await dispatchTaskplaneWritebackApplyPlan({
-        plan,
-        taskId: activeTaskId,
-        ports: {
-          createBlocker: window.api?.createBlocker,
-          createDecision: window.api?.createDecision,
-          recordTimelineEvent: recordPanelTimelineEvent,
-          updateTask: window.api?.updateTask,
-        },
-      });
+      const result = window.api?.applyTaskplaneWriteback
+        ? await window.api.applyTaskplaneWriteback({ plan, taskId: activeTaskId })
+        : await dispatchTaskplaneWritebackApplyPlan({
+          plan,
+          taskId: activeTaskId,
+          ports: {
+            createBlocker: window.api?.createBlocker,
+            createDecision: window.api?.createDecision,
+            recordTimelineEvent: recordPanelTimelineEvent,
+            updateTask: window.api?.updateTask,
+          },
+        });
       if (result.status === 'blocked') {
         appendSysMsg(result.message);
         return;

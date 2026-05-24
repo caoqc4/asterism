@@ -26,6 +26,7 @@ const api: ElectronApi = {
   transitionTask: (input) => ipcRenderer.invoke('task:transition', input),
   recordTaskCompletionCheck: (input) => ipcRenderer.invoke('task:recordCompletionCheck', input),
   recordTaskTimelineEvent: (input) => ipcRenderer.invoke('task:recordTimelineEvent', input),
+  applyTaskplaneWriteback: (input) => ipcRenderer.invoke('taskplaneWriteback:apply', input),
   getWorkHabitSnapshot: () => ipcRenderer.invoke('workHabit:getSnapshot'),
   importLegacyWorkHabits: (input) => ipcRenderer.invoke('workHabit:importLegacy', input),
   updateWorkHabit: (input) => ipcRenderer.invoke('workHabit:update', input),

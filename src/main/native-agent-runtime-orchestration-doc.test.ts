@@ -14,8 +14,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('completed chat summary');
     expect(content).toContain('task records, source contexts,');
     expect(content).toContain('decisions, next-step updates, blockers, completion proposals, and subtask');
-    expect(content).toContain('main-side writeback dispatch');
-    expect(content).toContain('non-UI confirmation flows still need to invoke that');
+    expect(content).toContain('right-panel confirmations now invoke main-side writeback dispatch');
+    expect(content).toContain('non-UI confirmation flows still need to');
     expect(content).not.toContain('completion proposals are not fully wired into the same pipeline');
   });
 });

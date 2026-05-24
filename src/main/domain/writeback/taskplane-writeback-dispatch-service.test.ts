@@ -126,6 +126,31 @@ describe('TaskplaneWritebackDispatchService', () => {
       title: '确认首版范围',
     });
   });
+
+  it('blocks writeback plans that target a different task', async () => {
+    const taskService = {
+      createBlocker: vi.fn(),
+      createSourceContext: vi.fn(),
+      recordTimelineEvent: vi.fn(),
+      update: vi.fn(),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService);
+
+    const result = await service.dispatch({
+      taskId: 'task_2',
+      plan: nextStepPlan(),
+    });
+
+    expect(result).toEqual({
+      action: 'task.update_next_step',
+      message: 'Write Intent 已暂停：计划目标任务与当前任务不一致。',
+      status: 'blocked',
+    });
+    expect(taskService.update).not.toHaveBeenCalled();
+  });
 });
 
 function sourceContextPlan(): TaskplaneSourceContextWritebackApplyPlan {

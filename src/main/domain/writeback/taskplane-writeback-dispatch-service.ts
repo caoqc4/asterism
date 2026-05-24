@@ -28,6 +28,15 @@ export class TaskplaneWritebackDispatchService {
     plan: TaskplaneWritebackApplyPlan;
     taskId: string;
   }): Promise<TaskplaneWritebackDispatchResult> {
+    const targetTaskId = getPlanTargetTaskId(params.plan);
+    if (targetTaskId !== params.taskId) {
+      return {
+        action: params.plan.action,
+        message: 'Write Intent 已暂停：计划目标任务与当前任务不一致。',
+        status: 'blocked',
+      };
+    }
+
     return dispatchTaskplaneWritebackApplyPlan({
       plan: params.plan,
       taskId: params.taskId,
@@ -48,4 +57,9 @@ export class TaskplaneWritebackDispatchService {
       },
     });
   }
+}
+
+function getPlanTargetTaskId(plan: TaskplaneWritebackApplyPlan): string | null | undefined {
+  if (plan.action === 'task.update_next_step') return plan.input.id;
+  return plan.input.taskId;
 }

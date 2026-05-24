@@ -106,12 +106,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',
       'Shared writeback dispatch applies plans through injected ports, so renderer and future service runtimes can share the same write boundary.',
       'Main-side writeback dispatch adapter wires shared dispatch to TaskService and DecisionService ports.',
+      'Right-panel confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
       'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
       'Completed native runs summarize Taskplane web research capture and native CLI web/search events.',
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
-      'Main-side Write Intent dispatch exists, but non-UI runtime confirmation flows do not yet invoke it automatically.',
+      'Right-panel Write Intent confirmation uses main-side dispatch, but non-UI runtime confirmation flows do not yet invoke it automatically.',
     ],
     nextActions: [
       'Wire confirmed non-UI CLI/API Write Intent proposals to the main-side dispatch adapter.',
@@ -260,6 +261,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Native CLI Write Intent can surface user-confirmed Decision, blocker, next-step, and completion proposal cards.',
       'Shared writeback dispatch applies high-risk plans through injected service ports.',
       'Main-side writeback dispatch adapter routes confirmed plans through task and decision services.',
+      'Right-panel confirmation calls the main-side writeback adapter before emitting task, decision, and brief refresh events.',
       'Completion verification is separate from model output.',
     ],
     gaps: [

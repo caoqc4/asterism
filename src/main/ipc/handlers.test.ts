@@ -80,6 +80,9 @@ const {
       create: vi.fn(),
       act: vi.fn(),
     },
+    taskplaneWritebackDispatchService: {
+      dispatch: vi.fn(),
+    },
     decisionRepository: {
       create: vi.fn(),
     },
@@ -1158,6 +1161,51 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
     expect(result.id).toBe('source_context_1');
+  });
+
+  it('applies Taskplane writeback through the main dispatch adapter', async () => {
+    servicesMock.taskplaneWritebackDispatchService.dispatch.mockResolvedValue({
+      action: 'decision.create',
+      status: 'completed',
+      successMessage: '已确认并创建 Decision：确认首版范围。',
+    });
+
+    const handler = getRegisteredHandler<
+      [{
+        taskId: string;
+        plan: {
+          action: 'decision.create';
+          input: {
+            taskId: string;
+            title: string;
+          };
+          requiredApi: 'createDecision';
+          successMessage: string;
+        };
+      }],
+      Awaited<ReturnType<typeof servicesMock.taskplaneWritebackDispatchService.dispatch>>
+    >('taskplaneWriteback:apply');
+    const input = {
+      taskId: 'task_1',
+      plan: {
+        action: 'decision.create' as const,
+        input: {
+          taskId: 'task_1',
+          title: '确认首版范围',
+        },
+        requiredApi: 'createDecision' as const,
+        successMessage: '已确认并创建 Decision：确认首版范围。',
+      },
+    };
+
+    const result = await handler({}, input);
+
+    expect(servicesMock.taskService.getDetail).toHaveBeenCalledWith('task_1');
+    expect(servicesMock.taskplaneWritebackDispatchService.dispatch).toHaveBeenCalledWith(input);
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenCalledWith('decision.changed');
+    expect(emitAppEventMock).toHaveBeenCalledWith('brief.changed');
+    expect(result.status).toBe('completed');
   });
 
   it('emits task.changed after completion criteria writes', async () => {

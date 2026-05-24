@@ -190,9 +190,9 @@ Native CLI integration is not a complete product-grade Agent experience yet:
 - Claude real-account execution has not been validated in this repository's
   current environment;
 - Write Intent extraction and confirmation UI cover the first planned intent
-  set, and main-side writeback dispatch now adapts the shared plans to task and
-  decision services; non-UI confirmation flows still need to invoke that
-  adapter outside the right panel;
+  set, and right-panel confirmations now invoke main-side writeback dispatch
+  for task and decision service writes; non-UI confirmation flows still need to
+  invoke that adapter outside the right panel;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 
