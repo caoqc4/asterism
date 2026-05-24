@@ -40,6 +40,7 @@ import { isTaskMdPath, isTaskRecordPath } from '@shared/task-memory-path';
 import { evaluateRuntimeVerification } from '@shared/runtime-verification';
 import {
   extractTaskplaneWriteIntentsFromText,
+  type TaskplaneSourceContextCreateIntent,
   type TaskplaneTaskRecordCreateIntent,
   validateTaskplaneWriteIntent,
 } from '@shared/taskplane-write-intent';
@@ -135,6 +136,14 @@ interface TaskFileWriteProposal {
   taskMemoryProposal?: TaskMemoryWriteProposal | null;
 }
 
+interface SourceContextWriteProposal {
+  evidenceRunId: string;
+  note: string;
+  title: string;
+  uri?: string | null;
+  credibility?: TaskplaneSourceContextCreateIntent['credibility'];
+}
+
 interface TaskDecompositionDraft {
   nextStep: string;
   review: string;
@@ -157,6 +166,7 @@ interface PanelSessionState {
   phaseCloseoutNotice: string | null;
   phaseCloseoutSaved: boolean;
   sessionRefreshDismissed: boolean;
+  sourceContextProposal: SourceContextWriteProposal | null;
   taskFileProposal: TaskFileWriteProposal | null;
 }
 
@@ -179,6 +189,7 @@ function createPanelSessionState(taskId: string | null): PanelSessionState {
     phaseCloseoutNotice: null,
     phaseCloseoutSaved: false,
     sessionRefreshDismissed: false,
+    sourceContextProposal: null,
     taskFileProposal: null,
   };
 }
@@ -194,6 +205,7 @@ function clearTaskScopedTransients(state: PanelSessionState): PanelSessionState 
     phaseCloseoutNotice: null,
     phaseCloseoutSaved: false,
     sessionRefreshDismissed: false,
+    sourceContextProposal: null,
     taskFileProposal: null,
   };
 }
@@ -880,6 +892,28 @@ function parseAgentCliTaskRecordWriteIntent(params: {
   });
 }
 
+function parseAgentCliSourceContextWriteIntent(params: {
+  output: string;
+  runId: string;
+  taskId: string;
+}): SourceContextWriteProposal | null {
+  const intent = extractTaskplaneWriteIntentsFromText({
+    evidenceRunId: params.runId,
+    taskId: params.taskId,
+    text: params.output,
+  }).find((candidate) => candidate.type === 'source_context.create');
+  if (!intent || intent.type !== 'source_context.create') return null;
+  const validation = validateTaskplaneWriteIntent(intent);
+  if (validation.status !== 'ready') return null;
+  return {
+    credibility: intent.credibility,
+    evidenceRunId: intent.evidenceRunId,
+    note: intent.note,
+    title: intent.title,
+    uri: intent.uri ?? null,
+  };
+}
+
 function isChildTaskAdvancementText(value: string): boolean {
   const normalized = value.replace(/\s+/g, ' ').trim();
   return /推进子任务|正在推进子任务|当前子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
@@ -1225,6 +1259,7 @@ export function RightPanel({
   const [savingPhaseCloseout, setSavingPhaseCloseout] = useState(false);
   const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
   const [creatingDecompositionChildren, setCreatingDecompositionChildren] = useState(false);
+  const [savingSourceContextProposal, setSavingSourceContextProposal] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [agentCliLaunchNotice, setAgentCliLaunchNotice] = useState<string | null>(null);
   const [taskDecompositionDraft, setTaskDecompositionDraft] = useState<TaskDecompositionDraft | null>(null);
@@ -1243,6 +1278,7 @@ export function RightPanel({
     phaseCloseoutNotice,
     phaseCloseoutSaved,
     sessionRefreshDismissed,
+    sourceContextProposal,
     taskFileProposal,
   } = sessionState;
   const activeTaskIdRef = useRef(activeTaskId);
@@ -1334,6 +1370,16 @@ export function RightPanel({
     });
   }
 
+  function updateSourceContextProposal(
+    updater: SourceContextWriteProposal | null | ((current: SourceContextWriteProposal | null) => SourceContextWriteProposal | null),
+  ) {
+    patchSession({
+      sourceContextProposal: typeof updater === 'function'
+        ? updater(sourceContextProposal)
+        : updater,
+    });
+  }
+
   // Fetch task title and seed welcome message when panel first opens with a task
   useEffect(() => {
     if (!taskId) return;
@@ -1413,6 +1459,14 @@ export function RightPanel({
           });
           if (taskRecordProposal) {
             updateTaskFileProposal((existing) => existing ?? taskRecordProposal);
+          }
+          const sourceProposal = parseAgentCliSourceContextWriteIntent({
+            output,
+            runId: detail.id,
+            taskId: current.taskId,
+          });
+          if (sourceProposal) {
+            updateSourceContextProposal((existing) => existing ?? sourceProposal);
           }
         }
         appendSysMsg(formatAgentCliRunMessage({
@@ -2119,6 +2173,38 @@ export function RightPanel({
     }
   }
 
+  async function confirmSourceContextWrite() {
+    if (!activeTaskId || !sourceContextProposal || savingSourceContextProposal || !window.api?.createSourceContext) return;
+    setSavingSourceContextProposal(true);
+    try {
+      await window.api.createSourceContext({
+        content: sourceContextProposal.uri
+          ? `Source: ${sourceContextProposal.uri}\n\n${sourceContextProposal.note}`
+          : sourceContextProposal.note,
+        credibility: sourceContextProposal.credibility ?? 'unknown',
+        capturedAt: new Date().toISOString(),
+        isKey: true,
+        kind: sourceContextProposal.uri ? 'link' : 'note',
+        note: sourceContextProposal.note,
+        runId: sourceContextProposal.evidenceRunId,
+        sourceRole: sourceContextProposal.uri ? 'raw' : 'digest',
+        taskId: activeTaskId,
+        title: sourceContextProposal.title,
+        uri: sourceContextProposal.uri ?? null,
+      });
+      await recordPanelTimelineEvent(activeTaskId, 'panel.source_updated', {
+        evidenceRunId: sourceContextProposal.evidenceRunId,
+        source: 'taskplane_write_intent',
+        title: sourceContextProposal.title,
+        uri: sourceContextProposal.uri ?? null,
+      });
+      updateSourceContextProposal(null);
+      appendSysMsg(`已确认并保存来源上下文：${sourceContextProposal.title}。`);
+    } finally {
+      setSavingSourceContextProposal(false);
+    }
+  }
+
   async function confirmTaskFileWrite() {
     if (!activeTaskId || !taskFileProposal || savingTaskFileProposal || !window.api?.createTaskFile) return;
     const normalizedInput = normalizeCreateTaskFileInput({
@@ -2301,6 +2387,7 @@ export function RightPanel({
     const agentCliPrompt = text;
     patchSession({
       manualRefreshReady: null,
+      sourceContextProposal: null,
       taskFileProposal: null,
     });
 
@@ -2352,6 +2439,14 @@ export function RightPanel({
           });
           if (taskRecordProposal) {
             updateTaskFileProposal((existing) => existing ?? taskRecordProposal);
+          }
+          const sourceProposal = parseAgentCliSourceContextWriteIntent({
+            output,
+            runId: run.id,
+            taskId: activeTaskId,
+          });
+          if (sourceProposal) {
+            updateSourceContextProposal((existing) => existing ?? sourceProposal);
           }
         }
         if (run.status === 'running') {
@@ -2793,6 +2888,7 @@ export function RightPanel({
     thinking
     || agentCliLaunchNotice
     || activeTaskAgentCliRun
+    || sourceContextProposal
     || taskDecompositionDraft
     || recentDecompositionConfirmedTaskId === activeTaskId
   );
@@ -3044,6 +3140,39 @@ export function RightPanel({
                 disabled={savingTaskFileProposal}
               >
                 {savingTaskFileProposal ? '写入中…' : taskFileProposalConfirmLabel(taskFileProposal)}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {sourceContextProposal && (
+          <div className="panel-file-proposal">
+            <div className="panel-file-proposal-head">
+              <strong>来源上下文写入提案</strong>
+              <span>来自 Agent 结构化意图，确认后保存</span>
+            </div>
+            <div className="panel-refresh-reason">
+              {sourceContextProposal.title}
+              {sourceContextProposal.uri ? ` · ${sourceContextProposal.uri}` : ''}
+            </div>
+            <textarea
+              className="panel-file-proposal-content"
+              value={sourceContextProposal.note}
+              onChange={(event) => updateSourceContextProposal((proposal) => (
+                proposal ? { ...proposal, note: event.target.value } : proposal
+              ))}
+              aria-label="来源上下文说明"
+            />
+            <div className="panel-refresh-actions">
+              <button className="btn sm ghost" onClick={() => updateSourceContextProposal(null)}>
+                放弃
+              </button>
+              <button
+                className={`btn sm primary${savingSourceContextProposal ? ' disabled' : ''}`}
+                onClick={() => void confirmSourceContextWrite()}
+                disabled={savingSourceContextProposal}
+              >
+                {savingSourceContextProposal ? '保存中…' : '确认保存来源'}
               </button>
             </div>
           </div>

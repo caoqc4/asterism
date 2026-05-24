@@ -2704,6 +2704,53 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('surfaces Agent CLI source context write intents as confirmed source proposals', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请保存这个来源。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
+    expect(run).toBeTruthy();
+    Object.assign(run!, {
+      output: [
+        '发现一个可保存来源。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'source_context.create',
+            title: 'Codex docs',
+            uri: 'https://example.com/codex',
+            note: '用于后续核对 Codex 教程内容。',
+            credibility: 'unknown',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText('来源上下文写入提案')).toBeTruthy();
+    expect(screen.getByText(/Codex docs/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认保存来源' }));
+    await waitFor(() => {
+      expect(harness.api.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'link',
+        note: '用于后续核对 Codex 教程内容。',
+        runId: 'run_agent_cli_created',
+        taskId: 'task_risk',
+        title: 'Codex docs',
+        uri: 'https://example.com/codex',
+      }));
+    });
+  });
+
   it('captures a global right-panel discussion as a task before planning', async () => {
     const user = userEvent.setup();
     render(<App />);

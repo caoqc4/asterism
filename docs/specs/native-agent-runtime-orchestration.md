@@ -473,10 +473,11 @@ Status: started.
   blocks and `TASKPLANE_WRITE_INTENTS` wrappers.
 - Extract `task_record.create` and `source_context.create` from
   `TASKPLANE_WRITE_INTENTS`; task records can be surfaced through the existing
-  confirmed task-file proposal card.
+  confirmed task-file proposal card, and source contexts can be surfaced through
+  a confirmed source-context proposal card.
 - Validate subtask proposal basics before any persistence path can use it.
-- Next, surface source-context proposals and extract decisions, next-step
-  updates, blockers, and completion proposals from CLI/API output.
+- Next, extract decisions, next-step updates, blockers, and completion
+  proposals from CLI/API output.
 - Validate against task scope, phase, and memory policy.
 - surface proposal cards;
 - persist only through Taskplane services.
