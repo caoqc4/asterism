@@ -28,6 +28,7 @@ export type RuntimeEntrypointGate =
   | 'runtime_selection'
   | 'runtime_action'
   | 'runtime_context_assembly'
+  | 'context_readiness'
   | 'task_memory_coverage'
   | 'task_memory_guidance'
   | 'runtime_handoff'
@@ -320,6 +321,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
+      'context_readiness',
       'task_memory_coverage',
       'task_memory_guidance',
       'pre_step',
@@ -330,13 +332,14 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
+      'context_readiness',
       'task_memory_coverage',
       'task_memory_guidance',
       'pre_step',
       'subtask_start',
       'post_step',
     ],
-    notes: 'Auth remains inside the official CLI; Taskplane gates context assembly and records run evidence.',
+    notes: 'Auth remains inside the official CLI; Taskplane gates context assembly, records context.readiness.evaluate before invoking the native runtime, and records run evidence.',
   },
   {
     id: 'run.triggerAgentApi.future',
@@ -347,6 +350,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
+      'context_readiness',
       'task_memory_coverage',
       'task_memory_guidance',
       'pre_step',
@@ -357,13 +361,14 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
+      'context_readiness',
       'task_memory_coverage',
       'task_memory_guidance',
       'pre_step',
       'subtask_start',
       'post_step',
     ],
-    notes: 'Deferred contract only: Agent API is a future peer execution runtime, not auxiliary provider assistance. When implemented, it must reuse the same Taskplane harness, context manifest, task-memory guidance, subtask_start, and post-step verification gates as Agent CLI before exposing any IPC channel.',
+    notes: 'Deferred contract only: Agent API is a future peer execution runtime, not auxiliary provider assistance. When implemented, it must reuse the same Taskplane harness, context manifest, context readiness, task-memory guidance, subtask_start, and post-step verification gates as Agent CLI before exposing any IPC channel.',
   },
   {
     id: 'run.cancelAgentCli',

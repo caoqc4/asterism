@@ -56,6 +56,13 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
   const output = step.output?.trim() ?? '';
   const haystack = `${title}\n${output}`.toLowerCase();
 
+  if (/上下文就绪|context readiness|readiness\.evaluate|decision=(ready|self_research|plan_first|ask_user|blocked)/.test(haystack)) {
+    return {
+      detail: compactStepDetail(output),
+      label: '正在判断上下文是否足够，并选择执行、调研、计划或询问。',
+      state: 'preparing',
+    };
+  }
   if (/验收|verification|verify|check/.test(haystack)) {
     return {
       label: '正在做结果验收和收尾整理。',

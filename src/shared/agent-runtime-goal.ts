@@ -314,7 +314,7 @@ export function buildRunGoalContract(params: {
     completionConditions: runCompletionConditions.length
       ? runCompletionConditions
       : childTaskConversation
-        ? ['本次 Agent run 应围绕当前子任务推进一轮简短对话，聚焦一个决策点；优先问一个问题，必要时可问 2-3 个紧密相关的问题。']
+        ? ['本次 Agent run 应围绕当前子任务推进一轮简短对话；若上下文足够，先形成首版边界、调研/执行动作或草稿，只有用户拍板会改变目标、风险或交付边界时才收束为关键问题。']
         : ['本次 Agent run 应回答用户请求，并给出下一步、风险和验证建议。'],
     validationEvidence: [
       'Agent terminal step exits successfully or records a failure reason.',

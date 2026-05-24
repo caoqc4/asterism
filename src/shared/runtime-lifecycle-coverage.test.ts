@@ -84,6 +84,8 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('block run_start when prior task-memory guidance is still pending');
     expect(text).toContain('AgentCliRunService block run_start when prior task-memory guidance is still pending');
     expect(text).toContain('Agent CLI runs cannot bypass unresolved task-memory writes');
+    expect(text).toContain('AgentCliRunService records context.readiness.evaluate before native CLI execution');
+    expect(text).toContain('Retained RunService and CodeAgent API-like paths do not yet consume context_readiness');
   });
 
   it('tracks service-boundary task completion and waiting-state guards', () => {

@@ -189,6 +189,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentCliRunService pass through run_start evaluation.',
       'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentCliRunService now pass run_start through pre_step verification before creating/executing work.',
       'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentCliRunService run subtask_start target-readiness checks before creating ordinary, Code Agent, operator-started, or Agent CLI runs.',
+      'AgentCliRunService records context.readiness.evaluate before native CLI execution, classifying the next movement as execute, research, plan, ask, or pause and injecting the verdict into the native context bridge.',
       'RunService paused-run continuation validates resume checkpoint eligibility before rechecking target-task readiness with subtask_start.',
       'TaskService guards direct transitions into running with the same subtask_start target-readiness check.',
       'Runs and run steps store plan, model, tool, checkpoint, failure, and final events.',
@@ -245,7 +246,8 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the smallest matching pre_step, post_step, and subtask_start gates.',
       'Agent API execution can remain deferred, but task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints.',
-      'Future Agent API execution is represented only as a deferred entrypoint contract; implementing it still requires a real service/IPC path that satisfies the provider_visible_execution baseline and existing runtime harness.',
+      'Future Agent API execution is represented only as a deferred entrypoint contract; implementing it still requires a real service/IPC path that satisfies the provider_visible_execution baseline, context_readiness gate, and existing runtime harness.',
+      'Retained RunService and CodeAgent API-like paths do not yet consume context_readiness; do not mark those paths as readiness-covered until their service boundary records the same verdict.',
       'Future API verifier subagent work must first persist inspectable shadow verifier evidence and pass local readiness thresholds before it can affect assist-mode or user-visible acceptance decisions.',
       'Future runtime-native goal passthrough must satisfy the native goal forwarding readiness gate before opening any execution entrypoint; first-version runtime-native goal requests stay audit-only.',
       'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained task-dynamics surfaces must reuse the same projection.',
@@ -254,6 +256,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     nextImplementation: [
       'Require future task-dynamic surfaces to consume RuntimeEventRecord and groupRuntimeEventsForReplay rather than raw timeline-only data.',
+      'Keep retained API-like run services outside context_readiness coverage until they route through context.readiness.evaluate.',
       'Keep legacy WorkbenchPage retired; new runtime behavior must land in retained TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',
     ],
   },

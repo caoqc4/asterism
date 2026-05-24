@@ -90,6 +90,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     gates: [
       'runtime_action',
       'runtime_context_assembly',
+      'context_readiness',
       'task_memory_coverage',
       'task_memory_guidance',
       'subtask_start',
@@ -101,6 +102,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     futureApiClosure: 'partial',
     evidence: [
       'Agent CLI runs return runtime evidence and compact progress projection.',
+      'Agent CLI runs record context.readiness.evaluate before native CLI execution and pass the verdict into the context bridge.',
       'Taskplane extracts Write Intent from runtime output before product writes.',
       'Shared writeback proposal builder normalizes runtime Write Intent into reusable product proposal surfaces.',
       'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',

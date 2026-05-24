@@ -38,6 +38,23 @@ function detail(partial: Partial<RunDetailRecord>): RunDetailRecord {
 }
 
 describe('deriveAgentCliProgress', () => {
+  it('recognizes context readiness as a native preparation step', () => {
+    const progress = deriveAgentCliProgress(detail({
+      steps: [
+        step({
+          index: 1,
+          kind: 'plan',
+          title: 'Agent CLI 上下文就绪判断',
+          output: 'decision=self_research\nmovement=research\nsummary=Context readiness: self_research.',
+        }),
+      ],
+    }));
+
+    expect(progress.state).toBe('preparing');
+    expect(progress.label).toContain('判断上下文');
+    expect(progress.detail).toBe('decision=self_research');
+  });
+
   it('recognizes native web search events', () => {
     const progress = deriveAgentCliProgress(detail({
       steps: [
