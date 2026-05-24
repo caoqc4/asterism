@@ -1334,6 +1334,7 @@ function buildCodexCliPrompt(params: {
     `Sandbox mode: ${params.sandboxMode}.`,
     'Do not modify files.',
     buildAgentCliCapabilityPromptInstruction(params.capabilityMode, 'Codex CLI'),
+    buildContextReadinessPromptInstruction(),
     decompositionInstructions ?? childTaskInstructions ?? 'Answer with a concrete plan, risks, and verification steps. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
     '',
     `Task: ${params.task.title}`,
@@ -1364,6 +1365,7 @@ function buildClaudeCodePrompt(params: {
     `Taskplane sandbox intent: ${params.sandboxMode}.`,
     'Claude Code is launched with --permission-mode plan. Research and propose; do not edit files, write files, or ask to continue into an editing mode.',
     buildAgentCliCapabilityPromptInstruction(params.capabilityMode, 'Claude Code'),
+    buildContextReadinessPromptInstruction(),
     decompositionInstructions ?? childTaskInstructions ?? 'Return a concise answer with findings, recommended next steps, risks, and verification checks. Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',
     '',
     `Task: ${params.task.title}`,
@@ -1378,11 +1380,21 @@ function buildClaudeCodePrompt(params: {
   ].filter((line): line is string => line !== null).join('\n');
 }
 
+function buildContextReadinessPromptInstruction(): string {
+  return [
+    'Context readiness: before asking or executing, decide whether the task context is clean and sufficient for a reversible next step.',
+    'If missing facts can be learned from files, source context, web research, official docs, prior records, or native runtime tools, inspect or research instead of asking.',
+    'Ask the user only when the answer changes the goal, acceptance boundary, irreversible cost, security/legal/credential boundary, external side effect, or a preference only the user can know.',
+    'If context is sufficient, briefly say so only when useful, then move into the concrete plan, research, execution, verification, or writeback path.',
+  ].join(' ');
+}
+
 function buildNativeChildTaskContextInstructions(): string {
   return [
     'Taskplane context: the selected task is a child task.',
     'Treat the user request as the source of intent; do not rewrite it or ask secondary preference questions when the task title, summary, memory, or parent context gives enough signal to move forward.',
     'Focus on the child task boundary. Produce the smallest useful advancement: a first-pass goal, scope, non-goals, research/build action, or concrete next step.',
+    'When the task title, summary, memory, or user request is enough, continue with a concrete action instead of another planning question.',
     'Do not create a subtask.propose write-intent block unless the user explicitly asks to split this child task further.',
     'Ask only when the missing information blocks useful progress, changes a key risk, or materially changes the deliverable boundary.',
   ].join(' ');
@@ -1586,6 +1598,7 @@ function buildChildTaskAdvancePromptInstructions(prompt: string): string | null 
     'For website, product, document, or tutorial tasks, theme/product + target audience + content shape/use case is enough to advance. Do not ask secondary choices such as private vs public use, directory vs learning path, or which display style before drafting.',
     'When external knowledge would materially improve the answer, use available research/search/browse tools if the runtime exposes them. If no live web tool is available, state the research need as the next action instead of inventing sources or asking the user to choose structure.',
     'Ask only when the missing information blocks the next action, changes a key risk, or materially changes the deliverable boundary. Ordinary product tradeoffs should be written as adjustable defaults.',
+    'If context is sufficient, briefly say so only when useful, then move into the first-pass scope, research, draft, or execution path.',
     'For a tutorial/website scope task with enough intent, return a concise first-pass goal, scope, non-goals, and next research or build action.',
     'Do not use English section headings such as Key Findings, Recommended Next Step, Risks, or Verification Checks.',
     'Only inspect the workspace when the user explicitly asks for code, files, repository state, or local verification.',

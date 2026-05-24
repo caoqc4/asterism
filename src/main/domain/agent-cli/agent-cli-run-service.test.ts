@@ -809,6 +809,12 @@ describe('AgentCliRunService', () => {
       input: expect.stringContaining('Treat the user request as the source of intent'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('Context readiness: before asking or executing'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('continue with a concrete action instead of another planning question'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.not.stringContaining('Return at most two short Chinese sentences'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({

@@ -78,6 +78,26 @@ Pilot: choose the movement.
 - After this movement, stay on this task, enter a child, return to parent,
   switch to successor, or stop?
 
+## Context Readiness
+
+Before asking or executing, judge whether the context is clean and sufficient.
+
+Context is sufficient when the goal, owner task, next movement, risk or
+permission boundary, and recovery source are clear enough for a reversible next
+step. Missing details are not blockers when they are adjustable defaults or can
+be learned from files, source review, web research, task memory, runtime tools,
+or a first-pass draft.
+
+Self-research before asking when external facts, product examples, official
+docs, repository state, prior records, or source evidence can answer the gap.
+Ask the user only when the answer changes the goal, acceptance boundary,
+irreversible cost, security/legal/credential boundary, external side effect, or
+a preference only the user can know.
+
+When context is enough, move. A brief "context is sufficient; starting" status
+is useful before visible execution, but should not become another planning
+turn.
+
 ## Situation Map
 
 | Situation | Default movement | Load next |
@@ -107,6 +127,9 @@ GoalPilot chooses when these documents or flows matter:
   proposals, run summaries, verification results, or user-facing files.
 - Task Memory Spec: load when reading/writing task memory, switching tasks,
   clearing context, closing a phase, or deciding if recovery is sufficient.
+- Native Agent Capability Mapping: load when aligning Codex or Claude Code
+  plan, goal, memory, compact, skills, hooks, subagents, status, or review
+  capabilities to Taskplane product states.
 - Source / evidence rules: load when research, citations, source contexts,
   freshness, credibility, or external facts affect the task.
 - Decision Layer Writeback Orchestration: load when runtime evidence must
@@ -164,6 +187,8 @@ back into the right layer: memory, scoped rule, skill, hook, or test.
 - Loading every spec for every turn.
 - Asking for secondary preferences instead of drafting a reversible default.
 - Executing before goal, boundary, context, or permission is sufficient.
+- Treating "need more context" as a reason to ask before trying available
+  self-research, files, memory, or runtime tools.
 - Re-decomposing a parent when the user is advancing a child.
 - Creating tiny subtasks when one larger task can own the outcome.
 - Writing Task Records for ordinary chat turns.

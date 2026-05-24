@@ -18,9 +18,12 @@ describe('GoalPilot task advancement framework', () => {
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('| Skills / Flows |');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('| Hooks / Gates |');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Goal And Pilot Loop');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Context Readiness');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Self-research before asking');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Situation Map');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## On-Demand References');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Agent Operating Principles: load for concrete execution');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Native Agent Capability Mapping');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Decision Layer Writeback Orchestration');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('If something must always happen, implement it as a hook/gate.');
   });
@@ -30,5 +33,9 @@ describe('GoalPilot task advancement framework', () => {
     expect(TASKPLANE_CORE_AGENT_CONTEXT).toContain('GoalPilot Task Advancement Framework');
     expect(TASKPLANE_CORE_AGENT_CONTEXT).toContain('What is the smallest movement');
     expect(TASKPLANE_CORE_AGENT_CONTEXT).toContain('detailed phase rules are loaded on demand');
+  });
+
+  it('stays compact enough for always-loaded context', () => {
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK.split('\n').length).toBeLessThanOrEqual(200);
   });
 });

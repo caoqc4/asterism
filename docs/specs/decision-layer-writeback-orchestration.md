@@ -172,6 +172,7 @@ Keep the rule documents small and layered:
 | Agent Operating Principles | Execution skill | Execution safety, tools, subagents, task mutation principles | Memory surface formats |
 | Agent Output Contract | Output skill | Chat, cards, drafts, proposals, summaries | State authority rules |
 | Task Memory Spec | Memory skill | Task.md, Records, Source Context, refresh and recovery | Runtime adapter design |
+| Native Agent Capability Mapping | Architecture skill | Native plan, goal, memory, compact, skills, hooks, subagents, status, review mapping | Durable write formats |
 | Native Runtime Orchestration | Runtime architecture | CLI/API boundaries and runtime result contract | Product-wide writeback details |
 | This document | Decision and writeback architecture | Decision skills, hooks, Write Intent closure, feature audit | Vendor-specific runtime behavior |
 

@@ -64,6 +64,9 @@ to propose structured write intent.
   in chat, progress cards, drafts, run detail, and memory proposals.
 - `taskplane.task-memory-spec.v1` defines durable memory surfaces and write
   standards.
+- `taskplane.native-agent-capability-mapping.v1` maps Codex and Claude Code
+  plan, goal, memory, compact, skills, hooks, subagents, status, and review
+  capabilities into Taskplane product states.
 - `taskplane.decision-layer-writeback-orchestration.v1` defines how decision
   skills, hooks, gates, Write Intent, and product write services close the loop
   after runtime execution.
@@ -180,6 +183,9 @@ Taskplane currently has a working native CLI execution backend:
 - Taskplane injects task state, Task.md previews, Source Context previews,
   GoalPilot guidance, capability policy, and a Run Goal Contract as surrounding
   context.
+- GoalPilot context readiness is a distinct pre-execution judgment: when the
+  next step is clear enough, adapters should move into native plan, research,
+  or execution instead of repeatedly asking secondary preference questions.
 - Codex CLI native Goal Mode is detected as an adapter capability for
   `0.133.0+`; older Codex versions are shown as needing an update, and Claude
   native goal mode remains unverified by the Taskplane adapter.

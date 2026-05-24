@@ -24,6 +24,9 @@ off, or pause.
 - Task memory, Task.md, Task Records, Source Context, context refresh, or
   recovery:
   `docs/specs/task-memory-spec.md`
+- Codex or Claude Code plan, goal, memory, compact, skills, hooks, subagents,
+  status, review, or context-readiness mapping:
+  `docs/specs/native-agent-capability-mapping.md`
 - Runtime result interpretation, decision skills, hooks, gates, Write Intent,
   or product writeback:
   `docs/specs/decision-layer-writeback-orchestration.md`
@@ -35,6 +38,8 @@ off, or pause.
 - Prefer movement over repeated clarification. Ask only when the missing answer
   blocks the next useful action, changes material risk, or changes the
   deliverable boundary.
+- If context is sufficient, say so briefly only when useful and move into the
+  chosen plan, research, execution, verification, or writeback path.
 - Do not mutate Taskplane structured data directly. Propose durable writes
   through Taskplane Write Intent or product services.
 - Do not create real subtasks, mark tasks complete, clear context, or perform

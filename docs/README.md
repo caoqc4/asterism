@@ -19,6 +19,7 @@ Taskplane specs are layered by load behavior:
 - Phase-loaded execution rules: [Taskplane Agent Operating Principles](specs/agent-operating-principles.md)
 - Phase-loaded rules: [Agent output contract](specs/agent-output-contract.md)
 - Phase-loaded memory rules and gates: [Task memory spec](specs/task-memory-spec.md)
+- Architecture skill: [Native Agent capability mapping](specs/native-agent-capability-mapping.md)
 - Architecture skill: [Decision layer writeback orchestration](specs/decision-layer-writeback-orchestration.md)
 - Architecture spec: [Native Agent runtime orchestration](specs/native-agent-runtime-orchestration.md)
 

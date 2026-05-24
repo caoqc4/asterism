@@ -109,6 +109,16 @@ export const PRODUCT_RUNTIME_RULE_ITEMS: ProductRuntimeRuleItem[] = [
     path: 'docs/specs/task-memory-spec.md',
   },
   {
+    id: 'native.capability_mapping',
+    name: 'Native Agent Capability Mapping',
+    invokeId: 'native.capability_mapping',
+    desc: '原生 agent 能力映射：把 Codex/Claude 的 plan、goal、memory、compact、skills、hooks、subagents、status 和 review 对齐到 Taskplane 产品状态。',
+    layer: 'Architecture skill',
+    load: '设计 runtime 能力、上下文就绪、plan/goal/memory/context 映射或 CLI adapter 行为时加载',
+    enforcement: 'Architecture rule + capability/status tests',
+    path: 'docs/specs/native-agent-capability-mapping.md',
+  },
+  {
     id: 'native.runtime_orchestration',
     name: 'Native Runtime Orchestration',
     invokeId: 'native.runtime_orchestration',
