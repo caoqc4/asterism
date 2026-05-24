@@ -41,7 +41,6 @@ import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status
 import type {
   CancelAgentCliRunInput,
   CancelAgentCliRunResult,
-  AgentCliRunPilotDecisionSnapshot,
   AgentCliRunSandboxMode,
   CreateAgentCliRunInput,
   RecordRuntimeNativeGoalRequestInput,
@@ -49,6 +48,7 @@ import type {
   RunRecord,
   RunStatus,
 } from '../../../shared/types/run.js';
+import type { PilotDecisionSnapshot } from '../../../shared/pilot-decision-contract.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
@@ -134,7 +134,7 @@ const DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES = 64_000;
 const AGENT_CLI_TERMINATION_GRACE_MS = 1_500;
 
 type NormalizedAgentCliRunInput = Required<Omit<CreateAgentCliRunInput, 'pilotDecision'>> & {
-  pilotDecision: AgentCliRunPilotDecisionSnapshot | null;
+  pilotDecision: PilotDecisionSnapshot | null;
 };
 
 export class AgentCliRunService {
@@ -806,7 +806,7 @@ function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): NormalizedAge
   };
 }
 
-function formatAgentCliPilotDecisionForStep(snapshot: AgentCliRunPilotDecisionSnapshot): string {
+function formatAgentCliPilotDecisionForStep(snapshot: PilotDecisionSnapshot): string {
   return [
     `operationMode=${snapshot.operationMode}`,
     `backend=${snapshot.backend}`,

@@ -693,12 +693,28 @@ describe('registerIpcHandlers', () => {
     });
 
     const handler = getRegisteredHandler<
-      [{ messages: Array<{ role: 'user' | 'assistant'; content: string }>; taskId?: string | null }],
-      { text: string; invocation?: { phase: string; layer: string; runtime: { mode: string; label: string }; status: string; summary: string } }
+      [{
+        messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+        pilotDecision?: ReturnType<typeof buildPilotDecisionSnapshotForTest>;
+        taskId?: string | null;
+      }],
+      {
+        text: string;
+        invocation?: {
+          phase: string;
+          layer: string;
+          runtime: { mode: string; label: string };
+          status: string;
+          summary: string;
+          pilotDecision?: ReturnType<typeof buildPilotDecisionSnapshotForTest> | null;
+        };
+      }
     >('ai:chat');
+    const pilotDecision = buildPilotDecisionSnapshotForTest();
 
     const result = await handler({}, {
       taskId: null,
+      pilotDecision,
       messages: [{ role: 'user', content: '帮我规划今天' }],
     });
 
@@ -712,6 +728,7 @@ describe('registerIpcHandlers', () => {
       },
       status: 'completed',
       summary: '已生成全局 API Runtime 回答。',
+      pilotDecision,
     });
     expect(getLanguageModelMock).toHaveBeenCalledWith(expect.objectContaining({
       model: 'gpt-test',
@@ -1872,3 +1889,24 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.runService.continuePausedRun).not.toHaveBeenCalled();
   });
 });
+
+function buildPilotDecisionSnapshotForTest() {
+  return {
+    backend: 'agent_api' as const,
+    backendPlan: {
+      backend: 'agent_api' as const,
+      maxTurns: 1 as const,
+      outputContract: 'pilot_decision_summary' as const,
+      reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',
+      status: 'requested' as const,
+      triggers: ['multi_task_priority' as const],
+    },
+    confidence: 'model_assisted' as const,
+    executor: 'agent_api' as const,
+    messagePriority: 'follow_up' as const,
+    movement: 'execute' as const,
+    operationMode: 'bounded_decision_backend' as const,
+    priorityLane: 'steady' as const,
+    reason: 'Pilot selected execute via api_runtime; message priority is follow_up.',
+  };
+}

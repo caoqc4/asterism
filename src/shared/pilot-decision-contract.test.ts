@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildBoundedPilotDecisionPrompt,
+  buildPilotDecisionSnapshot,
   classifyPilotMessagePriority,
   evaluatePilotDecision,
   formatPilotDecisionBackendPlanForStep,
@@ -37,6 +38,11 @@ describe('Pilot Decision Contract', () => {
     });
     expect(decision.backendPlan.triggers).toContain('user_steer');
     expect(shouldRunBoundedPilotDecisionBackend(decision)).toBe(true);
+    expect(buildPilotDecisionSnapshot(decision)).toMatchObject({
+      backend: 'codex_cli',
+      operationMode: 'bounded_decision_backend',
+      reason: decision.reason,
+    });
     expect(decision.executor).toBe('codex_cli');
     expect(decision.requiredRules).toContain('pilot.decision_contract');
     expect(decision.requiredRules).toContain('agent.execution_rules');

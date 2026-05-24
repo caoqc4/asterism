@@ -21,6 +21,7 @@ describe('Pilot Decision Contract spec', () => {
     expect(spec).toContain('`maxTurns=1`');
     expect(spec).toContain('`outputContract=pilot_decision_summary`');
     expect(spec).toContain('Pilot 决策辅助计划');
+    expect(spec).toContain('Agent API returns it in invocation provenance');
     expect(spec).toContain('Pilot composes GoalPilot movement with');
     expect(spec).toContain('A Pilot decision can be produced by');
     expect(spec).toContain('Codex CLI decision run');

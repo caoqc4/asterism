@@ -212,6 +212,8 @@ Taskplane currently has a working native CLI execution backend:
 - Agent CLI run records preserve a trimmed Pilot decision snapshot as
   `Pilot 决策辅助计划`, so backend choice and fallback status remain visible
   after execution.
+- Agent API chat invocations preserve the same trimmed Pilot decision snapshot
+  in invocation provenance, keeping phase-2 auditability runtime-neutral.
 - The current Pilot operation mode is either `product_control_layer` or
   `bounded_decision_backend`. `persistent_ai_pilot_reserved` is a future
   explicit watch/autopilot capability, not the default runtime shape.

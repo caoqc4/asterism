@@ -134,6 +134,24 @@ describe('ai runtime invocation contract', () => {
     });
     const taskInvocation = buildApiRuntimeChatAssistantInvocation({
       phase: 'task_assistant',
+      pilotDecision: {
+        backend: 'agent_api',
+        backendPlan: {
+          backend: 'agent_api',
+          maxTurns: 1,
+          outputContract: 'pilot_decision_summary',
+          reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',
+          status: 'requested',
+          triggers: ['multi_task_priority'],
+        },
+        confidence: 'model_assisted',
+        executor: 'agent_api',
+        messagePriority: 'follow_up',
+        movement: 'execute',
+        operationMode: 'bounded_decision_backend',
+        priorityLane: 'steady',
+        reason: 'Pilot selected execute via api_runtime.',
+      },
       text: '下一步是补齐验收标准。',
     });
 
@@ -148,6 +166,7 @@ describe('ai runtime invocation contract', () => {
       text: '今天先看阻塞。',
     });
     expect(taskInvocation.summary).toContain('任务上下文');
+    expect(taskInvocation.pilotDecision?.backendPlan.outputContract).toBe('pilot_decision_summary');
   });
 
   it('wraps product-harness verification and memory proposal phases', () => {

@@ -68,10 +68,11 @@ Each decision carries a `backendPlan` with status, backend, triggers,
 is usable, the status is `fallback_to_rules` or `human_review`; Taskplane does
 not silently invent another runtime.
 
-When a task-bound Agent CLI run starts, Taskplane passes a trimmed Pilot
-decision snapshot with the run request and records it as a `Pilot 决策辅助计划`
-run step. This makes the phase-2 decision auditable without turning Pilot into a
-resident process.
+When a task-bound Agent CLI or Agent API call starts, Taskplane passes a
+trimmed Pilot decision snapshot with the request. Agent CLI records it as a
+`Pilot 决策辅助计划` run step, and Agent API returns it in invocation provenance.
+This makes the phase-2 decision auditable without turning Pilot into a resident
+process.
 
 ## Pilot Decision Contract
 

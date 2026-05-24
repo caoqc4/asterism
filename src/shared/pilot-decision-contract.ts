@@ -70,6 +70,18 @@ export type PilotDecision = {
   shouldStartExecutor: boolean;
 };
 
+export type PilotDecisionSnapshot = {
+  backend: PilotDecisionBackend;
+  backendPlan: PilotDecisionBackendPlan;
+  confidence: PilotConfidence;
+  executor: PilotExecutor;
+  messagePriority: PilotMessagePriority;
+  movement: TaskAdvancementMovement;
+  operationMode: PilotOperationMode;
+  priorityLane: PriorityLane | null;
+  reason: string;
+};
+
 export type PilotDecisionInput = {
   availableDecisionBackends?: PilotDecisionBackend[];
   contextAssembly?: Parameters<typeof evaluateTaskAdvancement>[0]['contextAssembly'];
@@ -171,6 +183,20 @@ export function classifyPilotMessagePriority(params: {
 
 export function shouldRunBoundedPilotDecisionBackend(decision: Pick<PilotDecision, 'backendPlan'>): boolean {
   return decision.backendPlan.status === 'requested';
+}
+
+export function buildPilotDecisionSnapshot(decision: PilotDecision): PilotDecisionSnapshot {
+  return {
+    backend: decision.backend,
+    backendPlan: decision.backendPlan,
+    confidence: decision.confidence,
+    executor: decision.executor,
+    messagePriority: decision.messagePriority,
+    movement: decision.movement,
+    operationMode: decision.operationMode,
+    priorityLane: decision.priorityLane,
+    reason: decision.reason,
+  };
 }
 
 export function formatPilotDecisionBackendPlanForStep(plan: PilotDecisionBackendPlan): string {

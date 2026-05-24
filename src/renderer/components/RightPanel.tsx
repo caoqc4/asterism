@@ -6,7 +6,7 @@ import {
   type AgentCliRuntimeId,
 } from '@shared/agent-cli-runtime-status';
 import type { AiRuntimeMode } from '@shared/types/settings';
-import type { AgentCliRunPilotDecisionSnapshot, RunRecord, RunStepRecord } from '@shared/types/run';
+import type { RunRecord, RunStepRecord } from '@shared/types/run';
 import {
   selectBlockingTaskMemoryGuidance,
   type TaskMemoryGuidanceState,
@@ -27,6 +27,7 @@ import {
 import { evaluateTaskAdvancement } from '@shared/task-advancement-orchestrator';
 import {
   buildBoundedPilotDecisionPrompt,
+  buildPilotDecisionSnapshot,
   evaluatePilotDecision,
   type PilotDecision,
   type PilotDecisionBackend,
@@ -165,20 +166,6 @@ function formatPilotDecisionLaunchNotice(decision: PilotDecision, runtimeLabel: 
     `Pilot 有界判断中：${runtimeLabel} 会先判断推进路线，再执行下一步。`,
     '写入、拆任务、记忆和完成状态仍需 Taskplane gate 或用户确认。',
   ].join('\n');
-}
-
-function buildAgentCliPilotDecisionSnapshot(decision: PilotDecision): AgentCliRunPilotDecisionSnapshot {
-  return {
-    backend: decision.backend,
-    backendPlan: decision.backendPlan,
-    confidence: decision.confidence,
-    executor: decision.executor,
-    messagePriority: decision.messagePriority,
-    movement: decision.movement,
-    operationMode: decision.operationMode,
-    priorityLane: decision.priorityLane,
-    reason: decision.reason,
-  };
 }
 
 interface Message {
@@ -2795,7 +2782,7 @@ export function RightPanel({
         setAgentCliLaunchNotice(formatPilotDecisionLaunchNotice(pilotDecision, runtimeLabel));
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
-          pilotDecision: buildAgentCliPilotDecisionSnapshot(pilotDecision),
+          pilotDecision: buildPilotDecisionSnapshot(pilotDecision),
           prompt: agentCliPrompt,
           runtimeId: activeAgentCliRuntimeMode,
           sandboxMode: 'read-only',
@@ -2892,6 +2879,7 @@ export function RightPanel({
         const appliedHabits = summarizeWorkHabitMatchesForPrompt(selectedHabitMatches);
         const res = await window.api.chatWithAI({
           messages: historyForAI,
+          pilotDecision: buildPilotDecisionSnapshot(pilotDecision),
           taskId: activeTaskId,
           workHabits: appliedHabits,
           selectedFile,

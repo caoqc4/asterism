@@ -114,6 +114,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI web/search events.',
       'Right-panel task chat now runs through shared PilotDecision and TaskAdvancementOrchestrator before Agent CLI launch, preserving operation mode, backendPlan, message priority, user-owned approval boundaries, and executor routing.',
       'Agent CLI run records preserve the trimmed Pilot decision snapshot as a Pilot 决策辅助计划 step for phase-2 auditability.',
+      'Agent API chat invocations preserve the same trimmed Pilot decision snapshot in invocation provenance.',
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [

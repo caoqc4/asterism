@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
-import type { AgentCliRunPilotDecisionSnapshot, RunRecord, RunStepRecord } from '../../../shared/types/run.js';
+import type { RunRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
+import type { PilotDecisionSnapshot } from '../../../shared/pilot-decision-contract.js';
 import {
   AgentCliRunService,
   executeAgentCliCommand,
@@ -1989,8 +1990,8 @@ function buildRun(partial: Partial<RunRecord> = {}): RunRecord {
 }
 
 function buildPilotDecisionSnapshot(
-  partial: Partial<AgentCliRunPilotDecisionSnapshot> = {},
-): AgentCliRunPilotDecisionSnapshot {
+  partial: Partial<PilotDecisionSnapshot> = {},
+): PilotDecisionSnapshot {
   return {
     backend: 'codex_cli',
     backendPlan: {

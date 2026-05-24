@@ -1,3 +1,5 @@
+import type { PilotDecisionSnapshot } from '../pilot-decision-contract.js';
+
 export type PingResponse = {
   message: string;
   timestamp: string;
@@ -10,6 +12,7 @@ export type ChatMessage = {
 
 export type ChatInput = {
   messages: ChatMessage[];
+  pilotDecision?: PilotDecisionSnapshot | null;
   taskId?: string | null;
   workHabits?: string[];
   selectedFile?: {
@@ -31,6 +34,7 @@ export type ChatResponse = {
     };
     status: 'completed';
     summary: string;
+    pilotDecision?: PilotDecisionSnapshot | null;
   };
 };
 

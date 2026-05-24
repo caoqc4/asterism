@@ -1,6 +1,7 @@
 import type { AiRuntimeMode } from './types/settings.js';
 import type { AgentRuntimeVerifierResult } from './agent-runtime-verifier.js';
 import type { DecisionDraftRecord } from './types/decision.js';
+import type { PilotDecisionSnapshot } from './pilot-decision-contract.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
 import {
@@ -71,6 +72,7 @@ export type DecisionDraftInvocationResult = RuntimeInvocationBase & {
 export type ChatAssistantInvocationResult = RuntimeInvocationBase & {
   phase: 'global_assistant' | 'task_assistant';
   layer: 'api_runtime';
+  pilotDecision?: PilotDecisionSnapshot | null;
   text: string;
 };
 
@@ -163,6 +165,7 @@ export function buildProductHarnessDecisionDraftInvocation(params: {
 
 export function buildApiRuntimeChatAssistantInvocation(params: {
   phase: 'global_assistant' | 'task_assistant';
+  pilotDecision?: PilotDecisionSnapshot | null;
   text: string;
   runtimeLabel?: string;
   summary?: string;
@@ -180,6 +183,7 @@ export function buildApiRuntimeChatAssistantInvocation(params: {
         ? '已生成任务上下文 API Runtime 回答。'
         : '已生成全局 API Runtime 回答。'
     ),
+    pilotDecision: params.pilotDecision ?? null,
     text: params.text,
   };
 }

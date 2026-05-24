@@ -2063,6 +2063,10 @@ describe('App redesign v1', () => {
 
     await waitFor(() => {
       expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
+        pilotDecision: expect.objectContaining({
+          backendPlan: expect.objectContaining({ outputContract: 'pilot_decision_summary' }),
+          operationMode: 'product_control_layer',
+        }),
         taskId: 'task_risk',
         workHabits: expect.arrayContaining([
           expect.stringContaining('数据报告初稿完成后先内部评审再对外发送'),

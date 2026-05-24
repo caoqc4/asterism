@@ -796,6 +796,7 @@ export function registerIpcHandlers(): void {
 
     const invocation = buildApiRuntimeChatAssistantInvocation({
       phase: input.taskId ? 'task_assistant' : 'global_assistant',
+      pilotDecision: input.pilotDecision ?? null,
       runtimeLabel: `Agent API Runtime · ${config.provider} / ${config.model}`,
       text: result.text,
     });
@@ -811,6 +812,7 @@ export function registerIpcHandlers(): void {
         },
         status: invocation.status,
         summary: invocation.summary,
+        pilotDecision: invocation.pilotDecision ?? null,
       },
     };
   });
