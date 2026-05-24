@@ -38,7 +38,7 @@ describe('capability product surfaces', () => {
   });
 
   it('surfaces product runtime rules separately from optional skill catalogue entries', () => {
-    expect(PRODUCT_RUNTIME_RULE_ITEMS).toHaveLength(7);
+    expect(PRODUCT_RUNTIME_RULE_ITEMS).toHaveLength(9);
     expect(PRODUCT_RUNTIME_RULE_ITEMS[0]).toMatchObject({
       id: 'goalpilot.task_router',
       name: 'GoalPilot Task Router',
@@ -49,13 +49,19 @@ describe('capability product surfaces', () => {
       'agent.execution_rules',
       'agent.output_contract',
       'task.memory_rules',
+      'pilot.coordinator',
+      'priority.attention_routing',
       'native.capability_mapping',
       'native.runtime_orchestration',
       'decision.writeback_orchestration',
     ]);
-    expect(PRODUCT_RUNTIME_RULE_ITEMS[4]).toMatchObject({
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[6]).toMatchObject({
       name: 'Native Agent Capability Mapping',
       path: 'docs/specs/native-agent-capability-mapping.md',
+    });
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[4]).toMatchObject({
+      name: 'Pilot Coordinator',
+      path: 'docs/specs/pilot-coordinator.md',
     });
   });
 

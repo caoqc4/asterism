@@ -110,6 +110,8 @@ const PRODUCT_PRINCIPLES_PROTECTED_FILES = new Set([
   'src/shared/task-advancement-framework.ts',
   'src/shared/core-agent-context.ts',
   'docs/specs/goalpilot-task-advancement-framework.md',
+  'docs/specs/pilot-coordinator.md',
+  'docs/specs/priority-attention-routing.md',
 ]);
 const sourceContextKinds = new Set<SourceContextKind>(['link', 'doc', 'issue', 'pr', 'website_list', 'note']);
 const sourceContextRoles = new Set<SourceContextRole>(['raw', 'digest', 'stable_reference']);

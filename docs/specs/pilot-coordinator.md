@@ -1,0 +1,113 @@
+# Pilot Coordinator
+
+Document id: `taskplane.pilot-coordinator.v1`
+Owner: Taskplane product architecture
+Layer: architecture skill / always-available coordination role
+Load: Pilot routing, multi-task focus, message priority, executor selection,
+DecisionBackend selection, escalation, and run handoff
+Scope: GoalPilot, Brief priority routing, native CLI/API runtimes, future
+matrix executors, human review
+Authority: implementation-guiding; Taskplane gates and write services remain
+authoritative
+
+## Purpose
+
+Pilot is Taskplane's coordination role. It judges and coordinates; it does not
+own durable state and does not replace executor runtimes.
+
+The role is always available at the product-control layer, but it does not
+require an always-running model process. A Pilot decision can be produced by
+rules, an Agent API call, a Codex CLI decision run, a Claude CLI decision run,
+a future matrix runtime, or human review behind one `DecisionBackend` contract.
+
+## Role Split
+
+| Role | Owns | Does not own |
+| --- | --- | --- |
+| Pilot | route, priority, context readiness, message priority, executor choice, escalation, verification posture | direct task mutation or long task execution |
+| Executor | concrete work through Codex, Claude, API, matrix runtime, tool run, or human action | Taskplane state authority |
+
+This is a dual-role architecture, not a mandatory two-process architecture.
+The first implementation may run Pilot as rules plus bounded decision calls.
+
+## Pilot Decision Contract
+
+A Pilot decision should answer:
+
+- What movement should happen next: ask, research, shape, decompose, execute,
+  verify, persist, handoff, or pause?
+- Is the user message a follow-up, steer, or escalation?
+- Which priority lane applies when tasks compete?
+- Which executor should handle the next action?
+- Which product rules, hooks, gates, and evidence surfaces are required?
+- Should a model-backed decision backend be used, or are deterministic rules
+  enough?
+
+Pilot output is evidence and routing intent. It may create Write Intent
+candidates, but it must not persist product state directly.
+
+## Decision Backends
+
+Supported backend kinds:
+
+- `rules`: deterministic evaluators and gates.
+- `agent_api`: future or configured API evaluator.
+- `codex_cli`: bounded Codex CLI decision run.
+- `claude_cli`: bounded Claude Code decision run.
+- `wanman_matrix`: future matrix-level coordinator evidence.
+- `human_review`: user-owned decision or unresolved ambiguity.
+
+Backend choice is capability-based. If only CLI is available, Pilot may use CLI.
+If only API is available, Pilot may use API. If neither is available, Pilot
+falls back to rules or human review instead of writing silently.
+
+## Message Priority
+
+Pilot should classify incoming user messages:
+
+| Priority | Meaning | Default handling |
+| --- | --- | --- |
+| `follow_up` | Adds context or continues the current path. | Queue into current task/run path. |
+| `steer` | Corrects, interrupts, cancels, or changes direction. | Stop or redirect current run when possible; preserve correction evidence. |
+| `escalate` | Touches user-owned boundary, high risk, credentials, money, legal, deploy, delete, or security. | Pause automation and require confirmation or Decision. |
+
+This classification is a product event, not just chat tone.
+
+## Executor Selection
+
+Executor choice is separate from Pilot backend choice:
+
+- local rule for purely product-side checks;
+- human for user-owned decisions or approval;
+- Codex or Claude CLI for code/repo-native execution;
+- Agent API for lightweight provider execution;
+- matrix runtime for multi-agent mission-internal execution when available.
+
+Future matrix executors are delegated mission engines. Taskplane remains the
+mission control layer that verifies outcome evidence.
+
+## Wanman Reference Boundary
+
+Wanman-style coordinators usually coordinate multiple agents inside one
+mission. Taskplane Pilot coordinates across tasks and missions first, then may
+delegate one selected mission to a matrix executor.
+
+Do not turn GoalPilot into an agent matrix runtime. Reserve `wanman_matrix` as
+an executor backend while keeping Taskplane's task, evidence, decision, and
+memory authority.
+
+## Hooks And Gates
+
+Pilot cannot bypass:
+
+- runtime entrypoint gates;
+- priority and escalation boundaries;
+- context readiness and context transition gates;
+- write-intent validation;
+- confirmation requirements;
+- completion verification;
+- task memory coverage;
+- service-level write authorization.
+
+If a Pilot rule must always hold, implement it as a deterministic evaluator,
+hook, gate, or test.

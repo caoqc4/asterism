@@ -112,7 +112,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Right-panel source, structured, subtask, task-record, and task-memory confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
       'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
       'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI web/search events.',
-      'Right-panel task chat now runs through shared TaskAdvancementOrchestrator before Agent CLI launch, preserving user-owned approval boundaries while allowing self-research and execution to continue.',
+      'Right-panel task chat now runs through shared PilotCoordinator and TaskAdvancementOrchestrator before Agent CLI launch, preserving message priority, user-owned approval boundaries, and executor routing.',
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [

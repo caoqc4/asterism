@@ -163,6 +163,28 @@ Codex validates the GoalPilot positioning: Taskplane should not become a
 better single-agent goal loop. It should coordinate goals, tasks, runs, agents,
 state, evidence, and review across runtimes.
 
+## Agent Matrix Reference
+
+Wanman-style matrix runtimes are useful reference executors, not Taskplane's
+product identity. They coordinate multiple agents inside one delegated mission.
+Taskplane Pilot coordinates across tasks and missions, chooses what deserves
+attention, selects an executor, and verifies outcome evidence.
+
+Taskplane should therefore model a matrix runtime as an executor capability:
+
+| Matrix capability | Taskplane mapping |
+| --- | --- |
+| CEO/coordinator agent | Mission-internal executor coordinator below Pilot. |
+| Message bus | Runtime event and evidence stream. |
+| Task pool / initiative board | Imported evidence or mapped child task proposals, not source of Taskplane truth. |
+| Artifact store | Artifact / Evidence proposal. |
+| Per-agent worktree and HOME | Future run workspace isolation policy. |
+| Escalation | Decision or human approval gate. |
+
+The useful lesson is supervisor discipline: event logs, isolated workspaces,
+capability declarations, skill snapshots, and explicit escalation boundaries.
+Do not replace Taskplane's mission control layer with a black-box matrix.
+
 ## Context Readiness Pattern
 
 Before execution, Taskplane should decide whether the agent has enough context
@@ -231,6 +253,10 @@ use another backend, run a Taskplane bridge, or surface a clear blocker.
 
 - GoalPilot is the always-loaded router that decides the movement and whether
   context is ready.
+- Pilot Coordinator defines the coordination role, DecisionBackend choice,
+  message priority, executor selection, and matrix-runtime delegation boundary.
+- Priority Attention Routing defines Brief/Pilot focus selection when multiple
+  tasks compete.
 - Agent Operating Principles load for concrete execution and completion claims.
 - Task Memory Spec loads when context must be persisted, retrieved, refreshed,
   or cleared.

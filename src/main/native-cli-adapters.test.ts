@@ -12,6 +12,8 @@ describe('native CLI adapter instruction files', () => {
     expect(content).toContain('docs/specs/agent-operating-principles.md');
     expect(content).toContain('docs/specs/agent-output-contract.md');
     expect(content).toContain('docs/specs/task-memory-spec.md');
+    expect(content).toContain('docs/specs/pilot-coordinator.md');
+    expect(content).toContain('docs/specs/priority-attention-routing.md');
     expect(content).toContain('docs/specs/native-agent-capability-mapping.md');
     expect(content).toContain('docs/specs/decision-layer-writeback-orchestration.md');
     expect(content).toContain('docs/specs/native-agent-runtime-orchestration.md');
@@ -26,6 +28,8 @@ describe('native CLI adapter instruction files', () => {
     expect(content).toContain('docs/specs/agent-operating-principles.md');
     expect(content).toContain('docs/specs/agent-output-contract.md');
     expect(content).toContain('docs/specs/task-memory-spec.md');
+    expect(content).toContain('docs/specs/pilot-coordinator.md');
+    expect(content).toContain('docs/specs/priority-attention-routing.md');
     expect(content).toContain('docs/specs/native-agent-capability-mapping.md');
     expect(content).toContain('docs/specs/decision-layer-writeback-orchestration.md');
     expect(content).toContain('docs/specs/native-agent-runtime-orchestration.md');

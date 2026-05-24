@@ -10,12 +10,9 @@ Line budget: keep under 200 lines
 
 ## Purpose
 
-GoalPilot is the short, always-loaded task navigation layer for Taskplane.
+GoalPilot is the short, always-loaded task navigation layer for Taskplane and the operating reference for the Pilot coordination role.
 
-It decides how work moves from fuzzy intent to shaped, executable, verified,
-and recoverable task state. It does not contain detailed execution, memory,
-output, source, or tool rules. Instead, it routes each movement to the smallest
-needed runtime, rule document, skill, hook, or review path.
+It decides how work moves from fuzzy intent to shaped, executable, verified, and recoverable task state. It does not contain detailed execution, memory, output, source, or tool rules. Instead, it routes each movement to the smallest needed runtime, rule document, skill, hook, or review path.
 
 Use it silently. Do not show GoalPilot as a checklist unless the user asks why a movement was chosen.
 
@@ -47,7 +44,7 @@ Classify each rule or piece of context into the right layer:
 | Skills / Flows | Reusable workflows: research, decomposition, execution, closeout, context refresh, review. | Load by phase or explicit user request. |
 | Tools / Runtimes | Codex CLI, Claude Code, Agent API, MCP, connectors, Taskplane write services. | Use when the chosen movement needs them. |
 | Hooks / Gates | Deterministic constraints: confirmation, write validation, context-clear readiness, state transitions. | Always enforce in code; never rely on model memory. |
-| Decision Agents | Bounded semantic judgment by CLI, API, verifier, or subagent. | Use only when rules are insufficient. |
+| Pilot / Decision Agents | Bounded coordination judgment by rules, CLI, API, verifier, human review, or future matrix runtime. | Use only when rules are insufficient. |
 | Eval / Review | Feedback loops, tests, run verification, user corrections, failure review. | Run before closeout and after meaningful failures. |
 
 If something must always happen, implement it as a hook/gate. Do not leave it
@@ -72,6 +69,7 @@ Pilot: choose the movement.
 - Clarify, research, shape, decompose, select next task, execute, verify,
   persist, hand off, or pause?
 - What is the smallest useful next movement?
+- If multiple tasks compete, should Priority Attention Routing choose the focus first?
 - Which on-demand rule, skill, runtime, or hook applies?
 - Does durable state change require confirmation?
 - After this movement, stay on this task, enter a child, return to parent,
@@ -106,6 +104,7 @@ turn.
 | Product, website, document, or tutorial with theme, audience, content shape | Research or Shape | Source rules, output contract, or execution rules as needed. |
 | Project too broad for one run | Decompose | Decomposition flow; user confirmation before child creation. |
 | Project with existing children | Select next task or Verify | Subtask start evaluation; handoff/memory rules if switching. |
+| Multiple active tasks compete | Rank and focus | Priority Attention Routing; then selected-task rules. |
 | Child task active | Shape or Execute | Child-task scoped rules; do not re-plan parent unless boundary is wrong. |
 | Research-dependent task | Research | Source rules and selected runtime/tool capabilities. |
 | Executable task | Execute | Agent operating principles and runtime/tool rules. |
@@ -129,6 +128,8 @@ GoalPilot chooses when these documents or flows matter:
 - Context Transition Policy: load when compacting, resetting, clearing,
   handing off, switching tasks, starting a new conversation, or proving that
   useful chat context has been preserved.
+- Pilot Coordinator: load when defining Pilot role, message priority, DecisionBackend choice, executor routing, or matrix-runtime delegation.
+- Priority Attention Routing: load when Brief or Pilot must rank competing tasks, blockers, decisions, dependencies, artifacts, or completion chances.
 - Native Agent Capability Mapping: load when aligning Codex or Claude Code
   plan, goal, memory, compact, skills, hooks, subagents, status, or review
   capabilities to Taskplane product states.
@@ -194,7 +195,6 @@ right layer: memory, scoped rule, skill, hook, or test.
 - Treating "need more context" as a reason to ask before trying available
   self-research, files, memory, or runtime tools.
 - Re-decomposing a parent when the user is advancing a child.
-- Creating tiny subtasks when one larger task can own the outcome.
 - Completing a task because a next task is obvious.
 - Treating a runtime-native goal loop as Taskplane's source of truth.
 - Keeping must-follow rules only in prompt text instead of hooks.

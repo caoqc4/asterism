@@ -27,6 +27,12 @@ off, or pause.
 - Compact, reset, clear, handoff, task switch, phase closeout, or preservation
   proof:
   `docs/specs/context-transition-policy.md`
+- Pilot role, message priority, DecisionBackend choice, executor routing, or
+  matrix-runtime delegation:
+  `docs/specs/pilot-coordinator.md`
+- Brief/Pilot multi-task ranking, blockers, dependencies, decisions, artifacts,
+  or attention focus:
+  `docs/specs/priority-attention-routing.md`
 - Codex or Claude Code plan, goal, memory, compact, skills, hooks, subagents,
   status, review, or context-readiness mapping:
   `docs/specs/native-agent-capability-mapping.md`

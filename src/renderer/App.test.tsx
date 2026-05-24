@@ -2122,6 +2122,21 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/已发送取消请求/)).toBeTruthy();
   });
 
+  it('lets Pilot stop high-impact task chat before launching Codex CLI', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '是否允许直接部署到生产环境？');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(await screen.findByText(/这个动作触及需要你确认的边界/)).toBeTruthy();
+  });
+
   it('keeps selected Codex CLI global chat from falling through to API runtime', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));

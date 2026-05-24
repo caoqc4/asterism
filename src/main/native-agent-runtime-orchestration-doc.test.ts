@@ -12,6 +12,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
 
     expect(content).toContain('pre-run web research bridge');
     expect(content).toContain('context.readiness.evaluate');
+    expect(content).toContain('Pilot coordination is modeled as a product role');
+    expect(content).toContain('future `wanman_matrix` executor');
     expect(content).toContain('completed chat summary');
     expect(content).toContain('including child-task advancement messages');
     expect(content).toContain('task records, source contexts,');

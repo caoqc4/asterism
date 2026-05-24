@@ -25,6 +25,8 @@ describe('Decision Layer Writeback Orchestration spec', () => {
     );
 
     expect(spec).toContain('| `context.readiness.evaluate` |');
+    expect(spec).toContain('| `pilot.route` |');
+    expect(spec).toContain('| `priority.route` |');
     expect(spec).toContain('| `write_intent.extract` |');
     expect(spec).toContain('| Runtime entrypoint gate |');
     expect(spec).toContain('| Context readiness gate |');

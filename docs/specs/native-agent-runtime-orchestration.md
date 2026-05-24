@@ -17,6 +17,7 @@ workflow decisions.
 This spec defines the architecture that connects:
 
 - Taskplane control plane;
+- Pilot coordination role and DecisionBackend selection;
 - native Agent CLI runtimes such as Codex CLI and Claude Code;
 - the future Agent API Runtime;
 - the decision and write-intent layer between execution output and durable
@@ -58,6 +59,10 @@ to propose structured write intent.
 
 - `taskplane.task-advancement-framework.v1` chooses the next kind of movement:
   ask, research, shape, decompose, execute, verify, persist, hand off, or pause.
+- `taskplane.pilot-coordinator.v1` names the coordination role and defines
+  message priority, DecisionBackend choice, executor routing, and escalation.
+- `taskplane.priority-attention-routing.v1` defines the shared Brief/Pilot
+  priority language for competing tasks.
 - `taskplane.agent-operating-principles.v1` loads for execution-level rules,
   runtime runs, tools, subagents, state mutation, and completion claims.
 - `taskplane.agent-output-contract.v1` decides how the chosen movement appears
@@ -130,6 +135,11 @@ This layer is not a runtime. It is product orchestration. It may use rules,
 native CLI decision runs, or future API evaluators as backends, but the layer
 itself belongs to Taskplane.
 
+Pilot is the named coordination role in this layer. Pilot may use rules,
+Agent API, Codex CLI, Claude CLI, a future matrix runtime, or human review as a
+DecisionBackend. That does not make Pilot the executor, and it does not give
+Pilot write authority.
+
 The detailed writeback contract for this layer lives in
 `docs/specs/decision-layer-writeback-orchestration.md`.
 
@@ -146,6 +156,11 @@ The runtime layer runs AI work and returns evidence:
 
 Runtime adapters must not decide durable task state. They may provide output,
 events, proposed intents, persistent goal loop evidence, and execution evidence.
+
+Executor is the role that performs concrete work. Today an executor may be
+Codex CLI, Claude Code, API Runtime, a local rule path, or a human action. A
+future `wanman_matrix` executor can coordinate multiple mission-internal
+agents, while Taskplane Pilot remains the cross-task mission control layer.
 
 ## Product Rule Skills And Hooks
 
@@ -186,6 +201,9 @@ Taskplane currently has a working native CLI execution backend:
 - GoalPilot context readiness is a distinct pre-execution judgment: when the
   next step is clear enough, adapters should move into native plan, research,
   or execution instead of repeatedly asking secondary preference questions.
+- Pilot coordination is modeled as a product role: rules handle clear routes,
+  and API/CLI DecisionBackends may assist ambiguous routing without bypassing
+  Taskplane gates.
 - Agent CLI runs record a `context.readiness.evaluate` step that classifies the
   next movement as ready, self-research, plan-first, ask-user, or blocked
   before the native runtime receives the prompt.
@@ -591,11 +609,14 @@ Centralize scattered movement decisions:
 
 Current implementation:
 
+- `src/shared/pilot-coordinator.ts` wraps the shared advancement decision with
+  Pilot message priority, DecisionBackend choice, executor selection, and
+  priority-lane evidence.
 - `src/shared/task-advancement-orchestrator.ts` composes runtime intake and
   context-readiness evaluation into a shared advancement decision.
-- Right-panel task chat uses the shared decision before launching Agent CLI,
-  so user-owned approval boundaries stay local while child-task advancement can
-  continue through native runtime research/execution.
+- Right-panel task chat uses Pilot plus the shared advancement decision before
+  launching Agent CLI, so user-owned approval boundaries stay local while
+  child-task advancement can continue through native runtime research/execution.
 - Project decomposition uses the same shared decision before requesting a
   reversible subtask draft; durable child creation remains behind confirmation.
 - Manual context refresh and phase closeout call the same shared decision before

@@ -26,6 +26,11 @@ import {
 } from '@shared/runtime-intake-evaluator';
 import { evaluateTaskAdvancement } from '@shared/task-advancement-orchestrator';
 import {
+  evaluatePilotCoordinator,
+  type PilotCoordinatorDecision,
+  type PilotDecisionBackend,
+} from '@shared/pilot-coordinator';
+import {
   buildRuntimeHandoffPreview,
   buildRuntimeResumePlan,
   evaluateRuntimeHandoff,
@@ -121,6 +126,33 @@ const AGENT_CLI_PANEL_RUNTIME_HINTS: Record<AgentCliRuntimeId, string> = {
 };
 
 const AGENT_CLI_PANEL_RUNTIMES: AgentCliRuntimeId[] = ['codex', 'claude'];
+
+function pilotBackendForCliRuntime(runtimeId: AgentCliRuntimeId | null): PilotDecisionBackend | null {
+  if (runtimeId === 'claude') return 'claude_cli';
+  if (runtimeId === 'codex') return 'codex_cli';
+  return null;
+}
+
+function buildAvailablePilotDecisionBackends(params: {
+  apiReady: boolean;
+  cliRuntimeId: AgentCliRuntimeId | null;
+  cliReady: boolean;
+}): PilotDecisionBackend[] {
+  const backends: PilotDecisionBackend[] = ['rules'];
+  if (params.apiReady) backends.push('agent_api');
+  const cliBackend = params.cliReady ? pilotBackendForCliRuntime(params.cliRuntimeId) : null;
+  if (cliBackend) backends.push(cliBackend);
+  backends.push('human_review');
+  return [...new Set(backends)];
+}
+
+function formatPilotEscalationMessage(decision: PilotCoordinatorDecision): string {
+  return [
+    '这个动作触及需要你确认的边界，我先暂停自动执行。',
+    decision.advancement.userMessage,
+    '确认后我再继续调用对应的执行 runtime。',
+  ].join('\n\n');
+}
 
 interface Message {
   id: string;
@@ -2650,17 +2682,25 @@ export function RightPanel({
     const displayUserMessage = options.displayUserMessage ?? true;
     const isChildTask = isChildTaskContext(activeTaskId);
     const canDraftDecomposition = canCreateDecompositionDraftForTask(activeTaskId) || isExplicitDecompositionRequest(text);
-    const advancement = evaluateTaskAdvancement({
+    const runtimeAvailability = {
+      agentCliReady: Boolean(activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun),
+      apiRuntimeReady: Boolean(isAgentApiRuntimeMode && window.api?.chatWithAI),
+    };
+    const pilotDecision = evaluatePilotCoordinator({
+      availableDecisionBackends: buildAvailablePilotDecisionBackends({
+        apiReady: runtimeAvailability.apiRuntimeReady,
+        cliReady: runtimeAvailability.agentCliReady,
+        cliRuntimeId: activeAgentCliRuntimeMode,
+      }),
       entrypoint: isChildTask ? 'child_advance' : 'right_panel_chat',
       hasTaskContext: Boolean(activeTaskId),
       isChildTask,
       prompt: text,
-      runtime: {
-        agentCliReady: Boolean(activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun),
-        apiRuntimeReady: Boolean(isAgentApiRuntimeMode && window.api?.chatWithAI),
-      },
+      runtime: runtimeAvailability,
+      selectedCliRuntime: activeAgentCliRuntimeMode,
       task: activeTaskDetail,
     });
+    const advancement = pilotDecision.advancement;
     const childTaskConversation = advancement.promptMode === 'child_task_advance' || isChildTask;
     const childTaskConversationTurnCount = childTaskConversation
       ? messages.filter((message) => message.role === 'user').length + 1
@@ -2702,10 +2742,14 @@ export function RightPanel({
         replyText = await handleAgentRuntimeSlashCommand(slashCommand);
       } else if (!aiRuntimeStatusLoaded) {
         replyText = 'AI Runtime 状态仍在加载中，请稍后再发送。Taskplane 不会在未确认所选 Runtime 前调用 AI。';
+      } else if (activeTaskId && pilotDecision.messagePriority === 'escalate') {
+        replyText = formatPilotEscalationMessage(pilotDecision);
       } else if (advancement.route === 'local_rule' && advancement.movement === 'ask') {
         replyText = advancement.userMessage;
       } else if (
         advancement.route === 'agent_cli'
+        && pilotDecision.shouldStartExecutor
+        && (pilotDecision.executor === 'codex_cli' || pilotDecision.executor === 'claude_cli')
         && activeAgentCliRuntimeMode
         && shouldUseAgentCliRuntime
         && activeTaskId
@@ -2794,7 +2838,11 @@ export function RightPanel({
           '请到 AI Runtime 页完成安装、登录或重新检测后再试。',
           'Taskplane 不会在未说明的情况下切换到另一条 AI Runtime。',
         ].join('\n\n');
-      } else if (isAgentApiRuntimeMode && window.api?.chatWithAI) {
+      } else if (
+        isAgentApiRuntimeMode
+        && (!activeTaskId || (pilotDecision.shouldStartExecutor && pilotDecision.executor === 'agent_api'))
+        && window.api?.chatWithAI
+      ) {
         const habitParams = {
           taskTitle: titleCache[activeTaskId ?? ''] ?? null,
           taskTypeLabel: activeAttrs ? TASK_TYPE_HABIT_LABELS[activeAttrs.type] : null,
