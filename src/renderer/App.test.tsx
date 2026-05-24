@@ -2755,6 +2755,53 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('surfaces Agent CLI structured write intents as confirmed product writebacks', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请记录这个决策。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
+    expect(run).toBeTruthy();
+    Object.assign(run!, {
+      output: [
+        '建议把首版范围作为待确认决策。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'decision.create',
+            title: '确认首版范围',
+            rationale: '已从任务讨论中收敛到基础教程与案例展示，适合先作为首版边界。',
+            options: ['确认首版范围', '继续扩大范围'],
+            proposedOutcome: '确认首版范围',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText('结构化写回提案')).toBeTruthy();
+    expect(screen.getByText('决策提案：确认首版范围')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认执行' }));
+    await waitFor(() => {
+      expect(harness.api.createDecision).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'direction_choice',
+        sourceId: 'run_agent_cli_created',
+        sourceType: 'run',
+        taskId: 'task_risk',
+        title: '确认首版范围',
+      }));
+    });
+    expect(await screen.findByText(/已确认并创建 Decision：确认首版范围/)).toBeTruthy();
+  });
+
   it('captures a global right-panel discussion as a task before planning', async () => {
     const user = userEvent.setup();
     render(<App />);

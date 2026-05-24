@@ -40,6 +40,10 @@ import { isTaskMdPath, isTaskRecordPath } from '@shared/task-memory-path';
 import { evaluateRuntimeVerification } from '@shared/runtime-verification';
 import {
   extractTaskplaneWriteIntentsFromText,
+  type TaskplaneDecisionCreateIntent,
+  type TaskplaneTaskBlockedIntent,
+  type TaskplaneTaskCompleteIntent,
+  type TaskplaneTaskNextStepIntent,
   type TaskplaneSourceContextCreateIntent,
   type TaskplaneTaskRecordCreateIntent,
   validateTaskplaneWriteIntent,
@@ -144,6 +148,19 @@ interface SourceContextWriteProposal {
   credibility?: TaskplaneSourceContextCreateIntent['credibility'];
 }
 
+type StructuredWritebackIntent =
+  | TaskplaneDecisionCreateIntent
+  | TaskplaneTaskNextStepIntent
+  | TaskplaneTaskBlockedIntent
+  | TaskplaneTaskCompleteIntent;
+
+interface StructuredWritebackProposal {
+  detail: string;
+  evidenceRunId: string;
+  intent: StructuredWritebackIntent;
+  title: string;
+}
+
 interface TaskDecompositionDraft {
   nextStep: string;
   review: string;
@@ -167,6 +184,7 @@ interface PanelSessionState {
   phaseCloseoutSaved: boolean;
   sessionRefreshDismissed: boolean;
   sourceContextProposal: SourceContextWriteProposal | null;
+  structuredWritebackProposal: StructuredWritebackProposal | null;
   taskFileProposal: TaskFileWriteProposal | null;
 }
 
@@ -190,6 +208,7 @@ function createPanelSessionState(taskId: string | null): PanelSessionState {
     phaseCloseoutSaved: false,
     sessionRefreshDismissed: false,
     sourceContextProposal: null,
+    structuredWritebackProposal: null,
     taskFileProposal: null,
   };
 }
@@ -206,6 +225,7 @@ function clearTaskScopedTransients(state: PanelSessionState): PanelSessionState 
     phaseCloseoutSaved: false,
     sessionRefreshDismissed: false,
     sourceContextProposal: null,
+    structuredWritebackProposal: null,
     taskFileProposal: null,
   };
 }
@@ -914,6 +934,59 @@ function parseAgentCliSourceContextWriteIntent(params: {
   };
 }
 
+function parseAgentCliStructuredWritebackIntent(params: {
+  output: string;
+  runId: string;
+  taskId: string;
+}): StructuredWritebackProposal | null {
+  const intent = extractTaskplaneWriteIntentsFromText({
+    evidenceRunId: params.runId,
+    taskId: params.taskId,
+    text: params.output,
+  }).find((candidate): candidate is StructuredWritebackIntent => (
+    candidate.type === 'decision.create'
+    || candidate.type === 'task.update_next_step'
+    || candidate.type === 'task.mark_blocked'
+    || candidate.type === 'task.complete.propose'
+  ));
+  if (!intent) return null;
+  const validation = validateTaskplaneWriteIntent(intent);
+  if (validation.status !== 'ready') return null;
+
+  switch (intent.type) {
+    case 'decision.create':
+      return {
+        detail: intent.rationale,
+        evidenceRunId: intent.evidenceRunId,
+        intent,
+        title: `决策提案：${intent.title}`,
+      };
+    case 'task.update_next_step':
+      return {
+        detail: intent.reason,
+        evidenceRunId: intent.evidenceRunId,
+        intent,
+        title: `下一步提案：${intent.nextStep}`,
+      };
+    case 'task.mark_blocked':
+      return {
+        detail: intent.unblockCondition
+          ? `${intent.reason}\n解除条件：${intent.unblockCondition}`
+          : intent.reason,
+        evidenceRunId: intent.evidenceRunId,
+        intent,
+        title: '阻塞提案',
+      };
+    case 'task.complete.propose':
+      return {
+        detail: intent.evidence,
+        evidenceRunId: intent.evidenceRunId,
+        intent,
+        title: '完成确认提案',
+      };
+  }
+}
+
 function isChildTaskAdvancementText(value: string): boolean {
   const normalized = value.replace(/\s+/g, ' ').trim();
   return /推进子任务|正在推进子任务|当前子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
@@ -1260,6 +1333,7 @@ export function RightPanel({
   const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
   const [creatingDecompositionChildren, setCreatingDecompositionChildren] = useState(false);
   const [savingSourceContextProposal, setSavingSourceContextProposal] = useState(false);
+  const [savingStructuredWritebackProposal, setSavingStructuredWritebackProposal] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [agentCliLaunchNotice, setAgentCliLaunchNotice] = useState<string | null>(null);
   const [taskDecompositionDraft, setTaskDecompositionDraft] = useState<TaskDecompositionDraft | null>(null);
@@ -1279,6 +1353,7 @@ export function RightPanel({
     phaseCloseoutSaved,
     sessionRefreshDismissed,
     sourceContextProposal,
+    structuredWritebackProposal,
     taskFileProposal,
   } = sessionState;
   const activeTaskIdRef = useRef(activeTaskId);
@@ -1380,6 +1455,16 @@ export function RightPanel({
     });
   }
 
+  function updateStructuredWritebackProposal(
+    updater: StructuredWritebackProposal | null | ((current: StructuredWritebackProposal | null) => StructuredWritebackProposal | null),
+  ) {
+    patchSession({
+      structuredWritebackProposal: typeof updater === 'function'
+        ? updater(structuredWritebackProposal)
+        : updater,
+    });
+  }
+
   // Fetch task title and seed welcome message when panel first opens with a task
   useEffect(() => {
     if (!taskId) return;
@@ -1467,6 +1552,14 @@ export function RightPanel({
           });
           if (sourceProposal) {
             updateSourceContextProposal((existing) => existing ?? sourceProposal);
+          }
+          const structuredProposal = parseAgentCliStructuredWritebackIntent({
+            output,
+            runId: detail.id,
+            taskId: current.taskId,
+          });
+          if (structuredProposal) {
+            updateStructuredWritebackProposal((existing) => existing ?? structuredProposal);
           }
         }
         appendSysMsg(formatAgentCliRunMessage({
@@ -2205,6 +2298,101 @@ export function RightPanel({
     }
   }
 
+  async function confirmStructuredWriteback() {
+    if (!activeTaskId || !structuredWritebackProposal || savingStructuredWritebackProposal) return;
+    setSavingStructuredWritebackProposal(true);
+    const { intent } = structuredWritebackProposal;
+    try {
+      if (intent.type === 'decision.create') {
+        if (!window.api?.createDecision) {
+          appendSysMsg('决策提案已暂停：当前环境不支持创建 Decision。');
+          return;
+        }
+        await window.api.createDecision({
+          context: {
+            whyNow: intent.rationale,
+            impact: intent.proposedOutcome ? `建议结果：${intent.proposedOutcome}` : null,
+          },
+          kind: 'direction_choice',
+          options: intent.options?.map((label, index) => ({
+            id: `option_${index + 1}`,
+            label,
+          })),
+          recommendation: intent.proposedOutcome
+            ? {
+                label: intent.proposedOutcome,
+                reason: intent.rationale,
+              }
+            : null,
+          scope: 'task',
+          sourceId: intent.evidenceRunId,
+          sourceLabel: 'Agent CLI Write Intent',
+          sourceType: 'run',
+          taskId: activeTaskId,
+          title: intent.title,
+        });
+        appendSysMsg(`已确认并创建 Decision：${intent.title}。`);
+      } else if (intent.type === 'task.update_next_step') {
+        if (!window.api?.updateTask) {
+          appendSysMsg('下一步提案已暂停：当前环境不支持更新任务。');
+          return;
+        }
+        const updated = await window.api.updateTask({
+          id: activeTaskId,
+          nextStep: intent.nextStep,
+        });
+        setActiveTaskDetail((prev) => prev && prev.id === activeTaskId
+          ? { ...prev, nextStep: updated.nextStep ?? intent.nextStep }
+          : prev);
+        await recordPanelTimelineEvent(activeTaskId, 'panel.task_goal_updated', {
+          evidenceRunId: intent.evidenceRunId,
+          nextStep: intent.nextStep,
+          reason: intent.reason,
+          source: 'taskplane_write_intent',
+        });
+        appendSysMsg(`已确认并更新下一步：${intent.nextStep}`);
+      } else if (intent.type === 'task.mark_blocked') {
+        if (!window.api?.createBlocker) {
+          appendSysMsg('阻塞提案已暂停：当前环境不支持创建阻塞项。');
+          return;
+        }
+        await window.api.createBlocker({
+          detail: intent.unblockCondition ? `解除条件：${intent.unblockCondition}` : intent.reason,
+          kind: 'other',
+          taskId: activeTaskId,
+          title: intent.reason,
+        });
+        appendSysMsg(`已确认并记录阻塞项：${intent.reason}`);
+      } else {
+        if (!window.api?.createDecision) {
+          appendSysMsg('完成确认提案已暂停：当前环境不支持创建 Decision。');
+          return;
+        }
+        await window.api.createDecision({
+          context: {
+            whyNow: intent.evidence,
+            impact: '确认后再由任务完成流程变更状态。',
+          },
+          kind: 'completion_acceptance',
+          recommendation: {
+            label: '确认完成',
+            reason: intent.evidence,
+          },
+          scope: 'task',
+          sourceId: intent.evidenceRunId,
+          sourceLabel: 'Agent CLI Write Intent',
+          sourceType: 'run',
+          taskId: activeTaskId,
+          title: '确认任务是否完成',
+        });
+        appendSysMsg('已确认并创建完成验收 Decision。');
+      }
+      updateStructuredWritebackProposal(null);
+    } finally {
+      setSavingStructuredWritebackProposal(false);
+    }
+  }
+
   async function confirmTaskFileWrite() {
     if (!activeTaskId || !taskFileProposal || savingTaskFileProposal || !window.api?.createTaskFile) return;
     const normalizedInput = normalizeCreateTaskFileInput({
@@ -2447,6 +2635,14 @@ export function RightPanel({
           });
           if (sourceProposal) {
             updateSourceContextProposal((existing) => existing ?? sourceProposal);
+          }
+          const structuredProposal = parseAgentCliStructuredWritebackIntent({
+            output,
+            runId: run.id,
+            taskId: activeTaskId,
+          });
+          if (structuredProposal) {
+            updateStructuredWritebackProposal((existing) => existing ?? structuredProposal);
           }
         }
         if (run.status === 'running') {
@@ -2889,6 +3085,7 @@ export function RightPanel({
     || agentCliLaunchNotice
     || activeTaskAgentCliRun
     || sourceContextProposal
+    || structuredWritebackProposal
     || taskDecompositionDraft
     || recentDecompositionConfirmedTaskId === activeTaskId
   );
@@ -3173,6 +3370,36 @@ export function RightPanel({
                 disabled={savingSourceContextProposal}
               >
                 {savingSourceContextProposal ? '保存中…' : '确认保存来源'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {structuredWritebackProposal && (
+          <div className="panel-file-proposal">
+            <div className="panel-file-proposal-head">
+              <strong>结构化写回提案</strong>
+              <span>来自 Agent 结构化意图，确认后执行</span>
+            </div>
+            <div className="panel-refresh-reason">
+              {structuredWritebackProposal.title}
+            </div>
+            <textarea
+              className="panel-file-proposal-content"
+              value={structuredWritebackProposal.detail}
+              readOnly
+              aria-label="结构化写回说明"
+            />
+            <div className="panel-refresh-actions">
+              <button className="btn sm ghost" onClick={() => updateStructuredWritebackProposal(null)}>
+                放弃
+              </button>
+              <button
+                className={`btn sm primary${savingStructuredWritebackProposal ? ' disabled' : ''}`}
+                onClick={() => void confirmStructuredWriteback()}
+                disabled={savingStructuredWritebackProposal}
+              >
+                {savingStructuredWritebackProposal ? '处理中…' : '确认执行'}
               </button>
             </div>
           </div>

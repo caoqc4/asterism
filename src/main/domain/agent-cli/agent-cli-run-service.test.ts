@@ -371,6 +371,12 @@ describe('AgentCliRunService', () => {
       input: expect.stringContaining('Taskplane write intent'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('decision.create'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('task.complete.propose'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.not.stringContaining('ask exactly one natural follow-up question'),
     }));
   });

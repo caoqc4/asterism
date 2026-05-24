@@ -42,8 +42,11 @@ needs execution-level constraints.
   product-surface output.
 - Task Memory Spec loads when the movement reads, writes, clears, or evaluates
   durable task memory.
+- Decision Layer Writeback Orchestration loads when execution output must be
+  interpreted into Write Intent, proposal cards, hooks, gates, or product
+  feature impact audit entries.
 - Native Agent Runtime Orchestration loads when changing CLI/API adapter,
-  DecisionBackend, Write Intent, progress projection, or runtime boundaries.
+  DecisionBackend, progress projection, or runtime boundaries.
 
 ## Hard Boundaries
 

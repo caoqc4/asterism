@@ -108,9 +108,11 @@ GoalPilot chooses when these documents or flows matter:
   clearing context, closing a phase, or deciding if recovery is sufficient.
 - Source / evidence rules: load when research, citations, source contexts,
   freshness, credibility, or external facts affect the task.
+- Decision Layer Writeback Orchestration: load when runtime evidence must
+  become Write Intent, proposal cards, memory/source/decision updates, or
+  feature impact audit entries.
 - Native Agent Runtime Orchestration: load when changing CLI/API runtime
-  architecture, Write Intent, DecisionBackend, progress projection, or adapter
-  boundaries.
+  architecture, DecisionBackend, progress projection, or adapter boundaries.
 - Work Habits: retrieve only applicable confirmed habits; do not treat habits
   as global prompt bulk.
 

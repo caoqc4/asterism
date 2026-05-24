@@ -1416,9 +1416,10 @@ function buildAgentCliCapabilityPromptInstruction(
 function buildTaskplaneWriteIntentPromptInstructions(): string {
   return [
     'Taskplane write intent: do not claim that you wrote Taskplane data.',
-    'If the user explicitly asks to save a task record, or your result contains a durable source that Taskplane should offer to save, append at most one fenced JSON block:',
-    '{"type":"TASKPLANE_WRITE_INTENTS","intents":[{"type":"task_record.create","confidence":"medium","content":"..."},{"type":"source_context.create","title":"...","uri":"https://...","note":"...","credibility":"unknown"}]}',
-    'Only include intents that need Taskplane confirmation; otherwise omit the block.',
+    'If your result contains durable task memory, source evidence, a decision proposal, next-step update, blocker, or completion proposal that Taskplane should offer to save, append at most one fenced JSON block.',
+    'Allowed intent types: task_record.create, source_context.create, decision.create, task.update_next_step, task.mark_blocked, task.complete.propose.',
+    '{"type":"TASKPLANE_WRITE_INTENTS","intents":[{"type":"task_record.create","confidence":"medium","content":"..."},{"type":"source_context.create","title":"...","uri":"https://...","note":"...","credibility":"unknown"},{"type":"decision.create","title":"...","rationale":"...","options":["..."],"proposedOutcome":"..."},{"type":"task.update_next_step","nextStep":"...","reason":"..."},{"type":"task.mark_blocked","reason":"...","unblockCondition":"..."},{"type":"task.complete.propose","evidence":"..."}]}',
+    'Only include intents that need Taskplane confirmation or writeback review; otherwise omit the block.',
   ].join(' ');
 }
 
