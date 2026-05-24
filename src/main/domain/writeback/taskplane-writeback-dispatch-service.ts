@@ -13,6 +13,7 @@ import {
   dispatchTaskplaneWritebackApplyPlan,
   type TaskplaneWritebackDispatchResult,
 } from '../../../shared/taskplane-writeback-dispatch.js';
+import { evaluateTaskAdvancement } from '../../../shared/task-advancement-orchestrator.js';
 import type { PanelRuntimeTimelineEventType } from '../../../shared/runtime-panel-events.js';
 import type { TaskService } from '../task/task-service.js';
 import type { DecisionService } from '../decision/decision-service.js';
@@ -46,6 +47,20 @@ export class TaskplaneWritebackDispatchService {
     plan: TaskplaneWritebackApplyPlan;
     taskId: string;
   }): Promise<TaskplaneWritebackDispatchResult> {
+    const advancement = evaluateTaskAdvancement({
+      entrypoint: 'writeback_dispatch',
+      hasTaskContext: true,
+      prompt: `writeback:${params.plan.action}`,
+      task: { title: params.taskId },
+    });
+    if (advancement.route === 'blocked') {
+      return {
+        action: params.plan.action,
+        message: advancement.userMessage,
+        status: 'blocked',
+      };
+    }
+
     const targetTaskId = getPlanTargetTaskId(params.plan);
     if (targetTaskId !== params.taskId) {
       return {

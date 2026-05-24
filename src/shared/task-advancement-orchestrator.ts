@@ -17,6 +17,7 @@ export type TaskAdvancementEntrypoint =
   | 'project_decompose'
   | 'selected_task_verification'
   | 'task_completion_check'
+  | 'writeback_dispatch'
   | 'right_panel_chat';
 
 export type TaskAdvancementMovement =
@@ -198,6 +199,28 @@ export function evaluateTaskAdvancement(params: {
       ],
       route: 'local_rule',
       userMessage: '已在本地检查当前任务的结构、进度、决策和证据状态。',
+    });
+  }
+
+  if (params.entrypoint === 'writeback_dispatch' && hasTaskContext) {
+    return buildEvaluation({
+      confirmationRequired: true,
+      contextReadiness: null,
+      entrypoint: params.entrypoint,
+      intake: null,
+      movement: 'persist',
+      promptMode: 'plain_user',
+      reason: 'Writeback dispatch is a Taskplane persistence movement: validated Write Intent may become durable task state only through service gates.',
+      requiredGates: [
+        'simplicity_check',
+        'task_mutation',
+        'task_memory_guidance',
+        'pre_step',
+        'post_step',
+        'operator_confirmation',
+      ],
+      route: 'local_rule',
+      userMessage: '写回只能通过 Taskplane 服务和确认边界持久化。',
     });
   }
 

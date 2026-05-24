@@ -213,6 +213,24 @@ describe('evaluateTaskAdvancement', () => {
     });
     expect(evaluation.requiredGates).toContain('project_verification');
   });
+
+  it('routes writeback dispatch as a local persistence movement', () => {
+    const evaluation = evaluateTaskAdvancement({
+      entrypoint: 'writeback_dispatch',
+      hasTaskContext: true,
+      prompt: 'writeback:task.update_next_step',
+      task: buildTask(),
+    });
+
+    expect(evaluation).toMatchObject({
+      confirmationRequired: true,
+      movement: 'persist',
+      route: 'local_rule',
+      shouldStartRuntime: false,
+    });
+    expect(evaluation.requiredGates).toContain('task_mutation');
+    expect(evaluation.requiredGates).toContain('operator_confirmation');
+  });
 });
 
 function buildTask(partial: Partial<TaskDetail> = {}): TaskDetail {

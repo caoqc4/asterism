@@ -107,6 +107,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Shared writeback proposal builder normalizes runtime Write Intent into reusable product proposal surfaces.',
       'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',
       'Shared writeback dispatch applies plans through injected ports, so renderer and future service runtimes can share the same write boundary.',
+      'Main-side writeback dispatch now asks shared TaskAdvancementOrchestrator for a persistence movement before applying validated Write Intent through service ports.',
       'Main-side writeback dispatch adapter wires shared dispatch to TaskService, DecisionService, and TaskFileRepository ports.',
       'Right-panel source, structured, subtask, task-record, and task-memory confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
       'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
@@ -115,10 +116,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
-      'Right-panel Write Intent confirmation uses main-side dispatch, but non-UI runtime confirmation flows do not yet invoke it automatically.',
+      'Non-UI runtime confirmation flows still need product surfaces that let an operator approve dispatch outside the right panel.',
     ],
     nextActions: [
-      'Wire confirmed non-UI CLI/API Write Intent proposals to the main-side dispatch adapter.',
+      'Design operator approval surfaces for non-UI CLI/API Write Intent proposals before automatic dispatch.',
     ],
   },
   {
@@ -275,10 +276,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Tasks detail project verification now asks shared TaskAdvancementOrchestrator for a selected-task verification movement before rendering local project readiness evidence.',
     ],
     gaps: [
-      'Decision, blocker, next-step, and completion Write Intent now share apply-plan and main-side dispatch code, but non-UI runtime adapters still need to invoke it after confirmation.',
+      'Decision, blocker, next-step, and completion Write Intent now share apply-plan, main-side dispatch code, and advancement routing, but non-UI operator approval surfaces are still missing.',
     ],
     nextActions: [
-      'Connect non-UI runtime confirmation handlers to the main-side writeback dispatch adapter.',
+      'Design non-UI confirmation handlers that can approve main-side writeback dispatch without bypassing operator confirmation.',
     ],
   },
   {

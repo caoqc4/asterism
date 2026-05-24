@@ -601,10 +601,12 @@ Current implementation:
   verification and operator-confirmation gates.
 - Selected task project verification calls the shared decision before rendering
   local project-readiness evidence in the task detail surface.
+- Main-side Taskplane writeback dispatch calls the shared decision before
+  applying validated Write Intent through task, decision, source, file, or
+  subtask services.
 
 Remaining work:
 
-- Extend the orchestrator across non-UI writeback flows.
 - Move decomposition drafting behind the same selected-runtime/DecisionBackend
   abstraction used by ordinary task execution.
 
