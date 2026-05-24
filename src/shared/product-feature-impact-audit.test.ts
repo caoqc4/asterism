@@ -48,9 +48,12 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback dispatch');
+    expect(rightPanel?.evidence.join(' ')).toContain('Main-side writeback dispatch adapter');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need product UI paths');
+    expect(rightPanel?.gaps.join(' ')).not.toContain('main-side writeback orchestration service is not yet wired');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');
     expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');
+    expect(decisions?.gaps.join(' ')).not.toContain('still need to call it through main-side ports');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI web/search events');
   });
 });

@@ -37,6 +37,7 @@ import { RunService } from '../domain/run/run-service.js';
 import { SandboxPatchPromotionApplyService } from '../domain/run/sandbox-patch-promotion-apply-service.js';
 import { SandboxPatchPromotionPreflightService } from '../domain/run/sandbox-patch-promotion-preflight-service.js';
 import { TaskService } from '../domain/task/task-service.js';
+import { TaskplaneWritebackDispatchService } from '../domain/writeback/taskplane-writeback-dispatch-service.js';
 import { BriefExecutor } from '../executors/brief-executor.js';
 import { TextExecutor } from '../executors/text-executor.js';
 import { AiConfigService } from '../keychain/ai-config-service.js';
@@ -150,6 +151,7 @@ const decisionService = new DecisionService(
   runVerificationRepository,
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
+const taskplaneWritebackDispatchService = new TaskplaneWritebackDispatchService(taskService, decisionService);
 const workHabitService = new WorkHabitService(workHabitRepository);
 const runService = new RunService(
   runRepository,
@@ -233,6 +235,7 @@ const services = {
   sandboxPatchPromotionApplyService,
   taskService,
   decisionService,
+  taskplaneWritebackDispatchService,
   runService,
   operatorStartedRunService,
   agentCliRunService,
