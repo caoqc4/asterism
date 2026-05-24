@@ -138,6 +138,43 @@ describe('evaluateTaskAdvancement', () => {
     expect(evaluation.shouldStartRuntime).toBe(false);
     expect(evaluation.intake?.outcome).toBe('create_task');
   });
+
+  it('routes context refresh as a local handoff with memory gates', () => {
+    const evaluation = evaluateTaskAdvancement({
+      entrypoint: 'context_refresh',
+      hasTaskContext: true,
+      prompt: '整理归档并刷新当前任务会话。',
+      task: buildTask(),
+    });
+
+    expect(evaluation).toMatchObject({
+      confirmationRequired: true,
+      movement: 'handoff',
+      promptMode: 'context_refresh',
+      route: 'local_rule',
+      shouldStartRuntime: false,
+    });
+    expect(evaluation.requiredGates).toContain('runtime_handoff');
+    expect(evaluation.requiredGates).toContain('task_memory_coverage');
+  });
+
+  it('routes phase closeout as local verification before handoff', () => {
+    const evaluation = evaluateTaskAdvancement({
+      entrypoint: 'phase_closeout',
+      hasTaskContext: true,
+      prompt: '阶段收尾。',
+      task: buildTask(),
+    });
+
+    expect(evaluation).toMatchObject({
+      confirmationRequired: true,
+      movement: 'verify',
+      route: 'local_rule',
+      shouldStartRuntime: false,
+    });
+    expect(evaluation.requiredGates).toContain('task_completion');
+    expect(evaluation.requiredGates).toContain('post_step');
+  });
 });
 
 function buildTask(partial: Partial<TaskDetail> = {}): TaskDetail {

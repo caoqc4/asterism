@@ -227,6 +227,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'TaskMemoryCoverageEvaluation and AutoContextClearReadiness block unsafe context clearing.',
       'SourceContext creation carries source-quality metadata before persistence.',
+      'Manual task-session refresh now asks shared TaskAdvancementOrchestrator for a context-refresh handoff movement before existing memory and clearing gates run.',
     ],
     gaps: [
       'Automatic writeback should keep distinguishing recovery memory from ordinary chat summaries.',
@@ -269,6 +270,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Main-side writeback dispatch adapter routes confirmed plans through task, decision, and task-file services.',
       'Right-panel confirmation calls the main-side writeback adapter before emitting task, decision, and brief refresh events.',
       'Completion verification is separate from model output.',
+      'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
     ],
     gaps: [
       'Decision, blocker, next-step, and completion Write Intent now share apply-plan and main-side dispatch code, but non-UI runtime adapters still need to invoke it after confirmation.',

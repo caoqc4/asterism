@@ -593,11 +593,14 @@ Current implementation:
   continue through native runtime research/execution.
 - Project decomposition uses the same shared decision before requesting a
   reversible subtask draft; durable child creation remains behind confirmation.
+- Manual context refresh and phase closeout call the same shared decision before
+  memory handoff, quality checks, and context clearing continue through existing
+  Taskplane gates.
 
 Remaining work:
 
-- Extend the orchestrator across closeout, verification, context refresh, and
-  non-UI writeback flows.
+- Extend the orchestrator across task completion checks, selected-task
+  verification, and non-UI writeback flows.
 - Move decomposition drafting behind the same selected-runtime/DecisionBackend
   abstraction used by ordinary task execution.
 

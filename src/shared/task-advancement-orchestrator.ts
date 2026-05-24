@@ -13,6 +13,7 @@ import type { TaskDetail } from './types/task.js';
 export type TaskAdvancementEntrypoint =
   | 'child_advance'
   | 'context_refresh'
+  | 'phase_closeout'
   | 'project_decompose'
   | 'right_panel_chat';
 
@@ -109,6 +110,50 @@ export function evaluateTaskAdvancement(params: {
       ],
       route: selectRuntimeRoute(runtime),
       userMessage: '当前更适合先生成子任务草案；确认后再写入结构化子任务。',
+    });
+  }
+
+  if (params.entrypoint === 'context_refresh' && hasTaskContext) {
+    return buildEvaluation({
+      confirmationRequired: true,
+      contextReadiness: null,
+      entrypoint: params.entrypoint,
+      intake: null,
+      movement: 'handoff',
+      promptMode: 'context_refresh',
+      reason: 'Context refresh is a Taskplane handoff movement: preserve recovery-worthy memory before clearing the working conversation.',
+      requiredGates: [
+        'simplicity_check',
+        'runtime_context_assembly',
+        'runtime_handoff',
+        'task_memory_coverage',
+        'task_memory_guidance',
+      ],
+      route: 'local_rule',
+      userMessage: '先整理归档可恢复上下文，确认后再清理当前任务会话。',
+    });
+  }
+
+  if (params.entrypoint === 'phase_closeout' && hasTaskContext) {
+    return buildEvaluation({
+      confirmationRequired: true,
+      contextReadiness: null,
+      entrypoint: params.entrypoint,
+      intake: null,
+      movement: 'verify',
+      promptMode: 'plain_user',
+      reason: 'Phase closeout must verify produced work, preserve recovery notes, and decide the next handoff without claiming full task completion by default.',
+      requiredGates: [
+        'simplicity_check',
+        'runtime_handoff',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'task_completion',
+        'pre_step',
+        'post_step',
+      ],
+      route: 'local_rule',
+      userMessage: '先做阶段质量检查并保存收尾记录，再决定是否交接到下一项任务。',
     });
   }
 

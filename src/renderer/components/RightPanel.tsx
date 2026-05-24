@@ -1751,6 +1751,16 @@ export function RightPanel({
   }
 
   async function prepareManualTaskSessionRefresh() {
+    const advancement = evaluateTaskAdvancement({
+      entrypoint: 'context_refresh',
+      hasTaskContext: Boolean(activeTaskId),
+      prompt: 'manual_context_refresh',
+      task: activeTaskDetail,
+    });
+    if (advancement.route === 'blocked') {
+      appendSysMsg(advancement.userMessage);
+      return;
+    }
     const {
       taskName,
       archived,
@@ -1952,6 +1962,16 @@ export function RightPanel({
     if (!activeTaskId || savingPhaseCloseout) return;
     const taskName = title ?? titleCache[activeTaskId] ?? activeTaskId;
     const closeoutTaskId = activeTaskId;
+    const advancement = evaluateTaskAdvancement({
+      entrypoint: 'phase_closeout',
+      hasTaskContext: true,
+      prompt: 'phase_closeout',
+      task: activeTaskDetail,
+    });
+    if (advancement.route === 'blocked') {
+      appendSysMsg(advancement.userMessage);
+      return;
+    }
     const userMessageCount = messages.filter((message) => message.role === 'user').length;
     const actionEvaluation = evaluateRuntimeAction({
       action: 'phase_closeout',
