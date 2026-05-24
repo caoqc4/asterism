@@ -26,10 +26,10 @@ import {
 } from '@shared/runtime-intake-evaluator';
 import { evaluateTaskAdvancement } from '@shared/task-advancement-orchestrator';
 import {
-  evaluatePilotCoordinator,
-  type PilotCoordinatorDecision,
+  evaluatePilotDecision,
+  type PilotDecision,
   type PilotDecisionBackend,
-} from '@shared/pilot-coordinator';
+} from '@shared/pilot-decision-contract';
 import {
   buildRuntimeHandoffPreview,
   buildRuntimeResumePlan,
@@ -146,7 +146,7 @@ function buildAvailablePilotDecisionBackends(params: {
   return [...new Set(backends)];
 }
 
-function formatPilotEscalationMessage(decision: PilotCoordinatorDecision): string {
+function formatPilotEscalationMessage(decision: PilotDecision): string {
   return [
     '这个动作触及需要你确认的边界，我先暂停自动执行。',
     decision.advancement.userMessage,
@@ -2686,7 +2686,7 @@ export function RightPanel({
       agentCliReady: Boolean(activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun),
       apiRuntimeReady: Boolean(isAgentApiRuntimeMode && window.api?.chatWithAI),
     };
-    const pilotDecision = evaluatePilotCoordinator({
+    const pilotDecision = evaluatePilotDecision({
       availableDecisionBackends: buildAvailablePilotDecisionBackends({
         apiReady: runtimeAvailability.apiRuntimeReady,
         cliReady: runtimeAvailability.agentCliReady,

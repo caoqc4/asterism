@@ -10,9 +10,7 @@ Line budget: keep under 200 lines
 
 ## Purpose
 
-GoalPilot is the short, always-loaded task navigation layer for Taskplane and
-the operating reference for the Pilot coordination role. It is the single
-always-loaded product rule for task advancement.
+GoalPilot is the short, always-loaded task navigation layer for Taskplane and the operating reference for product-side task decisions. It is the single always-loaded product rule for task advancement.
 
 It decides how work moves from fuzzy intent to shaped, executable, verified, and recoverable task state. It does not contain detailed execution, memory, output, source, or tool rules. Instead, it routes each movement to the smallest needed runtime, rule document, skill, hook, or review path.
 
@@ -42,9 +40,9 @@ Keep authority and load order simple:
   should not duplicate product rules.
 - GoalPilot is the only always-loaded total rule. It chooses movement and
   indexes the smallest needed follow-up rule.
-- Pilot Coordinator is a role contract for applying GoalPilot plus priority,
-  message, backend, and executor decisions. Load it when Pilot behavior itself
-  matters; do not treat it as a second total rule.
+- Pilot Decision Contract turns GoalPilot plus priority into message, backend,
+  executor, and gate decisions. Load it when decision shape matters; do not
+  treat it as a second total rule.
 - Priority Attention Routing is a phase-loaded ranking skill shared by Brief
   and Pilot when tasks compete.
 - Execution, output, memory, context transition, source/evidence, writeback,
@@ -52,11 +50,22 @@ Keep authority and load order simple:
 - Hooks and gates are deterministic code constraints. If something must always
   happen, implement it there instead of relying on model memory.
 
-## Goal And Pilot Loop
+## Control Sequence
 
-Goal: understand the work.
+Run decisions in this order:
 
-- What is the real goal and owner task: parent, child, successor, or new task?
+- Identify the scope: global inbox, current task, child task, running run, correction, handoff, or new task.
+- If multiple tasks compete, load Priority Attention Routing and select the focus before judging advancement.
+- If the user clearly selected the current task, do not re-rank the whole task pool unless a blocker, risk, or dependency changes the focus.
+- For the focus task, choose the smallest movement: clarify, research, shape, decompose, select next task, execute, verify, persist, hand off, or pause.
+- Load the smallest needed rule, skill, runtime, hook, gate, or review path.
+- Choose the executor only after the movement and permission boundary are clear.
+- After the movement, stay on this task, enter a child, return to parent, switch
+  to successor, or stop.
+
+When choosing the movement, ask:
+
+- What is the real goal and owner task?
 - Is the boundary clear enough to act?
 - What would count as success or acceptable progress?
 - Which uncertainty matters: goal, scope, evidence, execution, risk, ownership,
@@ -65,17 +74,6 @@ Goal: understand the work.
   the uncertainty better than asking the user?
 - Is the current context clean, or contaminated by another task, stale prompt,
   unrelated selected file, or previous conversation?
-
-Pilot: choose the movement.
-
-- Clarify, research, shape, decompose, select next task, execute, verify,
-  persist, hand off, or pause?
-- What is the smallest useful next movement?
-- If multiple tasks compete, should Priority Attention Routing choose the focus first?
-- Which on-demand rule, skill, runtime, or hook applies?
-- Does durable state change require confirmation?
-- After this movement, stay on this task, enter a child, return to parent,
-  switch to successor, or stop?
 
 ## Context Readiness
 
@@ -130,7 +128,7 @@ GoalPilot chooses when these documents or flows matter:
 - Context Transition Policy: load when compacting, resetting, clearing,
   handing off, switching tasks, starting a new conversation, or proving that
   useful chat context has been preserved.
-- Pilot Coordinator: load when defining Pilot role, message priority, DecisionBackend choice, executor routing, or matrix-runtime delegation.
+- Pilot Decision Contract: load when defining Pilot role, message priority, DecisionBackend choice, executor routing, or matrix-runtime delegation.
 - Priority Attention Routing: load when Brief or Pilot must rank competing tasks, blockers, decisions, dependencies, artifacts, or completion chances.
 - Native Agent Capability Mapping: load when aligning Codex or Claude Code
   plan, goal, memory, compact, skills, hooks, subagents, status, or review

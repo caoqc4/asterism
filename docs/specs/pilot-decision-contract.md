@@ -1,6 +1,6 @@
-# Pilot Coordinator
+# Pilot Decision Contract
 
-Document id: `taskplane.pilot-coordinator.v1`
+Document id: `taskplane.pilot-decision-contract.v1`
 Owner: Taskplane product architecture
 Layer: phase-loaded architecture skill / Pilot role contract
 Load: Pilot routing, multi-task focus, message priority, executor selection,
@@ -12,8 +12,7 @@ authoritative
 
 ## Purpose
 
-Pilot is Taskplane's coordination role. It judges and coordinates; it does not
-own durable state and does not replace executor runtimes.
+Pilot is Taskplane's product-side decision posture. It is not a currently separate always-running agent. It judges and coordinates; it does not own durable state and does not replace executor runtimes.
 
 The role is always available at the product-control layer, but this document is
 not a second always-loaded total rule. Pilot composes GoalPilot movement with
@@ -31,8 +30,7 @@ review behind one `DecisionBackend` contract.
 | Pilot | route, priority, context readiness, message priority, executor choice, escalation, verification posture | direct task mutation or long task execution |
 | Executor | concrete work through Codex, Claude, API, matrix runtime, tool run, or human action | Taskplane state authority |
 
-This is a dual-role architecture, not a mandatory two-process architecture.
-The first implementation may run Pilot as rules plus bounded decision calls.
+This is a dual-role product model, not a mandatory two-agent or two-process architecture. The first implementation may run Pilot as rules plus bounded decision calls.
 
 ## Pilot Decision Contract
 

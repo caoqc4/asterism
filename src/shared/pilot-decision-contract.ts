@@ -31,7 +31,7 @@ export type PilotMessagePriority = 'follow_up' | 'steer' | 'escalate';
 
 export type PilotConfidence = 'rule' | 'model_assisted' | 'needs_review';
 
-export type PilotCoordinatorDecision = {
+export type PilotDecision = {
   role: 'pilot';
   advancement: TaskAdvancementEvaluation;
   backend: PilotDecisionBackend;
@@ -48,7 +48,7 @@ export type PilotCoordinatorDecision = {
   shouldStartExecutor: boolean;
 };
 
-export type PilotCoordinatorInput = {
+export type PilotDecisionInput = {
   availableDecisionBackends?: PilotDecisionBackend[];
   contextAssembly?: Parameters<typeof evaluateTaskAdvancement>[0]['contextAssembly'];
   entrypoint: TaskAdvancementEntrypoint;
@@ -63,9 +63,9 @@ export type PilotCoordinatorInput = {
   task?: TaskAdvancementTask | null;
 };
 
-const ALWAYS_REQUIRED_RULES = ['goalpilot.task_router', 'pilot.coordinator'];
+const ALWAYS_REQUIRED_RULES = ['goalpilot.task_router', 'pilot.decision_contract'];
 
-export function evaluatePilotCoordinator(input: PilotCoordinatorInput): PilotCoordinatorDecision {
+export function evaluatePilotDecision(input: PilotDecisionInput): PilotDecision {
   const advancement = evaluateTaskAdvancement({
     contextAssembly: input.contextAssembly,
     entrypoint: input.entrypoint,
@@ -182,7 +182,7 @@ function derivePilotPriorityLane(task?: TaskAdvancementTask | null): PriorityLan
 
 function shouldUseModelAssistedPilot(params: {
   advancement: TaskAdvancementEvaluation;
-  input: PilotCoordinatorInput;
+  input: PilotDecisionInput;
   messagePriority: PilotMessagePriority;
   priorityLane: PriorityLane | null;
 }): boolean {

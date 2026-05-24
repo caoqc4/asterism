@@ -253,8 +253,9 @@ use another backend, run a Taskplane bridge, or surface a clear blocker.
 
 - GoalPilot is the always-loaded router that decides the movement and whether
   context is ready.
-- Pilot Coordinator defines the coordination role, DecisionBackend choice,
-  message priority, executor selection, and matrix-runtime delegation boundary.
+- Pilot Decision Contract defines how selected movement and priority become
+  DecisionBackend choice, message priority, executor selection, and
+  matrix-runtime delegation boundary.
 - Priority Attention Routing defines Brief/Pilot focus selection when multiple
   tasks compete.
 - Agent Operating Principles load for concrete execution and completion claims.

@@ -59,8 +59,9 @@ to propose structured write intent.
 
 - `taskplane.task-advancement-framework.v1` chooses the next kind of movement:
   ask, research, shape, decompose, execute, verify, persist, hand off, or pause.
-- `taskplane.pilot-coordinator.v1` names the coordination role and defines
-  message priority, DecisionBackend choice, executor routing, and escalation.
+- `taskplane.pilot-decision-contract.v1` defines how a GoalPilot movement and
+  priority signal become message priority, DecisionBackend choice, executor
+  routing, and escalation.
 - `taskplane.priority-attention-routing.v1` defines the shared Brief/Pilot
   priority language for competing tasks.
 - `taskplane.agent-operating-principles.v1` loads for execution-level rules,
@@ -609,7 +610,7 @@ Centralize scattered movement decisions:
 
 Current implementation:
 
-- `src/shared/pilot-coordinator.ts` wraps the shared advancement decision with
+- `src/shared/pilot-decision-contract.ts` wraps the shared advancement decision with
   Pilot message priority, DecisionBackend choice, executor selection, and
   priority-lane evidence.
 - `src/shared/task-advancement-orchestrator.ts` composes runtime intake and

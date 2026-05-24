@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   classifyPilotMessagePriority,
-  evaluatePilotCoordinator,
+  evaluatePilotDecision,
   highestPriorityLane,
   selectPilotDecisionBackend,
-} from './pilot-coordinator.js';
+} from './pilot-decision-contract.js';
 
-describe('Pilot Coordinator', () => {
+describe('Pilot Decision Contract', () => {
   it('treats user corrections as steer events without turning Pilot into the executor', () => {
-    const decision = evaluatePilotCoordinator({
+    const decision = evaluatePilotDecision({
       entrypoint: 'right_panel_chat',
       hasTaskContext: true,
       prompt: '不对，先改成基础教程和案例展示，不要继续问目录结构。',
@@ -26,12 +26,12 @@ describe('Pilot Coordinator', () => {
     expect(decision.messagePriority).toBe('steer');
     expect(decision.backend).toBe('codex_cli');
     expect(decision.executor).toBe('codex_cli');
-    expect(decision.requiredRules).toContain('pilot.coordinator');
+    expect(decision.requiredRules).toContain('pilot.decision_contract');
     expect(decision.requiredRules).toContain('agent.execution_rules');
   });
 
   it('routes user-owned high-risk boundaries to human review', () => {
-    const decision = evaluatePilotCoordinator({
+    const decision = evaluatePilotDecision({
       entrypoint: 'right_panel_chat',
       hasTaskContext: true,
       prompt: '是否允许直接部署到生产环境？',
@@ -51,7 +51,7 @@ describe('Pilot Coordinator', () => {
   });
 
   it('does not treat every high-risk task message as an escalation', () => {
-    const decision = evaluatePilotCoordinator({
+    const decision = evaluatePilotDecision({
       entrypoint: 'right_panel_chat',
       hasTaskContext: true,
       prompt: '先做只读风险检查。',
@@ -80,7 +80,7 @@ describe('Pilot Coordinator', () => {
   });
 
   it('uses API or CLI as a Pilot DecisionBackend when multi-task coordination is ambiguous', () => {
-    const apiDecision = evaluatePilotCoordinator({
+    const apiDecision = evaluatePilotDecision({
       availableDecisionBackends: ['rules', 'agent_api', 'codex_cli'],
       entrypoint: 'right_panel_chat',
       hasTaskContext: true,
@@ -105,7 +105,7 @@ describe('Pilot Coordinator', () => {
   });
 
   it('keeps context refresh as a local handoff movement with memory rules', () => {
-    const decision = evaluatePilotCoordinator({
+    const decision = evaluatePilotDecision({
       entrypoint: 'context_refresh',
       hasTaskContext: true,
       prompt: '先保全并刷新当前任务会话。',

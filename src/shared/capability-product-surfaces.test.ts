@@ -49,7 +49,7 @@ describe('capability product surfaces', () => {
       'agent.execution_rules',
       'agent.output_contract',
       'task.memory_rules',
-      'pilot.coordinator',
+      'pilot.decision_contract',
       'priority.attention_routing',
       'native.capability_mapping',
       'native.runtime_orchestration',
@@ -60,8 +60,8 @@ describe('capability product surfaces', () => {
       path: 'docs/specs/native-agent-capability-mapping.md',
     });
     expect(PRODUCT_RUNTIME_RULE_ITEMS[4]).toMatchObject({
-      name: 'Pilot Coordinator',
-      path: 'docs/specs/pilot-coordinator.md',
+      name: 'Pilot Decision Contract',
+      path: 'docs/specs/pilot-decision-contract.md',
     });
   });
 

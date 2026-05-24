@@ -175,8 +175,8 @@ Keep the rule documents small and layered:
 | --- | --- | --- | --- |
 | `AGENTS.md` / `CLAUDE.md` | Native CLI adapter | Pointers to canonical specs and write boundaries | Long product rules |
 | GoalPilot | Always-loaded router | Movement choice, load routing, context cleanliness | Detailed write formats |
-| Pilot Coordinator | Coordination skill | Pilot role, message priority, DecisionBackend, executor choice | Runtime execution details |
-| Priority Attention Routing | Coordination skill | Multi-task focus, Brief priority lanes, escalation ranking | Write formats |
+| Pilot Decision Contract | Decision contract | Message priority, DecisionBackend, executor choice, escalation gates | Task movement principles |
+| Priority Attention Routing | Ranking skill | Multi-task focus, Brief priority lanes, escalation ranking | Write formats |
 | Agent Operating Principles | Execution skill | Execution safety, tools, subagents, task mutation principles | Memory surface formats |
 | Agent Output Contract | Output skill | Chat, cards, drafts, proposals, summaries | State authority rules |
 | Task Memory Spec | Memory skill | Task.md, Records, Source Context, refresh and recovery | Runtime adapter design |

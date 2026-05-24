@@ -29,7 +29,7 @@ off, or pause.
   `docs/specs/context-transition-policy.md`
 - Pilot role, message priority, DecisionBackend choice, executor routing, or
   matrix-runtime delegation:
-  `docs/specs/pilot-coordinator.md`
+  `docs/specs/pilot-decision-contract.md`
 - Brief/Pilot multi-task ranking, blockers, dependencies, decisions, artifacts,
   or attention focus:
   `docs/specs/priority-attention-routing.md`
