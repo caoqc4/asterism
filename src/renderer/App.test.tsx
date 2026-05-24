@@ -1644,6 +1644,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('产品级规则')).toBeTruthy();
     expect(screen.getByText('GoalPilot Task Router')).toBeTruthy();
     expect(screen.getByText('Agent Operating Principles')).toBeTruthy();
+    expect(screen.getByText('Decision Writeback Orchestration')).toBeTruthy();
     expect(screen.getByText(/真实工具暴露必须接入 Skills 服务/)).toBeTruthy();
     expect(screen.getByText('Brainstorming')).toBeTruthy();
     expect(screen.getByText(/在创建功能、组件或修改行为前/)).toBeTruthy();

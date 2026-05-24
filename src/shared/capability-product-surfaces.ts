@@ -118,6 +118,16 @@ export const PRODUCT_RUNTIME_RULE_ITEMS: ProductRuntimeRuleItem[] = [
     enforcement: 'Architecture rule + service tests',
     path: 'docs/specs/native-agent-runtime-orchestration.md',
   },
+  {
+    id: 'decision.writeback_orchestration',
+    name: 'Decision Writeback Orchestration',
+    invokeId: 'decision.writeback_orchestration',
+    desc: '中间决策层规则：用 decision skills、hooks/gates 和 Write Intent 把 runtime 证据闭环到产品数据。',
+    layer: 'Architecture skill',
+    load: '解释 runtime 结果、写回记忆、生成提案、审查产品功能影响面时加载',
+    enforcement: 'Decision skills + deterministic hooks/gates',
+    path: 'docs/specs/decision-layer-writeback-orchestration.md',
+  },
 ];
 
 export const DEFAULT_MCP_SERVER_CATALOGUE_ITEMS: DefaultMcpServerCatalogueItem[] = [

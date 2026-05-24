@@ -38,7 +38,7 @@ describe('capability product surfaces', () => {
   });
 
   it('surfaces product runtime rules separately from optional skill catalogue entries', () => {
-    expect(PRODUCT_RUNTIME_RULE_ITEMS).toHaveLength(5);
+    expect(PRODUCT_RUNTIME_RULE_ITEMS).toHaveLength(6);
     expect(PRODUCT_RUNTIME_RULE_ITEMS[0]).toMatchObject({
       id: 'goalpilot.task_router',
       name: 'GoalPilot Task Router',
@@ -50,6 +50,7 @@ describe('capability product surfaces', () => {
       'agent.output_contract',
       'task.memory_rules',
       'native.runtime_orchestration',
+      'decision.writeback_orchestration',
     ]);
   });
 

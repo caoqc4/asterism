@@ -62,6 +62,9 @@ to propose structured write intent.
   in chat, progress cards, drafts, run detail, and memory proposals.
 - `taskplane.task-memory-spec.v1` defines durable memory surfaces and write
   standards.
+- `taskplane.decision-layer-writeback-orchestration.v1` defines how decision
+  skills, hooks, gates, Write Intent, and product write services close the loop
+  after runtime execution.
 - This spec defines how native runtimes, future API runtimes, and Taskplane's
   decision/write-intent bridge cooperate without blurring authority boundaries.
 
@@ -101,6 +104,9 @@ intent:
 This layer is not a runtime. It is product orchestration. It may use rules,
 native CLI decision runs, or future API evaluators as backends, but the layer
 itself belongs to Taskplane.
+
+The detailed writeback contract for this layer lives in
+`docs/specs/decision-layer-writeback-orchestration.md`.
 
 ### 3. Runtime Layer
 

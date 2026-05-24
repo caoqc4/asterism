@@ -24,6 +24,9 @@ off, or pause.
 - Task memory, Task.md, Task Records, Source Context, context refresh, or
   recovery:
   `docs/specs/task-memory-spec.md`
+- Runtime result interpretation, decision skills, hooks, gates, Write Intent,
+  or product writeback:
+  `docs/specs/decision-layer-writeback-orchestration.md`
 - CLI/API adapter, Write Intent, progress projection, or orchestration changes:
   `docs/specs/native-agent-runtime-orchestration.md`
 
@@ -38,4 +41,3 @@ off, or pause.
   high-impact writes without the relevant Taskplane gate or user confirmation.
 - Keep this file short. Add detailed behavior to the relevant spec, skill, hook,
   service gate, or test instead.
-
