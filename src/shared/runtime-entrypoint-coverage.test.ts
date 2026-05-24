@@ -519,6 +519,7 @@ describe('runtime entrypoint coverage', () => {
       'task.structuredStateWrites',
       'task.transitionToRunning',
       'task.typeReview',
+      'taskplane.writebackApply',
       'workHabit.preferenceMemory',
     ]);
   });

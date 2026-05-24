@@ -52,7 +52,7 @@ type RuntimeContextReadinessTask = Pick<
 const CONCRETE_DELIVERABLE_PATTERN = /网站|教程|文档|页面|产品|功能|组件|报告|草稿|方案|实现|修复|优化|review|implement|build|draft|design/i;
 const CODE_OR_REPO_ACTION_PATTERN = /代码|仓库|实现|修复|重构|接入|接口|API|测试|lint|build|commit|push|deploy|refactor|bug|repo/i;
 const EXTERNAL_RESEARCH_PATTERN = /最新|官方文档|联网|搜索|调研|竞品|资料|案例|市场|Codex|Claude|Agent\s*初学者|web|search|browse|docs?/i;
-const USER_DECISION_PATTERN = /拍板|批准|审批|是否允许|要不要|选哪个|上线|发布|部署|删除|付费|收费|法务|合同|凭证|密钥|API\s*key|生产环境|force\s*push|push\s+main/i;
+const USER_DECISION_PATTERN = /拍板|批准|审批|是否允许|要不要|选哪个|是否.*(上线|发布|部署)|直接.*(上线|发布|部署)|(上线|发布|部署).*生产环境|删除|付费|收费|凭证|密钥|API\s*key|生产环境|force\s*push|push\s+main/i;
 const WEAK_START_PATTERN = /^(开始|继续|推进|执行|go|start|continue|run)$/i;
 
 export function evaluateRuntimeContextReadiness(params: {

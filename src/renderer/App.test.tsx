@@ -3733,7 +3733,8 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
     await user.click(await screen.findByText('上下文整理'));
-    await user.click(screen.getByRole('button', { name: '自动清理' }));
+    await user.click(screen.getByRole('button', { name: '自动整理' }));
+    expect(await screen.findByText('Agent API')).toBeTruthy();
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
     const longContextChunk = '这轮需要保留董事会材料的上下文：现金流页、CEO 批注、法务意见、截止时间、交付范围和风险说明都要一起考虑。'.repeat(38);
 
@@ -3747,7 +3748,7 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText(/不会自动清空聊天/)).toBeTruthy();
+    expect(await screen.findByText(/不会跳过保全证明/)).toBeTruthy();
     expect(screen.getByText(/估算上下文占用约/)).toBeTruthy();
     expect(screen.getByText(/达到 30% 阈值/)).toBeTruthy();
     expect(screen.getByRole('button', { name: '整理归档' })).toBeTruthy();
@@ -4902,6 +4903,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('任务已完成')).toBeTruthy();
     expect(screen.getAllByText('2 界面设计').length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '进入下一任务' }));
+    expect(await screen.findByText('Agent API')).toBeTruthy();
 
     await waitFor(() => {
       expect(harness.api.transitionTask).toHaveBeenCalledWith({
@@ -4927,7 +4929,6 @@ describe('App redesign v1', () => {
           recordPath: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-received-handoff\.md$/),
         }),
       }));
-      expect(screen.getByText('Agent API')).toBeTruthy();
       expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
         taskId: 'task_handoff_second',
         messages: expect.arrayContaining([
@@ -5990,7 +5991,7 @@ describe('App redesign v1', () => {
               {
                 ...buildTaskDetail(sourceOnlyTask).sourceContexts[0]!,
                 title: '会话刷新前保全',
-                note: '自学习观察：会话刷新前保全关键决策、偏好变化和未解决问题。',
+                note: '上下文保全证明：刷新前保存目标、决策、风险、来源、下一步或交接信号。',
               },
             ],
           }
@@ -6003,7 +6004,7 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText('Projected task record')).toBeTruthy();
     await expectOpenFileKind('记录');
-    expect(screen.getByDisplayValue(/自学习观察：会话刷新前保全关键决策/)).toBeTruthy();
+    expect(screen.getByDisplayValue(/上下文保全证明：刷新前保存目标/)).toBeTruthy();
   });
 
   it('classifies AI-generated source context projections as AI output files', async () => {

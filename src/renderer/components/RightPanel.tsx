@@ -30,6 +30,11 @@ import {
   buildRuntimeResumePlan,
   evaluateRuntimeHandoff,
 } from '@shared/runtime-handoff';
+import {
+  buildContextPreservationRecordContent,
+  evaluateContextPreservation,
+  type ContextPreservationMessage,
+} from '@shared/context-preservation';
 import type { PanelRuntimeTimelineEventType } from '@shared/runtime-panel-events';
 import {
   evaluateTaskRecordWorthiness,
@@ -119,7 +124,7 @@ const AGENT_CLI_PANEL_RUNTIME_HINTS: Record<AgentCliRuntimeId, string> = {
 const AGENT_CLI_PANEL_RUNTIMES: AgentCliRuntimeId[] = ['codex', 'claude'];
 
 const CONTEXT_STRATEGY_LABELS: Record<ContextStrategy, string> = {
-  auto: '自动清理',
+  auto: '自动整理',
   manual: '先询问',
   reminder: '仅提醒',
 };
@@ -432,41 +437,29 @@ async function preserveSessionRefreshMemory(params: {
   taskTitle: string;
   messages: Message[];
 }): Promise<boolean> {
-  const userMessages = params.messages
-    .filter((message) => message.role === 'user')
-    .map((message) => message.text.trim())
-    .filter(Boolean);
-  if (userMessages.length === 0 || !hasSpecificHandoffSignal(userMessages)) return false;
+  const preservationMessages = buildContextPreservationMessages(params.messages);
+  const userMessages = preservationMessages.filter((message) => message.role === 'user');
+  const heuristicSignal = hasSpecificHandoffSignal(userMessages.map((message) => message.text));
+  const planningEvaluation = evaluateContextPreservation({
+    hasTaskContext: true,
+    chatMessageCount: userMessages.length,
+    hasSpecificHandoffSignal: heuristicSignal,
+    memoryWriteCompleted: false,
+    messages: preservationMessages,
+  });
+  if (userMessages.length === 0 || !planningEvaluation.hasValuableSignals) return false;
 
-  const recentFocus = userMessages.slice(-3).map((message) => truncateMemoryLine(message));
-  const preferenceSignals = userMessages
-    .filter((message) => /不要|别|希望|以后|默认|必须|尽量|偏好|习惯/.test(message))
-    .slice(-2)
-    .map((message) => truncateMemoryLine(message));
-  const lastQuestion = recentFocus.at(-1) ?? '暂无';
-  const content = [
-    '# Record: 会话刷新前保全',
-    '',
-    '## Trigger',
-    '刷新任务会话前，AI 判断当前讨论包含足够具体的可恢复信号。',
-    '',
-    '## Summary',
-    `任务：${params.taskTitle}`,
-    `用户消息数：${userMessages.length}`,
-    `最近关注：${recentFocus.join(' / ')}`,
-    '',
-    '## Confirmed',
-    `- 偏好变化候选：${preferenceSignals.length ? preferenceSignals.join(' / ') : '暂无明显候选'}`,
-    '',
-    '## Open',
-    `- 未解决问题候选：${lastQuestion}`,
-    '',
-    '## Next',
-    '- 刷新后继续围绕当前任务推进，避免依赖长聊天窗口恢复上下文。',
-    '',
-    '## Links',
-    '- 用途：刷新会话前的保全式学习提取，只保存精选信号，不保存完整聊天全文。',
-  ].join('\n');
+  const archivedEvaluation = evaluateContextPreservation({
+    hasTaskContext: true,
+    chatMessageCount: userMessages.length,
+    hasSpecificHandoffSignal: heuristicSignal,
+    memoryWriteCompleted: true,
+    messages: preservationMessages,
+  });
+  const content = buildContextPreservationRecordContent({
+    evaluation: archivedEvaluation,
+    taskTitle: params.taskTitle,
+  });
 
   const canWriteSource = guardDurablePanelAction({ taskId: params.taskId, confirmed: true }).allowed;
   const sourceWritten = canWriteSource && window.api?.createSourceContext
@@ -476,7 +469,7 @@ async function preserveSessionRefreshMemory(params: {
       kind: 'note',
       isKey: false,
       content,
-      note: '自学习观察：会话刷新前保全关键决策、偏好变化和未解决问题。',
+      note: '上下文保全证明：刷新前保存目标、决策、风险、来源、下一步或交接信号。',
       sourceRole: 'digest',
     }).then(() => true).catch(() => false)
     : false;
@@ -496,10 +489,21 @@ async function preserveSessionRefreshMemory(params: {
     await recordPanelTimelineEvent(params.taskId, 'panel.context_refreshed', {
       sourceWritten,
       fileWritten,
+      preservationStatus: archivedEvaluation.status,
+      signalCount: archivedEvaluation.valuableSignals.length,
       userMessageCount: userMessages.length,
     });
   }
   return sourceWritten || fileWritten;
+}
+
+function buildContextPreservationMessages(messages: Message[]): ContextPreservationMessage[] {
+  return messages
+    .map((message) => ({
+      role: message.role,
+      text: message.text.trim(),
+    }))
+    .filter((message) => message.text);
 }
 
 function hasSpecificHandoffSignal(userMessages: string[]): boolean {
@@ -511,9 +515,15 @@ function hasSpecificHandoffSignal(userMessages: string[]): boolean {
   const unique = new Set(normalized);
   const combined = recent.join(' ');
 
-  return unique.size >= 2
+  const heuristicSignal = unique.size >= 2
     || combined.length >= 48
     || /[A-Za-z]{3,}|[0-9]|\.md|\.ts|\.tsx|Playwright|MCP|API|RAG|任务拆解|验收|实现|优化文档/.test(combined);
+  if (heuristicSignal) return true;
+  return evaluateContextPreservation({
+    hasTaskContext: true,
+    chatMessageCount: userMessages.length,
+    messages: userMessages.map((text) => ({ role: 'user', text })),
+  }).hasValuableSignals;
 }
 
 async function preservePhaseCloseoutRecord(params: {
@@ -3369,8 +3379,8 @@ export function RightPanel({
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
               {contextStrategy === 'reminder'
-                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要整理时可切回自动清理或先询问。'
-                : '这个任务的讨论已经有点长了。可以先整理关键结论，再由你决定是否刷新当前会话；不会自动清空聊天。'}
+                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要整理时可切回自动整理或先询问。'
+                : '这个任务的讨论已经有点长了。可以先保全关键结论，再由你决定是否刷新当前会话；不会跳过保全证明。'}
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
             <div className="panel-refresh-actions">
@@ -3658,7 +3668,7 @@ export function RightPanel({
             </summary>
             <div className="panel-context-strategy" aria-label="上下文策略">
               {([
-                ['auto', '自动清理'],
+                ['auto', '自动整理'],
                 ['manual', '先询问'],
                 ['reminder', '仅提醒'],
               ] as const).map(([value, label]) => (
@@ -3685,7 +3695,7 @@ export function RightPanel({
             <span>
               {manualRefreshReady
                 ? '已归档关键记录；可以继续补充，或确认刷新当前任务会话。'
-                : '先询问模式：先整理归档，再由你确认是否清理会话。'}
+                : '先询问模式：先保全归档，再由你确认是否刷新会话。'}
             </span>
             <button
               className="btn sm ghost"

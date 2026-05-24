@@ -323,6 +323,11 @@ user confirms clearing. Reminder-only mode must never clear automatically.
 Clearing context, leaving task context, switching tasks, and starting a new
 conversation are separate actions.
 
+When a context transition is needed, load the Context Transition Policy. It
+owns the preservation proof shape, reset strategy, compact/handoff distinction,
+and native runtime capability boundary. This spec owns the durable memory
+surfaces and recovery coverage check.
+
 ## Memory Coverage Check
 
 A task is memory-covered when the following are available or intentionally not

@@ -55,6 +55,7 @@ describe('RunService integration', () => {
       configured: true,
       apiKeyStored: true,
       apiKeySource: 'env',
+      runtimeMode: 'api',
       provider: 'openai-compatible',
       model: 'local-alpha-model',
       baseUrl: null,

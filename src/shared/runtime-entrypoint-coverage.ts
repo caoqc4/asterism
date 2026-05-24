@@ -818,6 +818,28 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     notes: 'Confirmation is product-harness durable write: it rechecks proposed child drafts before creating real child tasks, criteria, dependencies, parent updates, and records. It does not depend on which AI runtime produced the draft. Starting or entering a child task remains a separate subtask_start boundary.',
   },
   {
+    id: 'taskplane.writebackApply',
+    owner: 'TaskplaneWritebackDispatchService.dispatch',
+    kind: 'durable_write',
+    description: 'Apply a confirmed Taskplane Write Intent through main-process service ports.',
+    ipcChannels: ['taskplaneWriteback:apply'],
+    requiredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ],
+    notes: 'Shared Write Intent application is a product-harness durable write, not a hidden runtime call. The IPC handler verifies the target task, dispatch rechecks the writeback movement and target ids, and concrete writes still flow through TaskService, DecisionService, or TaskFileRepository ports with panel timeline allowlist events.',
+  },
+  {
     id: 'task.structuredStateWrites',
     owner: 'TaskService structured state resource handlers',
     kind: 'durable_write',

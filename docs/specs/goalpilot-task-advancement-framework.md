@@ -113,7 +113,7 @@ turn.
 | Long-running executable task with clear stop condition | Execute through persistent goal capability when available | Native runtime orchestration, run goal contract, verification gates. |
 | Blocked, waiting, risky, or decision-bound | Pause or Decision | Decision/checkpoint hooks. |
 | Work produced | Verify | Verification/review rules. |
-| Stable pause, closeout, or task switch | Persist or Handoff | Task memory spec and context-refresh rules. |
+| Stable pause, closeout, or task switch | Persist or Handoff | Task memory spec and context transition policy. |
 
 This map is a starting point, not a script.
 
@@ -127,6 +127,9 @@ GoalPilot chooses when these documents or flows matter:
   proposals, run summaries, verification results, or user-facing files.
 - Task Memory Spec: load when reading/writing task memory, switching tasks,
   clearing context, closing a phase, or deciding if recovery is sufficient.
+- Context Transition Policy: load when compacting, resetting, clearing,
+  handing off, switching tasks, starting a new conversation, or proving that
+  useful chat context has been preserved.
 - Native Agent Capability Mapping: load when aligning Codex or Claude Code
   plan, goal, memory, compact, skills, hooks, subagents, status, or review
   capabilities to Taskplane product states.

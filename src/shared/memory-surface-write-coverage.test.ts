@@ -102,9 +102,9 @@ describe('memory surface write coverage', () => {
   });
 
   it('binds retained memory-write IPC channels to the surface coverage matrix', () => {
-    const coveredChannels = memorySurfaceWriteEntrypoints()
+    const coveredChannels = [...new Set(memorySurfaceWriteEntrypoints()
       .flatMap((entrypoint) => entrypoint.ipcChannels ?? [])
-      .sort();
+      .sort())];
 
     expect(coveredChannels).toEqual([
       'artifact:createManual',
@@ -131,6 +131,7 @@ describe('memory surface write coverage', () => {
       'taskFile:create',
       'taskFile:delete',
       'taskFile:update',
+      'taskplaneWriteback:apply',
       'workHabit:createManual',
       'workHabit:delete',
       'workHabit:importLegacy',

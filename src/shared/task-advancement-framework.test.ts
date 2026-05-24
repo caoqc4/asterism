@@ -23,6 +23,7 @@ describe('GoalPilot task advancement framework', () => {
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Situation Map');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## On-Demand References');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Agent Operating Principles: load for concrete execution');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Context Transition Policy');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Native Agent Capability Mapping');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Decision Layer Writeback Orchestration');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('persistent goal capability');

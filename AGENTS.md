@@ -24,6 +24,9 @@ off, or pause.
 - Task memory, Task.md, Task Records, Source Context, context refresh, or
   recovery:
   `docs/specs/task-memory-spec.md`
+- Compact, reset, clear, handoff, task switch, phase closeout, or preservation
+  proof:
+  `docs/specs/context-transition-policy.md`
 - Codex or Claude Code plan, goal, memory, compact, skills, hooks, subagents,
   status, review, or context-readiness mapping:
   `docs/specs/native-agent-capability-mapping.md`

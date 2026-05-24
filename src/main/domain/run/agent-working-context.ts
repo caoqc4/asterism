@@ -6,6 +6,7 @@ import type {
 import type { CreateRunInput, RunRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TimelineEventRecord } from '../../../shared/types/task.js';
 import { TASKPLANE_CORE_AGENT_CONTEXT } from '../../../shared/core-agent-context.js';
+import { TASKPLANE_AGENT_PRINCIPLES_TITLE } from '../../../shared/agent-principles.js';
 import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
@@ -245,6 +246,8 @@ export function formatAgentRunRequestForStep(request: AgentRunRequest): string {
     `上下文装配：${runtimeContextAssemblyPolicy.summary}`,
     '产品原则：read-only',
     request.context.productPrinciples,
+    `执行规范：phase-loaded ${TASKPLANE_AGENT_PRINCIPLES_TITLE}`,
+    '关键执行约束：Do not store full chat transcripts in task files by default.',
     `任务状态：${request.context.task.state}`,
     `优先级语义：${request.context.priorityLane}`,
     `完成标准：${request.context.completion.satisfied}/${request.context.completion.total}`,

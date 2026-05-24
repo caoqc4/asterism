@@ -18,7 +18,11 @@ describe('agent cli runtime status', () => {
             availability: 'unknown',
             minimumVersion: '0.133.0',
           }),
+          defaultResetStrategy: 'product_transcript_reset',
+          supportsNativeClear: false,
+          supportsNativeCompact: false,
           supportsNativeGoalMode: false,
+          supportsPersistentSession: false,
           commandRouting: expect.objectContaining({
             passthroughRequiresExplicitNamespace: true,
           }),
@@ -33,7 +37,12 @@ describe('agent cli runtime status', () => {
           nativeGoalMode: expect.objectContaining({
             availability: 'unsupported',
           }),
+          defaultResetStrategy: 'product_transcript_reset',
+          supportsNativeClear: false,
+          supportsNativeCompact: false,
+          supportsNativeResume: false,
           supportsNativeGoalMode: false,
+          supportsPersistentSession: false,
         }),
       }),
     ]);
@@ -93,6 +102,9 @@ describe('agent cli runtime status', () => {
         minimumVersion: '0.133.0',
       },
       supportsNativeGoalMode: true,
+      supportsNativeClear: false,
+      supportsPersistentSession: false,
+      defaultResetStrategy: 'product_transcript_reset',
       supportsWorkspaceWrite: false,
     });
   });

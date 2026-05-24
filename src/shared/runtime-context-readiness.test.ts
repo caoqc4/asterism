@@ -119,6 +119,67 @@ describe('evaluateRuntimeContextReadiness', () => {
       shouldAskUser: true,
     });
   });
+
+  it('does not treat legal or contract references as approval requests by themselves', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      prompt: '这轮需要保留董事会材料上下文：现金流页、CEO 批注、法务意见、截止时间、交付范围和风险说明。',
+      task: buildReadinessTask({
+        nextStep: '整理反馈并启动下一轮修改。',
+        riskLevel: 'high',
+        riskNote: '今晚前需要给 CFO 过目。',
+        sourceContexts: [{
+          archivedAt: null,
+          batchId: null,
+          capturedAt: '2026-05-24T00:00:00.000Z',
+          containsSensitiveData: false,
+          content: '董事会材料来源摘要。',
+          createdAt: '2026-05-24T00:00:00.000Z',
+          credibility: 'verified',
+          id: 'source_legal',
+          isDuplicate: false,
+          isKey: true,
+          kind: 'note',
+          note: null,
+          sourceRole: 'digest',
+          status: 'active',
+          taskId: 'task_1',
+          title: '法务意见摘要',
+          updatedAt: '2026-05-24T00:00:00.000Z',
+          uri: null,
+        }],
+        summary: '需要按最新反馈更新董事会材料。',
+        title: '董事会材料修订',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      decision: 'ready',
+      movement: 'execute',
+      shouldAskUser: false,
+    });
+  });
+
+  it('does not block handoff prompts just because a project title contains launch wording', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      prompt: [
+        '刚刚已完成「1 需求确认」。',
+        '它属于项目「上线项目」。',
+        '现在请切换到下一项任务「2 界面设计」。',
+        '请先读取并重建这个任务的上下文。',
+      ].join('\n'),
+      task: buildReadinessTask({
+        nextStep: '确认界面设计第一步。',
+        summary: '项目第二项子任务。',
+        title: '2 界面设计',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      decision: 'ready',
+      movement: 'execute',
+      shouldAskUser: false,
+    });
+  });
 });
 
 function buildReadinessTask(partial: Partial<TaskDetail> = {}): TaskDetail {

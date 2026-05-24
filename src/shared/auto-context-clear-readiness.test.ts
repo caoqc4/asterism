@@ -42,6 +42,26 @@ describe('auto context clear readiness', () => {
     });
   });
 
+  it('uses preservation signals from messages instead of only message-count heuristics', () => {
+    expect(evaluateAutoContextClearReadiness({
+      hasTaskContext: true,
+      chatMessageCount: 2,
+      messages: [
+        { role: 'user', text: '目标是做 Codex 基础教程站，下一步先调研官方文档。' },
+      ],
+    })).toMatchObject({
+      outcome: 'needs_memory_write',
+      shouldAsk: true,
+      contextTransition: {
+        action: 'preserve_and_reset',
+        preservation: {
+          status: 'needs_write',
+          hasValuableSignals: true,
+        },
+      },
+    });
+  });
+
   it('allows auto clear after recoverable signals are written', () => {
     expect(evaluateAutoContextClearReadiness({
       hasTaskContext: true,

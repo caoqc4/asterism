@@ -43,6 +43,7 @@ describe('runtime entrypoint IPC coverage', () => {
         || channel === 'externalAccess:sourceIngestionCommit'
         || channel === 'task:update'
         || channel === 'task:transition'
+        || channel === 'taskplaneWriteback:apply'
         || /^(blocker|completionCriteria|taskDependency):/.test(channel)
       ))
       .sort();

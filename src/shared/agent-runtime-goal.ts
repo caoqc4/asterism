@@ -22,12 +22,17 @@ export type AgentRuntimeAdapterCapabilities = {
   label: string;
   executionKind: AgentRuntimeExecutionKind;
   supportsSingleRun: boolean;
+  supportsPersistentSession?: boolean;
   supportsNativeGoalMode: boolean;
+  supportsNativeClear?: boolean;
+  supportsNativeCompact?: boolean;
+  supportsNativeResume?: boolean;
   supportsPauseGoal: boolean;
   supportsResumeGoal: boolean;
   supportsClearGoal: boolean;
   supportsStructuredProgressEvents: boolean;
   supportsWorkspaceWrite: boolean;
+  defaultResetStrategy?: 'product_transcript_reset' | 'runtime_native_clear' | 'runtime_restart';
   defaultPermissionMode: 'read_only' | 'plan' | 'workspace_write';
   nativeGoalMode: NativeGoalModeCapability;
   commandRouting: {
