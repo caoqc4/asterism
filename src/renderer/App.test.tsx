@@ -2725,6 +2725,49 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('surfaces Agent CLI task file write intents as confirmed file proposals', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请保存这个教程大纲。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
+    expect(run).toBeTruthy();
+    Object.assign(run!, {
+      output: [
+        '已整理为任务文件草稿。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'task_file.propose',
+            path: 'Drafts/codex-tutorial-outline.md',
+            content: '# Codex 教程大纲\n\n- 入门路径',
+            summary: '保存首版教程大纲。',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText('任务文件写入提案')).toBeTruthy();
+    expect(screen.getByText('保存首版教程大纲。')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认写入文件' }));
+    await waitFor(() => {
+      expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+        content: '# Codex 教程大纲\n\n- 入门路径',
+        path: 'Drafts/codex-tutorial-outline.md',
+        taskId: 'task_risk',
+      }));
+    });
+  });
+
   it('surfaces Agent CLI source context write intents as confirmed source proposals', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));

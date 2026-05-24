@@ -1,9 +1,13 @@
-import type { RuntimeSurfaceKind } from './runtime-surface-routing.js';
+import {
+  classifyRuntimeFileSurface,
+  type RuntimeSurfaceKind,
+} from './runtime-surface-routing.js';
 import {
   extractTaskplaneWriteIntentsFromText,
   type TaskplaneDecisionCreateIntent,
   type TaskplaneTaskBlockedIntent,
   type TaskplaneTaskCompleteIntent,
+  type TaskplaneTaskFileProposeIntent,
   type TaskplaneTaskNextStepIntent,
   validateTaskplaneWriteIntent,
 } from './taskplane-write-intent.js';
@@ -42,6 +46,7 @@ export type TaskplaneStructuredWritebackProposal = {
 export type TaskplaneWritebackProposalSet = {
   sourceContext: TaskplaneSourceContextWritebackProposal | null;
   structured: TaskplaneStructuredWritebackProposal | null;
+  taskFile: TaskplaneTaskFileWritebackProposal | null;
   taskRecord: TaskplaneTaskFileWritebackProposal | null;
 };
 
@@ -59,6 +64,9 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
   }).filter((intent) => validateTaskplaneWriteIntent(intent).status === 'ready');
 
   const taskRecordIntent = intents.find((intent) => intent.type === 'task_record.create');
+  const taskFileIntent = intents.find((intent): intent is TaskplaneTaskFileProposeIntent => (
+    intent.type === 'task_file.propose'
+  ));
   const sourceContextIntent = intents.find((intent) => intent.type === 'source_context.create');
   const structuredIntent = intents.find((intent): intent is TaskplaneStructuredWritebackIntent => (
     intent.type === 'decision.create'
@@ -78,6 +86,7 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
         }
       : null,
     structured: structuredIntent ? buildStructuredWritebackProposal(structuredIntent) : null,
+    taskFile: taskFileIntent ? buildTaskFileProposal(taskFileIntent) : null,
     taskRecord: taskRecordIntent?.type === 'task_record.create'
       ? {
           content: taskRecordIntent.content,
@@ -89,6 +98,26 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
           surfaceLabel: '任务记录',
         }
       : null,
+  };
+}
+
+function buildTaskFileProposal(intent: TaskplaneTaskFileProposeIntent): TaskplaneTaskFileWritebackProposal {
+  const path = normalizeProposalPath(intent.path);
+  const name = path.split('/').filter(Boolean).at(-1) ?? path;
+  const surface = classifyRuntimeFileSurface({
+    kind: 'local_file',
+    name,
+    path,
+    taskFileKind: 'file',
+  });
+  return {
+    content: intent.content,
+    evidenceRunId: intent.evidenceRunId,
+    intentSource: 'write_intent',
+    path,
+    summary: intent.summary ?? 'Agent 建议保存为任务文件。',
+    surface: surface.surface,
+    surfaceLabel: surface.label,
   };
 }
 
@@ -140,4 +169,13 @@ function slugFilePart(value: string): string {
     .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
     .replace(/^-+|-+$/g, '');
   return ascii.slice(0, 36) || 'task';
+}
+
+function normalizeProposalPath(value: string): string {
+  return value
+    .replace(/\\/g, '/')
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join('/');
 }

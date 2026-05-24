@@ -203,6 +203,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Sandbox patch review and browser evidence persisters check artifact writes with post_step durable-change verification before persisting generated evidence artifacts.',
       'RightPanel phase closeout now passes through pre_step before saving and post_step before quality-check handoff.',
       'RightPanel task file proposal confirmation now passes through pre_step and post_step verification.',
+      'Native CLI task_file.propose Write Intent reuses the existing RightPanel task-file proposal confirmation and task_file.create writeback apply plan.',
       'TaskService transition and transitionIfAllowed guard task_state_transition at the service boundary.',
       'TaskService completion transitions require task_completion memory coverage, including passed or overridden completion-check evidence.',
       'Task completion coverage ignores Run and completion-check evidence older than the latest completion-criteria update.',

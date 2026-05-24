@@ -306,16 +306,17 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'post_step',
       'operator_confirmation',
     ],
-    cliOnlyClosure: 'supported',
+    cliOnlyClosure: 'partial',
     futureApiClosure: 'partial',
     evidence: [
       'Sandboxed coding and patch promotion keep local writes behind review or confirmation boundaries.',
+      'Native CLI task_file.propose Write Intent is parsed into the existing confirmed task-file proposal surface and main-side writeback apply plan.',
     ],
     gaps: [
-      'Task-file and artifact Write Intent should be represented explicitly when native runtime output proposes files.',
+      'Artifact Write Intent still needs a dedicated artifact proposal/apply plan before native runtime output can create Artifacts directly.',
     ],
     nextActions: [
-      'Add task-file/artifact proposal intent types only when the UI proposal surface is ready.',
+      'Add artifact.propose only after the artifact proposal surface and dispatcher port are ready.',
     ],
   },
   {

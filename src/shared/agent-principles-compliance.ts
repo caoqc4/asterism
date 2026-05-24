@@ -438,6 +438,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'No default Artifacts/ folder is required.',
       'Ordinary chat-driven task file writes use proposal flow before writing.',
+      'Native CLI task_file.propose output is parsed as a confirmed task-file proposal before persistence.',
       'AI output, source material, task record, artifact, and ordinary file labels come from shared classification.',
     ],
     gaps: [

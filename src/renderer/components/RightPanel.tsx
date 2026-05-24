@@ -936,6 +936,17 @@ function parseAgentCliTaskRecordWriteIntent(params: {
   return buildTaskplaneWritebackProposalsFromText(params).taskRecord;
 }
 
+function parseAgentCliTaskFileWriteIntent(params: {
+  output: string;
+  runId: string;
+  taskId: string;
+}): TaskFileWriteProposal | null {
+  return buildTaskplaneWritebackProposalsFromText({
+    ...params,
+    taskTitle: '',
+  }).taskFile;
+}
+
 function parseAgentCliSourceContextWriteIntent(params: {
   output: string;
   runId: string;
@@ -1514,8 +1525,13 @@ export function RightPanel({
             taskId: current.taskId,
             taskTitle,
           });
-          if (taskRecordProposal) {
-            updateTaskFileProposal((existing) => existing ?? taskRecordProposal);
+          const taskFileProposal = taskRecordProposal ?? parseAgentCliTaskFileWriteIntent({
+            output,
+            runId: detail.id,
+            taskId: current.taskId,
+          });
+          if (taskFileProposal) {
+            updateTaskFileProposal((existing) => existing ?? taskFileProposal);
           }
           const sourceProposal = parseAgentCliSourceContextWriteIntent({
             output,
@@ -2718,8 +2734,13 @@ export function RightPanel({
             taskId: activeTaskId,
             taskTitle: title ?? titleCache[activeTaskId] ?? activeTaskId,
           });
-          if (taskRecordProposal) {
-            updateTaskFileProposal((existing) => existing ?? taskRecordProposal);
+          const taskFileProposal = taskRecordProposal ?? parseAgentCliTaskFileWriteIntent({
+            output,
+            runId: run.id,
+            taskId: activeTaskId,
+          });
+          if (taskFileProposal) {
+            updateTaskFileProposal((existing) => existing ?? taskFileProposal);
           }
           const sourceProposal = parseAgentCliSourceContextWriteIntent({
             output,

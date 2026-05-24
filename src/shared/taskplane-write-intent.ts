@@ -1,3 +1,5 @@
+import { isTaskMdPath, isTaskRecordPath } from './task-memory-path.js';
+
 export type TaskplaneWriteIntentConfidence = 'low' | 'medium' | 'high';
 
 export type TaskplaneSubtaskDraftIntent = {
@@ -20,6 +22,15 @@ export type TaskplaneTaskRecordCreateIntent = {
   evidenceRunId: string;
   taskId: string;
   type: 'task_record.create';
+};
+
+export type TaskplaneTaskFileProposeIntent = {
+  content: string;
+  evidenceRunId: string;
+  path: string;
+  summary?: string;
+  taskId: string;
+  type: 'task_file.propose';
 };
 
 export type TaskplaneDecisionCreateIntent = {
@@ -67,6 +78,7 @@ export type TaskplaneTaskCompleteIntent = {
 
 export type TaskplaneWriteIntent =
   | TaskplaneTaskRecordCreateIntent
+  | TaskplaneTaskFileProposeIntent
   | TaskplaneDecisionCreateIntent
   | TaskplaneSourceContextCreateIntent
   | TaskplaneTaskNextStepIntent
@@ -121,6 +133,17 @@ export function validateTaskplaneWriteIntent(intent: TaskplaneWriteIntent): Task
   if (intent.type === 'task_record.create') {
     if (!intent.content.trim()) issues.push('Task record intent requires content.');
     if (!['low', 'medium', 'high'].includes(intent.confidence)) issues.push('Task record intent requires confidence.');
+  }
+  if (intent.type === 'task_file.propose') {
+    const path = normalizeWriteIntentPath(intent.path);
+    if (!path) issues.push('Task file proposal requires path.');
+    if (!intent.content.trim()) issues.push('Task file proposal requires content.');
+    if (path && (isTaskMdPath(path) || isTaskRecordPath(path))) {
+      issues.push('Task file proposal cannot target Task.md or Task Records/. Use the dedicated task-memory or task-record intent.');
+    }
+    if (path && !/\.(md|txt)$/i.test(path)) {
+      issues.push('Task file proposal currently supports .md or .txt files.');
+    }
   }
   if (intent.type === 'source_context.create') {
     if (!intent.title.trim()) issues.push('Source context intent requires title.');
@@ -183,6 +206,19 @@ function normalizeWriteIntentValue(value: unknown, params: {
       evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
       taskId: readString(value.taskId, params.taskId),
       type: 'task_record.create',
+    }];
+  }
+  if (type === 'task_file.propose') {
+    const path = normalizeWriteIntentPath(readString(value.path));
+    const content = readString(value.content);
+    if (!path || !content) return [];
+    return [{
+      content,
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      path,
+      summary: readString(value.summary) || undefined,
+      taskId: readString(value.taskId, params.taskId),
+      type: 'task_file.propose',
     }];
   }
   if (type === 'source_context.create') {
@@ -305,6 +341,15 @@ function dedupeWriteIntents(intents: TaskplaneWriteIntent[]): TaskplaneWriteInte
 
 function readString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function normalizeWriteIntentPath(value: string): string {
+  return value
+    .replace(/\\/g, '/')
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join('/');
 }
 
 function normalizeConfidence(value: unknown): TaskplaneWriteIntentConfidence {

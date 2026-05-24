@@ -21,6 +21,12 @@ describe('Taskplane writeback proposal builder', () => {
             note: '官方文档入口。',
           },
           {
+            type: 'task_file.propose',
+            path: 'Drafts/codex-tutorial-outline.md',
+            content: '# Codex 教程大纲\n\n- 入门路径',
+            summary: '保存首版教程大纲。',
+          },
+          {
             type: 'decision.create',
             title: '确认首版范围',
             rationale: '范围会影响页面结构。',
@@ -47,6 +53,15 @@ describe('Taskplane writeback proposal builder', () => {
       note: '官方文档入口。',
       title: 'Codex docs',
       uri: 'https://example.com/codex',
+    });
+    expect(proposals.taskFile).toMatchObject({
+      content: '# Codex 教程大纲\n\n- 入门路径',
+      evidenceRunId: 'run_1',
+      intentSource: 'write_intent',
+      path: 'Drafts/codex-tutorial-outline.md',
+      summary: '保存首版教程大纲。',
+      surface: 'task_file',
+      surfaceLabel: '文件',
     });
     expect(proposals.structured).toMatchObject({
       detail: '范围会影响页面结构。',

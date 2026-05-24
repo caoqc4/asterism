@@ -121,6 +121,49 @@ describe('Taskplane write intent', () => {
     expect(intents.map((intent) => validateTaskplaneWriteIntent(intent).status)).toEqual(['ready', 'ready']);
   });
 
+  it('extracts generic task file proposals without crossing task-memory surfaces', () => {
+    const intents = extractTaskplaneWriteIntentsFromText({
+      evidenceRunId: 'run_4_file',
+      taskId: 'task_scope',
+      text: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [
+          {
+            type: 'task_file.propose',
+            path: ' Drafts\\codex-tutorial-outline.md ',
+            content: '# Codex 教程大纲\n\n- 入门路径',
+            summary: '保存首版教程大纲。',
+          },
+          {
+            type: 'task_file.propose',
+            path: 'Task Records/handoff.md',
+            content: '# Handoff',
+          },
+        ],
+      }),
+    });
+
+    expect(intents).toMatchObject([
+      {
+        content: '# Codex 教程大纲\n\n- 入门路径',
+        evidenceRunId: 'run_4_file',
+        path: 'Drafts/codex-tutorial-outline.md',
+        summary: '保存首版教程大纲。',
+        taskId: 'task_scope',
+        type: 'task_file.propose',
+      },
+      {
+        path: 'Task Records/handoff.md',
+        type: 'task_file.propose',
+      },
+    ]);
+    expect(validateTaskplaneWriteIntent(intents[0]!)).toMatchObject({ status: 'ready' });
+    expect(validateTaskplaneWriteIntent(intents[1]!)).toMatchObject({
+      status: 'blocked',
+      issues: ['Task file proposal cannot target Task.md or Task Records/. Use the dedicated task-memory or task-record intent.'],
+    });
+  });
+
   it('extracts decision, next-step, blocker, and completion proposal intents', () => {
     const intents = extractTaskplaneWriteIntentsFromText({
       evidenceRunId: 'run_5',

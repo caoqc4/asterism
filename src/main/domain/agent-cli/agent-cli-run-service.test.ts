@@ -387,6 +387,9 @@ describe('AgentCliRunService', () => {
       input: expect.stringContaining('decision.create'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('task_file.propose'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('task.complete.propose'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
