@@ -2096,13 +2096,17 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '发送' }));
 
     await waitFor(() => {
-      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith({
+      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith(expect.objectContaining({
         operatorConfirmed: true,
+        pilotDecision: expect.objectContaining({
+          backendPlan: expect.objectContaining({ outputContract: 'pilot_decision_summary' }),
+          operationMode: 'product_control_layer',
+        }),
         prompt: '用 Codex CLI 检查下一步。',
         runtimeId: 'codex',
         sandboxMode: 'read-only',
         taskId: 'task_risk',
-      });
+      }));
     });
     expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
       messages: expect.arrayContaining([
@@ -2435,13 +2439,13 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '发送' }));
 
     await waitFor(() => {
-      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith({
+      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith(expect.objectContaining({
         operatorConfirmed: true,
         prompt: '用 Claude Code 看风险。',
         runtimeId: 'claude',
         sandboxMode: 'read-only',
         taskId: 'task_risk',
-      });
+      }));
     });
     expect(await screen.findByText('任务 Agent 正在执行')).toBeTruthy();
     expect(screen.queryByText(/Claude Code run 已在后台启动/)).toBeNull();

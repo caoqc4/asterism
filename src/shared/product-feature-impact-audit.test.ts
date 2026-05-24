@@ -51,6 +51,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('context.readiness.evaluate');
     expect(rightPanel?.evidence.join(' ')).toContain('preserving operation mode');
     expect(rightPanel?.evidence.join(' ')).toContain('backendPlan');
+    expect(rightPanel?.evidence.join(' ')).toContain('Pilot 决策辅助计划');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');

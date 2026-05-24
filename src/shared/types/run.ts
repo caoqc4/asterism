@@ -4,6 +4,16 @@ import type { RuntimeEventRecord, RuntimeReplayGroup } from '../runtime-event-re
 import type { TaskMemoryGuidanceState } from '../task-memory-guidance-state.js';
 import type { TaskMemoryWriteProposal } from '../task-memory-write-proposal.js';
 import type { AgentCliRuntimeId } from '../agent-cli-runtime-status.js';
+import type {
+  PilotConfidence,
+  PilotDecisionBackend,
+  PilotDecisionBackendPlan,
+  PilotExecutor,
+  PilotMessagePriority,
+  PilotOperationMode,
+} from '../pilot-decision-contract.js';
+import type { TaskAdvancementMovement } from '../task-advancement-orchestrator.js';
+import type { PriorityLane } from './brief.js';
 
 export type RunType = 'draft' | 'summarize' | 'agent';
 
@@ -105,12 +115,25 @@ export type CreateCodeAgentRunInput = {
 
 export type AgentCliRunSandboxMode = 'read-only';
 
+export type AgentCliRunPilotDecisionSnapshot = {
+  backend: PilotDecisionBackend;
+  backendPlan: PilotDecisionBackendPlan;
+  confidence: PilotConfidence;
+  executor: PilotExecutor;
+  messagePriority: PilotMessagePriority;
+  movement: TaskAdvancementMovement;
+  operationMode: PilotOperationMode;
+  priorityLane: PriorityLane | null;
+  reason: string;
+};
+
 export type CreateAgentCliRunInput = {
   taskId: string;
   prompt: string;
   runtimeId?: AgentCliRuntimeId;
   sandboxMode?: AgentCliRunSandboxMode;
   operatorConfirmed: boolean;
+  pilotDecision?: AgentCliRunPilotDecisionSnapshot | null;
 };
 
 export type RecordRuntimeNativeGoalRequestInput = {

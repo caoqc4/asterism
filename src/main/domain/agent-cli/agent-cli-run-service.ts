@@ -7,6 +7,7 @@ import {
   evaluateRuntimeContextReadiness,
   formatRuntimeContextReadinessForStep,
 } from '../../../shared/runtime-context-readiness.js';
+import { formatPilotDecisionBackendPlanForStep } from '../../../shared/pilot-decision-contract.js';
 import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
@@ -40,6 +41,7 @@ import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status
 import type {
   CancelAgentCliRunInput,
   CancelAgentCliRunResult,
+  AgentCliRunPilotDecisionSnapshot,
   AgentCliRunSandboxMode,
   CreateAgentCliRunInput,
   RecordRuntimeNativeGoalRequestInput,
@@ -130,6 +132,10 @@ type AgentCliParsedTranscript = {
 const DEFAULT_AGENT_CLI_TIMEOUT_MS = 120_000;
 const DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES = 64_000;
 const AGENT_CLI_TERMINATION_GRACE_MS = 1_500;
+
+type NormalizedAgentCliRunInput = Required<Omit<CreateAgentCliRunInput, 'pilotDecision'>> & {
+  pilotDecision: AgentCliRunPilotDecisionSnapshot | null;
+};
 
 export class AgentCliRunService {
   constructor(
@@ -342,6 +348,16 @@ export class AgentCliRunService {
         formatRuntimeContextManifestForStep(contextManifest),
       ].filter((line): line is string => line !== null).join('\n'),
     });
+    if (request.pilotDecision) {
+      await this.runStepRepository.create({
+        runId: run.id,
+        kind: 'decision',
+        status: request.pilotDecision.backendPlan.status === 'not_needed' ? 'skipped' : 'completed',
+        title: 'Pilot 决策辅助计划',
+        input: JSON.stringify(request.pilotDecision, null, 2),
+        output: formatAgentCliPilotDecisionForStep(request.pilotDecision),
+      });
+    }
     await this.runStepRepository.create({
       runId: run.id,
       kind: 'plan',
@@ -775,7 +791,7 @@ export class AgentCliRunService {
   }
 }
 
-function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): Required<CreateAgentCliRunInput> {
+function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): NormalizedAgentCliRunInput {
   const rawSandboxMode = (input as { sandboxMode?: unknown }).sandboxMode;
   if (rawSandboxMode !== undefined && rawSandboxMode !== 'read-only') {
     throw new Error('Agent CLI workspace-write mode is not enabled in this version.');
@@ -786,7 +802,22 @@ function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): Required<Crea
     runtimeId: input.runtimeId ?? 'codex',
     sandboxMode: 'read-only',
     taskId: input.taskId?.trim() ?? '',
+    pilotDecision: input.pilotDecision ?? null,
   };
+}
+
+function formatAgentCliPilotDecisionForStep(snapshot: AgentCliRunPilotDecisionSnapshot): string {
+  return [
+    `operationMode=${snapshot.operationMode}`,
+    `backend=${snapshot.backend}`,
+    `confidence=${snapshot.confidence}`,
+    `messagePriority=${snapshot.messagePriority}`,
+    `movement=${snapshot.movement}`,
+    `executor=${snapshot.executor}`,
+    `priorityLane=${snapshot.priorityLane ?? 'none'}`,
+    `reason=${snapshot.reason}`,
+    formatPilotDecisionBackendPlanForStep(snapshot.backendPlan),
+  ].join('\n');
 }
 
 function normalizeAgentCliCapabilityMode(mode: AgentCliCapabilityMode | undefined): AgentCliCapabilityMode {

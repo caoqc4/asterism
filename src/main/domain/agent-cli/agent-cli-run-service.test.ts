@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
-import type { RunRecord, RunStepRecord } from '../../../shared/types/run.js';
+import type { AgentCliRunPilotDecisionSnapshot, RunRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import {
   AgentCliRunService,
@@ -37,6 +37,7 @@ describe('AgentCliRunService', () => {
 
     const result = await service.trigger({
       operatorConfirmed: true,
+      pilotDecision: buildPilotDecisionSnapshot(),
       prompt: 'Review the next implementation step.',
       taskId: 'task_1',
     });
@@ -68,6 +69,17 @@ describe('AgentCliRunService', () => {
       title: 'Agent CLI 目标契约',
       input: expect.stringContaining('"runtimeLabel": "Codex CLI"'),
       output: expect.stringContaining('taskGoal=active'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'decision',
+      status: 'completed',
+      title: 'Pilot 决策辅助计划',
+      input: expect.stringContaining('"outputContract": "pilot_decision_summary"'),
+      output: expect.stringContaining('status=requested'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Pilot 决策辅助计划',
+      output: expect.stringContaining('triggers=user_steer'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Agent CLI 目标契约',
@@ -1972,6 +1984,30 @@ function buildRun(partial: Partial<RunRecord> = {}): RunRecord {
     taskId: 'task_1',
     type: 'agent',
     updatedAt: '2026-05-19T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function buildPilotDecisionSnapshot(
+  partial: Partial<AgentCliRunPilotDecisionSnapshot> = {},
+): AgentCliRunPilotDecisionSnapshot {
+  return {
+    backend: 'codex_cli',
+    backendPlan: {
+      backend: 'codex_cli',
+      maxTurns: 1,
+      outputContract: 'pilot_decision_summary',
+      reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',
+      status: 'requested',
+      triggers: ['user_steer'],
+    },
+    confidence: 'model_assisted',
+    executor: 'codex_cli',
+    messagePriority: 'steer',
+    movement: 'execute',
+    operationMode: 'bounded_decision_backend',
+    priorityLane: 'steady',
+    reason: 'Pilot selected execute via agent_cli; message priority is steer.',
     ...partial,
   };
 }
