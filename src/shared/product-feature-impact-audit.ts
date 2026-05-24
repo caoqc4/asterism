@@ -103,15 +103,16 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent CLI runs return runtime evidence and compact progress projection.',
       'Taskplane extracts Write Intent from runtime output before product writes.',
       'Shared writeback proposal builder normalizes runtime Write Intent into reusable product proposal surfaces.',
+      'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',
       'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
       'Completed native runs summarize Taskplane web research capture and native CLI web/search events.',
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
-      'Write Intent proposal building is shared, but confirmation policy and persistence handlers still live inside the right panel instead of a shared writeback orchestrator service.',
+      'Write Intent proposal and apply-plan mapping are shared, but final persistence dispatch still lives inside the right panel instead of a shared writeback orchestrator service.',
     ],
     nextActions: [
-      'Extract confirmation policy and persistence dispatch into a reusable writeback orchestration module shared by CLI and future API runtimes.',
+      'Extract final persistence dispatch into a reusable writeback orchestration service shared by CLI and future API runtimes.',
     ],
   },
   {
@@ -258,10 +259,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Completion verification is separate from model output.',
     ],
     gaps: [
-      'Decision, blocker, next-step, and completion Write Intent still need a shared confirmation policy service instead of panel-local branching.',
+      'Decision, blocker, next-step, and completion Write Intent now share apply-plan mapping, but final persistence dispatch still happens from panel code.',
     ],
     nextActions: [
-      'Move high-risk Write Intent confirmation policy into deterministic writeback gates before persistence.',
+      'Move high-risk Write Intent dispatch into deterministic writeback gates before persistence.',
     ],
   },
   {

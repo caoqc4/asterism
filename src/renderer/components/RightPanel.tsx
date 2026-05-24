@@ -48,6 +48,10 @@ import {
   type TaskplaneStructuredWritebackProposal,
 } from '@shared/taskplane-writeback-proposal';
 import {
+  buildSourceContextWritebackApplyPlan,
+  buildStructuredWritebackApplyPlan,
+} from '@shared/taskplane-writeback-apply-plan';
+import {
   classifyCreateTaskFileSurface,
   normalizeCreateTaskFileInput,
   type RuntimeSurfaceKind,
@@ -2225,30 +2229,15 @@ export function RightPanel({
   async function confirmSourceContextWrite() {
     if (!activeTaskId || !sourceContextProposal || savingSourceContextProposal || !window.api?.createSourceContext) return;
     setSavingSourceContextProposal(true);
+    const plan = buildSourceContextWritebackApplyPlan({
+      proposal: sourceContextProposal,
+      taskId: activeTaskId,
+    });
     try {
-      await window.api.createSourceContext({
-        content: sourceContextProposal.uri
-          ? `Source: ${sourceContextProposal.uri}\n\n${sourceContextProposal.note}`
-          : sourceContextProposal.note,
-        credibility: sourceContextProposal.credibility ?? 'unknown',
-        capturedAt: new Date().toISOString(),
-        isKey: true,
-        kind: sourceContextProposal.uri ? 'link' : 'note',
-        note: sourceContextProposal.note,
-        runId: sourceContextProposal.evidenceRunId,
-        sourceRole: sourceContextProposal.uri ? 'raw' : 'digest',
-        taskId: activeTaskId,
-        title: sourceContextProposal.title,
-        uri: sourceContextProposal.uri ?? null,
-      });
-      await recordPanelTimelineEvent(activeTaskId, 'panel.source_updated', {
-        evidenceRunId: sourceContextProposal.evidenceRunId,
-        source: 'taskplane_write_intent',
-        title: sourceContextProposal.title,
-        uri: sourceContextProposal.uri ?? null,
-      });
+      await window.api.createSourceContext(plan.input);
+      await recordPanelTimelineEvent(activeTaskId, plan.timeline.type, plan.timeline.payload);
       updateSourceContextProposal(null);
-      appendSysMsg(`已确认并保存来源上下文：${sourceContextProposal.title}。`);
+      appendSysMsg(plan.successMessage);
     } finally {
       setSavingSourceContextProposal(false);
     }
@@ -2257,93 +2246,42 @@ export function RightPanel({
   async function confirmStructuredWriteback() {
     if (!activeTaskId || !structuredWritebackProposal || savingStructuredWritebackProposal) return;
     setSavingStructuredWritebackProposal(true);
-    const { intent } = structuredWritebackProposal;
+    const plan = buildStructuredWritebackApplyPlan({
+      proposal: structuredWritebackProposal,
+      taskId: activeTaskId,
+    });
     try {
-      if (intent.type === 'decision.create') {
+      if (plan.action === 'decision.create') {
         if (!window.api?.createDecision) {
           appendSysMsg('决策提案已暂停：当前环境不支持创建 Decision。');
           return;
         }
-        await window.api.createDecision({
-          context: {
-            whyNow: intent.rationale,
-            impact: intent.proposedOutcome ? `建议结果：${intent.proposedOutcome}` : null,
-          },
-          kind: 'direction_choice',
-          options: intent.options?.map((label, index) => ({
-            id: `option_${index + 1}`,
-            label,
-          })),
-          recommendation: intent.proposedOutcome
-            ? {
-                label: intent.proposedOutcome,
-                reason: intent.rationale,
-              }
-            : null,
-          scope: 'task',
-          sourceId: intent.evidenceRunId,
-          sourceLabel: 'Agent CLI Write Intent',
-          sourceType: 'run',
-          taskId: activeTaskId,
-          title: intent.title,
-        });
-        appendSysMsg(`已确认并创建 Decision：${intent.title}。`);
-      } else if (intent.type === 'task.update_next_step') {
+        await window.api.createDecision(plan.input);
+      } else if (plan.action === 'task.update_next_step') {
         if (!window.api?.updateTask) {
           appendSysMsg('下一步提案已暂停：当前环境不支持更新任务。');
           return;
         }
-        const updated = await window.api.updateTask({
-          id: activeTaskId,
-          nextStep: intent.nextStep,
-        });
+        const updated = await window.api.updateTask(plan.input);
         setActiveTaskDetail((prev) => prev && prev.id === activeTaskId
-          ? { ...prev, nextStep: updated.nextStep ?? intent.nextStep }
+          ? { ...prev, nextStep: updated.nextStep ?? plan.nextStep }
           : prev);
-        await recordPanelTimelineEvent(activeTaskId, 'panel.task_goal_updated', {
-          evidenceRunId: intent.evidenceRunId,
-          nextStep: intent.nextStep,
-          reason: intent.reason,
-          source: 'taskplane_write_intent',
-        });
-        appendSysMsg(`已确认并更新下一步：${intent.nextStep}`);
-      } else if (intent.type === 'task.mark_blocked') {
+        await recordPanelTimelineEvent(activeTaskId, plan.timeline.type, plan.timeline.payload);
+      } else if (plan.action === 'blocker.create') {
         if (!window.api?.createBlocker) {
           appendSysMsg('阻塞提案已暂停：当前环境不支持创建阻塞项。');
           return;
         }
-        await window.api.createBlocker({
-          detail: intent.unblockCondition ? `解除条件：${intent.unblockCondition}` : intent.reason,
-          kind: 'other',
-          taskId: activeTaskId,
-          title: intent.reason,
-        });
-        appendSysMsg(`已确认并记录阻塞项：${intent.reason}`);
+        await window.api.createBlocker(plan.input);
       } else {
         if (!window.api?.createDecision) {
           appendSysMsg('完成确认提案已暂停：当前环境不支持创建 Decision。');
           return;
         }
-        await window.api.createDecision({
-          context: {
-            whyNow: intent.evidence,
-            impact: '确认后再由任务完成流程变更状态。',
-          },
-          kind: 'completion_acceptance',
-          recommendation: {
-            label: '确认完成',
-            reason: intent.evidence,
-          },
-          scope: 'task',
-          sourceId: intent.evidenceRunId,
-          sourceLabel: 'Agent CLI Write Intent',
-          sourceType: 'run',
-          taskId: activeTaskId,
-          title: '确认任务是否完成',
-        });
-        appendSysMsg('已确认并创建完成验收 Decision。');
+        await window.api.createDecision(plan.input);
       }
       updateStructuredWritebackProposal(null);
+      appendSysMsg(plan.successMessage);
     } finally {
       setSavingStructuredWritebackProposal(false);
     }
