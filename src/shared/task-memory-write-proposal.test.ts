@@ -15,6 +15,7 @@ function pendingGuidance(partial: Partial<TaskMemoryGuidanceState> = {}): TaskMe
     reason: partial.reason ?? '最新任务记忆建议仍缺少对应写入：Task.md。',
     referencePathsByTarget: partial.referencePathsByTarget,
     suggestedContentByTarget: partial.suggestedContentByTarget,
+    taskRecordReasonsByTarget: partial.taskRecordReasonsByTarget,
     targets: partial.targets ?? partial.pendingTargets ?? ['task_md'],
   };
 }
@@ -85,6 +86,9 @@ describe('task memory write proposal', () => {
       guidance: pendingGuidance({
         pendingTargets: ['task_record'],
         reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        taskRecordReasonsByTarget: {
+          task_record: 'context_clear_archive',
+        },
         targets: ['task_record'],
       }),
       nowIso: '2026-05-16T11:00:00.000Z',
@@ -97,8 +101,24 @@ describe('task memory write proposal', () => {
       target: 'task_record',
       title: '创建任务记录',
     }]);
+    expect(proposals[0]!.recordWorthiness).toMatchObject({
+      reason: 'context_clear_archive',
+      shouldCreateTaskRecord: true,
+    });
     expect(proposals[0]!.contentTemplate).toContain('## Trigger');
     expect(proposals[0]!.contentTemplate).toContain('最新任务记忆建议仍缺少对应写入');
+  });
+
+  it('does not create Task Record proposals for generic pending guidance', () => {
+    expect(buildTaskMemoryWriteProposals({
+      guidance: pendingGuidance({
+        pendingTargets: ['task_record'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        targets: ['task_record'],
+      }),
+      nowIso: '2026-05-16T11:00:00.000Z',
+      taskTitle: '开发小程序',
+    })).toEqual([]);
   });
 
   it('uses structured suggested content in Task Record proposals', () => {
@@ -171,6 +191,9 @@ describe('task memory write proposal', () => {
       guidance: pendingGuidance({
         pendingTargets: ['task_record'],
         reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        taskRecordReasonsByTarget: {
+          task_record: 'context_clear_archive',
+        },
         targets: ['task_record'],
       }),
       nowIso: '2026-05-16T11:00:00.000Z',

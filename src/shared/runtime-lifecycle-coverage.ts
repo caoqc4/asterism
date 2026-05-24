@@ -303,6 +303,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without performing automatic writes.',
       'TaskMemoryWriteProposal preserves existing Task.md content on update proposals and appends only the smallest missing memory note.',
       'TaskMemoryWriteProposal turns structured Task.md reference paths into concrete Important Files entries before falling back to generic pending-memory notes.',
+      'TaskMemoryWriteProposal routes pending Task Record guidance through TaskRecordWorthinessEvaluation, so generic pending-memory notes do not become durable Task Records.',
       'TaskMemoryWriteApplyPlan turns a confirmed TaskMemoryWriteProposal into a create/update TaskFile input, normalizes memory paths, and blocks target/path mismatches or unsafe updates without an existing file id.',
       'RunDetailRecord carries taskMemoryWriteProposals next to taskMemoryGuidance so runtime detail reads can reuse the same missing-memory write plan.',
       'RightPanel can surface pending RunDetail taskMemoryWriteProposals through the existing task-file proposal confirmation card, convert them into Taskplane writeback plans, and apply them through main-side dispatch after user confirmation.',

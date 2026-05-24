@@ -189,6 +189,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without automatically changing task memory.',
       'TaskMemoryWriteProposal preserves existing Task.md content and appends the smallest missing memory note instead of replacing the recovery file.',
       'TaskMemoryWriteProposal writes concrete Important Files entries when pending Task.md guidance carries reference paths.',
+      'TaskMemoryWriteProposal gates pending Task Record proposals through TaskRecordWorthinessEvaluation so generic memory reminders do not become durable records.',
       'TaskMemoryWriteApplyPlan converts confirmed proposals into create/update TaskFile inputs, normalizes memory paths, blocks target/path mismatches, and blocks Task.md updates that lack an existing file id.',
       'RunDetailRecord exposes taskMemoryWriteProposals derived from pending TaskMemoryGuidanceState, so runtime consumers can route the missing memory write without recomputing it.',
       'RightPanel routes pending taskMemoryWriteProposals through its existing confirmed task-file proposal card and applies TaskMemoryWriteApplyPlan only after user confirmation.',
@@ -203,7 +204,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance through structured fields, and TaskRepository update timeline changed-field metadata; remaining retained durable writes outside durable tools must pass changed fields and reference metadata consistently.',
       'TaskRecordWorthinessEvaluation is consumed by current retained Task Record writers, including RightPanel context-refresh/phase-closeout, TasksPage manual records, completion handoff, project decomposition self-check, and AgentToolRegistry recovery guidance; future Task Record writers must keep using the same evaluator.',
-      'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
+      'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan and TaskRecordWorthinessEvaluation instead of rebuilding proposal write inputs.',
       'MemorySurfaceWriteCoverage is an explicit registry, so future durable writers and retained memory-write IPC channels must be added there before they count as covered.',
       'Future connector ingestion services still need to be wired, but the retained source-context boundary now has a shared ingestion plan for connector-specific credibility and duplication signals.',
       'Retained Work Habit proposal, manual Work Habit, Work Habit update, SOP-template writes, and runtime Work Habit selection consume shared boundary or applicability logic; future learning writers should keep using that service boundary.',
@@ -399,6 +400,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage generic file creation rejects Task Records paths so Task Record files stay behind TaskRecordWorthinessEvaluation.',
       'Task completion modal checks TaskMemoryCoverageEvaluation before treating completion as clean; insufficient memory becomes a recorded override concern.',
       'AgentToolRegistry source-context writes pass through TaskRecordWorthinessEvaluation before recommending Task Record creation, so ordinary raw sources stay source context and only recovery-worthy external signals become Task Record guidance.',
+      'TaskMemoryWriteProposal reuses TaskRecordWorthinessEvaluation for pending Task Record guidance before presenting a confirmed write proposal.',
       'TaskRecordWorthiness tests cover positive and negative creation boundaries.',
     ],
     gaps: [

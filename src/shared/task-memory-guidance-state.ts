@@ -1,4 +1,5 @@
 import { isTaskMdPath, isTaskRecordPath, normalizeTaskMemoryPath } from './task-memory-path.js';
+import type { TaskRecordWorthinessReason } from './task-record-worthiness.js';
 
 export type TaskMemoryGuidanceTarget = 'task_md' | 'task_record';
 
@@ -27,6 +28,7 @@ export type TaskMemoryGuidanceState = {
   reason: string;
   referencePathsByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string[]>>;
   suggestedContentByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string>>;
+  taskRecordReasonsByTarget?: Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>>;
   targets: TaskMemoryGuidanceTarget[];
 };
 
@@ -54,6 +56,10 @@ export function evaluateTaskMemoryGuidanceState(params: {
         parseStructuredGuidanceReferences(signal.input),
         parseHumanReadableGuidanceReferences(signal.output),
       ),
+      taskRecordReasonsByTarget: mergeTaskRecordReasonMaps(
+        parseStructuredTaskRecordReasons(signal.input),
+        parseHumanReadableTaskRecordReasons(signal.output),
+      ),
       suggestedContentByTarget: parseStructuredGuidanceSuggestedContent(signal.input),
       targets: normalizeGuidanceTargets(signal.targets)
         ?? parseStructuredGuidanceTargets(signal.input)
@@ -69,6 +75,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
       reason: '没有发现待处理的任务记忆建议。',
       referencePathsByTarget: {},
       suggestedContentByTarget: {},
+      taskRecordReasonsByTarget: {},
       targets: [],
     };
   }
@@ -91,6 +98,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
       reason: '最新任务记忆建议已有对应的 Task.md 或 Task Record 写入。',
       referencePathsByTarget: referencePathsForTargets(targets, latestByTarget),
       suggestedContentByTarget: suggestedContentForTargets(targets, latestByTarget),
+      taskRecordReasonsByTarget: taskRecordReasonsForTargets(targets, latestByTarget),
       targets,
     };
   }
@@ -102,6 +110,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
     reason: `最新任务记忆建议仍缺少对应写入：${pendingTargets.map(labelTarget).join('、')}。`,
     referencePathsByTarget: referencePathsForTargets(pendingTargets, latestByTarget),
     suggestedContentByTarget: suggestedContentForTargets(pendingTargets, latestByTarget),
+    taskRecordReasonsByTarget: taskRecordReasonsForTargets(pendingTargets, latestByTarget),
     targets,
   };
 }
@@ -170,6 +179,31 @@ function parseStructuredGuidanceSuggestedContent(input?: string | null): Partial
   }
 }
 
+function parseStructuredTaskRecordReasons(input?: string | null): Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>> {
+  if (!input) return {};
+  try {
+    const parsed = JSON.parse(input) as {
+      items?: Array<{ target?: unknown; reason?: unknown }>;
+      taskRecordReasonHint?: unknown;
+      taskRecordReasonsByTarget?: unknown;
+    };
+    const record = parsed.taskRecordReasonsByTarget && typeof parsed.taskRecordReasonsByTarget === 'object'
+      ? parsed.taskRecordReasonsByTarget as Partial<Record<TaskMemoryGuidanceTarget, unknown>>
+      : {};
+    const taskRecordReason = normalizeTaskRecordReason(record.task_record)
+      ?? normalizeTaskRecordReason(parsed.taskRecordReasonHint);
+    const itemReason = (parsed.items ?? [])
+      .filter((item) => item.target === 'task_record')
+      .map((item) => normalizeTaskRecordReason(item.reason))
+      .find((reason): reason is TaskRecordWorthinessReason => Boolean(reason));
+    return {
+      task_record: taskRecordReason ?? itemReason,
+    };
+  } catch {
+    return {};
+  }
+}
+
 function normalizeSuggestedContent(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const content = value.trim();
@@ -190,6 +224,32 @@ function parseHumanReadableGuidanceReferences(output?: string | null): Partial<R
     result[target] = uniqueStrings([...(result[target] ?? []), referencePath]);
   }
   return result;
+}
+
+function parseHumanReadableTaskRecordReasons(output?: string | null): Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>> {
+  for (const line of output?.split(/\r?\n/) ?? []) {
+    const match = line.match(/Task Record(?: may be useful)?\s*[:：]\s*(.+)$/i);
+    if (!match) continue;
+    const reason = normalizeTaskRecordReason(match[1]);
+    if (reason) return { task_record: reason };
+  }
+  return {};
+}
+
+function normalizeTaskRecordReason(value: unknown): TaskRecordWorthinessReason | undefined {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (!normalized) return undefined;
+  if (/context.*(archive|clear|refresh)|context_archive/.test(normalized)) return 'context_clear_archive';
+  if (/phase.*close|closeout|milestone/.test(normalized)) return 'phase_closeout';
+  if (/handoff|handover/.test(normalized)) return 'handoff';
+  if (/correction|correct|user_correction/.test(normalized)) return 'user_correction';
+  if (/option|tradeoff|comparison/.test(normalized)) return 'option_comparison';
+  if (/decision|rationale|approved|rejected/.test(normalized)) return 'decision_rationale';
+  if (/failure|failed|postmortem|rollback/.test(normalized)) return 'failure_review';
+  if (/external|signal|webhook|source/.test(normalized)) return 'external_signal';
+  if (/durable|state|agent_cli|runtime|verifier|review/.test(normalized)) return 'durable_state_change';
+  return undefined;
 }
 
 function normalizeGuidanceItemReferences(
@@ -230,6 +290,15 @@ function mergeReferenceMaps(
   return {
     task_md: uniqueStrings([...(first.task_md ?? []), ...(second.task_md ?? [])]),
     task_record: uniqueStrings([...(first.task_record ?? []), ...(second.task_record ?? [])]),
+  };
+}
+
+function mergeTaskRecordReasonMaps(
+  first: Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>>,
+  second: Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>>,
+): Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>> {
+  return {
+    task_record: first.task_record ?? second.task_record,
   };
 }
 
@@ -309,6 +378,7 @@ function latestGuidanceByTarget(
     index: number;
     referencePathsByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string[]>>;
     suggestedContentByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string>>;
+    taskRecordReasonsByTarget?: Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>>;
     targets: TaskMemoryGuidanceTarget[];
   }>,
 ): Map<TaskMemoryGuidanceTarget, {
@@ -316,12 +386,14 @@ function latestGuidanceByTarget(
   index: number;
   referencePaths: string[];
   suggestedContent: string | null;
+  taskRecordReason: TaskRecordWorthinessReason | null;
 }> {
   const byTarget = new Map<TaskMemoryGuidanceTarget, {
     createdAt: string | null;
     index: number;
     referencePaths: string[];
     suggestedContent: string | null;
+    taskRecordReason: TaskRecordWorthinessReason | null;
   }>();
   for (const signal of signals) {
     for (const target of signal.targets) {
@@ -332,6 +404,7 @@ function latestGuidanceByTarget(
           index: signal.index,
           referencePaths: signal.referencePathsByTarget?.[target] ?? [],
           suggestedContent: signal.suggestedContentByTarget?.[target] ?? null,
+          taskRecordReason: signal.taskRecordReasonsByTarget?.[target] ?? null,
         });
       }
     }
@@ -369,6 +442,18 @@ function suggestedContentForTargets(
   for (const target of targets) {
     const content = latestByTarget.get(target)?.suggestedContent;
     if (content) result[target] = content;
+  }
+  return result;
+}
+
+function taskRecordReasonsForTargets(
+  targets: TaskMemoryGuidanceTarget[],
+  latestByTarget: Map<TaskMemoryGuidanceTarget, { taskRecordReason: TaskRecordWorthinessReason | null }>,
+): Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>> {
+  const result: Partial<Record<TaskMemoryGuidanceTarget, TaskRecordWorthinessReason>> = {};
+  for (const target of targets) {
+    const reason = latestByTarget.get(target)?.taskRecordReason;
+    if (reason) result[target] = reason;
   }
   return result;
 }

@@ -4,6 +4,10 @@ import type {
   TaskMemoryFileSignal,
 } from './task-memory-guidance-state.js';
 import { isTaskMdPath, isTaskRecordPath, normalizeTaskMemoryPath } from './task-memory-path.js';
+import {
+  evaluateTaskRecordWorthiness,
+  type TaskRecordWorthinessEvaluation,
+} from './task-record-worthiness.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from './types/task-file.js';
 
 export type TaskMemoryWriteProposalOperation = 'create' | 'update';
@@ -13,6 +17,7 @@ export type TaskMemoryWriteProposal = {
   existingFileId?: string | null;
   operation: TaskMemoryWriteProposalOperation;
   path: string;
+  recordWorthiness?: TaskRecordWorthinessEvaluation;
   referencePaths?: string[];
   reason: string;
   target: TaskMemoryGuidanceTarget;
@@ -53,7 +58,7 @@ export function buildTaskMemoryWriteProposals(params: {
   }));
   const taskTitle = params.taskTitle?.trim() || '当前任务';
 
-  return guidance.pendingTargets.map((target) => {
+  return guidance.pendingTargets.map((target): TaskMemoryWriteProposal | null => {
     const referencePaths = guidance.referencePathsByTarget?.[target] ?? [];
     if (target === 'task_md') {
       const existingTaskMd = normalizedFiles.find((file) => isTaskMdPath(file.path));
@@ -71,21 +76,36 @@ export function buildTaskMemoryWriteProposals(params: {
       };
     }
 
-    return {
-      contentTemplate: buildTaskRecordProposalContent(
-        taskTitle,
+    const contentTemplate = buildTaskRecordProposalContent(
+      taskTitle,
+      guidance.reason,
+      guidance.suggestedContentByTarget?.task_record,
+    );
+    const recordWorthiness = evaluateTaskRecordWorthiness({
+      hasTaskContext: true,
+      reasonHint: guidance.taskRecordReasonsByTarget?.task_record ?? null,
+      text: [
         guidance.reason,
-        guidance.suggestedContentByTarget?.task_record,
-      ),
+        guidance.taskRecordReasonsByTarget?.task_record
+          ? `Task Record may be useful: ${guidance.taskRecordReasonsByTarget.task_record}`
+          : null,
+        contentTemplate,
+      ].filter(Boolean).join('\n'),
+    });
+    if (!recordWorthiness.shouldCreateTaskRecord) return null;
+
+    return {
+      contentTemplate,
       existingFileId: null,
       operation: 'create',
       path: `Task Records/${formatTaskRecordDate(params.nowIso)}-memory-guidance.md`,
+      recordWorthiness,
       referencePaths,
       reason: guidance.reason,
       target,
       title: '创建任务记录',
     };
-  });
+  }).filter((proposal): proposal is TaskMemoryWriteProposal => proposal !== null);
 }
 
 export function buildTaskMemoryWriteApplyPlan(params: {

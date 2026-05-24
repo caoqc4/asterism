@@ -159,6 +159,26 @@ describe('task memory guidance state', () => {
       suggestedContentByTarget: {
         task_record: '## Summary\nCodex found the next verification step.',
       },
+      taskRecordReasonsByTarget: {
+        task_record: 'durable_state_change',
+      },
+    });
+  });
+
+  it('preserves task-record worthiness reasons from guidance output', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task Record may be useful: external_signal',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      taskRecordReasonsByTarget: {
+        task_record: 'external_signal',
+      },
     });
   });
 

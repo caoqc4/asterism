@@ -230,12 +230,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'TaskMemoryCoverageEvaluation and AutoContextClearReadiness block unsafe context clearing.',
       'SourceContext creation carries source-quality metadata before persistence.',
       'Manual task-session refresh now asks shared TaskAdvancementOrchestrator for a context-refresh handoff movement before existing memory and clearing gates run.',
+      'TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation and suppresses generic pending-memory guidance before durable Task Records are proposed.',
     ],
     gaps: [
-      'Automatic writeback should keep distinguishing recovery memory from ordinary chat summaries.',
+      'Future non-RightPanel task-memory confirmation surfaces must reuse TaskMemoryWriteApplyPlan and TaskRecordWorthinessEvaluation instead of rebuilding Task Record writes.',
     ],
     nextActions: [
-      'Route memory proposals through Write Intent worthiness checks before durable task records.',
+      'Extend the same write-intent proposal/apply boundary to future task-memory surfaces as they appear.',
     ],
   },
   {
