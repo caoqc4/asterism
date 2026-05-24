@@ -15,6 +15,7 @@ export type TaskAdvancementEntrypoint =
   | 'context_refresh'
   | 'phase_closeout'
   | 'project_decompose'
+  | 'task_completion_check'
   | 'right_panel_chat';
 
 export type TaskAdvancementMovement =
@@ -154,6 +155,29 @@ export function evaluateTaskAdvancement(params: {
       ],
       route: 'local_rule',
       userMessage: '先做阶段质量检查并保存收尾记录，再决定是否交接到下一项任务。',
+    });
+  }
+
+  if (params.entrypoint === 'task_completion_check' && hasTaskContext) {
+    return buildEvaluation({
+      confirmationRequired: true,
+      contextReadiness: null,
+      entrypoint: params.entrypoint,
+      intake: null,
+      movement: 'verify',
+      promptMode: 'plain_user',
+      reason: 'Task completion is a verification movement: check criteria, run evidence, memory coverage, project children, and user override before closing.',
+      requiredGates: [
+        'simplicity_check',
+        'task_completion',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'pre_step',
+        'post_step',
+        'operator_confirmation',
+      ],
+      route: 'local_rule',
+      userMessage: '先完成验收检查；如有风险，由用户确认等待或覆盖完成。',
     });
   }
 

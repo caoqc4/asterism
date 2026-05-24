@@ -271,6 +271,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Right-panel confirmation calls the main-side writeback adapter before emitting task, decision, and brief refresh events.',
       'Completion verification is separate from model output.',
       'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
+      'Task completion modal now asks shared TaskAdvancementOrchestrator for a local completion-check verification movement before passed, waiting, or override-completed outcomes are recorded.',
     ],
     gaps: [
       'Decision, blocker, next-step, and completion Write Intent now share apply-plan and main-side dispatch code, but non-UI runtime adapters still need to invoke it after confirmation.',

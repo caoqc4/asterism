@@ -10,6 +10,7 @@ import {
   buildTaskMemoryCoverageInputForTask,
   evaluateTaskMemoryCoverage,
 } from '@shared/task-memory-coverage';
+import { evaluateTaskAdvancement } from '@shared/task-advancement-orchestrator';
 import { selectBlockingTaskMemoryGuidance } from '@shared/task-memory-guidance-state';
 import type { RunDetailRecord, RunRecord, RunVerificationRecord } from '@shared/types/run';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
@@ -271,6 +272,13 @@ export function TaskCompletionCheckModal({
 
   async function submit(action: 'waiting' | 'complete') {
     if (submitting) return;
+    const advancement = evaluateTaskAdvancement({
+      entrypoint: 'task_completion_check',
+      hasTaskContext: true,
+      prompt: action === 'complete' ? 'complete_task' : 'mark_task_waiting',
+      task: detail ?? { title: taskTitle },
+    });
+    if (advancement.route === 'blocked') return;
     setSubmitting(true);
     try {
       const reason = projectVerification?.detail

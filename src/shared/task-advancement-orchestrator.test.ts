@@ -175,6 +175,24 @@ describe('evaluateTaskAdvancement', () => {
     expect(evaluation.requiredGates).toContain('task_completion');
     expect(evaluation.requiredGates).toContain('post_step');
   });
+
+  it('routes task completion checks as local verification with operator confirmation', () => {
+    const evaluation = evaluateTaskAdvancement({
+      entrypoint: 'task_completion_check',
+      hasTaskContext: true,
+      prompt: '确认任务完成。',
+      task: buildTask(),
+    });
+
+    expect(evaluation).toMatchObject({
+      confirmationRequired: true,
+      movement: 'verify',
+      route: 'local_rule',
+      shouldStartRuntime: false,
+    });
+    expect(evaluation.requiredGates).toContain('task_completion');
+    expect(evaluation.requiredGates).toContain('operator_confirmation');
+  });
 });
 
 function buildTask(partial: Partial<TaskDetail> = {}): TaskDetail {

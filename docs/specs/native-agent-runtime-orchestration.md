@@ -596,11 +596,14 @@ Current implementation:
 - Manual context refresh and phase closeout call the same shared decision before
   memory handoff, quality checks, and context clearing continue through existing
   Taskplane gates.
+- Task completion confirmation calls the shared decision before the modal
+  records passed, waiting, or override-completed outcomes through existing
+  verification and operator-confirmation gates.
 
 Remaining work:
 
-- Extend the orchestrator across task completion checks, selected-task
-  verification, and non-UI writeback flows.
+- Extend the orchestrator across selected-task verification and non-UI
+  writeback flows.
 - Move decomposition drafting behind the same selected-runtime/DecisionBackend
   abstraction used by ordinary task execution.
 
