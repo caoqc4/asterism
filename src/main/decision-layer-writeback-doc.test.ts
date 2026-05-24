@@ -27,7 +27,7 @@ describe('Decision Layer Writeback Orchestration spec', () => {
     expect(spec).toContain('| `write_intent.extract` |');
     expect(spec).toContain('| Runtime entrypoint gate |');
     expect(spec).toContain('Each skill returns structured output plus evidence. It must not directly call a');
+    expect(spec).toContain('src/shared/product-feature-impact-audit.ts');
     expect(spec).toContain('Do not redesign every feature at once.');
   });
 });
-

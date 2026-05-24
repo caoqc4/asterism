@@ -126,6 +126,20 @@ export function validateTaskplaneWriteIntent(intent: TaskplaneWriteIntent): Task
     if (!intent.title.trim()) issues.push('Source context intent requires title.');
     if (!intent.note.trim()) issues.push('Source context intent requires note.');
   }
+  if (intent.type === 'decision.create') {
+    if (!intent.title.trim()) issues.push('Decision intent requires title.');
+    if (!intent.rationale.trim()) issues.push('Decision intent requires rationale.');
+  }
+  if (intent.type === 'task.update_next_step') {
+    if (!intent.nextStep.trim()) issues.push('Next step intent requires nextStep.');
+    if (!intent.reason.trim()) issues.push('Next step intent requires reason.');
+  }
+  if (intent.type === 'task.mark_blocked') {
+    if (!intent.reason.trim()) issues.push('Blocked intent requires reason.');
+  }
+  if (intent.type === 'task.complete.propose') {
+    if (!intent.evidence.trim()) issues.push('Completion proposal requires evidence.');
+  }
 
   return issues.length
     ? { intent, issues, status: 'blocked' }
@@ -183,6 +197,53 @@ function normalizeWriteIntentValue(value: unknown, params: {
       title,
       type: 'source_context.create',
       uri: readString(value.uri) || null,
+    }];
+  }
+  if (type === 'decision.create') {
+    const title = readString(value.title);
+    const rationale = readString(value.rationale);
+    if (!title || !rationale) return [];
+    return [{
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      options: normalizeStringArray(value.options),
+      proposedOutcome: readString(value.proposedOutcome) || undefined,
+      rationale,
+      taskId: readString(value.taskId, params.taskId),
+      title,
+      type: 'decision.create',
+    }];
+  }
+  if (type === 'task.update_next_step') {
+    const nextStep = readString(value.nextStep);
+    const reason = readString(value.reason);
+    if (!nextStep || !reason) return [];
+    return [{
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      nextStep,
+      reason,
+      taskId: readString(value.taskId, params.taskId),
+      type: 'task.update_next_step',
+    }];
+  }
+  if (type === 'task.mark_blocked') {
+    const reason = readString(value.reason);
+    if (!reason) return [];
+    return [{
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      reason,
+      taskId: readString(value.taskId, params.taskId),
+      type: 'task.mark_blocked',
+      unblockCondition: readString(value.unblockCondition) || null,
+    }];
+  }
+  if (type === 'task.complete.propose') {
+    const evidence = readString(value.evidence);
+    if (!evidence) return [];
+    return [{
+      evidence,
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      taskId: readString(value.taskId, params.taskId),
+      type: 'task.complete.propose',
     }];
   }
   return [];
@@ -248,6 +309,15 @@ function readString(value: unknown, fallback = ''): string {
 
 function normalizeConfidence(value: unknown): TaskplaneWriteIntentConfidence {
   return value === 'low' || value === 'medium' || value === 'high' ? value : 'medium';
+}
+
+function normalizeStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value
+    .map((item) => readString(item))
+    .filter(Boolean)
+    .slice(0, 8);
+  return items.length ? items : undefined;
 }
 
 function normalizeSourceCredibility(value: unknown): TaskplaneSourceContextCreateIntent['credibility'] {

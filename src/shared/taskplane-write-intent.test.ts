@@ -120,4 +120,75 @@ describe('Taskplane write intent', () => {
     ]);
     expect(intents.map((intent) => validateTaskplaneWriteIntent(intent).status)).toEqual(['ready', 'ready']);
   });
+
+  it('extracts decision, next-step, blocker, and completion proposal intents', () => {
+    const intents = extractTaskplaneWriteIntentsFromText({
+      evidenceRunId: 'run_5',
+      taskId: 'task_scope',
+      text: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [
+          {
+            type: 'decision.create',
+            title: '确认首版发布范围',
+            rationale: 'Agent 发现范围会影响页面结构和验收。',
+            options: ['仅基础教程', '教程加案例展示'],
+            proposedOutcome: '教程加案例展示',
+          },
+          {
+            type: 'task.update_next_step',
+            nextStep: '整理页面信息架构草案。',
+            reason: '目标和受众已经足够推进首版结构。',
+          },
+          {
+            type: 'task.mark_blocked',
+            reason: '等待用户确认是否接入外部资料来源。',
+            unblockCondition: '用户确认资料来源范围。',
+          },
+          {
+            type: 'task.complete.propose',
+            evidence: '目标、范围、非目标和下一步已经写入任务记录。',
+          },
+        ],
+      }),
+    });
+
+    expect(intents).toMatchObject([
+      {
+        evidenceRunId: 'run_5',
+        options: ['仅基础教程', '教程加案例展示'],
+        proposedOutcome: '教程加案例展示',
+        rationale: 'Agent 发现范围会影响页面结构和验收。',
+        taskId: 'task_scope',
+        title: '确认首版发布范围',
+        type: 'decision.create',
+      },
+      {
+        evidenceRunId: 'run_5',
+        nextStep: '整理页面信息架构草案。',
+        reason: '目标和受众已经足够推进首版结构。',
+        taskId: 'task_scope',
+        type: 'task.update_next_step',
+      },
+      {
+        evidenceRunId: 'run_5',
+        reason: '等待用户确认是否接入外部资料来源。',
+        taskId: 'task_scope',
+        type: 'task.mark_blocked',
+        unblockCondition: '用户确认资料来源范围。',
+      },
+      {
+        evidence: '目标、范围、非目标和下一步已经写入任务记录。',
+        evidenceRunId: 'run_5',
+        taskId: 'task_scope',
+        type: 'task.complete.propose',
+      },
+    ]);
+    expect(intents.map((intent) => validateTaskplaneWriteIntent(intent).status)).toEqual([
+      'ready',
+      'ready',
+      'ready',
+      'ready',
+    ]);
+  });
 });

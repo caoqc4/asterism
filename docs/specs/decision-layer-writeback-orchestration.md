@@ -180,6 +180,12 @@ Keep the rule documents small and layered:
 Because this architecture changes the execution chain, review product features
 by risk and write authority, not by page count.
 
+The executable audit registry lives in
+`src/shared/product-feature-impact-audit.ts`. Keep this registry aligned with
+the high-priority areas below so new execution, writeback, capability, or
+context-clearing paths cannot drift outside the GoalPilot / Write Intent /
+hook-gate model.
+
 Audit each feature with these questions:
 
 1. Does it only read, or can it execute, propose, persist, clear, or mutate?
@@ -216,4 +222,3 @@ cross the execution/write boundary, then add tests that prove the boundary.
 5. Add decision skills only where deterministic rules are insufficient.
 6. Promote repeated must-follow decisions into hooks, gates, or tests.
 7. Run the product feature impact audit and track gaps by feature family.
-

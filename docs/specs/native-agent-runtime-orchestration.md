@@ -508,10 +508,13 @@ Status: started.
   `TASKPLANE_WRITE_INTENTS`; task records can be surfaced through the existing
   confirmed task-file proposal card, and source contexts can be surfaced through
   a confirmed source-context proposal card.
+- Extract `decision.create`, `task.update_next_step`, `task.mark_blocked`, and
+  `task.complete.propose` from `TASKPLANE_WRITE_INTENTS` into shared validated
+  intent objects.
 - Validate subtask proposal basics before any persistence path can use it.
-- Next, extract decisions, next-step updates, blockers, and completion
-  proposals from CLI/API output.
-- Validate against task scope, phase, and memory policy.
+- Next, add right-panel proposal cards and service-level persistence paths for
+  decision, next-step, blocker, and completion intents.
+- Validate against task scope, phase, and memory policy before persistence.
 - surface proposal cards;
 - persist only through Taskplane services.
 
