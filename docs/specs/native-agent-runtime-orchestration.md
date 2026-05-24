@@ -200,8 +200,8 @@ Taskplane currently has a working native CLI execution backend:
   needs fresh external information, save the digest and raw links as Source
   Context, and show the captured source count in the completed chat summary.
 - Native CLI web/search/browse events are projected into Run steps and the
-  completed chat summary, so users can see that research happened without
-  reading raw terminal output.
+  completed chat summary, including child-task advancement messages, so users
+  can see that research happened without reading raw terminal output.
 - Raw terminal output remains available as run evidence.
 - Taskplane extracts structured `TASKPLANE_WRITE_INTENTS` from native CLI
   output and can surface confirmation cards for task records, source contexts,

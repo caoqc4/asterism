@@ -6,7 +6,7 @@ import {
   type AgentCliRuntimeId,
 } from '@shared/agent-cli-runtime-status';
 import type { AiRuntimeMode } from '@shared/types/settings';
-import type { RunStepRecord } from '@shared/types/run';
+import type { RunRecord, RunStepRecord } from '@shared/types/run';
 import {
   selectBlockingTaskMemoryGuidance,
   type TaskMemoryGuidanceState,
@@ -260,7 +260,7 @@ function makeTaskSessionRefreshedMessage(taskTitle: string): Message {
   return {
     id: nextId(),
     role: 'assistant',
-    text: `已整理并刷新「${taskTitle}」的任务会话。关键恢复信息已写入任务记录，当前聊天已从任务记忆重新开始。`,
+    text: `已整理并刷新「${taskTitle}」的任务会话。关键恢复信息已写入任务记录，当前聊天会从这份任务记忆继续承接。`,
     ts: now(),
   };
 }
@@ -761,7 +761,11 @@ function formatAgentCliRunMessage(params: {
   statusText: string;
 }): string {
   if (params.childTaskConversation) {
-    return formatChildTaskConversationRunMessage(params.output);
+    const activity = summarizeAgentCliActivityForChat(params.steps);
+    return [
+      activity,
+      formatChildTaskConversationRunMessage(params.output),
+    ].filter(Boolean).join('\n');
   }
   if (params.decompositionDraftCreated) {
     return '已生成子任务草案。你确认后，我会把它们创建到当前项目下。';
@@ -2711,6 +2715,7 @@ export function RightPanel({
               output,
               runId: run.id,
               runtimeLabel,
+              steps: (run as RunRecord & { steps?: RunStepRecord[] }).steps,
               statusText: run.status === 'completed' ? '已完成' : run.status,
             });
       } else if (activeAgentCliRuntimeMode && !activeTaskId) {

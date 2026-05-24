@@ -5333,7 +5333,29 @@ describe('App redesign v1', () => {
         status: 'completed',
         taskId: input.taskId,
         type: 'agent',
-      });
+      }) as RunRecord & { steps?: RunStepRecord[] };
+      run.steps = [
+        buildRunStep({
+          id: 'step_child_web_prep',
+          runId: run.id,
+          index: 0,
+          title: 'Agent CLI 联网调研准备',
+          output: [
+            'status=captured',
+            'capability_mode=native',
+            'sources=2',
+            'query=Codex CLI beginner tutorial',
+            'reason=Taskplane captured web research into Source Context before handing the task to the selected Agent CLI.',
+          ].join('\n'),
+        }),
+        buildRunStep({
+          id: 'step_child_native_web',
+          runId: run.id,
+          index: 1,
+          title: 'Codex CLI 原生事件：web_search',
+          output: 'Found official Codex docs and examples.',
+        }),
+      ];
       harness.runs.push(run);
       return run;
     });
@@ -5357,6 +5379,8 @@ describe('App redesign v1', () => {
     }));
 
     expect(await screen.findByText(/当前可暂定为：首版做一个面向 Agent 初学者的 Codex 基础教程网站/)).toBeTruthy();
+    expect(screen.getByText(/联网调研：已保存 2 个来源到来源上下文/)).toBeTruthy();
+    expect(screen.getByText(/原生 CLI 联网动作：.*web_search/)).toBeTruthy();
     expect(screen.getByText(/整理 Codex 官方文档和同类教程站/)).toBeTruthy();
     expect(screen.queryByText(/你希望这个网站首版更偏/)).toBeNull();
     expect(screen.queryByText(/个人看还是给别人看/)).toBeNull();
