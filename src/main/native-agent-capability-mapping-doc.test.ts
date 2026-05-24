@@ -17,7 +17,14 @@ describe('Native Agent Capability Mapping spec', () => {
     expect(spec).toContain('| Hooks / permissions | Deterministic constraints');
     expect(spec).toContain('| Subagents / task tools | Isolated research');
     expect(spec).toContain('| Compact / clear / resume | Context hygiene');
+    expect(spec).toContain('## Vendor Reference Paths');
+    expect(spec).toContain('Codex-style path:');
+    expect(spec).toContain('Claude Code-style path:');
+    expect(spec).toContain('Plan Mode or read-only exploration');
+    expect(spec).toContain('permissions and hooks constrain tools and side effects');
     expect(spec).toContain('If the answer can be discovered, research or inspect instead of asking.');
     expect(spec).toContain('Taskplane state and write gates still win');
+    expect(spec).toContain('https://docs.anthropic.com/en/docs/claude-code/common-workflows');
+    expect(spec).toContain('https://docs.anthropic.com/en/docs/claude-code/hooks');
   });
 });

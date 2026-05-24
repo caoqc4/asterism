@@ -51,6 +51,46 @@ single oversized prompt.
 | Status / tool events | Runtime progress projection. | Taskplane stores run steps and shows compact user progress. |
 | Review / eval | Completion and quality feedback. | Taskplane verifies against acceptance, evidence, blockers, and user decisions. |
 
+## Vendor Reference Paths
+
+These paths are reference designs, not product ownership transfer.
+
+Codex-style path:
+
+```text
+AGENTS.md / rules
+-> plan or context exploration
+-> optional native goal loop for sustained execution
+-> tools, skills, subagents, or web/search as available
+-> compact/status/review signals
+-> Taskplane Write Intent, verification, memory, evidence, closeout
+```
+
+Claude Code-style path:
+
+```text
+CLAUDE.md / project memory
+-> Plan Mode or read-only exploration when context is fuzzy or risky
+-> permissions and hooks constrain tools and side effects
+-> subagents isolate review, research, audit, or large context work
+-> slash commands such as compact, clear, memory, agents, permissions, model
+   map to Taskplane context refresh, memory edit, capability, and runtime state
+-> Taskplane Write Intent, verification, memory, evidence, closeout
+```
+
+For Taskplane, Claude Code's useful pattern is the separation between:
+
+- memory files for project guidance;
+- settings and permissions for tool boundaries;
+- hooks for deterministic lifecycle checks;
+- subagents for context isolation;
+- Plan Mode for safe analysis before edits;
+- slash commands for explicit session operations.
+
+Taskplane should preserve those separations. `CLAUDE.md` stays a thin adapter,
+Taskplane memory stays structured, hooks/gates enforce durable writes, and
+Claude Code output remains evidence until converted into Write Intent.
+
 ## Context Readiness Pattern
 
 Before execution, Taskplane should decide whether the agent has enough context
@@ -116,3 +156,20 @@ use another backend, run a Taskplane bridge, or surface a clear blocker.
   Intent and product proposals.
 - Native Agent Runtime Orchestration defines the adapter boundary and runtime
   result contract.
+
+## Reference Anchors
+
+- Codex slash commands: https://developers.openai.com/codex/cli/slash-commands
+- Codex goal use case: https://developers.openai.com/codex/use-cases/follow-goals
+- Codex memories: https://developers.openai.com/codex/memories
+- Claude Code common workflows and Plan Mode:
+  https://docs.anthropic.com/en/docs/claude-code/common-workflows
+- Claude Code memory and `CLAUDE.md`:
+  https://docs.anthropic.com/en/docs/claude-code/memory
+- Claude Code settings and permissions:
+  https://docs.anthropic.com/en/docs/claude-code/settings
+- Claude Code hooks: https://docs.anthropic.com/en/docs/claude-code/hooks
+- Claude Code subagents:
+  https://docs.anthropic.com/en/docs/claude-code/sub-agents
+- Claude Code slash commands:
+  https://docs.anthropic.com/en/docs/claude-code/slash-commands
