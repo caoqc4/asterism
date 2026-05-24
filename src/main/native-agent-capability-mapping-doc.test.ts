@@ -22,6 +22,13 @@ describe('Native Agent Capability Mapping spec', () => {
     expect(spec).toContain('Claude Code-style path:');
     expect(spec).toContain('Plan Mode or read-only exploration');
     expect(spec).toContain('permissions and hooks constrain tools and side effects');
+    expect(spec).toContain('## Mature Product Lessons');
+    expect(spec).toContain('## Claude Code Deep Reference');
+    expect(spec).toContain('| `auto` mode | Autonomy requires background classification and fallback.');
+    expect(spec).toContain('Skills may survive compaction only within a budget');
+    expect(spec).toContain('## Codex Deep Reference');
+    expect(spec).toContain('`context.readiness.evaluate` should return one of');
+    expect(spec).toContain('| `plan_first` | Work is broad, risky, or code-changing.');
     expect(spec).toContain('If the answer can be discovered, research or inspect instead of asking.');
     expect(spec).toContain('Taskplane state and write gates still win');
     expect(spec).toContain('https://docs.anthropic.com/en/docs/claude-code/common-workflows');

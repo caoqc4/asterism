@@ -91,6 +91,78 @@ Taskplane should preserve those separations. `CLAUDE.md` stays a thin adapter,
 Taskplane memory stays structured, hooks/gates enforce durable writes, and
 Claude Code output remains evidence until converted into Write Intent.
 
+## Mature Product Lessons
+
+Codex and Claude Code converge on the same deeper architecture:
+
+1. **Rules are layered.** Always-loaded files provide stable orientation,
+   while skills, commands, hooks, and memories load by phase.
+2. **Planning is a permission state.** Plan/read-only exploration is a real
+   mode, not just a nicer answer style.
+3. **Autonomy needs a classifier.** Long-running or auto modes still need
+   deterministic allow/deny rules, model-backed classifiers, and fallback to
+   manual approval.
+4. **Context must be inspectable.** Users and product code need to see what
+   rules, files, memories, sources, tools, and skills are actually in context.
+5. **Subagents are context isolation.** Their value is keeping exploration,
+   review, and source digestion out of the main thread until summarized.
+6. **Compaction is a lifecycle event.** Skills, rules, and user boundaries can
+   be lost or truncated after compaction unless the product reattaches the
+   right small context.
+7. **Completion is gated.** The agent should not stop or mark complete until
+   evidence, criteria, blockers, and pending decisions pass review.
+
+Taskplane should turn these into product primitives instead of more prompt
+text: readiness skills, permission modes, action classifiers, context
+manifests, subagent evidence, compaction gates, and completion gates.
+
+## Claude Code Deep Reference
+
+Claude Code's strongest pattern for Taskplane is its staged permission ladder:
+
+| Claude Code pattern | Product lesson | Taskplane mapping |
+| --- | --- | --- |
+| `default` read-first mode | Safe exploration can be the default posture. | Read-only Agent CLI run and context readiness gate. |
+| `plan` mode | Explore and propose before changing disk. | `context.readiness.evaluate` returns `plan_first`; show plan proposal before write-capable work. |
+| `acceptEdits` | User accepts a plan, then reviews diffs after execution. | Future write-capable run mode with patch/artifact approval. |
+| `auto` mode | Autonomy requires background classification and fallback. | Runtime action classifier plus repeated-block fallback to confirmation. |
+| `dontAsk` | Non-interactive runs need pre-approved tool lists. | CI/scheduled task lanes can use allowlisted tools only. |
+| `bypassPermissions` | Full autonomy belongs only in isolated sandboxes. | Never expose bypass to ordinary Taskplane runs; use disposable sandbox only. |
+
+Other Claude Code mechanisms also map directly:
+
+- Plan approval becomes a Taskplane proposal card, not a chat paragraph.
+- User-stated boundaries such as "do not push" become Decisions or temporary
+  gates before they are lost to compaction.
+- `PreToolUse`, `PostToolUse`, `Stop`, `SubagentStart`, `SubagentStop`,
+  `PreCompact`, `PostCompact`, and task completion hooks map to Taskplane
+  runtime entry, write intent, completion, context refresh, and subagent gates.
+- Skills may survive compaction only within a budget, so Taskplane must record
+  which product skills were invoked and reattach the current phase skill after
+  context refresh.
+- `/context` and `/memory` imply a product need: users should be able to see
+  which Task.md, Task Records, Source Context, Work Habits, rules, skills, and
+  runtime capabilities were used in a run.
+- Subagent output should return as source/evidence summary plus risk flags; it
+  should not mutate Taskplane state directly.
+
+## Codex Deep Reference
+
+Codex contributes a complementary model:
+
+| Codex pattern | Product lesson | Taskplane mapping |
+| --- | --- | --- |
+| `/plan` and planning affordances | Planning is a first-class run phase. | Taskplane plan/shape movement before execute. |
+| `/goal` | A persistent goal loop is executor-local. | Taskplane owns mission state; Codex goal is one run capability. |
+| Memories | Stable preferences and workflows should be saved outside one chat. | Work Habits plus task-scoped memory surfaces. |
+| `AGENTS.md` | Startup guidance should be thin and discoverable. | `AGENTS.md` points to GoalPilot and phase specs. |
+| Skills and tools | Reusable workflows should be invoked by description and need. | Product skills are phase-loaded and visible in capability surfaces. |
+| Review/eval workflows | Completion needs evidence and feedback loops. | Verification records, task completion gate, and source evidence. |
+
+Codex validates the GoalPilot positioning: Taskplane should not become a
+better single-agent goal loop. It should coordinate goals, tasks, runs, agents,
+state, evidence, and review across runtimes.
+
 ## Context Readiness Pattern
 
 Before execution, Taskplane should decide whether the agent has enough context
@@ -112,6 +184,16 @@ If the answer can be discovered, research or inspect instead of asking. If the
 answer is a user-owned boundary, ask one high-signal question. If enough
 context exists, state a compact readiness status only when useful, then move
 into the chosen action.
+
+`context.readiness.evaluate` should return one of:
+
+| Decision | Meaning | Default next movement |
+| --- | --- | --- |
+| `ready` | Context is enough for a reversible next step. | Execute or shape. |
+| `self_research` | Missing facts are public or source-derived. | Use native research or Taskplane source bridge. |
+| `plan_first` | Work is broad, risky, or code-changing. | Use native plan/read-only exploration. |
+| `ask_user` | Missing answer is user-owned. | Ask one high-signal question or create Decision. |
+| `blocked` | A hard gate failed. | Pause until gate is resolved. |
 
 ## Taskplane Adaptation Rules
 

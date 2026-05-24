@@ -55,6 +55,16 @@ describe('AgentCliRunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'plan',
       status: 'completed',
+      title: 'Agent CLI 上下文就绪判断',
+      output: expect.stringContaining('decision=ready'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'agent cli run accepted',
+      output: expect.stringContaining('Context readiness: ready.'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'completed',
       title: 'Agent CLI 目标契约',
       input: expect.stringContaining('"runtimeLabel": "Codex CLI"'),
       output: expect.stringContaining('taskGoal=active'),
@@ -68,6 +78,9 @@ describe('AgentCliRunService', () => {
       command: 'codex',
       cwd: workspaceRoot,
       input: expect.stringContaining('Taskplane run contract:'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('Context readiness decision:'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('User request:\nReview the next implementation step.'),

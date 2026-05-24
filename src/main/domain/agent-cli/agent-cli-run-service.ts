@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeContextAssemblyGate } from '../../../shared/runtime-context-assembly-gate.js';
 import {
+  evaluateRuntimeContextReadiness,
+  formatRuntimeContextReadinessForStep,
+} from '../../../shared/runtime-context-readiness.js';
+import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
   formatRuntimeContextManifestForStep,
@@ -291,6 +295,11 @@ export class AgentCliRunService {
     if (!contextGate.canProceed) {
       throw new Error(contextGate.summary);
     }
+    const contextReadiness = evaluateRuntimeContextReadiness({
+      contextAssembly,
+      prompt: request.prompt,
+      task,
+    });
 
     const sandboxMode = request.sandboxMode ?? 'read-only';
     const workspaceRoot = aiStatus.workspaceRoot?.trim() || aiStatus.suggestedWorkspaceRoot?.trim();
@@ -329,8 +338,17 @@ export class AgentCliRunService {
         pendingMemoryWarning ? `pending_memory_warning=${pendingMemoryWarning}` : null,
         `capability_mode=${capabilityMode}`,
         contextGate.summary,
+        formatRuntimeContextReadinessForStep(contextReadiness),
         formatRuntimeContextManifestForStep(contextManifest),
       ].filter((line): line is string => line !== null).join('\n'),
+    });
+    await this.runStepRepository.create({
+      runId: run.id,
+      kind: 'plan',
+      status: contextReadiness.decision === 'blocked' ? 'failed' : 'completed',
+      title: 'Agent CLI 上下文就绪判断',
+      input: request.prompt,
+      output: formatRuntimeContextReadinessForStep(contextReadiness),
     });
     await this.runStepRepository.create({
       runId: run.id,
@@ -355,6 +373,7 @@ export class AgentCliRunService {
         capabilityMode,
         contract: runContract,
         manifest: contextManifest,
+        readinessSummary: formatRuntimeContextReadinessForStep(contextReadiness),
         task,
         taskFilesForContext,
       }),
@@ -859,6 +878,7 @@ function buildAgentCliContextBridge(params: {
   capabilityMode: AgentCliCapabilityMode;
   contract: RunGoalContract;
   manifest: RuntimeContextManifest;
+  readinessSummary: string;
   task: TaskDetail;
   taskFilesForContext: ReturnType<typeof buildAgentCliTaskFilesForContext>;
 }): string {
@@ -896,6 +916,9 @@ function buildAgentCliContextBridge(params: {
     '',
     'Runtime context manifest:',
     formatRuntimeContextManifestForStep(params.manifest),
+    '',
+    'Context readiness decision:',
+    params.readinessSummary,
     taskFilePreviews.length ? '' : null,
     taskFilePreviews.length ? 'Task recovery context preview:' : null,
     ...taskFilePreviews,

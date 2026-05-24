@@ -115,6 +115,7 @@ Recommended first skills:
 | Skill | Question | Output |
 | --- | --- | --- |
 | `advancement.evaluate` | What movement should happen next? | movement, reason, required rules |
+| `context.readiness.evaluate` | Is context sufficient, self-researchable, plan-first, user-bound, or blocked? | ready / self_research / plan_first / ask_user / blocked |
 | `write_intent.extract` | What product write is being proposed? | candidate Write Intent list |
 | `memory.worthiness` | Is this worth durable memory? | write / skip / ask |
 | `source.quality` | Can this source be trusted for this task? | include / caution / exclude |
@@ -131,6 +132,7 @@ Use hooks and gates for fixed product constraints:
 | Hook/Gate | Enforces |
 | --- | --- |
 | Runtime entrypoint gate | Whether a UI/service path may start execution or mutate state |
+| Context readiness gate | Whether the next move is execute, research, plan, ask, or pause |
 | Write intent validator | Type schema, target task, required evidence, phase permission |
 | Confirmation gate | Whether a proposal must be approved before persistence |
 | Memory gate | Whether Task.md, Task Record, or Source Context is the right surface |

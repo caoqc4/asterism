@@ -186,6 +186,9 @@ Taskplane currently has a working native CLI execution backend:
 - GoalPilot context readiness is a distinct pre-execution judgment: when the
   next step is clear enough, adapters should move into native plan, research,
   or execution instead of repeatedly asking secondary preference questions.
+- Agent CLI runs record a `context.readiness.evaluate` step that classifies the
+  next movement as ready, self-research, plan-first, ask-user, or blocked
+  before the native runtime receives the prompt.
 - Codex CLI native Goal Mode is detected as an adapter capability for
   `0.133.0+`; older Codex versions are shown as needing an update, and Claude
   native goal mode remains unverified by the Taskplane adapter.

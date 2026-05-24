@@ -11,6 +11,7 @@ describe('Native Agent Runtime Orchestration spec', () => {
     );
 
     expect(content).toContain('pre-run web research bridge');
+    expect(content).toContain('context.readiness.evaluate');
     expect(content).toContain('completed chat summary');
     expect(content).toContain('task records, source contexts,');
     expect(content).toContain('decisions, next-step updates, blockers, completion proposals, and subtask');
