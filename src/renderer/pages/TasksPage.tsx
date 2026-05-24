@@ -16,6 +16,7 @@ import {
   type RuntimeFileSurfaceKind,
 } from '@shared/runtime-surface-routing';
 import { evaluateRuntimeSubtaskDraft } from '@shared/runtime-subtask-evaluator';
+import { evaluateTaskAdvancement } from '@shared/task-advancement-orchestrator';
 import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
 import { evaluateTaskRecordWorthiness } from '@shared/task-record-worthiness';
 import { isTaskMdPath, isTaskRecordPath } from '@shared/task-memory-path';
@@ -2325,6 +2326,25 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   async function generateProjectDecomposition(project: Task) {
     if (!window.api?.decomposeProject || projectDecomposingId) {
       setProjectDecompositionError('当前版本暂时无法调用 AI 拆解服务。');
+      return;
+    }
+    const advancement = evaluateTaskAdvancement({
+      entrypoint: 'project_decompose',
+      hasTaskContext: true,
+      prompt: `拆解项目：${project.title}`,
+      runtime: { apiRuntimeReady: Boolean(window.api?.decomposeProject) },
+      task: {
+        childTaskIds: project.childTaskIds,
+        nextStep: project.nextStep ?? null,
+        parentTaskId: project.parentTaskId ?? null,
+        riskLevel: project.riskLevel,
+        state: project.state,
+        summary: project.whyNow ?? null,
+        title: project.title,
+      },
+    });
+    if (advancement.route === 'blocked') {
+      setProjectDecompositionError(advancement.userMessage);
       return;
     }
     const existingStructureEvaluation = evaluateRuntimeSubtaskDraft({

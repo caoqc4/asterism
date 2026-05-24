@@ -574,6 +574,8 @@ Status: started.
 
 ### Phase 4: Task Advancement Orchestrator
 
+Status: started.
+
 Centralize scattered movement decisions:
 
 - move ask/research/execute/decompose/closeout routing out of ad hoc UI and
@@ -581,6 +583,23 @@ Centralize scattered movement decisions:
 - use deterministic rules first;
 - call DecisionBackend only when semantic judgment is needed;
 - preserve user confirmation boundaries.
+
+Current implementation:
+
+- `src/shared/task-advancement-orchestrator.ts` composes runtime intake and
+  context-readiness evaluation into a shared advancement decision.
+- Right-panel task chat uses the shared decision before launching Agent CLI,
+  so user-owned approval boundaries stay local while child-task advancement can
+  continue through native runtime research/execution.
+- Project decomposition uses the same shared decision before requesting a
+  reversible subtask draft; durable child creation remains behind confirmation.
+
+Remaining work:
+
+- Extend the orchestrator across closeout, verification, context refresh, and
+  non-UI writeback flows.
+- Move decomposition drafting behind the same selected-runtime/DecisionBackend
+  abstraction used by ordinary task execution.
 
 ### Phase 5: API Decision Backend
 

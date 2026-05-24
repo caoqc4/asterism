@@ -24,6 +24,7 @@ import {
   evaluateRuntimeIntake,
   type RuntimeIntakeEvaluation,
 } from '@shared/runtime-intake-evaluator';
+import { evaluateTaskAdvancement } from '@shared/task-advancement-orchestrator';
 import {
   buildRuntimeHandoffPreview,
   buildRuntimeResumePlan,
@@ -2609,11 +2610,24 @@ export function RightPanel({
     const text = (forcedText ?? input).trim();
     if (!text || thinking) return;
     const displayUserMessage = options.displayUserMessage ?? true;
-    const childTaskConversation = isChildTaskContext(activeTaskId);
+    const isChildTask = isChildTaskContext(activeTaskId);
+    const canDraftDecomposition = canCreateDecompositionDraftForTask(activeTaskId) || isExplicitDecompositionRequest(text);
+    const advancement = evaluateTaskAdvancement({
+      entrypoint: isChildTask ? 'child_advance' : 'right_panel_chat',
+      hasTaskContext: Boolean(activeTaskId),
+      isChildTask,
+      prompt: text,
+      runtime: {
+        agentCliReady: Boolean(activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun),
+        apiRuntimeReady: Boolean(isAgentApiRuntimeMode && window.api?.chatWithAI),
+      },
+      task: activeTaskDetail,
+    });
+    const childTaskConversation = advancement.promptMode === 'child_task_advance' || isChildTask;
     const childTaskConversationTurnCount = childTaskConversation
       ? messages.filter((message) => message.role === 'user').length + 1
       : 0;
-    const allowDecompositionDraft = canCreateDecompositionDraftForTask(activeTaskId) || isExplicitDecompositionRequest(text);
+    const allowDecompositionDraft = advancement.promptMode === 'decomposition_draft' || canDraftDecomposition;
     const taskplaneConversationPrompt = childTaskConversation
       ? buildChildTaskConversationPrompt({
           childTaskConversationTurnCount,
@@ -2651,7 +2665,15 @@ export function RightPanel({
         replyText = await handleAgentRuntimeSlashCommand(slashCommand);
       } else if (!aiRuntimeStatusLoaded) {
         replyText = 'AI Runtime 状态仍在加载中，请稍后再发送。Taskplane 不会在未确认所选 Runtime 前调用 AI。';
-      } else if (activeAgentCliRuntimeMode && shouldUseAgentCliRuntime && activeTaskId && window.api?.triggerAgentCliRun) {
+      } else if (advancement.route === 'local_rule' && advancement.movement === 'ask') {
+        replyText = advancement.userMessage;
+      } else if (
+        advancement.route === 'agent_cli'
+        && activeAgentCliRuntimeMode
+        && shouldUseAgentCliRuntime
+        && activeTaskId
+        && window.api?.triggerAgentCliRun
+      ) {
         const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
         setAgentCliLaunchNotice('正在准备任务上下文和可追溯来源，等待运行接收。');
         const run = await window.api.triggerAgentCliRun({

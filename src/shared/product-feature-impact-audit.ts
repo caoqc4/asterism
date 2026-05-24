@@ -111,6 +111,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Right-panel source, structured, subtask, task-record, and task-memory confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
       'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
       'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI web/search events.',
+      'Right-panel task chat now runs through shared TaskAdvancementOrchestrator before Agent CLI launch, preserving user-owned approval boundaries while allowing self-research and execution to continue.',
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
@@ -148,6 +149,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     futureApiClosure: 'partial',
     evidence: [
       'Project decomposition produces draft child tasks before durable subtasks.',
+      'Project decomposition uses shared TaskAdvancementOrchestrator movement routing before requesting a reversible subtask draft.',
       'Subtask draft validation blocks underspecified or tiny proposals before confirmation.',
       'Subtask draft confirmation is represented as a subtask.create_many writeback apply plan and dispatched through the main-side task service adapter.',
       'The main-side subtask apply path promotes the parent to a project, creates planned child tasks, stores child completion criteria and matched dependencies when available, and records project timeline evidence.',
