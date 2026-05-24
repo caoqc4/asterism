@@ -17,8 +17,7 @@ and recoverable task state. It does not contain detailed execution, memory,
 output, source, or tool rules. Instead, it routes each movement to the smallest
 needed runtime, rule document, skill, hook, or review path.
 
-Use it silently. Do not show GoalPilot as a checklist unless the user asks why a
-movement was chosen.
+Use it silently. Do not show GoalPilot as a checklist unless the user asks why a movement was chosen.
 
 ## Core Question
 
@@ -164,14 +163,16 @@ Use the smallest durable surface:
 - Decisions for user approval boundaries.
 - Artifacts and task files for work products.
 
-## Context And Task Switching
+## Context Transition Decision
 
-Before switching tasks, advancing a child, clearing context, or starting a new
-conversation, check context cleanliness before context sufficiency.
+Before compacting, resetting, switching tasks, advancing a child, or starting a
+new conversation, first classify the current chat: temporary noise, active
+reasoning, recoverable signal, handoff, or decision/blocker.
 
-If context is contaminated, rebuild it around the target task. If useful
-handoff information would be lost, persist the smallest recovery note first. Do
-not carry task A chat history into task B as if it were task B memory.
+GoalPilot owns this trigger decision. If useful signals exist, load Context
+Transition Policy and require a preservation proof before reset or handoff. If only
+low-signal repetition exists, keep or continue rather than exposing mode choices.
+Do not carry task A chat history into task B as if it were task B memory.
 
 ## Verification And Review
 
@@ -182,8 +183,8 @@ Before closeout, verify against acceptance criteria, user intent, blockers,
 dependencies, pending decisions, risk, produced files, sources, and evidence.
 
 Use review/eval after failures, repeated user corrections, risky writes,
-runtime adapter changes, or task-completion decisions. Feed durable lessons
-back into the right layer: memory, scoped rule, skill, hook, or test.
+runtime adapter changes, or task-completion decisions. Feed lessons into the
+right layer: memory, scoped rule, skill, hook, or test.
 
 ## Anti-Patterns
 
@@ -194,7 +195,6 @@ back into the right layer: memory, scoped rule, skill, hook, or test.
   self-research, files, memory, or runtime tools.
 - Re-decomposing a parent when the user is advancing a child.
 - Creating tiny subtasks when one larger task can own the outcome.
-- Writing Task Records for ordinary chat turns.
 - Completing a task because a next task is obvious.
 - Treating a runtime-native goal loop as Taskplane's source of truth.
 - Keeping must-follow rules only in prompt text instead of hooks.

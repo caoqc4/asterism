@@ -198,7 +198,7 @@ export function buildContextPreservationRecordContent(params: {
     '',
     `Captured: ${capturedAt}`,
     'Role: context-preservation',
-    'Note: 自动整理前的最小恢复证明；不保存完整聊天全文。',
+    'Note: 上下文刷新前的最小恢复证明；不保存完整聊天全文。',
     '',
     '## Summary',
     `任务：${params.taskTitle}`,

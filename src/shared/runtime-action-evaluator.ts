@@ -75,10 +75,10 @@ export function evaluateRuntimeAction(params: {
         shouldPersistTaskRecord: hasTaskContext && Boolean(params.hasSpecificHandoffSignal),
         shouldRefreshContext: true,
         reason: !hasTaskContext || messageCount === 0
-          ? '全局或空会话可以直接清理。'
+          ? '全局或空会话可以直接刷新。'
           : params.hasSpecificHandoffSignal
-            ? '清理任务会话前应先保全关键恢复上下文。'
-            : '任务会话缺少可恢复信号，暂不应清理。',
+            ? '刷新任务会话前应先保全关键恢复上下文。'
+            : '任务会话缺少可恢复信号，暂不应刷新。',
       };
     case 'decision_action':
       return {

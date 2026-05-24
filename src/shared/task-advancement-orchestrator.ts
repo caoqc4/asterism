@@ -133,7 +133,7 @@ export function evaluateTaskAdvancement(params: {
         'task_memory_guidance',
       ],
       route: 'local_rule',
-      userMessage: '先整理归档可恢复上下文，确认后再清理当前任务会话。',
+      userMessage: '先保全可恢复上下文，安全后刷新当前任务会话。',
     });
   }
 

@@ -444,9 +444,9 @@ describe('runtime handoff', () => {
     });
   });
 
-  it('builds a reusable manual refresh preview from the handoff result', () => {
+  it('builds a reusable context refresh preview from the handoff result', () => {
     const handoff = evaluateRuntimeHandoff({
-      intent: 'manual_context_refresh',
+      intent: 'context_refresh',
       fromTaskId: 'task-1',
       messageCount: 2,
       hasSpecificHandoffSignal: true,
@@ -460,9 +460,9 @@ describe('runtime handoff', () => {
       recordPath: 'Task Records/context-refresh.md',
     })).toEqual({
       canPreview: true,
-      title: '已整理并归档当前任务讨论的关键记录。',
+      title: '已刷新当前任务会话。',
       detail: '归档摘要：用户消息 2 条；最近关注：确认方案 A / 遗留风险 B。 记录：Task Records/context-refresh.md',
-      nextAction: '请检查是否还要补充事实；确认无误后再刷新任务会话。',
+      nextAction: '刷新当前任务上下文。',
     });
   });
 

@@ -100,7 +100,6 @@ import {
 import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 
 type MessageRole = 'user' | 'assistant';
-type ContextStrategy = 'auto' | 'manual' | 'reminder';
 type ActiveAgentCliRunState = {
   allowDecompositionDraft?: boolean;
   progress?: AgentCliProgressSnapshot;
@@ -123,12 +122,6 @@ const AGENT_CLI_PANEL_RUNTIME_HINTS: Record<AgentCliRuntimeId, string> = {
 
 const AGENT_CLI_PANEL_RUNTIMES: AgentCliRuntimeId[] = ['codex', 'claude'];
 
-const CONTEXT_STRATEGY_LABELS: Record<ContextStrategy, string> = {
-  auto: '自动整理',
-  manual: '先询问',
-  reminder: '仅提醒',
-};
-
 interface Message {
   id: string;
   role: MessageRole;
@@ -139,10 +132,6 @@ interface Message {
 interface PendingCtxSwitch {
   taskId: string;
   taskTitle: string;
-}
-
-interface ManualRefreshReady {
-  taskName: string | null;
 }
 
 interface TaskFileWriteProposal {
@@ -176,7 +165,6 @@ interface PanelSessionState {
   abandonConfirmOpen: boolean;
   activeTaskId: string | null;
   input: string;
-  manualRefreshReady: ManualRefreshReady | null;
   pendingCapturedTaskId: string | null;
   pendingSwitch: PendingCtxSwitch | null;
   phaseCloseoutNotice: string | null;
@@ -200,7 +188,6 @@ function createPanelSessionState(taskId: string | null): PanelSessionState {
     abandonConfirmOpen: false,
     activeTaskId: taskId,
     input: '',
-    manualRefreshReady: null,
     pendingCapturedTaskId: null,
     pendingSwitch: null,
     phaseCloseoutNotice: null,
@@ -217,7 +204,6 @@ function clearTaskScopedTransients(state: PanelSessionState): PanelSessionState 
     ...state,
     abandonConfirmOpen: false,
     input: '',
-    manualRefreshReady: null,
     pendingCapturedTaskId: null,
     pendingSwitch: null,
     phaseCloseoutNotice: null,
@@ -401,12 +387,12 @@ function shouldSuggestSessionRefresh(
   const counts = new Map<string, number>();
   for (const message of userMessages) {
     const next = (counts.get(message) ?? 0) + 1;
-    if (userMessages.length >= 3 && next >= 3) {
+    if (userMessages.length >= 3 && next >= 3 && hasPreservableContextSignals(messages)) {
       return { reason: '触发原因：同一个问题已重复出现 3 次。' };
     }
     counts.set(message, next);
   }
-  if (transcriptUsage.percent >= compressionThreshold) {
+  if (transcriptUsage.percent >= compressionThreshold && hasPreservableContextSignals(messages)) {
     return {
       reason: `触发原因：估算上下文占用约 ${transcriptUsage.percent}%（约 ${transcriptUsage.tokens} tokens），达到 ${compressionThreshold}% 阈值。`,
     };
@@ -415,7 +401,7 @@ function shouldSuggestSessionRefresh(
   const recentCorrectionCount = userMessages
     .slice(-4)
     .filter((message) => looksLikeUserCorrection(message)).length;
-  if (userMessages.length >= 3 && recentCorrectionCount >= 2) {
+  if (userMessages.length >= 3 && recentCorrectionCount >= 2 && hasPreservableContextSignals(messages)) {
     return { reason: '触发原因：最近多次出现改口或纠正，建议刷新任务会话。' };
   }
 
@@ -426,10 +412,20 @@ function shouldSuggestSessionRefresh(
     userMessages.length >= 3
     && recentAssistantMessages.length >= 3
     && recentAssistantMessages.every((message) => looksGenericAssistantReply(message.text))
+    && hasPreservableContextSignals(messages)
   ) {
     return { reason: '触发原因：最近 3 次回复都偏泛化，建议刷新任务会话。' };
   }
   return null;
+}
+
+function hasPreservableContextSignals(messages: Message[]): boolean {
+  const preservationMessages = buildContextPreservationMessages(messages);
+  return evaluateContextPreservation({
+    hasTaskContext: true,
+    chatMessageCount: preservationMessages.filter((message) => message.role === 'user').length,
+    messages: preservationMessages,
+  }).hasValuableSignals;
 }
 
 async function preserveSessionRefreshMemory(params: {
@@ -1302,7 +1298,6 @@ export function RightPanel({
   const [messages, setMessages] = useState<Message[]>([]);
   const [fullScreen, setFullScreen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('manual');
   const [runtimeMode, setRuntimeMode] = useState<AiRuntimeMode>('codex');
   const [aiRuntimeStatusLoaded, setAiRuntimeStatusLoaded] = useState(false);
   const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
@@ -1339,7 +1334,6 @@ export function RightPanel({
     abandonConfirmOpen,
     activeTaskId,
     input,
-    manualRefreshReady,
     pendingCapturedTaskId,
     pendingSwitch,
     phaseCloseoutNotice,
@@ -1759,7 +1753,6 @@ export function RightPanel({
     setHistoryOpen(false);
     patchSession({
       input: '',
-      manualRefreshReady: null,
       sessionRefreshDismissed: false,
     });
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -1768,19 +1761,19 @@ export function RightPanel({
   function handleMissingRefreshArchive(reason?: string | null) {
     if (activeTaskId) {
       appendSysMsg([
-        '这次刷新前的保全信息还不够具体，暂不清理当前任务会话。',
-        reason && reason !== '任务会话缺少可恢复信号，暂不应清理。' ? reason : null,
+        '这次刷新前的保全信息还不够具体，暂不刷新当前任务会话。',
+        reason && reason !== '任务会话缺少可恢复信号，暂不应刷新。' ? reason : null,
         '请先补充已确认结论、候选方案、未解决问题或下一步动作。',
       ].filter(Boolean).join(' '));
       patchSession({ sessionRefreshDismissed: true });
     }
   }
 
-  async function prepareManualTaskSessionRefresh() {
+  async function refreshTaskSessionWithPreservation() {
     const advancement = evaluateTaskAdvancement({
       entrypoint: 'context_refresh',
       hasTaskContext: Boolean(activeTaskId),
-      prompt: 'manual_context_refresh',
+      prompt: 'context_refresh',
       task: activeTaskDetail,
     });
     if (advancement.route === 'blocked') {
@@ -1796,7 +1789,7 @@ export function RightPanel({
     } = await archiveTaskConversationIfNeeded();
     const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(activeTaskId);
     const handoff = evaluateRuntimeHandoff({
-      intent: 'manual_context_refresh',
+      intent: 'context_refresh',
       fromTaskId: activeTaskId,
       messageCount: userMessageCount,
       hasSpecificHandoffSignal: hasSpecificSignal,
@@ -1812,12 +1805,11 @@ export function RightPanel({
       messageCount: userMessageCount,
       recentFocus,
     });
-    patchSession({ manualRefreshReady: { taskName } });
-    appendSysMsg([
-      preview.title,
-      preview.detail,
-      preview.nextAction,
-    ].join('\n'));
+    if (!preview.canPreview) {
+      handleMissingRefreshArchive(preview.detail);
+      return;
+    }
+    clearTaskSessionAfterArchive(taskName);
   }
 
   async function startNewConversation() {
@@ -2685,7 +2677,6 @@ export function RightPanel({
       : text;
     const agentCliPrompt = text;
     patchSession({
-      manualRefreshReady: null,
       sourceContextProposal: null,
       taskFileProposal: null,
     });
@@ -3157,11 +3148,6 @@ export function RightPanel({
   const sessionRefreshSuggestion = activeTaskId && !sessionRefreshDismissed
     ? shouldSuggestSessionRefresh(messages, compressionThreshold)
     : null;
-  const canManuallyRefreshTaskSession = Boolean(
-    activeTaskId
-    && contextStrategy === 'manual'
-    && messages.some((message) => message.role === 'user')
-  );
   const canCaptureGlobalConversation = Boolean(
     evaluateRuntimeAction({
       action: 'task_capture',
@@ -3375,18 +3361,14 @@ export function RightPanel({
           </div>
         )}
 
-        {sessionRefreshSuggestion && contextStrategy !== 'manual' && (
+        {sessionRefreshSuggestion && (
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
-              {contextStrategy === 'reminder'
-                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要整理时可切回自动整理或先询问。'
-                : '这个任务的讨论已经有点长了。可以先保全关键结论，再由你决定是否刷新当前会话；不会跳过保全证明。'}
+              这个任务的讨论已经有点长了。可以先保全关键结论并刷新当前会话；不会跳过保全证明。
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
             <div className="panel-refresh-actions">
-              {contextStrategy === 'auto' && (
-                <button className="btn sm primary" onClick={() => void prepareManualTaskSessionRefresh()}>整理归档</button>
-              )}
+              <button className="btn sm primary" onClick={() => void refreshTaskSessionWithPreservation()}>整理并刷新</button>
               <button className="btn sm ghost" onClick={() => patchSession({ sessionRefreshDismissed: true })}>继续当前会话</button>
             </div>
           </div>
@@ -3410,7 +3392,7 @@ export function RightPanel({
         {canCloseoutActiveTaskPhase && (
           <div className="panel-capture-suggestion">
             <div className="panel-capture-text">
-              这段任务讨论可以收成阶段记录，用于质量检查、完成判断和上下文清理。
+              这段任务讨论可以收成阶段记录，用于质量检查、完成判断和上下文刷新。
             </div>
             <button
               className={`btn sm primary${savingPhaseCloseout ? ' disabled' : ''}`}
@@ -3660,57 +3642,6 @@ export function RightPanel({
 
       {/* Input */}
       <div className="panel-input-wrap">
-        {activeTaskId && (
-          <details className="panel-input-options">
-            <summary>
-              <span>上下文整理</span>
-              <strong>{CONTEXT_STRATEGY_LABELS[contextStrategy]}</strong>
-            </summary>
-            <div className="panel-context-strategy" aria-label="上下文策略">
-              {([
-                ['auto', '自动整理'],
-                ['manual', '先询问'],
-                ['reminder', '仅提醒'],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`panel-context-strategy-btn${contextStrategy === value ? ' active' : ''}`}
-                  onClick={() => {
-                    setContextStrategy(value);
-                    patchSession({
-                      manualRefreshReady: null,
-                      sessionRefreshDismissed: false,
-                    });
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </details>
-        )}
-        {canManuallyRefreshTaskSession && (
-          <div className="panel-manual-refresh">
-            <span>
-              {manualRefreshReady
-                ? '已归档关键记录；可以继续补充，或确认刷新当前任务会话。'
-                : '先询问模式：先保全归档，再由你确认是否刷新会话。'}
-            </span>
-            <button
-              className="btn sm ghost"
-              onClick={() => {
-                if (manualRefreshReady) {
-                  clearTaskSessionAfterArchive(manualRefreshReady.taskName);
-                  return;
-                }
-                void prepareManualTaskSessionRefresh();
-              }}
-            >
-              {manualRefreshReady ? '确认刷新' : '整理归档'}
-            </button>
-          </div>
-        )}
         <textarea
           ref={textareaRef}
           className="panel-input"

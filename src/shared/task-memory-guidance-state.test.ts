@@ -18,7 +18,7 @@ describe('task memory guidance state', () => {
   it('detects product task-record terms used by closeout and context refresh flows', () => {
     expect(detectTaskMemoryGuidanceTargets([
       '请写入阶段收尾记录，保留质量检查结论。',
-      '需要生成交接记录后再清理上下文。',
+      '需要生成交接记录后再刷新上下文。',
       '会话刷新记录已准备好。',
     ].join('\n'))).toEqual(['task_record']);
   });
@@ -71,7 +71,7 @@ describe('task memory guidance state', () => {
           output: [
             'runtime=codex',
             '已包含 Task.md 主恢复文件。',
-            '没有相关 Task Records；仅在任务含糊、长期运行、刚清理或明确引用历史时必需。',
+            '没有相关 Task Records；仅在任务含糊、长期运行、刚刷新或明确引用历史时必需。',
           ].join('\n'),
           createdAt: '2026-05-15T01:00:00.000Z',
         },

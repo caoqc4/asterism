@@ -646,7 +646,7 @@ export function buildRuntimeContextAssemblyPolicy(params: {
       reason: taskBound
         ? has('task_file', (item) => isTaskRecordPath(item.label) || isTaskRecordPath(item.id))
           ? '已包含相关 Task Records。'
-          : '没有相关 Task Records；仅在任务含糊、长期运行、刚清理或明确引用历史时必需。'
+          : '没有相关 Task Records；仅在任务含糊、长期运行、刚刷新或明确引用历史时必需。'
         : '全局上下文不读取任务记录。',
     },
     {

@@ -153,21 +153,21 @@ export function evaluateTaskMemoryCoverage(input: TaskMemoryCoverageInput): Task
   if (input.hasBlocker) {
     return result(input.action, 'blocked', {
       missing: ['存在阻塞、依赖或等待条件。'],
-      reason: '任务仍有阻塞或依赖，不能安全开始执行、完成或清理为已恢复状态。',
+      reason: '任务仍有阻塞或依赖，不能安全开始执行、完成或重置为已恢复状态。',
     });
   }
 
   if (input.action === 'context_clear') {
     if (!hasActiveTaskDiscussion) {
       return result(input.action, 'pass', {
-        reason: '当前任务没有需要保全的活跃讨论，可以清理或切换上下文。',
+        reason: '当前任务没有需要保全的活跃讨论，可以刷新或切换上下文。',
       });
     }
 
     if (!hasSpecificHandoffSignal) {
       return result(input.action, 'needs_user_clarification', {
         missing: ['缺少可恢复的结论、候选方案、未决问题、约束或下一步。'],
-        reason: '任务会话已有内容，但缺少具体可恢复信号，暂不应清理。',
+        reason: '任务会话已有内容，但缺少具体可恢复信号，暂不应刷新。',
       });
     }
 
@@ -175,12 +175,12 @@ export function evaluateTaskMemoryCoverage(input: TaskMemoryCoverageInput): Task
       return result(input.action, 'needs_memory_write', {
         missing: ['需要先把可恢复信号写入 Task Record、Task.md、Decision 或其他正确任务记忆表面。'],
         recommendedWrites: ['task_record'],
-        reason: '清理任务会话前需要先保全关键恢复上下文。',
+        reason: '刷新任务会话前需要先保全关键恢复上下文。',
       });
     }
 
     return result(input.action, 'pass', {
-      reason: '关键恢复信号已保全，可以清理或刷新当前任务会话。',
+      reason: '关键恢复信号已保全，可以刷新当前任务会话。',
     });
   }
 

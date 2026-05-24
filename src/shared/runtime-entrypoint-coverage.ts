@@ -1107,7 +1107,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     id: 'context.refreshOrLeave',
     owner: 'RightPanel / RuntimeHandoff',
     kind: 'context_transition',
-    description: 'Refresh the current task chat, prepare a manual refresh, leave task context, or start a global conversation.',
+    description: 'Refresh the current task chat through preservation gates, leave task context, or start a global conversation.',
     requiredGates: [
       'simplicity_check',
       'runtime_action',

@@ -3070,57 +3070,32 @@ describe('App redesign v1', () => {
     expect(await screen.findByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
   });
 
-  it('lets users switch right-panel context cleanup to reminder-only mode', async () => {
+  it('archives and refreshes a task session through one managed action', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    await user.click(await screen.findByText('上下文整理'));
-    await user.click(screen.getByRole('button', { name: '仅提醒' }));
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
-
-    for (let i = 0; i < 3; i += 1) {
-      await user.type(input, '下一步怎么推进？');
+    for (const prompt of [
+      '这轮先保留 Playwright 作为动态页面候选',
+      '不对，先把 Playwright 放到验证方案里',
+      '改成先确认 Playwright 是否真的需要',
+    ]) {
+      await user.type(input, prompt);
       await user.click(screen.getByRole('button', { name: '发送' }));
       await waitFor(() => {
-        expect(harness.api.chatWithAI).toHaveBeenCalledTimes(i + 1);
+        expect(harness.api.chatWithAI).toHaveBeenCalled();
       });
     }
 
-    expect(await screen.findByText(/当前为仅提醒模式/)).toBeTruthy();
-    expect(screen.getByText(/同一个问题已重复出现 3 次/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '刷新任务会话' })).toBeNull();
-  });
-
-  it('requires a second confirmation before manually refreshing a task session', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
-    await user.type(input, '这轮先保留 Playwright 作为动态页面候选');
-    await user.click(screen.getByRole('button', { name: '发送' }));
-    await waitFor(() => {
-      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
-        taskId: 'task_risk',
-      }));
-    });
-
-    await user.click(await screen.findByRole('button', { name: '整理归档' }));
-    expect(await screen.findByText(/已整理并归档当前任务讨论的关键记录/)).toBeTruthy();
-    expect(await screen.findByText(/归档摘要：用户消息 1 条/)).toBeTruthy();
-    expect(screen.getAllByText(/Playwright 作为动态页面候选/).length).toBeGreaterThan(0);
-    expect(await screen.findByRole('button', { name: '确认刷新' })).toBeTruthy();
-    expect(await screen.findByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: '整理并刷新' }));
+    expect(await screen.findByText(/已整理并刷新/)).toBeTruthy();
     expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_risk',
       path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-context-refresh-handoff\.md$/),
       content: expect.stringContaining('Playwright'),
     }));
-
-    await user.click(screen.getByRole('button', { name: '确认刷新' }));
-    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '确认刷新' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '整理并刷新' })).toBeNull();
   });
 
   it('blocks right-panel session refresh while latest task memory guidance is pending', async () => {
@@ -3675,8 +3650,7 @@ describe('App redesign v1', () => {
       });
     }
 
-    await user.click(await screen.findByRole('button', { name: '整理归档' }));
-    await user.click(await screen.findByRole('button', { name: '确认刷新' }));
+    await user.click(await screen.findByRole('button', { name: '整理并刷新' }));
     expect(await screen.findByText(/已整理并刷新/)).toBeTruthy();
     expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_risk',
@@ -3703,8 +3677,7 @@ describe('App redesign v1', () => {
       });
     }
 
-    await user.click(await screen.findByRole('button', { name: '整理归档' }));
-    await user.click(await screen.findByRole('button', { name: '确认刷新' }));
+    await user.click(await screen.findByRole('button', { name: '整理并刷新' }));
     expect(await screen.findByText(/已整理并刷新/)).toBeTruthy();
     expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_risk',
@@ -3732,8 +3705,6 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
-    await user.click(await screen.findByText('上下文整理'));
-    await user.click(screen.getByRole('button', { name: '自动整理' }));
     expect(await screen.findByText('Agent API')).toBeTruthy();
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
     const longContextChunk = '这轮需要保留董事会材料的上下文：现金流页、CEO 批注、法务意见、截止时间、交付范围和风险说明都要一起考虑。'.repeat(38);
@@ -3751,7 +3722,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/不会跳过保全证明/)).toBeTruthy();
     expect(screen.getByText(/估算上下文占用约/)).toBeTruthy();
     expect(screen.getByText(/达到 30% 阈值/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: '整理归档' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '整理并刷新' })).toBeTruthy();
   });
 
   it('persists selected task completion from the Tasks inline row action', async () => {

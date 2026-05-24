@@ -131,7 +131,7 @@ const SURFACE_POLICY: Record<RuntimeSurfaceKind, Omit<MemorySurfacePolicy, 'file
     requiresExplicitCreation: true,
     requiresQualityMetadata: false,
     label: '待拍板',
-    reason: 'Decision 表示用户判断边界，AI 不能通过任务记忆或上下文清理绕过。',
+    reason: 'Decision 表示用户判断边界，AI 不能通过任务记忆或上下文刷新绕过。',
   },
   run_step: {
     category: 'execution_event',

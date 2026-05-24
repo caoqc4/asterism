@@ -500,7 +500,7 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
       return {
         mode: input.mode,
         tone: canProceed ? 'pass' : 'warn',
-        label: canProceed ? '上下文清理检查通过' : '上下文清理需保全',
+        label: canProceed ? '上下文刷新检查通过' : '上下文刷新需保全',
         detail: coverage.reason,
         source: 'lightweight_rule_engine',
         canProceed,

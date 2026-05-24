@@ -11,7 +11,6 @@ import type { TaskCloseoutEvaluation } from './task-closeout-evaluator.js';
 
 export type RuntimeHandoffIntent =
   | 'context_refresh'
-  | 'manual_context_refresh'
   | 'start_global_conversation'
   | 'leave_task_context'
   | 'switch_task'
@@ -152,7 +151,7 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
           ? '当前任务会话包含可恢复信号，切换前需要先保全上下文。'
           : '当前任务会话没有明确可恢复信号，可由用户确认后切换。',
         notice: hasSpecificHandoffSignal
-          ? '切换前请先整理归档当前任务讨论。'
+          ? '切换前请先保全当前任务讨论。'
           : '目标任务上下文已可用，可确认切换或保持当前上下文。',
       };
     }
@@ -303,7 +302,7 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
 
   if (actionEvaluation.shouldPersistTaskRecord && !archived) {
     return {
-      ...blocked(input, '清理任务会话前需要先成功保全关键恢复上下文。'),
+      ...blocked(input, '刷新任务会话前需要先成功保全关键恢复上下文。'),
       autoContextClear,
     };
   }
@@ -324,9 +323,7 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
     autoContextClear,
     canProceed: true,
     reason: '任务会话已满足刷新条件。',
-    notice: input.intent === 'manual_context_refresh'
-      ? '已整理归档当前任务讨论，等待用户确认刷新。'
-      : '已刷新当前任务会话。',
+    notice: '已刷新当前任务会话。',
     shouldClearMessages: input.intent === 'context_refresh',
   };
 }
@@ -389,13 +386,9 @@ export function buildRuntimeHandoffPreview(
 
   return {
     canPreview: true,
-    title: handoff.intent === 'manual_context_refresh'
-      ? '已整理并归档当前任务讨论的关键记录。'
-      : handoff.notice,
+    title: handoff.notice,
     detail: snapshot.recordPath ? `${archiveSummary} 记录：${snapshot.recordPath}` : archiveSummary,
-    nextAction: handoff.intent === 'manual_context_refresh'
-      ? '请检查是否还要补充事实；确认无误后再刷新任务会话。'
-      : buildRuntimeResumePlan(handoff).nextAction,
+    nextAction: buildRuntimeResumePlan(handoff).nextAction,
   };
 }
 

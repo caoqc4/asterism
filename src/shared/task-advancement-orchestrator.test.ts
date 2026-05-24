@@ -164,7 +164,7 @@ describe('evaluateTaskAdvancement', () => {
     const evaluation = evaluateTaskAdvancement({
       entrypoint: 'context_refresh',
       hasTaskContext: true,
-      prompt: '整理归档并刷新当前任务会话。',
+      prompt: '先保全并刷新当前任务会话。',
       task: buildTask(),
     });
 

@@ -8,7 +8,6 @@ import {
 export type ContextTransitionIntent =
   | 'context_refresh'
   | 'leave_task_context'
-  | 'manual_context_refresh'
   | 'phase_closeout'
   | 'resume_run'
   | 'start_global_conversation'
