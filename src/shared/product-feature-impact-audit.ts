@@ -102,15 +102,16 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'Agent CLI runs return runtime evidence and compact progress projection.',
       'Taskplane extracts Write Intent from runtime output before product writes.',
+      'Shared writeback proposal builder normalizes runtime Write Intent into reusable product proposal surfaces.',
       'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
       'Completed native runs summarize Taskplane web research capture and native CLI web/search events.',
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
-      'Write Intent parsing and confirmation are functional, but several handlers still live inside the right panel instead of a shared writeback orchestrator service.',
+      'Write Intent proposal building is shared, but confirmation policy and persistence handlers still live inside the right panel instead of a shared writeback orchestrator service.',
     ],
     nextActions: [
-      'Extract proposal building and confirmation policy into a reusable writeback orchestration module shared by CLI and future API runtimes.',
+      'Extract confirmation policy and persistence dispatch into a reusable writeback orchestration module shared by CLI and future API runtimes.',
     ],
   },
   {
