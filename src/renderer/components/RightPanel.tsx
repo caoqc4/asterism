@@ -1304,6 +1304,7 @@ export function RightPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastAppliedDraftPromptRef = useRef<string | null>(null);
   const lastAutoSentDraftPromptRef = useRef<string | null>(null);
+  const pendingMemoryGuidanceLookupRef = useRef<string | null>(null);
   const {
     abandonConfirmOpen,
     activeTaskId,
@@ -3110,6 +3111,25 @@ export function RightPanel({
         ? 'Agent API'
         : 'Runtime 未选择';
   const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
+  const pendingMemoryGuidanceLookupKey = activeTaskId
+    && sessionRefreshSuggestion
+    && !taskFileProposal
+    && !sourceContextProposal
+    && !structuredWritebackProposal
+    && !taskDecompositionDraft
+    && !activeTaskAgentCliRun
+    && !thinking
+    && !activeIsChildTaskContext
+    ? `${activeTaskId}:${userMessageTexts.length}:${sessionRefreshSuggestion.reason}`
+    : null;
+
+  useEffect(() => {
+    if (!activeTaskId || !pendingMemoryGuidanceLookupKey) return undefined;
+    if (pendingMemoryGuidanceLookupRef.current === pendingMemoryGuidanceLookupKey) return undefined;
+    pendingMemoryGuidanceLookupRef.current = pendingMemoryGuidanceLookupKey;
+    void getBlockingTaskMemoryGuidance(activeTaskId).catch(() => null);
+    return undefined;
+  }, [activeTaskId, pendingMemoryGuidanceLookupKey]);
 
   return (
     <div className={`right-panel${fullScreen ? ' fullscreen' : ''}${hidden ? ' hidden' : ''}`}>
