@@ -127,13 +127,13 @@ describe('TextExecutor', () => {
 
     for (const call of generateTextMock.mock.calls) {
       expect(call[0]).toEqual(expect.objectContaining({
-        prompt: expect.stringContaining('Taskplane Agent Operating Principles'),
-      }));
-      expect(call[0]).toEqual(expect.objectContaining({
         prompt: expect.stringContaining('GoalPilot Task Advancement Framework'),
       }));
       expect(call[0]).toEqual(expect.objectContaining({
-        prompt: expect.stringContaining('Agent Output Contract'),
+        prompt: expect.stringContaining('Layer: operating-principle / always-loaded task router'),
+      }));
+      expect(call[0]).toEqual(expect.objectContaining({
+        prompt: expect.stringContaining('Agent Output Contract: load when rendering chat'),
       }));
     }
   });

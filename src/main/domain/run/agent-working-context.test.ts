@@ -192,7 +192,7 @@ describe('agent working context', () => {
     const context = buildAgentWorkingContext(task);
 
     expect(context.productPrinciples).toBe(TASKPLANE_CORE_AGENT_CONTEXT);
-    expect(context.productPrinciples).toContain('Taskplane Agent Operating Principles');
+    expect(context.productPrinciples).not.toContain('Taskplane Agent Operating Principles');
     expect(context.productPrinciples).toContain('GoalPilot Task Advancement Framework');
     expect(context.task.title).toBe('Agent context task');
     expect(context.priorityLane).toBe('escalate_now');

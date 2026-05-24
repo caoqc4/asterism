@@ -4,6 +4,14 @@ Document id: taskplane.agent-output-contract.v1
 
 Owner: Taskplane product design
 
+Layer: skill / phase-based output rules
+
+Load: render chat, progress, drafts, proposals, files, run summaries, verification, or memory-visible output
+
+Scope: user-visible and product-surface output
+
+Authority: required when loaded; GoalPilot decides when this contract is relevant
+
 Status: Draft, implementation-guiding
 
 ## Purpose

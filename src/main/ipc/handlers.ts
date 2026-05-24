@@ -80,6 +80,7 @@ import {
   taskTypeWorkHabitLabel,
 } from '../../shared/work-habit-rules.js';
 import { TASKPLANE_CORE_AGENT_CONTEXT } from '../../shared/core-agent-context.js';
+import { TASKPLANE_AGENT_PRINCIPLES } from '../../shared/agent-principles.js';
 import { normalizeCreateManualArtifactInput } from '../../shared/runtime-surface-routing.js';
 import { evaluateRuntimeSubtaskDraft } from '../../shared/runtime-subtask-evaluator.js';
 import { evaluateRuntimeAction } from '../../shared/runtime-action-evaluator.js';
@@ -845,6 +846,8 @@ export function registerIpcHandlers(): void {
         'You are Taskplane project decomposition planner.',
         'Read and follow this read-only Taskplane core Agent context before planning or creating task drafts:',
         TASKPLANE_CORE_AGENT_CONTEXT,
+        'Phase-loaded execution and task-creation rules for this decomposition movement:',
+        TASKPLANE_AGENT_PRINCIPLES,
         'Return only one valid JSON object. Do not wrap it in markdown.',
         'The JSON shape must be:',
         '{',

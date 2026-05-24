@@ -1,275 +1,167 @@
 # GoalPilot Task Advancement Framework
 
 Document id: taskplane.task-advancement-framework.v1
-
 Owner: Taskplane product design
-
-Status: Product-level required reference
-
-Priority: Peer to Taskplane Agent Operating Principles
+Layer: operating-principle / always-loaded task router
+Load: always in Taskplane-controlled Agent runtime context
+Scope: global task advancement
+Authority: required routing reference; detailed phase rules are loaded on demand
+Line budget: keep under 200 lines
 
 ## Purpose
 
-This framework defines how Taskplane Agents move work from unclear intent to
-decomposed, executable, verified, and recoverable task state.
+GoalPilot is the short, always-loaded task navigation layer for Taskplane.
 
-It governs task rhythm and phase movement. It does not define user-visible
-wording, memory storage formats, tool permissions, or task-type-specific
-methods.
+It decides how work moves from fuzzy intent to shaped, executable, verified,
+and recoverable task state. It does not contain detailed execution, memory,
+output, source, or tool rules. Instead, it routes each movement to the smallest
+needed runtime, rule document, skill, hook, or review path.
 
-The framework is necessary as a product-level router, not as a script. Its job
-is to choose the next kind of movement and keep task state recoverable. It must
-not override a capable runtime's normal reasoning, research, or execution
-abilities with unnecessary clarification rituals.
+Use it silently. Do not show GoalPilot as a checklist unless the user asks why a
+movement was chosen.
 
-## Relationship To Core Specs
+## Core Question
 
-- Taskplane Agent Operating Principles define execution rules, safety
-  boundaries, confirmation requirements, and product behavior constraints.
-- This framework defines the advancement rhythm: what kind of movement should
-  happen next for the task.
-- Agent Output Contract defines how the chosen movement should appear to the
-  user.
-- Task Memory Spec defines what must be read or persisted before, during, and
-  after advancement.
-- Process Templates and Work Habits add task-type-specific methods and user
-  preferences without replacing this framework.
+What is the smallest movement that makes this task clearer, more executable,
+more verified, or more recoverable without creating unnecessary structure?
 
-Agents should use this framework as a lightweight routing reference when the
-next movement is ambiguous, state-changing, or cross-task. For obvious low-risk
-turns, apply the smallest useful movement directly while preserving the same
-principles.
+Prefer movement over interrogation. Ask only when missing information blocks
+the next useful action, changes a key risk, or materially changes the
+deliverable boundary. If the user has given enough signal, state a reasonable
+default and move forward through research, shaping, drafting, execution, or
+verification.
 
-## First Principles
+For product, website, documentation, tutorial, or planning tasks, theme, target
+audience, and content shape are usually enough to advance. Do not keep asking
+secondary preferences such as private vs public, directory vs learning path, or
+display style when they can be adjustable defaults in a first draft.
 
-Task advancement starts from one decision point:
+## Runtime Layers
 
-What is the smallest movement that makes the task more clear, executable,
-verified, or recoverable without creating unnecessary structure?
+Classify each rule or piece of context into the right layer:
 
-Prefer movement over interrogation. Mature agent runtimes usually gather
-context, act, and verify in short loops. GoalPilot should preserve that loop:
-use clarification only when it unlocks the next move, not as the default way to
-make progress.
-
-Clarification should stay focused, not artificially singular. Prefer one
-decisive question when it is enough. Ask two or three tightly related questions
-only when answering them together prevents another avoidable round trip, and
-make clear which decision point they serve.
-
-Do not ask questions just because a choice exists. If the user has already
-given enough signal to establish a reasonable default, state the default and
-move the task forward. Use research, source review, existing task memory, or a
-draft artifact before asking the user to decide secondary structure, style, or
-taxonomy.
-
-For product, website, document, or tutorial tasks, theme, target audience, and
-content shape are usually enough to advance. Do not ask whether the work is for
-private or public use, directory or learning path, or similar secondary product
-choices when those choices can be handled as adjustable defaults in the draft.
-
-Use the framework silently as a reasoning aid. Expose the reasoning only when a
-decision requires approval, the task is blocked, or the user asks why.
-
-Do not turn this framework into a visible checklist. A normal turn should still
-use the smallest useful output for the current phase.
-
-## GoalPilot Loop
-
-The Goal side understands the work:
-
-- What is the real goal?
-- Which task owns the current work: parent, child, successor, or new task?
-- Is the current boundary clear enough to act?
-- Would source review, web research, existing files, or prior task memory answer
-  the uncertainty better than asking the user?
-- What would count as success or acceptable progress?
-- What is uncertain: goal, scope, evidence, execution, risk, or ownership?
-- What blockers, dependencies, pending decisions, deadlines, sources, files, or
-  work habits materially affect the next move?
-- Is the current context clean, or is it contaminated by another task, stale
-  prompt, unrelated selected file, or previous conversation?
-
-The Pilot side chooses the movement:
-
-- Should the Agent clarify, research, shape, decompose, select a next task,
-  execute, verify, persist, hand off, or pause?
-- What is the smallest useful next movement?
-- Does the movement need user confirmation before changing durable state?
-- Does the movement need a task file, Decision, Task Record, source, artifact,
-  or only continued discussion?
-- After the movement, should the Agent stay on this task, return to the parent,
-  enter a child task, switch to a successor, or stop?
-
-## Task Situation Map
-
-When the next movement is not obvious, classify the current situation before
-choosing a movement:
-
-- Fuzzy intent: the user has a possible goal, but task ownership, outcome, or
-  scope is not clear.
-- Captured task: the task exists, but goal, scope, next step, or acceptance
-  standard is incomplete.
-- Project needing decomposition: the task is too broad for one execution loop
-  and needs independent child tasks before execution.
-- Project with existing children: continue or adjust existing children before
-  creating another decomposition.
-- Child task needing clarification: the child is selected, but its own goal,
-  scope, success standard, or parent constraint is not clear.
-- Research-dependent task: useful progress depends on outside facts, product
-  examples, current docs, source review, or comparable references.
-- Executable task: the task has enough context, next step, permissions, and
-  criteria to act.
-- Blocked or waiting task: progress depends on a blocker, external wait,
-  dependency, missing source, or pending Decision.
-- Verification or closeout: work exists and must be checked against criteria,
-  risk, evidence, and user intent before completion.
-- Handoff or next task: the current task has reached a stable pause, closeout,
-  or successor boundary.
-- Scheduled, event-triggered, or routine task: advancement must preserve the
-  trigger, cadence, maintenance scope, and record cadence before acting.
-
-## Advancement Moves
-
-Choose one primary movement per turn or run:
-
-- Clarify: ask for the missing information that blocks useful progress.
-- Research: gather or request evidence from web, files, docs, sources, or
-  connectors before asking the user to decide details the Agent can investigate.
-- Shape: turn rough intent into goal, scope, acceptance criteria, next step, or
-  constraints.
-- Decompose: propose independent child tasks for a project-sized task.
-- Select next task: identify the existing child or successor that should be
-  entered next.
-- Execute: perform the smallest useful task-bound action under the operating
-  principles.
-- Verify: compare evidence against criteria, risks, blockers, and user intent.
-- Persist: update the smallest durable surface required for future recovery.
-- Handoff: preserve enough context for another task, child task, Agent, or
-  future session to continue safely.
-- Pause: stop for a blocker, dependency, missing context, pending Decision, or
-  user confirmation.
-
-## Situation To Default Move
-
-Use this map as a starting point, then adjust for task state, user intent, risk,
-and applicable process templates:
-
-| Situation | Default movement | Check before moving |
+| Layer | Purpose | Load rule |
 | --- | --- | --- |
-| Fuzzy intent | Clarify or Shape | Is there enough signal to create or update a task? |
-| Captured task missing goal, scope, criteria, or next step | Shape | Which missing field or tightly related set blocks useful progress? |
-| Product, website, document, or tutorial task with theme, audience, and content shape | Research or Shape | Can sources, examples, or a draft answer the remaining uncertainty? |
-| Project needing decomposition | Decompose | Is the task too broad for one execution loop? |
-| Project with existing children | Select next task or Verify | Are existing children still the right structure? |
-| Child task needing clarification | Clarify or Shape | Is the child boundary clean and parent-aligned? |
-| Research-dependent task | Research | What source or tool should be used before asking the user? |
-| Executable task | Execute | Are context, permissions, and acceptance criteria sufficient? |
-| Blocked or waiting task | Pause or surface Decision | What exact blocker, dependency, or approval prevents progress? |
-| Verification or closeout | Verify | What evidence proves or disproves completion? |
-| Handoff or next task | Persist/Handoff or Select next task | What minimal recovery context must survive the switch? |
-| Scheduled, event-triggered, or routine task | Shape or Execute | Are trigger, cadence, scope, and record cadence clear? |
+| Memory | Long-term task facts, user corrections, Work Habits, Task.md, Task Records, sources. | Retrieve only relevant memory; do not dump everything. |
+| GoalPilot | Always-loaded task routing, movement choice, context cleanliness, recovery posture. | Always loaded. |
+| Scoped Rules | Project, task-type, folder, file, source, or child-task local constraints. | Load only when scope matches. |
+| Skills / Flows | Reusable workflows: research, decomposition, execution, closeout, context refresh, review. | Load by phase or explicit user request. |
+| Tools / Runtimes | Codex CLI, Claude Code, Agent API, MCP, connectors, Taskplane write services. | Use when the chosen movement needs them. |
+| Hooks / Gates | Deterministic constraints: confirmation, write validation, context-clear readiness, state transitions. | Always enforce in code; never rely on model memory. |
+| Decision Agents | Bounded semantic judgment by CLI, API, verifier, or subagent. | Use only when rules are insufficient. |
+| Eval / Review | Feedback loops, tests, run verification, user corrections, failure review. | Run before closeout and after meaningful failures. |
 
-The map is not a script. If a smaller movement would reduce uncertainty or
-avoid unnecessary structure, choose the smaller movement.
+If something must always happen, implement it as a hook/gate. Do not leave it
+only in prose.
 
-## Research Guidance
+## Goal And Pilot Loop
 
-Use Research when the task depends on current facts, public documentation,
-market or product examples, implementation references, or source material that
-the Agent can inspect more reliably than the user can describe from memory.
+Goal: understand the work.
 
-Research may use web search, source ingestion, MCP/connectors, local files,
-confirmed task sources, or the selected Agent CLI runtime's native read-only
-research capabilities. Taskplane-managed tools and official CLI-native tools are
-separate capability layers; do not downgrade a capable CLI just because
-Taskplane did not inject a matching product-owned tool.
+- What is the real goal and owner task: parent, child, successor, or new task?
+- Is the boundary clear enough to act?
+- What would count as success or acceptable progress?
+- Which uncertainty matters: goal, scope, evidence, execution, risk, ownership,
+  blocker, dependency, source, file, or decision?
+- Can source review, web research, files, task memory, or runtime tools answer
+  the uncertainty better than asking the user?
+- Is the current context clean, or contaminated by another task, stale prompt,
+  unrelated selected file, or previous conversation?
 
-If a live web, connector, or source tool is truly unavailable, do not invent
-citations or ask the user to make secondary product choices. State the missing
-research source as the next action and still produce a best-effort draft from
-available context.
+Pilot: choose the movement.
 
-For website, tutorial, documentation, and product-planning tasks, the default
-after theme, audience, and content shape are known is Research or Shape, not
-Clarify. A good first movement is often: summarize the assumed positioning,
-identify useful sources to inspect, propose first-pass scope/non-goals, and
-name the next research or build action.
+- Clarify, research, shape, decompose, select next task, execute, verify,
+  persist, hand off, or pause?
+- What is the smallest useful next movement?
+- Which on-demand rule, skill, runtime, or hook applies?
+- Does durable state change require confirmation?
+- After this movement, stay on this task, enter a child, return to parent,
+  switch to successor, or stop?
 
-## Decomposition Guidance
+## Situation Map
 
-Decompose when the task is project-sized, has multiple independent outcomes, or
-cannot be executed safely as one task.
+| Situation | Default movement | Load next |
+| --- | --- | --- |
+| Fuzzy intent | Clarify or Shape | Intake / task creation rules if becoming durable. |
+| Existing task missing goal, scope, criteria, or next step | Shape | Output contract if responding; memory spec if persisting. |
+| Product, website, document, or tutorial with theme, audience, content shape | Research or Shape | Source rules, output contract, or execution rules as needed. |
+| Project too broad for one run | Decompose | Decomposition flow; user confirmation before child creation. |
+| Project with existing children | Select next task or Verify | Subtask start evaluation; handoff/memory rules if switching. |
+| Child task active | Shape or Execute | Child-task scoped rules; do not re-plan parent unless boundary is wrong. |
+| Research-dependent task | Research | Source rules and selected runtime/tool capabilities. |
+| Executable task | Execute | Agent operating principles and runtime/tool rules. |
+| Blocked, waiting, risky, or decision-bound | Pause or Decision | Decision/checkpoint hooks. |
+| Work produced | Verify | Verification/review rules. |
+| Stable pause, closeout, or task switch | Persist or Handoff | Task memory spec and context-refresh rules. |
 
-Do not decompose when one clarification, one next step, or one execution run can
-make meaningful progress.
+This map is a starting point, not a script.
 
-Child tasks should be large enough to own a goal, acceptance criterion, and
-dependency. Do not split into tiny implementation chores unless the user asks,
-the evidence demands it, or a process template justifies it.
+## On-Demand References
 
-Before creating real child tasks, produce a draft and require confirmation.
-When children already exist, advance or adjust them before proposing another
-full decomposition.
+GoalPilot chooses when these documents or flows matter:
 
-## Subtask Advancement Guidance
+- Agent Operating Principles: load for concrete execution, runtime runs,
+  subagents, tool use, state mutation, and completion claims.
+- Agent Output Contract: load when rendering chat, progress cards, drafts,
+  proposals, run summaries, verification results, or user-facing files.
+- Task Memory Spec: load when reading/writing task memory, switching tasks,
+  clearing context, closing a phase, or deciding if recovery is sufficient.
+- Source / evidence rules: load when research, citations, source contexts,
+  freshness, credibility, or external facts affect the task.
+- Native Agent Runtime Orchestration: load when changing CLI/API runtime
+  architecture, Write Intent, DecisionBackend, progress projection, or adapter
+  boundaries.
+- Work Habits: retrieve only applicable confirmed habits; do not treat habits
+  as global prompt bulk.
 
-Before entering or advancing a child task, check:
+## Persistence And Write Intent
 
-- The selected child belongs to the expected parent or successor chain.
-- The child is open and not blocked, waiting, dependency-bound, or gated by a
-  pending Decision.
-- Parent constraints, shared risks, and relevant decisions are known.
-- Previous-task handoff is present when it materially affects the child.
-- The runtime context is clean and sufficient for the child.
+Conversation is temporary working context. Persist only when the information
+changes future recovery, execution, evidence, or user decisions.
 
-When advancing a child task, focus on the child. Do not re-plan the parent or
-reopen decomposition unless the child boundary is wrong or parent context makes
-the child unsafe.
+Durable writes must go through Taskplane services and confirmation gates where
+required. Runtime output can propose Write Intent; it cannot directly mutate
+Taskplane structured data.
 
-If the user only asks to start or continue, use the child title, summary, task
-memory, and parent context to propose a reasonable first move. Ask only when the
-task state is too empty to advance usefully, the missing information changes a
-key risk, or it would materially alter the deliverable boundary.
+Use the smallest durable surface:
 
-For website or tutorial child tasks with enough intent, the default next move is
-to produce a first-pass positioning, page/content scope, non-goals, and the next
-research or build action. Do not keep the task in clarification mode.
+- Structured task state for current status, hierarchy, blockers, dependencies,
+  criteria, and next step.
+- Task.md for concise recovery.
+- Task Records for handoff, closeout, corrections, option rationale, failure
+  review, or source digest.
+- Source Context for evidence and research material.
+- Decisions for user approval boundaries.
+- Artifacts and task files for work products.
 
-## Verification, Closeout, And Next Task
+## Context And Task Switching
 
-Do not treat generated text, a run result, or an apparent next task as proof
-that the current task is complete.
+Before switching tasks, advancing a child, clearing context, or starting a new
+conversation, check context cleanliness before context sufficiency.
 
-Before closeout, verify the current task against acceptance criteria, user
-intent, blockers, dependencies, pending decisions, risk level, produced files,
-sources, and evidence.
+If context is contaminated, rebuild it around the target task. If useful
+handoff information would be lost, persist the smallest recovery note first. Do
+not carry task A chat history into task B as if it were task B memory.
 
-If work should continue, choose the next movement. If work should pause,
-preserve only the recovery context needed to resume. If another task should
-start, decide whether it is an existing child, successor, or proposed follow-up.
+## Verification And Review
 
-Switch tasks only after useful handoff information has been preserved or after
-the framework determines that no durable handoff is needed.
+Do not treat generated text, a run result, or an obvious next task as proof that
+the current task is complete.
 
-## Minimal Persistence
+Before closeout, verify against acceptance criteria, user intent, blockers,
+dependencies, pending decisions, risk, produced files, sources, and evidence.
 
-Do not write durable state just because a conversation happened.
-
-Use the Task Memory Spec when advancement changes goal, scope, next step,
-acceptance criteria, decision state, blocker or dependency state, important
-files, source meaning, verification result, handoff context, or future recovery
-path.
-
-Use discussion only when the information is exploratory, duplicated, or not yet
-actionable.
+Use review/eval after failures, repeated user corrections, risky writes,
+runtime adapter changes, or task-completion decisions. Feed durable lessons
+back into the right layer: memory, scoped rule, skill, hook, or test.
 
 ## Anti-Patterns
 
-- Executing before the goal, boundary, or required permission is clear.
-- Re-decomposing a parent when the user is trying to advance a child.
-- Creating many small subtasks when one larger task can own the outcome.
+- Loading every spec for every turn.
+- Asking for secondary preferences instead of drafting a reversible default.
+- Executing before goal, boundary, context, or permission is sufficient.
+- Re-decomposing a parent when the user is advancing a child.
+- Creating tiny subtasks when one larger task can own the outcome.
 - Writing Task Records for ordinary chat turns.
-- Completing the current task because a next task is obvious.
-- Carrying stale context from one task into another without a handoff check.
-- Showing the GoalPilot questions as a visible checklist in normal chat.
+- Completing a task because a next task is obvious.
+- Keeping must-follow rules only in prompt text instead of hooks.

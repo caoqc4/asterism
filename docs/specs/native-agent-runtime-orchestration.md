@@ -2,6 +2,10 @@
 
 Document id: `taskplane.native-agent-runtime-orchestration.v1`
 Owner: Taskplane product architecture
+Layer: architecture spec / runtime orchestration
+Load: runtime adapter changes, Write Intent, DecisionBackend, progress projection, CLI/API boundaries
+Scope: native Agent CLI, future Agent API, Taskplane control and decision layers
+Authority: implementation-guiding; product state authority and write gates are required
 Status: Architecture decision, implementation-guiding
 
 ## Purpose
@@ -52,6 +56,8 @@ to propose structured write intent.
 
 - `taskplane.task-advancement-framework.v1` chooses the next kind of movement:
   ask, research, shape, decompose, execute, verify, persist, hand off, or pause.
+- `taskplane.agent-operating-principles.v1` loads for execution-level rules,
+  runtime runs, tools, subagents, state mutation, and completion claims.
 - `taskplane.agent-output-contract.v1` decides how the chosen movement appears
   in chat, progress cards, drafts, run detail, and memory proposals.
 - `taskplane.task-memory-spec.v1` defines durable memory surfaces and write

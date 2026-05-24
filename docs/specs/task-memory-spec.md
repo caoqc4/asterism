@@ -2,6 +2,10 @@
 
 Document id: `taskplane.task-memory-spec.v1`
 Owner: Taskplane product design
+Layer: skill / memory rules plus hook-backed gates
+Load: task resume, memory read/write, task switch, context clear, closeout, handoff, recovery sufficiency
+Scope: durable task memory and recovery
+Authority: required when loaded; deterministic memory gates enforce must-follow rules
 Status: Product runtime specification
 
 ## Purpose

@@ -11,12 +11,18 @@ Public developer documentation for Taskplane.
 - [Testing](TESTING.md)
 - [Releases](RELEASES.md)
 
-## Core Specs
+## Runtime Specs
 
-- [GoalPilot task advancement framework](specs/goalpilot-task-advancement-framework.md)
-- [Agent output contract](specs/agent-output-contract.md)
-- [Task memory spec](specs/task-memory-spec.md)
-- [Native Agent runtime orchestration](specs/native-agent-runtime-orchestration.md)
+Taskplane specs are layered by load behavior:
+
+- Always-loaded router: [GoalPilot task advancement framework](specs/goalpilot-task-advancement-framework.md)
+- Phase-loaded execution rules: [Taskplane Agent Operating Principles](specs/agent-operating-principles.md)
+- Phase-loaded rules: [Agent output contract](specs/agent-output-contract.md)
+- Phase-loaded memory rules and gates: [Task memory spec](specs/task-memory-spec.md)
+- Architecture spec: [Native Agent runtime orchestration](specs/native-agent-runtime-orchestration.md)
+
+GoalPilot decides the movement and indexes the relevant rule set. Do not treat
+every spec as mandatory prompt context for every Agent turn.
 
 ## Documentation Scope
 
