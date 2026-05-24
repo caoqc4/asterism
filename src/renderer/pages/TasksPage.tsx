@@ -1576,7 +1576,18 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const directChildTasks = selectedTask
     ? orderedChildrenForTask(selectedTask, allTasks)
     : [];
-  const selectedProjectVerification = selectedTask && selectedTaskDetail && selectedEffectiveType === 'project'
+  const selectedTaskVerificationAdvancement = selectedTask && selectedTaskDetail
+    ? evaluateTaskAdvancement({
+        entrypoint: 'selected_task_verification',
+        hasTaskContext: true,
+        prompt: 'selected_task_verification',
+        task: selectedTaskDetail,
+      })
+    : null;
+  const selectedProjectVerification = selectedTask
+    && selectedTaskDetail
+    && selectedEffectiveType === 'project'
+    && selectedTaskVerificationAdvancement?.route !== 'blocked'
     ? evaluateRuntimeVerification({
         mode: 'project',
         task: selectedTaskDetail,

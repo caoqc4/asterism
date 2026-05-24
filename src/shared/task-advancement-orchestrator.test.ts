@@ -193,6 +193,26 @@ describe('evaluateTaskAdvancement', () => {
     expect(evaluation.requiredGates).toContain('task_completion');
     expect(evaluation.requiredGates).toContain('operator_confirmation');
   });
+
+  it('routes selected task verification as a local project verification check', () => {
+    const evaluation = evaluateTaskAdvancement({
+      entrypoint: 'selected_task_verification',
+      hasTaskContext: true,
+      prompt: '检查当前项目任务状态。',
+      task: buildTask({
+        childTaskIds: ['child_1'],
+        title: '官网改版项目',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      confirmationRequired: false,
+      movement: 'verify',
+      route: 'local_rule',
+      shouldStartRuntime: false,
+    });
+    expect(evaluation.requiredGates).toContain('project_verification');
+  });
 });
 
 function buildTask(partial: Partial<TaskDetail> = {}): TaskDetail {

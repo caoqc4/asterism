@@ -15,6 +15,7 @@ export type TaskAdvancementEntrypoint =
   | 'context_refresh'
   | 'phase_closeout'
   | 'project_decompose'
+  | 'selected_task_verification'
   | 'task_completion_check'
   | 'right_panel_chat';
 
@@ -178,6 +179,25 @@ export function evaluateTaskAdvancement(params: {
       ],
       route: 'local_rule',
       userMessage: '先完成验收检查；如有风险，由用户确认等待或覆盖完成。',
+    });
+  }
+
+  if (params.entrypoint === 'selected_task_verification' && hasTaskContext) {
+    return buildEvaluation({
+      confirmationRequired: false,
+      contextReadiness: null,
+      entrypoint: params.entrypoint,
+      intake: null,
+      movement: 'verify',
+      promptMode: 'plain_user',
+      reason: 'Selected task verification is a local product check for readiness, completion risk, child progress, decisions, and evidence state.',
+      requiredGates: [
+        'simplicity_check',
+        'runtime_context_assembly',
+        'project_verification',
+      ],
+      route: 'local_rule',
+      userMessage: '已在本地检查当前任务的结构、进度、决策和证据状态。',
     });
   }
 

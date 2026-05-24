@@ -599,11 +599,12 @@ Current implementation:
 - Task completion confirmation calls the shared decision before the modal
   records passed, waiting, or override-completed outcomes through existing
   verification and operator-confirmation gates.
+- Selected task project verification calls the shared decision before rendering
+  local project-readiness evidence in the task detail surface.
 
 Remaining work:
 
-- Extend the orchestrator across selected-task verification and non-UI
-  writeback flows.
+- Extend the orchestrator across non-UI writeback flows.
 - Move decomposition drafting behind the same selected-runtime/DecisionBackend
   abstraction used by ordinary task execution.
 
