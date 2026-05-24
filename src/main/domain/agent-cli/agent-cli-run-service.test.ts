@@ -359,7 +359,7 @@ describe('AgentCliRunService', () => {
       input: expect.stringContaining('This is a Taskplane child-task advancement request'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.stringContaining('Do not create a TASKPLANE_DECOMPOSITION JSON block.'),
+      input: expect.stringContaining('Do not create a subtask.propose write-intent block.'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('Do not keep the task in clarification mode'),
@@ -584,7 +584,10 @@ describe('AgentCliRunService', () => {
     });
 
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.stringContaining('TASKPLANE_DECOMPOSITION'),
+      input: expect.stringContaining('TASKPLANE_WRITE_INTENTS'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('subtask.propose'),
     }));
   });
 

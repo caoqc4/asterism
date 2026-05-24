@@ -707,6 +707,10 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.45;
 }
+.panel-agent-run-inline .panel-agent-run-detail {
+  margin-top: 3px;
+  color: var(--ink-5);
+}
 .panel-agent-run-inline .btn {
   margin-top: 7px;
 }

@@ -39,6 +39,10 @@ import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
 import { isTaskMdPath, isTaskRecordPath } from '@shared/task-memory-path';
 import { evaluateRuntimeVerification } from '@shared/runtime-verification';
 import {
+  extractTaskplaneWriteIntentsFromText,
+  validateTaskplaneWriteIntent,
+} from '@shared/taskplane-write-intent';
+import {
   classifyCreateTaskFileSurface,
   normalizeCreateTaskFileInput,
   type RuntimeSurfaceKind,
@@ -62,6 +66,10 @@ import {
   type TaskExecutionType,
 } from '../lib/taskAttributes';
 import {
+  deriveAgentCliProgress,
+  type AgentCliProgressSnapshot,
+} from '../lib/agentCliProgress';
+import {
   guardDurablePanelAction,
   guardTaskCapture,
   guardTaskStateTransition,
@@ -73,6 +81,7 @@ type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
 type ActiveAgentCliRunState = {
   allowDecompositionDraft?: boolean;
+  progress?: AgentCliProgressSnapshot;
   runId: string;
   runtimeId: AgentCliRuntimeId;
   runtimeLabel: string;
@@ -815,7 +824,7 @@ function formatChildTaskConversationRunMessage(output: string): string {
 }
 
 function parseAgentCliDecompositionDraft(output: string, runId: string): TaskDecompositionDraft | null {
-  if (!/TASKPLANE_DECOMPOSITION|子任务草案|拆解/i.test(output)) return null;
+  if (!/TASKPLANE_DECOMPOSITION|TASKPLANE_WRITE_INTENT|subtask\.propose|子任务草案|拆解/i.test(output)) return null;
   const jsonCandidates = [
     ...Array.from(output.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)).map((match) => match[1] ?? ''),
     output,
@@ -864,41 +873,20 @@ function buildChildTaskConversationPrompt(params: {
 }
 
 function parseDecompositionJson(value: string, runId: string): TaskDecompositionDraft | null {
-  const start = value.indexOf('{');
-  const end = value.lastIndexOf('}');
-  if (start < 0 || end <= start) return null;
-  try {
-    const parsed = JSON.parse(value.slice(start, end + 1)) as {
-      type?: unknown;
-      review?: unknown;
-      nextStep?: unknown;
-      subtasks?: Array<{
-        acceptanceCriteria?: unknown;
-        dependency?: unknown;
-        summary?: unknown;
-        title?: unknown;
-      }>;
-    };
-    if (parsed.type !== 'TASKPLANE_DECOMPOSITION' || !Array.isArray(parsed.subtasks)) return null;
-    const subtasks = parsed.subtasks
-      .map((item) => ({
-        acceptanceCriteria: normalizeDraftText(item.acceptanceCriteria) ?? '确认该环节交付物满足父任务目标。',
-        dependency: normalizeDraftText(item.dependency),
-        summary: normalizeDraftText(item.summary) ?? '',
-        title: normalizeDraftText(item.title) ?? '',
-      }))
-      .filter((item) => item.title && item.summary)
-      .slice(0, 8);
-    if (subtasks.length < 2) return null;
-    return {
-      nextStep: normalizeDraftText(parsed.nextStep) ?? '确认后创建这些子任务。',
-      review: normalizeDraftText(parsed.review) ?? '已按大块阶段拆解，确认后可创建子任务。',
-      runId,
-      subtasks,
-    };
-  } catch {
-    return null;
-  }
+  const intent = extractTaskplaneWriteIntentsFromText({
+    evidenceRunId: runId,
+    taskId: 'current',
+    text: value,
+  }).find((candidate) => candidate.type === 'subtask.propose');
+  if (!intent || intent.type !== 'subtask.propose') return null;
+  const validation = validateTaskplaneWriteIntent(intent);
+  if (validation.status !== 'ready') return null;
+  return {
+    nextStep: intent.nextStep?.trim() || '确认后创建这些子任务。',
+    review: intent.review?.trim() || '已按大块阶段拆解，确认后可创建子任务。',
+    runId,
+    subtasks: intent.subtasks,
+  };
 }
 
 function parseDecompositionBullets(output: string, runId: string): TaskDecompositionDraft | null {
@@ -1257,6 +1245,33 @@ export function RightPanel({
   useEffect(() => {
     activeAgentCliRunRef.current = activeAgentCliRun;
   }, [activeAgentCliRun]);
+
+  useEffect(() => {
+    const runId = activeAgentCliRun?.runId;
+    if (!runId || !window.api?.getRunDetail) return undefined;
+
+    let cancelled = false;
+    const refreshProgress = async () => {
+      const detail = await window.api!.getRunDetail!(runId).catch(() => null);
+      if (cancelled) return;
+      const progress = deriveAgentCliProgress(detail);
+      setActiveAgentCliRun((current) => (
+        current?.runId === runId
+          ? { ...current, progress }
+          : current
+      ));
+    };
+
+    void refreshProgress();
+    const timer = window.setInterval(() => {
+      void refreshProgress();
+    }, 1400);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [activeAgentCliRun?.runId]);
 
   function patchSession(patch: PanelSessionPatch) {
     dispatchSession({ type: 'patch', patch });
@@ -2982,7 +2997,10 @@ export function RightPanel({
             <span className="panel-agent-run-pulse" />
             <div>
               <strong>任务 Agent 正在执行</strong>
-              <p>完成后会把结果整理进任务动态。</p>
+              <p>{activeTaskAgentCliRun.progress?.label ?? '正在准备任务上下文...'}</p>
+              {activeTaskAgentCliRun.progress?.detail && (
+                <p className="panel-agent-run-detail">{activeTaskAgentCliRun.progress.detail}</p>
+              )}
               <button
                 className={`btn sm ghost${activeTaskAgentCliRun.status === 'cancelling' ? ' disabled' : ''}`}
                 onClick={() => void cancelActiveAgentCliRun()}

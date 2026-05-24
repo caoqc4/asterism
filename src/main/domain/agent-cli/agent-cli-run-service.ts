@@ -1381,7 +1381,7 @@ function buildNativeChildTaskContextInstructions(): string {
     'Taskplane context: the selected task is a child task.',
     'Treat the user request as the source of intent; do not rewrite it or ask secondary preference questions when the task title, summary, memory, or parent context gives enough signal to move forward.',
     'Focus on the child task boundary. Produce the smallest useful advancement: a first-pass goal, scope, non-goals, research/build action, or concrete next step.',
-    'Do not create a TASKPLANE_DECOMPOSITION JSON block unless the user explicitly asks to split this child task further.',
+    'Do not create a subtask.propose write-intent block unless the user explicitly asks to split this child task further.',
     'Ask only when the missing information blocks useful progress, changes a key risk, or materially changes the deliverable boundary.',
   ].join(' ');
 }
@@ -1555,9 +1555,9 @@ function buildTaskDecompositionPromptInstructions(prompt: string): string | null
     'The plan should contain 3-6 large-grained subtasks/phases. Avoid tiny implementation chores.',
     'Each subtask must have: title, summary, acceptanceCriteria, dependency.',
     'If one key product boundary is missing, still propose a sensible draft and put the question in nextStep.',
-    'End with exactly one fenced JSON block using this shape:',
+    'End with exactly one fenced JSON block using this Taskplane Write Intent shape:',
     '```json',
-    '{"type":"TASKPLANE_DECOMPOSITION","subtasks":[{"title":"...","summary":"...","acceptanceCriteria":"...","dependency":"..."}],"review":"...","nextStep":"..."}',
+    '{"type":"TASKPLANE_WRITE_INTENTS","intents":[{"type":"subtask.propose","subtasks":[{"title":"...","summary":"...","acceptanceCriteria":"...","dependency":"..."}],"review":"...","nextStep":"..."}]}',
     '```',
   ].join('\n');
 }
@@ -1567,7 +1567,7 @@ function buildChildTaskAdvancePromptInstructions(prompt: string): string | null 
   return [
     'This is a Taskplane child-task advancement request, not a decomposition request and not a parent-task review.',
     'Focus on the current child task title, summary, and user request.',
-    'Do not create a TASKPLANE_DECOMPOSITION JSON block.',
+    'Do not create a subtask.propose write-intent block.',
     'Do not keep the task in clarification mode when the user has already supplied a concrete direction.',
     'If the user only says to start or advance the child task, use the task title and summary to propose a reasonable first move; ask for their initial idea only when the task state is too empty to advance usefully.',
     'If the user gives a concrete idea, establish a reasonable default and move the task forward with a first-pass boundary, useful research/action step, or draft artifact.',

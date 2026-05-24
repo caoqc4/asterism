@@ -1,0 +1,114 @@
+import type { RunDetailRecord, RunStepRecord } from '@shared/types/run';
+
+export type AgentCliProgressState =
+  | 'preparing'
+  | 'researching'
+  | 'using_tool'
+  | 'reading_workspace'
+  | 'reasoning'
+  | 'verifying'
+  | 'completed'
+  | 'failed';
+
+export type AgentCliProgressSnapshot = {
+  detail?: string;
+  label: string;
+  state: AgentCliProgressState;
+};
+
+type MinimalRunDetail = Pick<RunDetailRecord, 'failureReason' | 'status' | 'steps'>;
+
+export function deriveAgentCliProgress(detail: MinimalRunDetail | null | undefined): AgentCliProgressSnapshot {
+  if (!detail) {
+    return {
+      label: '正在准备任务上下文...',
+      state: 'preparing',
+    };
+  }
+  if (detail.status === 'failed') {
+    return {
+      detail: detail.failureReason ?? undefined,
+      label: '任务 Agent 运行失败，正在等待结果整理。',
+      state: 'failed',
+    };
+  }
+  if (detail.status === 'completed') {
+    return {
+      label: '任务 Agent 已完成，正在整理结果。',
+      state: 'completed',
+    };
+  }
+
+  const latestStep = [...(detail.steps ?? [])]
+    .sort((left, right) => left.index - right.index)
+    .at(-1);
+  if (!latestStep) {
+    return {
+      label: '正在准备任务上下文...',
+      state: 'preparing',
+    };
+  }
+  return deriveAgentCliProgressFromStep(latestStep);
+}
+
+function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'output' | 'status' | 'title'>): AgentCliProgressSnapshot {
+  const title = step.title.trim();
+  const output = step.output?.trim() ?? '';
+  const haystack = `${title}\n${output}`.toLowerCase();
+
+  if (/验收|verification|verify|check/.test(haystack)) {
+    return {
+      label: '正在做结果验收和收尾整理。',
+      state: 'verifying',
+    };
+  }
+  if (/任务记忆|memory/.test(haystack)) {
+    return {
+      label: '正在整理任务记忆建议。',
+      state: 'verifying',
+    };
+  }
+  if (/completed|完成/.test(haystack) && step.kind === 'model') {
+    return {
+      label: 'Runtime 已返回结果，正在整理到任务动态。',
+      state: 'verifying',
+    };
+  }
+  if (/联网|web|search|browse|source|external|url|http/.test(haystack)) {
+    return {
+      detail: compactStepDetail(output),
+      label: '正在使用原生 CLI 联网检索或整理来源。',
+      state: 'researching',
+    };
+  }
+  if (/read|grep|rg|file|workspace|ls|cat|sed|bash|shell|command/.test(haystack)) {
+    return {
+      detail: compactStepDetail(output),
+      label: '正在读取工作区或运行原生 CLI 工具。',
+      state: 'reading_workspace',
+    };
+  }
+  if (/tool|call|mcp|hook|原生事件/.test(haystack) || step.kind === 'tool_call' || step.kind === 'tool_result') {
+    return {
+      detail: compactStepDetail(output),
+      label: '正在使用原生 CLI 工具推进任务。',
+      state: 'using_tool',
+    };
+  }
+  if (/目标契约|accepted|接收|run accepted/.test(haystack)) {
+    return {
+      label: 'Runtime 已接收任务，正在开始执行。',
+      state: 'reasoning',
+    };
+  }
+  return {
+    label: 'Runtime 正在思考并推进任务。',
+    state: 'reasoning',
+  };
+}
+
+function compactStepDetail(output: string): string | undefined {
+  const firstLine = output.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
+  if (!firstLine) return undefined;
+  return firstLine.length > 90 ? `${firstLine.slice(0, 87)}...` : firstLine;
+}
