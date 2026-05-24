@@ -38,8 +38,10 @@ Taskplane has three non-transferable responsibilities:
    produced evidence, which sources were used, and who confirmed durable writes.
 
 Native CLIs already provide mature reasoning, research, code navigation, and
-tool execution. Taskplane should not rebuild that execution loop unless it has
-a product-specific reason.
+tool execution. Codex Goal Mode is an example of this: it is a runtime-native
+persistent objective loop, not a replacement for Taskplane task state.
+Taskplane should not rebuild mature execution loops unless it has a
+product-specific reason.
 
 The minimal correct architecture is therefore:
 
@@ -71,6 +73,26 @@ to propose structured write intent.
 If this spec conflicts with a runtime's convenience behavior, Taskplane's state
 authority wins. Runtime-native features may assist execution or judgment, but
 they do not replace Taskplane's write, confirmation, or verification gates.
+
+## Codex Goal Mode Relationship
+
+Codex `/goal` is an executor capability: a persistent objective attached to a
+Codex thread or CLI session. GoalPilot is the product control layer above that
+capability. Therefore:
+
+- Taskplane `/goal` sets the durable Taskplane Task Goal and acceptance
+  conditions.
+- Codex native Goal Mode can later implement a long-running execution run when
+  the selected adapter proves command shape, state reflection, progress,
+  cancellation, memory, source-of-truth, and packaged smoke evidence.
+- A runtime-native goal result is still evidence. Taskplane must verify it,
+  extract Write Intent, and persist through Taskplane services.
+- Native goal forwarding must stay explicit; product `/goal` must not silently
+  become Codex `/goal`.
+
+As of the current adapter policy, Codex CLI `0.133.0+` is modeled as having the
+native goal capability available, but Taskplane passthrough remains closed until
+the native goal readiness gate is satisfied.
 
 ## Architecture Layers
 
@@ -120,7 +142,7 @@ The runtime layer runs AI work and returns evidence:
 - terminal output and event evidence.
 
 Runtime adapters must not decide durable task state. They may provide output,
-events, proposed intents, and execution evidence.
+events, proposed intents, persistent goal loop evidence, and execution evidence.
 
 ## Product Rule Skills And Hooks
 
@@ -158,6 +180,9 @@ Taskplane currently has a working native CLI execution backend:
 - Taskplane injects task state, Task.md previews, Source Context previews,
   GoalPilot guidance, capability policy, and a Run Goal Contract as surrounding
   context.
+- Codex CLI native Goal Mode is detected as an adapter capability for
+  `0.133.0+`; older Codex versions are shown as needing an update, and Claude
+  native goal mode remains unverified by the Taskplane adapter.
 - Runtime JSONL or stream-json output is parsed into Run steps when possible.
 - The right panel polls active native CLI runs and projects the latest Run step
   into compact progress states such as preparing, researching, reading
@@ -182,6 +207,9 @@ Taskplane currently has a working native CLI execution backend:
 
 Native CLI integration is not a complete product-grade Agent experience yet:
 
+- runtime-native goal passthrough is still gated; explicit `/codex goal`,
+  `/claude goal`, or `/runtime goal` requests are recorded as audit evidence
+  rather than forwarded until the readiness gate passes;
 - runtime progress projection is present, but it still relies on best-effort
   labels from parsed Run steps and should deepen its Codex JSONL and Claude
   stream-json schema mapping over time;

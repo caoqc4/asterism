@@ -41,6 +41,13 @@ describe('agent cli runtime status service', () => {
       executionSupport: 'manual_run',
       workload: 'idle',
       missingReason: 'Authentication is managed by Codex CLI; run codex login if execution reports a login error.',
+      capabilities: {
+        nativeGoalMode: {
+          availability: 'requires_update',
+          minimumVersion: '0.133.0',
+        },
+        supportsNativeGoalMode: false,
+      },
     });
     expect(status.runtimes.find((runtime) => runtime.id === 'claude')).toMatchObject({
       installed: false,
@@ -69,6 +76,35 @@ describe('agent cli runtime status service', () => {
       command: 'codex',
       executablePath: '/opt/homebrew/bin/codex',
       missingReason: null,
+      capabilities: {
+        nativeGoalMode: {
+          availability: 'requires_update',
+        },
+        supportsNativeGoalMode: false,
+      },
+    });
+  });
+
+  it('marks Codex native goal capability available only on the stabilized CLI version', async () => {
+    const service = new AgentCliRuntimeStatusService(async (command) => ({
+      authState: command === 'codex' ? 'ready' : 'unknown',
+      installed: command === 'codex',
+      version: command === 'codex' ? 'codex-cli 0.133.0' : null,
+    }));
+
+    const status = await service.getStatus();
+
+    expect(status.runtimes.find((runtime) => runtime.id === 'codex')).toMatchObject({
+      capabilities: {
+        nativeGoalMode: {
+          availability: 'available',
+          minimumVersion: '0.133.0',
+        },
+        supportsClearGoal: true,
+        supportsNativeGoalMode: true,
+        supportsPauseGoal: true,
+        supportsResumeGoal: true,
+      },
     });
   });
 

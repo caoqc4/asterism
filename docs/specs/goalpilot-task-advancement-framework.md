@@ -90,6 +90,7 @@ Pilot: choose the movement.
 | Child task active | Shape or Execute | Child-task scoped rules; do not re-plan parent unless boundary is wrong. |
 | Research-dependent task | Research | Source rules and selected runtime/tool capabilities. |
 | Executable task | Execute | Agent operating principles and runtime/tool rules. |
+| Long-running executable task with clear stop condition | Execute through persistent goal capability when available | Native runtime orchestration, run goal contract, verification gates. |
 | Blocked, waiting, risky, or decision-bound | Pause or Decision | Decision/checkpoint hooks. |
 | Work produced | Verify | Verification/review rules. |
 | Stable pause, closeout, or task switch | Persist or Handoff | Task memory spec and context-refresh rules. |
@@ -112,7 +113,8 @@ GoalPilot chooses when these documents or flows matter:
   become Write Intent, proposal cards, memory/source/decision updates, or
   feature impact audit entries.
 - Native Agent Runtime Orchestration: load when changing CLI/API runtime
-  architecture, DecisionBackend, progress projection, or adapter boundaries.
+  architecture, DecisionBackend, persistent goal capability, progress
+  projection, or adapter boundaries.
 - Work Habits: retrieve only applicable confirmed habits; do not treat habits
   as global prompt bulk.
 
@@ -166,4 +168,5 @@ back into the right layer: memory, scoped rule, skill, hook, or test.
 - Creating tiny subtasks when one larger task can own the outcome.
 - Writing Task Records for ordinary chat turns.
 - Completing a task because a next task is obvious.
+- Treating a runtime-native goal loop as Taskplane's source of truth.
 - Keeping must-follow rules only in prompt text instead of hooks.

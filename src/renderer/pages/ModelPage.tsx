@@ -711,7 +711,7 @@ function AgentCliRuntimeRow({
   const needsLogin = installed && runtime?.authState === 'needs_login';
   const rowState = ready ? 'ready' : brokenInstall ? 'error' : needsLogin ? 'needs-login' : installed ? 'needs-login' : 'missing';
   const statusLabel = ready ? '已登录' : brokenInstall ? '安装异常' : installed ? '需登录' : '未安装';
-  const nativeGoalLabel = runtime?.capabilities?.supportsNativeGoalMode ? 'Native Goal 可用' : 'Native Goal 关闭';
+  const nativeGoalLabel = nativeGoalCapabilityLabel(runtime?.capabilities?.nativeGoalMode?.availability);
   const detail = ready ? `${workloadLabel(runtime.workload)} · ${nativeGoalLabel}` : brokenInstall ? '需重新安装' : installed ? '等待登录' : '未检测到';
 
   return (
@@ -791,4 +791,11 @@ function workloadLabel(workload: 'idle' | 'running' | 'blocked') {
   if (workload === 'running') return '运行中';
   if (workload === 'blocked') return '受阻';
   return '空闲';
+}
+
+function nativeGoalCapabilityLabel(availability?: 'available' | 'requires_update' | 'unknown' | 'unsupported') {
+  if (availability === 'available') return 'Native Goal 已识别';
+  if (availability === 'requires_update') return 'Native Goal 需更新';
+  if (availability === 'unknown') return 'Native Goal 待确认';
+  return 'Native Goal 未验证';
 }

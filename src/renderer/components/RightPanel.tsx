@@ -1344,7 +1344,7 @@ export function RightPanel({
       const nextCapabilities = AGENT_CLI_PANEL_RUNTIMES.reduce<Record<AgentCliRuntimeId, AgentRuntimeAdapterCapabilities | null>>((acc, runtimeId) => {
         const runtime = status.agentCliRuntimeStatus?.runtimes.find((item) => item.id === runtimeId);
         acc[runtimeId] = runtime?.capabilities
-          ?? buildDefaultAgentCliRuntimeCapabilities(runtimeId, AGENT_CLI_PANEL_RUNTIME_LABELS[runtimeId]);
+          ?? buildDefaultAgentCliRuntimeCapabilities(runtimeId, AGENT_CLI_PANEL_RUNTIME_LABELS[runtimeId], runtime?.version ?? null);
         return acc;
       }, { claude: null, codex: null });
       setAgentCliAvailability(nextAvailability);
@@ -2899,10 +2899,15 @@ export function RightPanel({
             taskId: activeTaskId,
           }).catch(() => null)
         : null;
+      const nativeGoalStatusLine = nativeGoalDecision.supportsNativeGoalMode
+        ? `${runtimeLabel} native goal mode 已被 adapter 识别，但 Taskplane 透传入口尚未开放。`
+        : nativeGoalDecision.policy === 'runtime_requires_update'
+          ? `${runtimeLabel} native goal mode 需要更新 CLI 后才可用。`
+          : nativeGoalDecision.policy === 'native_goal_unverified'
+            ? `${runtimeLabel} native goal mode 仍待 adapter 确认。`
+            : `${runtimeLabel} native goal mode 尚未开启。`;
       return [
-        nativeGoalDecision.supportsNativeGoalMode
-          ? `${runtimeLabel} native goal mode 已被 adapter 声明，但 Taskplane 透传入口尚未开放。`
-          : `${runtimeLabel} native goal mode 尚未开启。`,
+        nativeGoalStatusLine,
         '',
         'Taskplane 已识别这是显式 runtime-native goal 请求，但本版本不会直接透传到底层 CLI，避免目标状态落在 Taskplane 会话之外。',
         auditRun ? `审计 Run: ${auditRun.id}` : null,

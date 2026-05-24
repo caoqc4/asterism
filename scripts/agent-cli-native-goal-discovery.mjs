@@ -20,8 +20,9 @@ const RUNTIME_ADAPTERS = {
       ['exec', '--help'],
     ],
     label: 'Codex CLI',
+    minimumNativeGoalVersion: '0.133.0',
     candidateExamples: [
-      'TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON=\'["exec","--sandbox","read-only","/goal inspect disposable goal support"]\'',
+      'TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON=\'["exec","--json","--sandbox","read-only","--enable","goals","/goal inspect disposable goal support"]\'',
     ],
   },
   claude: {
@@ -31,6 +32,7 @@ const RUNTIME_ADAPTERS = {
       ['--help'],
     ],
     label: 'Claude Code',
+    minimumNativeGoalVersion: 'adapter-not-verified',
     candidateExamples: [
       'TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON=\'["-p","/goal inspect disposable goal support","--permission-mode","plan","--output-format","text"]\'',
     ],
@@ -50,6 +52,7 @@ export function runAgentCliNativeGoalDiscovery() {
 
   const adapter = RUNTIME_ADAPTERS[RUNTIME];
   console.log(`label=${adapter.label}`);
+  console.log(`minimumNativeGoalVersion=${adapter.minimumNativeGoalVersion}`);
 
   for (const args of adapter.helpProbes) {
     const result = runCommand(adapter.command, args, { timeout: 10_000 });

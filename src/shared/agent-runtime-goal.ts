@@ -5,6 +5,18 @@ import type { TaskDetail, TimelineEventRecord } from './types/task.js';
 
 export type AgentRuntimeExecutionKind = 'cli' | 'api';
 
+export type NativeGoalModeAvailability =
+  | 'available'
+  | 'requires_update'
+  | 'unknown'
+  | 'unsupported';
+
+export type NativeGoalModeCapability = {
+  availability: NativeGoalModeAvailability;
+  minimumVersion: string | null;
+  reason: string;
+};
+
 export type AgentRuntimeAdapterCapabilities = {
   id: AgentCliRuntimeId | 'agent_api';
   label: string;
@@ -17,6 +29,7 @@ export type AgentRuntimeAdapterCapabilities = {
   supportsStructuredProgressEvents: boolean;
   supportsWorkspaceWrite: boolean;
   defaultPermissionMode: 'read_only' | 'plan' | 'workspace_write';
+  nativeGoalMode: NativeGoalModeCapability;
   commandRouting: {
     productOwned: string[];
     runtimeNative: string[];
@@ -60,7 +73,12 @@ export type RuntimeNativeGoalForwardingDecision = {
   reason: string;
   supportsNativeGoalMode: boolean;
   passthroughRequiresExplicitNamespace: boolean | null;
-  policy: 'capability_unavailable' | 'native_goal_disabled' | 'passthrough_entrypoint_closed';
+  policy:
+    | 'capability_unavailable'
+    | 'native_goal_disabled'
+    | 'native_goal_unverified'
+    | 'runtime_requires_update'
+    | 'passthrough_entrypoint_closed';
 };
 
 export type TaskGoalLifecycleStatus = 'unset' | 'active' | 'paused' | 'cleared';
@@ -131,11 +149,17 @@ export function evaluateRuntimeNativeGoalForwarding(
   }
 
   if (!capabilities.supportsNativeGoalMode) {
+    const nativeGoalMode = capabilities.nativeGoalMode;
+    const policy = nativeGoalMode.availability === 'requires_update'
+      ? 'runtime_requires_update'
+      : nativeGoalMode.availability === 'unknown'
+        ? 'native_goal_unverified'
+        : 'native_goal_disabled';
     return {
       forwarded: false,
       passthroughRequiresExplicitNamespace: capabilities.commandRouting.passthroughRequiresExplicitNamespace,
-      policy: 'native_goal_disabled',
-      reason: 'Adapter native goal capability is disabled.',
+      policy,
+      reason: nativeGoalMode.reason || 'Adapter native goal capability is disabled.',
       supportsNativeGoalMode: false,
     };
   }

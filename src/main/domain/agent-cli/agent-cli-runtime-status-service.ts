@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 
 import {
   DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE,
+  buildDefaultAgentCliRuntimeCapabilities,
   buildAgentCliRuntimeStatus,
   emptyAgentCliRuntimeStatus,
   type AgentCliAuthState,
@@ -58,6 +59,7 @@ export class AgentCliRuntimeStatusService {
       return {
         ...runtime,
         authState: probe.authState ?? 'unknown',
+        capabilities: buildDefaultAgentCliRuntimeCapabilities(runtime.id, runtime.label, probe.version),
         executablePath: probe.executablePath ?? null,
         installed: true,
         missingReason: installedRuntimeMissingReason(runtime.id, runtime.label, runtime.command, runtime.executionSupport, probe.authState, probe.authReason),

@@ -2326,7 +2326,7 @@ describe('App redesign v1', () => {
       forwarded: false,
       objective: '跑完验收',
       operatorConfirmed: true,
-      reason: 'Adapter native goal capability is disabled.',
+      reason: 'Codex CLI native goal mode requires Codex CLI 0.133.0+; detected 0.42.0.',
       runtimeId: 'codex',
       runtimeLabel: 'Codex CLI',
       supportsNativeGoalMode: false,
@@ -2348,7 +2348,7 @@ describe('App redesign v1', () => {
         expect.objectContaining({ content: '/codex goal 跑完验收' }),
       ]),
     }));
-    expect(await screen.findByText(/Codex CLI native goal mode 尚未开启/)).toBeTruthy();
+    expect(await screen.findByText(/Codex CLI native goal mode 需要更新 CLI 后才可用/)).toBeTruthy();
     expect(screen.getByText(/审计 Run: run_native_goal_audit/)).toBeTruthy();
     expect(screen.getByText(/显式 runtime-native goal 请求/)).toBeTruthy();
   });

@@ -14,6 +14,10 @@ describe('agent cli runtime status', () => {
         command: 'codex',
         executionSupport: 'manual_run',
         capabilities: expect.objectContaining({
+          nativeGoalMode: expect.objectContaining({
+            availability: 'unknown',
+            minimumVersion: '0.133.0',
+          }),
           supportsNativeGoalMode: false,
           commandRouting: expect.objectContaining({
             passthroughRequiresExplicitNamespace: true,
@@ -26,6 +30,9 @@ describe('agent cli runtime status', () => {
         executionSupport: 'manual_run',
         capabilities: expect.objectContaining({
           defaultPermissionMode: 'plan',
+          nativeGoalMode: expect.objectContaining({
+            availability: 'unsupported',
+          }),
           supportsNativeGoalMode: false,
         }),
       }),
@@ -81,7 +88,11 @@ describe('agent cli runtime status', () => {
     });
     expect(status.runtimes.find((runtime) => runtime.id === 'codex')?.capabilities).toMatchObject({
       executionKind: 'cli',
-      supportsNativeGoalMode: false,
+      nativeGoalMode: {
+        availability: 'available',
+        minimumVersion: '0.133.0',
+      },
+      supportsNativeGoalMode: true,
       supportsWorkspaceWrite: false,
     });
   });

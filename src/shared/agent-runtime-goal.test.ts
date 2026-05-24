@@ -94,15 +94,22 @@ describe('agent-runtime-goal', () => {
     expect(evaluateRuntimeNativeGoalForwarding(disabled)).toMatchObject({
       forwarded: false,
       passthroughRequiresExplicitNamespace: true,
-      policy: 'native_goal_disabled',
-      reason: 'Adapter native goal capability is disabled.',
+      policy: 'native_goal_unverified',
+      reason: 'Codex CLI native goal mode requires Codex CLI 0.133.0+; installed version is unknown.',
       supportsNativeGoalMode: false,
     });
 
-    expect(evaluateRuntimeNativeGoalForwarding({
-      ...disabled,
-      supportsNativeGoalMode: true,
-    })).toMatchObject({
+    const oldCodex = buildDefaultAgentCliRuntimeCapabilities('codex', 'Codex CLI', 'codex-cli 0.125.0');
+    expect(evaluateRuntimeNativeGoalForwarding(oldCodex)).toMatchObject({
+      forwarded: false,
+      passthroughRequiresExplicitNamespace: true,
+      policy: 'runtime_requires_update',
+      reason: 'Codex CLI native goal mode requires Codex CLI 0.133.0+; detected 0.125.0.',
+      supportsNativeGoalMode: false,
+    });
+
+    const currentCodex = buildDefaultAgentCliRuntimeCapabilities('codex', 'Codex CLI', 'codex-cli 0.133.0');
+    expect(evaluateRuntimeNativeGoalForwarding(currentCodex)).toMatchObject({
       forwarded: false,
       passthroughRequiresExplicitNamespace: true,
       policy: 'passthrough_entrypoint_closed',

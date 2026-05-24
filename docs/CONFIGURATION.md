@@ -429,6 +429,12 @@ The latest local live validation recorded on 2026-05-20 used Codex CLI
 `phrase=matched`, and `status=passed`. Treat this as manual acceptance evidence;
 the default smoke path stays skipped unless the explicit environment flag is set.
 
+Codex native Goal Mode is tracked separately from Taskplane Task Goal. The
+adapter treats Codex CLI `0.133.0+` as native-goal capable, shows older Codex
+versions as needing an update, and still keeps runtime-native goal passthrough
+closed until the Taskplane evidence gate proves command shape, progress,
+cancellation, memory, and source-of-truth boundaries.
+
 For a manual packaged-app live pass against the real local Codex account, build
 the unpacked app first and then run the opt-in task smoke:
 
