@@ -71,6 +71,7 @@ describe('runtime lifecycle coverage matrix', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
     expect(text).toContain('TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes');
+    expect(text).toContain('convert them into Taskplane writeback plans');
     expect(text).toContain('task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness');
     expect(text).toContain('context.refreshOrLeave');
     expect(text).toContain('context.taskSwitch');

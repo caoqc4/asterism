@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildTaskFileWritebackApplyPlan,
   buildSourceContextWritebackApplyPlan,
   buildStructuredWritebackApplyPlan,
 } from './taskplane-writeback-apply-plan.js';
@@ -79,6 +80,43 @@ describe('Taskplane writeback apply plans', () => {
       },
       timeline: {
         type: 'panel.task_goal_updated',
+      },
+    });
+  });
+
+  it('maps task file writes to timeline-backed apply plans', () => {
+    const plan = buildTaskFileWritebackApplyPlan({
+      evidenceRunId: 'run_4',
+      input: {
+        content: '# 本轮结论',
+        kind: 'file',
+        name: 'record.md',
+        path: 'Task Records/record.md',
+        taskId: 'task_1',
+      },
+      source: 'taskplane_write_intent',
+      surface: 'task_record',
+      surfaceLabel: '任务记录',
+      taskId: 'task_1',
+    });
+
+    expect(plan).toMatchObject({
+      action: 'task_file.create',
+      input: {
+        path: 'Task Records/record.md',
+        taskId: 'task_1',
+      },
+      requiredApi: 'createTaskFile',
+      taskId: 'task_1',
+      timeline: {
+        type: 'panel.task_file_written',
+        payload: {
+          evidenceRunId: 'run_4',
+          path: 'Task Records/record.md',
+          source: 'taskplane_write_intent',
+          surface: 'task_record',
+          surfaceLabel: '任务记录',
+        },
       },
     });
   });

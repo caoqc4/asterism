@@ -302,7 +302,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryWriteProposal turns structured Task.md reference paths into concrete Important Files entries before falling back to generic pending-memory notes.',
       'TaskMemoryWriteApplyPlan turns a confirmed TaskMemoryWriteProposal into a create/update TaskFile input, normalizes memory paths, and blocks target/path mismatches or unsafe updates without an existing file id.',
       'RunDetailRecord carries taskMemoryWriteProposals next to taskMemoryGuidance so runtime detail reads can reuse the same missing-memory write plan.',
-      'RightPanel can surface pending RunDetail taskMemoryWriteProposals through the existing task-file proposal confirmation card and apply the shared TaskMemoryWriteApplyPlan after user confirmation.',
+      'RightPanel can surface pending RunDetail taskMemoryWriteProposals through the existing task-file proposal confirmation card, convert them into Taskplane writeback plans, and apply them through main-side dispatch after user confirmation.',
       'Run start pre-step verification consumes pending TaskMemoryGuidanceState, so ordinary runs, Code Agent runs, operator-started runs, and Agent CLI runs cannot bypass unresolved task-memory writes.',
       'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
       'AutoContextClearReadiness wraps TaskMemoryCoverageEvaluation into safe_to_clear, needs_memory_write, needs_user_decision, keep_context, and not_applicable outcomes without introducing a hard message-count rule.',

@@ -90,6 +90,55 @@ describe('Taskplane writeback dispatch', () => {
       },
     });
   });
+
+  it('dispatches task file writes through provided ports and records timeline evidence', async () => {
+    const createTaskFile = vi.fn().mockResolvedValue({});
+    const recordTimelineEvent = vi.fn().mockResolvedValue(undefined);
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createTaskFile,
+        recordTimelineEvent,
+      },
+      plan: {
+        action: 'task_file.create',
+        input: {
+          content: '# 本轮结论',
+          kind: 'file',
+          name: 'record.md',
+          path: 'Task Records/record.md',
+          taskId: 'task_1',
+        },
+        requiredApi: 'createTaskFile',
+        successMessage: '已确认并写入任务文件：Task Records/record.md。',
+        taskId: 'task_1',
+        timeline: {
+          payload: {
+            path: 'Task Records/record.md',
+            source: 'taskplane_write_intent',
+          },
+          type: 'panel.task_file_written',
+        },
+      },
+    });
+
+    expect(createTaskFile).toHaveBeenCalledWith({
+      content: '# 本轮结论',
+      kind: 'file',
+      name: 'record.md',
+      path: 'Task Records/record.md',
+      taskId: 'task_1',
+    });
+    expect(recordTimelineEvent).toHaveBeenCalledWith('task_1', 'panel.task_file_written', {
+      path: 'Task Records/record.md',
+      source: 'taskplane_write_intent',
+    });
+    expect(result).toMatchObject({
+      action: 'task_file.create',
+      status: 'completed',
+    });
+  });
 });
 
 function nextStepPlan(): TaskplaneStructuredWritebackApplyPlan {

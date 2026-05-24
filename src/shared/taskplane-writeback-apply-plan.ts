@@ -2,6 +2,7 @@ import type { CreateBlockerInput } from './types/blocker.js';
 import type { CreateDecisionInput } from './types/decision.js';
 import type { CreateSourceContextInput } from './types/source-context.js';
 import type { UpdateTaskInput } from './types/task.js';
+import type { CreateTaskFileInput, UpdateTaskFileInput } from './types/task-file.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
   TaskplaneSourceContextWritebackProposal,
@@ -19,6 +20,24 @@ export type TaskplaneSourceContextWritebackApplyPlan = {
   successMessage: string;
   timeline: TaskplaneWritebackTimelineDraft;
 };
+
+export type TaskplaneTaskFileWritebackApplyPlan =
+  | {
+      action: 'task_file.create';
+      input: CreateTaskFileInput;
+      requiredApi: 'createTaskFile';
+      successMessage: string;
+      taskId: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    }
+  | {
+      action: 'task_file.update';
+      input: UpdateTaskFileInput;
+      requiredApi: 'updateTaskFile';
+      successMessage: string;
+      taskId: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    };
 
 export type TaskplaneStructuredWritebackApplyPlan =
   | {
@@ -50,7 +69,64 @@ export type TaskplaneStructuredWritebackApplyPlan =
 
 export type TaskplaneWritebackApplyPlan =
   | TaskplaneSourceContextWritebackApplyPlan
+  | TaskplaneTaskFileWritebackApplyPlan
   | TaskplaneStructuredWritebackApplyPlan;
+
+export function buildTaskFileWritebackApplyPlan(params: {
+  evidenceRunId?: string | null;
+  input: CreateTaskFileInput;
+  source: 'right_panel_file_proposal' | 'task_memory_write_proposal' | 'taskplane_write_intent';
+  surface: string;
+  surfaceLabel: string;
+  taskId: string;
+}): TaskplaneTaskFileWritebackApplyPlan {
+  const path = params.input.path ?? params.input.name;
+  return {
+    action: 'task_file.create',
+    input: params.input,
+    requiredApi: 'createTaskFile',
+    successMessage: `已确认并写入任务文件：${path}。`,
+    taskId: params.taskId,
+    timeline: {
+      type: 'panel.task_file_written',
+      payload: {
+        evidenceRunId: params.evidenceRunId ?? null,
+        path,
+        source: params.source,
+        surface: params.surface,
+        surfaceLabel: params.surfaceLabel,
+      },
+    },
+  };
+}
+
+export function buildTaskFileUpdateWritebackApplyPlan(params: {
+  evidenceRunId?: string | null;
+  input: UpdateTaskFileInput;
+  path: string;
+  source: 'right_panel_file_proposal' | 'task_memory_write_proposal' | 'taskplane_write_intent';
+  surface: string;
+  surfaceLabel: string;
+  taskId: string;
+}): TaskplaneTaskFileWritebackApplyPlan {
+  return {
+    action: 'task_file.update',
+    input: params.input,
+    requiredApi: 'updateTaskFile',
+    successMessage: `已确认并更新任务文件：${params.path}。`,
+    taskId: params.taskId,
+    timeline: {
+      type: 'panel.task_file_written',
+      payload: {
+        evidenceRunId: params.evidenceRunId ?? null,
+        path: params.path,
+        source: params.source,
+        surface: params.surface,
+        surfaceLabel: params.surfaceLabel,
+      },
+    },
+  };
+}
 
 export function buildSourceContextWritebackApplyPlan(params: {
   capturedAt?: string;

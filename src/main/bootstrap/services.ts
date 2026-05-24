@@ -151,7 +151,11 @@ const decisionService = new DecisionService(
   runVerificationRepository,
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
-const taskplaneWritebackDispatchService = new TaskplaneWritebackDispatchService(taskService, decisionService);
+const taskplaneWritebackDispatchService = new TaskplaneWritebackDispatchService(
+  taskService,
+  decisionService,
+  taskFileRepository,
+);
 const workHabitService = new WorkHabitService(workHabitRepository);
 const runService = new RunService(
   runRepository,

@@ -2,6 +2,7 @@ import type { BlockerRecord } from './types/blocker.js';
 import type { DecisionRecord } from './types/decision.js';
 import type { SourceContextRecord } from './types/source-context.js';
 import type { TaskListItemRecord } from './types/task.js';
+import type { TaskFileRecord } from './types/task-file.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
   TaskplaneWritebackApplyPlan,
@@ -15,11 +16,13 @@ export type TaskplaneWritebackDispatchPorts = {
     DecisionRecord
   >;
   createSourceContext?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'source_context.create' }>, SourceContextRecord>;
+  createTaskFile?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'task_file.create' }>, TaskFileRecord>;
   recordTimelineEvent?: (
     taskId: string,
     type: PanelRuntimeTimelineEventType,
     payload: Record<string, unknown>,
   ) => Promise<void>;
+  updateTaskFile?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'task_file.update' }>, TaskFileRecord>;
   updateTask?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'task.update_next_step' }>, TaskListItemRecord>;
 };
 
@@ -50,6 +53,20 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   if (plan.action === 'source_context.create') {
     if (!ports.createSourceContext) return blocked(plan.action, '来源上下文提案已暂停：当前环境不支持保存来源上下文。');
     await ports.createSourceContext(plan.input);
+    await recordTimeline(ports, taskId, plan.timeline);
+    return completed(plan);
+  }
+
+  if (plan.action === 'task_file.create') {
+    if (!ports.createTaskFile) return blocked(plan.action, '任务文件提案已暂停：当前环境不支持创建任务文件。');
+    await ports.createTaskFile(plan.input);
+    await recordTimeline(ports, taskId, plan.timeline);
+    return completed(plan);
+  }
+
+  if (plan.action === 'task_file.update') {
+    if (!ports.updateTaskFile) return blocked(plan.action, '任务文件提案已暂停：当前环境不支持更新任务文件。');
+    await ports.updateTaskFile(plan.input);
     await recordTimeline(ports, taskId, plan.timeline);
     return completed(plan);
   }

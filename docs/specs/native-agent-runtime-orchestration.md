@@ -191,8 +191,8 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   current environment;
 - Write Intent extraction and confirmation UI cover the first planned intent
   set, and right-panel confirmations now invoke main-side writeback dispatch
-  for task and decision service writes; non-UI confirmation flows still need to
-  invoke that adapter outside the right panel;
+  for task, source, decision, and task-file writes; non-UI confirmation flows
+  still need to invoke that adapter outside the right panel;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 
@@ -515,15 +515,15 @@ Status: started.
 - Extract `subtask.propose` intents from legacy `TASKPLANE_DECOMPOSITION`
   blocks and `TASKPLANE_WRITE_INTENTS` wrappers.
 - Extract `task_record.create` and `source_context.create` from
-  `TASKPLANE_WRITE_INTENTS`; task records can be surfaced through the existing
-  confirmed task-file proposal card, and source contexts can be surfaced through
-  a confirmed source-context proposal card.
+  `TASKPLANE_WRITE_INTENTS`; task records and source contexts can be surfaced
+  through confirmed proposal cards and routed through main-side writeback
+  dispatch.
 - Extract `decision.create`, `task.update_next_step`, `task.mark_blocked`, and
   `task.complete.propose` from `TASKPLANE_WRITE_INTENTS` into shared validated
   intent objects.
 - Validate subtask proposal basics before any persistence path can use it.
-- Next, add right-panel proposal cards and service-level persistence paths for
-  decision, next-step, blocker, and completion intents.
+- Right-panel proposal cards and service-level persistence paths now cover
+  decision, next-step, blocker, completion, source, and task-record intents.
 - Validate against task scope, phase, and memory policy before persistence.
 - surface proposal cards;
 - persist only through Taskplane services.

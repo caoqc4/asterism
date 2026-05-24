@@ -20,7 +20,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     const decisionService = {
       create: vi.fn(),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService);
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository());
 
     const result = await service.dispatch({
       taskId: 'task_1',
@@ -64,7 +64,7 @@ describe('TaskplaneWritebackDispatchService', () => {
         id: 'decision_1',
       }),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService);
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository());
 
     await service.dispatch({
       taskId: 'task_1',
@@ -137,7 +137,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     const decisionService = {
       create: vi.fn(),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService);
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository());
 
     const result = await service.dispatch({
       taskId: 'task_2',
@@ -151,7 +151,83 @@ describe('TaskplaneWritebackDispatchService', () => {
     });
     expect(taskService.update).not.toHaveBeenCalled();
   });
+
+  it('routes task file writes through the task file repository and timeline service', async () => {
+    const taskService = {
+      createBlocker: vi.fn(),
+      createSourceContext: vi.fn(),
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      update: vi.fn(),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const files = taskFileRepository();
+    files.create.mockResolvedValue({
+      content: '# 本轮结论',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      id: 'task_file_1',
+      kind: 'file',
+      name: 'record.md',
+      path: 'Task Records/record.md',
+      taskId: 'task_1',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, files);
+
+    const result = await service.dispatch({
+      taskId: 'task_1',
+      plan: {
+        action: 'task_file.create',
+        input: {
+          content: '# 本轮结论',
+          kind: 'file',
+          name: 'record.md',
+          path: 'Task Records/record.md',
+          taskId: 'task_1',
+        },
+        requiredApi: 'createTaskFile',
+        successMessage: '已确认并写入任务文件：Task Records/record.md。',
+        taskId: 'task_1',
+        timeline: {
+          payload: {
+            path: 'Task Records/record.md',
+            source: 'taskplane_write_intent',
+          },
+          type: 'panel.task_file_written',
+        },
+      },
+    });
+
+    expect(files.create).toHaveBeenCalledWith({
+      content: '# 本轮结论',
+      kind: 'file',
+      name: 'record.md',
+      path: 'Task Records/record.md',
+      taskId: 'task_1',
+    });
+    expect(taskService.recordTimelineEvent).toHaveBeenCalledWith({
+      payload: {
+        path: 'Task Records/record.md',
+        source: 'taskplane_write_intent',
+      },
+      taskId: 'task_1',
+      type: 'panel.task_file_written',
+    });
+    expect(result).toMatchObject({
+      action: 'task_file.create',
+      status: 'completed',
+    });
+  });
 });
+
+function taskFileRepository() {
+  return {
+    create: vi.fn(),
+    findById: vi.fn(),
+    update: vi.fn(),
+  };
+}
 
 function sourceContextPlan(): TaskplaneSourceContextWritebackApplyPlan {
   return {

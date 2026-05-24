@@ -48,6 +48,8 @@ import {
   type TaskplaneStructuredWritebackProposal,
 } from '@shared/taskplane-writeback-proposal';
 import {
+  buildTaskFileUpdateWritebackApplyPlan,
+  buildTaskFileWritebackApplyPlan,
   buildSourceContextWritebackApplyPlan,
   buildStructuredWritebackApplyPlan,
 } from '@shared/taskplane-writeback-apply-plan';
@@ -2293,7 +2295,12 @@ export function RightPanel({
   }
 
   async function confirmTaskFileWrite() {
-    if (!activeTaskId || !taskFileProposal || savingTaskFileProposal || !window.api?.createTaskFile) return;
+    if (
+      !activeTaskId
+      || !taskFileProposal
+      || savingTaskFileProposal
+      || (!window.api?.applyTaskplaneWriteback && !window.api?.createTaskFile)
+    ) return;
     const normalizedInput = normalizeCreateTaskFileInput({
       taskId: activeTaskId,
       name: normalizeTaskFilePath(taskFileProposal.path).split('/').filter(Boolean).at(-1) ?? taskFileProposal.path,
@@ -2302,6 +2309,9 @@ export function RightPanel({
       content: taskFileProposal.content,
     });
     const path = normalizedInput.path ?? normalizedInput.name;
+    const writebackSource = taskFileProposal.intentSource === 'write_intent'
+      ? 'taskplane_write_intent'
+      : taskFileProposal.taskMemoryProposal ? 'task_memory_write_proposal' : 'right_panel_file_proposal';
     const memoryApplyPlan = taskFileProposal.taskMemoryProposal
       ? buildTaskMemoryWriteApplyPlan({
         proposal: {
@@ -2337,6 +2347,7 @@ export function RightPanel({
     }
     setSavingTaskFileProposal(true);
     try {
+      let taskFileWritebackApplied = false;
       const existing = window.api.listTaskFiles
         ? await window.api.listTaskFiles(activeTaskId).catch(() => [])
         : [];
@@ -2348,20 +2359,79 @@ export function RightPanel({
         return;
       }
       if (memoryApplyPlan?.status === 'ready') {
+        const taskFilePlan = memoryApplyPlan.action === 'update'
+          ? buildTaskFileUpdateWritebackApplyPlan({
+            evidenceRunId: taskFileProposal.evidenceRunId ?? null,
+            input: memoryApplyPlan.input,
+            path,
+            source: writebackSource,
+            surface: taskFileProposal.surface,
+            surfaceLabel: taskFileProposal.surfaceLabel,
+            taskId: activeTaskId,
+          })
+          : buildTaskFileWritebackApplyPlan({
+            evidenceRunId: taskFileProposal.evidenceRunId ?? null,
+            input: memoryApplyPlan.input,
+            source: writebackSource,
+            surface: taskFileProposal.surface,
+            surfaceLabel: taskFileProposal.surfaceLabel,
+            taskId: activeTaskId,
+          });
+        if (window.api?.applyTaskplaneWriteback) {
+          const result = await window.api.applyTaskplaneWriteback({
+            plan: taskFilePlan,
+            taskId: activeTaskId,
+          });
+          if (result.status === 'blocked') {
+            appendSysMsg(result.message);
+            return;
+          }
+          taskFileWritebackApplied = true;
+        }
         if (memoryApplyPlan.action === 'update') {
-          if (!window.api.updateTaskFile) {
+          if (!taskFileWritebackApplied && !window.api.updateTaskFile) {
             appendSysMsg('任务记忆写入已暂停：当前环境不支持更新任务文件。');
             return;
           }
-          await window.api.updateTaskFile(memoryApplyPlan.input);
-        } else {
+          if (!taskFileWritebackApplied) await window.api.updateTaskFile(memoryApplyPlan.input);
+        } else if (!taskFileWritebackApplied) {
+          if (!window.api.createTaskFile) {
+            appendSysMsg('任务记忆写入已暂停：当前环境不支持创建任务文件。');
+            return;
+          }
           await window.api.createTaskFile(memoryApplyPlan.input);
         }
       } else {
-        await window.api.createTaskFile({
+        const createInput = {
           ...normalizedInput,
           taskId: activeTaskId,
+        };
+        const taskFilePlan = buildTaskFileWritebackApplyPlan({
+          evidenceRunId: taskFileProposal.evidenceRunId ?? null,
+          input: createInput,
+          source: writebackSource,
+          surface: taskFileProposal.surface,
+          surfaceLabel: taskFileProposal.surfaceLabel,
+          taskId: activeTaskId,
         });
+        if (window.api?.applyTaskplaneWriteback) {
+          const result = await window.api.applyTaskplaneWriteback({
+            plan: taskFilePlan,
+            taskId: activeTaskId,
+          });
+          if (result.status === 'blocked') {
+            appendSysMsg(result.message);
+            return;
+          }
+          taskFileWritebackApplied = true;
+        }
+        if (!taskFileWritebackApplied) {
+          if (!window.api.createTaskFile) {
+            appendSysMsg('任务文件写入已暂停：当前环境不支持创建任务文件。');
+            return;
+          }
+          await window.api.createTaskFile(createInput);
+        }
         await referenceTaskFileFromTaskRecord({
           taskId: activeTaskId,
           taskName: title ?? titleCache[activeTaskId] ?? activeTaskId,
@@ -2382,15 +2452,15 @@ export function RightPanel({
       if (!postStepVerification.canProceed) {
         appendSysMsg(`任务文件已写入，但后置检查提示：${postStepVerification.detail}`);
       }
-      await recordPanelTimelineEvent(activeTaskId, 'panel.task_file_written', {
-        evidenceRunId: taskFileProposal.evidenceRunId ?? null,
-        path,
-        surface: taskFileProposal.surface,
-        surfaceLabel: taskFileProposal.surfaceLabel,
-        source: taskFileProposal.intentSource === 'write_intent'
-          ? 'taskplane_write_intent'
-          : taskFileProposal.taskMemoryProposal ? 'task_memory_write_proposal' : 'right_panel_file_proposal',
-      });
+      if (!taskFileWritebackApplied) {
+        await recordPanelTimelineEvent(activeTaskId, 'panel.task_file_written', {
+          evidenceRunId: taskFileProposal.evidenceRunId ?? null,
+          path,
+          surface: taskFileProposal.surface,
+          surfaceLabel: taskFileProposal.surfaceLabel,
+          source: writebackSource,
+        });
+      }
       updateTaskFileProposal(null);
       appendSysMsg(taskFileProposal.taskMemoryProposal
         ? [
