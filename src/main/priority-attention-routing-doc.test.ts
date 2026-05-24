@@ -8,6 +8,7 @@ describe('Priority Attention Routing spec', () => {
     const spec = fs.readFileSync(path.join(process.cwd(), 'docs/specs/priority-attention-routing.md'), 'utf8');
 
     expect(spec).toContain('Document id: `taskplane.priority-attention-routing.v1`');
+    expect(spec).toContain('not a total rule');
     expect(spec).toContain('| `escalate_now` |');
     expect(spec).toContain('| `unblock_or_decide` |');
     expect(spec).toContain('| `continue_or_review` |');

@@ -14,10 +14,10 @@ describe('GoalPilot task advancement framework', () => {
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Layer: operating-principle / always-loaded task router');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Authority: required routing reference; detailed phase rules are loaded on demand');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('fuzzy intent to shaped, executable, verified, and recoverable task state');
-    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Runtime Layers');
-    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('| Skills / Flows |');
-    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('| Hooks / Gates |');
-    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('| Pilot / Decision Agents |');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Rule Hierarchy');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('GoalPilot is the only always-loaded total rule');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('do not treat it as a second total rule');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Priority Attention Routing is a phase-loaded ranking skill');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Goal And Pilot Loop');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Priority Attention Routing choose the focus first');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('## Context Readiness');
@@ -33,7 +33,7 @@ describe('GoalPilot task advancement framework', () => {
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Decision Layer Writeback Orchestration');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('persistent goal capability');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('runtime-native goal loop');
-    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('If something must always happen, implement it as a hook/gate.');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('If something must always happen, implement it there instead of relying on model memory.');
   });
 
   it('is the always-loaded shared core Agent context', () => {

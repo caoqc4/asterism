@@ -13,6 +13,7 @@ Authority: implementation-guiding; product ranking must remain explainable
 
 Priority Attention Routing is the shared ranking language for Brief and Pilot.
 It decides which task deserves attention when multiple tasks can be advanced.
+It is not a total rule; it is a phase-loaded skill for focus selection.
 
 GoalPilot stays small and always-loaded. When more than one task or mission is
 competing for attention, GoalPilot loads this skill and asks Pilot to choose a

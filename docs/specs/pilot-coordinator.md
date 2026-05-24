@@ -2,7 +2,7 @@
 
 Document id: `taskplane.pilot-coordinator.v1`
 Owner: Taskplane product architecture
-Layer: architecture skill / always-available coordination role
+Layer: phase-loaded architecture skill / Pilot role contract
 Load: Pilot routing, multi-task focus, message priority, executor selection,
 DecisionBackend selection, escalation, and run handoff
 Scope: GoalPilot, Brief priority routing, native CLI/API runtimes, future
@@ -15,10 +15,14 @@ authoritative
 Pilot is Taskplane's coordination role. It judges and coordinates; it does not
 own durable state and does not replace executor runtimes.
 
-The role is always available at the product-control layer, but it does not
-require an always-running model process. A Pilot decision can be produced by
-rules, an Agent API call, a Codex CLI decision run, a Claude CLI decision run,
-a future matrix runtime, or human review behind one `DecisionBackend` contract.
+The role is always available at the product-control layer, but this document is
+not a second always-loaded total rule. Pilot composes GoalPilot movement with
+Priority Attention Routing, message priority, backend choice, executor choice,
+and gates.
+
+A Pilot decision can be produced by rules, an Agent API call, a Codex CLI
+decision run, a Claude CLI decision run, a future matrix runtime, or human
+review behind one `DecisionBackend` contract.
 
 ## Role Split
 

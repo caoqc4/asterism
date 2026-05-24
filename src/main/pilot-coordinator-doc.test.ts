@@ -8,6 +8,8 @@ describe('Pilot Coordinator spec', () => {
     const spec = fs.readFileSync(path.join(process.cwd(), 'docs/specs/pilot-coordinator.md'), 'utf8');
 
     expect(spec).toContain('Document id: `taskplane.pilot-coordinator.v1`');
+    expect(spec).toContain('not a second always-loaded total rule');
+    expect(spec).toContain('Pilot composes GoalPilot movement with');
     expect(spec).toContain('A Pilot decision can be produced by');
     expect(spec).toContain('Codex CLI decision run');
     expect(spec).toContain('Claude CLI decision run');
