@@ -23,6 +23,21 @@ A Pilot decision can be produced by rules, an Agent API call, a Codex CLI
 decision run, a Claude CLI decision run, a future matrix runtime, or human
 review behind one `DecisionBackend` contract.
 
+## Operation Model
+
+Pilot is always present as product control logic, not as a default background
+model process.
+
+| Mode | Meaning | Current status |
+| --- | --- | --- |
+| `product_control_layer` | Deterministic rules, product state, hooks, gates, and human review decide the route. | Default. |
+| `bounded_decision_backend` | A short API/CLI/matrix decision backend may assist an ambiguous Pilot decision. | Allowed when explicitly selected by capability. |
+| `persistent_ai_pilot_reserved` | A long-lived AI Pilot watches tasks and coordinates proactively. | Future opt-in only; not returned by the current evaluator. |
+
+Do not implement or imply a persistent AI Pilot unless the product has explicit
+watch/autopilot mode, cost controls, permission gates, event replay, and user
+visibility.
+
 ## Role Split
 
 | Role | Owns | Does not own |
@@ -42,6 +57,8 @@ A Pilot decision should answer:
 - Which priority lane applies when tasks compete?
 - Which executor should handle the next action?
 - Which product rules, hooks, gates, and evidence surfaces are required?
+- Which operation mode is being used: product control layer, bounded decision
+  backend, or future reserved persistent Pilot?
 - Should a model-backed decision backend be used, or are deterministic rules
   enough?
 

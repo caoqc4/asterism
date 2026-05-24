@@ -256,6 +256,8 @@ use another backend, run a Taskplane bridge, or surface a clear blocker.
 - Pilot Decision Contract defines how selected movement and priority become
   DecisionBackend choice, message priority, executor selection, and
   matrix-runtime delegation boundary.
+- Pilot operation mode is a product-control choice first. Persistent AI Pilot
+  remains a future opt-in capability, not a requirement for native CLI support.
 - Priority Attention Routing defines Brief/Pilot focus selection when multiple
   tasks compete.
 - Agent Operating Principles load for concrete execution and completion claims.

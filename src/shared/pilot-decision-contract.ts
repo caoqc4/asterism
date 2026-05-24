@@ -31,6 +31,11 @@ export type PilotMessagePriority = 'follow_up' | 'steer' | 'escalate';
 
 export type PilotConfidence = 'rule' | 'model_assisted' | 'needs_review';
 
+export type PilotOperationMode =
+  | 'product_control_layer'
+  | 'bounded_decision_backend'
+  | 'persistent_ai_pilot_reserved';
+
 export type PilotDecision = {
   role: 'pilot';
   advancement: TaskAdvancementEvaluation;
@@ -42,6 +47,7 @@ export type PilotDecision = {
   gates: RuntimeEntrypointGate[];
   messagePriority: PilotMessagePriority;
   movement: TaskAdvancementMovement;
+  operationMode: PilotOperationMode;
   priorityLane: PriorityLane | null;
   reason: string;
   requiredRules: string[];
@@ -113,6 +119,7 @@ export function evaluatePilotDecision(input: PilotDecisionInput): PilotDecision 
     gates: advancement.requiredGates,
     messagePriority,
     movement: advancement.movement,
+    operationMode: operationModeForBackend(backend),
     priorityLane,
     reason: buildPilotReason(advancement, messagePriority, priorityLane),
     requiredRules: requiredRulesForPilot(advancement, priorityLane, input.multiTaskCandidateCount ?? 0),
@@ -255,6 +262,13 @@ function confidenceForBackend(
   if (backend !== 'rules') return 'model_assisted';
   if (needsModelJudgment || messagePriority === 'steer') return 'needs_review';
   return 'rule';
+}
+
+function operationModeForBackend(backend: PilotDecisionBackend): PilotOperationMode {
+  if (backend === 'rules' || backend === 'human_review') {
+    return 'product_control_layer';
+  }
+  return 'bounded_decision_backend';
 }
 
 function backendReason(backend: PilotDecisionBackend, needsModelJudgment: boolean): string {

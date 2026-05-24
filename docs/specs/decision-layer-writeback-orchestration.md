@@ -114,7 +114,7 @@ Recommended first skills:
 
 | Skill | Question | Output |
 | --- | --- | --- |
-| `pilot.route` | What should Pilot coordinate next, and which backend/executor should be used? | PilotDecision |
+| `pilot.route` | What should Pilot coordinate next, which operation mode applies, and which backend/executor should be used? | PilotDecision |
 | `pilot.message_priority` | Is the user message follow-up, steer, or escalate? | priority, reason |
 | `priority.route` | Which task deserves attention when multiple tasks compete? | focus task, lane, reason |
 | `advancement.evaluate` | What movement should happen next? | movement, reason, required rules |

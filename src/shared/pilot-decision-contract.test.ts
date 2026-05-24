@@ -25,6 +25,7 @@ describe('Pilot Decision Contract', () => {
     expect(decision.role).toBe('pilot');
     expect(decision.messagePriority).toBe('steer');
     expect(decision.backend).toBe('codex_cli');
+    expect(decision.operationMode).toBe('bounded_decision_backend');
     expect(decision.executor).toBe('codex_cli');
     expect(decision.requiredRules).toContain('pilot.decision_contract');
     expect(decision.requiredRules).toContain('agent.execution_rules');
@@ -46,6 +47,7 @@ describe('Pilot Decision Contract', () => {
 
     expect(decision.messagePriority).toBe('escalate');
     expect(decision.executor).toBe('human');
+    expect(decision.operationMode).not.toBe('persistent_ai_pilot_reserved');
     expect(decision.priorityLane).toBe('escalate_now');
     expect(decision.shouldStartExecutor).toBe(false);
   });
@@ -94,6 +96,7 @@ describe('Pilot Decision Contract', () => {
     });
 
     expect(apiDecision.backend).toBe('agent_api');
+    expect(apiDecision.operationMode).toBe('bounded_decision_backend');
     expect(apiDecision.requiredRules).toContain('priority.attention_routing');
 
     expect(selectPilotDecisionBackend({
@@ -117,6 +120,7 @@ describe('Pilot Decision Contract', () => {
 
     expect(decision.movement).toBe('handoff');
     expect(decision.executor).toBe('local_rule');
+    expect(decision.operationMode).toBe('product_control_layer');
     expect(decision.requiredRules).toContain('context.transition_policy');
     expect(decision.requiredRules).toContain('task.memory_rules');
   });

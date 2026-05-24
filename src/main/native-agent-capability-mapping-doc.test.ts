@@ -29,6 +29,7 @@ describe('Native Agent Capability Mapping spec', () => {
     expect(spec).toContain('## Codex Deep Reference');
     expect(spec).toContain('## Agent Matrix Reference');
     expect(spec).toContain('Wanman-style matrix runtimes are useful reference executors');
+    expect(spec).toContain('remains a future opt-in capability');
     expect(spec).toContain('`context.readiness.evaluate` should return one of');
     expect(spec).toContain('| `plan_first` | Work is broad, risky, or code-changing.');
     expect(spec).toContain('If the answer can be discovered, research or inspect instead of asking.');

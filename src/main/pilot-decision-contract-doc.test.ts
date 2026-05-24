@@ -11,6 +11,11 @@ describe('Pilot Decision Contract spec', () => {
     expect(spec).toContain('not a currently separate always-running agent');
     expect(spec).toContain('not a mandatory two-agent or two-process architecture');
     expect(spec).toContain('not a second always-loaded total rule');
+    expect(spec).toContain('| `product_control_layer` |');
+    expect(spec).toContain('| `bounded_decision_backend` |');
+    expect(spec).toContain('| `persistent_ai_pilot_reserved` |');
+    expect(spec).toContain('not returned by the current evaluator');
+    expect(spec).toContain('Do not implement or imply a persistent AI Pilot');
     expect(spec).toContain('Pilot composes GoalPilot movement with');
     expect(spec).toContain('A Pilot decision can be produced by');
     expect(spec).toContain('Codex CLI decision run');

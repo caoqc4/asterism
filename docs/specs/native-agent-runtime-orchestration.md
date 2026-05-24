@@ -205,6 +205,9 @@ Taskplane currently has a working native CLI execution backend:
 - Pilot coordination is modeled as a product role: rules handle clear routes,
   and API/CLI DecisionBackends may assist ambiguous routing without bypassing
   Taskplane gates.
+- The current Pilot operation mode is either `product_control_layer` or
+  `bounded_decision_backend`. `persistent_ai_pilot_reserved` is a future
+  explicit watch/autopilot capability, not the default runtime shape.
 - Agent CLI runs record a `context.readiness.evaluate` step that classifies the
   next movement as ready, self-research, plan-first, ask-user, or blocked
   before the native runtime receives the prompt.
