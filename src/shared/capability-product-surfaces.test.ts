@@ -64,6 +64,7 @@ describe('capability product surfaces', () => {
       path: 'docs/specs/pilot-decision-contract.md',
     });
     expect(PRODUCT_RUNTIME_RULE_ITEMS[4]?.desc).toContain('operation mode');
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[4]?.desc).toContain('backendPlan');
   });
 
   it('keeps default MCP catalogue data disconnected until a real service connects', () => {

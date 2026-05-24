@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildBoundedPilotDecisionPrompt,
   classifyPilotMessagePriority,
   evaluatePilotDecision,
+  formatPilotDecisionBackendPlanForStep,
   highestPriorityLane,
   selectPilotDecisionBackend,
+  shouldRunBoundedPilotDecisionBackend,
 } from './pilot-decision-contract.js';
 
 describe('Pilot Decision Contract', () => {
@@ -26,6 +29,14 @@ describe('Pilot Decision Contract', () => {
     expect(decision.messagePriority).toBe('steer');
     expect(decision.backend).toBe('codex_cli');
     expect(decision.operationMode).toBe('bounded_decision_backend');
+    expect(decision.backendPlan).toMatchObject({
+      status: 'requested',
+      backend: 'codex_cli',
+      maxTurns: 1,
+      outputContract: 'pilot_decision_summary',
+    });
+    expect(decision.backendPlan.triggers).toContain('user_steer');
+    expect(shouldRunBoundedPilotDecisionBackend(decision)).toBe(true);
     expect(decision.executor).toBe('codex_cli');
     expect(decision.requiredRules).toContain('pilot.decision_contract');
     expect(decision.requiredRules).toContain('agent.execution_rules');
@@ -97,6 +108,8 @@ describe('Pilot Decision Contract', () => {
 
     expect(apiDecision.backend).toBe('agent_api');
     expect(apiDecision.operationMode).toBe('bounded_decision_backend');
+    expect(apiDecision.backendPlan.status).toBe('requested');
+    expect(apiDecision.backendPlan.triggers).toContain('multi_task_priority');
     expect(apiDecision.requiredRules).toContain('priority.attention_routing');
 
     expect(selectPilotDecisionBackend({
@@ -121,8 +134,62 @@ describe('Pilot Decision Contract', () => {
     expect(decision.movement).toBe('handoff');
     expect(decision.executor).toBe('local_rule');
     expect(decision.operationMode).toBe('product_control_layer');
+    expect(decision.backendPlan.status).toBe('not_needed');
     expect(decision.requiredRules).toContain('context.transition_policy');
     expect(decision.requiredRules).toContain('task.memory_rules');
+  });
+
+  it('falls back conservatively when a bounded Pilot backend would help but is not available', () => {
+    const decision = evaluatePilotDecision({
+      availableDecisionBackends: ['rules'],
+      entrypoint: 'right_panel_chat',
+      hasTaskContext: true,
+      multiTaskCandidateCount: 2,
+      prompt: '现在应该先推进哪个任务？',
+      task: {
+        nextStep: '选择当前焦点。',
+        title: '多任务排序',
+      },
+    });
+
+    expect(decision.backend).toBe('rules');
+    expect(decision.operationMode).toBe('product_control_layer');
+    expect(decision.backendPlan).toMatchObject({
+      status: 'fallback_to_rules',
+      backend: 'rules',
+      maxTurns: 1,
+    });
+    expect(decision.confidence).toBe('needs_review');
+  });
+
+  it('builds a short bounded Pilot preflight prompt for selected model backends', () => {
+    const decision = evaluatePilotDecision({
+      entrypoint: 'right_panel_chat',
+      hasTaskContext: true,
+      prompt: '不对，先改成基础教程和案例展示。',
+      runtime: { agentCliReady: true },
+      selectedCliRuntime: 'codex',
+      task: {
+        nextStep: '明确网站目标和范围。',
+        summary: 'Codex 基础教程网站。',
+        title: '明确网站目标与范围',
+      },
+    });
+    const prompt = buildBoundedPilotDecisionPrompt({
+      decision,
+      task: {
+        nextStep: '明确网站目标和范围。',
+        summary: 'Codex 基础教程网站。',
+        title: '明确网站目标与范围',
+      },
+      userText: '不对，先改成基础教程和案例展示。',
+    });
+
+    expect(prompt).toContain('Taskplane Pilot phase-2 bounded decision pass.');
+    expect(prompt).toContain('Pilot movement:');
+    expect(prompt).toContain('Triggers: user_steer');
+    expect(prompt).toContain('User message:');
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('status=requested');
   });
 
   it('exposes shared priority lane ordering for Brief and Pilot', () => {

@@ -16,6 +16,10 @@ describe('Pilot Decision Contract spec', () => {
     expect(spec).toContain('| `persistent_ai_pilot_reserved` |');
     expect(spec).toContain('not returned by the current evaluator');
     expect(spec).toContain('Do not implement or imply a persistent AI Pilot');
+    expect(spec).toContain('## Phase 2 Bounded Decision');
+    expect(spec).toContain('Each decision carries a `backendPlan`');
+    expect(spec).toContain('`maxTurns=1`');
+    expect(spec).toContain('`outputContract=pilot_decision_summary`');
     expect(spec).toContain('Pilot composes GoalPilot movement with');
     expect(spec).toContain('A Pilot decision can be produced by');
     expect(spec).toContain('Codex CLI decision run');

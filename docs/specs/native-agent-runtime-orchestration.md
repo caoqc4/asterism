@@ -205,6 +205,10 @@ Taskplane currently has a working native CLI execution backend:
 - Pilot coordination is modeled as a product role: rules handle clear routes,
   and API/CLI DecisionBackends may assist ambiguous routing without bypassing
   Taskplane gates.
+- Phase-2 Pilot assistance is bounded: a `backendPlan` records trigger,
+  backend, `maxTurns=1`, and `pilot_decision_summary`; the right panel injects
+  a short Pilot preflight into the selected CLI/API call instead of starting a
+  resident Pilot agent.
 - The current Pilot operation mode is either `product_control_layer` or
   `bounded_decision_backend`. `persistent_ai_pilot_reserved` is a future
   explicit watch/autopilot capability, not the default runtime shape.
@@ -614,13 +618,16 @@ Centralize scattered movement decisions:
 Current implementation:
 
 - `src/shared/pilot-decision-contract.ts` wraps the shared advancement decision with
-  Pilot message priority, DecisionBackend choice, executor selection, and
-  priority-lane evidence.
+  Pilot message priority, DecisionBackend choice, bounded backend plan,
+  executor selection, and priority-lane evidence.
 - `src/shared/task-advancement-orchestrator.ts` composes runtime intake and
   context-readiness evaluation into a shared advancement decision.
 - Right-panel task chat uses Pilot plus the shared advancement decision before
   launching Agent CLI, so user-owned approval boundaries stay local while
   child-task advancement can continue through native runtime research/execution.
+- When Pilot requests a bounded decision backend, the right panel uses the
+  same selected CLI/API runtime with a short preflight instruction rather than
+  spinning up a separate always-on coordinator.
 - Project decomposition uses the same shared decision before requesting a
   reversible subtask draft; durable child creation remains behind confirmation.
 - Manual context refresh and phase closeout call the same shared decision before

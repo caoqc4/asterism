@@ -47,6 +47,27 @@ visibility.
 
 This is a dual-role product model, not a mandatory two-agent or two-process architecture. The first implementation may run Pilot as rules plus bounded decision calls.
 
+## Phase 2 Bounded Decision
+
+Phase 2 means rules still decide first. A bounded backend is requested only
+when the rule layer sees a coordination trigger:
+
+- competing tasks need priority selection;
+- the user is steering or correcting the current path;
+- a blocked state is ambiguous but a runtime can inspect context;
+- a task has context but no usable priority lane.
+
+The backend gets one short Pilot preflight, not an open-ended conversation. It
+must decide route before acting, prefer the next reversible step when context
+is enough, research or inspect public/source-derived gaps before asking, and
+ask only for user-owned boundaries. Durable state still returns as proposal or
+evidence.
+
+Each decision carries a `backendPlan` with status, backend, triggers,
+`maxTurns=1`, and `outputContract=pilot_decision_summary`. If no model backend
+is usable, the status is `fallback_to_rules` or `human_review`; Taskplane does
+not silently invent another runtime.
+
 ## Pilot Decision Contract
 
 A Pilot decision should answer:

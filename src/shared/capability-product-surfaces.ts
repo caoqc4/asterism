@@ -112,7 +112,7 @@ export const PRODUCT_RUNTIME_RULE_ITEMS: ProductRuntimeRuleItem[] = [
     id: 'pilot.decision_contract',
     name: 'Pilot Decision Contract',
     invokeId: 'pilot.decision_contract',
-    desc: 'Pilot 决策契约：把 GoalPilot 推进判断和优先级排序落成 operation mode、消息优先级、DecisionBackend、执行器、升级和 gate。',
+    desc: 'Pilot 决策契约：把 GoalPilot 推进判断和优先级排序落成 operation mode、backendPlan、消息优先级、DecisionBackend、执行器、升级和 gate。',
     layer: 'Phase-loaded architecture skill',
     load: '设计、审查或执行 Pilot 判断、steer/follow-up/escalate、executor routing 或多任务协调时加载',
     enforcement: 'PilotDecision contract + routing tests',

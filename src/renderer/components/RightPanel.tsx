@@ -26,9 +26,11 @@ import {
 } from '@shared/runtime-intake-evaluator';
 import { evaluateTaskAdvancement } from '@shared/task-advancement-orchestrator';
 import {
+  buildBoundedPilotDecisionPrompt,
   evaluatePilotDecision,
   type PilotDecision,
   type PilotDecisionBackend,
+  shouldRunBoundedPilotDecisionBackend,
 } from '@shared/pilot-decision-contract';
 import {
   buildRuntimeHandoffPreview,
@@ -152,6 +154,17 @@ function formatPilotEscalationMessage(decision: PilotDecision): string {
     decision.advancement.userMessage,
     '确认后我再继续调用对应的执行 runtime。',
   ].join('\n\n');
+}
+
+function formatPilotDecisionLaunchNotice(decision: PilotDecision, runtimeLabel: string): string {
+  if (!shouldRunBoundedPilotDecisionBackend(decision)) {
+    return '正在准备任务上下文和可追溯来源，等待运行接收。';
+  }
+
+  return [
+    `Pilot 有界判断中：${runtimeLabel} 会先判断推进路线，再执行下一步。`,
+    '写入、拆任务、记忆和完成状态仍需 Taskplane gate 或用户确认。',
+  ].join('\n');
 }
 
 interface Message {
@@ -2706,7 +2719,7 @@ export function RightPanel({
       ? messages.filter((message) => message.role === 'user').length + 1
       : 0;
     const allowDecompositionDraft = advancement.promptMode === 'decomposition_draft' || canDraftDecomposition;
-    const taskplaneConversationPrompt = childTaskConversation
+    const rawTaskplaneConversationPrompt = childTaskConversation
       ? buildChildTaskConversationPrompt({
           childTaskConversationTurnCount,
           parentTaskTitle: parentTitleForActiveChild(),
@@ -2715,7 +2728,16 @@ export function RightPanel({
           userText: text,
         })
       : text;
-    const agentCliPrompt = text;
+    const taskplaneConversationPrompt = buildBoundedPilotDecisionPrompt({
+      decision: pilotDecision,
+      task: activeTaskDetail,
+      userText: rawTaskplaneConversationPrompt,
+    });
+    const agentCliPrompt = buildBoundedPilotDecisionPrompt({
+      decision: pilotDecision,
+      task: activeTaskDetail,
+      userText: text,
+    });
     patchSession({
       sourceContextProposal: null,
       taskFileProposal: null,
@@ -2756,7 +2778,7 @@ export function RightPanel({
         && window.api?.triggerAgentCliRun
       ) {
         const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
-        setAgentCliLaunchNotice('正在准备任务上下文和可追溯来源，等待运行接收。');
+        setAgentCliLaunchNotice(formatPilotDecisionLaunchNotice(pilotDecision, runtimeLabel));
         const run = await window.api.triggerAgentCliRun({
           operatorConfirmed: true,
           prompt: agentCliPrompt,

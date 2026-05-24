@@ -36,11 +36,27 @@ export type PilotOperationMode =
   | 'bounded_decision_backend'
   | 'persistent_ai_pilot_reserved';
 
+export type PilotDecisionBackendTrigger =
+  | 'ambiguous_blocked_state'
+  | 'missing_priority_lane'
+  | 'multi_task_priority'
+  | 'user_steer';
+
+export type PilotDecisionBackendPlan = {
+  backend: PilotDecisionBackend;
+  maxTurns: 1;
+  outputContract: 'pilot_decision_summary';
+  reason: string;
+  status: 'not_needed' | 'requested' | 'fallback_to_rules' | 'human_review';
+  triggers: PilotDecisionBackendTrigger[];
+};
+
 export type PilotDecision = {
   role: 'pilot';
   advancement: TaskAdvancementEvaluation;
   backend: PilotDecisionBackend;
   backendReason: string;
+  backendPlan: PilotDecisionBackendPlan;
   confidence: PilotConfidence;
   executor: PilotExecutor;
   executorReason: string;
@@ -70,6 +86,7 @@ export type PilotDecisionInput = {
 };
 
 const ALWAYS_REQUIRED_RULES = ['goalpilot.task_router', 'pilot.decision_contract'];
+const PILOT_DECISION_OUTPUT_CONTRACT: PilotDecisionBackendPlan['outputContract'] = 'pilot_decision_summary';
 
 export function evaluatePilotDecision(input: PilotDecisionInput): PilotDecision {
   const advancement = evaluateTaskAdvancement({
@@ -87,12 +104,13 @@ export function evaluatePilotDecision(input: PilotDecisionInput): PilotDecision 
     priorityLane,
     task: input.task,
   });
-  const needsModelJudgment = shouldUseModelAssistedPilot({
+  const backendTriggers = decisionBackendTriggersForPilot({
     advancement,
     input,
     messagePriority,
     priorityLane,
   });
+  const needsModelJudgment = backendTriggers.length > 0;
   const backend = selectPilotDecisionBackend({
     availableBackends: input.availableDecisionBackends,
     needsModelJudgment,
@@ -106,6 +124,11 @@ export function evaluatePilotDecision(input: PilotDecisionInput): PilotDecision 
     route: advancement.route,
     selectedCliRuntime: input.selectedCliRuntime,
   });
+  const backendPlan = buildPilotDecisionBackendPlan({
+    backend,
+    needsModelJudgment,
+    triggers: backendTriggers,
+  });
   const confidence = confidenceForBackend(backend, needsModelJudgment, messagePriority);
 
   return {
@@ -113,6 +136,7 @@ export function evaluatePilotDecision(input: PilotDecisionInput): PilotDecision 
     advancement,
     backend,
     backendReason: backendReason(backend, needsModelJudgment),
+    backendPlan,
     confidence,
     executor,
     executorReason: executorReason(executor, advancement, messagePriority),
@@ -143,6 +167,61 @@ export function classifyPilotMessagePriority(params: {
   }
 
   return 'follow_up';
+}
+
+export function shouldRunBoundedPilotDecisionBackend(decision: Pick<PilotDecision, 'backendPlan'>): boolean {
+  return decision.backendPlan.status === 'requested';
+}
+
+export function formatPilotDecisionBackendPlanForStep(plan: PilotDecisionBackendPlan): string {
+  return [
+    `status=${plan.status}`,
+    `backend=${plan.backend}`,
+    `outputContract=${plan.outputContract}`,
+    `maxTurns=${plan.maxTurns}`,
+    plan.triggers.length ? `triggers=${plan.triggers.join(',')}` : 'triggers=none',
+    `reason=${plan.reason}`,
+  ].join('\n');
+}
+
+export function buildBoundedPilotDecisionPrompt(params: {
+  decision: PilotDecision;
+  task?: TaskAdvancementTask | null;
+  userText: string;
+}): string {
+  if (!shouldRunBoundedPilotDecisionBackend(params.decision)) {
+    return params.userText;
+  }
+
+  const taskLines = [
+    params.task?.title ? `Title: ${params.task.title}` : null,
+    params.task?.summary ? `Summary: ${params.task.summary}` : null,
+    params.task?.nextStep ? `Next step: ${params.task.nextStep}` : null,
+    params.task?.riskLevel ? `Risk: ${params.task.riskLevel}${params.task.riskNote ? ` (${params.task.riskNote})` : ''}` : null,
+    params.task?.activeBlocker ? `Blocker: ${params.task.activeBlocker.title}` : null,
+    params.task?.activeWaitingItem ? `Waiting: ${params.task.activeWaitingItem.reason}` : null,
+  ].filter((line): line is string => Boolean(line));
+
+  return [
+    'Taskplane Pilot phase-2 bounded decision pass.',
+    [
+      'Decide the next route before acting.',
+      'Prefer proceeding with the next reversible step when context is enough.',
+      'Use research/inspection for public or source-derived gaps before asking the user.',
+      'Ask only when the missing answer is user-owned, approval-bound, or irreversible.',
+      'Do not mutate Taskplane state directly; return any durable change as a proposal/evidence.',
+    ].join(' '),
+    [
+      `Pilot movement: ${params.decision.movement}`,
+      `Pilot route: ${params.decision.advancement.route}`,
+      `Executor: ${params.decision.executor}`,
+      `Message priority: ${params.decision.messagePriority}`,
+      `Priority lane: ${params.decision.priorityLane ?? 'none'}`,
+      `Triggers: ${params.decision.backendPlan.triggers.join(', ')}`,
+    ].join('\n'),
+    taskLines.length ? `Task context:\n${taskLines.join('\n')}` : null,
+    `User message:\n${params.userText}`,
+  ].filter((part): part is string => Boolean(part)).join('\n\n');
 }
 
 export function selectPilotDecisionBackend(params: {
@@ -187,19 +266,23 @@ function derivePilotPriorityLane(task?: TaskAdvancementTask | null): PriorityLan
   return 'steady';
 }
 
-function shouldUseModelAssistedPilot(params: {
+function decisionBackendTriggersForPilot(params: {
   advancement: TaskAdvancementEvaluation;
   input: PilotDecisionInput;
   messagePriority: PilotMessagePriority;
   priorityLane: PriorityLane | null;
-}): boolean {
-  if ((params.input.multiTaskCandidateCount ?? 0) > 1) return true;
-  if (params.messagePriority === 'steer') return true;
-  if (params.advancement.route === 'blocked' && Boolean(params.input.runtime?.agentCliReady || params.input.runtime?.apiRuntimeReady)) {
-    return true;
+}): PilotDecisionBackendTrigger[] {
+  const triggers = new Set<PilotDecisionBackendTrigger>();
+  if ((params.input.multiTaskCandidateCount ?? 0) > 1) triggers.add('multi_task_priority');
+  if (params.messagePriority === 'steer') triggers.add('user_steer');
+  if (
+    params.advancement.route === 'blocked'
+    && Boolean(params.input.runtime?.agentCliReady || params.input.runtime?.apiRuntimeReady)
+  ) {
+    triggers.add('ambiguous_blocked_state');
   }
-  if (!params.priorityLane && params.input.hasTaskContext) return true;
-  return false;
+  if (!params.priorityLane && params.input.hasTaskContext) triggers.add('missing_priority_lane');
+  return [...triggers];
 }
 
 function selectPilotExecutor(params: {
@@ -262,6 +345,54 @@ function confidenceForBackend(
   if (backend !== 'rules') return 'model_assisted';
   if (needsModelJudgment || messagePriority === 'steer') return 'needs_review';
   return 'rule';
+}
+
+function buildPilotDecisionBackendPlan(params: {
+  backend: PilotDecisionBackend;
+  needsModelJudgment: boolean;
+  triggers: PilotDecisionBackendTrigger[];
+}): PilotDecisionBackendPlan {
+  if (!params.needsModelJudgment) {
+    return {
+      backend: 'rules',
+      maxTurns: 1,
+      outputContract: PILOT_DECISION_OUTPUT_CONTRACT,
+      reason: 'Deterministic Pilot rules are enough; no bounded model judgment is needed.',
+      status: 'not_needed',
+      triggers: [],
+    };
+  }
+
+  if (params.backend === 'human_review') {
+    return {
+      backend: params.backend,
+      maxTurns: 1,
+      outputContract: PILOT_DECISION_OUTPUT_CONTRACT,
+      reason: 'The missing decision belongs to the user or an explicit review lane.',
+      status: 'human_review',
+      triggers: params.triggers,
+    };
+  }
+
+  if (params.backend === 'rules') {
+    return {
+      backend: params.backend,
+      maxTurns: 1,
+      outputContract: PILOT_DECISION_OUTPUT_CONTRACT,
+      reason: 'A bounded model decision would help, but no usable backend is available; stay conservative.',
+      status: 'fallback_to_rules',
+      triggers: params.triggers,
+    };
+  }
+
+  return {
+    backend: params.backend,
+    maxTurns: 1,
+    outputContract: PILOT_DECISION_OUTPUT_CONTRACT,
+    reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',
+    status: 'requested',
+    triggers: params.triggers,
+  };
 }
 
 function operationModeForBackend(backend: PilotDecisionBackend): PilotOperationMode {
