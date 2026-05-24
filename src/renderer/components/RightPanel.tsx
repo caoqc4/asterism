@@ -48,10 +48,14 @@ import {
   type TaskplaneStructuredWritebackProposal,
 } from '@shared/taskplane-writeback-proposal';
 import {
+  buildSubtaskCreateManyWritebackApplyPlan,
   buildTaskFileUpdateWritebackApplyPlan,
   buildTaskFileWritebackApplyPlan,
   buildSourceContextWritebackApplyPlan,
   buildStructuredWritebackApplyPlan,
+  formatSubtaskDraftSummary,
+  type TaskplaneSubtaskCreateManyInput,
+  type TaskplaneSubtaskCreateManyResult,
 } from '@shared/taskplane-writeback-apply-plan';
 import { dispatchTaskplaneWritebackApplyPlan } from '@shared/taskplane-writeback-dispatch';
 import {
@@ -2159,10 +2163,91 @@ export function RightPanel({
     }));
   }
 
+  async function createSubtasksFromPanelFallback(
+    input: TaskplaneSubtaskCreateManyInput,
+  ): Promise<TaskplaneSubtaskCreateManyResult> {
+    if (!window.api?.createTask) {
+      throw new Error('当前环境不支持创建任务。');
+    }
+    const currentDetail = activeTaskDetail?.id === input.parentTaskId
+      ? activeTaskDetail
+      : await window.api?.getTaskDetail?.(input.parentTaskId).catch(() => null);
+    let updatedTask: TaskListItemRecord | null = null;
+    if (currentDetail) {
+      const previousType = currentDetail.taskType ?? 'simple';
+      const nextFacets: TaskExecutionType[] = Array.from(
+        new Set<TaskExecutionType>(['project', previousType, ...(currentDetail.taskFacets ?? [])]),
+      );
+      const shouldUpdateParent =
+        currentDetail.taskType !== 'project'
+        || Boolean(input.nextStep?.trim());
+      if (shouldUpdateParent) {
+        const nextParentTask = await window.api.updateTask({
+          id: input.parentTaskId,
+          nextStep: input.nextStep?.trim() || currentDetail.nextStep,
+          taskFacets: nextFacets,
+          taskType: 'project',
+        });
+        updatedTask = nextParentTask;
+        setActiveTaskDetail((current) => current?.id === input.parentTaskId
+          ? { ...current, ...nextParentTask }
+          : current);
+      }
+    }
+    const createdTasks = await Promise.all(input.subtasks.map((subtask) => (
+      window.api!.createTask({
+        title: subtask.title,
+        summary: formatSubtaskDraftSummary(subtask),
+        taskType: 'simple',
+        taskFacets: ['simple'],
+        parentTaskId: input.parentTaskId,
+      })
+    )));
+    const plannedTasks = await Promise.all(createdTasks.map((task) => (
+      window.api?.transitionTask?.({ id: task.id, nextState: 'planned' }).catch(() => task) ?? Promise.resolve(task)
+    )));
+    await Promise.all(plannedTasks.map((task, index) => {
+      const acceptanceCriteria = input.subtasks[index]?.acceptanceCriteria.trim();
+      if (!acceptanceCriteria) return Promise.resolve(null);
+      if (!window.api?.createCompletionCriteria) return Promise.resolve(null);
+      return Promise.resolve(window.api.createCompletionCriteria({
+        taskId: task.id,
+        text: acceptanceCriteria,
+        verificationResponsibility: 'unknown',
+      })).catch(() => null);
+    }));
+    const plannedByTitle = new Map(plannedTasks.map((task) => [task.title.trim(), task]));
+    await Promise.all(input.subtasks.map((subtask, index) => {
+      const dependencyTitle = subtask.dependency?.trim();
+      if (!dependencyTitle) return Promise.resolve(null);
+      const dependency = plannedByTitle.get(dependencyTitle)
+        ?? plannedTasks.find((task) => (
+          dependencyTitle.includes(task.title.trim()) || task.title.trim().includes(dependencyTitle)
+        ));
+      const child = plannedTasks[index];
+      if (!child || !dependency || dependency.id === child.id) return Promise.resolve(null);
+      if (!window.api?.createTaskDependency) return Promise.resolve(null);
+      return Promise.resolve(window.api.createTaskDependency({
+        taskId: child.id,
+        blockedByTaskId: dependency.id,
+        reason: subtask.dependency ?? null,
+      })).catch(() => null);
+    }));
+    return {
+      createdTasks: plannedTasks,
+      updatedTask,
+    };
+  }
+
   async function confirmTaskDecompositionDraft() {
-    if (!activeTaskId || !taskDecompositionDraft || creatingDecompositionChildren || !window.api?.createTask) return;
+    if (
+      !activeTaskId
+      || !taskDecompositionDraft
+      || creatingDecompositionChildren
+      || (!window.api?.applyTaskplaneWriteback && !window.api?.createTask)
+    ) return;
     const actionEvaluation = evaluateRuntimeAction({
-      action: 'task_file_write_proposal',
+      action: 'task_mutation',
       fromTaskId: activeTaskId,
       messageCount: messages.filter((message) => message.role === 'user').length,
     });
@@ -2177,49 +2262,41 @@ export function RightPanel({
       return;
     }
     setCreatingDecompositionChildren(true);
+    const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: taskDecompositionDraft.runId,
+      nextStep: taskDecompositionDraft.nextStep,
+      parentTaskId: activeTaskId,
+      review: taskDecompositionDraft.review,
+      source: 'agent_cli_decomposition',
+      subtasks: taskDecompositionDraft.subtasks,
+    });
     try {
-      if (activeTaskDetail?.id === activeTaskId && activeTaskDetail.taskType !== 'project') {
-        const previousType = activeTaskDetail.taskType ?? 'simple';
-        const nextFacets: TaskExecutionType[] = Array.from(
-          new Set<TaskExecutionType>(['project', previousType, ...(activeTaskDetail.taskFacets ?? [])]),
-        );
-        const updated = await window.api?.updateTask?.({
-          id: activeTaskId,
-          taskFacets: nextFacets,
-          taskType: 'project',
-        }).catch(() => null);
-        if (updated) {
-          setActiveTaskDetail((current) => current?.id === activeTaskId
-            ? { ...current, taskFacets: nextFacets, taskType: 'project' }
-            : current);
-        }
+      const result = window.api?.applyTaskplaneWriteback
+        ? await window.api.applyTaskplaneWriteback({ plan, taskId: activeTaskId })
+        : await dispatchTaskplaneWritebackApplyPlan({
+          plan,
+          taskId: activeTaskId,
+          ports: {
+            createSubtasks: createSubtasksFromPanelFallback,
+            recordTimelineEvent: recordPanelTimelineEvent,
+          },
+        });
+      if (result.status === 'blocked') {
+        appendSysMsg(result.message);
+        return;
       }
-      const created = await Promise.all(taskDecompositionDraft.subtasks.map((subtask) => (
-        window.api!.createTask({
-          title: subtask.title,
-          summary: [
-            subtask.summary,
-            subtask.acceptanceCriteria ? `验收：${subtask.acceptanceCriteria}` : null,
-            subtask.dependency ? `依赖：${subtask.dependency}` : null,
-          ].filter(Boolean).join('\n'),
-          taskType: 'simple',
-          taskFacets: ['simple'],
-          parentTaskId: activeTaskId,
-        })
-      )));
-      await Promise.all(created.map((task) => (
-        window.api?.transitionTask?.({ id: task.id, nextState: 'planned' }).catch(() => task)
-      )));
-      await recordPanelTimelineEvent(activeTaskId, 'panel.task_record_written', {
-        source: 'agent_cli_decomposition',
-        runId: taskDecompositionDraft.runId,
-        subtaskCount: created.length,
-      });
+      if (result.updatedTask) {
+        const nextParentTask = result.updatedTask;
+        setActiveTaskDetail((current) => current?.id === activeTaskId
+          ? { ...current, ...nextParentTask }
+          : current);
+      }
+      const createdCount = result.createdTasks?.length ?? taskDecompositionDraft.subtasks.length;
       verifyDurablePanelActionCompleted({
         title: '创建项目子任务',
-        output: `已创建 ${created.length} 个子任务。`,
+        output: `已创建 ${createdCount} 个子任务。`,
       });
-      appendSysMsg(`已根据拆解草案创建 ${created.length} 个子任务。`);
+      appendSysMsg(result.successMessage);
       setTaskDecompositionDraft(null);
       setRecentDecompositionConfirmedTaskId(activeTaskId);
       onOpenTask?.(activeTaskId);

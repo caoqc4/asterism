@@ -219,8 +219,8 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   current environment;
 - Write Intent extraction and confirmation UI cover the first planned intent
   set, and right-panel confirmations now invoke main-side writeback dispatch
-  for task, source, decision, and task-file writes; non-UI confirmation flows
-  still need to invoke that adapter outside the right panel;
+  for task, source, decision, subtask, and task-file writes; non-UI
+  confirmation flows still need to invoke that adapter outside the right panel;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 
@@ -550,12 +550,15 @@ Status: started.
   `task.complete.propose` from `TASKPLANE_WRITE_INTENTS` into shared validated
   intent objects.
 - Validate subtask proposal basics before any persistence path can use it.
-- `subtask.propose` confirmation still uses dedicated project decomposition
-  flows because it writes multiple child tasks, dependencies, completion
-  criteria, parent updates, and timeline evidence; extract this into a main-side
-  apply service before treating it like the other writeback plans.
+- `subtask.propose` is normalized into a `subtask.create_many` apply plan.
+  Confirmation now routes through main-side writeback dispatch, where the task
+  service adapter promotes the parent to a project, creates planned child tasks,
+  stores child completion criteria and matched dependencies when available, and
+  records project timeline evidence. The renderer keeps a compatibility fallback
+  using the same shared dispatch contract.
 - Right-panel proposal cards and service-level persistence paths now cover
-  decision, next-step, blocker, completion, source, and task-record intents.
+  decision, next-step, blocker, completion, source, subtask, and task-record
+  intents.
 - Validate against task scope, phase, and memory policy before persistence.
 - surface proposal cards;
 - persist only through Taskplane services.

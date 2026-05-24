@@ -5,6 +5,7 @@ import type { TaskListItemRecord } from './types/task.js';
 import type { TaskFileRecord } from './types/task-file.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
+  TaskplaneSubtaskCreateManyResult,
   TaskplaneWritebackApplyPlan,
   TaskplaneWritebackTimelineDraft,
 } from './taskplane-writeback-apply-plan.js';
@@ -16,6 +17,7 @@ export type TaskplaneWritebackDispatchPorts = {
     DecisionRecord
   >;
   createSourceContext?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'source_context.create' }>, SourceContextRecord>;
+  createSubtasks?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'subtask.create_many' }>, TaskplaneSubtaskCreateManyResult>;
   createTaskFile?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'task_file.create' }>, TaskFileRecord>;
   recordTimelineEvent?: (
     taskId: string,
@@ -39,6 +41,7 @@ export type TaskplaneWritebackDispatchResult =
   | {
       action: TaskplaneWritebackApplyPlan['action'];
       status: 'completed';
+      createdTasks?: TaskListItemRecord[];
       successMessage: string;
       updatedTask?: TaskListItemRecord | null;
     };
@@ -71,6 +74,19 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
     return completed(plan);
   }
 
+  if (plan.action === 'subtask.create_many') {
+    if (!ports.createSubtasks) return blocked(plan.action, '子任务草案已暂停：当前环境不支持创建项目子任务。');
+    const result = await ports.createSubtasks(plan.input);
+    await recordTimeline(ports, taskId, {
+      ...plan.timeline,
+      payload: {
+        ...plan.timeline.payload,
+        childTaskIds: result.createdTasks.map((task) => task.id),
+      },
+    });
+    return completed(plan, result.updatedTask ?? null, result.createdTasks);
+  }
+
   if (plan.action === 'decision.create') {
     if (!ports.createDecision) return blocked(plan.action, '决策提案已暂停：当前环境不支持创建 Decision。');
     await ports.createDecision(plan.input);
@@ -98,9 +114,11 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
 function completed(
   plan: TaskplaneWritebackApplyPlan,
   updatedTask: TaskListItemRecord | null = null,
+  createdTasks?: TaskListItemRecord[],
 ): Extract<TaskplaneWritebackDispatchResult, { status: 'completed' }> {
   return {
     action: plan.action,
+    ...(createdTasks ? { createdTasks } : {}),
     status: 'completed',
     successMessage: plan.successMessage,
     updatedTask,

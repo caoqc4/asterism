@@ -139,6 +139,79 @@ describe('Taskplane writeback dispatch', () => {
       status: 'completed',
     });
   });
+
+  it('dispatches subtask creation through the unified writeback port', async () => {
+    const createSubtasks = vi.fn().mockResolvedValue({
+      createdTasks: [
+        { id: 'child_1', title: '确认网站范围' },
+        { id: 'child_2', title: '整理信息架构' },
+      ],
+      updatedTask: {
+        id: 'task_project',
+        taskType: 'project',
+      },
+    });
+    const recordTimelineEvent = vi.fn().mockResolvedValue(undefined);
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_project',
+      ports: {
+        createSubtasks,
+        recordTimelineEvent,
+      },
+      plan: {
+        action: 'subtask.create_many',
+        input: {
+          evidenceRunId: 'run_5',
+          nextStep: '进入第一个子任务。',
+          parentTaskId: 'task_project',
+          review: '拆解保持大块粒度。',
+          source: 'agent_cli_decomposition',
+          subtasks: [{
+            acceptanceCriteria: '页面范围已确认。',
+            dependency: null,
+            summary: '确认首版网站页面范围。',
+            title: '确认网站范围',
+          }, {
+            acceptanceCriteria: '首版信息架构已形成。',
+            dependency: '确认网站范围',
+            summary: '整理首页、教程和案例页面结构。',
+            title: '整理信息架构',
+          }],
+        },
+        successMessage: '已根据拆解草案创建 2 个子任务。',
+        timeline: {
+          type: 'panel.project_decomposed',
+          payload: {
+            evidenceRunId: 'run_5',
+            source: 'agent_cli_decomposition',
+            subtaskCount: 2,
+          },
+        },
+      },
+    });
+
+    expect(createSubtasks).toHaveBeenCalledWith(expect.objectContaining({
+      parentTaskId: 'task_project',
+    }));
+    expect(recordTimelineEvent).toHaveBeenCalledWith('task_project', 'panel.project_decomposed', {
+      childTaskIds: ['child_1', 'child_2'],
+      evidenceRunId: 'run_5',
+      source: 'agent_cli_decomposition',
+      subtaskCount: 2,
+    });
+    expect(result).toMatchObject({
+      action: 'subtask.create_many',
+      createdTasks: [
+        { id: 'child_1' },
+        { id: 'child_2' },
+      ],
+      status: 'completed',
+      updatedTask: {
+        id: 'task_project',
+      },
+    });
+  });
 });
 
 function nextStepPlan(): TaskplaneStructuredWritebackApplyPlan {

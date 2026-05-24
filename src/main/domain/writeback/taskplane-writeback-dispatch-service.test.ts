@@ -9,9 +9,14 @@ import type {
 describe('TaskplaneWritebackDispatchService', () => {
   it('adapts shared writeback dispatch to main task and decision services', async () => {
     const taskService = {
+      create: vi.fn(),
       createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
       createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
       recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      transition: vi.fn(),
       update: vi.fn().mockResolvedValue({
         id: 'task_1',
         nextStep: '整理页面信息架构。',
@@ -52,11 +57,16 @@ describe('TaskplaneWritebackDispatchService', () => {
 
   it('routes source contexts and decisions through their main domain services', async () => {
     const taskService = {
+      create: vi.fn(),
       createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
       createSourceContext: vi.fn().mockResolvedValue({
         id: 'source_1',
       }),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
       recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      transition: vi.fn(),
       update: vi.fn(),
     };
     const decisionService = {
@@ -129,9 +139,14 @@ describe('TaskplaneWritebackDispatchService', () => {
 
   it('blocks writeback plans that target a different task', async () => {
     const taskService = {
+      create: vi.fn(),
       createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
       createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
       recordTimelineEvent: vi.fn(),
+      transition: vi.fn(),
       update: vi.fn(),
     };
     const decisionService = {
@@ -154,9 +169,14 @@ describe('TaskplaneWritebackDispatchService', () => {
 
   it('routes task file writes through the task file repository and timeline service', async () => {
     const taskService = {
+      create: vi.fn(),
       createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
       createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
       recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      transition: vi.fn(),
       update: vi.fn(),
     };
     const decisionService = {
@@ -217,6 +237,132 @@ describe('TaskplaneWritebackDispatchService', () => {
     expect(result).toMatchObject({
       action: 'task_file.create',
       status: 'completed',
+    });
+  });
+
+  it('applies subtask proposals through task service project updates, child creation, criteria, and dependencies', async () => {
+    const taskService = {
+      create: vi.fn()
+        .mockResolvedValueOnce({
+          id: 'child_1',
+          title: '确认网站范围',
+          state: 'captured',
+        })
+        .mockResolvedValueOnce({
+          id: 'child_2',
+          title: '整理信息架构',
+          state: 'captured',
+        }),
+      createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn().mockResolvedValue({ id: 'criteria_1' }),
+      createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn().mockResolvedValue({ id: 'dependency_1' }),
+      getDetail: vi.fn().mockResolvedValue({
+        id: 'task_project',
+        nextStep: null,
+        taskFacets: ['simple'],
+        taskType: 'simple',
+      }),
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      transition: vi.fn()
+        .mockImplementation(async (input) => ({
+          id: input.id,
+          title: input.id === 'child_1' ? '确认网站范围' : '整理信息架构',
+          state: input.nextState,
+        })),
+      update: vi.fn().mockResolvedValue({
+        id: 'task_project',
+        nextStep: '进入第一个子任务。',
+        taskFacets: ['project', 'simple'],
+        taskType: 'project',
+      }),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository());
+
+    const result = await service.dispatch({
+      taskId: 'task_project',
+      plan: {
+        action: 'subtask.create_many',
+        input: {
+          evidenceRunId: 'run_5',
+          nextStep: '进入第一个子任务。',
+          parentTaskId: 'task_project',
+          review: '拆解保持大块粒度。',
+          source: 'agent_cli_decomposition',
+          subtasks: [{
+            acceptanceCriteria: '页面范围已确认。',
+            dependency: null,
+            summary: '确认首版网站页面范围。',
+            title: '确认网站范围',
+          }, {
+            acceptanceCriteria: '首版信息架构已形成。',
+            dependency: '确认网站范围',
+            summary: '整理首页、教程和案例页面结构。',
+            title: '整理信息架构',
+          }],
+        },
+        successMessage: '已根据拆解草案创建 2 个子任务。',
+        timeline: {
+          payload: {
+            evidenceRunId: 'run_5',
+            source: 'agent_cli_decomposition',
+            subtaskCount: 2,
+          },
+          type: 'panel.project_decomposed',
+        },
+      },
+    });
+
+    expect(taskService.update).toHaveBeenCalledWith({
+      id: 'task_project',
+      nextStep: '进入第一个子任务。',
+      taskFacets: ['project', 'simple'],
+      taskType: 'project',
+    });
+    expect(taskService.create).toHaveBeenCalledWith(expect.objectContaining({
+      parentTaskId: 'task_project',
+      summary: [
+        '确认首版网站页面范围。',
+        '验收：页面范围已确认。',
+      ].join('\n'),
+      taskFacets: ['simple'],
+      taskType: 'simple',
+      title: '确认网站范围',
+    }));
+    expect(taskService.createCompletionCriteria).toHaveBeenCalledWith({
+      taskId: 'child_1',
+      text: '页面范围已确认。',
+      verificationResponsibility: 'unknown',
+    });
+    expect(taskService.createTaskDependency).toHaveBeenCalledWith({
+      taskId: 'child_2',
+      blockedByTaskId: 'child_1',
+      reason: '确认网站范围',
+    });
+    expect(taskService.recordTimelineEvent).toHaveBeenCalledWith({
+      payload: {
+        childTaskIds: ['child_1', 'child_2'],
+        evidenceRunId: 'run_5',
+        source: 'agent_cli_decomposition',
+        subtaskCount: 2,
+      },
+      taskId: 'task_project',
+      type: 'panel.project_decomposed',
+    });
+    expect(result).toMatchObject({
+      action: 'subtask.create_many',
+      createdTasks: [
+        { id: 'child_1', state: 'planned' },
+        { id: 'child_2', state: 'planned' },
+      ],
+      status: 'completed',
+      updatedTask: {
+        id: 'task_project',
+        taskType: 'project',
+      },
     });
   });
 });

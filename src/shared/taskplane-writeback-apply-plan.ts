@@ -1,7 +1,7 @@
 import type { CreateBlockerInput } from './types/blocker.js';
 import type { CreateDecisionInput } from './types/decision.js';
 import type { CreateSourceContextInput } from './types/source-context.js';
-import type { UpdateTaskInput } from './types/task.js';
+import type { TaskListItemRecord, UpdateTaskInput } from './types/task.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from './types/task-file.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
@@ -14,9 +14,37 @@ export type TaskplaneWritebackTimelineDraft = {
   type: PanelRuntimeTimelineEventType;
 };
 
+export type TaskplaneSubtaskDraftInput = {
+  acceptanceCriteria: string;
+  dependency?: string | null;
+  summary: string;
+  title: string;
+};
+
+export type TaskplaneSubtaskCreateManyInput = {
+  evidenceRunId?: string | null;
+  nextStep?: string | null;
+  parentTaskId: string;
+  review?: string | null;
+  source: 'agent_cli_decomposition' | 'taskplane_write_intent';
+  subtasks: TaskplaneSubtaskDraftInput[];
+};
+
+export type TaskplaneSubtaskCreateManyResult = {
+  createdTasks: TaskListItemRecord[];
+  updatedTask?: TaskListItemRecord | null;
+};
+
 export type TaskplaneSourceContextWritebackApplyPlan = {
   action: 'source_context.create';
   input: CreateSourceContextInput;
+  successMessage: string;
+  timeline: TaskplaneWritebackTimelineDraft;
+};
+
+export type TaskplaneSubtaskWritebackApplyPlan = {
+  action: 'subtask.create_many';
+  input: TaskplaneSubtaskCreateManyInput;
   successMessage: string;
   timeline: TaskplaneWritebackTimelineDraft;
 };
@@ -69,8 +97,49 @@ export type TaskplaneStructuredWritebackApplyPlan =
 
 export type TaskplaneWritebackApplyPlan =
   | TaskplaneSourceContextWritebackApplyPlan
+  | TaskplaneSubtaskWritebackApplyPlan
   | TaskplaneTaskFileWritebackApplyPlan
   | TaskplaneStructuredWritebackApplyPlan;
+
+export function buildSubtaskCreateManyWritebackApplyPlan(params: {
+  evidenceRunId?: string | null;
+  nextStep?: string | null;
+  parentTaskId: string;
+  review?: string | null;
+  source?: 'agent_cli_decomposition' | 'taskplane_write_intent';
+  subtasks: TaskplaneSubtaskDraftInput[];
+}): TaskplaneSubtaskWritebackApplyPlan {
+  return {
+    action: 'subtask.create_many',
+    input: {
+      evidenceRunId: params.evidenceRunId ?? null,
+      nextStep: params.nextStep ?? null,
+      parentTaskId: params.parentTaskId,
+      review: params.review ?? null,
+      source: params.source ?? 'agent_cli_decomposition',
+      subtasks: params.subtasks,
+    },
+    successMessage: `已根据拆解草案创建 ${params.subtasks.length} 个子任务。`,
+    timeline: {
+      type: 'panel.project_decomposed',
+      payload: {
+        evidenceRunId: params.evidenceRunId ?? null,
+        nextStep: params.nextStep ?? null,
+        review: params.review ?? null,
+        source: params.source ?? 'agent_cli_decomposition',
+        subtaskCount: params.subtasks.length,
+      },
+    },
+  };
+}
+
+export function formatSubtaskDraftSummary(subtask: TaskplaneSubtaskDraftInput): string {
+  return [
+    subtask.summary,
+    subtask.acceptanceCriteria ? `验收：${subtask.acceptanceCriteria}` : null,
+    subtask.dependency ? `依赖：${subtask.dependency}` : null,
+  ].filter(Boolean).join('\n');
+}
 
 export function buildTaskFileWritebackApplyPlan(params: {
   evidenceRunId?: string | null;

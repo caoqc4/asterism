@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildSubtaskCreateManyWritebackApplyPlan,
   buildTaskFileWritebackApplyPlan,
   buildSourceContextWritebackApplyPlan,
   buildStructuredWritebackApplyPlan,
+  formatSubtaskDraftSummary,
 } from './taskplane-writeback-apply-plan.js';
 import type { TaskplaneStructuredWritebackProposal } from './taskplane-writeback-proposal.js';
 
@@ -119,6 +121,49 @@ describe('Taskplane writeback apply plans', () => {
         },
       },
     });
+  });
+
+  it('maps subtask drafts to a main-side project decomposition apply plan', () => {
+    const subtask = {
+      acceptanceCriteria: '页面范围已确认。',
+      dependency: '父任务目标',
+      summary: '确认首版网站页面范围。',
+      title: '确认网站范围',
+    };
+    const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_5',
+      nextStep: '进入第一个子任务。',
+      parentTaskId: 'task_project',
+      review: '拆解保持大块粒度。',
+      subtasks: [subtask, {
+        acceptanceCriteria: '首版信息架构已形成。',
+        dependency: '确认网站范围',
+        summary: '整理首页、教程和案例页面结构。',
+        title: '整理信息架构',
+      }],
+    });
+
+    expect(plan).toMatchObject({
+      action: 'subtask.create_many',
+      input: {
+        evidenceRunId: 'run_5',
+        nextStep: '进入第一个子任务。',
+        parentTaskId: 'task_project',
+        source: 'agent_cli_decomposition',
+      },
+      timeline: {
+        type: 'panel.project_decomposed',
+        payload: {
+          evidenceRunId: 'run_5',
+          subtaskCount: 2,
+        },
+      },
+    });
+    expect(formatSubtaskDraftSummary(subtask)).toBe([
+      '确认首版网站页面范围。',
+      '验收：页面范围已确认。',
+      '依赖：父任务目标',
+    ].join('\n'));
   });
 });
 
