@@ -339,7 +339,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'post_step',
     ],
-    notes: 'Auth remains inside the official CLI; Taskplane gates context assembly, records context.readiness.evaluate before invoking the native runtime, and records run evidence.',
+    notes: 'Auth remains inside the official CLI; Taskplane gates context assembly, records context.readiness.evaluate before invoking the native runtime, and records run evidence. Selected Agent CLI decomposition drafts also travel through this task-bound entrypoint: the right panel allows decomposition_draft prompts, extracts subtask.propose Write Intent from native output, and keeps durable child creation behind operator confirmation.',
   },
   {
     id: 'run.triggerAgentApi.future',
@@ -792,7 +792,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'task_memory_guidance',
       'subtask_draft',
     ],
-    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, wraps the result as a decomposition_draft API-runtime invocation for the currently implemented API path, then validates both existing children and proposed child drafts before returning JSON. The IPC handler rejects selected Agent CLI modes instead of silently switching runtimes. It is not a hidden Agent CLI fallback and creates no child tasks; future CLI/API adapters must return the same draft contract before durable creation remains behind project.decompositionConfirm.',
+    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, wraps the result as a decomposition_draft API-runtime invocation for the retained API path, then validates both existing children and proposed child drafts before returning JSON. The IPC handler rejects selected Agent CLI modes instead of silently switching runtimes. Selected Agent CLI decomposition uses run.triggerAgentCli plus right-panel subtask.propose Write Intent extraction and confirmation, not this IPC channel. Neither path directly creates child tasks; durable creation remains behind project.decompositionConfirm.',
   },
   {
     id: 'project.decompositionConfirm',

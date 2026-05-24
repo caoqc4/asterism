@@ -207,6 +207,11 @@ Taskplane currently has a working native CLI execution backend:
   output and can surface confirmation cards for task records, source contexts,
   decisions, next-step updates, blockers, completion proposals, and subtask
   drafts.
+- Selected native Agent CLI project decomposition now uses the same task-bound
+  right-panel execution path: GoalPilot routes the request as
+  `decomposition_draft`, the native CLI returns `subtask.propose` Write Intent,
+  and Taskplane confirms durable child creation through the shared writeback
+  apply path.
 - Taskplane runs verification and may create memory proposals after the runtime
   returns.
 - Codex CLI has a packaged-app live smoke path that verifies local account
@@ -607,8 +612,8 @@ Current implementation:
 
 Remaining work:
 
-- Move decomposition drafting behind the same selected-runtime/DecisionBackend
-  abstraction used by ordinary task execution.
+- Promote the future Agent API decomposition path into the same proposal-card
+  and writeback-apply contract already used by native CLI decomposition.
 
 ### Phase 5: API Decision Backend
 

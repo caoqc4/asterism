@@ -110,6 +110,27 @@ describe('evaluateTaskAdvancement', () => {
     expect(evaluation.requiredGates).toContain('subtask_draft');
   });
 
+  it('uses the selected native Agent CLI for decomposition drafts when available', () => {
+    const evaluation = evaluateTaskAdvancement({
+      entrypoint: 'project_decompose',
+      hasTaskContext: true,
+      prompt: '拆解官网改版项目。',
+      runtime: { agentCliReady: true, apiRuntimeReady: true },
+      task: buildTask({
+        childTaskIds: [],
+        title: '官网改版项目',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      confirmationRequired: true,
+      movement: 'decompose',
+      promptMode: 'decomposition_draft',
+      route: 'agent_cli',
+      shouldStartRuntime: true,
+    });
+  });
+
   it('does not force decomposition without an explicit decomposition movement', () => {
     const evaluation = evaluateTaskAdvancement({
       entrypoint: 'right_panel_chat',

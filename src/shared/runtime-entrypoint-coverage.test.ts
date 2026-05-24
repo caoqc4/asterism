@@ -57,6 +57,8 @@ describe('runtime entrypoint coverage', () => {
     expect(agentCli?.requiredGates).toContain('context_readiness');
     expect(agentCli?.coveredGates).toContain('context_readiness');
     expect(agentCli?.notes).toContain('context.readiness.evaluate');
+    expect(agentCli?.notes).toContain('Selected Agent CLI decomposition drafts');
+    expect(agentCli?.notes).toContain('subtask.propose Write Intent');
     expect(futureApi?.requiredGates).toContain('context_readiness');
     expect(futureApi?.coveredGates).toContain('context_readiness');
     expect(retainedRun?.requiredGates).not.toContain('context_readiness');
@@ -132,11 +134,11 @@ describe('runtime entrypoint coverage', () => {
     expect(draft?.requiredGates).not.toContain('task_mutation');
     expect(draft?.requiredGates).not.toContain('runtime_action');
     expect(draft?.notes).toContain('decomposition_draft API-runtime invocation');
-    expect(draft?.notes).toContain('currently implemented API path');
+    expect(draft?.notes).toContain('retained API path');
     expect(draft?.notes).toContain('rejects selected Agent CLI modes');
-    expect(draft?.notes).toContain('not a hidden Agent CLI fallback');
-    expect(draft?.notes).toContain('creates no child tasks');
-    expect(draft?.notes).toContain('future CLI/API adapters must return the same draft contract');
+    expect(draft?.notes).toContain('run.triggerAgentCli plus right-panel subtask.propose');
+    expect(draft?.notes).toContain('Neither path directly creates child tasks');
+    expect(draft?.notes).toContain('project.decompositionConfirm');
 
     expect(confirm?.kind).toBe('durable_write');
     expect(confirm?.requiredGates).toContain('task_mutation');

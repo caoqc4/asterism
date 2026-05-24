@@ -25,6 +25,8 @@ describe('GoalPilot task advancement framework', () => {
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Agent Operating Principles: load for concrete execution');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Native Agent Capability Mapping');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('Decision Layer Writeback Orchestration');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('persistent goal capability');
+    expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('runtime-native goal loop');
     expect(TASKPLANE_TASK_ADVANCEMENT_FRAMEWORK).toContain('If something must always happen, implement it as a hook/gate.');
   });
 

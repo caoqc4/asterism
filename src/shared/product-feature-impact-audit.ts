@@ -146,20 +146,21 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'post_step',
       'operator_confirmation',
     ],
-    cliOnlyClosure: 'partial',
+    cliOnlyClosure: 'supported',
     futureApiClosure: 'partial',
     evidence: [
       'Project decomposition produces draft child tasks before durable subtasks.',
       'Project decomposition uses shared TaskAdvancementOrchestrator movement routing before requesting a reversible subtask draft.',
+      'Selected native Agent CLI decomposition runs through the right-panel task-bound Agent CLI path, parses subtask.propose Write Intent from CLI output, and surfaces a confirmation card.',
       'Subtask draft validation blocks underspecified or tiny proposals before confirmation.',
       'Subtask draft confirmation is represented as a subtask.create_many writeback apply plan and dispatched through the main-side task service adapter.',
       'The main-side subtask apply path promotes the parent to a project, creates planned child tasks, stores child completion criteria and matched dependencies when available, and records project timeline evidence.',
     ],
     gaps: [
-      'Decomposition runtime selection should use the same adapter abstraction as ordinary task execution instead of API-only paths.',
+      'Future Agent API decomposition should reuse the same proposal-card and writeback-apply path as native CLI decomposition.',
     ],
     nextActions: [
-      'Move decomposition drafting behind runtime-neutral DecisionBackend / selected runtime support.',
+      'When Agent API execution is promoted, route subtask.propose through the same writeback confirmation contract.',
     ],
   },
   {
