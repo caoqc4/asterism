@@ -106,7 +106,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',
       'Shared writeback dispatch applies plans through injected ports, so renderer and future service runtimes can share the same write boundary.',
       'Main-side writeback dispatch adapter wires shared dispatch to TaskService, DecisionService, and TaskFileRepository ports.',
-      'Right-panel confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
+      'Right-panel source, structured, task-record, and task-memory confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
       'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
       'Completed native runs summarize Taskplane web research capture and native CLI web/search events.',
       'Run verification and memory proposals remain product-controlled.',
@@ -147,12 +147,15 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'Project decomposition produces draft child tasks before durable subtasks.',
       'Subtask draft validation blocks underspecified or tiny proposals before confirmation.',
+      'Subtask draft confirmation remains a dedicated project workflow because it writes multiple child tasks, state transitions, dependencies, completion criteria, and project timeline evidence.',
     ],
     gaps: [
       'Decomposition runtime selection should use the same adapter abstraction as ordinary task execution instead of API-only paths.',
+      'subtask.propose is validated and confirmable, but it is not yet represented as a main-side writeback apply plan.',
     ],
     nextActions: [
       'Move decomposition drafting behind runtime-neutral DecisionBackend / selected runtime support.',
+      'Extract subtask draft confirmation into a main-side project decomposition apply service before routing it through Write Intent dispatch.',
     ],
   },
   {

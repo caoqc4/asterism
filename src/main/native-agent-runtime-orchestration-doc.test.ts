@@ -16,6 +16,7 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('decisions, next-step updates, blockers, completion proposals, and subtask');
     expect(content).toContain('for task, source, decision, and task-file writes');
     expect(content).toContain('still need to invoke that adapter outside the right panel');
+    expect(content).toContain('subtask.propose` confirmation still uses dedicated project decomposition');
     expect(content).not.toContain('completion proposals are not fully wired into the same pipeline');
   });
 });

@@ -522,6 +522,10 @@ Status: started.
   `task.complete.propose` from `TASKPLANE_WRITE_INTENTS` into shared validated
   intent objects.
 - Validate subtask proposal basics before any persistence path can use it.
+- `subtask.propose` confirmation still uses dedicated project decomposition
+  flows because it writes multiple child tasks, dependencies, completion
+  criteria, parent updates, and timeline evidence; extract this into a main-side
+  apply service before treating it like the other writeback plans.
 - Right-panel proposal cards and service-level persistence paths now cover
   decision, next-step, blocker, completion, source, and task-record intents.
 - Validate against task scope, phase, and memory policy before persistence.

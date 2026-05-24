@@ -49,9 +49,11 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback dispatch');
     expect(rightPanel?.evidence.join(' ')).toContain('TaskService, DecisionService, and TaskFileRepository ports');
-    expect(rightPanel?.evidence.join(' ')).toContain('Right-panel confirmations invoke main-side writeback IPC');
+    expect(rightPanel?.evidence.join(' ')).toContain('source, structured, task-record, and task-memory confirmations');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need product UI paths');
     expect(rightPanel?.gaps.join(' ')).not.toContain('main-side writeback orchestration service is not yet wired');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.gaps.join(' '))
+      .toContain('not yet represented as a main-side writeback apply plan');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');
     expect(decisions?.evidence.join(' ')).toContain('task, decision, and task-file services');
     expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');
