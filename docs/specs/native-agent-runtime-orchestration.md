@@ -162,7 +162,17 @@ Taskplane currently has a working native CLI execution backend:
 - The right panel polls active native CLI runs and projects the latest Run step
   into compact progress states such as preparing, researching, reading
   workspace, using tools, verifying, completed, or failed.
+- Taskplane can perform a pre-run web research bridge when the task clearly
+  needs fresh external information, save the digest and raw links as Source
+  Context, and show the captured source count in the completed chat summary.
+- Native CLI web/search/browse events are projected into Run steps and the
+  completed chat summary, so users can see that research happened without
+  reading raw terminal output.
 - Raw terminal output remains available as run evidence.
+- Taskplane extracts structured `TASKPLANE_WRITE_INTENTS` from native CLI
+  output and can surface confirmation cards for task records, source contexts,
+  decisions, next-step updates, blockers, completion proposals, and subtask
+  drafts.
 - Taskplane runs verification and may create memory proposals after the runtime
   returns.
 - Codex CLI has a packaged-app live smoke path that verifies local account
@@ -179,10 +189,10 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   mapping as they evolve;
 - Claude real-account execution has not been validated in this repository's
   current environment;
-- write intent extraction has a first shared contract and `subtask.propose`
-  parser/validator, but task records, decisions, sources, next-step updates,
-  blockers, and completion proposals are not fully wired into the same pipeline
-  yet;
+- Write Intent extraction and confirmation UI cover the first planned intent
+  set, but the shared decision/writeback orchestration should continue moving
+  parsing, validation, confirmation policy, and persistence out of ad hoc panel
+  handlers into reusable orchestrator services;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 
@@ -434,8 +444,8 @@ Projection rules:
 - chat shows compact status only;
 - run detail and task dynamics keep raw event evidence;
 - repeated tool events should collapse into one moving status;
-- source capture should show "capturing sources" or "source capture skipped"
-  when relevant;
+- source capture should show whether sources were captured or skipped during
+  progress/final summaries when relevant;
 - verification and memory proposal should be visible as product actions, not
   raw stdout.
 
@@ -558,7 +568,8 @@ The architecture is working when:
 - a user can start a task-bound native CLI run from Taskplane;
 - Taskplane can show what phase the run is in without dumping raw events;
 - runtime evidence is persisted as run steps;
-- runtime output can produce structured write intent;
+- runtime output can produce structured write intent for records, sources,
+  decisions, next steps, blockers, completion proposals, and subtask drafts;
 - invalid intent is rejected or surfaced for review;
 - meaningful durable writes require confirmation;
 - Taskplane services perform all database writes;

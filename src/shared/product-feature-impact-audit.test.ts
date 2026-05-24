@@ -37,5 +37,17 @@ describe('product feature impact audit', () => {
       }
     }
   });
-});
 
+  it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+
+    expect(rightPanel?.evidence.join(' ')).toContain('decisions, next-step updates, blockers, completion proposals');
+    expect(rightPanel?.evidence.join(' ')).toContain('web research capture and native CLI web/search events');
+    expect(rightPanel?.gaps.join(' ')).not.toContain('still need product UI paths');
+    expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');
+    expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');
+    expect(capabilities?.evidence.join(' ')).toContain('Native CLI web/search events');
+  });
+});

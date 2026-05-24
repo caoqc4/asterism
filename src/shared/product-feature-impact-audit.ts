@@ -102,13 +102,15 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'Agent CLI runs return runtime evidence and compact progress projection.',
       'Taskplane extracts Write Intent from runtime output before product writes.',
+      'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
+      'Completed native runs summarize Taskplane web research capture and native CLI web/search events.',
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
-      'Persisted proposal handling is wired for some intent types; completion, blocker, next-step, and decision proposal cards still need product UI paths.',
+      'Write Intent parsing and confirmation are functional, but several handlers still live inside the right panel instead of a shared writeback orchestrator service.',
     ],
     nextActions: [
-      'Route every accepted Write Intent type through the same proposal and confirmation surface before service persistence.',
+      'Extract proposal building and confirmation policy into a reusable writeback orchestration module shared by CLI and future API runtimes.',
     ],
   },
   {
@@ -251,13 +253,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     futureApiClosure: 'partial',
     evidence: [
       'Decision services and checkpoint recovery are registered as runtime entrypoints.',
+      'Native CLI Write Intent can surface user-confirmed Decision, blocker, next-step, and completion proposal cards.',
       'Completion verification is separate from model output.',
     ],
     gaps: [
-      'Decision, blocker, next-step, and completion Write Intent proposal cards need unified right-panel handling.',
+      'Decision, blocker, next-step, and completion Write Intent still need a shared confirmation policy service instead of panel-local branching.',
     ],
     nextActions: [
-      'Add product proposal surfaces for high-risk Write Intent types before persistence.',
+      'Move high-risk Write Intent confirmation policy into deterministic writeback gates before persistence.',
     ],
   },
   {
@@ -321,9 +324,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'CapabilityRegistry keeps optional tools hidden until runtime gates expose model-visible tools.',
       'Skills page separates product runtime rules from optional user skills.',
+      'Native CLI web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
     ],
     gaps: [
-      'Native CLI tool progress needs deeper provider event mapping for web search and external-tool status.',
+      'Native CLI tool progress has first web/search mapping, but should deepen provider-specific schemas for more precise external-tool status.',
     ],
     nextActions: [
       'Map provider-specific CLI events into runtime-neutral capability progress states.',
@@ -444,4 +448,3 @@ export function findProductFeatureImpactAuditIssues(
 
   return issues;
 }
-
