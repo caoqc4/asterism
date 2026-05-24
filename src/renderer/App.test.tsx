@@ -11,7 +11,7 @@ import type { AppEvent } from '@shared/types/events';
 import type { ElectronApi } from '@shared/types/ipc';
 import type { CompletionCriteriaRecord } from '@shared/types/completion-criteria';
 import type { AppliedProcessTemplateRecord, ProcessTemplateRecord } from '@shared/types/process-template';
-import type { RunDetailRecord, RunRecord } from '@shared/types/run';
+import type { RunDetailRecord, RunRecord, RunStepRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { TaskDependencyRecord } from '@shared/types/task-dependency';
@@ -274,15 +274,32 @@ function buildRun(partial: Partial<RunRecord> = {}): RunRecord {
   };
 }
 
+function buildRunStep(partial: Partial<RunStepRecord> = {}): RunStepRecord {
+  return {
+    id: partial.id ?? `step_${partial.index ?? 1}`,
+    runId: partial.runId ?? 'run_1',
+    index: partial.index ?? 0,
+    kind: partial.kind ?? 'tool_call',
+    status: partial.status ?? 'completed',
+    title: partial.title ?? 'Agent CLI 联网调研准备',
+    input: partial.input ?? null,
+    output: partial.output ?? null,
+    error: partial.error ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+  };
+}
+
 function buildRunDetail(
   run: RunRecord,
   partial: Partial<Pick<RunDetailRecord, 'taskMemoryGuidance' | 'taskMemoryWriteProposals'>> = {},
 ): RunDetailRecord {
+  const runWithDetail = run as RunRecord & Partial<Pick<RunDetailRecord, 'steps'>>;
   return {
     ...run,
     artifacts: [],
     checkpoints: [],
-    steps: [
+    steps: runWithDetail.steps ?? [
       {
         id: 'step_1',
         runId: run.id,
@@ -2800,6 +2817,50 @@ describe('App redesign v1', () => {
       }));
     });
     expect(await screen.findByText(/已确认并创建 Decision：确认首版范围/)).toBeTruthy();
+  });
+
+  it('summarizes Agent CLI web research activity after completed native runs', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请先调研 Codex 教程资料。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created') as RunRecord & { steps?: RunStepRecord[] };
+    expect(run).toBeTruthy();
+    Object.assign(run, {
+      output: '已基于官方资料形成首版范围。',
+      outputSource: 'ai',
+      status: 'completed',
+      steps: [
+        buildRunStep({
+          id: 'step_web_prep',
+          runId: 'run_agent_cli_created',
+          index: 0,
+          title: 'Agent CLI 联网调研准备',
+          output: [
+            'status=captured',
+            'capability_mode=native',
+            'sources=3',
+            'query=Codex CLI 教程',
+            'reason=Taskplane captured web research into Source Context before handing the task to the selected Agent CLI.',
+          ].join('\n'),
+        }),
+        buildRunStep({
+          id: 'step_native_search',
+          runId: 'run_agent_cli_created',
+          index: 1,
+          title: 'Codex CLI 原生事件：web_search',
+          output: 'Found official Codex docs.',
+        }),
+      ],
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText(/联网调研：已保存 3 个来源到来源上下文/)).toBeTruthy();
+    expect(screen.getByText(/原生 CLI 联网动作：.*web_search/)).toBeTruthy();
   });
 
   it('captures a global right-panel discussion as a task before planning', async () => {

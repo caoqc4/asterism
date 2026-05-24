@@ -781,6 +781,7 @@ function formatAgentCliRunMessage(params: {
   decompositionDraftCreated?: boolean;
   runId: string;
   runtimeLabel: string;
+  steps?: RunStepRecord[];
   statusText: string;
 }): string {
   if (params.childTaskConversation) {
@@ -794,9 +795,62 @@ function formatAgentCliRunMessage(params: {
     return reason ? `任务运行没有完成：${reason}` : '任务运行没有完成，详情已记录到任务动态。';
   }
   const summary = summarizeAgentCliOutputForChat(params.output);
-  return summary
-    ? `已完成，结果已记录到任务动态。\n${summary}`
-    : '已完成，结果已记录到任务动态。';
+  const activity = summarizeAgentCliActivityForChat(params.steps);
+  return [
+    '已完成，结果已记录到任务动态。',
+    activity,
+    summary,
+  ].filter(Boolean).join('\n');
+}
+
+function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): string | null {
+  if (!steps?.length) return null;
+  const orderedSteps = [...steps].sort((left, right) => left.index - right.index);
+  const lines: string[] = [];
+  const webPreparationStep = orderedSteps.find((step) => /Agent CLI 联网调研准备/i.test(step.title));
+  if (webPreparationStep) {
+    const status = readStepKeyValue(webPreparationStep.output, 'status');
+    const sources = readStepKeyValue(webPreparationStep.output, 'sources');
+    const reason = readStepKeyValue(webPreparationStep.output, 'reason');
+    if (status === 'captured') {
+      lines.push(`联网调研：已保存 ${sources ?? '若干'} 个来源到来源上下文。`);
+    } else if (status === 'skipped' && reason) {
+      lines.push(`联网调研：未执行，${truncateAgentCliChatLine(reason, 72)}`);
+    }
+  }
+
+  const nativeWebStep = orderedSteps.find((step) => (
+    !/Agent CLI 联网调研准备/i.test(step.title)
+    && /web|search|browse|联网|搜索|检索|source|url|http/i.test(`${step.title}\n${step.output ?? ''}`)
+  ));
+  if (nativeWebStep) {
+    const title = nativeWebStep.title
+      .replace(/^(Codex CLI|Claude Code)\s*/i, '')
+      .replace(/^原生事件[:：]\s*/i, '')
+      .trim();
+    const detail = compactStepDetailForChat(nativeWebStep.output);
+    lines.push(`原生 CLI 联网动作：${truncateAgentCliChatLine(title || detail || '已记录', 56)}。`);
+  }
+
+  return lines.slice(0, 2).join('\n') || null;
+}
+
+function readStepKeyValue(output: string | null, key: string): string | null {
+  if (!output) return null;
+  const pattern = new RegExp(`^${key}=([^\\n]*)`, 'im');
+  const match = output.match(pattern);
+  return match?.[1]?.trim() || null;
+}
+
+function compactStepDetailForChat(output: string | null): string | null {
+  const firstLine = output?.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
+  return firstLine || null;
+}
+
+function truncateAgentCliChatLine(value: string, limit: number): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= limit) return normalized;
+  return `${normalized.slice(0, Math.max(0, limit - 3))}...`;
 }
 
 function summarizeAgentCliOutputForChat(output: string, options: { maxLines?: number } = {}): string | null {
@@ -1568,6 +1622,7 @@ export function RightPanel({
           output,
           runId: detail.id,
           runtimeLabel: current.runtimeLabel,
+          steps: detail.steps,
           statusText,
         }));
         setActiveAgentCliRun((value) => value?.runId === detail.id ? null : value);
