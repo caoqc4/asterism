@@ -48,6 +48,10 @@ export type TaskplaneStructuredWritebackApplyPlan =
       successMessage: string;
     };
 
+export type TaskplaneWritebackApplyPlan =
+  | TaskplaneSourceContextWritebackApplyPlan
+  | TaskplaneStructuredWritebackApplyPlan;
+
 export function buildSourceContextWritebackApplyPlan(params: {
   capturedAt?: string;
   proposal: TaskplaneSourceContextWritebackProposal;

@@ -104,15 +104,16 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Taskplane extracts Write Intent from runtime output before product writes.',
       'Shared writeback proposal builder normalizes runtime Write Intent into reusable product proposal surfaces.',
       'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',
+      'Shared writeback dispatch applies plans through injected ports, so renderer and future service runtimes can share the same write boundary.',
       'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
       'Completed native runs summarize Taskplane web research capture and native CLI web/search events.',
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
-      'Write Intent proposal and apply-plan mapping are shared, but final persistence dispatch still lives inside the right panel instead of a shared writeback orchestrator service.',
+      'Write Intent dispatch is shared through ports, but a main-side writeback orchestration service is not yet wired for non-UI runtime paths.',
     ],
     nextActions: [
-      'Extract final persistence dispatch into a reusable writeback orchestration service shared by CLI and future API runtimes.',
+      'Add a main-side adapter around the shared writeback dispatch so non-UI CLI/API runtimes can persist through the same gates.',
     ],
   },
   {
@@ -256,13 +257,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'Decision services and checkpoint recovery are registered as runtime entrypoints.',
       'Native CLI Write Intent can surface user-confirmed Decision, blocker, next-step, and completion proposal cards.',
+      'Shared writeback dispatch applies high-risk plans through injected service ports.',
       'Completion verification is separate from model output.',
     ],
     gaps: [
-      'Decision, blocker, next-step, and completion Write Intent now share apply-plan mapping, but final persistence dispatch still happens from panel code.',
+      'Decision, blocker, next-step, and completion Write Intent now share apply-plan and dispatch code, but non-UI runtime adapters still need to call it through main-side ports.',
     ],
     nextActions: [
-      'Move high-risk Write Intent dispatch into deterministic writeback gates before persistence.',
+      'Register a main-side writeback dispatch adapter with deterministic gates before persistence.',
     ],
   },
   {

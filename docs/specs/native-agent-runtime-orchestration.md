@@ -191,8 +191,8 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   current environment;
 - Write Intent extraction and confirmation UI cover the first planned intent
   set, but the shared decision/writeback orchestration should continue moving
-  persistence dispatch out of panel-local handlers into reusable orchestrator
-  services;
+  from port-based dispatch helpers toward main-side orchestrator services that
+  can run outside the right panel;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 

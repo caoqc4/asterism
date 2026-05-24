@@ -51,6 +51,7 @@ import {
   buildSourceContextWritebackApplyPlan,
   buildStructuredWritebackApplyPlan,
 } from '@shared/taskplane-writeback-apply-plan';
+import { dispatchTaskplaneWritebackApplyPlan } from '@shared/taskplane-writeback-dispatch';
 import {
   classifyCreateTaskFileSurface,
   normalizeCreateTaskFileInput,
@@ -2227,17 +2228,27 @@ export function RightPanel({
   }
 
   async function confirmSourceContextWrite() {
-    if (!activeTaskId || !sourceContextProposal || savingSourceContextProposal || !window.api?.createSourceContext) return;
+    if (!activeTaskId || !sourceContextProposal || savingSourceContextProposal) return;
     setSavingSourceContextProposal(true);
     const plan = buildSourceContextWritebackApplyPlan({
       proposal: sourceContextProposal,
       taskId: activeTaskId,
     });
     try {
-      await window.api.createSourceContext(plan.input);
-      await recordPanelTimelineEvent(activeTaskId, plan.timeline.type, plan.timeline.payload);
+      const result = await dispatchTaskplaneWritebackApplyPlan({
+        plan,
+        taskId: activeTaskId,
+        ports: {
+          createSourceContext: window.api?.createSourceContext,
+          recordTimelineEvent: recordPanelTimelineEvent,
+        },
+      });
+      if (result.status === 'blocked') {
+        appendSysMsg(result.message);
+        return;
+      }
       updateSourceContextProposal(null);
-      appendSysMsg(plan.successMessage);
+      appendSysMsg(result.successMessage);
     } finally {
       setSavingSourceContextProposal(false);
     }
@@ -2251,37 +2262,27 @@ export function RightPanel({
       taskId: activeTaskId,
     });
     try {
-      if (plan.action === 'decision.create') {
-        if (!window.api?.createDecision) {
-          appendSysMsg('决策提案已暂停：当前环境不支持创建 Decision。');
-          return;
-        }
-        await window.api.createDecision(plan.input);
-      } else if (plan.action === 'task.update_next_step') {
-        if (!window.api?.updateTask) {
-          appendSysMsg('下一步提案已暂停：当前环境不支持更新任务。');
-          return;
-        }
-        const updated = await window.api.updateTask(plan.input);
+      const result = await dispatchTaskplaneWritebackApplyPlan({
+        plan,
+        taskId: activeTaskId,
+        ports: {
+          createBlocker: window.api?.createBlocker,
+          createDecision: window.api?.createDecision,
+          recordTimelineEvent: recordPanelTimelineEvent,
+          updateTask: window.api?.updateTask,
+        },
+      });
+      if (result.status === 'blocked') {
+        appendSysMsg(result.message);
+        return;
+      }
+      if (result.updatedTask) {
         setActiveTaskDetail((prev) => prev && prev.id === activeTaskId
-          ? { ...prev, nextStep: updated.nextStep ?? plan.nextStep }
+          ? { ...prev, nextStep: result.updatedTask?.nextStep ?? prev.nextStep }
           : prev);
-        await recordPanelTimelineEvent(activeTaskId, plan.timeline.type, plan.timeline.payload);
-      } else if (plan.action === 'blocker.create') {
-        if (!window.api?.createBlocker) {
-          appendSysMsg('阻塞提案已暂停：当前环境不支持创建阻塞项。');
-          return;
-        }
-        await window.api.createBlocker(plan.input);
-      } else {
-        if (!window.api?.createDecision) {
-          appendSysMsg('完成确认提案已暂停：当前环境不支持创建 Decision。');
-          return;
-        }
-        await window.api.createDecision(plan.input);
       }
       updateStructuredWritebackProposal(null);
-      appendSysMsg(plan.successMessage);
+      appendSysMsg(result.successMessage);
     } finally {
       setSavingStructuredWritebackProposal(false);
     }
