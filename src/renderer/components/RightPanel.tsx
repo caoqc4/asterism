@@ -40,6 +40,7 @@ import { isTaskMdPath, isTaskRecordPath } from '@shared/task-memory-path';
 import { evaluateRuntimeVerification } from '@shared/runtime-verification';
 import {
   extractTaskplaneWriteIntentsFromText,
+  type TaskplaneTaskRecordCreateIntent,
   validateTaskplaneWriteIntent,
 } from '@shared/taskplane-write-intent';
 import {
@@ -124,6 +125,8 @@ interface ManualRefreshReady {
 }
 
 interface TaskFileWriteProposal {
+  evidenceRunId?: string | null;
+  intentSource?: 'write_intent';
   path: string;
   summary: string;
   content: string;
@@ -693,6 +696,23 @@ function taskMemoryProposalToFileProposal(proposal: TaskMemoryWriteProposal): Ta
   };
 }
 
+function taskRecordWriteIntentToFileProposal(params: {
+  intent: TaskplaneTaskRecordCreateIntent;
+  taskTitle: string;
+}): TaskFileWriteProposal {
+  const today = new Date().toISOString().slice(0, 10);
+  const path = `Task Records/${today}-${slugFilePart(params.taskTitle)}-agent-record.md`;
+  return {
+    content: params.intent.content,
+    evidenceRunId: params.intent.evidenceRunId,
+    intentSource: 'write_intent',
+    path,
+    summary: `Agent 建议保存为任务记录。confidence=${params.intent.confidence}`,
+    surface: 'task_record',
+    surfaceLabel: taskFileProposalSurfaceLabel('task_record'),
+  };
+}
+
 function isDecompositionMemoryProposal(proposal: TaskFileWriteProposal): boolean {
   if (!proposal.taskMemoryProposal) return false;
   return /拆解|子任务|subtask|decomposition|project structure/i.test([
@@ -703,11 +723,13 @@ function isDecompositionMemoryProposal(proposal: TaskFileWriteProposal): boolean
 }
 
 function taskFileProposalTitle(proposal: TaskFileWriteProposal): string {
+  if (proposal.intentSource === 'write_intent' && proposal.surface === 'task_record') return '任务记录写入提案';
   if (!proposal.taskMemoryProposal) return '任务文件写入提案';
   return isDecompositionMemoryProposal(proposal) ? '拆解记录写入提案' : '任务记忆写入提案';
 }
 
 function taskFileProposalStatusCopy(proposal: TaskFileWriteProposal): string {
+  if (proposal.intentSource === 'write_intent') return '来自 Agent 结构化意图，确认后写入';
   if (!proposal.taskMemoryProposal) return '新建文件，不覆盖现有文件';
   if (isDecompositionMemoryProposal(proposal)) return '确认后保存记录，不会直接创建子任务';
   return proposal.taskMemoryProposal.operation === 'update'
@@ -716,6 +738,7 @@ function taskFileProposalStatusCopy(proposal: TaskFileWriteProposal): string {
 }
 
 function taskFileProposalConfirmLabel(proposal: TaskFileWriteProposal): string {
+  if (proposal.intentSource === 'write_intent' && proposal.surface === 'task_record') return '确认写入记录';
   if (!proposal.taskMemoryProposal) return '确认写入文件';
   return isDecompositionMemoryProposal(proposal) ? '保存拆解记录' : '确认补写记忆';
 }
@@ -835,6 +858,26 @@ function parseAgentCliDecompositionDraft(output: string, runId: string): TaskDec
   }
   const fallback = parseDecompositionBullets(output, runId);
   return fallback && fallback.subtasks.length >= 2 ? fallback : null;
+}
+
+function parseAgentCliTaskRecordWriteIntent(params: {
+  output: string;
+  runId: string;
+  taskId: string;
+  taskTitle: string;
+}): TaskFileWriteProposal | null {
+  const intent = extractTaskplaneWriteIntentsFromText({
+    evidenceRunId: params.runId,
+    taskId: params.taskId,
+    text: params.output,
+  }).find((candidate) => candidate.type === 'task_record.create');
+  if (!intent || intent.type !== 'task_record.create') return null;
+  const validation = validateTaskplaneWriteIntent(intent);
+  if (validation.status !== 'ready') return null;
+  return taskRecordWriteIntentToFileProposal({
+    intent,
+    taskTitle: params.taskTitle,
+  });
 }
 
 function isChildTaskAdvancementText(value: string): boolean {
@@ -1360,6 +1403,17 @@ export function RightPanel({
           : null;
         if (decompositionDraft) {
           setTaskDecompositionDraft(decompositionDraft);
+        } else {
+          const taskTitle = titleCache[current.taskId] ?? activeTaskDetail?.title ?? current.taskId;
+          const taskRecordProposal = parseAgentCliTaskRecordWriteIntent({
+            output,
+            runId: detail.id,
+            taskId: current.taskId,
+            taskTitle,
+          });
+          if (taskRecordProposal) {
+            updateTaskFileProposal((existing) => existing ?? taskRecordProposal);
+          }
         }
         appendSysMsg(formatAgentCliRunMessage({
           childTaskConversation: suppressMemoryProposal,
@@ -2156,10 +2210,13 @@ export function RightPanel({
         appendSysMsg(`任务文件已写入，但后置检查提示：${postStepVerification.detail}`);
       }
       await recordPanelTimelineEvent(activeTaskId, 'panel.task_file_written', {
+        evidenceRunId: taskFileProposal.evidenceRunId ?? null,
         path,
         surface: taskFileProposal.surface,
         surfaceLabel: taskFileProposal.surfaceLabel,
-        source: taskFileProposal.taskMemoryProposal ? 'task_memory_write_proposal' : 'right_panel_file_proposal',
+        source: taskFileProposal.intentSource === 'write_intent'
+          ? 'taskplane_write_intent'
+          : taskFileProposal.taskMemoryProposal ? 'task_memory_write_proposal' : 'right_panel_file_proposal',
       });
       updateTaskFileProposal(null);
       appendSysMsg(taskFileProposal.taskMemoryProposal
@@ -2286,6 +2343,16 @@ export function RightPanel({
           : null;
         if (decompositionDraft) {
           setTaskDecompositionDraft(decompositionDraft);
+        } else if (activeTaskId) {
+          const taskRecordProposal = parseAgentCliTaskRecordWriteIntent({
+            output,
+            runId: run.id,
+            taskId: activeTaskId,
+            taskTitle: title ?? titleCache[activeTaskId] ?? activeTaskId,
+          });
+          if (taskRecordProposal) {
+            updateTaskFileProposal((existing) => existing ?? taskRecordProposal);
+          }
         }
         if (run.status === 'running') {
           setActiveAgentCliRun({

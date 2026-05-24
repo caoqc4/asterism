@@ -2663,6 +2663,47 @@ describe('App redesign v1', () => {
     expect(screen.queryByRole('button', { name: '生成文件提案' })).toBeNull();
   });
 
+  it('surfaces Agent CLI task record write intents as confirmed file proposals', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请保存本轮结论。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
+    expect(run).toBeTruthy();
+    Object.assign(run!, {
+      output: [
+        '已整理为任务记录。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'task_record.create',
+            confidence: 'high',
+            content: '# 本轮结论\n- 已确认应保存为任务记录。',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText('任务记录写入提案')).toBeTruthy();
+    expect(screen.getByText(/来自 Agent 结构化意图/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认写入记录' }));
+    await waitFor(() => {
+      expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+        content: '# 本轮结论\n- 已确认应保存为任务记录。',
+        path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-.*-agent-record\.md$/),
+      }));
+    });
+  });
+
   it('captures a global right-panel discussion as a task before planning', async () => {
     const user = userEvent.setup();
     render(<App />);

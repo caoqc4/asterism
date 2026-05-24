@@ -33,7 +33,7 @@ export type TaskplaneDecisionCreateIntent = {
 };
 
 export type TaskplaneSourceContextCreateIntent = {
-  credibility?: 'unknown' | 'low' | 'medium' | 'high';
+  credibility?: 'verified' | 'unknown' | 'low';
   evidenceRunId: string;
   note: string;
   taskId: string;
@@ -118,6 +118,14 @@ export function validateTaskplaneWriteIntent(intent: TaskplaneWriteIntent): Task
   } else if ('taskId' in intent && !intent.taskId.trim()) {
     issues.push(`${intent.type} requires taskId.`);
   }
+  if (intent.type === 'task_record.create') {
+    if (!intent.content.trim()) issues.push('Task record intent requires content.');
+    if (!['low', 'medium', 'high'].includes(intent.confidence)) issues.push('Task record intent requires confidence.');
+  }
+  if (intent.type === 'source_context.create') {
+    if (!intent.title.trim()) issues.push('Source context intent requires title.');
+    if (!intent.note.trim()) issues.push('Source context intent requires note.');
+  }
 
   return issues.length
     ? { intent, issues, status: 'blocked' }
@@ -149,6 +157,32 @@ function normalizeWriteIntentValue(value: unknown, params: {
       nextStep: readString(value.nextStep) || null,
       subtasks,
       type: 'subtask.propose',
+    }];
+  }
+  if (type === 'task_record.create') {
+    const content = readString(value.content);
+    if (!content) return [];
+    const confidence = normalizeConfidence(value.confidence);
+    return [{
+      confidence,
+      content,
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      taskId: readString(value.taskId, params.taskId),
+      type: 'task_record.create',
+    }];
+  }
+  if (type === 'source_context.create') {
+    const title = readString(value.title);
+    const note = readString(value.note);
+    if (!title || !note) return [];
+    return [{
+      credibility: normalizeSourceCredibility(value.credibility),
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      note,
+      taskId: readString(value.taskId, params.taskId),
+      title,
+      type: 'source_context.create',
+      uri: readString(value.uri) || null,
     }];
   }
   return [];
@@ -210,6 +244,14 @@ function dedupeWriteIntents(intents: TaskplaneWriteIntent[]): TaskplaneWriteInte
 
 function readString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function normalizeConfidence(value: unknown): TaskplaneWriteIntentConfidence {
+  return value === 'low' || value === 'medium' || value === 'high' ? value : 'medium';
+}
+
+function normalizeSourceCredibility(value: unknown): TaskplaneSourceContextCreateIntent['credibility'] {
+  return value === 'verified' || value === 'low' || value === 'unknown' ? value : 'unknown';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

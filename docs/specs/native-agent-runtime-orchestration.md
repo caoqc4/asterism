@@ -471,9 +471,12 @@ Status: started.
 - Define `TaskplaneWriteIntent`.
 - Extract `subtask.propose` intents from legacy `TASKPLANE_DECOMPOSITION`
   blocks and `TASKPLANE_WRITE_INTENTS` wrappers.
+- Extract `task_record.create` and `source_context.create` from
+  `TASKPLANE_WRITE_INTENTS`; task records can be surfaced through the existing
+  confirmed task-file proposal card.
 - Validate subtask proposal basics before any persistence path can use it.
-- Next, extract task records, decisions, source contexts, next-step updates,
-  blockers, and completion proposals from CLI/API output.
+- Next, surface source-context proposals and extract decisions, next-step
+  updates, blockers, and completion proposals from CLI/API output.
 - Validate against task scope, phase, and memory policy.
 - surface proposal cards;
 - persist only through Taskplane services.

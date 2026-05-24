@@ -1341,6 +1341,7 @@ function buildCodexCliPrompt(params: {
     params.task.nextStep ? `Next step: ${params.task.nextStep}` : null,
     params.task.riskNote ? `Risk: ${params.task.riskNote}` : null,
     `Runtime context: ${params.contextSummary}`,
+    buildTaskplaneWriteIntentPromptInstructions(),
     '',
     'User request:',
     params.prompt,
@@ -1370,6 +1371,7 @@ function buildClaudeCodePrompt(params: {
     params.task.nextStep ? `Next step: ${params.task.nextStep}` : null,
     params.task.riskNote ? `Risk: ${params.task.riskNote}` : null,
     `Runtime context: ${params.contextSummary}`,
+    buildTaskplaneWriteIntentPromptInstructions(),
     '',
     'User request:',
     params.prompt,
@@ -1408,6 +1410,15 @@ function buildAgentCliCapabilityPromptInstruction(
     'Capability mode: native.',
     `Use ${runtimeLabel}'s native read-only capabilities as you normally would in the terminal, including search, browse, source, and documentation tools when available.`,
     'For research-dependent tasks, gather high-signal sources and cite them; if the runtime truly has no live research capability, state that as a blocker or next action instead of over-asking the user.',
+  ].join(' ');
+}
+
+function buildTaskplaneWriteIntentPromptInstructions(): string {
+  return [
+    'Taskplane write intent: do not claim that you wrote Taskplane data.',
+    'If the user explicitly asks to save a task record, or your result contains a durable source that Taskplane should offer to save, append at most one fenced JSON block:',
+    '{"type":"TASKPLANE_WRITE_INTENTS","intents":[{"type":"task_record.create","confidence":"medium","content":"..."},{"type":"source_context.create","title":"...","uri":"https://...","note":"...","credibility":"unknown"}]}',
+    'Only include intents that need Taskplane confirmation; otherwise omit the block.',
   ].join(' ');
 }
 

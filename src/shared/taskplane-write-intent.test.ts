@@ -77,4 +77,47 @@ describe('Taskplane write intent', () => {
       issues: ['Subtask proposal requires at least two subtasks.'],
     });
   });
+
+  it('extracts task record and source context intents from a wrapper', () => {
+    const intents = extractTaskplaneWriteIntentsFromText({
+      evidenceRunId: 'run_4',
+      taskId: 'task_scope',
+      text: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [
+          {
+            type: 'task_record.create',
+            confidence: 'high',
+            content: '# Scope\n已确认首版范围。',
+          },
+          {
+            type: 'source_context.create',
+            title: 'Codex docs',
+            uri: 'https://example.com/codex',
+            note: '官方文档入口。',
+          },
+        ],
+      }),
+    });
+
+    expect(intents).toMatchObject([
+      {
+        confidence: 'high',
+        content: '# Scope\n已确认首版范围。',
+        evidenceRunId: 'run_4',
+        taskId: 'task_scope',
+        type: 'task_record.create',
+      },
+      {
+        credibility: 'unknown',
+        evidenceRunId: 'run_4',
+        note: '官方文档入口。',
+        taskId: 'task_scope',
+        title: 'Codex docs',
+        type: 'source_context.create',
+        uri: 'https://example.com/codex',
+      },
+    ]);
+    expect(intents.map((intent) => validateTaskplaneWriteIntent(intent).status)).toEqual(['ready', 'ready']);
+  });
 });
