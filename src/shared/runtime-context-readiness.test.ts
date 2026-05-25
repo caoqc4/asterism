@@ -48,6 +48,22 @@ describe('evaluateRuntimeContextReadiness', () => {
     expect(evaluation.shouldAskUser).toBe(false);
   });
 
+  it('does not route local workspace search as external self research', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      prompt: '请搜索本地工作区里的 TaskAdvancementOrchestrator。',
+      task: buildReadinessTask({
+        nextStep: '检查本地实现。',
+        summary: '需要查看当前仓库里的任务推进代码。',
+        title: '检查本地任务推进代码',
+      }),
+    });
+
+    expect(evaluation.decision).not.toBe('self_research');
+    expect(evaluation.movement).not.toBe('research');
+    expect(evaluation.recommendedMode).not.toBe('native_research');
+    expect(evaluation.shouldSelfResearch).toBe(false);
+  });
+
   it('treats product/tutorial context with sources as ready instead of asking weak preferences', () => {
     const evaluation = evaluateRuntimeContextReadiness({
       prompt: '偏基础教程和案例展示，继续推进。',

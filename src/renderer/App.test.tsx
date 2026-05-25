@@ -3099,6 +3099,37 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/当前工作区路径为/)).toBeTruthy();
   });
 
+  it('summarizes native workspace search as local activity instead of web research', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请搜索本地任务推进代码。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created') as RunRecord & { steps?: RunStepRecord[] };
+    expect(run).toBeTruthy();
+    Object.assign(run, {
+      output: '已完成本地检索。',
+      outputSource: 'ai',
+      status: 'completed',
+      steps: [
+        buildRunStep({
+          id: 'step_workspace_search',
+          runId: 'run_agent_cli_created',
+          index: 0,
+          title: 'Codex CLI 工作区读取：workspace.search',
+          output: 'capability=workspace_read\nprovider_event=tool.call\n{"query":"TaskAdvancementOrchestrator"}',
+        }),
+      ],
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText(/原生 CLI 本地动作：.*工作区读取/)).toBeTruthy();
+    expect(screen.queryByText(/原生 CLI 联网动作/)).toBeNull();
+  });
+
   it('captures a global right-panel discussion as a task before planning', async () => {
     const user = userEvent.setup();
     render(<App />);

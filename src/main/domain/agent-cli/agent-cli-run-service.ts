@@ -7,6 +7,10 @@ import {
   evaluateRuntimeContextReadiness,
   formatRuntimeContextReadinessForStep,
 } from '../../../shared/runtime-context-readiness.js';
+import {
+  buildRuntimeResearchIntentText,
+  evaluateRuntimeResearchIntent,
+} from '../../../shared/runtime-research-intent.js';
 import { formatPilotDecisionBackendPlanForStep } from '../../../shared/pilot-decision-contract.js';
 import {
   buildRuntimeContextAssemblyPolicy,
@@ -1185,11 +1189,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function shouldPrepareWebResearch(task: TaskDetail, prompt: string): boolean {
-  const text = `${task.title}\n${task.summary ?? ''}\n${task.nextStep ?? ''}\n${prompt}`;
-  if (/不要联网|不要搜索|不需要调研|skip\s+(web|search|research)|no\s+(web|search|research)/i.test(text)) {
-    return false;
-  }
-  return /网站|教程|文档|资料|调研|案例|官方文档|竞品|产品规划|市场|当前|最新|Codex|Agent\s*初学者|web\s*research|search|browse|documentation/i.test(text);
+  return evaluateRuntimeResearchIntent(buildRuntimeResearchIntentText([
+    task.title,
+    task.summary,
+    task.nextStep,
+    prompt,
+  ])).shouldUseExternalResearch;
 }
 
 function formatAgentCliWebResearchPreparation(preparation: AgentCliWebResearchPreparation): string {

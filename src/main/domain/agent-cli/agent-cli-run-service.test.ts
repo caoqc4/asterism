@@ -817,6 +817,59 @@ describe('AgentCliRunService', () => {
     }));
   });
 
+  it('records web research as not needed for local workspace search requests', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const resolveOpenAiWebResearchConfig = vi.fn();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: '已完成本地工作区检索。',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(buildTask({
+        nextStep: '检查本地实现。',
+        summary: '需要查看当前仓库里的任务推进代码。',
+        title: '检查本地任务推进代码',
+      })),
+      {
+        getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          featureFlags: {
+            enableScheduler: false,
+            enableProviderNativeToolCalls: true,
+            agentCliCapabilityMode: 'native',
+          },
+        })),
+        resolveOpenAiWebResearchConfig,
+      },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '请搜索本地工作区里的 TaskAdvancementOrchestrator。',
+      taskId: 'task_1',
+    });
+
+    expect(resolveOpenAiWebResearchConfig).not.toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_call',
+      status: 'completed',
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('status=not_needed'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('do not appear to require fresh external research'),
+    }));
+  });
+
   it('uses decomposition instructions only for explicit decomposition requests', async () => {
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,

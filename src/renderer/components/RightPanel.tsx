@@ -861,7 +861,7 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
 
   const nativeWebStep = orderedSteps.find((step) => (
     !/Agent CLI 联网调研准备/i.test(step.title)
-    && /web|search|browse|联网|搜索|检索|source|url|http/i.test(`${step.title}\n${step.output ?? ''}`)
+    && isNativeWebResearchStep(step)
   ));
   if (nativeWebStep) {
     const title = nativeWebStep.title
@@ -874,7 +874,7 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
 
   const nativeLocalStep = orderedSteps.find((step) => (
     !/Agent CLI 联网调研准备/i.test(step.title)
-    && !/web|search|browse|联网|搜索|检索|source|url|http/i.test(`${step.title}\n${step.output ?? ''}`)
+    && !isNativeWebResearchStep(step)
     && /capability=(workspace_read|workspace_write|shell_command)|工作区|命令执行|shell|command_execution|bash|terminal/i.test(`${step.title}\n${step.output ?? ''}`)
   ));
   if (nativeLocalStep) {
@@ -887,6 +887,18 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
   }
 
   return lines.slice(0, 2).join('\n') || null;
+}
+
+function isNativeWebResearchStep(step: RunStepRecord): boolean {
+  const output = step.output ?? '';
+  const haystack = `${step.title}\n${output}`;
+  const capability = readStepKeyValue(output, 'capability')?.toLowerCase();
+  if (capability === 'web_search') return true;
+  if (/capability=(workspace_read|workspace_write|shell_command)/i.test(output)) return false;
+  if (/workspace[._-]search|workspace[._-]read|ripgrep|\brg\b|\bgrep\b|\bls\b|\bcat\b|\bsed\b/i.test(haystack)) {
+    return false;
+  }
+  return /web[_\s.-]?search|websearch|browse|联网|网络检索|https?:\/\//i.test(haystack);
 }
 
 function readStepKeyValue(output: string | null, key: string): string | null {

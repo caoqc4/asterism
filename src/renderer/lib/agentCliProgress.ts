@@ -56,6 +56,24 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
   const output = step.output?.trim() ?? '';
   const haystack = `${title}\n${output}`.toLowerCase();
   const capability = readStepCapability(output);
+  const preparationStatus = /Agent CLI 联网调研准备/i.test(title)
+    ? readStepKeyValue(output, 'status')
+    : null;
+
+  if (preparationStatus) {
+    if (preparationStatus === 'captured') {
+      return {
+        detail: compactWebResearchPreparationDetail(output, preparationStatus),
+        label: '正在整理 Taskplane 联网调研来源。',
+        state: 'researching',
+      };
+    }
+    return {
+      detail: compactWebResearchPreparationDetail(output, preparationStatus),
+      label: '正在检查是否需要联网调研。',
+      state: 'preparing',
+    };
+  }
 
   if (/上下文就绪|context readiness|readiness\.evaluate|decision=(ready|self_research|plan_first|ask_user|blocked)/.test(haystack)) {
     return {
@@ -125,6 +143,31 @@ function readStepCapability(output: string): string | null {
   return match?.[1]?.toLowerCase() ?? null;
 }
 
+function readStepKeyValue(output: string, key: string): string | null {
+  return readStepKeyValueRaw(output, key)?.toLowerCase() ?? null;
+}
+
+function readStepKeyValueRaw(output: string, key: string): string | null {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = output.match(new RegExp(`^${escapedKey}=([^\\n\\r]+)`, 'im'));
+  return match?.[1]?.trim() ?? null;
+}
+
+function compactWebResearchPreparationDetail(
+  output: string,
+  status: string,
+): string | undefined {
+  if (status === 'captured') {
+    const sources = readStepKeyValueRaw(output, 'sources');
+    return `已保存 ${sources && sources !== '0' ? sources : '若干'} 个来源到来源上下文。`;
+  }
+  if (status === 'not_needed') {
+    return '当前任务没有识别到需要新鲜外部资料。';
+  }
+  const reason = readStepKeyValueRaw(output, 'reason');
+  return reason ? compactLine(reason) : undefined;
+}
+
 function isExternalResearchStep(haystack: string): boolean {
   if (/workspace[._-]search|workspace[._-]read|ripgrep|\brg\b|\bgrep\b|\bls\b|\bcat\b/.test(haystack)) {
     return false;
@@ -142,5 +185,9 @@ function compactStepDetail(output: string): string | undefined {
     .map((line) => line.trim())
     .find((line) => Boolean(line) && !/^(capability|provider_event)=/.test(line));
   if (!firstLine) return undefined;
-  return firstLine.length > 90 ? `${firstLine.slice(0, 87)}...` : firstLine;
+  return compactLine(firstLine);
+}
+
+function compactLine(value: string): string {
+  return value.length > 90 ? `${value.slice(0, 87)}...` : value;
 }

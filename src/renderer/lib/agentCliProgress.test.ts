@@ -72,6 +72,49 @@ describe('deriveAgentCliProgress', () => {
     expect(progress.detail).toBe('Found official Codex docs.');
   });
 
+  it('does not show web research progress when preparation says research is not needed', () => {
+    const progress = deriveAgentCliProgress(detail({
+      steps: [
+        step({
+          index: 1,
+          title: 'Agent CLI 联网调研准备',
+          output: [
+            'status=not_needed',
+            'capability_mode=native',
+            'sources=0',
+            'reason=The selected task and user request do not appear to require fresh external research.',
+          ].join('\n'),
+        }),
+      ],
+    }));
+
+    expect(progress.state).toBe('preparing');
+    expect(progress.label).toContain('是否需要联网调研');
+    expect(progress.detail).toBe('当前任务没有识别到需要新鲜外部资料。');
+  });
+
+  it('summarizes captured web research preparation without exposing raw status keys', () => {
+    const progress = deriveAgentCliProgress(detail({
+      steps: [
+        step({
+          index: 1,
+          title: 'Agent CLI 联网调研准备',
+          output: [
+            'status=captured',
+            'capability_mode=native',
+            'sources=3',
+            'query=Codex CLI docs',
+            'reason=Taskplane captured web research into Source Context before handing the task to the selected Agent CLI.',
+          ].join('\n'),
+        }),
+      ],
+    }));
+
+    expect(progress.state).toBe('researching');
+    expect(progress.label).toContain('联网调研来源');
+    expect(progress.detail).toBe('已保存 3 个来源到来源上下文。');
+  });
+
   it('does not mistake workspace search for web research', () => {
     const progress = deriveAgentCliProgress(detail({
       steps: [
