@@ -421,18 +421,20 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'method_library_boundary',
       'runtime_context_assembly',
       'operator_confirmation',
+      'post_step',
     ],
     cliOnlyClosure: 'partial',
     futureApiClosure: 'partial',
     evidence: [
       'Work habits are selected as applicable context and stay behind confirmation flows.',
       'Scheduled briefs use product-harness fallback when provider execution is unavailable.',
+      'RuntimeEntrypointCoverage now classifies scheduler stale-run recovery as scheduler_maintenance behind the scheduler feature flag, with post-step Run evidence and no Agent CLI/API startup.',
     ],
     gaps: [
-      'Routine/event-triggered Agent CLI execution still needs deeper runtime-neutral orchestration coverage.',
+      'Routine/event-triggered Agent CLI task execution remains intentionally unimplemented and still needs a runtime-neutral orchestration design before it can start native runtimes automatically.',
     ],
     nextActions: [
-      'Audit scheduled execution separately before enabling native runtime automation.',
+      'Design a separate scheduled/event execution entrypoint before enabling native runtime automation; it must not reuse scheduler_maintenance or scheduled Brief fallback semantics.',
     ],
   },
   {

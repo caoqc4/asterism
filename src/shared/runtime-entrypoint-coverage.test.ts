@@ -217,6 +217,29 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('not a hidden Agent CLI fallback');
   });
 
+  it('classifies scheduler stale-run recovery as local maintenance, not automated Agent execution', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('scheduler_maintenance')).toEqual([
+      'simplicity_check',
+      'product_config_boundary',
+      'post_step',
+    ]);
+
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'scheduler.staleRunRecovery');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('scheduler_maintenance');
+    expect(entry?.requiredGates).toEqual([
+      'simplicity_check',
+      'product_config_boundary',
+      'post_step',
+    ]);
+    expect(entry?.requiredGates).not.toContain('runtime_action');
+    expect(entry?.requiredGates).not.toContain('runtime_context_assembly');
+    expect(entry?.notes).toContain('scheduler feature flag');
+    expect(entry?.notes).toContain('does not start an Agent CLI/API runtime');
+    expect(entry?.notes).toContain('terminal Run evidence');
+  });
+
   it('registers phase closeout as a handoff boundary without equating it to completion', () => {
     expect(requiredRuntimeEntrypointGatesForKind('phase_closeout_handoff')).toEqual([
       'simplicity_check',
@@ -514,6 +537,7 @@ describe('runtime entrypoint coverage', () => {
       'run.triggerCodeAgent',
       'run.triggerOperatorStarted',
       'sandboxPatchPromotion.apply',
+      'scheduler.staleRunRecovery',
       'settings.agentCliLoginProbe',
       'settings.aiRuntimeConfig',
       'settings.sandboxBackendProbe',

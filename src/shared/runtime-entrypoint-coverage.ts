@@ -8,6 +8,7 @@ export type RuntimeEntrypointKind =
   | 'product_configuration'
   | 'preference_memory'
   | 'method_library'
+  | 'scheduler_maintenance'
   | 'capability_probe'
   | 'runtime_audit'
   | 'execution_resume'
@@ -124,6 +125,11 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
   method_library: [
     'simplicity_check',
     'method_library_boundary',
+  ],
+  scheduler_maintenance: [
+    'simplicity_check',
+    'product_config_boundary',
+    'post_step',
   ],
   capability_probe: [
     'simplicity_check',
@@ -254,6 +260,23 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'runtime_context_assembly',
     ],
     notes: 'HomeBriefService builds the bounded Brief context projection before provider exposure; BriefProcessTemplateSelector and BriefExecutor use the resolved API Runtime config only when API Runtime is selected for scheduled brief generation. Selected Agent CLI modes skip API config resolution and write a local product-harness brief snapshot with fallbackReason, not a hidden Agent CLI fallback or cross-runtime provider call.',
+  },
+  {
+    id: 'scheduler.staleRunRecovery',
+    owner: 'SchedulerService.reconcileStaleRuns',
+    kind: 'scheduler_maintenance',
+    description: 'Background scheduler maintenance that marks stale incomplete Runs failed after the local recovery window.',
+    requiredGates: [
+      'simplicity_check',
+      'product_config_boundary',
+      'post_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'product_config_boundary',
+      'post_step',
+    ],
+    notes: 'This is product-harness maintenance behind the scheduler feature flag: it does not start an Agent CLI/API runtime, does not assemble provider-visible context, and writes terminal Run evidence only for already-incomplete Runs that exceed the recovery window.',
   },
   {
     id: 'run.trigger',
