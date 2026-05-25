@@ -58,6 +58,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Pilot 决策辅助计划');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API chat invocations preserve');
     expect(rightPanel?.evidence.join(' ')).toContain('RunService runs now record context.readiness.evaluate');
+    expect(rightPanel?.evidence.join(' ')).toContain('Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('configured workspace for native guidance');
     expect(rightPanel?.evidence.join(' ')).toContain('workspace write candidates that require reviewable promotion evidence');

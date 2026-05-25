@@ -299,6 +299,14 @@ describe('CodeAgentRunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith({
       input: 'Prepare a staged notes patch.',
       kind: 'plan',
+      output: expect.stringContaining('decision=ready'),
+      runId: 'run_code_agent_1',
+      status: 'completed',
+      title: 'Code Agent 上下文就绪判断',
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith({
+      input: 'Prepare a staged notes patch.',
+      kind: 'plan',
       output: 'descriptor=workspace.staged_patch / producer=local_diagnostic / providerCall=disabled / checks=test / Orchestration request / lane=coding / source=code_agent_preview / profile=manual_sandbox_producer / runtime=local_sandbox / start=manual / providerCall=no / queue=no / autoStart=no',
       runId: 'run_code_agent_1',
       status: 'completed',

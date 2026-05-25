@@ -22,6 +22,10 @@ import {
   buildRuntimeContextManifest,
   formatRuntimeContextManifestForStep,
 } from '../../../shared/runtime-context.js';
+import {
+  evaluateRuntimeContextReadiness,
+  formatRuntimeContextReadinessForStep,
+} from '../../../shared/runtime-context-readiness.js';
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type {
   CreateCodeAgentRunInput,
@@ -154,6 +158,18 @@ export class CodeAgentRunService {
           ? 'Model producer loop is explicitly requested for this run and remains sandbox/Decision gated.'
           : 'Model producer loop is not requested for this run; this run records a staged local preview only.',
       ].join(' '),
+    });
+    const contextReadiness = evaluateRuntimeContextReadiness({
+      prompt: patchIntent,
+      task,
+    });
+    await this.runStepRepository.create({
+      runId: run.id,
+      kind: 'plan',
+      status: 'completed',
+      title: 'Code Agent 上下文就绪判断',
+      input: patchIntent,
+      output: formatRuntimeContextReadinessForStep(contextReadiness),
     });
     const request = {
       commandPolicy: {

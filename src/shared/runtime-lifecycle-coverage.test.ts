@@ -93,7 +93,9 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('Agent CLI runs cannot bypass unresolved task-memory writes');
     expect(text).toContain('AgentCliRunService records context.readiness.evaluate before native CLI execution');
     expect(text).toContain('Retained RunService now records context.readiness.evaluate before the API Runtime');
-    expect(text).toContain('CodeAgent API-like paths do not yet consume context_readiness');
+    expect(text).toContain('CodeAgentRunService records context.readiness.evaluate immediately after creating the run');
+    expect(text).toContain('Retained CodeAgentRunService now records context.readiness.evaluate before model-producer/API-like execution');
+    expect(text).not.toContain('CodeAgent API-like paths do not yet consume context_readiness');
   });
 
   it('tracks service-boundary task completion and waiting-state guards', () => {

@@ -127,6 +127,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent CLI run records preserve the trimmed Pilot decision snapshot as a Pilot 决策辅助计划 step for phase-2 auditability.',
       'Agent API chat invocations preserve the same trimmed Pilot decision snapshot in invocation provenance.',
       'Retained API Runtime / Agent API-like RunService runs now record context.readiness.evaluate before provider-visible execution resolves runtime config.',
+      'Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate before model-producer execution, including blocked early exits.',
       'Run Goal Contract and Agent CLI context bridge now carry selected-runtime capability declarations into the native CLI prompt before execution.',
       'Run verification and memory proposals remain product-controlled.',
       'Post-step verification now treats native CLI capability=workspace_write steps as workspace write candidates that require reviewable promotion evidence instead of accepting ordinary command output as sufficient recovery evidence.',

@@ -51,6 +51,7 @@ describe('runtime entrypoint coverage', () => {
 
   it('keeps context readiness on Agent CLI, retained API, and future peer API runtimes', () => {
     const agentCli = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.triggerAgentCli');
+    const codeAgent = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.triggerCodeAgent');
     const futureApi = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.triggerAgentApi.future');
     const retainedRun = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.trigger');
 
@@ -64,6 +65,9 @@ describe('runtime entrypoint coverage', () => {
     expect(retainedRun?.requiredGates).toContain('context_readiness');
     expect(retainedRun?.coveredGates).toContain('context_readiness');
     expect(retainedRun?.notes).toContain('RunService records context.readiness.evaluate');
+    expect(codeAgent?.requiredGates).toContain('context_readiness');
+    expect(codeAgent?.coveredGates).toContain('context_readiness');
+    expect(codeAgent?.notes).toContain('CodeAgentRunService records context.readiness.evaluate');
   });
 
   it('registers future Agent API execution as the same gated runtime class as Agent CLI', () => {
@@ -87,8 +91,10 @@ describe('runtime entrypoint coverage', () => {
     expect(entry).toBeTruthy();
     expect(entry?.kind).toBe('provider_visible_execution');
     expect(entry?.requiredGates).toContain('runtime_context_assembly');
+    expect(entry?.requiredGates).toContain('context_readiness');
     expect(entry?.requiredGates).toContain('task_memory_guidance');
     expect(entry?.notes).toContain('future Agent API adapter');
+    expect(entry?.notes).toContain('CodeAgentRunService records context.readiness.evaluate');
     expect(entry?.notes).toContain('blocks selected Agent CLI modes before resolving API config');
     expect(entry?.notes).toContain('must not be exposed as auxiliary provider assistance');
     expect(entry?.notes).toContain('implicit fallback for selected Agent CLI runtimes');
