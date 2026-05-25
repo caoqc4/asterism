@@ -186,6 +186,12 @@ export type PreviewPatchArtifactSandboxReviewInput = {
   requestedChecks?: CodeAgentAllowedCheck[];
 };
 
+export type RunPatchArtifactSandboxReviewInput = {
+  artifactId: string;
+  operatorConfirmed: boolean;
+  requestedChecks?: CodeAgentAllowedCheck[];
+};
+
 export type PatchArtifactSandboxReviewPreview =
   | {
       artifactId: string;
@@ -207,6 +213,37 @@ export type PatchArtifactSandboxReviewPreview =
       summary: string;
       taskId: string;
       workspaceRoot: string;
+    };
+
+export type PatchArtifactSandboxReviewRunResult =
+  | {
+      artifactId: string;
+      noWorkspaceFilesWritten: true;
+      reason: string;
+      runId: string | null;
+      status: 'blocked';
+      summary: string;
+      taskId: string;
+    }
+  | {
+      artifactId: string;
+      noWorkspaceFilesWritten: true;
+      reason: string;
+      runId: string;
+      status: 'failed';
+      summary: string;
+      taskId: string;
+    }
+  | {
+      artifactId: string;
+      checkpointId: string | null;
+      decisionId: string | null;
+      noWorkspaceFilesWritten: true;
+      reviewedArtifactId: string;
+      runId: string;
+      status: 'completed';
+      summary: string;
+      taskId: string;
     };
 
 export type ElectronApi = {
@@ -285,6 +322,9 @@ export type ElectronApi = {
   previewPatchArtifactSandboxReview?: (
     input: PreviewPatchArtifactSandboxReviewInput,
   ) => Promise<PatchArtifactSandboxReviewPreview>;
+  runPatchArtifactSandboxReview?: (
+    input: RunPatchArtifactSandboxReviewInput,
+  ) => Promise<PatchArtifactSandboxReviewRunResult>;
   listTaskFiles: (taskId: string) => Promise<TaskFileRecord[]>;
   createTaskFile: (input: CreateTaskFileInput) => Promise<TaskFileRecord>;
   updateTaskFile: (input: UpdateTaskFileInput) => Promise<TaskFileRecord>;

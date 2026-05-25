@@ -107,6 +107,9 @@ const {
     codeAgentRunService: {
       trigger: vi.fn(),
     },
+    patchArtifactSandboxReviewRunService: {
+      run: vi.fn(),
+    },
     operatorStartedRunService: {
       trigger: vi.fn(),
     },
@@ -1499,6 +1502,60 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.artifactRepository.update).not.toHaveBeenCalled();
     expect(servicesMock.taskFileRepository.update).not.toHaveBeenCalled();
     expect(emitAppEventMock).not.toHaveBeenCalled();
+  });
+
+  it('runs sandbox review from a confirmed patch artifact and emits run, task, decision, and brief events', async () => {
+    servicesMock.patchArtifactSandboxReviewRunService.run.mockResolvedValueOnce({
+      artifactId: 'artifact_patch_1',
+      checkpointId: 'run_checkpoint_patch_1',
+      decisionId: 'decision_patch_1',
+      noWorkspaceFilesWritten: true,
+      reviewedArtifactId: 'artifact_patch_reviewed_1',
+      run: {
+        id: 'run_review_1',
+        taskId: 'task_1',
+        type: 'agent',
+        status: 'completed',
+        instructions: 'Run sandbox review.',
+        output: 'Sandbox patch review completed.',
+        outputSource: 'system',
+        failureReason: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      status: 'completed',
+      summary: 'Sandbox patch review completed / no workspace files written',
+      taskId: 'task_1',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ artifactId: string; requestedChecks: Array<'test' | 'lint'> }],
+      unknown
+    >('artifact:runSandboxPatchReview');
+
+    await expect(handler({}, {
+      artifactId: 'artifact_patch_1',
+      operatorConfirmed: true,
+      requestedChecks: ['test', 'lint'],
+    })).resolves.toMatchObject({
+      artifactId: 'artifact_patch_1',
+      checkpointId: 'run_checkpoint_patch_1',
+      decisionId: 'decision_patch_1',
+      noWorkspaceFilesWritten: true,
+      reviewedArtifactId: 'artifact_patch_reviewed_1',
+      runId: 'run_review_1',
+      status: 'completed',
+      taskId: 'task_1',
+    });
+    expect(servicesMock.patchArtifactSandboxReviewRunService.run).toHaveBeenCalledWith({
+      artifactId: 'artifact_patch_1',
+      operatorConfirmed: true,
+      requestedChecks: ['test', 'lint'],
+    });
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_review_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'decision.changed');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(4, 'brief.changed');
   });
 
   it('imports legacy work habits without emitting task events', async () => {

@@ -815,6 +815,31 @@ function createMockApi() {
       detail.artifacts = detail.artifacts.filter((artifact) => artifact.id !== id);
       return existing;
     }),
+    previewPatchArtifactSandboxReview: vi.fn().mockResolvedValue({
+      artifactId: 'artifact_patch_1',
+      changedFiles: ['notes.md'],
+      checks: ['test', 'lint'],
+      decisionTitle: '确认提升 patch artifact：review.patch',
+      idempotencyKey: 'sandbox-patch-review:imported_patch_artifact:artifact_patch_1:run_1:task_1:lint,test',
+      noWorkspaceFilesWritten: true,
+      sourceId: 'artifact_patch_1',
+      sourceKind: 'imported_patch_artifact',
+      status: 'ready',
+      summary: 'Sandbox patch review run plan ready',
+      taskId: 'task_risk',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    }),
+    runPatchArtifactSandboxReview: vi.fn().mockResolvedValue({
+      artifactId: 'artifact_patch_1',
+      checkpointId: 'run_checkpoint_patch_1',
+      decisionId: 'decision_patch_1',
+      noWorkspaceFilesWritten: true,
+      reviewedArtifactId: 'artifact_patch_reviewed_1',
+      runId: 'run_review_1',
+      status: 'completed',
+      summary: 'Sandbox patch review completed / no workspace files written',
+      taskId: 'task_risk',
+    }),
     listTaskFiles: vi.fn().mockImplementation(async (taskId) => taskFiles[taskId] ?? []),
     createTaskFile: vi.fn().mockImplementation(async (input) => {
       taskFileCounter += 1;

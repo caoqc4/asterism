@@ -1051,6 +1051,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const [fileContextMenu, setFileContextMenu] = useState<FileContextMenuState | null>(null);
   const [patchReviewPreviewMessages, setPatchReviewPreviewMessages] = useState<Record<string, string>>({});
   const [previewingPatchReviewArtifactId, setPreviewingPatchReviewArtifactId] = useState<string | null>(null);
+  const [runningPatchReviewArtifactId, setRunningPatchReviewArtifactId] = useState<string | null>(null);
   const [fileContentOverrides, setFileContentOverrides] = useState<Record<string, string>>(() => loadTaskFileContentOverrides());
   const [localTaskFiles, setLocalTaskFiles] = useState<Record<string, LocalTaskFileRecord[]>>(() => loadLocalTaskFiles());
   const [pendingFileSwitch, setPendingFileSwitch] = useState<PendingFileSwitch>(null);
@@ -1634,6 +1635,8 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     : null;
   const selectedPatchReviewAvailable = isPatchArtifactFile(selectedFile)
     && Boolean(window.api?.previewPatchArtifactSandboxReview);
+  const selectedPatchReviewRunAvailable = isPatchArtifactFile(selectedFile)
+    && Boolean(window.api?.runPatchArtifactSandboxReview);
   const directChildTasks = selectedTask
     ? orderedChildrenForTask(selectedTask, allTasks)
     : [];
@@ -1760,6 +1763,57 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       }));
     } finally {
       setPreviewingPatchReviewArtifactId(null);
+    }
+  }
+
+  async function runPatchArtifactSandboxReview(file: VirtualTaskFile | null) {
+    if (!isPatchArtifactFile(file) || !window.api?.runPatchArtifactSandboxReview) return;
+
+    const artifactId = file.artifactId;
+    setRunningPatchReviewArtifactId(artifactId);
+    setPatchReviewPreviewMessages((current) => ({
+      ...current,
+      [artifactId]: '正在运行沙箱 review；工作区保持只读...',
+    }));
+
+    try {
+      const result = await window.api.runPatchArtifactSandboxReview({
+        artifactId,
+        operatorConfirmed: true,
+        requestedChecks: ['test', 'lint'],
+      });
+      const message = result.status === 'completed'
+        ? [
+            '沙箱 review 完成',
+            result.decisionId ? `已创建 promotion Decision：${result.decisionId}` : '未创建 promotion Decision',
+            `Run：${result.runId}`,
+            '未写入工作区',
+          ].join('；')
+        : `沙箱 review ${result.status === 'blocked' ? '阻塞' : '失败'}：${result.reason}`;
+      setPatchReviewPreviewMessages((current) => ({
+        ...current,
+        [artifactId]: message,
+      }));
+      await recordPanelTimelineEvent(file.taskId, 'panel.artifact_written', {
+        artifactId,
+        noWorkspaceFilesWritten: true,
+        runId: result.runId,
+        source: 'tasks_page',
+        status: result.status,
+        summary: result.summary,
+        type: 'sandbox_review_run',
+      });
+      reloadRunsForTask(file.taskId);
+      reloadTaskDetailForTask(file.taskId);
+      reloadPendingDecisions();
+      reloadTasks();
+    } catch (error) {
+      setPatchReviewPreviewMessages((current) => ({
+        ...current,
+        [artifactId]: `沙箱 review 失败：${error instanceof Error ? error.message : '未知错误'}`,
+      }));
+    } finally {
+      setRunningPatchReviewArtifactId(null);
     }
   }
 
@@ -2823,6 +2877,8 @@ function resetCaptureDraft() {
               onDelete={deleteSelectedFile}
               onPreviewPatchReview={selectedPatchReviewAvailable ? () => previewPatchArtifactSandboxReview(selectedFile) : undefined}
               patchReviewBusy={selectedFile?.artifactId === previewingPatchReviewArtifactId}
+              onRunPatchReview={selectedPatchReviewRunAvailable ? () => runPatchArtifactSandboxReview(selectedFile) : undefined}
+              patchReviewRunBusy={selectedFile?.artifactId === runningPatchReviewArtifactId}
             />
           ) : selectedObject === 'task-create' ? (
             <div className="tasks-toolbar-title">
@@ -3116,6 +3172,7 @@ function resetCaptureDraft() {
           onDelete={() => { closeFileContextMenu(); void deleteFile(contextMenuFile); }}
           onCopyPath={() => { copyFilePath(contextMenuFile); closeFileContextMenu(); }}
           onPreviewPatchReview={() => { closeFileContextMenu(); void previewPatchArtifactSandboxReview(contextMenuFile); }}
+          onRunPatchReview={() => { closeFileContextMenu(); void runPatchArtifactSandboxReview(contextMenuFile); }}
           onToggleSourceKey={() => { closeFileContextMenu(); void toggleSourceKey(contextMenuFile); }}
           onArchiveSource={() => { closeFileContextMenu(); void archiveSourceFile(contextMenuFile); }}
         />
@@ -3543,6 +3600,8 @@ function FileHeader({
   onDelete,
   onPreviewPatchReview,
   patchReviewBusy = false,
+  onRunPatchReview,
+  patchReviewRunBusy = false,
 }: {
   file: VirtualTaskFile;
   dirty: boolean;
@@ -3553,6 +3612,8 @@ function FileHeader({
   onDelete: () => void;
   onPreviewPatchReview?: () => void | Promise<void>;
   patchReviewBusy?: boolean;
+  onRunPatchReview?: () => void | Promise<void>;
+  patchReviewRunBusy?: boolean;
 }) {
   const immutableFile = file.kind === 'task_record' || file.kind === 'source';
   const fileLocationLabel = taskFileKindLabel(file);
@@ -3570,6 +3631,11 @@ function FileHeader({
       {onPreviewPatchReview && (
         <button className="btn sm ghost" onClick={() => void onPreviewPatchReview()} disabled={patchReviewBusy}>
           {patchReviewBusy ? '预检中...' : '沙箱预检'}
+        </button>
+      )}
+      {onRunPatchReview && (
+        <button className="btn sm ghost" onClick={() => void onRunPatchReview()} disabled={patchReviewRunBusy}>
+          {patchReviewRunBusy ? 'review 中...' : '运行 review'}
         </button>
       )}
       <button className="btn sm primary" onClick={() => void onSave()} disabled={!dirty}>保存</button>
@@ -5051,6 +5117,7 @@ interface FileContextMenuProps {
   onDelete: () => void;
   onCopyPath: () => void;
   onPreviewPatchReview: () => void;
+  onRunPatchReview: () => void;
   onToggleSourceKey: () => void;
   onArchiveSource: () => void;
 }
@@ -5067,6 +5134,7 @@ function FileContextMenu({
   onDelete,
   onCopyPath,
   onPreviewPatchReview,
+  onRunPatchReview,
   onToggleSourceKey,
   onArchiveSource,
 }: FileContextMenuProps) {
@@ -5075,6 +5143,7 @@ function FileContextMenu({
   const canMove = canEditLocal;
   const canDelete = canEditLocal || file.kind === 'artifact';
   const canPreviewPatchReview = isPatchArtifactFile(file) && Boolean(window.api?.previewPatchArtifactSandboxReview);
+  const canRunPatchReview = isPatchArtifactFile(file) && Boolean(window.api?.runPatchArtifactSandboxReview);
   const fileClass = classifyTaskFile(file);
   const isSourceMaterial = fileClass === 'source';
 
@@ -5090,6 +5159,11 @@ function FileContextMenu({
       {canPreviewPatchReview && (
         <button className="ctx-menu-item" onClick={onPreviewPatchReview}>
           沙箱预检
+        </button>
+      )}
+      {canRunPatchReview && (
+        <button className="ctx-menu-item" onClick={onRunPatchReview}>
+          运行 review
         </button>
       )}
       {isSourceMaterial && (

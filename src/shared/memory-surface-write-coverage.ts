@@ -320,6 +320,7 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     id: 'evidence.sandbox_or_browser_artifact',
     owner: 'ArtifactWriter',
     kind: 'evidence_writer',
+    ipcChannels: ['artifact:runSandboxPatchReview'],
     surfaces: ['artifact', 'run_step'],
     writePolicies: ['artifact_writer', 'run_step_writer'],
     guards: ['canonical_write_validation', 'artifact_writer', 'run_step_recovery_guidance', 'post_step', 'simplicity_check'],

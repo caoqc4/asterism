@@ -9,6 +9,7 @@ import {
 export function buildSandboxPatchDraftSourceFromPatchArtifact(params: {
   artifact: ArtifactRecord;
   requestedScripts?: AgentSandboxCheckScript[];
+  reviewRunId?: string | null;
   workspaceRoot: string | null | undefined;
 }): SandboxPatchDraftSourceValidation {
   const blockedReasons: string[] = [];
@@ -67,7 +68,7 @@ export function buildSandboxPatchDraftSourceFromPatchArtifact(params: {
       promotion: 'decision_required',
     },
     requestedScripts,
-    runId: params.artifact.sourceId,
+    runId: params.reviewRunId?.trim() || params.artifact.sourceId,
     sourceId: params.artifact.id,
     sourceKind: 'imported_patch_artifact',
     taskId: params.artifact.taskId,

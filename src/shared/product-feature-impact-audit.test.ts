@@ -95,8 +95,9 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('artifact.propose kind=patch');
     expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchReviewPlanningService as imported_patch_artifact sources');
     expect(taskFiles?.evidence.join(' ')).toContain('sandbox-review preview action through main-side IPC');
+    expect(taskFiles?.evidence.join(' ')).toContain('run sandbox review from a confirmed patch artifact');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
-    expect(taskFiles?.gaps.join(' ')).toContain('follow-through action that runs sandbox review');
+    expect(taskFiles?.gaps.join(' ')).toContain('final apply path is disabled by default');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Task-file and artifact Write Intent should be represented explicitly');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Artifact Write Intent still needs a dedicated artifact proposal/apply plan');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');

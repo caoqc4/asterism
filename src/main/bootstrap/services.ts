@@ -36,6 +36,7 @@ import { OperatorStartedRunService } from '../domain/run/operator-started-run-se
 import { RunService } from '../domain/run/run-service.js';
 import { SandboxPatchPromotionApplyService } from '../domain/run/sandbox-patch-promotion-apply-service.js';
 import { SandboxPatchPromotionPreflightService } from '../domain/run/sandbox-patch-promotion-preflight-service.js';
+import { PatchArtifactSandboxReviewRunService } from '../domain/run/patch-artifact-sandbox-review-run-service.js';
 import { TaskService } from '../domain/task/task-service.js';
 import { TaskplaneWritebackDispatchService } from '../domain/writeback/taskplane-writeback-dispatch-service.js';
 import { BriefExecutor } from '../executors/brief-executor.js';
@@ -212,6 +213,15 @@ const codeAgentRunService = new CodeAgentRunService(
   undefined,
   runVerificationRepository,
 );
+const patchArtifactSandboxReviewRunService = new PatchArtifactSandboxReviewRunService(
+  artifactRepository,
+  aiConfigService,
+  runRepository,
+  runStepRepository,
+  runCheckpointRepository,
+  decisionRepository,
+  sandboxPatchPromotionRepository,
+);
 
 const services = {
   taskRepository,
@@ -245,6 +255,7 @@ const services = {
   operatorStartedRunService,
   agentCliRunService,
   codeAgentRunService,
+  patchArtifactSandboxReviewRunService,
   workHabitService,
   browserEvidencePersister,
   homeBriefService,

@@ -109,6 +109,7 @@ describe('memory surface write coverage', () => {
     expect(coveredChannels).toEqual([
       'artifact:createManual',
       'artifact:delete',
+      'artifact:runSandboxPatchReview',
       'artifact:update',
       'blocker:create',
       'blocker:resolve',

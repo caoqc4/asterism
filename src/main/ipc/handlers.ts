@@ -7,6 +7,7 @@ import type {
   PingResponse,
   PreviewPatchArtifactSandboxReviewInput,
   ProjectDecompositionInput,
+  RunPatchArtifactSandboxReviewInput,
 } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
@@ -605,6 +606,45 @@ export function registerIpcHandlers(): void {
       summary: plan.summary,
       taskId: artifact.taskId,
       workspaceRoot: plan.requestBundle.audit.workspaceRoot,
+    };
+  });
+
+  ipcMain.handle('artifact:runSandboxPatchReview', async (
+    _event,
+    input: RunPatchArtifactSandboxReviewInput,
+  ) => {
+    const result = await getServices().patchArtifactSandboxReviewRunService.run(input);
+    if (result.run) {
+      emitAppEvent('run.changed', result.run.id);
+    }
+    emitAppEvent('task.changed', result.taskId);
+    if (result.status === 'completed' && result.decisionId) {
+      emitAppEvent('decision.changed');
+      emitAppEvent('brief.changed');
+    }
+
+    if (result.status === 'completed') {
+      return {
+        artifactId: result.artifactId,
+        checkpointId: result.checkpointId,
+        decisionId: result.decisionId,
+        noWorkspaceFilesWritten: true,
+        reviewedArtifactId: result.reviewedArtifactId,
+        runId: result.run.id,
+        status: result.status,
+        summary: result.summary,
+        taskId: result.taskId,
+      };
+    }
+
+    return {
+      artifactId: result.artifactId,
+      noWorkspaceFilesWritten: true,
+      reason: result.reason,
+      runId: result.run?.id ?? null,
+      status: result.status,
+      summary: result.summary,
+      taskId: result.taskId,
     };
   });
 

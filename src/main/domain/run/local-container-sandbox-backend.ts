@@ -120,14 +120,23 @@ export type LocalContainerSandboxPatchReviewPreparation = {
 const DEFAULT_LOCAL_CONTAINER_SANDBOX_IMAGE = 'node:22-bookworm-slim';
 const LOCAL_CONTAINER_STAGING_MOUNT_PATH = '/taskplane-staging';
 const LOCAL_CONTAINER_CHECK_WORKDIR_PATH = '/taskplane-workdir';
+const LOCAL_CONTAINER_PATCH_FILE_NAME = 'taskplane.patch';
+const LOCAL_CONTAINER_PATCH_FILE_PATH = `${LOCAL_CONTAINER_STAGING_MOUNT_PATH}/${LOCAL_CONTAINER_PATCH_FILE_NAME}`;
 const LOCAL_CONTAINER_CHECK_ENTRYPOINT = [
   'set -eu',
   `rm -rf ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}`,
   `mkdir -p ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}`,
   `cp -a /workspace/. ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/`,
-  `cp -a ${LOCAL_CONTAINER_STAGING_MOUNT_PATH}/. ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/`,
-  `rm -f ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/session.json`,
   `cd ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}`,
+  `if [ -s ${LOCAL_CONTAINER_PATCH_FILE_PATH} ]; then`,
+  `  if command -v git >/dev/null 2>&1; then git apply --whitespace=nowarn ${LOCAL_CONTAINER_PATCH_FILE_PATH};`,
+  `  elif command -v patch >/dev/null 2>&1; then patch -p1 < ${LOCAL_CONTAINER_PATCH_FILE_PATH};`,
+  `  else echo "No patch application tool available in sandbox image." >&2; exit 127; fi`,
+  'else',
+  `  cp -a ${LOCAL_CONTAINER_STAGING_MOUNT_PATH}/. ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/`,
+  `  rm -f ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/session.json`,
+  `  rm -f ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/${LOCAL_CONTAINER_PATCH_FILE_NAME}`,
+  'fi',
   'npm run "$1"',
 ].join('\n');
 
@@ -230,6 +239,7 @@ export async function prepareLocalContainerSandboxPatchReview(params: {
   }
 
   const handle = await params.provider.prepareSession(params.request);
+  await fs.writeFile(path.join(handle.stagingRoot, LOCAL_CONTAINER_PATCH_FILE_NAME), params.patchDraft.diff, 'utf8');
 
   try {
     const checkRun = await params.provider.runChecks({

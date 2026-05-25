@@ -480,6 +480,7 @@ describe('runtime entrypoint coverage', () => {
     expect(RUNTIME_ENTRYPOINT_COVERAGE.map((entry) => entry.id).sort()).toEqual([
       'agent.toolDurableWrites',
       'ai.taskChat',
+      'artifact.runSandboxPatchReview',
       'brief.scheduledSnapshot',
       'context.refreshOrLeave',
       'context.taskSwitch',

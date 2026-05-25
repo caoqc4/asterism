@@ -68,6 +68,7 @@ function getExposedApi() {
     updateArtifact: (input: unknown) => Promise<unknown>;
     deleteArtifact: (id: string) => Promise<unknown>;
     previewPatchArtifactSandboxReview?: (input: unknown) => Promise<unknown>;
+    runPatchArtifactSandboxReview?: (input: unknown) => Promise<unknown>;
     listTaskFiles: (taskId: string) => Promise<unknown>;
     createTaskFile: (input: unknown) => Promise<unknown>;
     updateTaskFile: (input: unknown) => Promise<unknown>;
@@ -196,6 +197,11 @@ describe('preload bridge', () => {
     const previewPatchArtifactSandboxReviewInput = {
       artifactId: 'artifact_patch_1',
       requestedChecks: ['test'],
+    };
+    const runPatchArtifactSandboxReviewInput = {
+      artifactId: 'artifact_patch_1',
+      operatorConfirmed: true,
+      requestedChecks: ['test', 'lint'],
     };
     const createTaskFileInput = {
       taskId: 'task_1',
@@ -327,6 +333,7 @@ describe('preload bridge', () => {
     await api.updateArtifact(updateArtifactInput);
     await api.deleteArtifact('artifact_1');
     await api.previewPatchArtifactSandboxReview?.(previewPatchArtifactSandboxReviewInput);
+    await api.runPatchArtifactSandboxReview?.(runPatchArtifactSandboxReviewInput);
     await api.listTaskFiles('task_1');
     await api.createTaskFile(createTaskFileInput);
     await api.updateTaskFile(updateTaskFileInput);
@@ -405,6 +412,7 @@ describe('preload bridge', () => {
       ['artifact:update', updateArtifactInput],
       ['artifact:delete', 'artifact_1'],
       ['artifact:previewSandboxPatchReview', previewPatchArtifactSandboxReviewInput],
+      ['artifact:runSandboxPatchReview', runPatchArtifactSandboxReviewInput],
       ['taskFile:list', 'task_1'],
       ['taskFile:create', createTaskFileInput],
       ['taskFile:update', updateTaskFileInput],

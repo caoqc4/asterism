@@ -330,13 +330,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Native CLI artifact.propose kind=patch is validated as reviewable diff evidence and routed to ArtifactRepository.createPatchFromRun after confirmation.',
       'Run-backed patch artifacts can now feed SandboxPatchReviewPlanningService as imported_patch_artifact sources, keeping workspace promotion behind sandbox review and Decision approval.',
       'Tasks file workspace now surfaces a confirmed patch artifact sandbox-review preview action through main-side IPC, returning changed files, checks, idempotency, and an explicit no-workspace-write guarantee.',
+      'Tasks file workspace can run sandbox review from a confirmed patch artifact, creating a new audit Run, reviewed patch artifact, promotion checkpoint, and pending Decision without writing workspace files.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
     ],
     gaps: [
-      'Workspace-write and sandbox promotion paths still need the follow-through action that runs sandbox review and converts accepted evidence into a promotion Decision.',
+      'Workspace-write promotion remains intentionally Decision-gated; the final apply path is disabled by default and still needs clearer operator-facing status before it should be treated as a normal happy path.',
     ],
     nextActions: [
-      'Add the explicit sandbox review execution action after preview, keeping final workspace promotion behind Decision approval.',
+      'Surface promotion Decision status and disabled-by-default workspace apply readiness next to reviewed patch artifacts.',
     ],
   },
   {

@@ -96,11 +96,13 @@ export class SandboxPatchReviewPlanningService {
     decisionTitle?: string | null;
     featureFlags: FeatureFlags;
     requestedScripts?: Array<'test' | 'lint'>;
+    reviewRunId?: string | null;
     workspaceRoot: string | null | undefined;
   }): SandboxPatchReviewRunPlan {
     const validation = buildSandboxPatchDraftSourceFromPatchArtifact({
       artifact: params.artifact,
       requestedScripts: params.requestedScripts,
+      reviewRunId: params.reviewRunId,
       workspaceRoot: params.workspaceRoot,
     });
 

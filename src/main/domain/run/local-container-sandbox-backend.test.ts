@@ -177,15 +177,22 @@ describe('local container sandbox backend probe', () => {
         'rm -rf /taskplane-workdir',
         'mkdir -p /taskplane-workdir',
         'cp -a /workspace/. /taskplane-workdir/',
-        'cp -a /taskplane-staging/. /taskplane-workdir/',
-        'rm -f /taskplane-workdir/session.json',
         'cd /taskplane-workdir',
+        'if [ -s /taskplane-staging/taskplane.patch ]; then',
+        '  if command -v git >/dev/null 2>&1; then git apply --whitespace=nowarn /taskplane-staging/taskplane.patch;',
+        '  elif command -v patch >/dev/null 2>&1; then patch -p1 < /taskplane-staging/taskplane.patch;',
+        '  else echo "No patch application tool available in sandbox image." >&2; exit 127; fi',
+        'else',
+        '  cp -a /taskplane-staging/. /taskplane-workdir/',
+        '  rm -f /taskplane-workdir/session.json',
+        '  rm -f /taskplane-workdir/taskplane.patch',
+        'fi',
         'npm run "$1"',
       ].join('\n'),
       'taskplane-check',
       'test',
     ]);
-    expect(plans[0]?.args.join('\n')).toContain('cp -a /taskplane-staging/. /taskplane-workdir/');
+    expect(plans[0]?.args.join('\n')).toContain('git apply --whitespace=nowarn /taskplane-staging/taskplane.patch');
     expect(plans[0]?.args.join('\n')).toContain('npm run "$1"');
     expect(plans[0]?.args).not.toContain('--env');
   });
@@ -558,6 +565,8 @@ describe('local container sandbox backend probe', () => {
       });
       expect(preparation.sessionSummary).toContain('patchArtifacts=supported');
       expect(fs.readFileSync(sourceFile, 'utf8')).toBe('original\n');
+      expect(fs.readFileSync(`${preparation.handle.stagingRoot}/taskplane.patch`, 'utf8'))
+        .toContain('+++ b/notes.md');
       expect(runner).toHaveBeenCalledTimes(1);
 
       await provider.disposeSession(preparation.handle);
