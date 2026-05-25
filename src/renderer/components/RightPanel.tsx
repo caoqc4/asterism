@@ -853,9 +853,15 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
     const sources = readStepKeyValue(webPreparationStep.output, 'sources');
     const reason = readStepKeyValue(webPreparationStep.output, 'reason');
     if (status === 'captured') {
-      lines.push(`联网调研：已保存 ${sources ?? '若干'} 个来源到来源上下文。`);
+      const partial = reason ? /\bcaptured\s+\d+\s*\/\s*\d+\b/i.test(reason) : false;
+      lines.push(`联网调研：已保存 ${sources ?? '若干'} 个来源到来源上下文${partial ? '，部分来源保存失败' : ''}。`);
     } else if (status === 'skipped' && reason) {
-      lines.push(`联网调研：未执行，${truncateAgentCliChatLine(reason, 72)}`);
+      const saveFailed = /none could be saved|could not be saved|source context.*unavailable/i.test(reason);
+      lines.push(
+        saveFailed
+          ? `联网调研：已获取来源但未能保存，${truncateAgentCliChatLine(reason, 72)}`
+          : `联网调研：未保存来源，${truncateAgentCliChatLine(reason, 72)}`,
+      );
     }
   }
 

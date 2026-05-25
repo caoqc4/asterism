@@ -115,6 +115,28 @@ describe('deriveAgentCliProgress', () => {
     expect(progress.detail).toBe('已保存 3 个来源到来源上下文。');
   });
 
+  it('identifies web research source persistence failures as unsaved evidence', () => {
+    const progress = deriveAgentCliProgress(detail({
+      steps: [
+        step({
+          index: 1,
+          title: 'Agent CLI 联网调研准备',
+          output: [
+            'status=skipped',
+            'capability_mode=native',
+            'sources=0',
+            'query=Codex CLI docs',
+            'reason=Taskplane web research produced 2 source context item(s), but none could be saved; the native CLI may still use its own research tools.',
+          ].join('\n'),
+        }),
+      ],
+    }));
+
+    expect(progress.state).toBe('preparing');
+    expect(progress.label).toContain('来源未能保存');
+    expect(progress.detail).toContain('none could be saved');
+  });
+
   it('does not mistake workspace search for web research', () => {
     const progress = deriveAgentCliProgress(detail({
       steps: [

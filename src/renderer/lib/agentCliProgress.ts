@@ -68,6 +68,13 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
         state: 'researching',
       };
     }
+    if (preparationStatus === 'skipped' && isWebResearchPersistenceFailure(output)) {
+      return {
+        detail: compactWebResearchPreparationDetail(output, preparationStatus),
+        label: '联网调研来源未能保存，正在准备交给原生 CLI 继续。',
+        state: 'preparing',
+      };
+    }
     return {
       detail: compactWebResearchPreparationDetail(output, preparationStatus),
       label: '正在检查是否需要联网调研。',
@@ -166,6 +173,11 @@ function compactWebResearchPreparationDetail(
   }
   const reason = readStepKeyValueRaw(output, 'reason');
   return reason ? compactLine(reason) : undefined;
+}
+
+function isWebResearchPersistenceFailure(output: string): boolean {
+  const reason = readStepKeyValueRaw(output, 'reason') ?? output;
+  return /none could be saved|could not be saved|source context.*unavailable/i.test(reason);
 }
 
 function isExternalResearchStep(haystack: string): boolean {

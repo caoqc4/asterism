@@ -3068,6 +3068,44 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/原生 CLI 联网动作：.*web_search/)).toBeTruthy();
   });
 
+  it('summarizes Agent CLI web research source persistence failures as unsaved evidence', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请先调研 Codex 教程资料。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created') as RunRecord & { steps?: RunStepRecord[] };
+    expect(run).toBeTruthy();
+    Object.assign(run, {
+      output: '已交给原生 CLI 继续调研。',
+      outputSource: 'ai',
+      status: 'completed',
+      steps: [
+        buildRunStep({
+          id: 'step_web_prep_failed_save',
+          runId: 'run_agent_cli_created',
+          index: 0,
+          title: 'Agent CLI 联网调研准备',
+          output: [
+            'status=skipped',
+            'capability_mode=native',
+            'sources=0',
+            'query=Codex CLI 教程',
+            'reason=Taskplane web research produced 2 source context item(s), but none could be saved; the native CLI may still use its own research tools.',
+          ].join('\n'),
+        }),
+      ],
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText(/联网调研：已获取来源但未能保存/)).toBeTruthy();
+    expect(screen.queryByText(/联网调研：未执行/)).toBeNull();
+    expect(screen.queryByText(/已保存 0 个来源到来源上下文/)).toBeNull();
+  });
+
   it('summarizes Agent CLI local command activity after completed native runs', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
