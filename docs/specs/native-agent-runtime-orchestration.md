@@ -234,6 +234,10 @@ Taskplane currently has a working native CLI execution backend:
   native web/search activation, resume commands, plan/read-only affordances,
   hook events, Claude agents, and native memory-loading hints can be shown
   before execution without starting a run.
+- The status probe also inspects configured-workspace native guidance files and
+  directories such as `AGENTS.md`, `CLAUDE.md`, `.claude/settings*.json`, and
+  `.claude/agents/` as capability evidence only. These checks do not execute the
+  runtime and do not grant write permissions.
 - The Run Goal Contract and Agent CLI context bridge pass those selected-runtime
   capability declarations into native CLI prompts before execution, so the
   runtime sees the same capability boundary shown in Taskplane UI.

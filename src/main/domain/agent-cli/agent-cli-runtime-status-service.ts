@@ -1,4 +1,6 @@
 import { execFile } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import {
   DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE,
@@ -41,7 +43,7 @@ export class AgentCliRuntimeStatusService {
     private readonly workloadTracker: AgentCliRuntimeWorkloadTracker = agentCliRuntimeWorkloadTracker,
   ) {}
 
-  async getStatus(): Promise<AgentCliRuntimeStatus> {
+  async getStatus(options: { workspaceRoot?: string | null } = {}): Promise<AgentCliRuntimeStatus> {
     const fixture = parseAgentCliRuntimeFixture(readEnvValue(AGENT_CLI_RUNTIME_FIXTURE_ENV));
     if (fixture) return fixture;
 
@@ -61,7 +63,15 @@ export class AgentCliRuntimeStatusService {
       return {
         ...runtime,
         authState: probe.authState ?? 'unknown',
-        capabilities: buildDefaultAgentCliRuntimeCapabilities(runtime.id, runtime.label, probe.version, probe.capabilitySignals ?? null),
+        capabilities: buildDefaultAgentCliRuntimeCapabilities(
+          runtime.id,
+          runtime.label,
+          probe.version,
+          mergeAgentCliCapabilitySignals(
+            probe.capabilitySignals ?? null,
+            detectWorkspaceCapabilitySignals(runtime.id, options.workspaceRoot),
+          ),
+        ),
         executablePath: probe.executablePath ?? null,
         installed: true,
         missingReason: installedRuntimeMissingReason(runtime.id, runtime.label, runtime.command, runtime.executionSupport, probe.authState, probe.authReason),
@@ -189,6 +199,72 @@ export function parseAgentCliCapabilitySignals(
   };
 }
 
+export function detectWorkspaceCapabilitySignals(
+  runtimeId: AgentCliRuntimeId,
+  workspaceRoot: string | null | undefined,
+): AgentCliRuntimeCapabilityProbeSignals | null {
+  const root = workspaceRoot?.trim();
+  if (!root) return null;
+
+  let stat: fs.Stats;
+  try {
+    stat = fs.statSync(root);
+  } catch {
+    return null;
+  }
+  if (!stat.isDirectory()) return null;
+
+  if (runtimeId === 'codex') {
+    return compactSignals({
+      nativeMemory: fileExists(path.join(root, 'AGENTS.md'))
+        || fileExists(path.join(root, '.codex', 'AGENTS.md')),
+    });
+  }
+
+  if (runtimeId === 'claude') {
+    return compactSignals({
+      hooks: claudeSettingsDeclareHooks(root)
+        || directoryHasEntries(path.join(root, '.claude', 'hooks')),
+      nativeMemory: fileExists(path.join(root, 'CLAUDE.md'))
+        || fileExists(path.join(root, '.claude', 'CLAUDE.md'))
+        || fileExists(path.join(root, '.claude', 'memory.md')),
+      subagents: directoryHasEntries(path.join(root, '.claude', 'agents')),
+    });
+  }
+
+  return null;
+}
+
+export function mergeAgentCliCapabilitySignals(
+  primary: AgentCliRuntimeCapabilityProbeSignals | null | undefined,
+  secondary: AgentCliRuntimeCapabilityProbeSignals | null | undefined,
+): AgentCliRuntimeCapabilityProbeSignals | null {
+  if (!primary && !secondary) return null;
+  const result: AgentCliRuntimeCapabilityProbeSignals = {};
+  const keys: Array<keyof AgentCliRuntimeCapabilityProbeSignals> = [
+    'hooks',
+    'nativeClear',
+    'nativeCompact',
+    'nativeMemory',
+    'nativeResume',
+    'planMode',
+    'structuredProgressEvents',
+    'subagents',
+    'webSearch',
+  ];
+
+  for (const key of keys) {
+    const primaryValue = primary?.[key];
+    const secondaryValue = secondary?.[key];
+    const value = primaryValue === true || secondaryValue === true
+      ? true
+      : primaryValue ?? secondaryValue;
+    if (value !== undefined) result[key] = value;
+  }
+
+  return Object.keys(result).length ? result : null;
+}
+
 export function executableProbeFailureReason(
   command: string,
   probe: { exitCode: number | null; stdout: string; stderr: string },
@@ -202,6 +278,48 @@ export function executableProbeFailureReason(
     return `${command} install is incomplete; reinstall the official CLI with optional dependencies enabled.`;
   }
   return null;
+}
+
+function compactSignals(
+  signals: AgentCliRuntimeCapabilityProbeSignals,
+): AgentCliRuntimeCapabilityProbeSignals | null {
+  const compacted = Object.fromEntries(
+    Object.entries(signals).filter(([, value]) => value !== undefined && value !== false),
+  ) as AgentCliRuntimeCapabilityProbeSignals;
+  return Object.keys(compacted).length ? compacted : null;
+}
+
+function fileExists(filePath: string): boolean {
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function directoryHasEntries(directoryPath: string): boolean {
+  try {
+    return fs.statSync(directoryPath).isDirectory()
+      && fs.readdirSync(directoryPath).some((entry) => !entry.startsWith('.'));
+  } catch {
+    return false;
+  }
+}
+
+function claudeSettingsDeclareHooks(workspaceRoot: string): boolean {
+  return [
+    path.join(workspaceRoot, '.claude', 'settings.json'),
+    path.join(workspaceRoot, '.claude', 'settings.local.json'),
+  ].some((settingsPath) => {
+    try {
+      const raw = fs.readFileSync(settingsPath, 'utf8');
+      if (!raw.trim()) return false;
+      const parsed = JSON.parse(raw) as { hooks?: unknown };
+      return Boolean(parsed.hooks);
+    } catch {
+      return false;
+    }
+  });
 }
 
 function installedRuntimeMissingReason(

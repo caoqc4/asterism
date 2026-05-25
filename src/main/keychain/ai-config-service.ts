@@ -191,7 +191,7 @@ export class AiConfigService {
     const activeKey = providerKey ?? envApiKey ?? legacyKey;
     const [externalAccessStatus, agentCliRuntimeStatus] = await Promise.all([
       this.externalAccessStatusService.getStatus(),
-      this.agentCliRuntimeStatusService.getStatus(),
+      this.agentCliRuntimeStatusService.getStatus({ workspaceRoot: config.workspaceRoot }),
     ]);
 
     const status: AiConfigStatus = {
@@ -249,7 +249,7 @@ export class AiConfigService {
     const activeKey = providerKey ?? envApiKey ?? legacyKey;
     const [externalAccessStatus, agentCliRuntimeStatus] = await Promise.all([
       this.externalAccessStatusService.getStatus(),
-      this.agentCliRuntimeStatusService.getStatus(),
+      this.agentCliRuntimeStatusService.getStatus({ workspaceRoot: config.workspaceRoot }),
     ]);
 
     const status: AiConfigStatus = {

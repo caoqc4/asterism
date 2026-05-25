@@ -371,16 +371,17 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent CLI runtime status now carries adapter-level native capability declarations for structured events, runtime-dependent web/search, workspace read/write boundaries, hooks, subagents, and product-controlled memory/clear/compact.',
       'Agent CLI status probes parse lightweight provider help output for structured-event, hook-event, and native agent/subagent signals when the installed CLI exposes them.',
       'Agent CLI status probes now combine top-level and execution help output to detect native web/search activation, resume support, plan/read-only affordances, Claude hook events, Claude agents, and native memory-loading signals.',
+      'Agent CLI status probes also inspect the configured workspace for native guidance and lifecycle assets such as AGENTS.md, CLAUDE.md, .claude/settings hooks, and .claude/agents without executing the runtime.',
       'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution.',
       'Run Goal Contract and Agent CLI context bridge pass selected-runtime capability declarations into native CLI prompts.',
       'Native CLI provider events are projected into runtime-neutral capability progress states for web search, workspace reads/writes, command execution, MCP, and hooks.',
       'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
     ],
     gaps: [
-      'Runtime capability probes still need config-file checks for exact hook files, subagent folders, and native memory surfaces beyond provider help-output signals.',
+      'Runtime capability probes still need native compact/clear and goal-forwarding readiness checks once providers expose stable non-executing signals.',
     ],
     nextActions: [
-      'Add optional runtime-specific config-file checks for hook files, subagent folders, memory files, compact readiness, and native goal forwarding when the providers expose stable locations.',
+      'Add optional runtime-specific compact/clear and native goal readiness probes when stable provider metadata or config locations are available.',
     ],
   },
   {

@@ -261,6 +261,10 @@ claiming a native capability. Current probes combine top-level and execution
 help output so Codex `--search` / `resume` and Claude hook events, agents,
 plan permission mode, resume, and native memory-loading hints are visible in
 runtime status without starting an execution run.
+Workspace-local checks may also inspect only known lightweight project files or
+directories such as `AGENTS.md`, `CLAUDE.md`, `.claude/settings*.json`, and
+`.claude/agents/`. These checks are evidence for capability display and routing;
+they do not grant write authority or execute the runtime.
 
 ## Relationship To Other Specs
 

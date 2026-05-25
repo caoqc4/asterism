@@ -9,7 +9,9 @@ import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status
 import {
   AGENT_CLI_RUNTIME_FIXTURE_ENV,
   AgentCliRuntimeStatusService,
+  detectWorkspaceCapabilitySignals,
   executableProbeFailureReason,
+  mergeAgentCliCapabilitySignals,
   nativeCapabilityProbeArgs,
   parseAgentCliCapabilitySignals,
   probeAgentCliCommand,
@@ -149,6 +151,44 @@ describe('agent cli runtime status service', () => {
       planMode: true,
       structuredProgressEvents: true,
       subagents: true,
+    });
+  });
+
+  it('detects workspace-native guidance, hook, and subagent files without executing a runtime', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-workspace-signals-'));
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'AGENTS.md'), '# Agent guidance\n');
+      fs.writeFileSync(path.join(tempRoot, 'CLAUDE.md'), '# Claude guidance\n');
+      fs.mkdirSync(path.join(tempRoot, '.claude', 'agents'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'agents', 'reviewer.md'), '# Reviewer\n');
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'settings.json'), JSON.stringify({
+        hooks: {
+          PreToolUse: [],
+        },
+      }));
+
+      expect(detectWorkspaceCapabilitySignals('codex', tempRoot)).toMatchObject({
+        nativeMemory: true,
+      });
+      expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).toMatchObject({
+        hooks: true,
+        nativeMemory: true,
+        subagents: true,
+      });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('merges provider help signals with workspace signals conservatively', () => {
+    expect(mergeAgentCliCapabilitySignals(
+      { structuredProgressEvents: false, webSearch: true },
+      { hooks: true, structuredProgressEvents: true },
+    )).toMatchObject({
+      hooks: true,
+      structuredProgressEvents: true,
+      webSearch: true,
     });
   });
 
