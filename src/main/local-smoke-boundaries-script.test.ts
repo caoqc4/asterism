@@ -20,6 +20,7 @@ const envKeys = [
   'TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME',
   'TASKPLANE_AGENT_CLI_NATIVE_GOAL_STDIN',
   'TASKPLANE_AGENT_CLI_NATIVE_GOAL_TIMEOUT_MS',
+  'TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME',
   'TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE',
   'TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE',
@@ -312,15 +313,27 @@ describe('local smoke script default boundaries', () => {
   it('keeps packaged Agent CLI live task smoke manual and skipped by default', () => {
     const scripts = readPackageScripts();
     const result = runScript('scripts/manual-agent-cli-task-live-mac.mjs');
+    const claudeResult = runScript('scripts/manual-agent-cli-task-live-mac.mjs', '', {
+      TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME: 'claude',
+    });
     const testingDoc = fs.readFileSync(new URL('../../docs/TESTING.md', import.meta.url), 'utf8');
 
     expect(scripts['manual:agent-cli-task-live:mac']).toBe('node scripts/manual-agent-cli-task-live-mac.mjs');
+    expect(scripts['manual:claude-agent-cli-task-live:mac']).toBe('cross-env TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude node scripts/manual-agent-cli-task-live-mac.mjs');
     expect(result.status).toBe(0);
     expect(result.output).toContain('Agent CLI packaged task live smoke');
+    expect(result.output).toContain('runtime=codex');
     expect(result.output).toContain('status=skip');
     expect(result.output).toContain('cli=not-called');
     expect(result.output).toContain('packagedApp=not-launched');
     expect(result.output).toContain('workspace=unchanged');
+    expect(claudeResult.status).toBe(0);
+    expect(claudeResult.output).toContain('runtime=claude');
+    expect(claudeResult.output).toContain('status=skip');
+    expect(claudeResult.output).toContain('cli=not-called');
+    expect(claudeResult.output).toContain('workspace=unchanged');
+    expect(claudeResult.output).toContain('local Claude Code account');
+    expect(testingDoc).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:claude-agent-cli-task-live:mac');
     expect(testingDoc).toContain('TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac');
     expect(testingDoc).toContain('The default command stays skipped and must not');
     expect(testingDoc).toContain('packaged-app live smoke passed locally');

@@ -44,6 +44,7 @@ describe('product feature impact audit', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+    const smoke = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'smoke_tests_runtime_readiness_recovery');
 
     expect(rightPanel?.evidence.join(' ')).toContain('decisions, next-step updates, blockers, completion proposals');
     expect(rightPanel?.evidence.join(' ')).toContain('web research capture and native CLI capability-tagged web/search events');
@@ -139,5 +140,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
     expect(capabilities?.gaps.join(' ')).not.toContain('compact/clear readiness checks');
+    expect(smoke?.evidence.join(' ')).toContain('Claude Code mode');
+    expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');
+    expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
 });

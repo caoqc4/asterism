@@ -160,6 +160,7 @@ local `claude` command and valid account are available:
 
 ```bash
 TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-readonly-smoke
+TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:claude-agent-cli-task-live:mac
 ```
 
 The packaged task-bound Agent CLI smoke uses a fake Codex executable and fixture
@@ -182,10 +183,12 @@ first build the unpacked macOS app, then opt in explicitly:
 ```bash
 npm run dist:mac:dir
 TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac
+# Optional Claude Code pass when a local Claude account is ready:
+TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:claude-agent-cli-task-live:mac
 ```
 
 This launches the packaged app with isolated user data and a temporary workspace,
-injects only the detected local Codex runtime status, runs one task-bound
+injects only the detected local Agent CLI runtime status, runs one task-bound
 read-only Agent CLI request, checks the expected phrase in the terminal step, and
 fails if workspace files change. The default command stays skipped and must not
 call the CLI or launch the app.

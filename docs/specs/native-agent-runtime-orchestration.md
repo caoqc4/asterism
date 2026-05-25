@@ -331,8 +331,9 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   web/search readiness;
 - real Codex JSONL and Claude stream-json event shapes need deeper schema
   mapping as they evolve;
-- Claude real-account execution has not been validated in this repository's
-  current environment;
+- Claude real-account execution has a default-skipped packaged live smoke mode
+  on the shared Agent CLI task harness, but it has not passed in this
+  repository's current environment without local account readiness;
 - Write Intent extraction and confirmation UI cover the first planned intent
   set. Right-panel confirmations invoke main-side writeback dispatch for task,
   source, decision, subtask, task-file, and artifact writes, and Task Dynamics
@@ -649,7 +650,8 @@ Status: mostly implemented.
 - Keep JSONL/stream-json event capture.
 - Keep run steps, verifier, and memory proposal integration.
 - Continue live Codex packaged smoke.
-- Add Claude live smoke when account readiness permits.
+- Run the default-skipped Claude packaged live smoke when account readiness
+  permits.
 
 ### Phase 2: Observable Runtime Progress
 

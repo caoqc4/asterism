@@ -8,6 +8,21 @@ import Database from 'better-sqlite3';
 import { _electron as electron } from 'playwright';
 
 const ENABLED = process.env.TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE === 'true';
+const RUNTIME_ID = process.env.TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME === 'claude' ? 'claude' : 'codex';
+const RUNTIME = {
+  codex: {
+    authArgs: ['login', 'status'],
+    command: 'codex',
+    label: 'Codex CLI',
+    terminalStepTitle: 'codex cli completed',
+  },
+  claude: {
+    authArgs: ['auth', 'status'],
+    command: 'claude',
+    label: 'Claude Code',
+    terminalStepTitle: 'claude code completed',
+  },
+}[RUNTIME_ID];
 const EXPECTED_PHRASE = 'TASKPLANE_AGENT_CLI_TASK_LIVE_OK';
 const root = process.cwd();
 const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
@@ -17,11 +32,11 @@ const taskId = 'task_agent_cli_task_live_smoke';
 const workspaceFile = 'README.md';
 
 console.log('Agent CLI packaged task live smoke');
-console.log('runtime=codex');
+console.log(`runtime=${RUNTIME_ID}`);
 
 if (!ENABLED) {
   console.log('status=skip');
-  console.log('set TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true to launch the packaged app and call the local Codex CLI account');
+  console.log(`set TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true to launch the packaged app and call the local ${RUNTIME.label} account`);
   console.log('cli=not-called');
   console.log('packagedApp=not-launched');
   console.log('workspace=unchanged');
@@ -36,26 +51,26 @@ if (!fs.existsSync(executablePath)) {
   fail(`status=failed\nerror=Missing packaged app executable: ${executablePath}\nrun=npm run dist:mac:dir`);
 }
 
-const codexPath = firstLine(runCommand('sh', ['-lc', 'command -v codex']).output);
-if (!codexPath) {
-  fail('status=failed\ncli=missing\nworkspace=unchanged\nerror=codex command not found in PATH');
+const runtimePath = firstLine(runCommand('sh', ['-lc', `command -v ${RUNTIME.command}`]).output);
+if (!runtimePath) {
+  fail(`status=failed\ncli=missing\nworkspace=unchanged\nerror=${RUNTIME.command} command not found in PATH`);
 }
 
-const versionResult = runCommand(codexPath, ['--version']);
+const versionResult = runCommand(runtimePath, ['--version']);
 if (versionResult.status !== 0) {
-  fail(`status=failed\ncli=codex\nworkspace=unchanged\nerror=codex --version failed\noutput=${preview(versionResult.output)}`);
+  fail(`status=failed\ncli=${RUNTIME_ID}\nworkspace=unchanged\nerror=${RUNTIME.command} --version failed\noutput=${preview(versionResult.output)}`);
 }
-console.log('cli=codex');
-console.log(`executablePath=${codexPath}`);
+console.log(`cli=${RUNTIME_ID}`);
+console.log(`executablePath=${runtimePath}`);
 console.log(`version=${firstLine(versionResult.output) || '<unknown>'}`);
 
-const loginResult = runCommand(codexPath, ['login', 'status']);
+const loginResult = runCommand(runtimePath, RUNTIME.authArgs);
 if (loginResult.status !== 0) {
-  fail(`status=failed\ncli=codex\nauth=not-ready\nworkspace=unchanged\noutput=${preview(loginResult.output)}`);
+  fail(`status=failed\ncli=${RUNTIME_ID}\nauth=not-ready\nworkspace=unchanged\noutput=${preview(loginResult.output)}`);
 }
 console.log('auth=ready');
 
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-task-live-smoke-'));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), `taskplane-agent-cli-${RUNTIME_ID}-task-live-smoke-`));
 const userDataPath = path.join(tempRoot, 'user-data');
 const workspaceRoot = path.join(tempRoot, 'workspace');
 const dbPath = path.join(userDataPath, 'taskplane.db');
@@ -110,10 +125,10 @@ function seedTaskFixture() {
         `)
         .run(
           taskId,
-          'Agent CLI packaged live task smoke',
-          'Use the real local Codex CLI runtime to inspect this task without modifying files.',
+          `Agent CLI packaged live task smoke (${RUNTIME.label})`,
+          `Use the real local ${RUNTIME.label} runtime to inspect this task without modifying files.`,
           'running',
-          'Run a real read-only Codex CLI task smoke request.',
+          `Run a real read-only ${RUNTIME.label} task smoke request.`,
           null,
           'none',
           null,
@@ -137,10 +152,10 @@ function seedTaskFixture() {
             '# Task',
             '',
             '## Goal',
-            'Agent CLI packaged live task smoke',
+            `Agent CLI packaged live task smoke (${RUNTIME.label})`,
             '',
             '## Next Step',
-            'Run a real read-only Codex CLI task smoke request.',
+            `Run a real read-only ${RUNTIME.label} task smoke request.`,
             '',
           ].join('\n'),
           '2026-05-20T08:00:00.000Z',
@@ -182,14 +197,14 @@ async function waitFor(condition, description) {
 async function openTaskPanel(page) {
   await page.getByRole('button', { name: 'Tasks' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
-  await page.locator('.task-row', { hasText: 'Agent CLI packaged live task smoke' }).click();
-  await page.getByRole('heading', { name: 'Agent CLI packaged live task smoke' }).waitFor();
+  await page.locator('.task-row', { hasText: `Agent CLI packaged live task smoke (${RUNTIME.label})` }).click();
+  await page.getByRole('heading', { name: `Agent CLI packaged live task smoke (${RUNTIME.label})` }).waitFor();
   await page.locator('.task-primary-action').click();
-  await page.getByPlaceholder(/关于「Agent CLI packaged live task smoke」/).waitFor();
+  await page.getByPlaceholder(new RegExp(`关于「Agent CLI packaged live task smoke \\(${escapeRegExp(RUNTIME.label)}\\)」`)).waitFor();
 }
 
 async function sendPanelMessage(page, message) {
-  const input = page.getByPlaceholder(/关于「Agent CLI packaged live task smoke」/);
+  const input = page.getByPlaceholder(new RegExp(`关于「Agent CLI packaged live task smoke \\(${escapeRegExp(RUNTIME.label)}\\)」`));
   await input.fill(message);
   await page.locator('.panel-input-foot').getByRole('button', { name: '发送' }).click();
 }
@@ -222,6 +237,10 @@ function fail(message, error) {
   process.exit(1);
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 prepareWorkspace();
 const beforeWorkspace = workspaceSnapshot();
 let app;
@@ -234,17 +253,18 @@ try {
       ELECTRON_RUN_AS_NODE: '',
       TASKPLANE_USER_DATA_DIR: userDataPath,
       TASKPLANE_WORKSPACE_ROOT: workspaceRoot,
+      TASKPLANE_AI_RUNTIME_MODE: RUNTIME_ID,
       TASKPLANE_ENABLE_SCHEDULER: 'false',
       TASKPLANE_RUNTIME_SMOKE_PATH: smokePath,
       TASKPLANE_AGENT_CLI_RUNTIME_FIXTURE_JSON: JSON.stringify({
         updatedAt: '2026-05-20T08:00:00.000Z',
         runtimes: [{
-          id: 'codex',
-          label: 'Codex CLI',
-          command: 'codex',
-          executablePath: codexPath,
+          id: RUNTIME_ID,
+          label: RUNTIME.label,
+          command: RUNTIME.command,
+          executablePath: runtimePath,
           installed: true,
-          version: firstLine(versionResult.output) || 'codex',
+          version: firstLine(versionResult.output) || RUNTIME.command,
           authState: 'ready',
           executionSupport: 'manual_run',
           workload: 'idle',
@@ -261,10 +281,10 @@ try {
   const page = await app.firstWindow({ timeout: timeoutMs });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await openTaskPanel(page);
-  await page.locator('.panel-runtime-chip', { hasText: 'Codex CLI' }).waitFor({ timeout: timeoutMs });
+  await page.locator('.panel-runtime-chip', { hasText: RUNTIME.label }).waitFor({ timeout: timeoutMs });
 
   await sendPanelMessage(page, [
-    'Run a real packaged Codex CLI read-only smoke.',
+    `Run a real packaged ${RUNTIME.label} read-only smoke.`,
     `Reply with the exact phrase ${EXPECTED_PHRASE}.`,
     `You may inspect ${workspaceFile}, but do not modify, create, delete, rename, or move files.`,
   ].join('\n'));
@@ -274,23 +294,23 @@ try {
 
   const [run] = queryRunRows();
   const steps = queryRunStepRows(run.id);
-  const terminalStep = steps.find((step) => step.title === 'codex cli completed');
+  const terminalStep = steps.find((step) => step.title === RUNTIME.terminalStepTitle);
   if (!terminalStep) {
-    throw new Error('Missing real Codex CLI terminal run step.');
+    throw new Error(`Missing real ${RUNTIME.label} terminal run step.`);
   }
   if (!String(terminalStep.output ?? '').includes(EXPECTED_PHRASE)) {
-    throw new Error(`Real Codex CLI output did not include expected phrase. output=${preview(terminalStep.output ?? '')}`);
+    throw new Error(`Real ${RUNTIME.label} output did not include expected phrase. output=${preview(terminalStep.output ?? '')}`);
   }
   if (!steps.some((step) => step.title === 'agent cli run accepted')) {
-    throw new Error('Missing accepted run step for real Codex CLI task smoke.');
+    throw new Error(`Missing accepted run step for real ${RUNTIME.label} task smoke.`);
   }
   if (!steps.some((step) => step.title === '验收子 Agent 检查')) {
-    throw new Error('Missing verifier step for real Codex CLI task smoke.');
+    throw new Error(`Missing verifier step for real ${RUNTIME.label} task smoke.`);
   }
 
   const afterWorkspace = workspaceSnapshot();
   if (JSON.stringify(afterWorkspace) !== JSON.stringify(beforeWorkspace)) {
-    throw new Error('Real packaged Codex CLI task smoke changed the workspace fixture.');
+    throw new Error(`Real packaged ${RUNTIME.label} task smoke changed the workspace fixture.`);
   }
 
   await app.close();

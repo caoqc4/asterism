@@ -442,11 +442,13 @@ the unpacked app first and then run the opt-in task smoke:
 ```bash
 npm run dist:mac:dir
 TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac
+# Optional Claude Code pass when a local Claude account is ready:
+TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:claude-agent-cli-task-live:mac
 ```
 
-This path uses isolated app data, a temporary workspace, Codex read-only sandbox
-execution, and workspace snapshot comparison. It is not part of default local
-acceptance because it calls the user's real CLI account.
+This path uses isolated app data, a temporary workspace, selected Agent CLI
+read-only execution, and workspace snapshot comparison. It is not part of
+default local acceptance because it calls the user's real CLI account.
 
 The latest local packaged-app live validation recorded on 2026-05-20 used Codex
 CLI `codex-cli 0.125.0` and passed with `auth=ready`, `workspace=unchanged`,
