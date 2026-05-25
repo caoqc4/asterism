@@ -409,13 +409,30 @@ function buildDecisionActionEffect(
   action: 'approve' | 'defer' | 'cancel',
 ): DecisionActionEffect {
   const effect = summarizeDecisionEffects([decision]);
+  const sourceLabel = decision.sourceLabel ?? decision.sourceType ?? decision.scope;
+  if (action === 'approve' && isPatchPromotionDecision(decision)) {
+    return {
+      actionLabel: '已批准',
+      detail: '批准已记录；真实写入只在 apply flag 开启且 promotion preflight 通过时发生，否则只记录 no-write 或 blocked 证据。',
+      effectLabel: '应用边界',
+      sourceLabel,
+      title: decision.title,
+    };
+  }
+
   return {
     actionLabel: action === 'approve' ? '已批准' : action === 'defer' ? '已延后' : '已取消',
     detail: effect.effectDetail,
     effectLabel: effect.effectLabel,
-    sourceLabel: decision.sourceLabel ?? decision.sourceType ?? decision.scope,
+    sourceLabel,
     title: decision.title,
   };
+}
+
+function isPatchPromotionDecision(decision: DecisionRecord): boolean {
+  const text = `${decision.title} ${decision.sourceLabel ?? ''}`.toLowerCase();
+  return decision.sourceLabel === 'workspace.staged_patch'
+    || text.includes('workspace.staged_patch');
 }
 
 function hierarchyResolutionForItem(

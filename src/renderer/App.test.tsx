@@ -4511,6 +4511,34 @@ describe('App redesign v1', () => {
     expect(await screen.findByLabelText('拍板结果')).toBeTruthy();
   });
 
+  it('explains the workspace apply boundary after approving a reviewed patch', async () => {
+    const user = userEvent.setup();
+    harness.decisions.length = 0;
+    harness.decisions.push(buildDecision({
+      id: 'decision_patch_promotion',
+      kind: 'agent_resume',
+      sourceType: 'agent_checkpoint',
+      sourceLabel: 'workspace.staged_patch',
+      title: '确认提升 sandbox patch',
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Decisions/ }));
+    await user.click(await screen.findByText('确认提升 sandbox patch'));
+    await user.click((await screen.findAllByRole('button', { name: '选择此方案' }))[0]!);
+
+    await waitFor(() => {
+      expect(harness.api.actOnDecision).toHaveBeenCalledWith({
+        id: 'decision_patch_promotion',
+        action: 'approve',
+      });
+    });
+    expect(await screen.findByLabelText('拍板结果')).toBeTruthy();
+    expect(screen.getByText('应用边界')).toBeTruthy();
+    expect(screen.getByText(/真实写入只在 apply flag 开启且 promotion preflight 通过时发生/)).toBeTruthy();
+    expect(screen.getByText('workspace.staged_patch')).toBeTruthy();
+  });
+
   it('counts only active task-linked decisions in the task decision lens', async () => {
     const user = userEvent.setup();
     harness.decisions.length = 0;

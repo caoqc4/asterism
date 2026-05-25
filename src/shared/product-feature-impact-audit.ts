@@ -130,9 +130,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Post-step verification now treats native CLI capability=workspace_write steps as workspace write candidates that require reviewable promotion evidence instead of accepting ordinary command output as sufficient recovery evidence.',
       'Approved patch-promotion Decisions can call SandboxPatchPromotionApplyService when the sandbox patch promotion apply feature flag is enabled; the service preflights reviewed patch evidence, writes only matching workspace files, records applied/blocked promotion state, and updates run evidence.',
       'Run detail now includes sandbox patch promotion records, and the task file workspace projects applied, blocked, approved-but-unapplied, and missing-apply-record status next to reviewed patch artifacts.',
+      'Decisions approval results now explain that approving a reviewed patch records the approval while real workspace writes still require the apply flag and a passing promotion preflight.',
     ],
     gaps: [
-      'Write-enabled native runtime modes still need an explicit operator-facing apply workflow before workspace mutation can become a normal happy path.',
+      'Write-enabled native runtime modes still need a fully normal operator-facing apply workflow before workspace mutation can become a common happy path.',
     ],
     nextActions: [
       'Keep future workspace-write promotion on patch artifacts, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review evidence surfaces before product-controlled persistence.',
@@ -337,10 +338,11 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Tasks file workspace projects patch-promotion checkpoint and Decision status next to reviewed patch artifacts, including the disabled-by-default workspace apply boundary.',
       'SandboxPatchPromotionApplyService can apply approved patch-promotion checkpoints when enableSandboxPatchPromotionApply is true, with preflight divergence checks, idempotency handling, and applied/blocked promotion records.',
       'Run detail carries sandboxPatchPromotions so Tasks file workspace can distinguish pending, approved-but-unapplied, missing-apply-record, applied, and blocked reviewed-patch promotions.',
+      'Decisions approval feedback now calls out the apply flag plus promotion preflight boundary after a reviewed-patch approval, so operators are not led to assume approval always wrote workspace files.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
     ],
     gaps: [
-      'Workspace-write promotion remains intentionally Decision-gated; the final apply path is disabled by default and should stay outside the normal happy path until there is an explicit operator-facing apply workflow.',
+      'Workspace-write promotion remains intentionally Decision-gated; the final apply path is disabled by default and should stay outside the normal happy path until the operator-facing apply workflow is more complete.',
     ],
     nextActions: [
       'Design the explicit reviewed-patch apply workflow only after the sandbox promotion apply flag, preflight evidence, and user approval copy are stable enough for real workspace writes.',
