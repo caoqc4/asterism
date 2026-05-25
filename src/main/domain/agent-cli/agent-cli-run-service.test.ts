@@ -817,6 +817,83 @@ describe('AgentCliRunService', () => {
     }));
   });
 
+  it('does not report captured web research when source context persistence fails', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const taskService = buildTaskService(buildTask({
+      summary: '做一个 Codex 基础教程网站，面向 Agent 初学者。',
+      title: '明确网站目标与范围',
+    }));
+    vi.mocked(taskService.createSourceContext).mockRejectedValue(new Error('source context unavailable'));
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        output_text: 'Codex CLI 教程站应参考官方文档。',
+        sources: [{
+          title: 'OpenAI Codex',
+          url: 'https://developers.openai.com/codex',
+          snippet: 'Codex official docs.',
+        }],
+      }),
+      ok: true,
+      status: 200,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: '会用 CLI 原生能力继续调研。',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      taskService,
+      {
+        getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          featureFlags: {
+            enableScheduler: false,
+            enableProviderNativeToolCalls: true,
+            agentCliCapabilityMode: 'native',
+          },
+        })),
+        resolveOpenAiWebResearchConfig: vi.fn().mockResolvedValue({
+          apiKey: 'test-openai-key',
+          model: 'gpt-5-mini',
+          provider: 'openai',
+        }),
+      },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '做一个 Codex 基础教程网站，面向 Agent 初学者。',
+      taskId: 'task_1',
+    });
+
+    expect(taskService.createSourceContext).toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_call',
+      status: 'skipped',
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('status=skipped'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('sources=0'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('none could be saved'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.not.stringContaining('https://developers.openai.com/codex'),
+    }));
+  });
+
   it('records web research as not needed for local workspace search requests', async () => {
     const runStepRepository = buildRunStepRepository();
     const resolveOpenAiWebResearchConfig = vi.fn();
@@ -2216,7 +2293,7 @@ function buildTaskService(task: TaskDetail = buildTask()) {
   return {
     annotateRunCompleted: vi.fn(),
     annotateRunFailed: vi.fn(),
-    createSourceContext: vi.fn(),
+    createSourceContext: vi.fn().mockImplementation(async (input) => input),
     getDetail: vi.fn().mockResolvedValue(task),
   };
 }

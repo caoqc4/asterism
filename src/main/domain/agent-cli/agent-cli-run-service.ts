@@ -613,16 +613,35 @@ export class AgentCliRunService {
       research,
       taskId: params.task.id,
     });
+    let persistedSourceCount = 0;
     for (const input of createdInputs) {
-      await Promise.resolve(this.taskService.createSourceContext(input)).catch(() => null);
+      const source = await Promise.resolve(this.taskService.createSourceContext(input)).catch(() => null);
+      if (source) persistedSourceCount += 1;
     }
+
+    if (persistedSourceCount === 0) {
+      return {
+        preparation: {
+          capabilityMode: params.capabilityMode,
+          query,
+          reason: `Taskplane web research produced ${createdInputs.length} source context item(s), but none could be saved; the native CLI may still use its own research tools.`,
+          sourceCount: 0,
+          status: 'skipped',
+        },
+        task: params.task,
+      };
+    }
+
+    const failedSourceCount = createdInputs.length - persistedSourceCount;
 
     return {
       preparation: {
         capabilityMode: params.capabilityMode,
         query,
-        reason: 'Taskplane captured web research into Source Context before handing the task to the selected Agent CLI.',
-        sourceCount: createdInputs.length,
+        reason: failedSourceCount > 0
+          ? `Taskplane captured ${persistedSourceCount}/${createdInputs.length} web research source context item(s) before handing the task to the selected Agent CLI.`
+          : 'Taskplane captured web research into Source Context before handing the task to the selected Agent CLI.',
+        sourceCount: persistedSourceCount,
         status: 'captured',
       },
       task: await this.taskService.getDetail(params.task.id).catch(() => params.task) ?? params.task,
