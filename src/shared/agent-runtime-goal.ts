@@ -17,6 +17,31 @@ export type NativeGoalModeCapability = {
   reason: string;
 };
 
+export type AgentRuntimeNativeCapabilityAvailability =
+  | 'available'
+  | 'product_controlled'
+  | 'runtime_dependent'
+  | 'unverified'
+  | 'unsupported';
+
+export type AgentRuntimeNativeCapabilityDeclaration = {
+  availability: AgentRuntimeNativeCapabilityAvailability;
+  label: string;
+  reason: string;
+};
+
+export type AgentRuntimeNativeCapabilitySet = {
+  structuredProgressEvents: AgentRuntimeNativeCapabilityDeclaration;
+  webSearch: AgentRuntimeNativeCapabilityDeclaration;
+  workspaceRead: AgentRuntimeNativeCapabilityDeclaration;
+  workspaceWrite: AgentRuntimeNativeCapabilityDeclaration;
+  hooks: AgentRuntimeNativeCapabilityDeclaration;
+  subagents: AgentRuntimeNativeCapabilityDeclaration;
+  memory: AgentRuntimeNativeCapabilityDeclaration;
+  compact: AgentRuntimeNativeCapabilityDeclaration;
+  clear: AgentRuntimeNativeCapabilityDeclaration;
+};
+
 export type AgentRuntimeAdapterCapabilities = {
   id: AgentCliRuntimeId | 'agent_api';
   label: string;
@@ -35,6 +60,7 @@ export type AgentRuntimeAdapterCapabilities = {
   defaultResetStrategy?: 'product_transcript_reset' | 'runtime_native_clear' | 'runtime_restart';
   defaultPermissionMode: 'read_only' | 'plan' | 'workspace_write';
   nativeGoalMode: NativeGoalModeCapability;
+  nativeCapabilities?: AgentRuntimeNativeCapabilitySet;
   commandRouting: {
     productOwned: string[];
     runtimeNative: string[];

@@ -23,6 +23,16 @@ describe('agent cli runtime status', () => {
           supportsNativeCompact: false,
           supportsNativeGoalMode: false,
           supportsPersistentSession: false,
+          supportsStructuredProgressEvents: true,
+          nativeCapabilities: expect.objectContaining({
+            structuredProgressEvents: expect.objectContaining({ availability: 'available' }),
+            webSearch: expect.objectContaining({ availability: 'runtime_dependent' }),
+            workspaceRead: expect.objectContaining({ availability: 'available' }),
+            workspaceWrite: expect.objectContaining({ availability: 'unsupported' }),
+            memory: expect.objectContaining({ availability: 'product_controlled' }),
+            compact: expect.objectContaining({ availability: 'product_controlled' }),
+            clear: expect.objectContaining({ availability: 'product_controlled' }),
+          }),
           commandRouting: expect.objectContaining({
             passthroughRequiresExplicitNamespace: true,
           }),
@@ -43,6 +53,13 @@ describe('agent cli runtime status', () => {
           supportsNativeResume: false,
           supportsNativeGoalMode: false,
           supportsPersistentSession: false,
+          supportsStructuredProgressEvents: true,
+          nativeCapabilities: expect.objectContaining({
+            structuredProgressEvents: expect.objectContaining({ availability: 'available' }),
+            webSearch: expect.objectContaining({ availability: 'runtime_dependent' }),
+            workspaceRead: expect.objectContaining({ availability: 'available' }),
+            workspaceWrite: expect.objectContaining({ availability: 'unsupported' }),
+          }),
         }),
       }),
     ]);
@@ -104,8 +121,14 @@ describe('agent cli runtime status', () => {
       supportsNativeGoalMode: true,
       supportsNativeClear: false,
       supportsPersistentSession: false,
+      supportsStructuredProgressEvents: true,
       defaultResetStrategy: 'product_transcript_reset',
       supportsWorkspaceWrite: false,
+      nativeCapabilities: expect.objectContaining({
+        structuredProgressEvents: expect.objectContaining({ availability: 'available' }),
+        workspaceRead: expect.objectContaining({ availability: 'available' }),
+        workspaceWrite: expect.objectContaining({ availability: 'unsupported' }),
+      }),
     });
   });
 

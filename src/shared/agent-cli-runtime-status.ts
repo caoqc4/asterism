@@ -1,4 +1,8 @@
-import type { AgentRuntimeAdapterCapabilities } from './agent-runtime-goal.js';
+import type {
+  AgentRuntimeAdapterCapabilities,
+  AgentRuntimeNativeCapabilityDeclaration,
+  AgentRuntimeNativeCapabilitySet,
+} from './agent-runtime-goal.js';
 
 export type AgentCliRuntimeId = 'codex' | 'claude';
 
@@ -79,11 +83,12 @@ export function buildDefaultAgentCliRuntimeCapabilities(
     supportsPauseGoal: supportsNativeGoalMode,
     supportsResumeGoal: supportsNativeGoalMode,
     supportsClearGoal: supportsNativeGoalMode,
-    supportsStructuredProgressEvents: false,
+    supportsStructuredProgressEvents: true,
     supportsWorkspaceWrite: false,
     defaultResetStrategy: 'product_transcript_reset',
     defaultPermissionMode: runtimeId === 'claude' ? 'plan' : 'read_only',
     nativeGoalMode,
+    nativeCapabilities: buildNativeCapabilityDeclarations(runtimeId, label),
     commandRouting: {
       productOwned: ['/goal', '/goal status', '/goal pause', '/goal resume', '/goal clear', '/cancel', '/status'],
       runtimeNative: runtimeId === 'codex'
@@ -106,6 +111,12 @@ export function agentCliRuntimeCapabilities(
       ...fallback.commandRouting,
       ...runtime.capabilities.commandRouting,
     },
+    nativeCapabilities: fallback.nativeCapabilities
+      ? {
+          ...fallback.nativeCapabilities,
+          ...(runtime.capabilities.nativeCapabilities ?? {}),
+        }
+      : runtime.capabilities.nativeCapabilities,
     nativeGoalMode: runtime.capabilities.nativeGoalMode ?? fallback.nativeGoalMode,
   };
 }
@@ -158,6 +169,68 @@ function buildNativeGoalModeCapability(
     availability: 'available',
     minimumVersion: CODEX_NATIVE_GOAL_MINIMUM_VERSION,
     reason: `${label} native goal mode is available in the detected CLI version, but Taskplane passthrough still requires the native goal readiness gate.`,
+  };
+}
+
+function nativeCapability(
+  label: string,
+  availability: AgentRuntimeNativeCapabilityDeclaration['availability'],
+  reason: string,
+): AgentRuntimeNativeCapabilityDeclaration {
+  return { availability, label, reason };
+}
+
+function buildNativeCapabilityDeclarations(
+  runtimeId: AgentCliRuntimeId,
+  label: string,
+): AgentRuntimeNativeCapabilitySet {
+  const readMode = runtimeId === 'claude' ? 'plan mode' : 'read-only sandbox';
+  return {
+    structuredProgressEvents: nativeCapability(
+      'structured events',
+      'available',
+      `${label} adapter requests structured terminal output and projects it into Taskplane Run steps.`,
+    ),
+    webSearch: nativeCapability(
+      'native web/search',
+      'runtime_dependent',
+      `${label} may expose native web/search tools inside the official runtime; Taskplane records visible events and can use its own source-capture bridge when configured.`,
+    ),
+    workspaceRead: nativeCapability(
+      'workspace read',
+      'available',
+      `${label} runs through Taskplane-controlled ${readMode} for local inspection.`,
+    ),
+    workspaceWrite: nativeCapability(
+      'workspace write',
+      'unsupported',
+      'Taskplane does not grant direct workspace mutation through the native CLI adapter yet; writes must return as proposals or reviewed artifacts.',
+    ),
+    hooks: nativeCapability(
+      'hooks',
+      'unverified',
+      `${label} hook support is not configured by Taskplane yet; deterministic product gates remain the source of enforcement.`,
+    ),
+    subagents: nativeCapability(
+      'subagents',
+      'unverified',
+      `${label} subagent or delegation support is not routed through Taskplane yet.`,
+    ),
+    memory: nativeCapability(
+      'memory',
+      'product_controlled',
+      'Task memory is persisted by Taskplane surfaces, not by runtime-native memory files.',
+    ),
+    compact: nativeCapability(
+      'compact',
+      'product_controlled',
+      'Context compaction is handled through Taskplane handoff and memory coverage gates.',
+    ),
+    clear: nativeCapability(
+      'clear',
+      'product_controlled',
+      'Conversation reset is product-controlled so valuable context can be preserved before clearing.',
+    ),
   };
 }
 

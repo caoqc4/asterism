@@ -1168,6 +1168,11 @@ describe('App redesign v1', () => {
     expect(screen.getByLabelText('内部运行目录')).toBeTruthy();
     expect(screen.getAllByText('Codex CLI').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Claude Code').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('事件流').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('只读工作区').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('原生搜索').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('记忆由产品写入').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('写入需提案').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '重新检测' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: '更新' }).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '修改配置' }));

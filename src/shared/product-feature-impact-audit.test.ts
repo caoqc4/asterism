@@ -85,8 +85,11 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('task, decision, and task-file services');
     expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');
     expect(decisions?.gaps.join(' ')).not.toContain('still need to call it through main-side ports');
+    expect(capabilities?.evidence.join(' ')).toContain('adapter-level native capability declarations');
+    expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
+    expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
   });
 });

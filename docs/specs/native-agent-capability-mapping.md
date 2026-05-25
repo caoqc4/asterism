@@ -241,6 +241,9 @@ Codex and Claude adapters should report capabilities in a runtime-neutral way:
 - native web/search/browse visibility;
 - provider event projection into neutral web-search, workspace-read,
   workspace-write, command, MCP, and hook progress states;
+- adapter-level native capability declarations surfaced before execution:
+  structured events, runtime-dependent web/search, workspace read/write
+  boundary, hooks, subagents, product-controlled memory, compact, and clear;
 - memory adapter files present;
 - hooks or permission constraints available;
 - subagent/delegation capability available;
@@ -250,6 +253,8 @@ Codex and Claude adapters should report capabilities in a runtime-neutral way:
 Taskplane can then choose the right movement without pretending every runtime
 has the same features. When a capability is missing, the product should either
 use another backend, run a Taskplane bridge, or surface a clear blocker.
+Adapter-level declarations are not a substitute for live provider probes; they
+are the minimum pre-run contract until stable CLI signals are available.
 
 ## Relationship To Other Specs
 

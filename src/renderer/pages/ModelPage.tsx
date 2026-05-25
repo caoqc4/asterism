@@ -1,4 +1,12 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import {
+  buildDefaultAgentCliRuntimeCapabilities,
+  type AgentCliRuntimeId,
+} from '@shared/agent-cli-runtime-status';
+import type {
+  AgentRuntimeAdapterCapabilities,
+  AgentRuntimeNativeCapabilityDeclaration,
+} from '@shared/agent-runtime-goal';
 import type { AgentCliCapabilityMode, AiConfigStatus, AiProvider, AiRuntimeMode, FeatureFlags } from '@shared/types/settings';
 
 interface ModelDef {
@@ -694,11 +702,11 @@ function AgentCliRuntimeRow({
 }: {
   fallback: {
     command: 'codex' | 'claude';
-    id: 'codex' | 'claude';
+    id: AgentCliRuntimeId;
     label: string;
   };
-  onOpenLogin: (runtimeId: 'codex' | 'claude') => void;
-  onOpenInstall: (runtimeId: 'codex' | 'claude', options?: { repair?: boolean }) => void;
+  onOpenLogin: (runtimeId: AgentCliRuntimeId) => void;
+  onOpenInstall: (runtimeId: AgentCliRuntimeId, options?: { repair?: boolean }) => void;
   onSelectRuntimeMode: (runtimeMode: AiRuntimeMode) => void;
   openingInstall: boolean;
   openingLogin: boolean;
@@ -711,7 +719,9 @@ function AgentCliRuntimeRow({
   const needsLogin = installed && runtime?.authState === 'needs_login';
   const rowState = ready ? 'ready' : brokenInstall ? 'error' : needsLogin ? 'needs-login' : installed ? 'needs-login' : 'missing';
   const statusLabel = ready ? '已登录' : brokenInstall ? '安装异常' : installed ? '需登录' : '未安装';
-  const nativeGoalLabel = nativeGoalCapabilityLabel(runtime?.capabilities?.nativeGoalMode?.availability);
+  const capabilities = runtime?.capabilities ?? buildDefaultAgentCliRuntimeCapabilities(fallback.id, fallback.label, runtime?.version ?? null);
+  const nativeGoalLabel = nativeGoalCapabilityLabel(capabilities.nativeGoalMode?.availability);
+  const capabilityChips = installed ? runtimeCapabilityChips(capabilities) : [];
   const detail = ready ? `${workloadLabel(runtime.workload)} · ${nativeGoalLabel}` : brokenInstall ? '需重新安装' : installed ? '等待登录' : '未检测到';
 
   return (
@@ -738,7 +748,18 @@ function AgentCliRuntimeRow({
           </button>
         )}
       </span>
-      <span className="agent-cli-runtime-row-detail">{detail}</span>
+      <span className="agent-cli-runtime-row-detail">
+        <span>{detail}</span>
+        {capabilityChips.length > 0 && (
+          <span className="agent-cli-runtime-capability-chips" aria-label={`${fallback.label} capability declarations`}>
+            {capabilityChips.map((chip) => (
+              <span key={chip.label} className={`agent-cli-runtime-capability-chip ${chip.tone}`} title={chip.reason}>
+                {chip.label}
+              </span>
+            ))}
+          </span>
+        )}
+      </span>
       {brokenInstall ? (
         <button
           className={`btn sm${openingInstall ? ' disabled' : ''}`}
@@ -791,6 +812,50 @@ function workloadLabel(workload: 'idle' | 'running' | 'blocked') {
   if (workload === 'running') return '运行中';
   if (workload === 'blocked') return '受阻';
   return '空闲';
+}
+
+function runtimeCapabilityChips(capabilities: AgentRuntimeAdapterCapabilities): Array<{
+  label: string;
+  reason: string;
+  tone: 'ready' | 'gated' | 'blocked';
+}> {
+  const native = capabilities.nativeCapabilities;
+  return [
+    nativeCapabilityChip(native?.structuredProgressEvents, '事件流', 'ready'),
+    nativeCapabilityChip(native?.workspaceRead, '只读工作区', 'ready'),
+    nativeCapabilityChip(native?.webSearch, '原生搜索', 'gated'),
+    capabilities.supportsNativeGoalMode
+      ? {
+          label: 'Goal',
+          reason: capabilities.nativeGoalMode.reason,
+          tone: 'ready' as const,
+        }
+      : nativeCapabilityChip({
+          availability: capabilities.nativeGoalMode.availability === 'unsupported' ? 'unsupported' : 'unverified',
+          label: 'Goal',
+          reason: capabilities.nativeGoalMode.reason,
+        }, 'Goal', 'gated'),
+    nativeCapabilityChip(native?.memory, '记忆由产品写入', 'gated'),
+    nativeCapabilityChip(native?.workspaceWrite, '写入需提案', 'blocked'),
+  ].filter((chip): chip is { label: string; reason: string; tone: 'ready' | 'gated' | 'blocked' } => chip !== null);
+}
+
+function nativeCapabilityChip(
+  capability: AgentRuntimeNativeCapabilityDeclaration | undefined,
+  label: string,
+  fallbackTone: 'ready' | 'gated' | 'blocked',
+): { label: string; reason: string; tone: 'ready' | 'gated' | 'blocked' } | null {
+  if (!capability) return null;
+  const tone = capability.availability === 'available'
+    ? 'ready'
+    : capability.availability === 'unsupported'
+      ? 'blocked'
+      : fallbackTone;
+  return {
+    label,
+    reason: capability.reason,
+    tone,
+  };
 }
 
 function nativeGoalCapabilityLabel(availability?: 'available' | 'requires_update' | 'unknown' | 'unsupported') {

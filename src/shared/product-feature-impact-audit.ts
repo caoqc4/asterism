@@ -352,14 +352,16 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'CapabilityRegistry keeps optional tools hidden until runtime gates expose model-visible tools.',
       'Skills page separates product runtime rules from optional user skills.',
+      'Agent CLI runtime status now carries adapter-level native capability declarations for structured events, runtime-dependent web/search, workspace read/write boundaries, hooks, subagents, and product-controlled memory/clear/compact.',
+      'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution.',
       'Native CLI provider events are projected into runtime-neutral capability progress states for web search, workspace reads/writes, command execution, MCP, and hooks.',
       'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
     ],
     gaps: [
-      'Runtime capability probes still need provider-owned declarations for exact tool availability rather than relying on parsed event evidence after execution.',
+      'Runtime capability probes still need deeper live provider checks for exact tool availability, hook files, subagent folders, and native memory surfaces instead of adapter-level declarations only.',
     ],
     nextActions: [
-      'Expose adapter capability declarations for native web/search, hooks, subagents, memory, and goal-mode support in the runtime settings surface.',
+      'Add optional runtime-specific probe commands or config-file checks for native web/search, hooks, subagents, memory, compact, and goal-mode readiness when the providers expose stable signals.',
     ],
   },
   {

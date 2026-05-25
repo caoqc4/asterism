@@ -46,6 +46,18 @@ describe('agent cli runtime status service', () => {
           availability: 'requires_update',
           minimumVersion: '0.133.0',
         },
+        nativeCapabilities: {
+          structuredProgressEvents: {
+            availability: 'available',
+          },
+          workspaceRead: {
+            availability: 'available',
+          },
+          workspaceWrite: {
+            availability: 'unsupported',
+          },
+        },
+        supportsStructuredProgressEvents: true,
         supportsNativeGoalMode: false,
       },
     });
@@ -80,6 +92,15 @@ describe('agent cli runtime status service', () => {
         nativeGoalMode: {
           availability: 'requires_update',
         },
+        nativeCapabilities: {
+          structuredProgressEvents: {
+            availability: 'available',
+          },
+          webSearch: {
+            availability: 'runtime_dependent',
+          },
+        },
+        supportsStructuredProgressEvents: true,
         supportsNativeGoalMode: false,
       },
     });

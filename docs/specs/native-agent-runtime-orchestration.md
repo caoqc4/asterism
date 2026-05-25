@@ -223,6 +223,10 @@ Taskplane currently has a working native CLI execution backend:
 - Codex CLI native Goal Mode is detected as an adapter capability for
   `0.133.0+`; older Codex versions are shown as needing an update, and Claude
   native goal mode remains unverified by the Taskplane adapter.
+- Agent CLI status carries adapter-level native capability declarations for
+  structured events, runtime-dependent web/search, workspace read/write
+  boundaries, hooks, subagents, and product-controlled memory/compact/clear; the
+  AI Runtime settings surface shows these before a run starts.
 - Runtime JSONL or stream-json output is parsed into Run steps when possible.
 - The right panel polls active native CLI runs and projects the latest Run step
   into compact progress states such as preparing, researching, reading
@@ -259,6 +263,9 @@ Native CLI integration is not a complete product-grade Agent experience yet:
 - runtime progress projection is present, but it still relies on best-effort
   labels from parsed Run steps and should deepen its Codex JSONL and Claude
   stream-json schema mapping over time;
+- native capability declarations are adapter-level and still need deeper live
+  provider probes for exact hook, subagent, native memory, and web/search
+  readiness;
 - real Codex JSONL and Claude stream-json event shapes need deeper schema
   mapping as they evolve;
 - Claude real-account execution has not been validated in this repository's
