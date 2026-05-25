@@ -230,7 +230,7 @@ describe('agent-runtime-goal', () => {
 
     expect(contract.runtimeCapabilities).toEqual(expect.arrayContaining([
       'native_goal=available',
-      'web_search=runtime_dependent',
+      'web_search=unverified',
       'workspace_write=unsupported',
       'memory=product_controlled',
     ]));

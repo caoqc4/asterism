@@ -98,6 +98,8 @@ capability. Therefore:
   extract Write Intent, and persist through Taskplane services.
 - Native goal forwarding must stay explicit; product `/goal` must not silently
   become Codex `/goal`.
+- Audit-only runtime-native goal requests should surface the readiness summary
+  and missing evidence, not just record that forwarding was skipped.
 
 As of the current adapter policy, Codex CLI `0.133.0+` is modeled as having the
 native goal capability available, but Taskplane passthrough remains closed until

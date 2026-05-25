@@ -18,6 +18,11 @@ export type NativeGoalForwardingReadiness = {
   summary: string;
 };
 
+export type NativeGoalAuditReadinessInput = {
+  adapterId: string;
+  supportsNativeGoalMode: boolean;
+};
+
 const evidenceLabels: Array<[keyof NativeGoalForwardingEvidence, string]> = [
   ['commandShapeVerified', 'command shape'],
   ['stateReflectionVerified', 'state reflection'],
@@ -44,5 +49,26 @@ export function evaluateNativeGoalForwardingReadiness(
     summary: ready
       ? `${evidence.adapterId} native goal forwarding has complete evidence for an explicit passthrough candidate.`
       : `${evidence.adapterId} native goal forwarding remains audit-only; missing ${missingEvidence.join(', ')}.`,
+  };
+}
+
+export function buildNativeGoalAuditReadinessEvidence(
+  input: NativeGoalAuditReadinessInput,
+): NativeGoalForwardingEvidence {
+  return {
+    adapterId: input.adapterId,
+    commandShapeVerified: false,
+    controlBoundaryVerified: false,
+    memoryBoundaryVerified: true,
+    packagedSmokeVerified: false,
+    progressEvidenceVerified: false,
+    sourceOfTruthBoundaryVerified: true,
+    stateReflectionVerified: true,
+    notes: [
+      input.supportsNativeGoalMode
+        ? 'Runtime reports native goal affordance, but Taskplane has not verified passthrough command shape and lifecycle evidence.'
+        : 'Runtime has not reported a verified native goal affordance.',
+      'Taskplane records the request as product-owned audit evidence and keeps memory/source-of-truth boundaries closed.',
+    ],
   };
 }

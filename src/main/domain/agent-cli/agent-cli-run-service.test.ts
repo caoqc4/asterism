@@ -887,12 +887,16 @@ describe('AgentCliRunService', () => {
       status: 'skipped',
       title: 'Runtime Native Goal 请求审计',
       input: expect.stringContaining('"forwarded": false'),
+      output: expect.stringContaining('codex native goal forwarding remains audit-only'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('"missingEvidence"'),
       output: expect.stringContaining('Taskplane kept this as audit evidence'),
     }));
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_agent_cli_1',
       'completed',
-      expect.stringContaining('Runtime-native goal request recorded without forwarding'),
+      expect.stringContaining('Readiness: codex native goal forwarding remains audit-only'),
       'system',
     );
     expect(onTerminalRun).toHaveBeenCalledWith(expect.objectContaining({
@@ -1507,7 +1511,7 @@ describe('AgentCliRunService', () => {
     expect(prompt).toContain('Confirmed Gmail source says the launch note needs legal review.');
     expect(prompt).not.toContain('token=secret');
     expect(prompt).toContain('Runtime capabilities:');
-    expect(prompt).toContain('web_search=runtime_dependent');
+    expect(prompt).toContain('web_search=unverified');
     expect(prompt).toContain('workspace_write=unsupported');
     expect(prompt).toContain('memory=product_controlled');
     expect(prompt).toContain('Native mode: do not downgrade the selected official CLI.');

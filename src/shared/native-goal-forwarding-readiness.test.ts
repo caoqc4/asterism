@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildNativeGoalAuditReadinessEvidence,
   evaluateNativeGoalForwardingReadiness,
   type NativeGoalForwardingEvidence,
 } from './native-goal-forwarding-readiness.js';
@@ -32,6 +33,27 @@ describe('native-goal-forwarding-readiness', () => {
       status: 'ready_to_open_passthrough',
       summary: 'codex native goal forwarding has complete evidence for an explicit passthrough candidate.',
     });
+  });
+
+  it('builds audit-run readiness evidence without opening native goal passthrough', () => {
+    const evidence = buildNativeGoalAuditReadinessEvidence({
+      adapterId: 'claude',
+      supportsNativeGoalMode: true,
+    });
+    const readiness = evaluateNativeGoalForwardingReadiness(evidence);
+
+    expect(evidence).toMatchObject({
+      adapterId: 'claude',
+      commandShapeVerified: false,
+      memoryBoundaryVerified: true,
+      sourceOfTruthBoundaryVerified: true,
+      stateReflectionVerified: true,
+    });
+    expect(readiness).toMatchObject({
+      status: 'audit_only',
+      missingEvidence: ['command shape', 'progress evidence', 'control boundary', 'packaged smoke'],
+    });
+    expect(evidence.notes?.join('\n')).toContain('Taskplane records the request as product-owned audit evidence');
   });
 });
 

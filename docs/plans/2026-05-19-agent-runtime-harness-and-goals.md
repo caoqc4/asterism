@@ -323,6 +323,7 @@ Runtime-native goal passthrough must stay audit-only until a runtime adapter pro
 - **Packaged smoke**: the adapter has a deterministic fake-runtime packaged smoke that proves audit, forwarding, cancellation, terminal evidence, task dynamics, and no unexpected workspace writes.
 
 Until every item is satisfied, `/codex goal ...`, `/claude goal ...`, and `/runtime goal ...` remain runtime-audit entries that do not call the CLI.
+Those audit entries should include the current readiness summary and missing evidence, so users can see that Taskplane preserved the request and why passthrough is still closed.
 
 ### Local Daemon Decision Rule
 
@@ -505,7 +506,7 @@ First pass implemented on 2026-05-19:
 - Agent CLI run_start now has explicit regression coverage for the Task Memory gate: a previous `任务记忆建议` that still needs Task Record confirmation blocks the next CLI run before Taskplane creates a run or calls the executor.
 - Agent CLI now has explicit service-level regressions for the shared target-readiness and context-assembly gates: completed/archived tasks or missing Task.md recovery context stop execution before Taskplane creates a run or calls the CLI.
 - Agent CLI cancellation is tracked as local execution control rather than a new execution start: the registered gate is explicit operator confirmation, and terminal evidence still lands through the already-gated run path.
-- Runtime-native goal audit is registered as its own non-executing runtime-audit entrypoint. It requires explicit operator confirmation plus a non-empty objective, records system audit evidence, and still does not call the CLI.
+- Runtime-native goal audit is registered as its own non-executing runtime-audit entrypoint. It requires explicit operator confirmation plus a non-empty objective, records system audit evidence, writes the native goal forwarding readiness summary into the skipped run step, and still does not call the CLI.
 - AI Runtime configuration now presents Agent CLI and Agent API as peer AI invocation runtimes. Provider configuration belongs to the Agent API Runtime path and is not described as a helper or hidden fallback for Agent CLI.
 - RightPanel now avoids the old fallback wording: selected CLI global phases that are not yet wired are marked as not yet connected, unavailable CLI task phases do not silently fall through to API calls, and `api` runtime mode is shown as the Agent API invocation path for currently wired question/planning phases.
 - CapabilityRegistry and ConfigurationSafetyReport now include `agent_api.runtime` as a peer AI invocation runtime. When API Runtime is selected and a provider is configured, diagnostics mark it available for supported provider-backed phases while still showing full task execution run as in development; otherwise it stays disabled instead of being conflated with raw provider configuration.

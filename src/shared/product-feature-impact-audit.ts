@@ -374,14 +374,16 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent CLI status probes also inspect the configured workspace for native guidance and lifecycle assets such as AGENTS.md, CLAUDE.md, .claude/settings hooks, and .claude/agents without executing the runtime.',
       'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution.',
       'Run Goal Contract and Agent CLI context bridge pass selected-runtime capability declarations into native CLI prompts.',
+      'Runtime-native goal audit runs now attach the shared native goal forwarding readiness summary, missing evidence, and closed boundary notes without executing the CLI.',
       'Native CLI provider events are projected into runtime-neutral capability progress states for web search, workspace reads/writes, command execution, MCP, and hooks.',
       'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
     ],
     gaps: [
-      'Runtime capability probes still need native compact/clear and goal-forwarding readiness checks once providers expose stable non-executing signals.',
+      'Runtime capability probes still need native compact/clear readiness checks once providers expose stable non-executing signals.',
     ],
     nextActions: [
-      'Add optional runtime-specific compact/clear and native goal readiness probes when stable provider metadata or config locations are available.',
+      'Add optional runtime-specific compact/clear probes when stable provider metadata or config locations are available.',
+      'Keep native goal passthrough closed until command shape, progress/control evidence, and packaged smoke move from audit output into verified adapter evidence.',
     ],
   },
   {

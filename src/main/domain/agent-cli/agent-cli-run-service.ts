@@ -21,6 +21,10 @@ import {
   type RunGoalContract,
 } from '../../../shared/agent-runtime-goal.js';
 import {
+  buildNativeGoalAuditReadinessEvidence,
+  evaluateNativeGoalForwardingReadiness,
+} from '../../../shared/native-goal-forwarding-readiness.js';
+import {
   formatAgentRuntimeVerifierResult,
   type AgentRuntimeVerifierResult,
   verifyRunGoalContractEvidence,
@@ -185,8 +189,19 @@ export class AgentCliRunService {
       taskId: task.id,
       type: 'agent',
     });
+    const readinessEvidence = buildNativeGoalAuditReadinessEvidence({
+      adapterId: request.runtimeId,
+      supportsNativeGoalMode: request.supportsNativeGoalMode,
+    });
+    const readiness = evaluateNativeGoalForwardingReadiness(readinessEvidence);
     const payload = {
       forwarded: request.forwarded,
+      nativeGoalForwardingReadiness: {
+        missingEvidence: readiness.missingEvidence,
+        notes: readinessEvidence.notes ?? [],
+        status: readiness.status,
+        summary: readiness.summary,
+      },
       objective: request.objective,
       reason: request.reason,
       runtimeId: request.runtimeId,
@@ -205,13 +220,15 @@ export class AgentCliRunService {
         `Objective: ${request.objective}`,
         'Forwarded: no',
         `Reason: ${request.reason}`,
+        `Readiness: ${readiness.summary}`,
+        `Missing evidence: ${readiness.missingEvidence.join(', ') || 'none'}`,
         'Taskplane kept this as audit evidence; no CLI command was executed.',
       ].join('\n'),
     });
     const updated = await this.updateRunResult(
       run.id,
       'completed',
-      `Runtime-native goal request recorded without forwarding. Runtime: ${request.runtimeLabel}. Objective: ${request.objective}. Reason: ${request.reason}`,
+      `Runtime-native goal request recorded without forwarding. Runtime: ${request.runtimeLabel}. Objective: ${request.objective}. Reason: ${request.reason}. Readiness: ${readiness.summary}`,
       'system',
     );
     await this.notifyTerminalRun(updated);
