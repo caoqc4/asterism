@@ -65,6 +65,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService');
     expect(rightPanel?.evidence.join(' ')).toContain('missing-apply-record status');
     expect(rightPanel?.evidence.join(' ')).toContain('explicit apply-to-workspace action');
+    expect(rightPanel?.evidence.join(' ')).toContain('reviewed patch promotion apply smoke');
+    expect(rightPanel?.evidence.join(' ')).toContain('workspace-drift blocked recovery evidence');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
@@ -117,6 +119,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need an apply implementation');
     expect(rightPanel?.gaps.join(' ')).not.toContain('fully normal operator-facing apply workflow');
     expect(rightPanel?.gaps.join(' ')).not.toContain('post-apply status projection');
+    expect(rightPanel?.gaps.join(' ')).not.toContain('broader packaged smoke and recovery UX');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Task-file and artifact Write Intent should be represented explicitly');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Artifact Write Intent still needs a dedicated artifact proposal/apply plan');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');

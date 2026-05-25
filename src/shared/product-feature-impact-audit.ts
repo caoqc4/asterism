@@ -135,9 +135,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Run detail now includes sandbox patch promotion records, and the task file workspace projects applied, blocked, approved-but-unapplied, and missing-apply-record status next to reviewed patch artifacts.',
       'Decisions approval results now explain that approving a reviewed patch records the approval while real workspace writes still require the apply flag and a passing promotion preflight.',
       'Tasks file workspace exposes an explicit apply-to-workspace action for approved reviewed-patch promotions when enableSandboxPatchPromotionApply is enabled; the action confirms with the operator, calls main-side promotion apply IPC, records run evidence, and refreshes task/run state.',
+      'Local agent acceptance includes a reviewed patch promotion apply smoke covering default approval no-write, feature-flagged apply success, and workspace-drift blocked recovery evidence.',
     ],
     gaps: [
-      'Write-enabled native runtime modes remain intentionally feature-flagged; broader packaged smoke and recovery UX are still needed before workspace mutation can become a common happy path.',
+      'Write-enabled native runtime modes remain intentionally feature-flagged; broader packaged UI smoke and recovery copy are still needed before workspace mutation can become a common happy path.',
     ],
     nextActions: [
       'Keep future workspace-write promotion on patch artifacts, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review evidence surfaces before product-controlled persistence.',
