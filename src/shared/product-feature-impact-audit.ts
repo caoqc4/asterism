@@ -137,9 +137,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Decisions approval results now explain that approving a reviewed patch records the approval while real workspace writes still require the apply flag and a passing promotion preflight.',
       'Tasks file workspace exposes an explicit apply-to-workspace action for approved reviewed-patch promotions when enableSandboxPatchPromotionApply is enabled; the action confirms with the operator, calls main-side promotion apply IPC, records run evidence, and refreshes task/run state.',
       'Local agent acceptance includes a reviewed patch promotion apply smoke covering default approval no-write, feature-flagged apply success, and workspace-drift blocked recovery evidence.',
+      'The packaged task-files smoke now seeds an approved reviewed-patch promotion, enables the apply flag in a temporary workspace, drives the Tasks UI apply action, and verifies workspace file content plus applied run evidence.',
     ],
     gaps: [
-      'Write-enabled native runtime modes remain intentionally feature-flagged; broader packaged UI smoke and recovery copy are still needed before workspace mutation can become a common happy path.',
+      'Write-enabled native runtime modes remain intentionally feature-flagged; broader recovery copy is still needed before workspace mutation can become a common happy path.',
     ],
     nextActions: [
       'Keep future workspace-write promotion on patch artifacts, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review evidence surfaces before product-controlled persistence.',
@@ -349,13 +350,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Tasks file workspace refreshes the selected task Run detail when a Decision changes, so reviewed-patch promotion notices can move from waiting approval to approved/no-write without a manual page refresh.',
       'Tasks file workspace can explicitly apply approved reviewed-patch promotions when enableSandboxPatchPromotionApply is true; the action stays behind operator confirmation, main-side IPC, promotion preflight, and applied/blocked run evidence.',
       'Local agent acceptance now runs the reviewed patch promotion apply smoke against built main-process modules, covering default no-write approval, feature-flagged apply success, and blocked workspace-drift recovery evidence without Docker or provider calls.',
+      'Packaged task-files smoke now covers the explicit reviewed-patch apply UI path against a temporary workspace, including applied promotion state and touched-file run evidence.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
     ],
     gaps: [
-      'Workspace-write promotion remains intentionally Decision-gated and disabled by default; the explicit apply action should stay outside the normal happy path until packaged UI smoke and recovery copy are broader.',
+      'Workspace-write promotion remains intentionally Decision-gated and disabled by default; the explicit apply action should stay outside the normal happy path until blocked-preflight recovery copy is broader.',
     ],
     nextActions: [
-      'Add packaged UI smoke for explicit reviewed-patch apply, including blocked preflight recovery and post-apply verification copy.',
+      'Broaden packaged reviewed-patch apply smoke to cover blocked preflight recovery and post-apply verification copy.',
     ],
   },
   {

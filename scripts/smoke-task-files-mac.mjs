@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -8,6 +9,7 @@ import { _electron as electron } from 'playwright';
 const root = process.cwd();
 const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
 const userDataPath = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-task-files-smoke-'));
+const workspacePath = path.join(userDataPath, 'workspace');
 const smokePath = path.join(userDataPath, 'task-files-smoke.log');
 const dbPath = path.join(userDataPath, 'taskplane.db');
 const timeoutMs = 20_000;
@@ -45,7 +47,54 @@ function seedTaskFileFixture() {
   try {
     const taskId = 'task_packaged_task_files';
     const fileId = 'task_file_packaged_notes';
+    const runId = 'run_packaged_patch_apply';
+    const artifactId = 'artifact_packaged_reviewed_patch';
+    const checkpointId = 'run_checkpoint_packaged_patch_apply';
+    const decisionId = 'decision_packaged_patch_apply';
+    const promotionId = 'sandbox_patch_promotion_packaged_apply';
+    const sourceId = 'sandbox_source_packaged_apply';
+    const patchFile = 'packaged-apply.md';
     const now = '2026-05-05T09:00:00.000Z';
+    const patchDiff = [
+      `--- a/${patchFile}`,
+      `+++ b/${patchFile}`,
+      '@@',
+      '-alpha packaged apply',
+      '+beta packaged apply',
+    ].join('\n');
+    const patchDigest = `sha256:${createHash('sha256').update(patchDiff, 'utf8').digest('hex')}`;
+    const artifactContent = JSON.stringify({
+      artifact: {
+        commandLogs: [],
+        diff: patchDiff,
+        files: [patchFile],
+        kind: 'patch',
+        riskSummary: 'Packaged smoke reviewed patch.',
+        summary: 'Reviewable smoke patch',
+      },
+      review: {
+        audit: null,
+        sandboxSessionId: sourceId,
+        sessionSummary: `sandbox=${sourceId}`,
+      },
+    });
+    const checkpointPayload = JSON.stringify({
+      version: 1,
+      kind: 'patch_promotion',
+      artifactId,
+      artifactSummary: 'Reviewable smoke patch',
+      sourceId,
+      sessionId: sourceId,
+      descriptorId: 'workspace.staged_patch',
+      decisionId,
+      decisionTitle: '确认应用 packaged reviewed patch',
+      expectedFiles: [patchFile],
+      patchDigest,
+      policySnapshot: {
+        descriptorId: 'workspace.staged_patch',
+      },
+      preview: patchDiff,
+    });
 
     database.transaction(() => {
       database
@@ -84,6 +133,116 @@ function seedTaskFileFixture() {
           now,
           now,
         );
+
+      database
+        .prepare(`
+          INSERT INTO runs (
+            id, task_id, type, status, instructions, output, output_source,
+            failure_reason, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          runId,
+          taskId,
+          'agent',
+          'completed',
+          'Review a sandbox patch for packaged apply smoke.',
+          'Reviewed patch promotion is ready for explicit apply.',
+          'ai',
+          null,
+          now,
+          now,
+        );
+
+      database
+        .prepare(`
+          INSERT INTO artifacts (
+            id, task_id, source_type, source_id, kind, title, content, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          artifactId,
+          taskId,
+          'run',
+          runId,
+          'patch',
+          'Reviewable smoke patch',
+          artifactContent,
+          now,
+          now,
+        );
+
+      database
+        .prepare(`
+          INSERT INTO run_checkpoints (
+            id, run_id, step_id, kind, status, payload, created_at, resolved_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          checkpointId,
+          runId,
+          null,
+          'patch_promotion',
+          'resolved',
+          checkpointPayload,
+          now,
+          now,
+        );
+
+      database
+        .prepare(`
+          INSERT INTO decision_requests (
+            id, task_id, title, status, scope, kind, source_type, source_id,
+            source_label, context, options, recommendation, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          decisionId,
+          taskId,
+          '确认应用 packaged reviewed patch',
+          'approved',
+          'task',
+          'direction_choice',
+          'agent_checkpoint',
+          checkpointId,
+          'workspace.staged_patch',
+          JSON.stringify({ boundary: 'packaged smoke approved reviewed patch apply' }),
+          JSON.stringify([]),
+          null,
+          now,
+          now,
+        );
+
+      database
+        .prepare(`
+          INSERT INTO sandbox_patch_promotions (
+            id, checkpoint_id, run_id, task_id, artifact_id, source_id, decision_id,
+            patch_digest, expected_files, status, audit_summary, blocked_reasons,
+            created_at, updated_at, applied_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          promotionId,
+          checkpointId,
+          runId,
+          taskId,
+          artifactId,
+          sourceId,
+          decisionId,
+          patchDigest,
+          JSON.stringify([patchFile]),
+          'pending',
+          'Packaged smoke reviewed patch is approved but unapplied.',
+          JSON.stringify([]),
+          now,
+          now,
+          null,
+        );
     })();
   } finally {
     database.close();
@@ -106,6 +265,37 @@ function assertSavedContent() {
   }
 }
 
+function assertPatchPromotionApplied() {
+  const workspaceFile = path.join(workspacePath, 'packaged-apply.md');
+  const content = fs.readFileSync(workspaceFile, 'utf8');
+  if (content !== 'beta packaged apply\n') {
+    throw new Error('Reviewed patch promotion did not update the packaged smoke workspace file.');
+  }
+
+  const database = new Database(dbPath, { fileMustExist: true });
+
+  try {
+    const promotion = database
+      .prepare('SELECT status, audit_summary, applied_at FROM sandbox_patch_promotions WHERE id = ?')
+      .get('sandbox_patch_promotion_packaged_apply');
+    const evidence = database
+      .prepare('SELECT output FROM run_steps WHERE run_id = ? ORDER BY step_index DESC LIMIT 1')
+      .get('run_packaged_patch_apply');
+
+    if (promotion?.status !== 'applied' || !promotion.applied_at) {
+      throw new Error('Packaged UI apply did not mark the patch promotion as applied.');
+    }
+    if (!promotion.audit_summary?.includes('Sandbox patch promotion applied')) {
+      throw new Error('Packaged UI apply did not record applied audit summary.');
+    }
+    if (!evidence?.output?.includes('Touched files: packaged-apply.md')) {
+      throw new Error('Packaged UI apply did not record touched-file run evidence.');
+    }
+  } finally {
+    database.close();
+  }
+}
+
 async function assertTaskFileWorkspace(page) {
   await page.getByRole('button', { name: 'Tasks' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
@@ -120,6 +310,12 @@ async function assertTaskFileWorkspace(page) {
   await editor.fill('Initial packaged task file content.\n\nEdited by packaged task file smoke.');
   await page.getByRole('button', { name: '保存' }).click();
   await page.getByText('Saved').waitFor();
+
+  await page.getByRole('button', { name: /Reviewable smoke patch/ }).click();
+  await page.getByText(/promotion 已审批，未应用/).waitFor();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: '应用到工作区' }).click();
+  await page.getByText(/promotion apply 完成/).waitFor();
 }
 
 if (process.platform !== 'darwin') {
@@ -140,18 +336,23 @@ try {
       ELECTRON_RUN_AS_NODE: '',
       TASKPLANE_USER_DATA_DIR: userDataPath,
       TASKPLANE_ENABLE_SCHEDULER: 'false',
+      TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY: 'true',
       TASKPLANE_RUNTIME_SMOKE_PATH: smokePath,
+      TASKPLANE_WORKSPACE_ROOT: workspacePath,
     },
     timeout: timeoutMs,
   });
 
   await waitFor(() => fs.existsSync(dbPath) && fs.statSync(dbPath).size > 0, 'packaged app database');
+  fs.mkdirSync(workspacePath, { recursive: true });
+  fs.writeFileSync(path.join(workspacePath, 'packaged-apply.md'), 'alpha packaged apply\n', 'utf8');
   seedTaskFileFixture();
 
   const page = await app.firstWindow({ timeout: timeoutMs });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await assertTaskFileWorkspace(page);
   assertSavedContent();
+  assertPatchPromotionApplied();
 
   await app.close();
   cleanup();

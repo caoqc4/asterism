@@ -347,9 +347,10 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   promotion checkpoints after preflight, and task file workspace views project
   applied, blocked, approved-but-unapplied, or missing-apply-record promotion
   status from Run detail; when the apply flag is enabled, Tasks exposes an
-  explicit apply action for approved reviewed patches, but workspace application
-  remains disabled by default and still needs broader packaged smoke and recovery
-  UX before it becomes a normal happy path;
+  explicit apply action for approved reviewed patches, and packaged task-files
+  smoke now drives that UI action against a temporary workspace. Workspace
+  application remains disabled by default and still needs broader blocked
+  preflight recovery copy before it becomes a normal happy path;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 

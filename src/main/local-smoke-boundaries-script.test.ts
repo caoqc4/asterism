@@ -394,6 +394,7 @@ describe('local smoke script default boundaries', () => {
 
   it('keeps targeted packaged recovery acceptance outside the release gate', () => {
     const scripts = readPackageScripts();
+    const taskFilesSmoke = fs.readFileSync(path.join(process.cwd(), 'scripts/smoke-task-files-mac.mjs'), 'utf8');
 
     expect(scripts['accept:packaged-recovery:mac']).toBe(
       'npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:context-refresh:mac && npm run smoke:context-learning:mac && npm run smoke:code-agent-ui:mac && npm run smoke:agent-cli-task:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
@@ -410,6 +411,10 @@ describe('local smoke script default boundaries', () => {
     expect(scripts['smoke:release:mac']).not.toContain('smoke:external-access:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:decisions-center:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:task-files:mac');
+    expect(taskFilesSmoke).toContain('TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY');
+    expect(taskFilesSmoke).toContain('应用到工作区');
+    expect(taskFilesSmoke).toContain('assertPatchPromotionApplied');
+    expect(taskFilesSmoke).toContain('Touched files: packaged-apply.md');
   });
 
   it('keeps alpha local acceptance non-live and explicit', () => {
