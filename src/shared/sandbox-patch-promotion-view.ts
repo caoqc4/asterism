@@ -149,9 +149,9 @@ function buildSandboxPatchPromotionView(params: {
     }
     return {
       ...base,
-      detail: `${fileLabel}；Decision 已批准且 checkpoint 已结清，实际工作区应用仍受功能开关和 apply 服务控制。`,
-      label: 'promotion 已审批',
-      tone: 'completed',
+      detail: `${fileLabel}；Decision 已批准且 checkpoint 已结清，但未找到 promotion apply 记录；工作区应用状态需要通过 apply 服务或 Run 证据确认。`,
+      label: 'promotion 已审批，待应用确认',
+      tone: 'ready',
     };
   }
 

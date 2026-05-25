@@ -172,7 +172,7 @@ describe('projectSandboxPatchPromotionViews', () => {
     expect(view?.detail).toContain('显式 promotion apply workflow');
   });
 
-  it('keeps approved promotions without promotion records visible as controlled workspace application', () => {
+  it('keeps approved promotions without promotion records visible as unconfirmed workspace application', () => {
     const [view] = projectSandboxPatchPromotionViews({
       decisions: [buildDecision({ status: 'approved' })],
       runDetails: [buildRunDetail({
@@ -188,11 +188,12 @@ describe('projectSandboxPatchPromotionViews', () => {
 
     expect(view).toMatchObject({
       decisionStatus: 'approved',
-      label: 'promotion 已审批',
+      label: 'promotion 已审批，待应用确认',
       promotionStatus: null,
-      tone: 'completed',
+      tone: 'ready',
     });
-    expect(view?.detail).toContain('功能开关');
+    expect(view?.detail).toContain('未找到 promotion apply 记录');
+    expect(view?.detail).toContain('工作区应用状态');
   });
 
   it('projects applied promotion records after workspace apply succeeds', () => {
