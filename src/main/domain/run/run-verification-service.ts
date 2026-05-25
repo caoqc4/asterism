@@ -87,7 +87,10 @@ function hasReadyTaskplanePromotionWriteIntent(detail: RunDetailRecord): boolean
       taskId: detail.taskId,
       text,
     }).some((intent) => (
-      (intent.type === 'task_file.propose' || intent.type === 'artifact.propose')
+      (
+        intent.type === 'task_file.propose'
+        || (intent.type === 'artifact.propose' && intent.kind === 'patch')
+      )
       && validateTaskplaneWriteIntent(intent).status === 'ready'
     ))
   ));

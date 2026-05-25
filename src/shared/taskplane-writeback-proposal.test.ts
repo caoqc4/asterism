@@ -86,4 +86,35 @@ describe('Taskplane writeback proposal builder', () => {
       },
     });
   });
+
+  it('preserves patch artifact proposals as reviewable patch evidence', () => {
+    const proposals = buildTaskplaneWritebackProposalsFromText({
+      output: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [{
+          type: 'artifact.propose',
+          title: 'changes.patch',
+          kind: 'patch',
+          content: [
+            '--- a/src/app.ts',
+            '+++ b/src/app.ts',
+            '@@ -1 +1 @@',
+            '-old',
+            '+new',
+          ].join('\n'),
+          summary: 'Reviewable patch evidence.',
+        }],
+      }),
+      runId: 'run_patch',
+      taskId: 'task_scope',
+      taskTitle: 'Review workspace change',
+    });
+
+    expect(proposals.artifact).toMatchObject({
+      evidenceRunId: 'run_patch',
+      kind: 'patch',
+      summary: 'Reviewable patch evidence.',
+      title: 'changes.patch',
+    });
+  });
 });

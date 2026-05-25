@@ -250,9 +250,13 @@ Taskplane currently has a working native CLI execution backend:
 - Native CLI `workspace_write` capability steps are treated as write candidates:
   post-step verification requires reviewable promotion evidence before Taskplane
   considers them recoverable. Accepted evidence is a run-backed patch artifact,
-  a patch-promotion checkpoint, or a ready `task_file.propose` /
-  `artifact.propose` Write Intent; ordinary note/run-output artifacts are not
-  enough by themselves.
+  a patch-promotion checkpoint, a ready `task_file.propose` Write Intent, or a
+  ready `artifact.propose` Write Intent with `kind: "patch"`; ordinary note /
+  run-output artifacts are not enough by themselves.
+- Native CLI `artifact.propose` Write Intent may carry `kind: "patch"` when
+  the content is reviewable diff evidence. Confirmed patch proposals are saved
+  as run-backed patch artifacts through the main-side ArtifactRepository port;
+  they still do not apply workspace files by themselves.
 - Completed native run chat summaries mention both web research and local
   command/workspace activity when those events were recorded.
 - Codex JSONL `command_execution` items are projected as `shell_command` Run

@@ -13,6 +13,7 @@ import type {
 
 export type TaskplaneWritebackDispatchPorts = {
   createArtifact?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'artifact.create_note_from_run' }>, ArtifactRecord>;
+  createPatchArtifact?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'artifact.create_patch_from_run' }>, ArtifactRecord>;
   createBlocker?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'blocker.create' }>, BlockerRecord>;
   createDecision?: TaskplaneWritebackPort<
     Extract<TaskplaneWritebackApplyPlan, { action: 'decision.create' | 'completion_decision.create' }>,
@@ -59,6 +60,13 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   if (plan.action === 'artifact.create_note_from_run') {
     if (!ports.createArtifact) return blocked(plan.action, '产物提案已暂停：当前环境不支持保存任务产物。');
     await ports.createArtifact(plan.input);
+    await recordTimeline(ports, taskId, plan.timeline);
+    return completed(plan);
+  }
+
+  if (plan.action === 'artifact.create_patch_from_run') {
+    if (!ports.createPatchArtifact) return blocked(plan.action, 'Patch 产物提案已暂停：当前环境不支持保存 patch 证据。');
+    await ports.createPatchArtifact(plan.input);
     await recordTimeline(ports, taskId, plan.timeline);
     return completed(plan);
   }

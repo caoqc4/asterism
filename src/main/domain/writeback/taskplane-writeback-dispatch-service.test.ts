@@ -315,6 +315,80 @@ describe('TaskplaneWritebackDispatchService', () => {
     });
   });
 
+  it('routes patch artifact proposals through the patch artifact repository method', async () => {
+    const taskService = {
+      create: vi.fn(),
+      createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      transition: vi.fn(),
+      update: vi.fn(),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const artifacts = artifactRepository();
+    artifacts.createPatchFromRun.mockResolvedValue({
+      content: '--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1 +1 @@\n-old\n+new',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      id: 'artifact_patch_1',
+      kind: 'patch',
+      sourceId: 'run_patch',
+      sourceType: 'run',
+      taskId: 'task_1',
+      title: 'changes.patch',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifacts);
+
+    const result = await service.dispatch({
+      taskId: 'task_1',
+      plan: {
+        action: 'artifact.create_patch_from_run',
+        input: {
+          content: '--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1 +1 @@\n-old\n+new',
+          runId: 'run_patch',
+          taskId: 'task_1',
+          title: 'changes.patch',
+        },
+        successMessage: '已确认并保存任务产物：changes.patch。',
+        timeline: {
+          payload: {
+            evidenceRunId: 'run_patch',
+            kind: 'patch',
+            source: 'taskplane_write_intent',
+            title: 'changes.patch',
+          },
+          type: 'panel.artifact_written',
+        },
+      },
+    });
+
+    expect(artifacts.createPatchFromRun).toHaveBeenCalledWith({
+      content: '--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1 +1 @@\n-old\n+new',
+      runId: 'run_patch',
+      taskId: 'task_1',
+      title: 'changes.patch',
+    });
+    expect(taskService.recordTimelineEvent).toHaveBeenCalledWith({
+      payload: {
+        evidenceRunId: 'run_patch',
+        kind: 'patch',
+        source: 'taskplane_write_intent',
+        title: 'changes.patch',
+      },
+      taskId: 'task_1',
+      type: 'panel.artifact_written',
+    });
+    expect(result).toMatchObject({
+      action: 'artifact.create_patch_from_run',
+      status: 'completed',
+    });
+  });
+
   it('applies subtask proposals through task service project updates, child creation, criteria, and dependencies', async () => {
     const taskService = {
       create: vi.fn()
@@ -476,6 +550,7 @@ function taskFileRepository() {
 function artifactRepository() {
   return {
     createNoteFromRun: vi.fn(),
+    createPatchFromRun: vi.fn(),
   };
 }
 

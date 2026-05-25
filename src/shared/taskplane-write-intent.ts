@@ -36,7 +36,7 @@ export type TaskplaneTaskFileProposeIntent = {
 export type TaskplaneArtifactProposeIntent = {
   content: string;
   evidenceRunId: string;
-  kind: 'note';
+  kind: 'note' | 'patch';
   summary?: string;
   taskId: string;
   title: string;
@@ -159,7 +159,12 @@ export function validateTaskplaneWriteIntent(intent: TaskplaneWriteIntent): Task
   if (intent.type === 'artifact.propose') {
     if (!intent.title.trim()) issues.push('Artifact proposal requires title.');
     if (!intent.content.trim()) issues.push('Artifact proposal requires content.');
-    if (intent.kind !== 'note') issues.push('Artifact proposal currently supports note artifacts.');
+    if (intent.kind !== 'note' && intent.kind !== 'patch') {
+      issues.push('Artifact proposal currently supports note or patch artifacts.');
+    }
+    if (intent.kind === 'patch' && !looksLikePatchContent(intent.content)) {
+      issues.push('Patch artifact proposal requires reviewable diff content.');
+    }
   }
   if (intent.type === 'source_context.create') {
     if (!intent.title.trim()) issues.push('Source context intent requires title.');
@@ -244,7 +249,7 @@ function normalizeWriteIntentValue(value: unknown, params: {
     return [{
       content,
       evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
-      kind: 'note',
+      kind: normalizeArtifactKind(value.kind),
       summary: readString(value.summary) || undefined,
       taskId: readString(value.taskId, params.taskId),
       title,
@@ -386,6 +391,10 @@ function normalizeConfidence(value: unknown): TaskplaneWriteIntentConfidence {
   return value === 'low' || value === 'medium' || value === 'high' ? value : 'medium';
 }
 
+function normalizeArtifactKind(value: unknown): TaskplaneArtifactProposeIntent['kind'] {
+  return value === 'patch' ? 'patch' : 'note';
+}
+
 function normalizeStringArray(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const items = value
@@ -397,6 +406,12 @@ function normalizeStringArray(value: unknown): string[] | undefined {
 
 function normalizeSourceCredibility(value: unknown): TaskplaneSourceContextCreateIntent['credibility'] {
   return value === 'verified' || value === 'low' || value === 'unknown' ? value : 'unknown';
+}
+
+function looksLikePatchContent(value: string): boolean {
+  const normalized = value.replace(/\r\n/g, '\n');
+  return /\ndiff --git\s+a\/.+\s+b\/.+/.test(`\n${normalized}`)
+    || (/^---\s+/m.test(normalized) && /^\+\+\+\s+/m.test(normalized));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

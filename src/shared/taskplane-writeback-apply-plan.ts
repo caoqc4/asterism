@@ -45,17 +45,26 @@ export type TaskplaneSourceContextWritebackApplyPlan = {
   timeline: TaskplaneWritebackTimelineDraft;
 };
 
-export type TaskplaneArtifactWritebackApplyPlan = {
-  action: 'artifact.create_note_from_run';
-  input: {
-    content: string;
-    runId: string;
-    taskId: string;
-    title: string;
-  };
-  successMessage: string;
-  timeline: TaskplaneWritebackTimelineDraft;
+type TaskplaneArtifactWritebackInput = {
+  content: string;
+  runId: string;
+  taskId: string;
+  title: string;
 };
+
+export type TaskplaneArtifactWritebackApplyPlan =
+  | {
+      action: 'artifact.create_note_from_run';
+      input: TaskplaneArtifactWritebackInput;
+      successMessage: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    }
+  | {
+      action: 'artifact.create_patch_from_run';
+      input: TaskplaneArtifactWritebackInput;
+      successMessage: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    };
 
 export type TaskplaneSubtaskWritebackApplyPlan = {
   action: 'subtask.create_many';
@@ -257,7 +266,7 @@ export function buildArtifactWritebackApplyPlan(params: {
 }): TaskplaneArtifactWritebackApplyPlan {
   const { proposal } = params;
   return {
-    action: 'artifact.create_note_from_run',
+    action: proposal.kind === 'patch' ? 'artifact.create_patch_from_run' : 'artifact.create_note_from_run',
     input: {
       content: proposal.content,
       runId: proposal.evidenceRunId,

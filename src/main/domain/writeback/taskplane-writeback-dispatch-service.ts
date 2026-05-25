@@ -37,7 +37,7 @@ export type TaskplaneWritebackTaskServicePort = Pick<
 export type TaskplaneWritebackDecisionServicePort = Pick<DecisionService, 'create'>;
 
 export type TaskplaneWritebackTaskFileRepositoryPort = Pick<TaskFileRepository, 'create' | 'findById' | 'update'>;
-export type TaskplaneWritebackArtifactRepositoryPort = Pick<ArtifactRepository, 'createNoteFromRun'>;
+export type TaskplaneWritebackArtifactRepositoryPort = Pick<ArtifactRepository, 'createNoteFromRun' | 'createPatchFromRun'>;
 
 export class TaskplaneWritebackDispatchService {
   constructor(
@@ -89,6 +89,7 @@ export class TaskplaneWritebackDispatchService {
       taskId: params.taskId,
       ports: {
         createArtifact: (input): Promise<ArtifactRecord> => this.artifactRepository.createNoteFromRun(input),
+        createPatchArtifact: (input): Promise<ArtifactRecord> => this.artifactRepository.createPatchFromRun(input),
         createBlocker: (input): Promise<BlockerRecord> => this.taskService.createBlocker(input),
         createDecision: (input): Promise<DecisionRecord> => this.decisionService.create(input),
         createSourceContext: (input): Promise<SourceContextRecord> => this.taskService.createSourceContext(input),

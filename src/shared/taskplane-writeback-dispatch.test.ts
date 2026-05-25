@@ -187,6 +187,55 @@ describe('Taskplane writeback dispatch', () => {
     });
   });
 
+  it('dispatches patch artifact proposals through the patch artifact port', async () => {
+    const createPatchArtifact = vi.fn().mockResolvedValue({});
+    const recordTimelineEvent = vi.fn().mockResolvedValue(undefined);
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createPatchArtifact,
+        recordTimelineEvent,
+      },
+      plan: {
+        action: 'artifact.create_patch_from_run',
+        input: {
+          content: '--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1 +1 @@\n-old\n+new',
+          runId: 'run_patch',
+          taskId: 'task_1',
+          title: 'changes.patch',
+        },
+        successMessage: '已确认并保存任务产物：changes.patch。',
+        timeline: {
+          payload: {
+            evidenceRunId: 'run_patch',
+            kind: 'patch',
+            source: 'taskplane_write_intent',
+            title: 'changes.patch',
+          },
+          type: 'panel.artifact_written',
+        },
+      },
+    });
+
+    expect(createPatchArtifact).toHaveBeenCalledWith({
+      content: '--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1 +1 @@\n-old\n+new',
+      runId: 'run_patch',
+      taskId: 'task_1',
+      title: 'changes.patch',
+    });
+    expect(recordTimelineEvent).toHaveBeenCalledWith('task_1', 'panel.artifact_written', {
+      evidenceRunId: 'run_patch',
+      kind: 'patch',
+      source: 'taskplane_write_intent',
+      title: 'changes.patch',
+    });
+    expect(result).toMatchObject({
+      action: 'artifact.create_patch_from_run',
+      status: 'completed',
+    });
+  });
+
   it('dispatches subtask creation through the unified writeback port', async () => {
     const createSubtasks = vi.fn().mockResolvedValue({
       createdTasks: [

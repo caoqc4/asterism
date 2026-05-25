@@ -95,6 +95,78 @@ describe('run verification service', () => {
     }));
   });
 
+  it('does not treat note artifact Write Intent as workspace write promotion evidence', async () => {
+    const writer = { upsert: vi.fn().mockResolvedValue({}) };
+
+    await persistLightweightRunVerifications(buildRunDetail({
+      output: [
+        'I prepared an ordinary note artifact proposal.',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'artifact.propose',
+            title: 'notes.md',
+            kind: 'note',
+            content: '# Notes',
+            summary: 'Save notes.',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      steps: [buildStep({
+        title: 'Codex CLI 工作区写入候选：apply_patch',
+        output: 'capability=workspace_write\napply_patch changed src/app.ts',
+      })],
+    }), writer, { includeRunLevel: false });
+
+    expect(writer.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      label: '写入候选需复核',
+      targetId: 'run_step_1',
+      targetType: 'step',
+      tone: 'warn',
+    }));
+  });
+
+  it('accepts ready patch artifact Write Intent as workspace write promotion evidence', async () => {
+    const writer = { upsert: vi.fn().mockResolvedValue({}) };
+
+    await persistLightweightRunVerifications(buildRunDetail({
+      output: [
+        'I prepared a reviewable patch artifact proposal.',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'artifact.propose',
+            title: 'changes.patch',
+            kind: 'patch',
+            content: [
+              '--- a/src/app.ts',
+              '+++ b/src/app.ts',
+              '@@ -1 +1 @@',
+              '-old',
+              '+new',
+            ].join('\n'),
+            summary: 'Reviewable patch evidence.',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      steps: [buildStep({
+        title: 'Codex CLI 工作区写入候选：apply_patch',
+        output: 'capability=workspace_write\napply_patch changed src/app.ts',
+      })],
+    }), writer, { includeRunLevel: false });
+
+    expect(writer.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      label: '执行后检查通过',
+      targetId: 'run_step_1',
+      targetType: 'step',
+      tone: 'pass',
+    }));
+  });
+
   it('accepts patch promotion checkpoints as workspace write promotion evidence', async () => {
     const writer = { upsert: vi.fn().mockResolvedValue({}) };
 

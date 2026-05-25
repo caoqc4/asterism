@@ -27,6 +27,7 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('`command_execution` items');
     expect(content).toContain('workspace reads, commands');
     expect(content).toContain('`workspace_write` capability steps are treated as write candidates');
+    expect(content).toContain('`artifact.propose` Write Intent may carry `kind: "patch"`');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');
     expect(content).toContain('AI Runtime settings surface shows these before a run starts');

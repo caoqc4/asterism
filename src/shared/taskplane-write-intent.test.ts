@@ -191,6 +191,52 @@ describe('Taskplane write intent', () => {
     expect(validateTaskplaneWriteIntent(intents[0]!)).toMatchObject({ status: 'ready' });
   });
 
+  it('extracts patch artifact proposals only when they contain reviewable diff evidence', () => {
+    const intents = extractTaskplaneWriteIntentsFromText({
+      evidenceRunId: 'run_patch',
+      taskId: 'task_scope',
+      text: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [{
+          type: 'artifact.propose',
+          title: 'changes.patch',
+          kind: 'patch',
+          content: [
+            'diff --git a/src/app.ts b/src/app.ts',
+            '--- a/src/app.ts',
+            '+++ b/src/app.ts',
+            '@@ -1 +1 @@',
+            '-old',
+            '+new',
+          ].join('\n'),
+          summary: 'Reviewable patch evidence.',
+        }],
+      }),
+    });
+
+    expect(intents).toMatchObject([{
+      evidenceRunId: 'run_patch',
+      kind: 'patch',
+      taskId: 'task_scope',
+      title: 'changes.patch',
+      type: 'artifact.propose',
+    }]);
+    expect(validateTaskplaneWriteIntent(intents[0]!)).toMatchObject({ status: 'ready' });
+
+    const patchIntent = intents[0];
+    if (!patchIntent || patchIntent.type !== 'artifact.propose') {
+      throw new Error('Expected artifact proposal.');
+    }
+
+    expect(validateTaskplaneWriteIntent({
+      ...patchIntent,
+      content: 'Changed src/app.ts.',
+    })).toMatchObject({
+      status: 'blocked',
+      issues: ['Patch artifact proposal requires reviewable diff content.'],
+    });
+  });
+
   it('extracts decision, next-step, blocker, and completion proposal intents', () => {
     const intents = extractTaskplaneWriteIntentsFromText({
       evidenceRunId: 'run_5',

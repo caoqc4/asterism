@@ -26,7 +26,7 @@ export type TaskplaneTaskFileWritebackProposal = {
 export type TaskplaneArtifactWritebackProposal = {
   content: string;
   evidenceRunId: string;
-  kind: 'note';
+  kind: 'note' | 'patch';
   summary: string;
   title: string;
 };

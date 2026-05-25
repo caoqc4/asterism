@@ -156,6 +156,43 @@ describe('Taskplane writeback apply plans', () => {
     });
   });
 
+  it('maps patch artifact proposals to run-backed patch artifacts', () => {
+    const plan = buildArtifactWritebackApplyPlan({
+      proposal: {
+        content: [
+          '--- a/src/app.ts',
+          '+++ b/src/app.ts',
+          '@@ -1 +1 @@',
+          '-old',
+          '+new',
+        ].join('\n'),
+        evidenceRunId: 'run_patch',
+        kind: 'patch',
+        summary: 'Reviewable patch evidence.',
+        title: 'changes.patch',
+      },
+      taskId: 'task_1',
+    });
+
+    expect(plan).toMatchObject({
+      action: 'artifact.create_patch_from_run',
+      input: {
+        runId: 'run_patch',
+        taskId: 'task_1',
+        title: 'changes.patch',
+      },
+      timeline: {
+        type: 'panel.artifact_written',
+        payload: {
+          evidenceRunId: 'run_patch',
+          kind: 'patch',
+          source: 'taskplane_write_intent',
+          title: 'changes.patch',
+        },
+      },
+    });
+  });
+
   it('maps subtask drafts to a main-side project decomposition apply plan', () => {
     const subtask = {
       acceptanceCriteria: '页面范围已确认。',
