@@ -255,12 +255,17 @@ describe('AgentCliRunService', () => {
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'tool_call',
-      title: 'Codex CLI 原生事件：web_search',
+      title: 'Codex CLI 联网检索：web_search',
       input: expect.stringContaining('Codex CLI docs'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-      kind: 'tool_call',
-      title: 'Codex CLI 原生事件：web_search',
+      kind: 'tool_result',
+      title: 'Codex CLI 联网检索：web_search',
+      output: expect.stringContaining('capability=web_search'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_result',
+      title: 'Codex CLI 联网检索：web_search',
       output: expect.stringContaining('Found official Codex docs.'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -274,6 +279,42 @@ describe('AgentCliRunService', () => {
       '整理完成：建议参考官方 Codex 文档。',
       'ai',
     );
+  });
+
+  it('tags workspace search as workspace progress instead of web research', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: [
+        JSON.stringify({ type: 'tool.call', name: 'workspace.search', input: { query: 'TaskAdvancementOrchestrator' } }),
+        JSON.stringify({ type: 'result', result: '已完成本地检索。' }),
+      ].join('\n'),
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '检查本地任务推进代码。',
+      taskId: 'task_1',
+    });
+
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'tool_call',
+        title: 'Codex CLI 工作区读取：workspace.search',
+        output: expect.stringContaining('capability=workspace_read'),
+      }));
+    });
   });
 
   it('projects Claude stream-json tool events into run steps', async () => {
@@ -336,8 +377,9 @@ describe('AgentCliRunService', () => {
     await vi.waitFor(() => {
       expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
         kind: 'tool_call',
-        title: 'Claude Code 原生事件：WebSearch',
+        title: 'Claude Code 联网检索：WebSearch',
         input: expect.stringContaining('Claude Code headless mode'),
+        output: expect.stringContaining('capability=web_search'),
       }));
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({

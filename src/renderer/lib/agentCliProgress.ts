@@ -55,6 +55,7 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
   const title = step.title.trim();
   const output = step.output?.trim() ?? '';
   const haystack = `${title}\n${output}`.toLowerCase();
+  const capability = readStepCapability(output);
 
   if (/上下文就绪|context readiness|readiness\.evaluate|decision=(ready|self_research|plan_first|ask_user|blocked)/.test(haystack)) {
     return {
@@ -81,17 +82,22 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
       state: 'verifying',
     };
   }
-  if (/联网|web|search|browse|source|external|url|http/.test(haystack)) {
+  if (capability === 'web_search' || isExternalResearchStep(haystack)) {
     return {
       detail: compactStepDetail(output),
       label: '正在使用原生 CLI 联网检索或整理来源。',
       state: 'researching',
     };
   }
-  if (/read|grep|rg|file|workspace|ls|cat|sed|bash|shell|command/.test(haystack)) {
+  if (
+    capability === 'workspace_read'
+    || capability === 'workspace_write'
+    || capability === 'shell_command'
+    || isWorkspaceOrCommandStep(haystack)
+  ) {
     return {
       detail: compactStepDetail(output),
-      label: '正在读取工作区或运行原生 CLI 工具。',
+      label: '正在读取工作区、运行命令或调用本地工具。',
       state: 'reading_workspace',
     };
   }
@@ -114,8 +120,27 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
   };
 }
 
+function readStepCapability(output: string): string | null {
+  const match = output.match(/^capability=([a-z0-9_.-]+)/im);
+  return match?.[1]?.toLowerCase() ?? null;
+}
+
+function isExternalResearchStep(haystack: string): boolean {
+  if (/workspace[._-]search|workspace[._-]read|ripgrep|\brg\b|\bgrep\b|\bls\b|\bcat\b/.test(haystack)) {
+    return false;
+  }
+  return /联网|web[_\s.-]?search|websearch|browse|browser|external|url|https?:\/\//.test(haystack);
+}
+
+function isWorkspaceOrCommandStep(haystack: string): boolean {
+  return /workspace|read|grep|ripgrep|\brg\b|file|\bls\b|\bcat\b|\bsed\b|bash|shell|command|terminal|exec|write|edit|patch|apply_patch/.test(haystack);
+}
+
 function compactStepDetail(output: string): string | undefined {
-  const firstLine = output.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
+  const firstLine = output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => Boolean(line) && !/^(capability|provider_event)=/.test(line));
   if (!firstLine) return undefined;
   return firstLine.length > 90 ? `${firstLine.slice(0, 87)}...` : firstLine;
 }

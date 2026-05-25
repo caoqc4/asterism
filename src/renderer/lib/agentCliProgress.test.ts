@@ -61,8 +61,8 @@ describe('deriveAgentCliProgress', () => {
         step({ index: 0, title: 'agent cli run accepted', kind: 'plan' }),
         step({
           index: 1,
-          title: 'Codex CLI 原生事件：web_search',
-          output: 'Found official Codex docs.',
+          title: 'Codex CLI 联网检索：web_search',
+          output: 'capability=web_search\nprovider_event=tool.result\nFound official Codex docs.',
         }),
       ],
     }));
@@ -72,13 +72,29 @@ describe('deriveAgentCliProgress', () => {
     expect(progress.detail).toBe('Found official Codex docs.');
   });
 
+  it('does not mistake workspace search for web research', () => {
+    const progress = deriveAgentCliProgress(detail({
+      steps: [
+        step({
+          index: 1,
+          title: 'Tool started: workspace.search',
+          output: 'capability=workspace_read\nprovider_event=tool.call\n{"query":"agent"}',
+        }),
+      ],
+    }));
+
+    expect(progress.state).toBe('reading_workspace');
+    expect(progress.label).toContain('读取工作区');
+    expect(progress.detail).toBe('{"query":"agent"}');
+  });
+
   it('recognizes native workspace and command events', () => {
     const progress = deriveAgentCliProgress(detail({
       steps: [
         step({
           index: 1,
-          title: 'Claude Code 原生事件：Bash',
-          output: 'rg -n "agent"',
+          title: 'Claude Code 命令执行：Bash',
+          output: 'capability=shell_command\nprovider_event=assistant\nrg -n "agent"',
         }),
       ],
     }));

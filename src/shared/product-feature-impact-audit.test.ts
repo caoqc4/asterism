@@ -46,7 +46,7 @@ describe('product feature impact audit', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
     expect(rightPanel?.evidence.join(' ')).toContain('decisions, next-step updates, blockers, completion proposals');
-    expect(rightPanel?.evidence.join(' ')).toContain('web research capture and native CLI web/search events');
+    expect(rightPanel?.evidence.join(' ')).toContain('web research capture and native CLI capability-tagged web/search events');
     expect(rightPanel?.evidence.join(' ')).toContain('child-task advancement messages');
     expect(rightPanel?.evidence.join(' ')).toContain('context.readiness.evaluate');
     expect(rightPanel?.evidence.join(' ')).toContain('preserving operation mode');
@@ -57,8 +57,12 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback dispatch');
-    expect(rightPanel?.evidence.join(' ')).toContain('TaskService, DecisionService, and TaskFileRepository ports');
+    expect(rightPanel?.evidence.join(' ')).toContain('TaskService, DecisionService, TaskFileRepository, and ArtifactRepository ports');
     expect(rightPanel?.evidence.join(' ')).toContain('source, structured, subtask, task-record, and task-memory confirmations');
+    expect(rightPanel?.evidence.join(' ')).toContain('task records, task files, task artifacts');
+    expect(rightPanel?.writeIntents).toContain('task_file.propose');
+    expect(rightPanel?.writeIntents).toContain('artifact.propose');
+    expect(rightPanel?.writeIntents).toContain('subtask.propose');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need product UI paths');
     expect(rightPanel?.gaps.join(' ')).not.toContain('main-side writeback orchestration service is not yet wired');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
@@ -81,6 +85,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('task, decision, and task-file services');
     expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');
     expect(decisions?.gaps.join(' ')).not.toContain('still need to call it through main-side ports');
-    expect(capabilities?.evidence.join(' ')).toContain('Native CLI web/search events');
+    expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
+    expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
+    expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
   });
 });

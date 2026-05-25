@@ -883,7 +883,10 @@ function readStepKeyValue(output: string | null, key: string): string | null {
 }
 
 function compactStepDetailForChat(output: string | null): string | null {
-  const firstLine = output?.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
+  const firstLine = output
+    ?.split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => Boolean(line) && !/^(capability|provider_event)=/.test(line));
   return firstLine || null;
 }
 

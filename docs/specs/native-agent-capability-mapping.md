@@ -239,6 +239,8 @@ Codex and Claude adapters should report capabilities in a runtime-neutral way:
 - plan/read-only mode available;
 - persistent goal mode available or gated;
 - native web/search/browse visibility;
+- provider event projection into neutral web-search, workspace-read,
+  workspace-write, command, MCP, and hook progress states;
 - memory adapter files present;
 - hooks or permission constraints available;
 - subagent/delegation capability available;

@@ -387,9 +387,10 @@ calling the CLI.
 When a CLI exposes structured terminal events, Taskplane asks for that stream
 and projects it into Run steps: Codex uses `codex exec --json`, and Claude Code
 uses `claude -p --output-format stream-json`. Parsed tool/search/browse events
-become `Agent CLI 原生事件` steps; if the stream shape changes or cannot be
-parsed, Taskplane falls back to the terminal stdout summary instead of treating
-the run as failed.
+become capability-tagged steps such as `Codex CLI 联网检索：web_search` or
+`Claude Code 命令执行：Bash`; if the stream shape changes or cannot be parsed,
+Taskplane falls back to the terminal stdout summary instead of treating the run
+as failed.
 
 The Agent API Runtime remains a separate future invocation path. Current
 Taskplane execution work prioritizes the native Agent CLI path.

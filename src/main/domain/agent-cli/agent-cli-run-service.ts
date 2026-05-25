@@ -46,6 +46,7 @@ import type {
   RecordRuntimeNativeGoalRequestInput,
   RunOutputSource,
   RunRecord,
+  RunStepKind,
   RunStatus,
 } from '../../../shared/types/run.js';
 import type { PilotDecisionSnapshot } from '../../../shared/pilot-decision-contract.js';
@@ -117,6 +118,7 @@ type AgentCliRunAdapter = {
 };
 
 type AgentCliParsedEvent = {
+  kind: RunStepKind;
   input: string | null;
   output: string;
   status: 'completed' | 'failed' | 'skipped';
@@ -128,6 +130,15 @@ type AgentCliParsedTranscript = {
   finalText: string | null;
   rawJsonLineCount: number;
 };
+
+type AgentCliNativeCapability =
+  | 'generic_tool'
+  | 'hook'
+  | 'mcp_tool'
+  | 'shell_command'
+  | 'web_search'
+  | 'workspace_read'
+  | 'workspace_write';
 
 const DEFAULT_AGENT_CLI_TIMEOUT_MS = 120_000;
 const DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES = 64_000;
@@ -641,7 +652,7 @@ export class AgentCliRunService {
       for (const event of parsedTranscript.events) {
         await this.runStepRepository.create({
           runId: params.run.id,
-          kind: 'tool_call',
+          kind: event.kind,
           status: event.status,
           title: event.title,
           input: event.input,
@@ -1530,6 +1541,7 @@ function mapAgentCliJsonEventToRunStep(event: Record<string, unknown>, runtimeLa
   const kind = String(event.type ?? event.event ?? event.kind ?? '').toLowerCase();
   const nestedToolUse = findAgentCliToolUse(event);
   const name = String(event.name ?? event.tool_name ?? event.tool ?? event.subtype ?? nestedToolUse?.name ?? '').trim();
+  const input = summarizeAgentCliEventInput(event) ?? summarizeAgentCliEventInput(nestedToolUse ?? {});
   const text = extractAgentCliEventText(event);
   if (!kind && !name && !text) return null;
 
@@ -1538,12 +1550,74 @@ function mapAgentCliJsonEventToRunStep(event: Record<string, unknown>, runtimeLa
   if (!isToolLike) return null;
 
   const label = name || humanizeAgentCliEventKind(kind) || 'native event';
+  const capability = classifyAgentCliNativeCapability({
+    kind,
+    input,
+    name,
+    text,
+  });
+  const fallbackOutput = truncateAgentCliContextLine(JSON.stringify(event), 1200);
   return {
-    input: summarizeAgentCliEventInput(event) ?? summarizeAgentCliEventInput(nestedToolUse ?? {}),
-    output: text || truncateAgentCliContextLine(JSON.stringify(event), 1200),
+    input,
+    kind: runStepKindForAgentCliNativeEvent(kind),
+    output: [
+      `capability=${capability}`,
+      kind ? `provider_event=${kind}` : null,
+      text || fallbackOutput,
+    ].filter((line): line is string => line !== null).join('\n'),
     status: /error|failed|failure/.test(kind) ? 'failed' : 'completed',
-    title: `${runtimeLabel} 原生事件：${label}`,
+    title: `${runtimeLabel} ${agentCliNativeCapabilityLabel(capability)}：${label}`,
   };
+}
+
+function runStepKindForAgentCliNativeEvent(kind: string): RunStepKind {
+  if (/result|completed|complete|finished|done|failed|failure|error/.test(kind)) {
+    return 'tool_result';
+  }
+  return 'tool_call';
+}
+
+function classifyAgentCliNativeCapability(params: {
+  kind: string;
+  input: string | null;
+  name: string;
+  text: string;
+}): AgentCliNativeCapability {
+  const haystack = `${params.kind} ${params.name} ${params.input ?? ''} ${params.text}`.toLowerCase();
+  if (/\bmcp\b/.test(haystack)) return 'mcp_tool';
+  if (/hook/.test(haystack)) return 'hook';
+  if (/web[_\s.-]?search|websearch|browser|browse|fetch|http|https|url|联网|搜索网页|网络检索/.test(haystack)) {
+    return 'web_search';
+  }
+  if (/write|edit|patch|apply_patch|create|delete|remove|rename|move|修改|写入|删除/.test(haystack)) {
+    return 'workspace_write';
+  }
+  if (/bash|shell|terminal|exec|command|run_command/.test(haystack)) {
+    return 'shell_command';
+  }
+  if (/workspace|read|grep|rg|ripgrep|glob|list|ls|cat|sed|find|open|view|file|inspect|读取|文件/.test(haystack)) {
+    return 'workspace_read';
+  }
+  return 'generic_tool';
+}
+
+function agentCliNativeCapabilityLabel(capability: AgentCliNativeCapability): string {
+  switch (capability) {
+    case 'web_search':
+      return '联网检索';
+    case 'workspace_read':
+      return '工作区读取';
+    case 'workspace_write':
+      return '工作区写入候选';
+    case 'shell_command':
+      return '命令执行';
+    case 'mcp_tool':
+      return 'MCP 工具';
+    case 'hook':
+      return 'Hook';
+    case 'generic_tool':
+      return '原生工具';
+  }
 }
 
 function extractAgentCliFinalText(event: Record<string, unknown>): string | null {

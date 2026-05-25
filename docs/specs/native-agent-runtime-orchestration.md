@@ -230,9 +230,10 @@ Taskplane currently has a working native CLI execution backend:
 - Taskplane can perform a pre-run web research bridge when the task clearly
   needs fresh external information, save the digest and raw links as Source
   Context, and show the captured source count in the completed chat summary.
-- Native CLI web/search/browse events are projected into Run steps and the
-  completed chat summary, including child-task advancement messages, so users
-  can see that research happened without reading raw terminal output.
+- Native CLI tool/search/browse events are projected into capability-tagged Run
+  steps and the completed chat summary, including child-task advancement
+  messages, so users can distinguish web research, workspace reads, commands,
+  and tool calls without reading raw terminal output.
 - Raw terminal output remains available as run evidence.
 - Taskplane extracts structured `TASKPLANE_WRITE_INTENTS` from native CLI
   output and can surface confirmation cards for task records, task files,
@@ -573,9 +574,11 @@ Status: mostly implemented.
 
 ### Phase 2: Observable Runtime Progress
 
-Status: implemented as a first pass.
+Status: implemented.
 
-- Map `Agent CLI 联网调研准备` and native events into compact progress states.
+- Map `Agent CLI 联网调研准备` and provider native events into compact progress
+  states with capability markers such as web search, workspace read, command,
+  write candidate, MCP, and hook.
 - Show status in the right panel while a run is active.
 - keep detailed event evidence in run detail/task dynamics;
 - do not render raw JSONL or stdout in chat.

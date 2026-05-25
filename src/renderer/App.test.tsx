@@ -2961,8 +2961,8 @@ describe('App redesign v1', () => {
           id: 'step_native_search',
           runId: 'run_agent_cli_created',
           index: 1,
-          title: 'Codex CLI 原生事件：web_search',
-          output: 'Found official Codex docs.',
+          title: 'Codex CLI 联网检索：web_search',
+          output: 'capability=web_search\nprovider_event=tool.result\nFound official Codex docs.',
         }),
       ],
     });
@@ -5433,8 +5433,8 @@ describe('App redesign v1', () => {
           id: 'step_child_native_web',
           runId: run.id,
           index: 1,
-          title: 'Codex CLI 原生事件：web_search',
-          output: 'Found official Codex docs and examples.',
+          title: 'Codex CLI 联网检索：web_search',
+          output: 'capability=web_search\nprovider_event=tool.result\nFound official Codex docs and examples.',
         }),
       ];
       harness.runs.push(run);

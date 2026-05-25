@@ -81,8 +81,11 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     ],
     writeIntents: [
       'task_record.create',
+      'task_file.propose',
+      'artifact.propose',
       'source_context.create',
       'decision.create',
+      'subtask.propose',
       'task.update_next_step',
       'task.mark_blocked',
       'task.complete.propose',
@@ -108,10 +111,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',
       'Shared writeback dispatch applies plans through injected ports, so renderer and future service runtimes can share the same write boundary.',
       'Main-side writeback dispatch now asks shared TaskAdvancementOrchestrator for a persistence movement before applying validated Write Intent through service ports.',
-      'Main-side writeback dispatch adapter wires shared dispatch to TaskService, DecisionService, and TaskFileRepository ports.',
+      'Main-side writeback dispatch adapter wires shared dispatch to TaskService, DecisionService, TaskFileRepository, and ArtifactRepository ports.',
       'Right-panel source, structured, subtask, task-record, and task-memory confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
-      'Right-panel proposals can confirm task records, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
-      'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI web/search events.',
+      'Right-panel proposals can confirm task records, task files, task artifacts, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
+      'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI capability-tagged web/search events.',
       'Right-panel task chat now runs through shared PilotDecision and TaskAdvancementOrchestrator before Agent CLI launch, preserving operation mode, backendPlan, message priority, user-owned approval boundaries, and executor routing.',
       'Agent CLI run records preserve the trimmed Pilot decision snapshot as a Pilot 决策辅助计划 step for phase-2 auditability.',
       'Agent API chat invocations preserve the same trimmed Pilot decision snapshot in invocation provenance.',
@@ -349,13 +352,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'CapabilityRegistry keeps optional tools hidden until runtime gates expose model-visible tools.',
       'Skills page separates product runtime rules from optional user skills.',
-      'Native CLI web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
+      'Native CLI provider events are projected into runtime-neutral capability progress states for web search, workspace reads/writes, command execution, MCP, and hooks.',
+      'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
     ],
     gaps: [
-      'Native CLI tool progress has first web/search mapping, but should deepen provider-specific schemas for more precise external-tool status.',
+      'Runtime capability probes still need provider-owned declarations for exact tool availability rather than relying on parsed event evidence after execution.',
     ],
     nextActions: [
-      'Map provider-specific CLI events into runtime-neutral capability progress states.',
+      'Expose adapter capability declarations for native web/search, hooks, subagents, memory, and goal-mode support in the runtime settings surface.',
     ],
   },
   {
