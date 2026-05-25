@@ -146,7 +146,33 @@ describe('projectSandboxPatchPromotionViews', () => {
     expect(view?.detail).toContain('涉及 4 个文件：src/app.ts, src/view.tsx, docs/notes.md 等，另 1 个');
   });
 
-  it('keeps approved promotions visible as controlled workspace application', () => {
+  it('keeps preflight-only approved promotions visible as approved but unapplied', () => {
+    const [view] = projectSandboxPatchPromotionViews({
+      decisions: [buildDecision({ status: 'approved' })],
+      runDetails: [buildRunDetail({
+        checkpoints: [
+          {
+            ...buildRunDetail().checkpoints![0]!,
+            status: 'resolved',
+            resolvedAt: now,
+          },
+        ],
+        sandboxPatchPromotions: [buildPromotion({ status: 'pending' })],
+      })],
+    });
+
+    expect(view).toMatchObject({
+      decisionStatus: 'approved',
+      label: 'promotion 已审批，未应用',
+      promotionStatus: 'pending',
+      tone: 'completed',
+    });
+    expect(view?.detail).toContain('preflight/no-write');
+    expect(view?.detail).toContain('工作区仍未应用');
+    expect(view?.detail).toContain('显式 promotion apply workflow');
+  });
+
+  it('keeps approved promotions without promotion records visible as controlled workspace application', () => {
     const [view] = projectSandboxPatchPromotionViews({
       decisions: [buildDecision({ status: 'approved' })],
       runDetails: [buildRunDetail({
@@ -163,6 +189,7 @@ describe('projectSandboxPatchPromotionViews', () => {
     expect(view).toMatchObject({
       decisionStatus: 'approved',
       label: 'promotion 已审批',
+      promotionStatus: null,
       tone: 'completed',
     });
     expect(view?.detail).toContain('功能开关');
