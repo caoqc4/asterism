@@ -108,8 +108,12 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('approved-but-unapplied');
     expect(taskFiles?.evidence.join(' ')).toContain('sandboxPatchPromotions');
     expect(taskFiles?.evidence.join(' ')).toContain('explicitly apply approved reviewed-patch promotions');
+    expect(taskFiles?.evidence.join(' ')).toContain('reviewed patch promotion apply smoke');
+    expect(taskFiles?.evidence.join(' ')).toContain('blocked workspace-drift recovery evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
     expect(taskFiles?.gaps.join(' ')).toContain('disabled by default');
+    expect(taskFiles?.gaps.join(' ')).toContain('packaged UI smoke');
+    expect(taskFiles?.gaps.join(' ')).not.toContain('packaged smoke and recovery UX');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need an apply implementation');
     expect(rightPanel?.gaps.join(' ')).not.toContain('fully normal operator-facing apply workflow');
     expect(rightPanel?.gaps.join(' ')).not.toContain('post-apply status projection');

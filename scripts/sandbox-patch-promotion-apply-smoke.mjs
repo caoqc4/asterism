@@ -81,11 +81,19 @@ try {
     nextContent: 'beta-enabled\n',
     originalContent: 'alpha-enabled\n',
   });
+  const blocked = await runScenario({
+    driftContent: 'operator-edited-before-apply\n',
+    enabled: true,
+    id: 'blocked',
+    nextContent: 'beta-blocked\n',
+    originalContent: 'alpha-blocked\n',
+  });
 
   console.log([
     'Sandbox patch promotion apply smoke: ready',
     `default=${noWrite}`,
     `enabled=${applied}`,
+    `blocked=${blocked}`,
     'docker=not-started',
     'ai=not-called',
   ].join(' / '));
@@ -94,7 +102,9 @@ try {
   await fs.rm(tempRoot, { force: true, recursive: true });
 }
 
-async function runScenario({ enabled, id, nextContent, originalContent }) {
+async function runScenario({ driftContent, enabled, id, nextContent, originalContent }) {
+  closeDatabase();
+  setDatabaseUserDataPathForTests(path.join(userDataRoot, id));
   const workspaceFile = path.join(workspaceRoot, `${id}.md`);
   await fs.writeFile(workspaceFile, originalContent, 'utf8');
   const patchDiff = [
@@ -112,6 +122,9 @@ async function runScenario({ enabled, id, nextContent, originalContent }) {
 
   closeDatabase();
   const services = createServices({ enableSandboxPatchPromotionApply: enabled });
+  if (driftContent !== undefined) {
+    await fs.writeFile(workspaceFile, driftContent, 'utf8');
+  }
   await services.decisionService.act({
     action: 'approve',
     id: checkpoint.decisionId,
@@ -121,6 +134,21 @@ async function runScenario({ enabled, id, nextContent, originalContent }) {
   const [resolvedCheckpoint] = await services.runCheckpointRepository.listForRun(checkpoint.runId);
   const promotion = await services.sandboxPatchPromotionRepository.findByCheckpointId(checkpoint.checkpointId);
   const steps = await services.runStepRepository.listForRun(checkpoint.runId);
+
+  if (driftContent !== undefined) {
+    assert(content === driftContent, 'blocked promotion unexpectedly changed the diverged workspace file');
+    assert(resolvedCheckpoint?.status === 'cancelled', 'blocked promotion did not cancel the checkpoint');
+    assert(promotion?.status === 'blocked', 'blocked promotion record was not marked blocked');
+    assert(
+      steps.some((step) =>
+        step.status === 'failed' &&
+        step.output?.includes('No workspace files were written.') &&
+        step.output?.includes(`Patch promotion workspace content does not match reviewed base: ${id}.md`)
+      ),
+      'blocked promotion did not record no-write failure evidence',
+    );
+    return 'blocked-no-write';
+  }
 
   if (enabled) {
     assert(content === nextContent, 'enabled promotion did not update the workspace file');

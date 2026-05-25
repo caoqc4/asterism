@@ -294,6 +294,21 @@ describe('local smoke script default boundaries', () => {
     );
   });
 
+  it('keeps reviewed patch promotion apply smoke in local agent acceptance', () => {
+    const scripts = readPackageScripts();
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/sandbox-patch-promotion-apply-smoke.mjs'), 'utf8');
+
+    expect(scripts['accept:sandbox-coding:patch-promotion-apply-smoke']).toBe(
+      'npm run build:main && node scripts/sandbox-patch-promotion-apply-smoke.mjs',
+    );
+    expect(scripts['accept:agent-local']).toContain('npm run accept:sandbox-coding:patch-promotion-apply-smoke');
+    expect(script).toContain('default=${noWrite}');
+    expect(script).toContain('enabled=${applied}');
+    expect(script).toContain('blocked=${blocked}');
+    expect(script).toContain('Patch promotion workspace content does not match reviewed base');
+    expect(script).toContain('No workspace files were written.');
+  });
+
   it('keeps packaged Agent CLI live task smoke manual and skipped by default', () => {
     const scripts = readPackageScripts();
     const result = runScript('scripts/manual-agent-cli-task-live-mac.mjs');
