@@ -20,8 +20,14 @@ export type AgentCliWorkload = 'idle' | 'running' | 'blocked';
 
 export type AgentCliRuntimeCapabilityProbeSignals = {
   hooks?: boolean;
+  nativeClear?: boolean;
+  nativeCompact?: boolean;
+  nativeMemory?: boolean;
+  nativeResume?: boolean;
+  planMode?: boolean;
   structuredProgressEvents?: boolean;
   subagents?: boolean;
+  webSearch?: boolean;
 };
 
 export type AgentCliRuntimeRecord = {
@@ -78,6 +84,7 @@ export function buildDefaultAgentCliRuntimeCapabilities(
   const nativeGoalMode = buildNativeGoalModeCapability(runtimeId, label, version);
   const supportsNativeGoalMode = nativeGoalMode.availability === 'available';
   const structuredProgressEvents = probeSignals?.structuredProgressEvents ?? true;
+  const supportsNativeResume = probeSignals?.nativeResume ?? false;
   return {
     id: runtimeId,
     label,
@@ -87,7 +94,7 @@ export function buildDefaultAgentCliRuntimeCapabilities(
     supportsNativeGoalMode,
     supportsNativeClear: false,
     supportsNativeCompact: false,
-    supportsNativeResume: false,
+    supportsNativeResume,
     supportsPauseGoal: supportsNativeGoalMode,
     supportsResumeGoal: supportsNativeGoalMode,
     supportsClearGoal: supportsNativeGoalMode,
@@ -194,6 +201,17 @@ function buildNativeCapabilityDeclarations(
   probeSignals: AgentCliRuntimeCapabilityProbeSignals | null,
 ): AgentRuntimeNativeCapabilitySet {
   const readMode = runtimeId === 'claude' ? 'plan mode' : 'read-only sandbox';
+  const webSearchAvailability = probeSignals?.webSearch
+    ? nativeCapability(
+        'native web/search',
+        'runtime_dependent',
+        `${label} help output exposes native web/search activation; Taskplane records visible web/search events and can still use its own source-capture bridge when configured.`,
+      )
+    : nativeCapability(
+        'native web/search',
+        'unverified',
+        `${label} native web/search was not detected by the runtime probe; Taskplane can use its own source-capture bridge when configured.`,
+      );
   const hookAvailability = probeSignals?.hooks
     ? nativeCapability(
         'hooks',
@@ -216,6 +234,39 @@ function buildNativeCapabilityDeclarations(
         'unverified',
         `${label} subagent or delegation support is not routed through Taskplane yet.`,
       );
+  const memoryAvailability = probeSignals?.nativeMemory
+    ? nativeCapability(
+        'memory',
+        'runtime_dependent',
+        `${label} exposes native memory/project-guidance loading signals; Taskplane still persists task memory through structured product surfaces.`,
+      )
+    : nativeCapability(
+        'memory',
+        'product_controlled',
+        'Task memory is persisted by Taskplane surfaces, not by runtime-native memory files.',
+      );
+  const compactAvailability = probeSignals?.nativeCompact
+    ? nativeCapability(
+        'compact',
+        'runtime_dependent',
+        `${label} exposes native compact signals; Taskplane requires its handoff and memory coverage gates before context reset.`,
+      )
+    : nativeCapability(
+        'compact',
+        'product_controlled',
+        'Context compaction is handled through Taskplane handoff and memory coverage gates.',
+      );
+  const clearAvailability = probeSignals?.nativeClear
+    ? nativeCapability(
+        'clear',
+        'runtime_dependent',
+        `${label} exposes native clear signals; Taskplane requires preservation proof before clearing task context.`,
+      )
+    : nativeCapability(
+        'clear',
+        'product_controlled',
+        'Conversation reset is product-controlled so valuable context can be preserved before clearing.',
+      );
   return {
     structuredProgressEvents: nativeCapability(
       'structured events',
@@ -224,11 +275,7 @@ function buildNativeCapabilityDeclarations(
         ? `${label} structured event output was not detected by the runtime probe.`
         : `${label} adapter requests structured terminal output and projects it into Taskplane Run steps.`,
     ),
-    webSearch: nativeCapability(
-      'native web/search',
-      'runtime_dependent',
-      `${label} may expose native web/search tools inside the official runtime; Taskplane records visible events and can use its own source-capture bridge when configured.`,
-    ),
+    webSearch: webSearchAvailability,
     workspaceRead: nativeCapability(
       'workspace read',
       'available',
@@ -241,21 +288,9 @@ function buildNativeCapabilityDeclarations(
     ),
     hooks: hookAvailability,
     subagents: subagentAvailability,
-    memory: nativeCapability(
-      'memory',
-      'product_controlled',
-      'Task memory is persisted by Taskplane surfaces, not by runtime-native memory files.',
-    ),
-    compact: nativeCapability(
-      'compact',
-      'product_controlled',
-      'Context compaction is handled through Taskplane handoff and memory coverage gates.',
-    ),
-    clear: nativeCapability(
-      'clear',
-      'product_controlled',
-      'Conversation reset is product-controlled so valuable context can be preserved before clearing.',
-    ),
+    memory: memoryAvailability,
+    compact: compactAvailability,
+    clear: clearAvailability,
   };
 }
 

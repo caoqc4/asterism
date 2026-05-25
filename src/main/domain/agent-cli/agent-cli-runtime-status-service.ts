@@ -113,10 +113,9 @@ export async function probeAgentCliCommand(command: string, runtimeId: AgentCliR
     : runtimeId === 'claude'
       ? runProbe(executable, ['auth', 'status'])
       : Promise.resolve(null);
-  const capabilityArgs = nativeCapabilityProbeArgs(runtimeId);
-  const capabilityProbePromise = capabilityArgs
-    ? runProbe(executable, capabilityArgs)
-    : Promise.resolve(null);
+  const capabilityProbePromise = Promise.all(
+    nativeCapabilityProbeArgs(runtimeId).map((args) => runProbe(executable, args)),
+  );
   const [versionProbe, authProbe, capabilityProbe] = await Promise.all([
     runProbe(executable, ['--version']),
     authProbePromise,
@@ -138,8 +137,12 @@ export async function probeAgentCliCommand(command: string, runtimeId: AgentCliR
   return {
     authReason: authStatus?.reason ?? null,
     authState: authStatus?.state,
-    capabilitySignals: capabilityProbe?.exitCode === 0
-      ? parseAgentCliCapabilitySignals(runtimeId, capabilityProbe.stdout, capabilityProbe.stderr)
+    capabilitySignals: capabilityProbe.some((probe) => probe.exitCode === 0)
+      ? parseAgentCliCapabilitySignals(
+          runtimeId,
+          capabilityProbe.map((probe) => probe.stdout).join('\n'),
+          capabilityProbe.map((probe) => probe.stderr).join('\n'),
+        )
       : null,
     executablePath,
     installed: true,
@@ -149,13 +152,13 @@ export async function probeAgentCliCommand(command: string, runtimeId: AgentCliR
   };
 }
 
-function nativeCapabilityProbeArgs(runtimeId: AgentCliRuntimeId): string[] | null {
-  if (runtimeId === 'codex') return ['exec', '--help'];
-  if (runtimeId === 'claude') return ['-p', '--help'];
-  return null;
+export function nativeCapabilityProbeArgs(runtimeId: AgentCliRuntimeId): string[][] {
+  if (runtimeId === 'codex') return [['--help'], ['exec', '--help']];
+  if (runtimeId === 'claude') return [['--help'], ['-p', '--help']];
+  return [];
 }
 
-function parseAgentCliCapabilitySignals(
+export function parseAgentCliCapabilitySignals(
   runtimeId: AgentCliRuntimeId,
   stdout: string,
   stderr: string,
@@ -163,12 +166,26 @@ function parseAgentCliCapabilitySignals(
   const output = `${stdout}\n${stderr}`;
   return {
     hooks: runtimeId === 'claude' && /--include-hook-events|hook lifecycle/i.test(output),
+    nativeClear: /\b(clear|reset)\b/i.test(output) && /conversation|session|context/i.test(output),
+    nativeCompact: /\bcompact\b|PreCompact|PostCompact/i.test(output),
+    nativeMemory: runtimeId === 'claude'
+      ? /auto-memory|CLAUDE\.md|memory paths|project memory/i.test(output)
+      : /AGENTS\.md|memory/i.test(output),
+    nativeResume: runtimeId === 'codex'
+      ? /\bresume\b/i.test(output)
+      : /--resume\b|--continue\b|resume a conversation/i.test(output),
+    planMode: runtimeId === 'claude'
+      ? /--permission-mode[\s\S]*\bplan\b|\bchoices:[^\n]*plan/i.test(output)
+      : /--sandbox[\s\S]*read-only/i.test(output),
     structuredProgressEvents: runtimeId === 'codex'
       ? /--json\b/.test(output)
       : runtimeId === 'claude'
         ? /stream-json/.test(output)
         : undefined,
-    subagents: runtimeId === 'claude' && /--agents?\b/.test(output),
+    subagents: runtimeId === 'claude' && /--agents?\b|custom agents/i.test(output),
+    webSearch: runtimeId === 'codex'
+      ? /--search\b|web_search/i.test(output)
+      : /web\s*search|browser|chrome integration|--chrome\b/i.test(output),
   };
 }
 

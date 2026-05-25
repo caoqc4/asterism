@@ -27,7 +27,7 @@ describe('agent cli runtime status', () => {
           supportsStructuredProgressEvents: true,
           nativeCapabilities: expect.objectContaining({
             structuredProgressEvents: expect.objectContaining({ availability: 'available' }),
-            webSearch: expect.objectContaining({ availability: 'runtime_dependent' }),
+            webSearch: expect.objectContaining({ availability: 'unverified' }),
             workspaceRead: expect.objectContaining({ availability: 'available' }),
             workspaceWrite: expect.objectContaining({ availability: 'unsupported' }),
             memory: expect.objectContaining({ availability: 'product_controlled' }),
@@ -57,7 +57,7 @@ describe('agent cli runtime status', () => {
           supportsStructuredProgressEvents: true,
           nativeCapabilities: expect.objectContaining({
             structuredProgressEvents: expect.objectContaining({ availability: 'available' }),
-            webSearch: expect.objectContaining({ availability: 'runtime_dependent' }),
+            webSearch: expect.objectContaining({ availability: 'unverified' }),
             workspaceRead: expect.objectContaining({ availability: 'available' }),
             workspaceWrite: expect.objectContaining({ availability: 'unsupported' }),
           }),
@@ -85,6 +85,8 @@ describe('agent cli runtime status', () => {
         command: 'claude',
         capabilities: buildDefaultAgentCliRuntimeCapabilities('claude', 'Claude Code', '2.1.144', {
           hooks: true,
+          nativeMemory: true,
+          nativeResume: true,
           structuredProgressEvents: true,
           subagents: true,
         }),
@@ -99,8 +101,32 @@ describe('agent cli runtime status', () => {
 
     expect(status.runtimes[0]?.capabilities?.nativeCapabilities).toMatchObject({
       hooks: { availability: 'runtime_dependent' },
+      memory: { availability: 'runtime_dependent' },
       structuredProgressEvents: { availability: 'available' },
       subagents: { availability: 'runtime_dependent' },
+    });
+    expect(status.runtimes[0]?.capabilities?.supportsNativeResume).toBe(true);
+  });
+
+  it('promotes probed Codex web search and resume signals without granting writes', () => {
+    const capabilities = buildDefaultAgentCliRuntimeCapabilities('codex', 'Codex CLI', 'codex-cli 0.133.0', {
+      nativeResume: true,
+      structuredProgressEvents: true,
+      webSearch: true,
+    });
+
+    expect(capabilities).toMatchObject({
+      supportsNativeGoalMode: true,
+      supportsNativeResume: true,
+      supportsWorkspaceWrite: false,
+      nativeCapabilities: {
+        webSearch: {
+          availability: 'runtime_dependent',
+        },
+        workspaceWrite: {
+          availability: 'unsupported',
+        },
+      },
     });
   });
 

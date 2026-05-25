@@ -10,6 +10,8 @@ import {
   AGENT_CLI_RUNTIME_FIXTURE_ENV,
   AgentCliRuntimeStatusService,
   executableProbeFailureReason,
+  nativeCapabilityProbeArgs,
+  parseAgentCliCapabilitySignals,
   probeAgentCliCommand,
 } from './agent-cli-runtime-status-service.js';
 import { AgentCliRuntimeWorkloadTracker } from './agent-cli-runtime-workload.js';
@@ -97,12 +99,56 @@ describe('agent cli runtime status service', () => {
             availability: 'available',
           },
           webSearch: {
-            availability: 'runtime_dependent',
+            availability: 'unverified',
           },
         },
         supportsStructuredProgressEvents: true,
         supportsNativeGoalMode: false,
       },
+    });
+  });
+
+  it('checks multiple help surfaces for native capability signals', () => {
+    expect(nativeCapabilityProbeArgs('codex')).toEqual([['--help'], ['exec', '--help']]);
+    expect(nativeCapabilityProbeArgs('claude')).toEqual([['--help'], ['-p', '--help']]);
+  });
+
+  it('parses Codex web search and resume signals from help output', () => {
+    const signals = parseAgentCliCapabilitySignals('codex', [
+      'Commands:',
+      '  exec',
+      '  resume',
+      'Options:',
+      '  --search Enable live web search',
+      '  --json Print events to stdout as JSONL',
+      '  --sandbox <SANDBOX_MODE> [possible values: read-only, workspace-write]',
+    ].join('\n'), '');
+
+    expect(signals).toMatchObject({
+      nativeResume: true,
+      planMode: true,
+      structuredProgressEvents: true,
+      webSearch: true,
+    });
+  });
+
+  it('parses Claude hooks, subagents, memory, plan, and resume signals from help output', () => {
+    const signals = parseAgentCliCapabilitySignals('claude', [
+      '--include-hook-events Include all hook lifecycle events',
+      '--agents <json> JSON object defining custom agents',
+      '--permission-mode <mode> choices: acceptEdits, auto, default, plan',
+      '--bare Minimal mode: skip hooks, auto-memory, and CLAUDE.md auto-discovery',
+      '--resume Resume a conversation by session ID',
+      '--output-format <format> choices: text, json, stream-json',
+    ].join('\n'), '');
+
+    expect(signals).toMatchObject({
+      hooks: true,
+      nativeMemory: true,
+      nativeResume: true,
+      planMode: true,
+      structuredProgressEvents: true,
+      subagents: true,
     });
   });
 

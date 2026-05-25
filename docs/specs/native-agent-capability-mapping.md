@@ -255,6 +255,12 @@ has the same features. When a capability is missing, the product should either
 use another backend, run a Taskplane bridge, or surface a clear blocker.
 Adapter-level declarations are not a substitute for live provider probes; they
 are the minimum pre-run contract until stable CLI signals are available.
+Taskplane should prefer safe provider metadata probes such as `--help`,
+`--version`, status commands, and documented config-file locations before
+claiming a native capability. Current probes combine top-level and execution
+help output so Codex `--search` / `resume` and Claude hook events, agents,
+plan permission mode, resume, and native memory-loading hints are visible in
+runtime status without starting an execution run.
 
 ## Relationship To Other Specs
 

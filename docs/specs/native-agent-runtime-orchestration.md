@@ -230,6 +230,10 @@ Taskplane currently has a working native CLI execution backend:
 - The status probe also parses lightweight provider help output for
   structured-event flags and, where exposed, native hook-event and agent/subagent
   signals. These are still capability declarations, not permission grants.
+- The status probe combines top-level and execution help output where safe, so
+  native web/search activation, resume commands, plan/read-only affordances,
+  hook events, Claude agents, and native memory-loading hints can be shown
+  before execution without starting a run.
 - The Run Goal Contract and Agent CLI context bridge pass those selected-runtime
   capability declarations into native CLI prompts before execution, so the
   runtime sees the same capability boundary shown in Taskplane UI.

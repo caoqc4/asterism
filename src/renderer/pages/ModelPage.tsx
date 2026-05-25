@@ -824,6 +824,8 @@ function runtimeCapabilityChips(capabilities: AgentRuntimeAdapterCapabilities): 
     nativeCapabilityChip(native?.structuredProgressEvents, '事件流', 'ready'),
     nativeCapabilityChip(native?.workspaceRead, '只读工作区', 'ready'),
     nativeCapabilityChip(native?.webSearch, '原生搜索', 'gated'),
+    nativeCapabilityChip(native?.hooks, 'Hooks', 'gated'),
+    nativeCapabilityChip(native?.subagents, 'Subagents', 'gated'),
     capabilities.supportsNativeGoalMode
       ? {
           label: 'Goal',
