@@ -947,6 +947,58 @@ describe('AgentCliRunService', () => {
     }));
   });
 
+  it('does not prepare web research only because the prompt names the selected CLI runtime', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const resolveOpenAiWebResearchConfig = vi.fn();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: '已检查下一步。',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(buildTask({
+        nextStep: 'Review implementation path.',
+        summary: 'Task summary.',
+        title: 'Task 1',
+      })),
+      {
+        getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          featureFlags: {
+            enableScheduler: false,
+            enableProviderNativeToolCalls: true,
+            agentCliCapabilityMode: 'native',
+          },
+        })),
+        resolveOpenAiWebResearchConfig,
+      },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: '用 Codex CLI 检查下一步。',
+      taskId: 'task_1',
+    });
+
+    expect(resolveOpenAiWebResearchConfig).not.toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_call',
+      status: 'completed',
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('status=not_needed'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.not.stringContaining('Confirmed source previews:'),
+    }));
+  });
+
   it('uses decomposition instructions only for explicit decomposition requests', async () => {
     const executor = vi.fn().mockResolvedValue({
       exitCode: 0,

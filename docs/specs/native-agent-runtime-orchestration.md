@@ -253,6 +253,8 @@ Taskplane currently has a working native CLI execution backend:
 - Taskplane can perform a pre-run web research bridge when the task clearly
   needs fresh external information, save the digest and raw links as Source
   Context, and show the captured source count in the completed chat summary.
+  Runtime names such as Codex CLI or Claude Code and generic current-task
+  wording are not enough by themselves to trigger this bridge.
 - Native CLI tool/search/browse events are projected into capability-tagged Run
   steps and the completed chat summary, including child-task advancement
   messages, so users can distinguish web research, workspace reads, commands,

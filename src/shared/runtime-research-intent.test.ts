@@ -20,6 +20,17 @@ describe('evaluateRuntimeResearchIntent', () => {
     expect(intent.shouldUseExternalResearch).toBe(false);
   });
 
+  it('does not treat runtime names or current-task wording as external research', () => {
+    expect(evaluateRuntimeResearchIntent('用 Codex CLI 检查下一步。').shouldUseExternalResearch).toBe(false);
+    expect(evaluateRuntimeResearchIntent('让 Claude Code 继续当前任务。').shouldUseExternalResearch).toBe(false);
+    expect(evaluateRuntimeResearchIntent('检查当前任务下一步。').shouldUseExternalResearch).toBe(false);
+  });
+
+  it('still treats product documentation and best-practice requests as external research', () => {
+    expect(evaluateRuntimeResearchIntent('整理 Codex CLI 官方文档和最佳实践。').shouldUseExternalResearch).toBe(true);
+    expect(evaluateRuntimeResearchIntent('比较 Claude Code release notes。').shouldUseExternalResearch).toBe(true);
+  });
+
   it('does not treat local docs folders as external documentation research', () => {
     const intent = evaluateRuntimeResearchIntent('请搜索本地 docs 文件夹里的 API 说明。');
 
