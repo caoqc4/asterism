@@ -6,6 +6,7 @@ import {
   buildAgentCliRuntimeStatus,
   emptyAgentCliRuntimeStatus,
   type AgentCliAuthState,
+  type AgentCliRuntimeCapabilityProbeSignals,
   type AgentCliRuntimeId,
   type AgentCliRuntimeRecord,
   type AgentCliRuntimeStatus,
@@ -19,6 +20,7 @@ import {
 export type AgentCliCommandProbe = (command: string, runtimeId: AgentCliRuntimeId) => Promise<{
   authReason?: string | null;
   authState?: AgentCliAuthState;
+  capabilitySignals?: AgentCliRuntimeCapabilityProbeSignals | null;
   executablePath?: string | null;
   installed: boolean;
   version: string | null;
@@ -59,7 +61,7 @@ export class AgentCliRuntimeStatusService {
       return {
         ...runtime,
         authState: probe.authState ?? 'unknown',
-        capabilities: buildDefaultAgentCliRuntimeCapabilities(runtime.id, runtime.label, probe.version),
+        capabilities: buildDefaultAgentCliRuntimeCapabilities(runtime.id, runtime.label, probe.version, probe.capabilitySignals ?? null),
         executablePath: probe.executablePath ?? null,
         installed: true,
         missingReason: installedRuntimeMissingReason(runtime.id, runtime.label, runtime.command, runtime.executionSupport, probe.authState, probe.authReason),
@@ -86,6 +88,7 @@ export function createAgentCliRuntimeStatusService(): AgentCliRuntimeStatusServi
 export async function probeAgentCliCommand(command: string, runtimeId: AgentCliRuntimeId): Promise<{
   authReason?: string | null;
   authState?: AgentCliAuthState;
+  capabilitySignals?: AgentCliRuntimeCapabilityProbeSignals | null;
   executablePath?: string | null;
   installed: boolean;
   version: string | null;
@@ -110,9 +113,14 @@ export async function probeAgentCliCommand(command: string, runtimeId: AgentCliR
     : runtimeId === 'claude'
       ? runProbe(executable, ['auth', 'status'])
       : Promise.resolve(null);
-  const [versionProbe, authProbe] = await Promise.all([
+  const capabilityArgs = nativeCapabilityProbeArgs(runtimeId);
+  const capabilityProbePromise = capabilityArgs
+    ? runProbe(executable, capabilityArgs)
+    : Promise.resolve(null);
+  const [versionProbe, authProbe, capabilityProbe] = await Promise.all([
     runProbe(executable, ['--version']),
     authProbePromise,
+    capabilityProbePromise,
   ]);
   const executableFailure = executableProbeFailureReason(command, versionProbe);
   if (executableFailure) {
@@ -130,11 +138,37 @@ export async function probeAgentCliCommand(command: string, runtimeId: AgentCliR
   return {
     authReason: authStatus?.reason ?? null,
     authState: authStatus?.state,
+    capabilitySignals: capabilityProbe?.exitCode === 0
+      ? parseAgentCliCapabilitySignals(runtimeId, capabilityProbe.stdout, capabilityProbe.stderr)
+      : null,
     executablePath,
     installed: true,
     version: versionProbe.exitCode === 0
       ? firstLine(versionProbe.stdout || versionProbe.stderr)
       : null,
+  };
+}
+
+function nativeCapabilityProbeArgs(runtimeId: AgentCliRuntimeId): string[] | null {
+  if (runtimeId === 'codex') return ['exec', '--help'];
+  if (runtimeId === 'claude') return ['-p', '--help'];
+  return null;
+}
+
+function parseAgentCliCapabilitySignals(
+  runtimeId: AgentCliRuntimeId,
+  stdout: string,
+  stderr: string,
+): AgentCliRuntimeCapabilityProbeSignals {
+  const output = `${stdout}\n${stderr}`;
+  return {
+    hooks: runtimeId === 'claude' && /--include-hook-events|hook lifecycle/i.test(output),
+    structuredProgressEvents: runtimeId === 'codex'
+      ? /--json\b/.test(output)
+      : runtimeId === 'claude'
+        ? /stream-json/.test(output)
+        : undefined,
+    subagents: runtimeId === 'claude' && /--agents?\b/.test(output),
   };
 }
 

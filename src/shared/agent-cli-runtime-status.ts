@@ -18,6 +18,12 @@ export type AgentCliExecutionSupport =
 
 export type AgentCliWorkload = 'idle' | 'running' | 'blocked';
 
+export type AgentCliRuntimeCapabilityProbeSignals = {
+  hooks?: boolean;
+  structuredProgressEvents?: boolean;
+  subagents?: boolean;
+};
+
 export type AgentCliRuntimeRecord = {
   id: AgentCliRuntimeId;
   label: string;
@@ -67,9 +73,11 @@ export function buildDefaultAgentCliRuntimeCapabilities(
   runtimeId: AgentCliRuntimeId,
   label: string,
   version: string | null = null,
+  probeSignals: AgentCliRuntimeCapabilityProbeSignals | null = null,
 ): AgentRuntimeAdapterCapabilities {
   const nativeGoalMode = buildNativeGoalModeCapability(runtimeId, label, version);
   const supportsNativeGoalMode = nativeGoalMode.availability === 'available';
+  const structuredProgressEvents = probeSignals?.structuredProgressEvents ?? true;
   return {
     id: runtimeId,
     label,
@@ -83,12 +91,12 @@ export function buildDefaultAgentCliRuntimeCapabilities(
     supportsPauseGoal: supportsNativeGoalMode,
     supportsResumeGoal: supportsNativeGoalMode,
     supportsClearGoal: supportsNativeGoalMode,
-    supportsStructuredProgressEvents: true,
+    supportsStructuredProgressEvents: structuredProgressEvents,
     supportsWorkspaceWrite: false,
     defaultResetStrategy: 'product_transcript_reset',
     defaultPermissionMode: runtimeId === 'claude' ? 'plan' : 'read_only',
     nativeGoalMode,
-    nativeCapabilities: buildNativeCapabilityDeclarations(runtimeId, label),
+    nativeCapabilities: buildNativeCapabilityDeclarations(runtimeId, label, probeSignals),
     commandRouting: {
       productOwned: ['/goal', '/goal status', '/goal pause', '/goal resume', '/goal clear', '/cancel', '/status'],
       runtimeNative: runtimeId === 'codex'
@@ -183,13 +191,38 @@ function nativeCapability(
 function buildNativeCapabilityDeclarations(
   runtimeId: AgentCliRuntimeId,
   label: string,
+  probeSignals: AgentCliRuntimeCapabilityProbeSignals | null,
 ): AgentRuntimeNativeCapabilitySet {
   const readMode = runtimeId === 'claude' ? 'plan mode' : 'read-only sandbox';
+  const hookAvailability = probeSignals?.hooks
+    ? nativeCapability(
+        'hooks',
+        'runtime_dependent',
+        `${label} help output exposes hook event streaming; Taskplane records visible hook events while deterministic product gates remain the enforcement source.`,
+      )
+    : nativeCapability(
+        'hooks',
+        'unverified',
+        `${label} hook support is not configured by Taskplane yet; deterministic product gates remain the source of enforcement.`,
+      );
+  const subagentAvailability = probeSignals?.subagents
+    ? nativeCapability(
+        'subagents',
+        'runtime_dependent',
+        `${label} help output exposes agent/subagent selection; Taskplane treats product subagent delegation as an explicit future routing decision.`,
+      )
+    : nativeCapability(
+        'subagents',
+        'unverified',
+        `${label} subagent or delegation support is not routed through Taskplane yet.`,
+      );
   return {
     structuredProgressEvents: nativeCapability(
       'structured events',
-      'available',
-      `${label} adapter requests structured terminal output and projects it into Taskplane Run steps.`,
+      probeSignals?.structuredProgressEvents === false ? 'unsupported' : 'available',
+      probeSignals?.structuredProgressEvents === false
+        ? `${label} structured event output was not detected by the runtime probe.`
+        : `${label} adapter requests structured terminal output and projects it into Taskplane Run steps.`,
     ),
     webSearch: nativeCapability(
       'native web/search',
@@ -206,16 +239,8 @@ function buildNativeCapabilityDeclarations(
       'unsupported',
       'Taskplane does not grant direct workspace mutation through the native CLI adapter yet; writes must return as proposals or reviewed artifacts.',
     ),
-    hooks: nativeCapability(
-      'hooks',
-      'unverified',
-      `${label} hook support is not configured by Taskplane yet; deterministic product gates remain the source of enforcement.`,
-    ),
-    subagents: nativeCapability(
-      'subagents',
-      'unverified',
-      `${label} subagent or delegation support is not routed through Taskplane yet.`,
-    ),
+    hooks: hookAvailability,
+    subagents: subagentAvailability,
     memory: nativeCapability(
       'memory',
       'product_controlled',

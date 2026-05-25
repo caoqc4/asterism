@@ -87,6 +87,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');
     expect(decisions?.gaps.join(' ')).not.toContain('still need to call it through main-side ports');
     expect(capabilities?.evidence.join(' ')).toContain('adapter-level native capability declarations');
+    expect(capabilities?.evidence.join(' ')).toContain('provider help output');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');

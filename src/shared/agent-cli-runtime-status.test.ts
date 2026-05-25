@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_AGENT_CLI_RUNTIME_CATALOGUE,
   buildAgentCliRuntimeStatus,
+  buildDefaultAgentCliRuntimeCapabilities,
   emptyAgentCliRuntimeStatus,
 } from './agent-cli-runtime-status.js';
 
@@ -74,6 +75,33 @@ describe('agent cli runtime status', () => {
     expect(status.manualRunCount).toBe(0);
     expect(status.readyManualRunCount).toBe(0);
     expect(status.errorCount).toBe(0);
+  });
+
+  it('promotes probed Claude native agent and hook signals into capability declarations', () => {
+    const status = buildAgentCliRuntimeStatus([
+      {
+        id: 'claude',
+        label: 'Claude Code',
+        command: 'claude',
+        capabilities: buildDefaultAgentCliRuntimeCapabilities('claude', 'Claude Code', '2.1.144', {
+          hooks: true,
+          structuredProgressEvents: true,
+          subagents: true,
+        }),
+        installed: true,
+        version: '2.1.144 (Claude Code)',
+        authState: 'ready',
+        executionSupport: 'manual_run',
+        workload: 'idle',
+        missingReason: null,
+      },
+    ], '2026-05-19T00:00:00.000Z');
+
+    expect(status.runtimes[0]?.capabilities?.nativeCapabilities).toMatchObject({
+      hooks: { availability: 'runtime_dependent' },
+      structuredProgressEvents: { availability: 'available' },
+      subagents: { availability: 'runtime_dependent' },
+    });
   });
 
   it('summarizes detected, ready, manual-run, running, and errored runtimes', () => {

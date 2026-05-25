@@ -227,6 +227,9 @@ Taskplane currently has a working native CLI execution backend:
   structured events, runtime-dependent web/search, workspace read/write
   boundaries, hooks, subagents, and product-controlled memory/compact/clear; the
   AI Runtime settings surface shows these before a run starts.
+- The status probe also parses lightweight provider help output for
+  structured-event flags and, where exposed, native hook-event and agent/subagent
+  signals. These are still capability declarations, not permission grants.
 - The Run Goal Contract and Agent CLI context bridge pass those selected-runtime
   capability declarations into native CLI prompts before execution, so the
   runtime sees the same capability boundary shown in Taskplane UI.
@@ -266,9 +269,9 @@ Native CLI integration is not a complete product-grade Agent experience yet:
 - runtime progress projection is present, but it still relies on best-effort
   labels from parsed Run steps and should deepen its Codex JSONL and Claude
   stream-json schema mapping over time;
-- native capability declarations are adapter-level and still need deeper live
-  provider probes for exact hook, subagent, native memory, and web/search
-  readiness;
+- native capability declarations use adapter defaults plus lightweight help
+  probes, and still need deeper live provider probes for exact hook files,
+  subagent folders, native memory, and web/search readiness;
 - real Codex JSONL and Claude stream-json event shapes need deeper schema
   mapping as they evolve;
 - Claude real-account execution has not been validated in this repository's
