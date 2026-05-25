@@ -108,6 +108,42 @@ describe('projectSandboxPatchPromotionViews', () => {
       tone: 'pending',
     });
     expect(view?.detail).toContain('审批前不会写入工作区');
+    expect(view?.detail).toContain('应用 reviewed patch');
+    expect(view?.detail).toContain('promotion apply 预检');
+    expect(view?.detail).toContain('notes.md');
+  });
+
+  it('shows a bounded affected-file preview for multi-file promotions', () => {
+    const [view] = projectSandboxPatchPromotionViews({
+      decisions: [buildDecision()],
+      runDetails: [buildRunDetail({
+        checkpoints: [
+          {
+            ...buildRunDetail().checkpoints![0]!,
+            payload: JSON.stringify(createPatchPromotionCheckpointPayload({
+              artifactId: 'artifact_patch_review_1',
+              artifactSummary: 'Review patch.',
+              decisionId: 'decision_patch_1',
+              decisionTitle: '确认提升 sandbox patch',
+              descriptorId: 'workspace.staged_patch',
+              expectedFiles: ['src/app.ts', 'src/view.tsx', 'docs/notes.md', 'package.json'],
+              patchDigest: 'sha256:abc',
+              policySnapshot: {
+                credentialPolicy: 'none',
+                descriptorId: 'workspace.staged_patch',
+                networkPolicy: 'disabled',
+                outputLimitBytes: 1000,
+                sessionKind: 'sandbox',
+                timeoutMs: 1000,
+              },
+              sessionId: 'sandbox_1',
+            })),
+          },
+        ],
+      })],
+    });
+
+    expect(view?.detail).toContain('涉及 4 个文件：src/app.ts, src/view.tsx, docs/notes.md 等，另 1 个');
   });
 
   it('keeps approved promotions visible as controlled workspace application', () => {

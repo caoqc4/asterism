@@ -80,9 +80,7 @@ function buildSandboxPatchPromotionView(params: {
   promotion: SandboxPatchPromotionRecord | null;
   title: string;
 }): SandboxPatchPromotionView {
-  const fileLabel = params.expectedFiles.length
-    ? `涉及 ${params.expectedFiles.length} 个文件`
-    : '未记录文件清单';
+  const fileLabel = formatExpectedFileLabel(params.expectedFiles);
   const base = {
     artifactId: params.artifactId,
     checkpointId: params.checkpointId,
@@ -134,7 +132,7 @@ function buildSandboxPatchPromotionView(params: {
   if (params.decision?.status === 'pending' || params.checkpointStatus === 'open') {
     return {
       ...base,
-      detail: `${fileLabel}；需要先在 Decisions 中审批，审批前不会写入工作区。`,
+      detail: `${fileLabel}；需要先在 Decisions 中选择“应用 reviewed patch”，审批前不会写入工作区；批准后的真实应用仍受功能开关和 promotion apply 预检控制。`,
       label: '等待 promotion 拍板',
       tone: 'pending',
     };
@@ -173,4 +171,11 @@ function buildSandboxPatchPromotionView(params: {
     label: 'promotion 状态待核对',
     tone: 'pending',
   };
+}
+
+function formatExpectedFileLabel(expectedFiles: string[]): string {
+  if (!expectedFiles.length) return '未记录文件清单';
+  const preview = expectedFiles.slice(0, 3).join(', ');
+  const overflow = expectedFiles.length > 3 ? ` 等，另 ${expectedFiles.length - 3} 个` : '';
+  return `涉及 ${expectedFiles.length} 个文件：${preview}${overflow}`;
 }
