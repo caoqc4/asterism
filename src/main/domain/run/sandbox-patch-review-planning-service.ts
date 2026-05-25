@@ -1,5 +1,7 @@
 import type { FeatureFlags } from '../../../shared/types/settings.js';
+import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { LocalContainerSandboxPatchDraft } from './local-container-sandbox-backend.js';
+import { buildSandboxPatchDraftSourceFromPatchArtifact } from './sandbox-patch-artifact-source.js';
 import { validateSandboxPatchDraftSource } from './sandbox-patch-draft-source.js';
 import {
   buildSandboxPatchReviewRunPlan,
@@ -86,6 +88,42 @@ export class SandboxPatchReviewPlanningService {
     return {
       ...plan,
       summary: `${plan.summary} / ${validation.summary}`,
+    };
+  }
+
+  previewFromPatchArtifact(params: {
+    artifact: ArtifactRecord;
+    decisionTitle?: string | null;
+    featureFlags: FeatureFlags;
+    requestedScripts?: Array<'test' | 'lint'>;
+    workspaceRoot: string | null | undefined;
+  }): SandboxPatchReviewRunPlan {
+    const validation = buildSandboxPatchDraftSourceFromPatchArtifact({
+      artifact: params.artifact,
+      requestedScripts: params.requestedScripts,
+      workspaceRoot: params.workspaceRoot,
+    });
+
+    if (!validation.valid) {
+      return {
+        reason: validation.blockedReasons.join(' '),
+        status: 'blocked',
+        summary: validation.summary,
+      };
+    }
+
+    const plan = this.previewFromSource({
+      decisionTitle: params.decisionTitle ?? `确认提升 patch artifact：${params.artifact.title}`,
+      expectedWorkspaceRoot: params.workspaceRoot,
+      featureFlags: params.featureFlags,
+      source: validation.source,
+    });
+
+    if (plan.status === 'blocked') return plan;
+
+    return {
+      ...plan,
+      summary: `${plan.summary} / importedArtifact=${params.artifact.id}`,
     };
   }
 }

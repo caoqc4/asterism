@@ -156,4 +156,48 @@ describe('SandboxPatchReviewPlanningService', () => {
       summary: 'Sandbox patch review run plan blocked: Sandbox patch draft source workspace does not match the selected workspace.',
     });
   });
+
+  it('previews a sandbox review plan from a confirmed patch artifact', () => {
+    const service = new SandboxPatchReviewPlanningService();
+    const plan = service.previewFromPatchArtifact({
+      artifact: {
+        content: [
+          'diff --git a/src/app.ts b/src/app.ts',
+          '--- a/src/app.ts',
+          '+++ b/src/app.ts',
+          '@@ -1 +1 @@',
+          '-old',
+          '+new',
+        ].join('\n'),
+        createdAt: '2026-05-25T00:00:00.000Z',
+        id: 'artifact_patch_1',
+        kind: 'patch',
+        sourceId: 'run_1',
+        sourceType: 'run',
+        taskId: 'task_1',
+        title: 'changes.patch',
+        updatedAt: '2026-05-25T00:00:00.000Z',
+      },
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      requestedScripts: ['lint'],
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+
+    expect(plan.status).toBe('ready');
+
+    if (plan.status === 'ready') {
+      expect(plan.decisionTitle).toBe('确认提升 patch artifact：changes.patch');
+      expect(plan.requestBundle.audit.idempotencyKey).toBe(
+        'sandbox-patch-review:imported_patch_artifact:artifact_patch_1:run_1:task_1:lint',
+      );
+      expect(plan.requestBundle.audit.patchDraftSource).toEqual({
+        sourceId: 'artifact_patch_1',
+        sourceKind: 'imported_patch_artifact',
+      });
+      expect(plan.summary).toContain('importedArtifact=artifact_patch_1');
+    }
+  });
 });

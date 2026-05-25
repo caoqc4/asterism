@@ -67,6 +67,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('task records, task files, task artifacts');
     expect(rightPanel?.evidence.join(' ')).toContain('Task Dynamics now builds a Run-detail writeback approval queue');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose Write Intent can now carry kind=patch');
+    expect(rightPanel?.evidence.join(' ')).toContain('imported_patch_artifact sandbox draft sources');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
     expect(rightPanel?.writeIntents).toContain('subtask.propose');
@@ -92,7 +93,9 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI task_file.propose Write Intent');
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI artifact.propose Write Intent');
     expect(taskFiles?.evidence.join(' ')).toContain('artifact.propose kind=patch');
+    expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchReviewPlanningService as imported_patch_artifact sources');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
+    expect(taskFiles?.gaps.join(' ')).toContain('user-facing action');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Task-file and artifact Write Intent should be represented explicitly');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Artifact Write Intent still needs a dedicated artifact proposal/apply plan');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');
