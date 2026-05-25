@@ -64,11 +64,13 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('TaskService, DecisionService, TaskFileRepository, and ArtifactRepository ports');
     expect(rightPanel?.evidence.join(' ')).toContain('source, structured, subtask, task-record, and task-memory confirmations');
     expect(rightPanel?.evidence.join(' ')).toContain('task records, task files, task artifacts');
+    expect(rightPanel?.evidence.join(' ')).toContain('Task Dynamics now builds a Run-detail writeback approval queue');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
     expect(rightPanel?.writeIntents).toContain('subtask.propose');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need product UI paths');
     expect(rightPanel?.gaps.join(' ')).not.toContain('main-side writeback orchestration service is not yet wired');
+    expect(rightPanel?.gaps.join(' ')).not.toContain('Non-UI runtime confirmation flows');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('subtask.create_many writeback apply plan');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
@@ -87,8 +89,10 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.gaps.join(' ')).not.toContain('Artifact Write Intent still needs a dedicated artifact proposal/apply plan');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');
     expect(decisions?.evidence.join(' ')).toContain('task, decision, and task-file services');
+    expect(decisions?.evidence.join(' ')).toContain('Task Dynamics can approve Run-detail structured Write Intent');
     expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');
     expect(decisions?.gaps.join(' ')).not.toContain('still need to call it through main-side ports');
+    expect(decisions?.gaps.join(' ')).not.toContain('non-UI operator approval surfaces are still missing');
     expect(capabilities?.evidence.join(' ')).toContain('adapter-level native capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('provider help output');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');

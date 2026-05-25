@@ -39,6 +39,10 @@ import {
   type PriorityRecommendationCandidate,
   type PriorityRecommendationTaskSignal,
 } from '@shared/priority-recommendation-ranking';
+import {
+  buildTaskplaneWritebackApprovalItems,
+  type TaskplaneWritebackApprovalItem,
+} from '@shared/taskplane-writeback-approval';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
   guardDurablePanelAction,
@@ -1063,6 +1067,9 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const [projectDecomposingId, setProjectDecomposingId] = useState<string | null>(null);
   const [projectCreatingChildrenId, setProjectCreatingChildrenId] = useState<string | null>(null);
   const [projectDecompositionError, setProjectDecompositionError] = useState<string | null>(null);
+  const [applyingWritebackApprovalId, setApplyingWritebackApprovalId] = useState<string | null>(null);
+  const [appliedWritebackApprovalIds, setAppliedWritebackApprovalIds] = useState<Record<string, boolean>>({});
+  const [writebackApprovalMessages, setWritebackApprovalMessages] = useState<Record<string, string>>({});
   const [workHabits, setWorkHabits] = useState<WorkHabitRecord[]>([]);
 
   const [showCapture, setShowCapture] = useState(false);
@@ -1296,6 +1303,52 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       type,
       payload,
     }).catch(() => undefined);
+  }
+
+  async function confirmWritebackApproval(item: TaskplaneWritebackApprovalItem) {
+    if (applyingWritebackApprovalId || !selectedTask) return;
+    if (!window.api?.applyTaskplaneWriteback) {
+      setWritebackApprovalMessages((current) => ({
+        ...current,
+        [item.id]: '当前环境缺少主进程写回审批入口，请先在右侧面板处理这条提案。',
+      }));
+      return;
+    }
+    setApplyingWritebackApprovalId(item.id);
+    setWritebackApprovalMessages((current) => ({
+      ...current,
+      [item.id]: '正在确认写回...',
+    }));
+    try {
+      const result = await window.api.applyTaskplaneWriteback({
+        plan: item.plan,
+        taskId: item.taskId,
+      });
+      if (result.status === 'blocked') {
+        setWritebackApprovalMessages((current) => ({
+          ...current,
+          [item.id]: result.message,
+        }));
+        return;
+      }
+      setAppliedWritebackApprovalIds((current) => ({ ...current, [item.id]: true }));
+      setWritebackApprovalMessages((current) => ({
+        ...current,
+        [item.id]: result.successMessage,
+      }));
+      reloadTasks();
+      reloadPendingDecisions();
+      reloadTaskFilesForTask(item.taskId);
+      reloadRunsForTask(item.taskId);
+      reloadTaskDetailForTask(item.taskId);
+    } catch (error) {
+      setWritebackApprovalMessages((current) => ({
+        ...current,
+        [item.id]: `写回失败：${error instanceof Error ? error.message : '未知错误'}`,
+      }));
+    } finally {
+      setApplyingWritebackApprovalId(null);
+    }
   }
 
   async function saveFileDraft() {
@@ -1614,6 +1667,23 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
             updatedAt: file.updatedAt,
           })),
       ].filter((file, index, files) => files.findIndex((candidate) => candidate.id === file.id) === index)
+    : [];
+  const writebackApprovalItems = selectedTask
+    ? buildTaskplaneWritebackApprovalItems({
+        existing: {
+          activeBlocker: selectedTaskDetail?.activeBlocker ?? null,
+          artifacts: selectedArtifacts,
+          decisions: allDecisions.filter((decision) => decision.taskId === selectedTask.id),
+          nextStep: selectedTask.nextStep,
+          sourceContexts: selectedTaskDetail?.sourceContexts ?? [],
+          taskFiles: projectedTaskFiles,
+        },
+        runDetails: selectedRuns
+          .map((run) => selectedRunDetailsById[run.id])
+          .filter((detail): detail is RunDetailRecord => Boolean(detail)),
+        taskId: selectedTask.id,
+        taskTitle: selectedTask.title,
+      }).filter((item) => !appliedWritebackApprovalIds[item.id])
     : [];
   const runtimeEvents = selectedTask
     ? projectRuntimeEvents({
@@ -2956,6 +3026,10 @@ function resetCaptureDraft() {
               displayType={selectedEffectiveType ?? selectedTask.type}
               events={runtimeEvents}
               runCount={selectedRuns.length}
+              writebackApprovals={writebackApprovalItems}
+              applyingWritebackApprovalId={applyingWritebackApprovalId}
+              writebackApprovalMessages={writebackApprovalMessages}
+              onConfirmWriteback={confirmWritebackApproval}
               onSelectParent={selectTask}
             />
           ) : selectedObject === 'task' && selectedTask ? (
@@ -3602,6 +3676,10 @@ function TaskTimelineView({
   displayType,
   events,
   runCount,
+  writebackApprovals,
+  applyingWritebackApprovalId,
+  writebackApprovalMessages,
+  onConfirmWriteback,
   onSelectParent,
 }: {
   task: Task;
@@ -3609,6 +3687,10 @@ function TaskTimelineView({
   displayType: TaskType;
   events: RuntimeEventRecord[];
   runCount: number;
+  writebackApprovals: TaskplaneWritebackApprovalItem[];
+  applyingWritebackApprovalId: string | null;
+  writebackApprovalMessages: Record<string, string>;
+  onConfirmWriteback: (item: TaskplaneWritebackApprovalItem) => void;
   onSelectParent: (taskId: string) => void;
 }) {
   const ordered = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -3643,6 +3725,38 @@ function TaskTimelineView({
       <div className="preview-section">
         <div className="preview-label">任务动态</div>
         <p className="preview-config-note compact">{scopeCopy}</p>
+        {writebackApprovals.length > 0 && (
+          <div className="task-writeback-approvals" aria-label="待确认写回提案">
+            {writebackApprovals.slice(0, 4).map((item) => {
+              const busy = applyingWritebackApprovalId === item.id;
+              return (
+                <div className="task-writeback-approval" key={item.id}>
+                  <div className="task-writeback-approval-main">
+                    <div className="task-writeback-approval-title">
+                      <strong>{item.title}</strong>
+                      <span>{item.source === 'task_memory_guidance' ? '任务记忆' : 'Write Intent'}</span>
+                    </div>
+                    <p>{item.summary}</p>
+                    <small>{truncateRuntimeApprovalDetail(item.detail)}</small>
+                    {writebackApprovalMessages[item.id] && (
+                      <em>{writebackApprovalMessages[item.id]}</em>
+                    )}
+                  </div>
+                  <button
+                    className={`btn sm${busy ? ' disabled' : ''}`}
+                    disabled={Boolean(applyingWritebackApprovalId)}
+                    onClick={() => onConfirmWriteback(item)}
+                  >
+                    {busy ? '确认中…' : '确认写回'}
+                  </button>
+                </div>
+              );
+            })}
+            {writebackApprovals.length > 4 && (
+              <div className="task-writeback-overflow">{`另有 ${writebackApprovals.length - 4} 条写回提案，请回到右侧面板逐条处理。`}</div>
+            )}
+          </div>
+        )}
         {ordered.length === 0 ? (
           <div className="tasks-empty compact">
             <p>当前任务还没有任务动态。</p>
@@ -3729,6 +3843,12 @@ function formatRuntimeReplayGroupScope(group: RuntimeReplayGroup): string {
     group.relatedTaskIds.length > 0 ? `${group.relatedTaskIds.length} 个关联任务` : null,
   ].filter(Boolean);
   return parts.join(' · ');
+}
+
+function truncateRuntimeApprovalDetail(value: string): string {
+  const compact = value.replace(/\s+/g, ' ').trim();
+  if (compact.length <= 160) return compact;
+  return `${compact.slice(0, 157)}...`;
 }
 
 function formatRuntimeReplayGroupTimeRange(group: RuntimeReplayGroup): string {

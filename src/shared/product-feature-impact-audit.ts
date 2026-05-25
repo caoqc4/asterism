@@ -114,6 +114,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Main-side writeback dispatch adapter wires shared dispatch to TaskService, DecisionService, TaskFileRepository, and ArtifactRepository ports.',
       'Right-panel source, structured, subtask, task-record, and task-memory confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
       'Right-panel proposals can confirm task records, task files, task artifacts, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
+      'Task Dynamics now builds a Run-detail writeback approval queue from the same shared proposal builder and dispatches confirmed non-subtask Write Intent or task-memory proposals through main-side writeback IPC outside the right panel.',
       'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI capability-tagged web/search events.',
       'Codex JSONL command_execution items are projected as shell_command run steps, so right-panel progress can show local command activity instead of only raw terminal output.',
       'Agent CLI stdout JSONL lines are now projected into Run steps while the native process is still running, with completion-time transcript parsing kept as a fallback.',
@@ -125,10 +126,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
-      'Non-UI runtime confirmation flows still need product surfaces that let an operator approve dispatch outside the right panel.',
+      'Project child creation remains intentionally task-bound to the decomposition draft surface; future API decomposition should reuse the same apply-plan contract.',
     ],
     nextActions: [
-      'Design operator approval surfaces for non-UI CLI/API Write Intent proposals before automatic dispatch.',
+      'Keep future non-panel runtime surfaces on TaskplaneWritebackApprovalItem and main-side writeback dispatch instead of introducing a second persistence path.',
     ],
   },
   {
@@ -281,16 +282,17 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Shared writeback dispatch applies high-risk plans through injected service ports.',
       'Main-side writeback dispatch adapter routes confirmed plans through task, decision, and task-file services.',
       'Right-panel confirmation calls the main-side writeback adapter before emitting task, decision, and brief refresh events.',
+      'Task Dynamics can approve Run-detail structured Write Intent through the same TaskplaneWritebackApprovalItem queue and main-side writeback adapter.',
       'Completion verification is separate from model output.',
       'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
       'Task completion modal now asks shared TaskAdvancementOrchestrator for a local completion-check verification movement before passed, waiting, or override-completed outcomes are recorded.',
       'Tasks detail project verification now asks shared TaskAdvancementOrchestrator for a selected-task verification movement before rendering local project readiness evidence.',
     ],
     gaps: [
-      'Decision, blocker, next-step, and completion Write Intent now share apply-plan, main-side dispatch code, and advancement routing, but non-UI operator approval surfaces are still missing.',
+      'Future background scheduler decisions must still surface operator approval before invoking main-side writeback dispatch.',
     ],
     nextActions: [
-      'Design non-UI confirmation handlers that can approve main-side writeback dispatch without bypassing operator confirmation.',
+      'Reuse the Task Dynamics writeback approval queue for any future non-panel runtime review surface.',
     ],
   },
   {

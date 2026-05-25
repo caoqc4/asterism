@@ -285,9 +285,10 @@ Native CLI integration is not a complete product-grade Agent experience yet:
 - Claude real-account execution has not been validated in this repository's
   current environment;
 - Write Intent extraction and confirmation UI cover the first planned intent
-  set, and right-panel confirmations now invoke main-side writeback dispatch
-  for task, source, decision, subtask, task-file, and artifact writes; non-UI
-  confirmation flows still need to invoke that adapter outside the right panel;
+  set. Right-panel confirmations invoke main-side writeback dispatch for task,
+  source, decision, subtask, task-file, and artifact writes, and Task Dynamics
+  can approve Run-detail non-subtask writeback proposals through the same
+  dispatch adapter outside the right panel;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 
@@ -628,6 +629,9 @@ Status: started.
 - Right-panel proposal cards and service-level persistence paths now cover
   decision, next-step, blocker, completion, source, subtask, and task-record
   intents.
+- Task Dynamics uses `TaskplaneWritebackApprovalItem` to surface Run-detail
+  Write Intent and task-memory proposals outside the right panel while still
+  requiring operator confirmation and main-side writeback dispatch.
 - Validate against task scope, phase, and memory policy before persistence.
 - surface proposal cards;
 - persist only through Taskplane services.

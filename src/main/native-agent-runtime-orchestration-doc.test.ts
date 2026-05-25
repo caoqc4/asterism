@@ -35,8 +35,11 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('falls back to parsing the completed stdout transcript');
     expect(content).toContain('task records, task files,');
     expect(content).toContain('artifacts, source contexts, decisions, next-step updates, blockers');
-    expect(content).toContain('for task, source, decision, subtask, task-file, and artifact writes');
-    expect(content).toContain('still need to invoke that adapter outside the right panel');
+    expect(content).toContain('for task,');
+    expect(content).toContain('source, decision, subtask, task-file, and artifact writes');
+    expect(content).toContain('Task Dynamics');
+    expect(content).toContain('outside the right panel');
+    expect(content).toContain('TaskplaneWritebackApprovalItem');
     expect(content).toContain('subtask.propose` is normalized into a `subtask.create_many` apply plan');
     expect(content).not.toContain('completion proposals are not fully wired into the same pipeline');
   });

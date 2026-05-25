@@ -4900,6 +4900,59 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   gap: 16px;
 }
+.task-writeback-approvals {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+.task-writeback-approval {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg-elev);
+}
+.task-writeback-approval-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.task-writeback-approval-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.task-writeback-approval-title strong {
+  color: var(--ink-2);
+  font-size: 12px;
+  word-break: break-word;
+}
+.task-writeback-approval-title span {
+  flex-shrink: 0;
+  color: var(--ink-4);
+  font-size: 10.5px;
+}
+.task-writeback-approval p,
+.task-writeback-approval small,
+.task-writeback-approval em,
+.task-writeback-overflow {
+  margin: 0;
+  color: var(--ink-4);
+  font-size: 11px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.task-writeback-approval small {
+  color: var(--ink-3);
+}
+.task-writeback-approval em {
+  color: var(--ink-2);
+  font-style: normal;
+}
 .task-timeline-item p {
   margin: 3px 0 0;
   color: var(--ink-4);

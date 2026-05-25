@@ -985,6 +985,69 @@ function createMockApi() {
     }),
   };
 
+  api.applyTaskplaneWriteback = vi.fn().mockImplementation(async ({ plan, taskId }) => {
+    if (plan.action === 'task_file.create') {
+      await api.createTaskFile(plan.input);
+      return { action: plan.action, status: 'completed', successMessage: plan.successMessage, updatedTask: null };
+    }
+    if (plan.action === 'task_file.update') {
+      await api.updateTaskFile(plan.input);
+      return { action: plan.action, status: 'completed', successMessage: plan.successMessage, updatedTask: null };
+    }
+    if (plan.action === 'source_context.create') {
+      await api.createSourceContext(plan.input);
+      return { action: plan.action, status: 'completed', successMessage: plan.successMessage, updatedTask: null };
+    }
+    if (plan.action === 'artifact.create_note_from_run') {
+      await api.createManualArtifact({
+        content: plan.input.content,
+        taskId: plan.input.taskId,
+        title: plan.input.title,
+      });
+      return { action: plan.action, status: 'completed', successMessage: plan.successMessage, updatedTask: null };
+    }
+    if (plan.action === 'decision.create' || plan.action === 'completion_decision.create') {
+      await api.createDecision(plan.input);
+      return { action: plan.action, status: 'completed', successMessage: plan.successMessage, updatedTask: null };
+    }
+    if (plan.action === 'task.update_next_step') {
+      const updatedTask = await api.updateTask(plan.input);
+      return { action: plan.action, status: 'completed', successMessage: plan.successMessage, updatedTask };
+    }
+    if (plan.action === 'blocker.create') {
+      await api.createBlocker(plan.input);
+      return { action: plan.action, status: 'completed', successMessage: plan.successMessage, updatedTask: null };
+    }
+    const parent = await api.updateTask({
+      id: plan.input.parentTaskId,
+      nextStep: plan.input.nextStep ?? undefined,
+      taskType: 'project',
+      taskFacets: ['project'],
+    });
+    const createdTasks = [];
+    for (const subtask of plan.input.subtasks) {
+      const created = await api.createTask({
+        parentTaskId: plan.input.parentTaskId,
+        summary: [
+          subtask.summary,
+          subtask.acceptanceCriteria ? `验收：${subtask.acceptanceCriteria}` : null,
+          subtask.dependency ? `依赖：${subtask.dependency}` : null,
+        ].filter(Boolean).join('\n'),
+        taskFacets: ['simple'],
+        taskType: 'simple',
+        title: subtask.title,
+      });
+      createdTasks.push(await api.transitionTask({ id: created.id, nextState: 'planned' }));
+    }
+    return {
+      action: plan.action,
+      createdTasks,
+      status: 'completed',
+      successMessage: plan.successMessage,
+      updatedTask: parent,
+    };
+  });
+
   return {
     api,
     tasks,
@@ -4604,6 +4667,55 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/等待法务确认盖章版本/)).toBeTruthy();
     expect(screen.getByRole('button', { name: '任务管理' }).className).toContain('active');
     expect(screen.queryByText('任务信息已更新')).toBeNull();
+  });
+
+  it('lets task dynamics approve Run writeback proposals without opening the right panel', async () => {
+    const user = userEvent.setup();
+    harness.runs[0] = {
+      ...harness.runs[0]!,
+      output: [
+        '建议确认首版范围。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'decision.create',
+            title: '确认首版范围',
+            rationale: 'Run 已收敛到基础教程和案例展示。',
+            proposedOutcome: '基础教程和案例展示',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+    };
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
+
+    const approvalQueue = await screen.findByLabelText('待确认写回提案');
+    expect(within(approvalQueue).getByText('决策提案：确认首版范围')).toBeTruthy();
+    await user.click(within(approvalQueue).getByRole('button', { name: '确认写回' }));
+
+    await waitFor(() => {
+      expect(harness.api.applyTaskplaneWriteback).toHaveBeenCalledWith(expect.objectContaining({
+        plan: expect.objectContaining({
+          action: 'decision.create',
+          input: expect.objectContaining({
+            sourceId: 'run_1',
+            taskId: 'task_risk',
+            title: '确认首版范围',
+          }),
+        }),
+        taskId: 'task_risk',
+      }));
+    });
+    expect(harness.api.createDecision).toHaveBeenCalledWith(expect.objectContaining({
+      sourceId: 'run_1',
+      taskId: 'task_risk',
+      title: '确认首版范围',
+    }));
   });
 
   it('renders completion checks as quality-gate replay groups in task dynamics', async () => {

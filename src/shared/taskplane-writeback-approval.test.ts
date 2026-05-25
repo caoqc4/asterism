@@ -1,0 +1,151 @@
+import { describe, expect, it } from 'vitest';
+
+import { buildTaskplaneWritebackApprovalItems } from './taskplane-writeback-approval.js';
+import type { RunDetailRecord } from './types/run.js';
+
+describe('Taskplane writeback approval items', () => {
+  it('builds run-detail operator approval items from structured Write Intent output', () => {
+    const run = buildRunDetail({
+      output: [
+        'Runtime finished with product write proposals.',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [
+            {
+              type: 'decision.create',
+              title: '确认首版范围',
+              rationale: '首版范围已经收敛。',
+              proposedOutcome: '确认基础教程和案例展示。',
+            },
+            {
+              type: 'task_file.propose',
+              path: 'Drafts/codex-tutorial.md',
+              content: '# Codex 教程',
+              summary: '保存教程初稿。',
+            },
+          ],
+        }),
+        '```',
+      ].join('\n'),
+    });
+
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [run],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+    });
+
+    expect(items.map((item) => item.kind)).toEqual(['task_file', 'structured']);
+    expect(items[0]).toMatchObject({
+      plan: {
+        action: 'task_file.create',
+        input: {
+          path: 'Drafts/codex-tutorial.md',
+          taskId: 'task_1',
+        },
+      },
+      source: 'runtime_write_intent',
+      title: '任务文件写回提案',
+    });
+    expect(items[1]).toMatchObject({
+      plan: {
+        action: 'decision.create',
+        input: {
+          sourceId: 'run_1',
+          taskId: 'task_1',
+          title: '确认首版范围',
+        },
+      },
+      summary: '确认后创建 Decision。',
+    });
+  });
+
+  it('filters proposals that already have durable task surfaces', () => {
+    const run = buildRunDetail({
+      output: [
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [
+            {
+              type: 'decision.create',
+              title: '确认首版范围',
+              rationale: '已确认。',
+            },
+            {
+              type: 'source_context.create',
+              title: 'Codex docs',
+              uri: 'https://example.com/codex',
+              note: '官方文档。',
+            },
+          ],
+        }),
+        '```',
+      ].join('\n'),
+    });
+
+    expect(buildTaskplaneWritebackApprovalItems({
+      existing: {
+        decisions: [{ sourceId: 'run_1', title: '确认首版范围' }],
+        sourceContexts: [{ runId: null, title: 'Codex docs', uri: 'https://example.com/codex' }],
+      },
+      runDetails: [run],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+    })).toEqual([]);
+  });
+
+  it('turns pending task memory guidance into the same writeback approval queue', () => {
+    const run = buildRunDetail({
+      taskMemoryWriteProposals: [{
+        contentTemplate: '# Task\n\n## Recent Records\n- 已保全关键上下文。',
+        existingFileId: 'task_file_1',
+        operation: 'update',
+        path: 'Task.md',
+        reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+        target: 'task_md',
+        title: '更新 Task.md',
+      }],
+    });
+
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [run],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+    });
+
+    expect(items).toMatchObject([{
+      kind: 'task_memory',
+      plan: {
+        action: 'task_file.update',
+        input: {
+          id: 'task_file_1',
+          content: expect.stringContaining('已保全关键上下文'),
+        },
+      },
+      source: 'task_memory_guidance',
+      title: '更新 Task.md',
+    }]);
+  });
+});
+
+function buildRunDetail(partial: Partial<RunDetailRecord> = {}): RunDetailRecord {
+  return {
+    id: partial.id ?? 'run_1',
+    taskId: partial.taskId ?? 'task_1',
+    type: 'agent',
+    status: 'completed',
+    instructions: null,
+    output: partial.output ?? null,
+    outputSource: partial.outputSource ?? 'ai',
+    failureReason: null,
+    createdAt: '2026-05-25T00:00:00.000Z',
+    updatedAt: '2026-05-25T00:00:00.000Z',
+    artifacts: [],
+    checkpoints: [],
+    steps: [],
+    taskMemoryWriteProposals: partial.taskMemoryWriteProposals ?? [],
+    verifications: [],
+  };
+}
