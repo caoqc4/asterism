@@ -677,7 +677,8 @@ Current implementation:
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and
-  the `AI 项目拆解自检.md` task record.
+  the `AI 项目拆解自检.md` task record. The project-decomposition timeline now
+  carries both created child task ids and the task record path as evidence.
 
 Remaining work:
 

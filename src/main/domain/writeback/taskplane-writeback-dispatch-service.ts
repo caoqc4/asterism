@@ -187,18 +187,21 @@ export class TaskplaneWritebackDispatchService {
     })).catch(() => null);
 
     const recordContent = buildProjectDecompositionRecordContent(input);
+    let taskRecordPath: string | null = null;
     if (recordContent) {
-      await Promise.resolve(this.taskFileRepository.create({
+      const record = await Promise.resolve(this.taskFileRepository.create({
         taskId: input.parentTaskId,
         name: 'AI 项目拆解自检.md',
         path: 'Task Records/AI 项目拆解自检.md',
         kind: 'file',
         content: recordContent,
       })).catch(() => null);
+      taskRecordPath = record?.path ?? null;
     }
 
     return {
       createdTasks,
+      taskRecordPath,
       updatedTask,
     };
   }

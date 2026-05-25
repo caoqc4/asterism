@@ -45,6 +45,7 @@ export type TaskplaneWritebackDispatchResult =
       status: 'completed';
       createdTasks?: TaskListItemRecord[];
       successMessage: string;
+      taskRecordPath?: string | null;
       updatedTask?: TaskListItemRecord | null;
     };
 
@@ -91,9 +92,10 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
       payload: {
         ...plan.timeline.payload,
         childTaskIds: result.createdTasks.map((task) => task.id),
+        ...(result.taskRecordPath ? { recordPath: result.taskRecordPath } : {}),
       },
     });
-    return completed(plan, result.updatedTask ?? null, result.createdTasks);
+    return completed(plan, result.updatedTask ?? null, result.createdTasks, result.taskRecordPath ?? null);
   }
 
   if (plan.action === 'decision.create') {
@@ -124,12 +126,14 @@ function completed(
   plan: TaskplaneWritebackApplyPlan,
   updatedTask: TaskListItemRecord | null = null,
   createdTasks?: TaskListItemRecord[],
+  taskRecordPath?: string | null,
 ): Extract<TaskplaneWritebackDispatchResult, { status: 'completed' }> {
   return {
     action: plan.action,
     ...(createdTasks ? { createdTasks } : {}),
     status: 'completed',
     successMessage: plan.successMessage,
+    ...(taskRecordPath ? { taskRecordPath } : {}),
     updatedTask,
   };
 }

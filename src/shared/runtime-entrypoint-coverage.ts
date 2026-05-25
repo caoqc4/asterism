@@ -815,7 +815,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_draft',
       'panel_event_allowlist',
     ],
-    notes: 'Confirmation is product-harness durable write through TaskplaneWritebackApplyPlan: it rechecks proposed child drafts before creating real child tasks, child and parent criteria, dependencies, parent updates, project timeline evidence, and task records. It does not depend on which AI runtime produced the draft. Starting or entering a child task remains a separate subtask_start boundary.',
+    notes: 'Confirmation is product-harness durable write through TaskplaneWritebackApplyPlan: it rechecks proposed child drafts before creating real child tasks, child and parent criteria, dependencies, parent updates, project timeline evidence with child ids and record path, and task records. It does not depend on which AI runtime produced the draft. Starting or entering a child task remains a separate subtask_start boundary.',
   },
   {
     id: 'taskplane.writebackApply',

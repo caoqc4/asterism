@@ -34,6 +34,7 @@ export type TaskplaneSubtaskCreateManyInput = {
 
 export type TaskplaneSubtaskCreateManyResult = {
   createdTasks: TaskListItemRecord[];
+  taskRecordPath?: string | null;
   updatedTask?: TaskListItemRecord | null;
 };
 

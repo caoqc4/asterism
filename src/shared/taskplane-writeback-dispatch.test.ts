@@ -193,6 +193,7 @@ describe('Taskplane writeback dispatch', () => {
         { id: 'child_1', title: '确认网站范围' },
         { id: 'child_2', title: '整理信息架构' },
       ],
+      taskRecordPath: 'Task Records/AI 项目拆解自检.md',
       updatedTask: {
         id: 'task_project',
         taskType: 'project',
@@ -244,6 +245,7 @@ describe('Taskplane writeback dispatch', () => {
     expect(recordTimelineEvent).toHaveBeenCalledWith('task_project', 'panel.project_decomposed', {
       childTaskIds: ['child_1', 'child_2'],
       evidenceRunId: 'run_5',
+      recordPath: 'Task Records/AI 项目拆解自检.md',
       source: 'agent_cli_decomposition',
       subtaskCount: 2,
     });
@@ -254,6 +256,7 @@ describe('Taskplane writeback dispatch', () => {
         { id: 'child_2' },
       ],
       status: 'completed',
+      taskRecordPath: 'Task Records/AI 项目拆解自检.md',
       updatedTask: {
         id: 'task_project',
       },

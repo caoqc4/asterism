@@ -126,10 +126,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Run verification and memory proposals remain product-controlled.',
     ],
     gaps: [
-      'Project child creation remains intentionally task-bound to the decomposition draft surface; future API decomposition should reuse the same apply-plan contract.',
+      'Workspace-write side effects still need dedicated promotion evidence before right-panel run closure can be marked fully covered.',
     ],
     nextActions: [
-      'Keep future non-panel runtime surfaces on TaskplaneWritebackApprovalItem and main-side writeback dispatch instead of introducing a second persistence path.',
+      'Keep future workspace-write promotion on artifact, task-file, or patch-review evidence surfaces before product-controlled persistence.',
     ],
   },
   {
@@ -165,7 +165,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Subtask draft validation blocks underspecified or tiny proposals before confirmation.',
       'Subtask draft confirmation is represented as a subtask.create_many writeback apply plan and dispatched through the main-side task service adapter.',
       'The retained Agent API decomposition confirmation path now builds an agent_api_decomposition subtask.create_many apply plan instead of writing child tasks directly from the renderer.',
-      'The main-side subtask apply path promotes the parent to a project, creates planned child tasks, stores child and parent completion criteria, stores matched dependencies, records the project timeline, and writes an AI 项目拆解自检 task record when review context exists.',
+      'The main-side subtask apply path promotes the parent to a project, creates planned child tasks, stores child and parent completion criteria, stores matched dependencies, records the project timeline with childTaskIds and recordPath evidence, and writes an AI 项目拆解自检 task record when review context exists.',
     ],
     gaps: [
       'Future Agent API decomposition generation is still not the primary task-bound runtime path; if promoted, it should surface the same reversible proposal card before confirmation.',

@@ -435,6 +435,7 @@ describe('TaskplaneWritebackDispatchService', () => {
       payload: {
         childTaskIds: ['child_1', 'child_2'],
         evidenceRunId: 'run_5',
+        recordPath: 'Task Records/AI 项目拆解自检.md',
         source: 'agent_cli_decomposition',
         subtaskCount: 2,
       },
@@ -447,6 +448,7 @@ describe('TaskplaneWritebackDispatchService', () => {
         { id: 'child_1', state: 'planned' },
         { id: 'child_2', state: 'planned' },
       ],
+      taskRecordPath: 'Task Records/AI 项目拆解自检.md',
       status: 'completed',
       updatedTask: {
         id: 'task_project',
@@ -458,7 +460,14 @@ describe('TaskplaneWritebackDispatchService', () => {
 
 function taskFileRepository() {
   return {
-    create: vi.fn(),
+    create: vi.fn().mockImplementation(async (input) => ({
+      id: 'task_file_1',
+      createdAt: '2026-05-25T00:00:00.000Z',
+      updatedAt: '2026-05-25T00:00:00.000Z',
+      ...input,
+      path: input.path ?? input.name,
+      content: input.content ?? '',
+    })),
     findById: vi.fn(),
     update: vi.fn(),
   };
