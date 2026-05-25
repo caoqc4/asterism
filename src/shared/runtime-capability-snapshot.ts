@@ -87,7 +87,7 @@ export function describeRuntimeExecutionSelection(mode: AiRuntimeMode | null | u
       kind: 'agent_api',
       label: 'Agent API Runtime',
       mode,
-      reason: 'Agent API Runtime is selected in config but remains a peer execution runtime planned for a later version.',
+      reason: 'Agent API Runtime is selected for supported provider-backed phases: chat, decomposition, decision, and scheduled brief. Task execution run remains deferred.',
     };
   }
   return {

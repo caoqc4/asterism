@@ -121,6 +121,7 @@ describe('runtime capability snapshot', () => {
       kind: 'agent_api',
       label: 'Agent API Runtime',
       mode: 'api',
+      reason: 'Agent API Runtime is selected for supported provider-backed phases: chat, decomposition, decision, and scheduled brief. Task execution run remains deferred.',
     });
     expect(agentApiSnapshot.summary).toContain('runtime=api');
     expect(agentApiSnapshot.summary).toContain('runtimeKind=agent_api');

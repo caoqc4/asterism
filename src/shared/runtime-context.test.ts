@@ -404,7 +404,8 @@ describe('runtime context manifest', () => {
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('capability:runtime_capabilities');
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('selectedRuntime=Agent API Runtime');
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('runtimeExecutable=no');
-    expect(formatRuntimeContextManifestForStep(manifest)).toContain('Agent API Runtime is selected in config');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('supported provider-backed phases');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('Task execution run remains deferred');
   });
 
   it('formats runtime capability context as counts without exposing hidden optional catalogue entries', () => {
