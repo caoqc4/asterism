@@ -1439,6 +1439,68 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).not.toHaveBeenCalled();
   });
 
+  it('previews sandbox review from a confirmed patch artifact without writing workspace files', async () => {
+    servicesMock.aiConfigService.getStatus.mockResolvedValueOnce({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'keychain',
+      provider: 'openai-compatible',
+      model: 'relay-model',
+      baseUrl: 'https://relay.example.com/v1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/config.json',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    });
+    servicesMock.artifactRepository.findById.mockResolvedValueOnce({
+      id: 'artifact_patch_1',
+      taskId: 'task_1',
+      sourceType: 'run',
+      sourceId: 'run_agent_cli_1',
+      kind: 'patch',
+      title: 'review.patch',
+      content: JSON.stringify({
+        diff: [
+          'diff --git a/src/example.ts b/src/example.ts',
+          '--- a/src/example.ts',
+          '+++ b/src/example.ts',
+          '@@ -1 +1 @@',
+          '-old',
+          '+new',
+        ].join('\n'),
+        files: ['src/example.ts'],
+        summary: 'Update example implementation.',
+      }),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ artifactId: string; requestedChecks: Array<'test'> }],
+      unknown
+    >('artifact:previewSandboxPatchReview');
+
+    await expect(handler({}, {
+      artifactId: 'artifact_patch_1',
+      requestedChecks: ['test'],
+    })).resolves.toMatchObject({
+      artifactId: 'artifact_patch_1',
+      changedFiles: ['src/example.ts'],
+      checks: ['test'],
+      noWorkspaceFilesWritten: true,
+      sourceKind: 'imported_patch_artifact',
+      status: 'ready',
+      taskId: 'task_1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+    expect(servicesMock.artifactRepository.update).not.toHaveBeenCalled();
+    expect(servicesMock.taskFileRepository.update).not.toHaveBeenCalled();
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+  });
+
   it('imports legacy work habits without emitting task events', async () => {
     servicesMock.workHabitService.importLegacy.mockResolvedValue({
       version: 3,

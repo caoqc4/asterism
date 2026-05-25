@@ -14,6 +14,7 @@ describe('runtime entrypoint IPC coverage', () => {
       .flatMap((entry) => entry.ipcChannels ?? []);
     const readOnlyChannels = [
       'PING_CHANNEL',
+      'artifact:previewSandboxPatchReview',
       'brief:getHomeData',
       'decision:list',
       'decision:listJudgments',
@@ -53,6 +54,7 @@ describe('runtime entrypoint IPC coverage', () => {
       'decision:draft',
       'decision:list',
       'decision:listJudgments',
+      'artifact:previewSandboxPatchReview',
       'taskFile:list',
       'workHabit:getSnapshot',
     ];

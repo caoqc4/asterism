@@ -130,6 +130,7 @@ import type {
 import type {
   CancelAgentCliRunInput,
   CancelAgentCliRunResult,
+  CodeAgentAllowedCheck,
   CreateAgentCliRunInput,
   CreateCodeAgentRunInput,
   CreateRunInput,
@@ -179,6 +180,34 @@ export type ApplyTaskplaneWritebackInput = {
   plan: TaskplaneWritebackApplyPlan;
   taskId: string;
 };
+
+export type PreviewPatchArtifactSandboxReviewInput = {
+  artifactId: string;
+  requestedChecks?: CodeAgentAllowedCheck[];
+};
+
+export type PatchArtifactSandboxReviewPreview =
+  | {
+      artifactId: string;
+      reason: string;
+      status: 'blocked';
+      summary: string;
+      noWorkspaceFilesWritten: true;
+    }
+  | {
+      artifactId: string;
+      changedFiles: string[];
+      checks: CodeAgentAllowedCheck[];
+      decisionTitle: string;
+      idempotencyKey: string;
+      noWorkspaceFilesWritten: true;
+      sourceId: string;
+      sourceKind: string;
+      status: 'ready';
+      summary: string;
+      taskId: string;
+      workspaceRoot: string;
+    };
 
 export type ElectronApi = {
   ping: () => Promise<PingResponse>;
@@ -253,6 +282,9 @@ export type ElectronApi = {
   createManualArtifact: (input: CreateManualArtifactInput) => Promise<ArtifactRecord>;
   updateArtifact: (input: UpdateArtifactInput) => Promise<ArtifactRecord>;
   deleteArtifact: (id: string) => Promise<ArtifactRecord>;
+  previewPatchArtifactSandboxReview?: (
+    input: PreviewPatchArtifactSandboxReviewInput,
+  ) => Promise<PatchArtifactSandboxReviewPreview>;
   listTaskFiles: (taskId: string) => Promise<TaskFileRecord[]>;
   createTaskFile: (input: CreateTaskFileInput) => Promise<TaskFileRecord>;
   updateTaskFile: (input: UpdateTaskFileInput) => Promise<TaskFileRecord>;

@@ -53,6 +53,7 @@ const api: ElectronApi = {
   createManualArtifact: (input) => ipcRenderer.invoke('artifact:createManual', input),
   updateArtifact: (input) => ipcRenderer.invoke('artifact:update', input),
   deleteArtifact: (id) => ipcRenderer.invoke('artifact:delete', id),
+  previewPatchArtifactSandboxReview: (input) => ipcRenderer.invoke('artifact:previewSandboxPatchReview', input),
   listTaskFiles: (taskId) => ipcRenderer.invoke('taskFile:list', taskId),
   createTaskFile: (input) => ipcRenderer.invoke('taskFile:create', input),
   updateTaskFile: (input) => ipcRenderer.invoke('taskFile:update', input),

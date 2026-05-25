@@ -67,6 +67,7 @@ function getExposedApi() {
     createManualArtifact: (input: unknown) => Promise<unknown>;
     updateArtifact: (input: unknown) => Promise<unknown>;
     deleteArtifact: (id: string) => Promise<unknown>;
+    previewPatchArtifactSandboxReview?: (input: unknown) => Promise<unknown>;
     listTaskFiles: (taskId: string) => Promise<unknown>;
     createTaskFile: (input: unknown) => Promise<unknown>;
     updateTaskFile: (input: unknown) => Promise<unknown>;
@@ -191,6 +192,10 @@ describe('preload bridge', () => {
     const updateArtifactInput = {
       id: 'artifact_1',
       title: 'notes-final.md',
+    };
+    const previewPatchArtifactSandboxReviewInput = {
+      artifactId: 'artifact_patch_1',
+      requestedChecks: ['test'],
     };
     const createTaskFileInput = {
       taskId: 'task_1',
@@ -321,6 +326,7 @@ describe('preload bridge', () => {
     await api.createManualArtifact(createManualArtifactInput);
     await api.updateArtifact(updateArtifactInput);
     await api.deleteArtifact('artifact_1');
+    await api.previewPatchArtifactSandboxReview?.(previewPatchArtifactSandboxReviewInput);
     await api.listTaskFiles('task_1');
     await api.createTaskFile(createTaskFileInput);
     await api.updateTaskFile(updateTaskFileInput);
@@ -398,6 +404,7 @@ describe('preload bridge', () => {
       ['artifact:createManual', createManualArtifactInput],
       ['artifact:update', updateArtifactInput],
       ['artifact:delete', 'artifact_1'],
+      ['artifact:previewSandboxPatchReview', previewPatchArtifactSandboxReviewInput],
       ['taskFile:list', 'task_1'],
       ['taskFile:create', createTaskFileInput],
       ['taskFile:update', updateTaskFileInput],

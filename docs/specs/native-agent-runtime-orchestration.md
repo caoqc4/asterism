@@ -262,6 +262,10 @@ Taskplane currently has a working native CLI execution backend:
   existing sandbox patch review planner. This creates a path from native CLI
   patch evidence into sandbox review and promotion Decisions without granting
   direct workspace writes.
+- Tasks file workspace exposes that path as a patch artifact "沙箱预检" action.
+  The preview returns changed files, requested checks, idempotency evidence, and
+  an explicit no-workspace-write guarantee before any sandbox review run or
+  promotion Decision is created.
 - Completed native run chat summaries mention both web research and local
   command/workspace activity when those events were recorded.
 - Codex JSONL `command_execution` items are projected as `shell_command` Run
@@ -304,9 +308,9 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   source, decision, subtask, task-file, and artifact writes, and Task Dynamics
   can approve Run-detail non-subtask writeback proposals through the same
   dispatch adapter outside the right panel;
-- confirmed patch artifacts have a planner-level path into sandbox patch review,
-  but still need a user-facing action that decides evidence-only vs sandbox
-  review vs task-file/note preservation;
+- confirmed patch artifacts have a user-facing sandbox review preview path, but
+  still need the follow-through action that runs sandbox review and converts
+  accepted evidence into a promotion Decision;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 

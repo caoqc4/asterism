@@ -1049,6 +1049,8 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const [fileFilter, setFileFilter] = useState<TaskFileFilter>('all');
   const [showNewFileMenu, setShowNewFileMenu] = useState(false);
   const [fileContextMenu, setFileContextMenu] = useState<FileContextMenuState | null>(null);
+  const [patchReviewPreviewMessages, setPatchReviewPreviewMessages] = useState<Record<string, string>>({});
+  const [previewingPatchReviewArtifactId, setPreviewingPatchReviewArtifactId] = useState<string | null>(null);
   const [fileContentOverrides, setFileContentOverrides] = useState<Record<string, string>>(() => loadTaskFileContentOverrides());
   const [localTaskFiles, setLocalTaskFiles] = useState<Record<string, LocalTaskFileRecord[]>>(() => loadLocalTaskFiles());
   const [pendingFileSwitch, setPendingFileSwitch] = useState<PendingFileSwitch>(null);
@@ -1627,6 +1629,11 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   });
   const selectedFile = taskFiles.find((file) => file.id === selectedFileId) ?? null;
   const contextMenuFile = fileContextMenu ? taskFiles.find((file) => file.id === fileContextMenu.fileId) ?? null : null;
+  const selectedPatchReviewMessage = selectedFile?.artifactId
+    ? patchReviewPreviewMessages[selectedFile.artifactId] ?? null
+    : null;
+  const selectedPatchReviewAvailable = isPatchArtifactFile(selectedFile)
+    && Boolean(window.api?.previewPatchArtifactSandboxReview);
   const directChildTasks = selectedTask
     ? orderedChildrenForTask(selectedTask, allTasks)
     : [];
@@ -1710,6 +1717,51 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     pendingDecisions,
   ).length;
   const taskDirectoryGroups = buildTaskDirectoryGroups(filtered, allTasks);
+
+  async function previewPatchArtifactSandboxReview(file: VirtualTaskFile | null) {
+    if (!isPatchArtifactFile(file) || !window.api?.previewPatchArtifactSandboxReview) return;
+
+    const artifactId = file.artifactId;
+    setPreviewingPatchReviewArtifactId(artifactId);
+    setPatchReviewPreviewMessages((current) => ({
+      ...current,
+      [artifactId]: '正在生成沙箱预检计划...',
+    }));
+
+    try {
+      const result = await window.api.previewPatchArtifactSandboxReview({
+        artifactId,
+        requestedChecks: ['test', 'lint'],
+      });
+      const message = result.status === 'ready'
+        ? [
+            '沙箱预检就绪',
+            result.changedFiles.length ? `文件：${result.changedFiles.join(', ')}` : null,
+            result.checks.length ? `检查：${result.checks.join(', ')}` : null,
+            '未写入工作区',
+          ].filter(Boolean).join('；')
+        : `沙箱预检阻塞：${result.reason}`;
+      setPatchReviewPreviewMessages((current) => ({
+        ...current,
+        [artifactId]: message,
+      }));
+      await recordPanelTimelineEvent(file.taskId, 'panel.artifact_written', {
+        artifactId,
+        noWorkspaceFilesWritten: true,
+        source: 'tasks_page',
+        status: result.status,
+        summary: result.summary,
+        type: 'sandbox_review_preview',
+      });
+    } catch (error) {
+      setPatchReviewPreviewMessages((current) => ({
+        ...current,
+        [artifactId]: `沙箱预检失败：${error instanceof Error ? error.message : '未知错误'}`,
+      }));
+    } finally {
+      setPreviewingPatchReviewArtifactId(null);
+    }
+  }
 
   useEffect(() => {
     const selectedFileContext = selectedObject === 'file' && selectedFile
@@ -2769,6 +2821,8 @@ function resetCaptureDraft() {
               onRename={renameSelectedFile}
               onMove={moveSelectedFile}
               onDelete={deleteSelectedFile}
+              onPreviewPatchReview={selectedPatchReviewAvailable ? () => previewPatchArtifactSandboxReview(selectedFile) : undefined}
+              patchReviewBusy={selectedFile?.artifactId === previewingPatchReviewArtifactId}
             />
           ) : selectedObject === 'task-create' ? (
             <div className="tasks-toolbar-title">
@@ -2902,6 +2956,7 @@ function resetCaptureDraft() {
               file={selectedFile}
               draft={fileDraft}
               dirty={fileDirty}
+              notice={selectedPatchReviewMessage}
               onChange={(value) => {
                 setFileDraft(value);
                 setFileDirty(value !== selectedFile.content);
@@ -3060,6 +3115,7 @@ function resetCaptureDraft() {
           onMove={() => { closeFileContextMenu(); void moveFile(contextMenuFile); }}
           onDelete={() => { closeFileContextMenu(); void deleteFile(contextMenuFile); }}
           onCopyPath={() => { copyFilePath(contextMenuFile); closeFileContextMenu(); }}
+          onPreviewPatchReview={() => { closeFileContextMenu(); void previewPatchArtifactSandboxReview(contextMenuFile); }}
           onToggleSourceKey={() => { closeFileContextMenu(); void toggleSourceKey(contextMenuFile); }}
           onArchiveSource={() => { closeFileContextMenu(); void archiveSourceFile(contextMenuFile); }}
         />
@@ -3312,6 +3368,10 @@ function isOpenableTaskFile(file: VirtualTaskFile): boolean {
   return file.kind !== 'records_folder' && file.kind !== 'local_folder';
 }
 
+function isPatchArtifactFile(file: VirtualTaskFile | null): file is VirtualTaskFile & { artifactId: string } {
+  return Boolean(file?.artifactId && file.kind === 'artifact' && file.artifactKind === 'patch');
+}
+
 function runtimeSurfaceForFile(file: VirtualTaskFile) {
   return classifyRuntimeFileSurface({
     kind: file.kind,
@@ -3481,6 +3541,8 @@ function FileHeader({
   onRename,
   onMove,
   onDelete,
+  onPreviewPatchReview,
+  patchReviewBusy = false,
 }: {
   file: VirtualTaskFile;
   dirty: boolean;
@@ -3489,6 +3551,8 @@ function FileHeader({
   onRename: () => void;
   onMove: () => void;
   onDelete: () => void;
+  onPreviewPatchReview?: () => void | Promise<void>;
+  patchReviewBusy?: boolean;
 }) {
   const immutableFile = file.kind === 'task_record' || file.kind === 'source';
   const fileLocationLabel = taskFileKindLabel(file);
@@ -3503,6 +3567,11 @@ function FileHeader({
       <button className="btn sm ghost" onClick={onRename} disabled={immutableFile}>重命名</button>
       <button className="btn sm ghost" onClick={onMove} disabled={immutableFile}>移动</button>
       <button className="btn sm ghost" onClick={onDelete} disabled={immutableFile}>删除</button>
+      {onPreviewPatchReview && (
+        <button className="btn sm ghost" onClick={() => void onPreviewPatchReview()} disabled={patchReviewBusy}>
+          {patchReviewBusy ? '预检中...' : '沙箱预检'}
+        </button>
+      )}
       <button className="btn sm primary" onClick={() => void onSave()} disabled={!dirty}>保存</button>
     </div>
   );
@@ -3529,11 +3598,13 @@ function FileWorkspace({
   file,
   draft,
   dirty,
+  notice,
   onChange,
 }: {
   file: VirtualTaskFile;
   draft: string;
   dirty: boolean;
+  notice?: string | null;
   onChange: (value: string) => void;
 }) {
   return (
@@ -3545,6 +3616,11 @@ function FileWorkspace({
       {!file.editable && (
         <div className="file-readonly-note">
           此文件当前仅支持只读预览；非文本或受保护文件不会在 v1 中强制内联编辑。
+        </div>
+      )}
+      {notice && (
+        <div className="file-readonly-note">
+          {notice}
         </div>
       )}
       <textarea
@@ -4974,6 +5050,7 @@ interface FileContextMenuProps {
   onMove: () => void;
   onDelete: () => void;
   onCopyPath: () => void;
+  onPreviewPatchReview: () => void;
   onToggleSourceKey: () => void;
   onArchiveSource: () => void;
 }
@@ -4989,6 +5066,7 @@ function FileContextMenu({
   onMove,
   onDelete,
   onCopyPath,
+  onPreviewPatchReview,
   onToggleSourceKey,
   onArchiveSource,
 }: FileContextMenuProps) {
@@ -4996,6 +5074,7 @@ function FileContextMenu({
   const canRename = canEditLocal || file.kind === 'artifact';
   const canMove = canEditLocal;
   const canDelete = canEditLocal || file.kind === 'artifact';
+  const canPreviewPatchReview = isPatchArtifactFile(file) && Boolean(window.api?.previewPatchArtifactSandboxReview);
   const fileClass = classifyTaskFile(file);
   const isSourceMaterial = fileClass === 'source';
 
@@ -5008,6 +5087,11 @@ function FileContextMenu({
       <button className="ctx-menu-item" onClick={onOpen}>
         打开
       </button>
+      {canPreviewPatchReview && (
+        <button className="ctx-menu-item" onClick={onPreviewPatchReview}>
+          沙箱预检
+        </button>
+      )}
       {isSourceMaterial && (
         <>
           <button className="ctx-menu-item" onClick={onToggleSourceKey}>

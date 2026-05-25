@@ -5,6 +5,7 @@ import type {
   ApplyTaskplaneWritebackInput,
   ChatInput,
   PingResponse,
+  PreviewPatchArtifactSandboxReviewInput,
   ProjectDecompositionInput,
 } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
@@ -91,6 +92,7 @@ import {
   normalizeProjectDecompositionDraft,
 } from '../../shared/project-decomposition-draft.js';
 import { GmailOAuthControlService } from '../domain/external-access/gmail-oauth-control-service.js';
+import { SandboxPatchReviewPlanningService } from '../domain/run/sandbox-patch-review-planning-service.js';
 
 const PING_CHANNEL = 'app:ping';
 
@@ -561,6 +563,49 @@ export function registerIpcHandlers(): void {
     const deleted = await getServices().artifactRepository.delete(id);
     emitAppEvent('task.changed', deleted.taskId);
     return deleted;
+  });
+
+  ipcMain.handle('artifact:previewSandboxPatchReview', async (
+    _event,
+    input: PreviewPatchArtifactSandboxReviewInput,
+  ) => {
+    const artifact = await getServices().artifactRepository.findById(input.artifactId);
+    if (!artifact) {
+      throw new Error(`Artifact not found: ${input.artifactId}`);
+    }
+
+    const aiStatus = await getServices().aiConfigService.getStatus();
+    const plan = new SandboxPatchReviewPlanningService().previewFromPatchArtifact({
+      artifact,
+      featureFlags: aiStatus.featureFlags,
+      requestedScripts: input.requestedChecks,
+      workspaceRoot: aiStatus.workspaceRoot,
+    });
+
+    if (plan.status === 'blocked') {
+      return {
+        artifactId: artifact.id,
+        noWorkspaceFilesWritten: true,
+        reason: plan.reason,
+        status: 'blocked' as const,
+        summary: plan.summary,
+      };
+    }
+
+    return {
+      artifactId: artifact.id,
+      changedFiles: plan.patchDraft.files,
+      checks: plan.requestBundle.checkPlan.scripts,
+      decisionTitle: plan.decisionTitle,
+      idempotencyKey: plan.requestBundle.audit.idempotencyKey,
+      noWorkspaceFilesWritten: true,
+      sourceId: plan.requestBundle.audit.patchDraftSource?.sourceId ?? artifact.id,
+      sourceKind: plan.requestBundle.audit.patchDraftSource?.sourceKind ?? 'imported_patch_artifact',
+      status: 'ready' as const,
+      summary: plan.summary,
+      taskId: artifact.taskId,
+      workspaceRoot: plan.requestBundle.audit.workspaceRoot,
+    };
   });
 
   ipcMain.handle('taskFile:list', async (_event, taskId: string) => {

@@ -329,13 +329,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Native CLI artifact.propose Write Intent is parsed into a confirmed task artifact proposal and saved through the main-side ArtifactRepository port as run-backed evidence.',
       'Native CLI artifact.propose kind=patch is validated as reviewable diff evidence and routed to ArtifactRepository.createPatchFromRun after confirmation.',
       'Run-backed patch artifacts can now feed SandboxPatchReviewPlanningService as imported_patch_artifact sources, keeping workspace promotion behind sandbox review and Decision approval.',
+      'Tasks file workspace now surfaces a confirmed patch artifact sandbox-review preview action through main-side IPC, returning changed files, checks, idempotency, and an explicit no-workspace-write guarantee.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
     ],
     gaps: [
-      'Workspace-write and sandbox promotion paths still need a user-facing action that chooses whether a confirmed patch artifact should remain evidence-only, become a task file/note, or enter sandbox patch review.',
+      'Workspace-write and sandbox promotion paths still need the follow-through action that runs sandbox review and converts accepted evidence into a promotion Decision.',
     ],
     nextActions: [
-      'Surface a confirmed-patch-artifact review action that calls the imported_patch_artifact sandbox review planner before creating any promotion Decision.',
+      'Add the explicit sandbox review execution action after preview, keeping final workspace promotion behind Decision approval.',
     ],
   },
   {
