@@ -1134,7 +1134,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       .catch(() => {});
   }
 
-  function reloadRunsForTask(taskId: string | null = selectedId) {
+  function reloadRunsForTask(taskId: string | null = selectedIdRef.current) {
     if (!taskId || !window.api?.listRuns) {
       setSelectedRuns([]);
       setSelectedRunDetailsById({});
@@ -1209,7 +1209,10 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         }
       }
       if (event.type === 'run.changed') reloadRunsForTask();
-      if (event.type === 'decision.changed') reloadPendingDecisions();
+      if (event.type === 'decision.changed') {
+        reloadPendingDecisions();
+        reloadRunsForTask();
+      }
     });
     return () => unsub?.();
   }, []);
