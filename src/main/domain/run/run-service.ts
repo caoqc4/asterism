@@ -39,6 +39,7 @@ import { RunRepository } from '../../db/repositories/run-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
+import type { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import { TaskService } from '../task/task-service.js';
 import { AgentSessionStore } from './agent-session-store.js';
 import {
@@ -83,6 +84,7 @@ export class RunService {
       agentSessionStore,
     ),
     private readonly workHabitService: WorkHabitService | null = null,
+    private readonly sandboxPatchPromotionRepository: Pick<SandboxPatchPromotionRepository, 'listForRun'> | null = null,
   ) {}
 
   list(): Promise<RunRecord[]> {
@@ -105,6 +107,9 @@ export class RunService {
       artifacts: await this.artifactRepository.listForRun(runId),
       steps,
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
+      sandboxPatchPromotions: this.sandboxPatchPromotionRepository
+        ? await this.sandboxPatchPromotionRepository.listForRun(runId)
+        : [],
       agentSessions: await this.agentSessionStore.listForRun(runId),
       taskMemoryGuidance,
       taskMemoryWriteProposals: taskMemory.writeProposals,

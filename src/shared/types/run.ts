@@ -1,5 +1,6 @@
 import type { AgentSessionRecord } from './agent-execution.js';
 import type { ArtifactRecord } from './artifact.js';
+import type { SandboxPatchPromotionRecord } from './sandbox-patch-promotion.js';
 import type { RuntimeEventRecord, RuntimeReplayGroup } from '../runtime-event-record.js';
 import type { TaskMemoryGuidanceState } from '../task-memory-guidance-state.js';
 import type { TaskMemoryWriteProposal } from '../task-memory-write-proposal.js';
@@ -49,6 +50,7 @@ export type RunDetailRecord = RunRecord & {
   artifacts?: ArtifactRecord[];
   steps?: RunStepRecord[];
   checkpoints?: RunCheckpointRecord[];
+  sandboxPatchPromotions?: SandboxPatchPromotionRecord[];
   agentSessions?: AgentSessionRecord[];
   verifications?: RunVerificationRecord[];
   runtimeEvents?: RuntimeEventRecord[];

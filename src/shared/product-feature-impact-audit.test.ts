@@ -59,6 +59,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('configured workspace for native guidance');
     expect(rightPanel?.evidence.join(' ')).toContain('workspace write candidates that require reviewable promotion evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService');
+    expect(rightPanel?.evidence.join(' ')).toContain('applied or blocked promotion status');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
@@ -98,8 +100,12 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchReviewPlanningService as imported_patch_artifact sources');
     expect(taskFiles?.evidence.join(' ')).toContain('sandbox-review preview action through main-side IPC');
     expect(taskFiles?.evidence.join(' ')).toContain('run sandbox review from a confirmed patch artifact');
+    expect(taskFiles?.evidence.join(' ')).toContain('enableSandboxPatchPromotionApply');
+    expect(taskFiles?.evidence.join(' ')).toContain('sandboxPatchPromotions');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
     expect(taskFiles?.gaps.join(' ')).toContain('final apply path is disabled by default');
+    expect(rightPanel?.gaps.join(' ')).not.toContain('still need an apply implementation');
+    expect(rightPanel?.gaps.join(' ')).not.toContain('post-apply status projection');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Task-file and artifact Write Intent should be represented explicitly');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Artifact Write Intent still needs a dedicated artifact proposal/apply plan');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');

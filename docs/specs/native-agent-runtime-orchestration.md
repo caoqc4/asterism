@@ -328,8 +328,11 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   can approve Run-detail non-subtask writeback proposals through the same
   dispatch adapter outside the right panel;
 - confirmed patch artifacts have user-facing preview and sandbox-review run
-  paths; final workspace application remains Decision-gated and disabled by
-  default until the operator-facing promotion/apply status is clearer;
+  paths; a feature-flagged SandboxPatchPromotionApplyService can apply approved
+  promotion checkpoints after preflight, and task file workspace views project
+  applied or blocked promotion status from Run detail; final workspace
+  application remains disabled by default and still needs a clearer
+  operator-facing apply workflow before it becomes a normal happy path;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 

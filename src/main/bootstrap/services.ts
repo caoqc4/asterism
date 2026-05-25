@@ -173,6 +173,7 @@ const runService = new RunService(
   runVerificationRepository,
   undefined,
   workHabitService,
+  sandboxPatchPromotionRepository,
 );
 const browserEvidencePersister = new BrowserEvidencePersister(
   artifactRepository,

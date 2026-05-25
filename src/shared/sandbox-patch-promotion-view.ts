@@ -1,6 +1,7 @@
 import type { DecisionRecord, DecisionStatus } from './types/decision.js';
 import type { RunCheckpointStatus, RunDetailRecord } from './types/run.js';
 import { parseRunCheckpointPayload } from './types/run-checkpoint-payload.js';
+import type { SandboxPatchPromotionRecord } from './types/sandbox-patch-promotion.js';
 
 export type SandboxPatchPromotionViewTone = 'blocked' | 'completed' | 'pending' | 'ready';
 
@@ -13,6 +14,7 @@ export type SandboxPatchPromotionView = {
   detail: string;
   expectedFiles: string[];
   label: string;
+  promotionStatus: SandboxPatchPromotionRecord['status'] | null;
   title: string;
   tone: SandboxPatchPromotionViewTone;
 };
@@ -28,6 +30,11 @@ export function projectSandboxPatchPromotionViews(input: {
       .map((decision) => [decision.sourceId!, decision]),
   );
   const views: SandboxPatchPromotionView[] = [];
+  const promotionsByCheckpoint = new Map(
+    input.runDetails
+      .flatMap((detail) => detail.sandboxPatchPromotions ?? [])
+      .map((promotion) => [promotion.checkpointId, promotion] as const),
+  );
 
   for (const runDetail of input.runDetails) {
     for (const checkpoint of runDetail.checkpoints ?? []) {
@@ -53,6 +60,7 @@ export function projectSandboxPatchPromotionViews(input: {
         checkpointStatus: checkpoint.status,
         decision,
         expectedFiles,
+        promotion: promotionsByCheckpoint.get(checkpoint.id) ?? null,
         title: decision?.title
           ?? (typeof payload.decisionTitle === 'string' ? payload.decisionTitle : null)
           ?? 'sandbox patch promotion',
@@ -69,6 +77,7 @@ function buildSandboxPatchPromotionView(params: {
   checkpointStatus: RunCheckpointStatus;
   decision: DecisionRecord | null;
   expectedFiles: string[];
+  promotion: SandboxPatchPromotionRecord | null;
   title: string;
 }): SandboxPatchPromotionView {
   const fileLabel = params.expectedFiles.length
@@ -81,8 +90,28 @@ function buildSandboxPatchPromotionView(params: {
     decisionId: params.decision?.id ?? null,
     decisionStatus: params.decision?.status ?? null,
     expectedFiles: params.expectedFiles,
+    promotionStatus: params.promotion?.status ?? null,
     title: params.title,
   };
+
+  if (params.promotion?.status === 'applied') {
+    return {
+      ...base,
+      detail: `${fileLabel}；已通过 promotion apply 服务写入工作区${params.promotion.appliedAt ? `（${params.promotion.appliedAt}）` : ''}。`,
+      label: 'promotion 已应用',
+      tone: 'completed',
+    };
+  }
+
+  if (params.promotion?.status === 'blocked') {
+    const reason = params.promotion.blockedReasons.join(' ') || params.promotion.auditSummary || 'apply 服务阻塞。';
+    return {
+      ...base,
+      detail: `${fileLabel}；promotion apply 被阻塞：${reason}`,
+      label: 'promotion apply 被阻塞',
+      tone: 'blocked',
+    };
+  }
 
   if (params.checkpointStatus === 'cancelled' || params.decision?.status === 'cancelled') {
     return {

@@ -79,6 +79,16 @@ export class SandboxPatchPromotionRepository {
     return row ? toRecord(row) : null;
   }
 
+  async listForRun(runId: string): Promise<SandboxPatchPromotionRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(sandboxPatchPromotions)
+      .where(eq(sandboxPatchPromotions.runId, runId));
+
+    return rows.map(toRecord);
+  }
+
   async findBySourceDigest(
     sourceId: string,
     patchDigest: string,

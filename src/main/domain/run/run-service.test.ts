@@ -330,6 +330,9 @@ describe('RunService', () => {
       upsert: vi.fn(),
       listForRun: vi.fn().mockResolvedValue([{ id: 'run_verification_1' }]),
     };
+    const sandboxPatchPromotionRepository = {
+      listForRun: vi.fn().mockResolvedValue([{ checkpointId: 'run_checkpoint_1', status: 'applied' }]),
+    };
     const service = new RunService(
       runRepository as never,
       {} as never,
@@ -342,6 +345,9 @@ describe('RunService', () => {
       runCheckpointRepository as never,
       agentSessionRepository as never,
       runVerificationRepository as never,
+      undefined,
+      null,
+      sandboxPatchPromotionRepository as never,
     );
 
     const result = await service.getDetail('run_1');
@@ -349,6 +355,7 @@ describe('RunService', () => {
     expect(runRepository.getDetail).toHaveBeenCalledWith('run_1');
     expect(runStepRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(runCheckpointRepository.listForRun).toHaveBeenCalledWith('run_1');
+    expect(sandboxPatchPromotionRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(agentSessionRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(artifactRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
@@ -367,6 +374,7 @@ describe('RunService', () => {
     expect(runVerificationRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(result?.artifacts).toEqual([{ id: 'artifact_1' }]);
     expect(result?.verifications).toEqual([{ id: 'run_verification_1' }]);
+    expect(result?.sandboxPatchPromotions).toEqual([{ checkpointId: 'run_checkpoint_1', status: 'applied' }]);
     expect(result?.agentSessions).toEqual([{ id: 'agent_session_1' }]);
     expect(result?.runtimeEvents?.map((event) => event.type)).toEqual([
       'run.completed',

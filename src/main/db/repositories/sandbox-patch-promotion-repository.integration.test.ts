@@ -60,6 +60,20 @@ describe('SandboxPatchPromotionRepository integration', () => {
     expect(repeated.id).toBe(created.id);
     expect(byCheckpoint?.id).toBe(created.id);
     expect(byDigest?.id).toBe(created.id);
+    await repository.createPending({
+      artifactId: 'artifact_2',
+      checkpointId: 'run_checkpoint_2',
+      decisionId: 'decision_2',
+      expectedFiles: ['src/other.ts'],
+      patchDigest: 'sha256:def456',
+      runId: 'run_2',
+      sourceId: 'sandbox_source_2',
+      taskId: 'task_1',
+    });
+    expect(await repository.listForRun('run_1')).toEqual([expect.objectContaining({
+      checkpointId: 'run_checkpoint_1',
+      runId: 'run_1',
+    })]);
   });
 
   it('marks promotions as applied or blocked with durable audit state', async () => {

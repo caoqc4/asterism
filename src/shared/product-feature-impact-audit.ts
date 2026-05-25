@@ -127,9 +127,11 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Run Goal Contract and Agent CLI context bridge now carry selected-runtime capability declarations into the native CLI prompt before execution.',
       'Run verification and memory proposals remain product-controlled.',
       'Post-step verification now treats native CLI capability=workspace_write steps as workspace write candidates that require reviewable promotion evidence instead of accepting ordinary command output as sufficient recovery evidence.',
+      'Approved patch-promotion Decisions can call SandboxPatchPromotionApplyService when the sandbox patch promotion apply feature flag is enabled; the service preflights reviewed patch evidence, writes only matching workspace files, records applied/blocked promotion state, and updates run evidence.',
+      'Run detail now includes sandbox patch promotion records, and the task file workspace projects applied or blocked promotion status next to reviewed patch artifacts.',
     ],
     gaps: [
-      'Write-enabled native runtime modes still need an apply implementation that converts approved promotion evidence into workspace mutations.',
+      'Write-enabled native runtime modes still need an explicit operator-facing apply workflow before workspace mutation can become a normal happy path.',
     ],
     nextActions: [
       'Keep future workspace-write promotion on patch artifacts, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review evidence surfaces before product-controlled persistence.',
@@ -332,6 +334,8 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Tasks file workspace now surfaces a confirmed patch artifact sandbox-review preview action through main-side IPC, returning changed files, checks, idempotency, and an explicit no-workspace-write guarantee.',
       'Tasks file workspace can run sandbox review from a confirmed patch artifact, creating a new audit Run, reviewed patch artifact, promotion checkpoint, and pending Decision without writing workspace files.',
       'Tasks file workspace projects patch-promotion checkpoint and Decision status next to reviewed patch artifacts, including the disabled-by-default workspace apply boundary.',
+      'SandboxPatchPromotionApplyService can apply approved patch-promotion checkpoints when enableSandboxPatchPromotionApply is true, with preflight divergence checks, idempotency handling, and applied/blocked promotion records.',
+      'Run detail carries sandboxPatchPromotions so Tasks file workspace can distinguish pending, applied, and blocked reviewed-patch promotions.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
     ],
     gaps: [
