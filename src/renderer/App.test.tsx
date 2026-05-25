@@ -4514,7 +4514,7 @@ describe('App redesign v1', () => {
           {
             id: 'sandbox.patch_promotion',
             state: 'approval_required',
-            reason: 'Sandbox patch promotion apply is enabled but still requires explicit approval.',
+            reason: 'Sandbox patch promotion apply is enabled; approving a ready workspace.staged_patch Decision can write reviewed files after promotion preflight.',
             requiresApproval: true,
             startupProbePolicy: 'manual_only',
             exposesSecretValue: false,
@@ -4549,6 +4549,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('配置安全边界')).toBeTruthy();
     expect(screen.getByText('密钥不外显')).toBeTruthy();
     expect(screen.getByText('sandbox.patch_promotion')).toBeTruthy();
+    expect(screen.getByText(/can write reviewed files after promotion preflight/)).toBeTruthy();
     expect(screen.getByText(/诊断：workspace=missing \/ selected=Codex CLI/)).toBeTruthy();
     expect(screen.getByText(/探测：仅手动 · 需用户确认/)).toBeTruthy();
     expect(screen.getByText(/当前不会自动启用受阻能力/)).toBeTruthy();

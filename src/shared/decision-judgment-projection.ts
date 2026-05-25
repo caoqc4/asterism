@@ -84,10 +84,21 @@ export function projectDecisionJudgment(
   group?: DecisionJudgmentGroup,
 ): DecisionJudgmentProjection {
   const isAgentCheckpoint = decision.sourceType === 'agent_checkpoint';
+  const isPatchPromotion = isPatchPromotionDecision(decision);
   const category = classifyDecisionJudgment(decision, task);
   const taskTitle = task?.title ?? decision.sourceLabel ?? decision.sourceId ?? '全局事项';
   const sourceTarget = buildDecisionSourceTarget(decision, task);
-  const fallbackOptions = isAgentCheckpoint
+  const fallbackOptions = isPatchPromotion
+    ? [
+        {
+          label: '应用 reviewed patch',
+          desc: '批准后仅处理当前 workspace.staged_patch；feature flag 开启时会先做 promotion preflight，再写入匹配的工作区文件。',
+          risk: '可能写入工作区',
+        },
+        { label: '暂停等待', desc: '暂缓处理，保留检查点；工作区保持不变，等补充审查后再决定。' },
+        { label: '取消本次执行', desc: '取消这次 patch promotion 请求，不把 sandbox patch 写入工作区。' },
+      ]
+    : isAgentCheckpoint
     ? [
         { label: '恢复执行', desc: '确认当前检查点，让 Agent 按当前上下文继续推进；这不会授予后续同类动作的长期权限。' },
         { label: '暂停等待', desc: '暂缓处理，保留检查点，等补充信息后再恢复。' },
@@ -106,7 +117,7 @@ export function projectDecisionJudgment(
       }))
     : fallbackOptions;
   const recommendation = decision.recommendation?.label
-    ?? (isAgentCheckpoint ? '恢复执行' : category.key === 'completion' ? '确认完成' : '批准');
+    ?? (isPatchPromotion ? '应用 reviewed patch' : isAgentCheckpoint ? '恢复执行' : category.key === 'completion' ? '确认完成' : '批准');
 
   return {
     id: decision.id,
@@ -126,10 +137,14 @@ export function projectDecisionJudgment(
     urgency: isAgentCheckpoint ? 'today' : 'week',
     category,
     context: {
-      whyNow: isAgentCheckpoint
+      whyNow: isPatchPromotion
+        ? `Agent 已产出「${decision.sourceLabel ?? 'workspace.staged_patch'}」sandbox patch，需要你确认是否提升到工作区；启用 apply flag 时批准会先预检再写入匹配文件。`
+        : isAgentCheckpoint
         ? `Agent 在「${decision.sourceLabel ?? decision.title}」的执行检查点暂停，需要你确认是否恢复推进。`
         : decision.context?.whyNow ?? buildWhyNow(decision, task, category),
-      ifDeferred: isAgentCheckpoint
+      ifDeferred: isPatchPromotion
+        ? '如果暂不处理，Agent 会保持暂停，sandbox patch 只留作证据，工作区文件不会被写入。'
+        : isAgentCheckpoint
         ? '如果暂不处理，Agent 会保持暂停，相关任务不会自动继续执行。'
         : decision.context?.ifDeferred ?? buildDeferredImpact(task, category),
     },
@@ -137,8 +152,8 @@ export function projectDecisionJudgment(
     recommendation,
     recommendationClarity: isAgentCheckpoint ? 'review' : 'clear',
     recommendationReason: decision.recommendation?.reason ?? null,
-    impactLabel: decision.context?.impact ?? impactLabelFor(category, task),
-    reversibilityLabel: decision.context?.reversibility ?? reversibilityLabelFor(category),
+    impactLabel: decision.context?.impact ?? (isPatchPromotion ? '工作区写入影响' : impactLabelFor(category, task)),
+    reversibilityLabel: decision.context?.reversibility ?? (isPatchPromotion ? '需预检留痕' : reversibilityLabelFor(category)),
     sortScore: scoreDecision(decision, task, category),
     group: group ?? {
       key: decision.taskId
@@ -278,6 +293,9 @@ export function classifyDecisionJudgment(
   decision: DecisionRecord,
   task: TaskListItemRecord | null,
 ): DecisionCategory {
+  if (isPatchPromotionDecision(decision)) {
+    return { key: 'risk', label: '工作区写入', tone: 'risk' };
+  }
   if (decision.kind === 'agent_resume' || decision.scope === 'agent') {
     return { key: 'agent', label: 'Agent 暂停', tone: 'agent' };
   }
@@ -421,6 +439,9 @@ function boundaryLabelFor(
   category: DecisionCategory,
   sourceTarget: DecisionJudgmentSourceTarget,
 ): string {
+  if (isPatchPromotionSource(sourceTarget)) {
+    return '批准仅覆盖当前 reviewed patch；apply flag 开启时会写入匹配工作区文件';
+  }
   if (category.key === 'agent') return '批准后仅恢复当前检查点，不授予长期权限';
   if (category.key === 'risk') return '批准后仅记录本次授权范围';
   if (category.key === 'completion') return '批准后可作为完成验收依据';
@@ -430,4 +451,20 @@ function boundaryLabelFor(
 
 function formatDecisionDate(value: string): string {
   return value.slice(0, 10);
+}
+
+function isPatchPromotionDecision(decision: DecisionRecord): boolean {
+  const text = `${decision.title} ${decision.sourceLabel ?? ''}`.toLowerCase();
+  return decision.sourceLabel === 'workspace.staged_patch'
+    || text.includes('workspace.staged_patch')
+    || text.includes('patch promotion')
+    || text.includes('sandbox patch');
+}
+
+function isPatchPromotionSource(sourceTarget: DecisionJudgmentSourceTarget): boolean {
+  const label = sourceTarget.label.toLowerCase();
+  return label === 'workspace.staged_patch'
+    || label.includes('workspace.staged_patch')
+    || label.includes('patch promotion')
+    || label.includes('sandbox patch');
 }

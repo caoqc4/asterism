@@ -42,6 +42,7 @@ describe('configuration safety report', () => {
     });
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
       state: 'approval_required',
+      reason: 'Sandbox patch promotion apply is enabled; approving a ready workspace.staged_patch Decision can write reviewed files after promotion preflight.',
       requiresApproval: true,
       startupProbePolicy: 'manual_only',
     });
@@ -69,6 +70,10 @@ describe('configuration safety report', () => {
     });
     expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')).toMatchObject({
       state: 'disabled_by_flag',
+    });
+    expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
+      state: 'disabled_by_flag',
+      reason: 'Sandbox patch promotion apply is disabled by feature flag; approvals remain preflight/no-write only.',
     });
     expect(report.blockedReasons).toEqual(expect.arrayContaining([
       'model.provider: Model provider or model is missing.',
