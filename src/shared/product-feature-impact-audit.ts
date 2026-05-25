@@ -331,13 +331,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Run-backed patch artifacts can now feed SandboxPatchReviewPlanningService as imported_patch_artifact sources, keeping workspace promotion behind sandbox review and Decision approval.',
       'Tasks file workspace now surfaces a confirmed patch artifact sandbox-review preview action through main-side IPC, returning changed files, checks, idempotency, and an explicit no-workspace-write guarantee.',
       'Tasks file workspace can run sandbox review from a confirmed patch artifact, creating a new audit Run, reviewed patch artifact, promotion checkpoint, and pending Decision without writing workspace files.',
+      'Tasks file workspace projects patch-promotion checkpoint and Decision status next to reviewed patch artifacts, including the disabled-by-default workspace apply boundary.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
     ],
     gaps: [
-      'Workspace-write promotion remains intentionally Decision-gated; the final apply path is disabled by default and still needs clearer operator-facing status before it should be treated as a normal happy path.',
+      'Workspace-write promotion remains intentionally Decision-gated; the final apply path is disabled by default and should stay outside the normal happy path until there is an explicit operator-facing apply workflow.',
     ],
     nextActions: [
-      'Surface promotion Decision status and disabled-by-default workspace apply readiness next to reviewed patch artifacts.',
+      'Design the explicit reviewed-patch apply workflow only after the sandbox promotion apply flag, preflight evidence, and user approval copy are stable enough for real workspace writes.',
     ],
   },
   {

@@ -271,6 +271,10 @@ Taskplane currently has a working native CLI execution backend:
   only inside the disposable local-container workdir, persists the reviewed patch
   artifact, and creates the patch-promotion checkpoint / Decision when checks
   pass. The host workspace remains unchanged.
+- Reviewed patch artifacts now show the associated patch-promotion checkpoint and
+  Decision status in the task file workspace, including the fact that workspace
+  application remains disabled by default and controlled by the promotion apply
+  boundary.
 - Completed native run chat summaries mention both web research and local
   command/workspace activity when those events were recorded.
 - Codex JSONL `command_execution` items are projected as `shell_command` Run

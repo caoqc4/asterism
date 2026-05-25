@@ -44,6 +44,10 @@ import {
   buildTaskplaneWritebackApprovalItems,
   type TaskplaneWritebackApprovalItem,
 } from '@shared/taskplane-writeback-approval';
+import {
+  projectSandboxPatchPromotionViews,
+  type SandboxPatchPromotionView,
+} from '@shared/sandbox-patch-promotion-view';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
   guardDurablePanelAction,
@@ -1630,8 +1634,23 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   });
   const selectedFile = taskFiles.find((file) => file.id === selectedFileId) ?? null;
   const contextMenuFile = fileContextMenu ? taskFiles.find((file) => file.id === fileContextMenu.fileId) ?? null : null;
+  const patchPromotionViewsByArtifactId = new Map(
+    projectSandboxPatchPromotionViews({
+      decisions: selectedTask
+        ? allDecisions.filter((decision) => decision.taskId === selectedTask.id || decision.sourceType === 'agent_checkpoint')
+        : allDecisions,
+      runDetails: Object.values(selectedRunDetailsById),
+    }).map((view) => [view.artifactId, view] as const),
+  );
+  const selectedPatchPromotionView = selectedFile?.artifactId
+    ? patchPromotionViewsByArtifactId.get(selectedFile.artifactId) ?? null
+    : null;
   const selectedPatchReviewMessage = selectedFile?.artifactId
-    ? patchReviewPreviewMessages[selectedFile.artifactId] ?? null
+    ? [
+        patchReviewPreviewMessages[selectedFile.artifactId] ?? null,
+        selectedPatchPromotionView ? formatSandboxPatchPromotionNotice(selectedPatchPromotionView) : null,
+      ].filter(Boolean).join(' ')
+      || null
     : null;
   const selectedPatchReviewAvailable = isPatchArtifactFile(selectedFile)
     && Boolean(window.api?.previewPatchArtifactSandboxReview);
@@ -3427,6 +3446,13 @@ function isOpenableTaskFile(file: VirtualTaskFile): boolean {
 
 function isPatchArtifactFile(file: VirtualTaskFile | null): file is VirtualTaskFile & { artifactId: string } {
   return Boolean(file?.artifactId && file.kind === 'artifact' && file.artifactKind === 'patch');
+}
+
+function formatSandboxPatchPromotionNotice(view: SandboxPatchPromotionView): string {
+  const decisionLabel = view.decisionId
+    ? `Decision ${view.decisionId}`
+    : '未关联 Decision';
+  return `Promotion：${view.label}（${decisionLabel}）；${view.detail}`;
 }
 
 function runtimeSurfaceForFile(file: VirtualTaskFile) {

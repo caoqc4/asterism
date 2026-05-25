@@ -68,6 +68,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Task Dynamics now builds a Run-detail writeback approval queue');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose Write Intent can now carry kind=patch');
     expect(rightPanel?.evidence.join(' ')).toContain('imported_patch_artifact sandbox draft sources');
+    expect(taskFiles?.evidence.join(' ')).toContain('patch-promotion checkpoint and Decision status');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
     expect(rightPanel?.writeIntents).toContain('subtask.propose');
