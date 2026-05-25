@@ -872,6 +872,20 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
     lines.push(`原生 CLI 联网动作：${truncateAgentCliChatLine(title || detail || '已记录', 56)}。`);
   }
 
+  const nativeLocalStep = orderedSteps.find((step) => (
+    !/Agent CLI 联网调研准备/i.test(step.title)
+    && !/web|search|browse|联网|搜索|检索|source|url|http/i.test(`${step.title}\n${step.output ?? ''}`)
+    && /capability=(workspace_read|workspace_write|shell_command)|工作区|命令执行|shell|command_execution|bash|terminal/i.test(`${step.title}\n${step.output ?? ''}`)
+  ));
+  if (nativeLocalStep) {
+    const title = nativeLocalStep.title
+      .replace(/^(Codex CLI|Claude Code)\s*/i, '')
+      .replace(/^原生事件[:：]\s*/i, '')
+      .trim();
+    const detail = compactStepDetailForChat(nativeLocalStep.output);
+    lines.push(`原生 CLI 本地动作：${truncateAgentCliChatLine(title || detail || '已记录', 56)}。`);
+  }
+
   return lines.slice(0, 2).join('\n') || null;
 }
 

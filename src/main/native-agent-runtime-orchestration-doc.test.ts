@@ -21,6 +21,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('`persistent_ai_pilot_reserved` is a future');
     expect(content).toContain('future `wanman_matrix` executor');
     expect(content).toContain('completed chat summary');
+    expect(content).toContain('local');
+    expect(content).toContain('command/workspace activity');
     expect(content).toContain('capability-tagged Run');
     expect(content).toContain('`command_execution` items');
     expect(content).toContain('workspace reads, commands');

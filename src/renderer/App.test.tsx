@@ -2977,6 +2977,37 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/原生 CLI 联网动作：.*web_search/)).toBeTruthy();
   });
 
+  it('summarizes Agent CLI local command activity after completed native runs', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请检查当前工作区路径。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created') as RunRecord & { steps?: RunStepRecord[] };
+    expect(run).toBeTruthy();
+    Object.assign(run, {
+      output: '当前工作区路径为 /Users/caoq/git/Taskplane。',
+      outputSource: 'ai',
+      status: 'completed',
+      steps: [
+        buildRunStep({
+          id: 'step_native_command',
+          runId: 'run_agent_cli_created',
+          index: 0,
+          title: 'Codex CLI 命令执行：command_execution',
+          output: 'capability=shell_command\nprovider_event=item.completed\ncommand=/bin/zsh -lc pwd\noutput=/Users/caoq/git/Taskplane',
+        }),
+      ],
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText(/原生 CLI 本地动作：.*命令执行/)).toBeTruthy();
+    expect(screen.getByText(/当前工作区路径为/)).toBeTruthy();
+  });
+
   it('captures a global right-panel discussion as a task before planning', async () => {
     const user = userEvent.setup();
     render(<App />);
