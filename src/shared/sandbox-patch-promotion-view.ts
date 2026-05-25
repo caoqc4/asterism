@@ -132,7 +132,7 @@ function buildSandboxPatchPromotionView(params: {
   if (params.decision?.status === 'pending' || params.checkpointStatus === 'open') {
     return {
       ...base,
-      detail: `${fileLabel}；需要先在 Decisions 中选择“应用 reviewed patch”，审批前不会写入工作区；批准后的真实应用仍受功能开关和 promotion apply 预检控制。`,
+      detail: `${fileLabel}；需要先在 Decisions 中选择“批准 reviewed patch”，审批前不会写入工作区；批准后的真实应用仍受功能开关和 promotion apply 预检控制。`,
       label: '等待 promotion 拍板',
       tone: 'pending',
     };

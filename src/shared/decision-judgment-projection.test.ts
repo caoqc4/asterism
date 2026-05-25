@@ -80,19 +80,19 @@ describe('decision judgment projection', () => {
     expect(projected).toMatchObject({
       category: { key: 'risk', label: '工作区写入' },
       urgency: 'today',
-      recommendation: '应用 reviewed patch',
+      recommendation: '批准 reviewed patch',
       recommendationClarity: 'review',
       impactLabel: '工作区写入影响',
       reversibilityLabel: '需预检留痕',
       sourceKindLabel: 'Agent 检查点',
-      boundaryLabel: '批准仅覆盖当前 reviewed patch；apply flag 开启时会写入匹配工作区文件',
+      boundaryLabel: '批准仅覆盖当前 reviewed patch；只有 apply flag 开启时才会写入匹配工作区文件',
     });
-    expect(projected.context.whyNow).toContain('启用 apply flag 时批准会先预检再写入匹配文件');
+    expect(projected.context.whyNow).toContain('只有启用 apply flag 时，批准才会先预检再写入匹配文件');
     expect(projected.context.ifDeferred).toContain('工作区文件不会被写入');
     expect(projected.options).toEqual([
       {
-        label: '应用 reviewed patch',
-        desc: '批准后仅处理当前 workspace.staged_patch；feature flag 开启时会先做 promotion preflight，再写入匹配的工作区文件。',
+        label: '批准 reviewed patch',
+        desc: '批准仅覆盖当前 workspace.staged_patch；feature flag 开启时才会先做 promotion preflight，再写入匹配的工作区文件。',
         risk: '可能写入工作区',
       },
       {

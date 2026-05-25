@@ -108,7 +108,7 @@ describe('projectSandboxPatchPromotionViews', () => {
       tone: 'pending',
     });
     expect(view?.detail).toContain('审批前不会写入工作区');
-    expect(view?.detail).toContain('应用 reviewed patch');
+    expect(view?.detail).toContain('批准 reviewed patch');
     expect(view?.detail).toContain('promotion apply 预检');
     expect(view?.detail).toContain('notes.md');
   });

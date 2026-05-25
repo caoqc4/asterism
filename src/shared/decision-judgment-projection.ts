@@ -91,8 +91,8 @@ export function projectDecisionJudgment(
   const fallbackOptions = isPatchPromotion
     ? [
         {
-          label: '应用 reviewed patch',
-          desc: '批准后仅处理当前 workspace.staged_patch；feature flag 开启时会先做 promotion preflight，再写入匹配的工作区文件。',
+          label: '批准 reviewed patch',
+          desc: '批准仅覆盖当前 workspace.staged_patch；feature flag 开启时才会先做 promotion preflight，再写入匹配的工作区文件。',
           risk: '可能写入工作区',
         },
         { label: '暂停等待', desc: '暂缓处理，保留检查点；工作区保持不变，等补充审查后再决定。' },
@@ -117,7 +117,7 @@ export function projectDecisionJudgment(
       }))
     : fallbackOptions;
   const recommendation = decision.recommendation?.label
-    ?? (isPatchPromotion ? '应用 reviewed patch' : isAgentCheckpoint ? '恢复执行' : category.key === 'completion' ? '确认完成' : '批准');
+    ?? (isPatchPromotion ? '批准 reviewed patch' : isAgentCheckpoint ? '恢复执行' : category.key === 'completion' ? '确认完成' : '批准');
 
   return {
     id: decision.id,
@@ -138,7 +138,7 @@ export function projectDecisionJudgment(
     category,
     context: {
       whyNow: isPatchPromotion
-        ? `Agent 已产出「${decision.sourceLabel ?? 'workspace.staged_patch'}」sandbox patch，需要你确认是否提升到工作区；启用 apply flag 时批准会先预检再写入匹配文件。`
+        ? `Agent 已产出「${decision.sourceLabel ?? 'workspace.staged_patch'}」sandbox patch，需要你确认是否提升；只有启用 apply flag 时，批准才会先预检再写入匹配文件。`
         : isAgentCheckpoint
         ? `Agent 在「${decision.sourceLabel ?? decision.title}」的执行检查点暂停，需要你确认是否恢复推进。`
         : decision.context?.whyNow ?? buildWhyNow(decision, task, category),
@@ -440,7 +440,7 @@ function boundaryLabelFor(
   sourceTarget: DecisionJudgmentSourceTarget,
 ): string {
   if (isPatchPromotionSource(sourceTarget)) {
-    return '批准仅覆盖当前 reviewed patch；apply flag 开启时会写入匹配工作区文件';
+    return '批准仅覆盖当前 reviewed patch；只有 apply flag 开启时才会写入匹配工作区文件';
   }
   if (category.key === 'agent') return '批准后仅恢复当前检查点，不授予长期权限';
   if (category.key === 'risk') return '批准后仅记录本次授权范围';
