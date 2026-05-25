@@ -216,6 +216,9 @@ Taskplane currently has a working native CLI execution backend:
   after execution.
 - Agent API chat invocations preserve the same trimmed Pilot decision snapshot
   in invocation provenance, keeping phase-2 auditability runtime-neutral.
+- Shared AI Runtime invocation provenance includes a skipped `execution_run`
+  shape for deferred Agent API task execution, so UI and service code can refer
+  to API execution readiness without silently starting provider-visible work.
 - The current Pilot operation mode is either `product_control_layer` or
   `bounded_decision_backend`. `persistent_ai_pilot_reserved` is a future
   explicit watch/autopilot capability, not the default runtime shape.
@@ -743,6 +746,9 @@ Remaining work:
 
 - If Agent API decomposition is promoted as a primary runtime path, keep draft
   generation task-bound and reversible before it reaches writeback confirmation.
+- If Agent API task execution is promoted, replace the skipped `execution_run`
+  invocation with a real provider-visible execution entrypoint only after the
+  same context readiness, task-memory, subtask-start, and post-step gates pass.
 
 ### Phase 5: API Decision Backend
 

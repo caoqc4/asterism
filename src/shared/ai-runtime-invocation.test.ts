@@ -4,6 +4,7 @@ import {
   buildApiRuntimeChatAssistantInvocation,
   buildApiRuntimeDecisionDraftInvocation,
   buildApiRuntimeDecompositionDraftInvocation,
+  buildDeferredAgentApiExecutionRunInvocation,
   buildLocalTaskTypeReviewInvocation,
   buildProductHarnessDecisionDraftInvocation,
   buildProductHarnessMemoryProposalInvocation,
@@ -167,6 +168,24 @@ describe('ai runtime invocation contract', () => {
     });
     expect(taskInvocation.summary).toContain('任务上下文');
     expect(taskInvocation.pilotDecision?.backendPlan.outputContract).toBe('pilot_decision_summary');
+  });
+
+  it('represents Agent API task execution as an explicit deferred execution_run invocation', () => {
+    const invocation = buildDeferredAgentApiExecutionRunInvocation({
+      runtimeLabel: 'Agent API Runtime · openai / gpt-test',
+    });
+
+    expect(invocation).toMatchObject({
+      phase: 'execution_run',
+      layer: 'api_runtime',
+      runtime: {
+        mode: 'api',
+        label: 'Agent API Runtime · openai / gpt-test',
+      },
+      status: 'skipped',
+    });
+    expect(invocation.summary).toContain('provider-visible execution harness gates');
+    expect(invocation.deferredReason).toContain('Agent API Runtime task execution remains deferred');
   });
 
   it('wraps product-harness verification and memory proposal phases', () => {

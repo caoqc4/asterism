@@ -76,6 +76,12 @@ export type ChatAssistantInvocationResult = RuntimeInvocationBase & {
   text: string;
 };
 
+export type ExecutionRunInvocationResult = RuntimeInvocationBase & {
+  phase: 'execution_run';
+  layer: 'selected_runtime' | 'api_runtime';
+  deferredReason?: string | null;
+};
+
 export type VerificationAssistInvocationResult = RuntimeInvocationBase & {
   phase: 'verification_assist';
   layer: 'product_harness';
@@ -185,6 +191,26 @@ export function buildApiRuntimeChatAssistantInvocation(params: {
     ),
     pilotDecision: params.pilotDecision ?? null,
     text: params.text,
+  };
+}
+
+export function buildDeferredAgentApiExecutionRunInvocation(params: {
+  runtimeLabel?: string;
+  summary?: string;
+  deferredReason?: string | null;
+} = {}): ExecutionRunInvocationResult {
+  const deferredReason = params.deferredReason
+    ?? 'Agent API Runtime task execution remains deferred until it satisfies the provider-visible execution harness gates.';
+  return {
+    phase: 'execution_run',
+    layer: 'api_runtime',
+    runtime: {
+      mode: 'api',
+      label: params.runtimeLabel ?? 'Agent API Runtime 执行',
+    },
+    status: 'skipped',
+    summary: params.summary ?? deferredReason,
+    deferredReason,
   };
 }
 

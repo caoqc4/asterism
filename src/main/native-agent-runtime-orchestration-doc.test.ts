@@ -17,6 +17,7 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('pilot_decision_summary');
     expect(content).toContain('Pilot 决策辅助计划');
     expect(content).toContain('Agent API chat invocations preserve');
+    expect(content).toContain('skipped `execution_run`');
     expect(content).toContain('`product_control_layer` or');
     expect(content).toContain('`persistent_ai_pilot_reserved` is a future');
     expect(content).toContain('future `wanman_matrix` executor');
