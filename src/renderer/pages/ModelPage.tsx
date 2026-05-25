@@ -838,6 +838,8 @@ function runtimeCapabilityChips(capabilities: AgentRuntimeAdapterCapabilities): 
           reason: capabilities.nativeGoalMode.reason,
         }, 'Goal', 'gated'),
     nativeCapabilityChip(native?.memory, '记忆由产品写入', 'gated'),
+    nativeCapabilityChip(native?.compact, '上下文压缩', 'gated'),
+    nativeCapabilityChip(native?.clear, '上下文清理', 'gated'),
     nativeCapabilityChip(native?.workspaceWrite, '写入需提案', 'blocked'),
   ].filter((chip): chip is { label: string; reason: string; tone: 'ready' | 'gated' | 'blocked' } => chip !== null);
 }

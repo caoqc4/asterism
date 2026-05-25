@@ -110,6 +110,8 @@ describe('agent cli runtime status', () => {
 
   it('promotes probed Codex web search and resume signals without granting writes', () => {
     const capabilities = buildDefaultAgentCliRuntimeCapabilities('codex', 'Codex CLI', 'codex-cli 0.133.0', {
+      nativeClear: true,
+      nativeCompact: true,
       nativeResume: true,
       structuredProgressEvents: true,
       webSearch: true,
@@ -121,6 +123,12 @@ describe('agent cli runtime status', () => {
       supportsWorkspaceWrite: false,
       nativeCapabilities: {
         webSearch: {
+          availability: 'runtime_dependent',
+        },
+        compact: {
+          availability: 'runtime_dependent',
+        },
+        clear: {
           availability: 'runtime_dependent',
         },
         workspaceWrite: {

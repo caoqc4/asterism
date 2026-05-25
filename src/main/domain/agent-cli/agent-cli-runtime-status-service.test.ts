@@ -154,6 +154,18 @@ describe('agent cli runtime status service', () => {
     });
   });
 
+  it('parses native compact and clear context signals from help output', () => {
+    const signals = parseAgentCliCapabilitySignals('claude', [
+      'Hook events: PreCompact, PostCompact',
+      'Use clear to reset the conversation context.',
+    ].join('\n'), '');
+
+    expect(signals).toMatchObject({
+      nativeClear: true,
+      nativeCompact: true,
+    });
+  });
+
   it('detects workspace-native guidance, hook, and subagent files without executing a runtime', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-workspace-signals-'));
 
