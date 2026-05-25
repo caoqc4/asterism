@@ -119,6 +119,8 @@ describe('agent cli runtime status', () => {
 
     expect(capabilities).toMatchObject({
       supportsNativeGoalMode: true,
+      supportsNativeClear: true,
+      supportsNativeCompact: true,
       supportsNativeResume: true,
       supportsWorkspaceWrite: false,
       nativeCapabilities: {

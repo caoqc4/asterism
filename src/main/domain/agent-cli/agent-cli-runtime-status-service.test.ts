@@ -166,6 +166,35 @@ describe('agent cli runtime status service', () => {
     });
   });
 
+  it('promotes probed compact and clear signals into adapter capability support without granting persistence', async () => {
+    const service = new AgentCliRuntimeStatusService(async (command) => ({
+      authState: command === 'claude' ? 'ready' : 'unknown',
+      capabilitySignals: command === 'claude'
+        ? {
+            nativeClear: true,
+            nativeCompact: true,
+          }
+        : null,
+      installed: command === 'claude',
+      version: command === 'claude' ? 'claude 2.1.144' : null,
+    }));
+
+    const status = await service.getStatus();
+    const claude = status.runtimes.find((runtime) => runtime.id === 'claude');
+
+    expect(claude).toMatchObject({
+      capabilities: {
+        supportsNativeClear: true,
+        supportsNativeCompact: true,
+        supportsPersistentSession: false,
+        nativeCapabilities: {
+          clear: { availability: 'runtime_dependent' },
+          compact: { availability: 'runtime_dependent' },
+        },
+      },
+    });
+  });
+
   it('detects workspace-native guidance, hook, and subagent files without executing a runtime', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-workspace-signals-'));
 

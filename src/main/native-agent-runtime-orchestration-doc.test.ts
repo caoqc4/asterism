@@ -33,6 +33,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('records applied or blocked run evidence');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');
+    expect(content).toContain('compact/clear context');
+    expect(content).toContain('adapter capability support');
     expect(content).toContain('AI Runtime settings surface shows these before a run starts');
     expect(content).toContain('selected-runtime');
     expect(content).toContain('native CLI prompts before execution');

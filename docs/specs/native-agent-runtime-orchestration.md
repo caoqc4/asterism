@@ -233,9 +233,12 @@ Taskplane currently has a working native CLI execution backend:
   structured-event flags and, where exposed, native hook-event and agent/subagent
   signals. These are still capability declarations, not permission grants.
 - The status probe combines top-level and execution help output where safe, so
-  native web/search activation, resume commands, plan/read-only affordances,
-  hook events, Claude agents, and native memory-loading hints can be shown
-  before execution without starting a run.
+  native web/search activation, resume commands, compact/clear context
+  affordances, plan/read-only affordances, hook events, Claude agents, and
+  native memory-loading hints can be shown before execution without starting a
+  run. Probed compact/clear signals are reflected in adapter capability support,
+  but Taskplane still selects runtime-native reset only after preservation gates
+  pass and the adapter owns a persistent session.
 - The status probe also inspects configured-workspace native guidance files and
   directories such as `AGENTS.md`, `CLAUDE.md`, `.claude/settings*.json`, and
   `.claude/agents/` as capability evidence only. These checks do not execute the
@@ -322,9 +325,10 @@ Native CLI integration is not a complete product-grade Agent experience yet:
 - runtime progress projection is present, but it still relies on best-effort
   labels from parsed Run steps and should deepen its Codex JSONL and Claude
   stream-json schema mapping over time;
-- native capability declarations use adapter defaults plus lightweight help
-  probes, and still need deeper live provider probes for exact hook files,
-  subagent folders, native memory, and web/search readiness;
+- native capability declarations use adapter defaults plus lightweight help and
+  workspace probes, and still need deeper provider-specific checks for exact
+  hook config semantics, packaged metadata, native memory behavior, and
+  web/search readiness;
 - real Codex JSONL and Claude stream-json event shapes need deeper schema
   mapping as they evolve;
 - Claude real-account execution has not been validated in this repository's

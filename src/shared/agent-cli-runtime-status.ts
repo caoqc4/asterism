@@ -84,6 +84,8 @@ export function buildDefaultAgentCliRuntimeCapabilities(
   const nativeGoalMode = buildNativeGoalModeCapability(runtimeId, label, version);
   const supportsNativeGoalMode = nativeGoalMode.availability === 'available';
   const structuredProgressEvents = probeSignals?.structuredProgressEvents ?? true;
+  const supportsNativeClear = probeSignals?.nativeClear ?? false;
+  const supportsNativeCompact = probeSignals?.nativeCompact ?? false;
   const supportsNativeResume = probeSignals?.nativeResume ?? false;
   return {
     id: runtimeId,
@@ -92,8 +94,8 @@ export function buildDefaultAgentCliRuntimeCapabilities(
     supportsSingleRun: true,
     supportsPersistentSession: false,
     supportsNativeGoalMode,
-    supportsNativeClear: false,
-    supportsNativeCompact: false,
+    supportsNativeClear,
+    supportsNativeCompact,
     supportsNativeResume,
     supportsPauseGoal: supportsNativeGoalMode,
     supportsResumeGoal: supportsNativeGoalMode,

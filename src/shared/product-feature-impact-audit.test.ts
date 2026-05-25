@@ -123,11 +123,14 @@ describe('product feature impact audit', () => {
     expect(decisions?.gaps.join(' ')).not.toContain('non-UI operator approval surfaces are still missing');
     expect(capabilities?.evidence.join(' ')).toContain('adapter-level native capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('provider help output');
+    expect(capabilities?.evidence.join(' ')).toContain('compact/clear context affordances');
+    expect(capabilities?.evidence.join(' ')).toContain('adapter capability support');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
+    expect(capabilities?.gaps.join(' ')).not.toContain('compact/clear readiness checks');
   });
 });
