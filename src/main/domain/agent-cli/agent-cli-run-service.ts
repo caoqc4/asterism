@@ -1544,13 +1544,17 @@ function parseAgentCliNativeTranscript(params: {
 
 function mapAgentCliJsonEventToRunStep(event: Record<string, unknown>, runtimeLabel: string): AgentCliParsedEvent | null {
   const kind = String(event.type ?? event.event ?? event.kind ?? '').toLowerCase();
+  const nativeItem = findAgentCliNativeActionItem(event);
   const nestedToolUse = findAgentCliToolUse(event);
-  const name = String(event.name ?? event.tool_name ?? event.tool ?? event.subtype ?? nestedToolUse?.name ?? '').trim();
-  const input = summarizeAgentCliEventInput(event) ?? summarizeAgentCliEventInput(nestedToolUse ?? {});
-  const text = extractAgentCliEventText(event);
+  const name = String(event.name ?? event.tool_name ?? event.tool ?? event.subtype ?? nativeItem?.name ?? nestedToolUse?.name ?? '').trim();
+  const input = summarizeAgentCliEventInput(event)
+    ?? summarizeAgentCliEventInput(nativeItem?.item ?? {})
+    ?? summarizeAgentCliEventInput(nestedToolUse ?? {});
+  const text = extractAgentCliEventText(event) || nativeItem?.text || '';
   if (!kind && !name && !text) return null;
 
   const isToolLike = Boolean(nestedToolUse)
+    || Boolean(nativeItem)
     || /tool|call|command|bash|shell|search|browse|web|read|write|edit|hook|mcp/.test(`${kind} ${name}`);
   if (!isToolLike) return null;
 
@@ -1651,7 +1655,10 @@ function collectAgentCliTextChunks(value: unknown, chunks: string[]): void {
   }
   if (!isRecord(value)) return;
   const type = String(value.type ?? '').toLowerCase();
-  if ((type === 'text' || type === 'output_text') && typeof value.text === 'string') {
+  if (
+    (type === 'text' || type === 'output_text' || type === 'agent_message' || type === 'message')
+    && typeof value.text === 'string'
+  ) {
     chunks.push(value.text);
   }
   if (typeof value.message === 'string') chunks.push(value.message);
@@ -1693,6 +1700,34 @@ function findAgentCliToolUse(value: unknown): { input?: unknown; name: string } 
     }
   }
   return null;
+}
+
+function findAgentCliNativeActionItem(value: unknown): { item: Record<string, unknown>; name: string; text: string } | null {
+  if (!isRecord(value)) return null;
+  if (!isRecord(value.item)) return null;
+  const item = value.item;
+  const type = String(item.type ?? '').toLowerCase();
+  if (!type) return null;
+  if (!/command|tool|call|search|browse|web|read|write|edit|hook|mcp/.test(type)) return null;
+  return {
+    item,
+    name: type,
+    text: summarizeAgentCliNativeActionItem(item),
+  };
+}
+
+function summarizeAgentCliNativeActionItem(item: Record<string, unknown>): string {
+  const parts = [
+    typeof item.status === 'string' ? `status=${item.status}` : null,
+    typeof item.exit_code === 'number' ? `exit_code=${item.exit_code}` : null,
+    typeof item.command === 'string' ? `command=${truncateAgentCliContextLine(item.command, 400)}` : null,
+    typeof item.query === 'string' ? `query=${truncateAgentCliContextLine(item.query, 400)}` : null,
+    typeof item.url === 'string' ? `url=${truncateAgentCliContextLine(item.url, 400)}` : null,
+    typeof item.aggregated_output === 'string' && item.aggregated_output.trim()
+      ? `output=${truncateAgentCliContextLine(item.aggregated_output.trim(), 900)}`
+      : null,
+  ].filter((part): part is string => part !== null);
+  return parts.join('\n');
 }
 
 function humanizeAgentCliEventKind(kind: string): string | null {

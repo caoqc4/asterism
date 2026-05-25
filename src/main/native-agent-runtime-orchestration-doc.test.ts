@@ -22,6 +22,7 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('future `wanman_matrix` executor');
     expect(content).toContain('completed chat summary');
     expect(content).toContain('capability-tagged Run');
+    expect(content).toContain('`command_execution` items');
     expect(content).toContain('workspace reads, commands');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');

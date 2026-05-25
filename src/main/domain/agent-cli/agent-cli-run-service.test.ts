@@ -317,6 +317,84 @@ describe('AgentCliRunService', () => {
     });
   });
 
+  it('projects Codex exec command_execution items into command progress', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: [
+        JSON.stringify({ type: 'thread.started', thread_id: 'thread_1' }),
+        JSON.stringify({ type: 'turn.started' }),
+        JSON.stringify({
+          type: 'item.started',
+          item: {
+            id: 'item_0',
+            type: 'command_execution',
+            command: '/bin/zsh -lc pwd',
+            aggregated_output: '',
+            exit_code: null,
+            status: 'in_progress',
+          },
+        }),
+        JSON.stringify({
+          type: 'item.completed',
+          item: {
+            id: 'item_0',
+            type: 'command_execution',
+            command: '/bin/zsh -lc pwd',
+            aggregated_output: '/Users/caoq/git/Taskplane\n',
+            exit_code: 0,
+            status: 'completed',
+          },
+        }),
+        JSON.stringify({
+          type: 'item.completed',
+          item: {
+            id: 'item_1',
+            type: 'agent_message',
+            text: '/Users/caoq/git/Taskplane',
+          },
+        }),
+        JSON.stringify({ type: 'turn.completed', usage: { input_tokens: 1, output_tokens: 1 } }),
+      ].join('\n'),
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run pwd.',
+      taskId: 'task_1',
+    });
+
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'tool_call',
+        title: 'Codex CLI 命令执行：command_execution',
+        input: expect.stringContaining('/bin/zsh -lc pwd'),
+        output: expect.stringContaining('capability=shell_command'),
+      }));
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'tool_result',
+      title: 'Codex CLI 命令执行：command_execution',
+      output: expect.stringContaining('output=/Users/caoq/git/Taskplane'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'model',
+      title: 'codex cli completed',
+      output: '/Users/caoq/git/Taskplane',
+    }));
+  });
+
   it('projects Claude stream-json tool events into run steps', async () => {
     const runStepRepository = buildRunStepRepository();
     const executor = vi.fn().mockResolvedValue({

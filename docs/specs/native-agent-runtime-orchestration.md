@@ -244,6 +244,9 @@ Taskplane currently has a working native CLI execution backend:
   steps and the completed chat summary, including child-task advancement
   messages, so users can distinguish web research, workspace reads, commands,
   and tool calls without reading raw terminal output.
+- Codex JSONL `command_execution` items are projected as `shell_command` Run
+  steps, preserving command, status, exit code, and output preview for right-panel
+  progress.
 - Raw terminal output remains available as run evidence.
 - Taskplane extracts structured `TASKPLANE_WRITE_INTENTS` from native CLI
   output and can surface confirmation cards for task records, task files,
