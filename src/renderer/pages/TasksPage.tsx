@@ -1652,6 +1652,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       ].filter(Boolean).join(' ')
       || null
     : null;
+  const selectedPatchReviewTone = selectedPatchPromotionView?.tone ?? null;
   const selectedPatchReviewAvailable = isPatchArtifactFile(selectedFile)
     && Boolean(window.api?.previewPatchArtifactSandboxReview);
   const selectedPatchReviewRunAvailable = isPatchArtifactFile(selectedFile)
@@ -3032,6 +3033,7 @@ function resetCaptureDraft() {
               draft={fileDraft}
               dirty={fileDirty}
               notice={selectedPatchReviewMessage}
+              noticeTone={selectedPatchReviewTone}
               onChange={(value) => {
                 setFileDraft(value);
                 setFileDirty(value !== selectedFile.content);
@@ -3691,12 +3693,14 @@ function FileWorkspace({
   draft,
   dirty,
   notice,
+  noticeTone,
   onChange,
 }: {
   file: VirtualTaskFile;
   draft: string;
   dirty: boolean;
   notice?: string | null;
+  noticeTone?: SandboxPatchPromotionView['tone'] | null;
   onChange: (value: string) => void;
 }) {
   return (
@@ -3711,7 +3715,7 @@ function FileWorkspace({
         </div>
       )}
       {notice && (
-        <div className="file-readonly-note">
+        <div className={`file-readonly-note${noticeTone ? ` ${noticeTone}` : ''}`}>
           {notice}
         </div>
       )}

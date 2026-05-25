@@ -165,7 +165,7 @@ describe('projectSandboxPatchPromotionViews', () => {
       decisionStatus: 'approved',
       label: 'promotion 已审批，未应用',
       promotionStatus: 'pending',
-      tone: 'completed',
+      tone: 'ready',
     });
     expect(view?.detail).toContain('preflight/no-write');
     expect(view?.detail).toContain('工作区仍未应用');

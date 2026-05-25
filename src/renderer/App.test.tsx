@@ -16,6 +16,8 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import type { TaskFileRecord } from '@shared/types/task-file';
+import { createPatchPromotionCheckpointPayload } from '@shared/types/run-checkpoint-payload';
+import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffold';
 import type { TaskMemoryGuidanceState } from '@shared/task-memory-guidance-state';
 import type { TaskMemoryWriteProposal } from '@shared/task-memory-write-proposal';
 import { App } from './App';
@@ -292,7 +294,7 @@ function buildRunStep(partial: Partial<RunStepRecord> = {}): RunStepRecord {
 
 function buildRunDetail(
   run: RunRecord,
-  partial: Partial<Pick<RunDetailRecord, 'taskMemoryGuidance' | 'taskMemoryWriteProposals'>> = {},
+  partial: Partial<RunDetailRecord> = {},
 ): RunDetailRecord {
   const runWithDetail = run as RunRecord & Partial<Pick<RunDetailRecord, 'steps'>>;
   return {
@@ -6076,6 +6078,98 @@ describe('App redesign v1', () => {
     }));
     promptSpy.mockRestore();
     alertSpy.mockRestore();
+  });
+
+  it('marks approved-but-unapplied patch promotion notices as ready in task files', async () => {
+    const user = userEvent.setup();
+    const reviewRun = buildRun({
+      id: 'run_review_1',
+      taskId: 'task_risk',
+      updatedAt: '2026-01-01T00:04:00.000Z',
+    });
+    harness.runs.push(reviewRun);
+    harness.details.task_risk.artifacts.unshift({
+      id: 'artifact_patch_reviewed_1',
+      taskId: 'task_risk',
+      sourceType: 'run',
+      sourceId: reviewRun.id,
+      kind: 'patch',
+      title: 'reviewed.patch',
+      content: 'diff --git a/notes.md b/notes.md\n+reviewed change\n',
+      createdAt: now,
+      updatedAt: now,
+    });
+    harness.decisions.push(buildDecision({
+      id: 'decision_patch_1',
+      taskId: 'task_risk',
+      title: '确认提升 sandbox patch',
+      status: 'approved',
+      kind: 'risk_approval',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_patch_1',
+      sourceLabel: 'workspace.staged_patch',
+    }));
+    harness.api.getRunDetail = vi.fn().mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      if (!run) return null;
+      if (run.id !== reviewRun.id) return buildRunDetail(run);
+      return buildRunDetail(run, {
+        checkpoints: [
+          {
+            id: 'run_checkpoint_patch_1',
+            runId: reviewRun.id,
+            stepId: 'run_step_patch_1',
+            kind: 'patch_promotion',
+            status: 'resolved',
+            payload: JSON.stringify(createPatchPromotionCheckpointPayload({
+              artifactId: 'artifact_patch_reviewed_1',
+              artifactSummary: 'Reviewed patch.',
+              decisionId: 'decision_patch_1',
+              decisionTitle: '确认提升 sandbox patch',
+              descriptorId: 'workspace.staged_patch',
+              expectedFiles: ['notes.md'],
+              patchDigest: 'sha256:abc',
+              policySnapshot: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+              sessionId: 'sandbox_1',
+            })),
+            createdAt: now,
+            resolvedAt: now,
+          },
+        ],
+        sandboxPatchPromotions: [
+          {
+            id: 'sandbox_patch_promotion_1',
+            checkpointId: 'run_checkpoint_patch_1',
+            runId: reviewRun.id,
+            taskId: 'task_risk',
+            artifactId: 'artifact_patch_reviewed_1',
+            sourceId: 'sandbox_1',
+            decisionId: 'decision_patch_1',
+            patchDigest: 'sha256:abc',
+            expectedFiles: ['notes.md'],
+            status: 'pending',
+            auditSummary: null,
+            blockedReasons: [],
+            createdAt: now,
+            updatedAt: now,
+            appliedAt: null,
+          },
+        ],
+      });
+    });
+    window.api = harness.api;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
+    await user.click(await findTaskFileButton(/reviewed\.patch/));
+
+    const notice = await screen.findByText(/promotion 已审批，未应用/);
+    const noticeElement = notice.closest('.file-readonly-note');
+    expect(noticeElement?.className).toContain('ready');
+    expect(noticeElement?.className).not.toContain('completed');
+    expect(notice.textContent).toContain('工作区仍未应用');
   });
 
   it('opens the right panel with the current task and selected file context from Tasks', async () => {

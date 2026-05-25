@@ -144,7 +144,7 @@ function buildSandboxPatchPromotionView(params: {
         ...base,
         detail: `${fileLabel}；Decision 已批准且 checkpoint 已结清，但本次以 preflight/no-write 方式完成，工作区仍未应用；需要显式 promotion apply workflow 才能写入。`,
         label: 'promotion 已审批，未应用',
-        tone: 'completed',
+        tone: 'ready',
       };
     }
     return {
