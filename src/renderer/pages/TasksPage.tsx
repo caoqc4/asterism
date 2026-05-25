@@ -39,6 +39,7 @@ import {
   type PriorityRecommendationCandidate,
   type PriorityRecommendationTaskSignal,
 } from '@shared/priority-recommendation-ranking';
+import { buildSubtaskCreateManyWritebackApplyPlan } from '@shared/taskplane-writeback-apply-plan';
 import {
   buildTaskplaneWritebackApprovalItems,
   type TaskplaneWritebackApprovalItem,
@@ -2473,156 +2474,43 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       setProjectDecompositionError('项目父任务更新被 runtime 检查暂停。');
       return;
     }
+    if (!window.api.applyTaskplaneWriteback) {
+      setProjectDecompositionError('当前环境缺少统一写回入口，无法确认项目拆解草案。');
+      return;
+    }
     setProjectCreatingChildrenId(project.id);
     setProjectDecompositionError(null);
     try {
-      const childRecords = await Promise.all(draft.subtasks.map((subtask) => window.api!.createTask({
-        title: subtask.title,
-        summary: subtask.summary,
-        taskType: 'simple',
-        taskFacets: ['simple'],
+      const plan = buildSubtaskCreateManyWritebackApplyPlan({
+        nextStep: draft.nextStep,
+        parentSummary: draft.parentGoal,
         parentTaskId: project.id,
-      })));
-      verifyDurablePanelActionCompleted({
-        title: '创建项目子任务',
-        output: `已为「${project.title}」创建 ${childRecords.length} 个子任务。`,
+        review: draft.review,
+        source: 'agent_api_decomposition',
+        subtasks: draft.subtasks.map((subtask) => ({
+          acceptanceCriteria: subtask.acceptanceCriteria,
+          dependency: subtask.dependency,
+          summary: subtask.summary,
+          title: subtask.title,
+        })),
       });
-      const plannedChildRecords = await Promise.all(childRecords.map((child) => (
-        guardTaskStateTransition({ taskId: child.id, nextState: 'planned', confirmationSatisfied: true }).allowed
-          ? window.api!.transitionTask({ id: child.id, nextState: 'planned' })
-          : Promise.resolve(child)
-      )));
-      await Promise.all(childRecords.map((child, index) => (
-        guardDurablePanelAction({ taskId: child.id, confirmed: true }).allowed
-          ? window.api!.createCompletionCriteria({
-              taskId: child.id,
-              text: draft.subtasks[index]?.acceptanceCriteria ?? '完成后能明确验收。',
-              verificationResponsibility: 'unknown',
-          })
-          : Promise.resolve(null)
-      )));
-
-      const childRecordByTitle = new Map(plannedChildRecords.map((child) => [child.title.trim(), child]));
-      await Promise.all(draft.subtasks.map((subtask, index) => {
-        const dependencyTitle = subtask.dependency?.trim();
-        if (!dependencyTitle) return Promise.resolve(null);
-        const dependency = childRecordByTitle.get(dependencyTitle)
-          ?? plannedChildRecords.find((child) => dependencyTitle.includes(child.title) || child.title.includes(dependencyTitle));
-        const child = plannedChildRecords[index];
-        if (!child || !dependency || dependency.id === child.id) return Promise.resolve(null);
-        if (!guardDurablePanelAction({ taskId: child.id, confirmed: true }).allowed) return Promise.resolve(null);
-        return window.api!.createTaskDependency({
-          taskId: child.id,
-          blockedByTaskId: dependency.id,
-          reason: subtask.dependency,
-        });
-      }));
-
-      const childIds = [...project.childTaskIds, ...plannedChildRecords.map((child) => child.id)];
-      const parentAttrs = saveTaskAttributes(project.id, {
-        type: 'project',
-        facets: project.facets,
-        typeConfirmed: true,
+      const result = await window.api.applyTaskplaneWriteback({
+        plan,
+        taskId: project.id,
       });
-      const updatedParent = await window.api.updateTask({
-        id: project.id,
-        summary: draft.parentGoal,
-        nextStep: draft.nextStep,
-        taskType: 'project',
-        taskFacets: project.facets,
-        childTaskIds: childIds,
-      });
-      verifyDurablePanelActionCompleted({
-        title: '更新项目结构',
-        output: `项目「${project.title}」已关联 ${childIds.length} 个子任务。`,
-      });
-      const projectRecordContent = [
-        '# Record: AI 项目拆解自检',
-        '',
-        '## Trigger',
-        '用户确认创建项目拆解子任务。',
-        '',
-        '## Summary',
-        draft.review,
-        '',
-        '## Confirmed',
-        `- 已创建 ${draft.subtasks.length} 个子任务。`,
-        '',
-        '## Next',
-        `- ${draft.nextStep}`,
-        '',
-      ].join('\n');
-      const projectRecordWorthiness = evaluateTaskRecordWorthiness({
-        text: projectRecordContent,
-        hasTaskContext: true,
-        producedDurableChange: true,
-        reasonHint: 'durable_state_change',
-      });
-      const projectRecord = projectRecordWorthiness.shouldCreateTaskRecord
-        ? await window.api.createTaskFile?.({
-          taskId: project.id,
-          name: 'AI 项目拆解自检.md',
-          path: 'Task Records/AI 项目拆解自检.md',
-          kind: 'file',
-          content: projectRecordContent,
-        }).catch(() => null)
-        : null;
-      if (projectRecord) {
-        verifyDurablePanelActionCompleted({
-          title: '保存项目拆解记录',
-          output: '已写入 Task Records/AI 项目拆解自检.md。',
-        });
+      if (result.status === 'blocked') {
+        setProjectDecompositionError(result.message);
+        return;
       }
-      if (guardDurablePanelAction({ taskId: project.id, confirmed: true }).allowed) {
-        await window.api.createCompletionCriteria({
-          taskId: project.id,
-          text: `完成并验收 ${draft.subtasks.length} 个项目子任务。`,
-          verificationResponsibility: 'unknown',
-        });
-      }
-      await recordPanelTimelineEvent(project.id, 'panel.project_decomposed', {
-        childTaskIds: childIds,
-        childCount: plannedChildRecords.length,
-        nextStep: draft.nextStep,
-        recordPath: projectRecord?.path ?? null,
-        source: 'tasks_page',
-      });
-      const childTasks = plannedChildRecords.map((child) => {
-        const draftSubtask = draft.subtasks.find((subtask) => subtask.title === child.title);
-        const childAttrs = saveTaskAttributes(child.id, {
-          type: 'simple',
-          typeConfirmed: true,
-        });
-        const dependencyTitle = draftSubtask?.dependency?.trim() ?? '';
-        const dependency = dependencyTitle
-          ? plannedChildRecords.find((candidate) => dependencyTitle.includes(candidate.title) || candidate.title.includes(dependencyTitle))
-          : null;
-        const baseTask = fromRecord({ ...child, activeBlocker: null, activeWaitingItem: null }, childAttrs);
-        return {
-          ...baseTask,
-          status: dependency ? 'blocked' as const : baseTask.status,
-          lane: dependency ? 'unblock' as const : baseTask.lane,
-          waitingOn: dependency ? `依赖：${dependency.title}` : baseTask.waitingOn,
-        };
-      });
-
-      setAllTasks((prev) => {
-        const nextParent = prev.map((task) => (
-          task.id === project.id
-            ? {
-                ...fromRecord({
-                  ...updatedParent,
-                  activeBlocker: null,
-                  activeWaitingItem: null,
-                  activeDependency: null,
-                  dependencyReevaluation: null,
-                }, parentAttrs),
-              }
-            : task
-        ));
-        return [...childTasks, ...nextParent];
+      const createdCount = result.createdTasks?.length ?? draft.subtasks.length;
+      verifyDurablePanelActionCompleted({
+        title: '确认项目拆解',
+        output: `已通过统一写回入口为「${project.title}」创建 ${createdCount} 个子任务。`,
       });
       setProjectDraft(null);
+      reloadTasks();
+      reloadTaskDetailForTask(project.id);
+      reloadTaskFilesForTask(project.id);
     } catch (error) {
       setProjectDecompositionError(error instanceof Error ? error.message : '创建子任务失败，请稍后重试。');
     } finally {

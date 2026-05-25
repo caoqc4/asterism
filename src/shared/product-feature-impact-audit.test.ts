@@ -81,6 +81,8 @@ describe('product feature impact audit', () => {
       .not.toContain('not yet represented as a main-side writeback apply plan');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.gaps.join(' '))
       .not.toContain('API-only paths');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('agent_api_decomposition subtask.create_many apply plan');
     expect(taskMemory?.evidence.join(' ')).toContain('TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation');
     expect(taskMemory?.gaps.join(' ')).not.toContain('Automatic writeback should keep distinguishing');
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI task_file.propose Write Intent');

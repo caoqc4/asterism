@@ -25,9 +25,10 @@ export type TaskplaneSubtaskDraftInput = {
 export type TaskplaneSubtaskCreateManyInput = {
   evidenceRunId?: string | null;
   nextStep?: string | null;
+  parentSummary?: string | null;
   parentTaskId: string;
   review?: string | null;
-  source: 'agent_cli_decomposition' | 'taskplane_write_intent';
+  source: 'agent_api_decomposition' | 'agent_cli_decomposition' | 'taskplane_write_intent';
   subtasks: TaskplaneSubtaskDraftInput[];
 };
 
@@ -118,9 +119,10 @@ export type TaskplaneWritebackApplyPlan =
 export function buildSubtaskCreateManyWritebackApplyPlan(params: {
   evidenceRunId?: string | null;
   nextStep?: string | null;
+  parentSummary?: string | null;
   parentTaskId: string;
   review?: string | null;
-  source?: 'agent_cli_decomposition' | 'taskplane_write_intent';
+  source?: 'agent_api_decomposition' | 'agent_cli_decomposition' | 'taskplane_write_intent';
   subtasks: TaskplaneSubtaskDraftInput[];
 }): TaskplaneSubtaskWritebackApplyPlan {
   return {
@@ -128,6 +130,7 @@ export function buildSubtaskCreateManyWritebackApplyPlan(params: {
     input: {
       evidenceRunId: params.evidenceRunId ?? null,
       nextStep: params.nextStep ?? null,
+      parentSummary: params.parentSummary ?? null,
       parentTaskId: params.parentTaskId,
       review: params.review ?? null,
       source: params.source ?? 'agent_cli_decomposition',

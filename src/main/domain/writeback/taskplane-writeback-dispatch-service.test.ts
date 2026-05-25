@@ -25,7 +25,8 @@ describe('TaskplaneWritebackDispatchService', () => {
     const decisionService = {
       create: vi.fn(),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifactRepository());
+    const taskFiles = taskFileRepository();
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFiles, artifactRepository());
 
     const result = await service.dispatch({
       taskId: 'task_1',
@@ -74,7 +75,8 @@ describe('TaskplaneWritebackDispatchService', () => {
         id: 'decision_1',
       }),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifactRepository());
+    const taskFiles = taskFileRepository();
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFiles, artifactRepository());
 
     await service.dispatch({
       taskId: 'task_1',
@@ -152,7 +154,8 @@ describe('TaskplaneWritebackDispatchService', () => {
     const decisionService = {
       create: vi.fn(),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifactRepository());
+    const taskFiles = taskFileRepository();
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFiles, artifactRepository());
 
     const result = await service.dispatch({
       taskId: 'task_2',
@@ -352,7 +355,8 @@ describe('TaskplaneWritebackDispatchService', () => {
     const decisionService = {
       create: vi.fn(),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifactRepository());
+    const taskFiles = taskFileRepository();
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFiles, artifactRepository());
 
     const result = await service.dispatch({
       taskId: 'task_project',
@@ -361,6 +365,7 @@ describe('TaskplaneWritebackDispatchService', () => {
         input: {
           evidenceRunId: 'run_5',
           nextStep: '进入第一个子任务。',
+          parentSummary: '完成首版网站目标与范围确认。',
           parentTaskId: 'task_project',
           review: '拆解保持大块粒度。',
           source: 'agent_cli_decomposition',
@@ -391,6 +396,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     expect(taskService.update).toHaveBeenCalledWith({
       id: 'task_project',
       nextStep: '进入第一个子任务。',
+      summary: '完成首版网站目标与范围确认。',
       taskFacets: ['project', 'simple'],
       taskType: 'project',
     });
@@ -409,11 +415,22 @@ describe('TaskplaneWritebackDispatchService', () => {
       text: '页面范围已确认。',
       verificationResponsibility: 'unknown',
     });
+    expect(taskService.createCompletionCriteria).toHaveBeenCalledWith({
+      taskId: 'task_project',
+      text: '完成并验收 2 个项目子任务。',
+      verificationResponsibility: 'unknown',
+    });
     expect(taskService.createTaskDependency).toHaveBeenCalledWith({
       taskId: 'child_2',
       blockedByTaskId: 'child_1',
       reason: '确认网站范围',
     });
+    expect(taskFiles.create).toHaveBeenCalledWith(expect.objectContaining({
+      content: expect.stringContaining('拆解保持大块粒度。'),
+      name: 'AI 项目拆解自检.md',
+      path: 'Task Records/AI 项目拆解自检.md',
+      taskId: 'task_project',
+    }));
     expect(taskService.recordTimelineEvent).toHaveBeenCalledWith({
       payload: {
         childTaskIds: ['child_1', 'child_2'],

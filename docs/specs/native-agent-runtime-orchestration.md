@@ -674,11 +674,15 @@ Current implementation:
 - Main-side Taskplane writeback dispatch calls the shared decision before
   applying validated Write Intent through task, decision, source, file, or
   subtask services.
+- The retained Agent API project-decomposition confirmation path now builds the
+  same `subtask.create_many` apply plan as native CLI decomposition, including
+  parent summary, parent/child criteria, dependencies, project timeline, and
+  the `AI 项目拆解自检.md` task record.
 
 Remaining work:
 
-- Promote the future Agent API decomposition path into the same proposal-card
-  and writeback-apply contract already used by native CLI decomposition.
+- If Agent API decomposition is promoted as a primary runtime path, keep draft
+  generation task-bound and reversible before it reaches writeback confirmation.
 
 ### Phase 5: API Decision Backend
 

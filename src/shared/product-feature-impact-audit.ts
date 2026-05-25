@@ -164,13 +164,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Selected native Agent CLI decomposition runs through the right-panel task-bound Agent CLI path, parses subtask.propose Write Intent from CLI output, and surfaces a confirmation card.',
       'Subtask draft validation blocks underspecified or tiny proposals before confirmation.',
       'Subtask draft confirmation is represented as a subtask.create_many writeback apply plan and dispatched through the main-side task service adapter.',
-      'The main-side subtask apply path promotes the parent to a project, creates planned child tasks, stores child completion criteria and matched dependencies when available, and records project timeline evidence.',
+      'The retained Agent API decomposition confirmation path now builds an agent_api_decomposition subtask.create_many apply plan instead of writing child tasks directly from the renderer.',
+      'The main-side subtask apply path promotes the parent to a project, creates planned child tasks, stores child and parent completion criteria, stores matched dependencies, records the project timeline, and writes an AI 项目拆解自检 task record when review context exists.',
     ],
     gaps: [
-      'Future Agent API decomposition should reuse the same proposal-card and writeback-apply path as native CLI decomposition.',
+      'Future Agent API decomposition generation is still not the primary task-bound runtime path; if promoted, it should surface the same reversible proposal card before confirmation.',
     ],
     nextActions: [
-      'When Agent API execution is promoted, route subtask.propose through the same writeback confirmation contract.',
+      'When Agent API execution is promoted, keep its draft generation task-bound and feed confirmation through TaskplaneWritebackApplyPlan.',
     ],
   },
   {

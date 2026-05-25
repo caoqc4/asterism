@@ -41,6 +41,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('outside the right panel');
     expect(content).toContain('TaskplaneWritebackApprovalItem');
     expect(content).toContain('subtask.propose` is normalized into a `subtask.create_many` apply plan');
+    expect(content).toContain('Agent API project-decomposition confirmation path');
+    expect(content).toContain('AI 项目拆解自检.md');
     expect(content).not.toContain('completion proposals are not fully wired into the same pipeline');
   });
 });

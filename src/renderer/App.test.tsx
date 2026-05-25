@@ -1021,6 +1021,7 @@ function createMockApi() {
     const parent = await api.updateTask({
       id: plan.input.parentTaskId,
       nextStep: plan.input.nextStep ?? undefined,
+      summary: plan.input.parentSummary ?? undefined,
       taskType: 'project',
       taskFacets: ['project'],
     });

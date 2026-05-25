@@ -128,11 +128,13 @@ export class TaskplaneWritebackDispatchService {
     );
     const shouldUpdateParent =
       parent.taskType !== 'project'
+      || Boolean(input.parentSummary?.trim())
       || Boolean(input.nextStep?.trim());
     if (shouldUpdateParent) {
       updatedTask = await this.taskService.update({
         id: input.parentTaskId,
         nextStep: input.nextStep?.trim() || parent.nextStep,
+        ...(input.parentSummary?.trim() ? { summary: input.parentSummary.trim() } : {}),
         taskFacets: nextFacets,
         taskType: 'project',
       });
@@ -153,11 +155,11 @@ export class TaskplaneWritebackDispatchService {
       });
       createdTasks.push(planned);
       if (subtask.acceptanceCriteria.trim()) {
-        await this.taskService.createCompletionCriteria({
+        await Promise.resolve(this.taskService.createCompletionCriteria({
           taskId: planned.id,
           text: subtask.acceptanceCriteria,
           verificationResponsibility: 'unknown',
-        }).catch(() => null);
+        })).catch(() => null);
       }
     }
 
@@ -171,18 +173,60 @@ export class TaskplaneWritebackDispatchService {
         ));
       const child = createdTasks[index];
       if (!child || !dependency || dependency.id === child.id) return Promise.resolve(null);
-      return this.taskService.createTaskDependency({
+      return Promise.resolve(this.taskService.createTaskDependency({
         taskId: child.id,
         blockedByTaskId: dependency.id,
         reason: subtask.dependency ?? null,
-      }).catch(() => null);
+      })).catch(() => null);
     }));
+
+    await Promise.resolve(this.taskService.createCompletionCriteria({
+      taskId: input.parentTaskId,
+      text: `完成并验收 ${input.subtasks.length} 个项目子任务。`,
+      verificationResponsibility: 'unknown',
+    })).catch(() => null);
+
+    const recordContent = buildProjectDecompositionRecordContent(input);
+    if (recordContent) {
+      await Promise.resolve(this.taskFileRepository.create({
+        taskId: input.parentTaskId,
+        name: 'AI 项目拆解自检.md',
+        path: 'Task Records/AI 项目拆解自检.md',
+        kind: 'file',
+        content: recordContent,
+      })).catch(() => null);
+    }
 
     return {
       createdTasks,
       updatedTask,
     };
   }
+}
+
+function buildProjectDecompositionRecordContent(
+  input: TaskplaneSubtaskCreateManyInput,
+): string | null {
+  const review = input.review?.trim();
+  const nextStep = input.nextStep?.trim();
+  if (!review && !nextStep) return null;
+
+  return [
+    '# Record: AI 项目拆解自检',
+    '',
+    '## Trigger',
+    '用户确认创建项目拆解子任务。',
+    '',
+    '## Summary',
+    review ?? `已创建 ${input.subtasks.length} 个子任务。`,
+    '',
+    '## Confirmed',
+    `- 已创建 ${input.subtasks.length} 个子任务。`,
+    '',
+    '## Next',
+    `- ${nextStep || '进入第一个可执行子任务。'}`,
+    '',
+  ].join('\n');
 }
 
 function getPlanTargetTaskId(plan: TaskplaneWritebackApplyPlan): string | null | undefined {
