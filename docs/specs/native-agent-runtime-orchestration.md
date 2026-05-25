@@ -235,9 +235,9 @@ Taskplane currently has a working native CLI execution backend:
   can see that research happened without reading raw terminal output.
 - Raw terminal output remains available as run evidence.
 - Taskplane extracts structured `TASKPLANE_WRITE_INTENTS` from native CLI
-  output and can surface confirmation cards for task records, source contexts,
-  decisions, next-step updates, blockers, completion proposals, and subtask
-  drafts.
+  output and can surface confirmation cards for task records, task files,
+  artifacts, source contexts, decisions, next-step updates, blockers,
+  completion proposals, and subtask drafts.
 - Selected native Agent CLI project decomposition now uses the same task-bound
   right-panel execution path: GoalPilot routes the request as
   `decomposition_draft`, the native CLI returns `subtask.propose` Write Intent,
@@ -264,7 +264,7 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   current environment;
 - Write Intent extraction and confirmation UI cover the first planned intent
   set, and right-panel confirmations now invoke main-side writeback dispatch
-  for task, source, decision, subtask, and task-file writes; non-UI
+  for task, source, decision, subtask, task-file, and artifact writes; non-UI
   confirmation flows still need to invoke that adapter outside the right panel;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
@@ -587,10 +587,10 @@ Status: started.
 - Define `TaskplaneWriteIntent`.
 - Extract `subtask.propose` intents from legacy `TASKPLANE_DECOMPOSITION`
   blocks and `TASKPLANE_WRITE_INTENTS` wrappers.
-- Extract `task_record.create` and `source_context.create` from
-  `TASKPLANE_WRITE_INTENTS`; task records and source contexts can be surfaced
-  through confirmed proposal cards and routed through main-side writeback
-  dispatch.
+- Extract `task_record.create`, `task_file.propose`, `artifact.propose`, and
+  `source_context.create` from `TASKPLANE_WRITE_INTENTS`; task records, task
+  files, artifacts, and source contexts can be surfaced through confirmed
+  proposal cards and routed through main-side writeback dispatch.
 - Extract `decision.create`, `task.update_next_step`, `task.mark_blocked`, and
   `task.complete.propose` from `TASKPLANE_WRITE_INTENTS` into shared validated
   intent objects.
@@ -682,8 +682,9 @@ The architecture is working when:
 - a user can start a task-bound native CLI run from Taskplane;
 - Taskplane can show what phase the run is in without dumping raw events;
 - runtime evidence is persisted as run steps;
-- runtime output can produce structured write intent for records, sources,
-  decisions, next steps, blockers, completion proposals, and subtask drafts;
+- runtime output can produce structured write intent for records, task files,
+  artifacts, sources, decisions, next steps, blockers, completion proposals,
+  and subtask drafts;
 - invalid intent is rejected or surfaced for review;
 - meaningful durable writes require confirmation;
 - Taskplane services perform all database writes;

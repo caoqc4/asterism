@@ -2838,6 +2838,49 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('surfaces Agent CLI artifact write intents as confirmed artifact proposals', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请保存这个教程结构产物。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created');
+    expect(run).toBeTruthy();
+    Object.assign(run!, {
+      output: [
+        '已整理为任务产物。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'artifact.propose',
+            title: 'codex-tutorial-structure.md',
+            content: '# 首版教程结构\n\n- 入门\n- 案例',
+            summary: '保存教程结构产物。',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText('任务产物写入提案')).toBeTruthy();
+    expect(screen.getByText('保存教程结构产物。')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认保存产物' }));
+    await waitFor(() => {
+      expect(harness.api.createManualArtifact).toHaveBeenCalledWith(expect.objectContaining({
+        content: '# 首版教程结构\n\n- 入门\n- 案例',
+        taskId: 'task_risk',
+        title: 'codex-tutorial-structure.md',
+      }));
+    });
+  });
+
   it('surfaces Agent CLI structured write intents as confirmed product writebacks', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));

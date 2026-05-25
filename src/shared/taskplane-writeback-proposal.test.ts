@@ -27,6 +27,12 @@ describe('Taskplane writeback proposal builder', () => {
             summary: '保存首版教程大纲。',
           },
           {
+            type: 'artifact.propose',
+            title: 'codex-tutorial-structure.md',
+            content: '# 首版教程结构\n\n- 入门\n- 案例',
+            summary: '保存教程结构产物。',
+          },
+          {
             type: 'decision.create',
             title: '确认首版范围',
             rationale: '范围会影响页面结构。',
@@ -62,6 +68,13 @@ describe('Taskplane writeback proposal builder', () => {
       summary: '保存首版教程大纲。',
       surface: 'task_file',
       surfaceLabel: '文件',
+    });
+    expect(proposals.artifact).toMatchObject({
+      content: '# 首版教程结构\n\n- 入门\n- 案例',
+      evidenceRunId: 'run_1',
+      kind: 'note',
+      summary: '保存教程结构产物。',
+      title: 'codex-tutorial-structure.md',
     });
     expect(proposals.structured).toMatchObject({
       detail: '范围会影响页面结构。',

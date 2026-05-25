@@ -25,7 +25,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     const decisionService = {
       create: vi.fn(),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository());
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifactRepository());
 
     const result = await service.dispatch({
       taskId: 'task_1',
@@ -74,7 +74,7 @@ describe('TaskplaneWritebackDispatchService', () => {
         id: 'decision_1',
       }),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository());
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifactRepository());
 
     await service.dispatch({
       taskId: 'task_1',
@@ -152,7 +152,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     const decisionService = {
       create: vi.fn(),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository());
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifactRepository());
 
     const result = await service.dispatch({
       taskId: 'task_2',
@@ -193,7 +193,7 @@ describe('TaskplaneWritebackDispatchService', () => {
       taskId: 'task_1',
       updatedAt: '2026-01-01T00:00:00.000Z',
     });
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, files);
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, files, artifactRepository());
 
     const result = await service.dispatch({
       taskId: 'task_1',
@@ -240,6 +240,78 @@ describe('TaskplaneWritebackDispatchService', () => {
     });
   });
 
+  it('routes artifact proposals through the artifact repository and timeline service', async () => {
+    const taskService = {
+      create: vi.fn(),
+      createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      transition: vi.fn(),
+      update: vi.fn(),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const artifacts = artifactRepository();
+    artifacts.createNoteFromRun.mockResolvedValue({
+      content: '# 首版教程结构',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      id: 'artifact_1',
+      kind: 'note',
+      sourceId: 'run_6',
+      sourceType: 'run',
+      taskId: 'task_1',
+      title: 'codex-tutorial-structure.md',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifacts);
+
+    const result = await service.dispatch({
+      taskId: 'task_1',
+      plan: {
+        action: 'artifact.create_note_from_run',
+        input: {
+          content: '# 首版教程结构',
+          runId: 'run_6',
+          taskId: 'task_1',
+          title: 'codex-tutorial-structure.md',
+        },
+        successMessage: '已确认并保存任务产物：codex-tutorial-structure.md。',
+        timeline: {
+          payload: {
+            evidenceRunId: 'run_6',
+            source: 'taskplane_write_intent',
+            title: 'codex-tutorial-structure.md',
+          },
+          type: 'panel.artifact_written',
+        },
+      },
+    });
+
+    expect(artifacts.createNoteFromRun).toHaveBeenCalledWith({
+      content: '# 首版教程结构',
+      runId: 'run_6',
+      taskId: 'task_1',
+      title: 'codex-tutorial-structure.md',
+    });
+    expect(taskService.recordTimelineEvent).toHaveBeenCalledWith({
+      payload: {
+        evidenceRunId: 'run_6',
+        source: 'taskplane_write_intent',
+        title: 'codex-tutorial-structure.md',
+      },
+      taskId: 'task_1',
+      type: 'panel.artifact_written',
+    });
+    expect(result).toMatchObject({
+      action: 'artifact.create_note_from_run',
+      status: 'completed',
+    });
+  });
+
   it('applies subtask proposals through task service project updates, child creation, criteria, and dependencies', async () => {
     const taskService = {
       create: vi.fn()
@@ -280,7 +352,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     const decisionService = {
       create: vi.fn(),
     };
-    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository());
+    const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFileRepository(), artifactRepository());
 
     const result = await service.dispatch({
       taskId: 'task_project',
@@ -372,6 +444,12 @@ function taskFileRepository() {
     create: vi.fn(),
     findById: vi.fn(),
     update: vi.fn(),
+  };
+}
+
+function artifactRepository() {
+  return {
+    createNoteFromRun: vi.fn(),
   };
 }
 

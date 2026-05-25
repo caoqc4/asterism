@@ -58,10 +58,12 @@ import {
 } from '@shared/taskplane-write-intent';
 import {
   buildTaskplaneWritebackProposalsFromText,
+  type TaskplaneArtifactWritebackProposal,
   type TaskplaneSourceContextWritebackProposal,
   type TaskplaneStructuredWritebackProposal,
 } from '@shared/taskplane-writeback-proposal';
 import {
+  buildArtifactWritebackApplyPlan,
   buildSubtaskCreateManyWritebackApplyPlan,
   buildTaskFileUpdateWritebackApplyPlan,
   buildTaskFileWritebackApplyPlan,
@@ -193,6 +195,8 @@ interface TaskFileWriteProposal {
 
 type SourceContextWriteProposal = TaskplaneSourceContextWritebackProposal;
 
+type ArtifactWriteProposal = TaskplaneArtifactWritebackProposal;
+
 type StructuredWritebackProposal = TaskplaneStructuredWritebackProposal;
 
 interface TaskDecompositionDraft {
@@ -216,6 +220,7 @@ interface PanelSessionState {
   phaseCloseoutNotice: string | null;
   phaseCloseoutSaved: boolean;
   sessionRefreshDismissed: boolean;
+  artifactProposal: ArtifactWriteProposal | null;
   sourceContextProposal: SourceContextWriteProposal | null;
   structuredWritebackProposal: StructuredWritebackProposal | null;
   taskFileProposal: TaskFileWriteProposal | null;
@@ -239,6 +244,7 @@ function createPanelSessionState(taskId: string | null): PanelSessionState {
     phaseCloseoutNotice: null,
     phaseCloseoutSaved: false,
     sessionRefreshDismissed: false,
+    artifactProposal: null,
     sourceContextProposal: null,
     structuredWritebackProposal: null,
     taskFileProposal: null,
@@ -255,6 +261,7 @@ function clearTaskScopedTransients(state: PanelSessionState): PanelSessionState 
     phaseCloseoutNotice: null,
     phaseCloseoutSaved: false,
     sessionRefreshDismissed: false,
+    artifactProposal: null,
     sourceContextProposal: null,
     structuredWritebackProposal: null,
     taskFileProposal: null,
@@ -1010,6 +1017,17 @@ function parseAgentCliSourceContextWriteIntent(params: {
   }).sourceContext;
 }
 
+function parseAgentCliArtifactWriteIntent(params: {
+  output: string;
+  runId: string;
+  taskId: string;
+}): ArtifactWriteProposal | null {
+  return buildTaskplaneWritebackProposalsFromText({
+    ...params,
+    taskTitle: '',
+  }).artifact;
+}
+
 function parseAgentCliStructuredWritebackIntent(params: {
   output: string;
   runId: string;
@@ -1367,6 +1385,7 @@ export function RightPanel({
   const [creatingDecompositionChildren, setCreatingDecompositionChildren] = useState(false);
   const [savingSourceContextProposal, setSavingSourceContextProposal] = useState(false);
   const [savingStructuredWritebackProposal, setSavingStructuredWritebackProposal] = useState(false);
+  const [savingArtifactProposal, setSavingArtifactProposal] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [agentCliLaunchNotice, setAgentCliLaunchNotice] = useState<string | null>(null);
   const [taskDecompositionDraft, setTaskDecompositionDraft] = useState<TaskDecompositionDraft | null>(null);
@@ -1385,6 +1404,7 @@ export function RightPanel({
     phaseCloseoutNotice,
     phaseCloseoutSaved,
     sessionRefreshDismissed,
+    artifactProposal,
     sourceContextProposal,
     structuredWritebackProposal,
     taskFileProposal,
@@ -1484,6 +1504,16 @@ export function RightPanel({
     patchSession({
       sourceContextProposal: typeof updater === 'function'
         ? updater(sourceContextProposal)
+        : updater,
+    });
+  }
+
+  function updateArtifactProposal(
+    updater: ArtifactWriteProposal | null | ((current: ArtifactWriteProposal | null) => ArtifactWriteProposal | null),
+  ) {
+    patchSession({
+      artifactProposal: typeof updater === 'function'
+        ? updater(artifactProposal)
         : updater,
     });
   }
@@ -1590,6 +1620,14 @@ export function RightPanel({
           });
           if (sourceProposal) {
             updateSourceContextProposal((existing) => existing ?? sourceProposal);
+          }
+          const artifactProposal = parseAgentCliArtifactWriteIntent({
+            output,
+            runId: detail.id,
+            taskId: current.taskId,
+          });
+          if (artifactProposal) {
+            updateArtifactProposal((existing) => existing ?? artifactProposal);
           }
           const structuredProposal = parseAgentCliStructuredWritebackIntent({
             output,
@@ -2425,6 +2463,39 @@ export function RightPanel({
     }
   }
 
+  async function confirmArtifactWrite() {
+    if (!activeTaskId || !artifactProposal || savingArtifactProposal) return;
+    setSavingArtifactProposal(true);
+    const plan = buildArtifactWritebackApplyPlan({
+      proposal: artifactProposal,
+      taskId: activeTaskId,
+    });
+    try {
+      const result = window.api?.applyTaskplaneWriteback
+        ? await window.api.applyTaskplaneWriteback({ plan, taskId: activeTaskId })
+        : await dispatchTaskplaneWritebackApplyPlan({
+          plan,
+          taskId: activeTaskId,
+          ports: {
+            createArtifact: (input) => window.api.createManualArtifact({
+              content: input.content,
+              taskId: input.taskId,
+              title: input.title,
+            }),
+            recordTimelineEvent: recordPanelTimelineEvent,
+          },
+        });
+      if (result.status === 'blocked') {
+        appendSysMsg(result.message);
+        return;
+      }
+      updateArtifactProposal(null);
+      appendSysMsg(result.successMessage);
+    } finally {
+      setSavingArtifactProposal(false);
+    }
+  }
+
   async function confirmStructuredWriteback() {
     if (!activeTaskId || !structuredWritebackProposal || savingStructuredWritebackProposal) return;
     setSavingStructuredWritebackProposal(true);
@@ -2740,7 +2811,9 @@ export function RightPanel({
       userText: text,
     });
     patchSession({
+      artifactProposal: null,
       sourceContextProposal: null,
+      structuredWritebackProposal: null,
       taskFileProposal: null,
     });
 
@@ -2818,6 +2891,14 @@ export function RightPanel({
           });
           if (sourceProposal) {
             updateSourceContextProposal((existing) => existing ?? sourceProposal);
+          }
+          const artifactProposal = parseAgentCliArtifactWriteIntent({
+            output,
+            runId: run.id,
+            taskId: activeTaskId,
+          });
+          if (artifactProposal) {
+            updateArtifactProposal((existing) => existing ?? artifactProposal);
           }
           const structuredProposal = parseAgentCliStructuredWritebackIntent({
             output,
@@ -3273,6 +3354,7 @@ export function RightPanel({
     thinking
     || agentCliLaunchNotice
     || activeTaskAgentCliRun
+    || artifactProposal
     || sourceContextProposal
     || structuredWritebackProposal
     || taskDecompositionDraft
@@ -3328,6 +3410,7 @@ export function RightPanel({
   const pendingMemoryGuidanceLookupKey = activeTaskId
     && sessionRefreshSuggestion
     && !taskFileProposal
+    && !artifactProposal
     && !sourceContextProposal
     && !structuredWritebackProposal
     && !taskDecompositionDraft
@@ -3541,6 +3624,44 @@ export function RightPanel({
                 disabled={savingTaskFileProposal}
               >
                 {savingTaskFileProposal ? '写入中…' : taskFileProposalConfirmLabel(taskFileProposal)}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {artifactProposal && (
+          <div className="panel-file-proposal">
+            <div className="panel-file-proposal-head">
+              <strong>任务产物写入提案</strong>
+              <span>来自 Agent 结构化意图，确认后保存</span>
+            </div>
+            <input
+              className="panel-file-proposal-path"
+              value={artifactProposal.title}
+              onChange={(event) => updateArtifactProposal((proposal) => (
+                proposal ? { ...proposal, title: event.target.value } : proposal
+              ))}
+              aria-label="任务产物标题"
+            />
+            <div className="panel-refresh-reason">{artifactProposal.summary}</div>
+            <textarea
+              className="panel-file-proposal-content"
+              value={artifactProposal.content}
+              onChange={(event) => updateArtifactProposal((proposal) => (
+                proposal ? { ...proposal, content: event.target.value } : proposal
+              ))}
+              aria-label="任务产物内容"
+            />
+            <div className="panel-refresh-actions">
+              <button className="btn sm ghost" onClick={() => updateArtifactProposal(null)}>
+                放弃
+              </button>
+              <button
+                className={`btn sm primary${savingArtifactProposal ? ' disabled' : ''}`}
+                onClick={() => void confirmArtifactWrite()}
+                disabled={savingArtifactProposal}
+              >
+                {savingArtifactProposal ? '保存中…' : '确认保存产物'}
               </button>
             </div>
           </div>

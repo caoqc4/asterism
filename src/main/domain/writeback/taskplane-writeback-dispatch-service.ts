@@ -3,6 +3,7 @@ import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskExecutionType, TaskListItemRecord } from '../../../shared/types/task.js';
 import type { TaskFileRecord } from '../../../shared/types/task-file.js';
+import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import {
   formatSubtaskDraftSummary,
   type TaskplaneSubtaskCreateManyInput,
@@ -17,6 +18,7 @@ import { evaluateTaskAdvancement } from '../../../shared/task-advancement-orches
 import type { PanelRuntimeTimelineEventType } from '../../../shared/runtime-panel-events.js';
 import type { TaskService } from '../task/task-service.js';
 import type { DecisionService } from '../decision/decision-service.js';
+import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { TaskFileRepository } from '../../db/repositories/task-file-repository.js';
 
 export type TaskplaneWritebackTaskServicePort = Pick<
@@ -35,12 +37,14 @@ export type TaskplaneWritebackTaskServicePort = Pick<
 export type TaskplaneWritebackDecisionServicePort = Pick<DecisionService, 'create'>;
 
 export type TaskplaneWritebackTaskFileRepositoryPort = Pick<TaskFileRepository, 'create' | 'findById' | 'update'>;
+export type TaskplaneWritebackArtifactRepositoryPort = Pick<ArtifactRepository, 'createNoteFromRun'>;
 
 export class TaskplaneWritebackDispatchService {
   constructor(
     private readonly taskService: TaskplaneWritebackTaskServicePort,
     private readonly decisionService: TaskplaneWritebackDecisionServicePort,
     private readonly taskFileRepository: TaskplaneWritebackTaskFileRepositoryPort,
+    private readonly artifactRepository: TaskplaneWritebackArtifactRepositoryPort,
   ) {}
 
   async dispatch(params: {
@@ -84,6 +88,7 @@ export class TaskplaneWritebackDispatchService {
       plan: params.plan,
       taskId: params.taskId,
       ports: {
+        createArtifact: (input): Promise<ArtifactRecord> => this.artifactRepository.createNoteFromRun(input),
         createBlocker: (input): Promise<BlockerRecord> => this.taskService.createBlocker(input),
         createDecision: (input): Promise<DecisionRecord> => this.decisionService.create(input),
         createSourceContext: (input): Promise<SourceContextRecord> => this.taskService.createSourceContext(input),

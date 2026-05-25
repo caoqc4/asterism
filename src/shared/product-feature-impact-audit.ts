@@ -313,12 +313,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'Sandboxed coding and patch promotion keep local writes behind review or confirmation boundaries.',
       'Native CLI task_file.propose Write Intent is parsed into the existing confirmed task-file proposal surface and main-side writeback apply plan.',
+      'Native CLI artifact.propose Write Intent is parsed into a confirmed task artifact proposal and saved through the main-side ArtifactRepository port as run-backed evidence.',
     ],
     gaps: [
-      'Artifact Write Intent still needs a dedicated artifact proposal/apply plan before native runtime output can create Artifacts directly.',
+      'Workspace-write and sandbox promotion paths still need to decide when an Artifact should become a patch promotion, a task file, or a note artifact.',
     ],
     nextActions: [
-      'Add artifact.propose only after the artifact proposal surface and dispatcher port are ready.',
+      'Align future workspace-write promotion with artifact.propose, task_file.propose, and patch-review evidence surfaces.',
     ],
   },
   {

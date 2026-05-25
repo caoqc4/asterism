@@ -159,10 +159,10 @@ Write Intent may describe:
 - `decision.create`;
 - `subtask.propose`;
 - `task_file.propose`;
+- `artifact.propose`;
 - `task.update_next_step`;
 - `task.mark_blocked`;
 - `task.complete.propose`;
-- future artifact proposals.
 
 Write Intent is a proposal. Persistence happens only after validation and,
 where required, confirmation.

@@ -3,6 +3,7 @@ import type { DecisionRecord } from './types/decision.js';
 import type { SourceContextRecord } from './types/source-context.js';
 import type { TaskListItemRecord } from './types/task.js';
 import type { TaskFileRecord } from './types/task-file.js';
+import type { ArtifactRecord } from './types/artifact.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
   TaskplaneSubtaskCreateManyResult,
@@ -11,6 +12,7 @@ import type {
 } from './taskplane-writeback-apply-plan.js';
 
 export type TaskplaneWritebackDispatchPorts = {
+  createArtifact?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'artifact.create_note_from_run' }>, ArtifactRecord>;
   createBlocker?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'blocker.create' }>, BlockerRecord>;
   createDecision?: TaskplaneWritebackPort<
     Extract<TaskplaneWritebackApplyPlan, { action: 'decision.create' | 'completion_decision.create' }>,
@@ -52,6 +54,13 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   taskId: string;
 }): Promise<TaskplaneWritebackDispatchResult> {
   const { plan, ports, taskId } = params;
+
+  if (plan.action === 'artifact.create_note_from_run') {
+    if (!ports.createArtifact) return blocked(plan.action, '产物提案已暂停：当前环境不支持保存任务产物。');
+    await ports.createArtifact(plan.input);
+    await recordTimeline(ports, taskId, plan.timeline);
+    return completed(plan);
+  }
 
   if (plan.action === 'source_context.create') {
     if (!ports.createSourceContext) return blocked(plan.action, '来源上下文提案已暂停：当前环境不支持保存来源上下文。');

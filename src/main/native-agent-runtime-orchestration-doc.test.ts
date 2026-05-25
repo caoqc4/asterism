@@ -22,9 +22,9 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('future `wanman_matrix` executor');
     expect(content).toContain('completed chat summary');
     expect(content).toContain('including child-task advancement messages');
-    expect(content).toContain('task records, source contexts,');
-    expect(content).toContain('decisions, next-step updates, blockers, completion proposals, and subtask');
-    expect(content).toContain('for task, source, decision, subtask, and task-file writes');
+    expect(content).toContain('task records, task files,');
+    expect(content).toContain('artifacts, source contexts, decisions, next-step updates, blockers');
+    expect(content).toContain('for task, source, decision, subtask, task-file, and artifact writes');
     expect(content).toContain('still need to invoke that adapter outside the right panel');
     expect(content).toContain('subtask.propose` is normalized into a `subtask.create_many` apply plan');
     expect(content).not.toContain('completion proposals are not fully wired into the same pipeline');

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildArtifactWritebackApplyPlan,
   buildSubtaskCreateManyWritebackApplyPlan,
   buildTaskFileWritebackApplyPlan,
   buildSourceContextWritebackApplyPlan,
@@ -118,6 +119,38 @@ describe('Taskplane writeback apply plans', () => {
           source: 'taskplane_write_intent',
           surface: 'task_record',
           surfaceLabel: '任务记录',
+        },
+      },
+    });
+  });
+
+  it('maps artifact proposals to run-backed note artifacts', () => {
+    const plan = buildArtifactWritebackApplyPlan({
+      proposal: {
+        content: '# 首版教程结构\n\n- 入门\n- 案例',
+        evidenceRunId: 'run_6',
+        kind: 'note',
+        summary: '保存教程结构产物。',
+        title: 'codex-tutorial-structure.md',
+      },
+      taskId: 'task_1',
+    });
+
+    expect(plan).toMatchObject({
+      action: 'artifact.create_note_from_run',
+      input: {
+        content: '# 首版教程结构\n\n- 入门\n- 案例',
+        runId: 'run_6',
+        taskId: 'task_1',
+        title: 'codex-tutorial-structure.md',
+      },
+      timeline: {
+        type: 'panel.artifact_written',
+        payload: {
+          evidenceRunId: 'run_6',
+          kind: 'note',
+          source: 'taskplane_write_intent',
+          title: 'codex-tutorial-structure.md',
         },
       },
     });

@@ -164,6 +164,33 @@ describe('Taskplane write intent', () => {
     });
   });
 
+  it('extracts artifact proposals as run-backed note artifact intents', () => {
+    const intents = extractTaskplaneWriteIntentsFromText({
+      evidenceRunId: 'run_artifact',
+      taskId: 'task_scope',
+      text: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [{
+          type: 'artifact.propose',
+          title: 'codex-tutorial-structure.md',
+          content: '# 首版教程结构\n\n- 入门\n- 案例',
+          summary: '保存为任务产物，便于后续页面实现引用。',
+        }],
+      }),
+    });
+
+    expect(intents).toMatchObject([{
+      content: '# 首版教程结构\n\n- 入门\n- 案例',
+      evidenceRunId: 'run_artifact',
+      kind: 'note',
+      summary: '保存为任务产物，便于后续页面实现引用。',
+      taskId: 'task_scope',
+      title: 'codex-tutorial-structure.md',
+      type: 'artifact.propose',
+    }]);
+    expect(validateTaskplaneWriteIntent(intents[0]!)).toMatchObject({ status: 'ready' });
+  });
+
   it('extracts decision, next-step, blocker, and completion proposal intents', () => {
     const intents = extractTaskplaneWriteIntentsFromText({
       evidenceRunId: 'run_5',

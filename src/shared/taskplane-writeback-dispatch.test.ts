@@ -140,6 +140,53 @@ describe('Taskplane writeback dispatch', () => {
     });
   });
 
+  it('dispatches artifact proposals through provided ports and records timeline evidence', async () => {
+    const createArtifact = vi.fn().mockResolvedValue({});
+    const recordTimelineEvent = vi.fn().mockResolvedValue(undefined);
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createArtifact,
+        recordTimelineEvent,
+      },
+      plan: {
+        action: 'artifact.create_note_from_run',
+        input: {
+          content: '# 首版教程结构',
+          runId: 'run_6',
+          taskId: 'task_1',
+          title: 'codex-tutorial-structure.md',
+        },
+        successMessage: '已确认并保存任务产物：codex-tutorial-structure.md。',
+        timeline: {
+          payload: {
+            evidenceRunId: 'run_6',
+            source: 'taskplane_write_intent',
+            title: 'codex-tutorial-structure.md',
+          },
+          type: 'panel.artifact_written',
+        },
+      },
+    });
+
+    expect(createArtifact).toHaveBeenCalledWith({
+      content: '# 首版教程结构',
+      runId: 'run_6',
+      taskId: 'task_1',
+      title: 'codex-tutorial-structure.md',
+    });
+    expect(recordTimelineEvent).toHaveBeenCalledWith('task_1', 'panel.artifact_written', {
+      evidenceRunId: 'run_6',
+      source: 'taskplane_write_intent',
+      title: 'codex-tutorial-structure.md',
+    });
+    expect(result).toMatchObject({
+      action: 'artifact.create_note_from_run',
+      status: 'completed',
+    });
+  });
+
   it('dispatches subtask creation through the unified writeback port', async () => {
     const createSubtasks = vi.fn().mockResolvedValue({
       createdTasks: [

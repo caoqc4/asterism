@@ -4,6 +4,7 @@ import {
 } from './runtime-surface-routing.js';
 import {
   extractTaskplaneWriteIntentsFromText,
+  type TaskplaneArtifactProposeIntent,
   type TaskplaneDecisionCreateIntent,
   type TaskplaneTaskBlockedIntent,
   type TaskplaneTaskCompleteIntent,
@@ -20,6 +21,14 @@ export type TaskplaneTaskFileWritebackProposal = {
   summary: string;
   surface: RuntimeSurfaceKind;
   surfaceLabel: string;
+};
+
+export type TaskplaneArtifactWritebackProposal = {
+  content: string;
+  evidenceRunId: string;
+  kind: 'note';
+  summary: string;
+  title: string;
 };
 
 export type TaskplaneSourceContextWritebackProposal = {
@@ -44,6 +53,7 @@ export type TaskplaneStructuredWritebackProposal = {
 };
 
 export type TaskplaneWritebackProposalSet = {
+  artifact: TaskplaneArtifactWritebackProposal | null;
   sourceContext: TaskplaneSourceContextWritebackProposal | null;
   structured: TaskplaneStructuredWritebackProposal | null;
   taskFile: TaskplaneTaskFileWritebackProposal | null;
@@ -67,6 +77,9 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
   const taskFileIntent = intents.find((intent): intent is TaskplaneTaskFileProposeIntent => (
     intent.type === 'task_file.propose'
   ));
+  const artifactIntent = intents.find((intent): intent is TaskplaneArtifactProposeIntent => (
+    intent.type === 'artifact.propose'
+  ));
   const sourceContextIntent = intents.find((intent) => intent.type === 'source_context.create');
   const structuredIntent = intents.find((intent): intent is TaskplaneStructuredWritebackIntent => (
     intent.type === 'decision.create'
@@ -76,6 +89,7 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
   ));
 
   return {
+    artifact: artifactIntent ? buildArtifactProposal(artifactIntent) : null,
     sourceContext: sourceContextIntent?.type === 'source_context.create'
       ? {
           credibility: sourceContextIntent.credibility,
@@ -98,6 +112,16 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
           surfaceLabel: '任务记录',
         }
       : null,
+  };
+}
+
+function buildArtifactProposal(intent: TaskplaneArtifactProposeIntent): TaskplaneArtifactWritebackProposal {
+  return {
+    content: intent.content,
+    evidenceRunId: intent.evidenceRunId,
+    kind: intent.kind,
+    summary: intent.summary ?? 'Agent 建议保存为任务产物。',
+    title: intent.title,
   };
 }
 

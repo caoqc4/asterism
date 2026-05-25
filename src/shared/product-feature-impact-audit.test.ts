@@ -74,7 +74,9 @@ describe('product feature impact audit', () => {
     expect(taskMemory?.evidence.join(' ')).toContain('TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation');
     expect(taskMemory?.gaps.join(' ')).not.toContain('Automatic writeback should keep distinguishing');
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI task_file.propose Write Intent');
+    expect(taskFiles?.evidence.join(' ')).toContain('Native CLI artifact.propose Write Intent');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Task-file and artifact Write Intent should be represented explicitly');
+    expect(taskFiles?.gaps.join(' ')).not.toContain('Artifact Write Intent still needs a dedicated artifact proposal/apply plan');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');
     expect(decisions?.evidence.join(' ')).toContain('task, decision, and task-file services');
     expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');

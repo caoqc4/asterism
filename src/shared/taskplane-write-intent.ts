@@ -33,6 +33,16 @@ export type TaskplaneTaskFileProposeIntent = {
   type: 'task_file.propose';
 };
 
+export type TaskplaneArtifactProposeIntent = {
+  content: string;
+  evidenceRunId: string;
+  kind: 'note';
+  summary?: string;
+  taskId: string;
+  title: string;
+  type: 'artifact.propose';
+};
+
 export type TaskplaneDecisionCreateIntent = {
   evidenceRunId: string;
   options?: string[];
@@ -79,6 +89,7 @@ export type TaskplaneTaskCompleteIntent = {
 export type TaskplaneWriteIntent =
   | TaskplaneTaskRecordCreateIntent
   | TaskplaneTaskFileProposeIntent
+  | TaskplaneArtifactProposeIntent
   | TaskplaneDecisionCreateIntent
   | TaskplaneSourceContextCreateIntent
   | TaskplaneTaskNextStepIntent
@@ -144,6 +155,11 @@ export function validateTaskplaneWriteIntent(intent: TaskplaneWriteIntent): Task
     if (path && !/\.(md|txt)$/i.test(path)) {
       issues.push('Task file proposal currently supports .md or .txt files.');
     }
+  }
+  if (intent.type === 'artifact.propose') {
+    if (!intent.title.trim()) issues.push('Artifact proposal requires title.');
+    if (!intent.content.trim()) issues.push('Artifact proposal requires content.');
+    if (intent.kind !== 'note') issues.push('Artifact proposal currently supports note artifacts.');
   }
   if (intent.type === 'source_context.create') {
     if (!intent.title.trim()) issues.push('Source context intent requires title.');
@@ -219,6 +235,20 @@ function normalizeWriteIntentValue(value: unknown, params: {
       summary: readString(value.summary) || undefined,
       taskId: readString(value.taskId, params.taskId),
       type: 'task_file.propose',
+    }];
+  }
+  if (type === 'artifact.propose') {
+    const title = readString(value.title);
+    const content = readString(value.content);
+    if (!title || !content) return [];
+    return [{
+      content,
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      kind: 'note',
+      summary: readString(value.summary) || undefined,
+      taskId: readString(value.taskId, params.taskId),
+      title,
+      type: 'artifact.propose',
     }];
   }
   if (type === 'source_context.create') {

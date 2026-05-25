@@ -5,6 +5,7 @@ import type { TaskListItemRecord, UpdateTaskInput } from './types/task.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from './types/task-file.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
+  TaskplaneArtifactWritebackProposal,
   TaskplaneSourceContextWritebackProposal,
   TaskplaneStructuredWritebackProposal,
 } from './taskplane-writeback-proposal.js';
@@ -38,6 +39,18 @@ export type TaskplaneSubtaskCreateManyResult = {
 export type TaskplaneSourceContextWritebackApplyPlan = {
   action: 'source_context.create';
   input: CreateSourceContextInput;
+  successMessage: string;
+  timeline: TaskplaneWritebackTimelineDraft;
+};
+
+export type TaskplaneArtifactWritebackApplyPlan = {
+  action: 'artifact.create_note_from_run';
+  input: {
+    content: string;
+    runId: string;
+    taskId: string;
+    title: string;
+  };
   successMessage: string;
   timeline: TaskplaneWritebackTimelineDraft;
 };
@@ -96,6 +109,7 @@ export type TaskplaneStructuredWritebackApplyPlan =
     };
 
 export type TaskplaneWritebackApplyPlan =
+  | TaskplaneArtifactWritebackApplyPlan
   | TaskplaneSourceContextWritebackApplyPlan
   | TaskplaneSubtaskWritebackApplyPlan
   | TaskplaneTaskFileWritebackApplyPlan
@@ -228,6 +242,32 @@ export function buildSourceContextWritebackApplyPlan(params: {
         source: 'taskplane_write_intent',
         title: proposal.title,
         uri: proposal.uri ?? null,
+      },
+    },
+  };
+}
+
+export function buildArtifactWritebackApplyPlan(params: {
+  proposal: TaskplaneArtifactWritebackProposal;
+  taskId: string;
+}): TaskplaneArtifactWritebackApplyPlan {
+  const { proposal } = params;
+  return {
+    action: 'artifact.create_note_from_run',
+    input: {
+      content: proposal.content,
+      runId: proposal.evidenceRunId,
+      taskId: params.taskId,
+      title: proposal.title,
+    },
+    successMessage: `已确认并保存任务产物：${proposal.title}。`,
+    timeline: {
+      type: 'panel.artifact_written',
+      payload: {
+        evidenceRunId: proposal.evidenceRunId,
+        kind: proposal.kind,
+        source: 'taskplane_write_intent',
+        title: proposal.title,
       },
     },
   };

@@ -124,6 +124,7 @@ const {
     },
     artifactRepository: {
       createPatchFromRun: vi.fn(),
+      createNoteFromRun: vi.fn(),
       createManualNote: vi.fn(),
       findById: vi.fn(),
       update: vi.fn(),
