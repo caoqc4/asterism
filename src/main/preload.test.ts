@@ -69,6 +69,7 @@ function getExposedApi() {
     deleteArtifact: (id: string) => Promise<unknown>;
     previewPatchArtifactSandboxReview?: (input: unknown) => Promise<unknown>;
     runPatchArtifactSandboxReview?: (input: unknown) => Promise<unknown>;
+    applySandboxPatchPromotion?: (input: unknown) => Promise<unknown>;
     listTaskFiles: (taskId: string) => Promise<unknown>;
     createTaskFile: (input: unknown) => Promise<unknown>;
     updateTaskFile: (input: unknown) => Promise<unknown>;
@@ -203,6 +204,10 @@ describe('preload bridge', () => {
       operatorConfirmed: true,
       requestedChecks: ['test', 'lint'],
     };
+    const applySandboxPatchPromotionInput = {
+      checkpointId: 'run_checkpoint_patch_1',
+      operatorConfirmed: true,
+    };
     const createTaskFileInput = {
       taskId: 'task_1',
       name: 'notes.md',
@@ -334,6 +339,7 @@ describe('preload bridge', () => {
     await api.deleteArtifact('artifact_1');
     await api.previewPatchArtifactSandboxReview?.(previewPatchArtifactSandboxReviewInput);
     await api.runPatchArtifactSandboxReview?.(runPatchArtifactSandboxReviewInput);
+    await api.applySandboxPatchPromotion?.(applySandboxPatchPromotionInput);
     await api.listTaskFiles('task_1');
     await api.createTaskFile(createTaskFileInput);
     await api.updateTaskFile(updateTaskFileInput);
@@ -413,6 +419,7 @@ describe('preload bridge', () => {
       ['artifact:delete', 'artifact_1'],
       ['artifact:previewSandboxPatchReview', previewPatchArtifactSandboxReviewInput],
       ['artifact:runSandboxPatchReview', runPatchArtifactSandboxReviewInput],
+      ['sandboxPatchPromotion:apply', applySandboxPatchPromotionInput],
       ['taskFile:list', 'task_1'],
       ['taskFile:create', createTaskFileInput],
       ['taskFile:update', updateTaskFileInput],

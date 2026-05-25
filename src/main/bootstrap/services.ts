@@ -121,6 +121,7 @@ const sandboxPatchPromotionPreflightService = new SandboxPatchPromotionPreflight
   sandboxPatchPromotionRepository,
   runCheckpointRepository,
   artifactRepository,
+  decisionRepository,
 );
 const sandboxPatchPromotionApplyService = new SandboxPatchPromotionApplyService(
   sandboxPatchPromotionPreflightService,

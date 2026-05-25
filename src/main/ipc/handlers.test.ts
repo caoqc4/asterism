@@ -27,6 +27,9 @@ const {
       resolveRuntimeConfig: vi.fn(),
       setConfig: vi.fn(),
     },
+    appConfigService: {
+      read: vi.fn(),
+    },
     schedulerService: {
       start: vi.fn(),
       stop: vi.fn(),
@@ -109,6 +112,9 @@ const {
     },
     patchArtifactSandboxReviewRunService: {
       run: vi.fn(),
+    },
+    sandboxPatchPromotionApplyService: {
+      apply: vi.fn(),
     },
     operatorStartedRunService: {
       trigger: vi.fn(),
@@ -252,6 +258,12 @@ describe('registerIpcHandlers', () => {
       });
     });
     servicesMock.taskService.list.mockResolvedValue([]);
+    servicesMock.appConfigService.read.mockReturnValue({
+      featureFlags: {
+        enableSandboxPatchPromotionApply: false,
+      },
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
     servicesMock.taskService.getDetail.mockResolvedValue({
       id: 'task_1',
       title: 'Task 1',
@@ -1556,6 +1568,79 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'decision.changed');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(4, 'brief.changed');
+  });
+
+  it('applies approved sandbox patch promotions through explicit IPC when the apply flag is enabled', async () => {
+    servicesMock.appConfigService.read.mockReturnValue({
+      featureFlags: {
+        enableSandboxPatchPromotionApply: true,
+      },
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+    servicesMock.sandboxPatchPromotionApplyService.apply.mockResolvedValueOnce({
+      auditSummary: 'Sandbox patch promotion applied / checkpoint=run_checkpoint_patch_1 / files=notes.md',
+      promotion: {
+        id: 'sandbox_patch_promotion_1',
+        checkpointId: 'run_checkpoint_patch_1',
+        runId: 'run_review_1',
+        taskId: 'task_1',
+        artifactId: 'artifact_patch_1',
+        sourceId: 'sandbox_1',
+        decisionId: 'decision_patch_1',
+        patchDigest: 'sha256:abc',
+        expectedFiles: ['notes.md'],
+        status: 'applied',
+        auditSummary: 'Sandbox patch promotion applied / checkpoint=run_checkpoint_patch_1 / files=notes.md',
+        blockedReasons: [],
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:01:00.000Z',
+        appliedAt: '2026-01-01T00:01:00.000Z',
+      },
+      status: 'applied',
+      touchedFiles: ['notes.md'],
+    });
+
+    const handler = getRegisteredHandler<
+      [{ checkpointId: string; operatorConfirmed: boolean }],
+      unknown
+    >('sandboxPatchPromotion:apply');
+
+    await expect(handler({}, {
+      checkpointId: 'run_checkpoint_patch_1',
+      operatorConfirmed: true,
+    })).resolves.toMatchObject({
+      status: 'applied',
+      touchedFiles: ['notes.md'],
+    });
+    expect(servicesMock.sandboxPatchPromotionApplyService.apply).toHaveBeenCalledWith('run_checkpoint_patch_1');
+    expect(servicesMock.runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_review_1',
+      status: 'completed',
+      title: '显式 promotion apply 已应用',
+      output: expect.stringContaining('Touched files: notes.md'),
+    }));
+    expect(servicesMock.runRepository.updateResult).toHaveBeenCalledWith(
+      'run_review_1',
+      'completed',
+      'Sandbox patch promotion applied / checkpoint=run_checkpoint_patch_1 / files=notes.md',
+      'system',
+      null,
+    );
+    expect(emitAppEventMock).toHaveBeenCalledWith('run.changed', 'run_review_1');
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+  });
+
+  it('blocks explicit sandbox patch promotion apply when the apply flag is disabled', async () => {
+    const handler = getRegisteredHandler<
+      [{ checkpointId: string; operatorConfirmed: boolean }],
+      unknown
+    >('sandboxPatchPromotion:apply');
+
+    await expect(handler({}, {
+      checkpointId: 'run_checkpoint_patch_1',
+      operatorConfirmed: true,
+    })).rejects.toThrow('disabled by feature flag');
+    expect(servicesMock.sandboxPatchPromotionApplyService.apply).not.toHaveBeenCalled();
   });
 
   it('imports legacy work habits without emitting task events', async () => {

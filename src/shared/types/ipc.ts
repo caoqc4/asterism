@@ -147,6 +147,10 @@ import type {
   UpdateSourceContextInput,
 } from './source-context.js';
 import type {
+  ApplySandboxPatchPromotionInput,
+  ApplySandboxPatchPromotionResult,
+} from './sandbox-patch-promotion.js';
+import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
   CreateWorkHabitProposalInput,
@@ -325,6 +329,9 @@ export type ElectronApi = {
   runPatchArtifactSandboxReview?: (
     input: RunPatchArtifactSandboxReviewInput,
   ) => Promise<PatchArtifactSandboxReviewRunResult>;
+  applySandboxPatchPromotion?: (
+    input: ApplySandboxPatchPromotionInput,
+  ) => Promise<ApplySandboxPatchPromotionResult>;
   listTaskFiles: (taskId: string) => Promise<TaskFileRecord[]>;
   createTaskFile: (input: CreateTaskFileInput) => Promise<TaskFileRecord>;
   updateTaskFile: (input: UpdateTaskFileInput) => Promise<TaskFileRecord>;

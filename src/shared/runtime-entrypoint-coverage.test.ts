@@ -513,6 +513,7 @@ describe('runtime entrypoint coverage', () => {
       'run.triggerAgentCli',
       'run.triggerCodeAgent',
       'run.triggerOperatorStarted',
+      'sandboxPatchPromotion.apply',
       'settings.agentCliLoginProbe',
       'settings.aiRuntimeConfig',
       'settings.sandboxBackendProbe',
@@ -531,5 +532,21 @@ describe('runtime entrypoint coverage', () => {
       'taskplane.writebackApply',
       'workHabit.preferenceMemory',
     ]);
+  });
+
+  it('registers explicit reviewed-patch workspace apply as an operator-gated local control path', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'sandboxPatchPromotion.apply');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('local_execution_control');
+    expect(entry?.ipcChannels).toEqual(['sandboxPatchPromotion:apply']);
+    expect(entry?.requiredGates).toEqual(expect.arrayContaining([
+      'operator_confirmation',
+      'decision_action',
+      'checkpoint_eligibility',
+      'post_step',
+    ]));
+    expect(entry?.notes).toContain('enableSandboxPatchPromotionApply');
+    expect(entry?.notes).toContain('records applied or blocked Run evidence');
   });
 });

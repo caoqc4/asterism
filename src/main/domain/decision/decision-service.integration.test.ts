@@ -69,6 +69,7 @@ describe('DecisionService integration', () => {
       sandboxPatchPromotionRepository,
       runCheckpointRepository,
       artifactRepository,
+      decisionRepository,
     );
     const sandboxPatchPromotionApplyService = new SandboxPatchPromotionApplyService(
       sandboxPatchPromotionPreflightService,

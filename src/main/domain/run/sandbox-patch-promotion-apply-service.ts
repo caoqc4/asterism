@@ -1,7 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { SandboxPatchPromotionRecord } from '../../../shared/types/sandbox-patch-promotion.js';
+import type {
+  ApplySandboxPatchPromotionResult,
+  SandboxPatchPromotionRecord,
+} from '../../../shared/types/sandbox-patch-promotion.js';
 import type { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import type {
   SandboxPatchPromotionPreflightResult,
@@ -9,26 +12,7 @@ import type {
 } from './sandbox-patch-promotion-preflight-service.js';
 import type { SandboxPatchReviewArtifactContent } from './sandbox-patch-review-persister.js';
 
-export type SandboxPatchPromotionApplyResult =
-  | {
-      auditSummary: string;
-      promotion: SandboxPatchPromotionRecord;
-      status: 'already_applied';
-      touchedFiles: string[];
-    }
-  | {
-      auditSummary: string;
-      promotion: SandboxPatchPromotionRecord;
-      status: 'applied';
-      touchedFiles: string[];
-    }
-  | {
-      auditSummary: string;
-      blockedReasons: string[];
-      promotion?: SandboxPatchPromotionRecord;
-      status: 'blocked';
-      touchedFiles: string[];
-    };
+export type SandboxPatchPromotionApplyResult = ApplySandboxPatchPromotionResult;
 
 type ParsedSandboxPatchFile = {
   file: string;

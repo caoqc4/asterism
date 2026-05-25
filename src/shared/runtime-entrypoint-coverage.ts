@@ -344,6 +344,28 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     notes: 'Patch artifact sandbox review is a product-controlled local execution path: it starts from an already confirmed run-backed patch artifact, creates a new audit Run, mounts the workspace read-only, applies the patch only inside the disposable sandbox workdir, persists review artifacts and checkpoint evidence, and leaves actual workspace mutation behind the existing promotion Decision approval/apply gate.',
   },
   {
+    id: 'sandboxPatchPromotion.apply',
+    owner: 'IPC sandboxPatchPromotion:apply / SandboxPatchPromotionApplyService.apply',
+    kind: 'local_execution_control',
+    description: 'Explicitly apply an approved reviewed-patch promotion to the real workspace when the apply feature flag is enabled.',
+    ipcChannels: ['sandboxPatchPromotion:apply'],
+    requiredGates: [
+      'simplicity_check',
+      'operator_confirmation',
+      'decision_action',
+      'checkpoint_eligibility',
+      'post_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'operator_confirmation',
+      'decision_action',
+      'checkpoint_eligibility',
+      'post_step',
+    ],
+    notes: 'This is an explicit operator action, not a runtime fallback: IPC requires operatorConfirmed and enableSandboxPatchPromotionApply, SandboxPatchPromotionPreflightService revalidates approved reviewed-patch promotion metadata and workspace divergence, and the handler records applied or blocked Run evidence before refreshing task/run state.',
+  },
+  {
     id: 'run.triggerAgentCli',
     owner: 'AgentCliRunService.trigger',
     kind: 'provider_visible_execution',

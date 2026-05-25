@@ -118,6 +118,7 @@ function buildArtifact(partial: Partial<ArtifactRecord> = {}): ArtifactRecord {
 function buildService(params: {
   artifact?: ArtifactRecord | null;
   checkpoint?: RunCheckpointRecord | null;
+  decisionStatus?: 'approved' | 'cancelled' | 'deferred' | 'pending';
   promotion?: SandboxPatchPromotionRecord | null;
 } = {}): SandboxPatchPromotionPreflightService {
   return new SandboxPatchPromotionPreflightService(
@@ -135,6 +136,12 @@ function buildService(params: {
       findById: vi.fn().mockResolvedValue(
         'artifact' in params ? params.artifact : buildArtifact(),
       ),
+    },
+    {
+      get: vi.fn().mockResolvedValue({
+        id: 'decision_1',
+        status: params.decisionStatus ?? 'pending',
+      }),
     },
   );
 }
@@ -175,6 +182,40 @@ describe('SandboxPatchPromotionPreflightService', () => {
     expect(result).toMatchObject({
       status: 'already_applied',
       summary: 'Sandbox patch promotion preflight: already_applied / checkpoint=run_checkpoint_1',
+    });
+  });
+
+  it('allows explicit apply preflight after an approved no-write promotion settled the checkpoint', async () => {
+    const service = buildService({
+      checkpoint: buildCheckpoint({
+        status: 'resolved',
+        resolvedAt: '2026-01-01T00:01:00.000Z',
+      }),
+      decisionStatus: 'approved',
+    });
+
+    const result = await service.preflight('run_checkpoint_1');
+
+    expect(result).toMatchObject({
+      status: 'ready',
+      summary: 'Sandbox patch promotion preflight: ready / checkpoint=run_checkpoint_1 / source=sandbox_source_1 / files=notes.md / no workspace files written',
+    });
+  });
+
+  it('keeps settled promotions blocked until the associated Decision is approved', async () => {
+    const service = buildService({
+      checkpoint: buildCheckpoint({
+        status: 'resolved',
+        resolvedAt: '2026-01-01T00:01:00.000Z',
+      }),
+      decisionStatus: 'deferred',
+    });
+
+    const result = await service.preflight('run_checkpoint_1');
+
+    expect(result).toMatchObject({
+      blockedReasons: ['Patch promotion checkpoint is not open.'],
+      status: 'blocked',
     });
   });
 

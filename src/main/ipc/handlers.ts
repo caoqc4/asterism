@@ -39,6 +39,7 @@ import type {
 } from '../../shared/types/external-access-source-ingestion.js';
 import type { OperatorStartedRunRequest } from '../../shared/types/operator-started-run.js';
 import type { CreateManualArtifactInput, UpdateArtifactInput } from '../../shared/types/artifact.js';
+import type { ApplySandboxPatchPromotionInput } from '../../shared/types/sandbox-patch-promotion.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from '../../shared/types/task-file.js';
 import type {
   CreateSourceContextInput,
@@ -646,6 +647,54 @@ export function registerIpcHandlers(): void {
       summary: result.summary,
       taskId: result.taskId,
     };
+  });
+
+  ipcMain.handle('sandboxPatchPromotion:apply', async (
+    _event,
+    input: ApplySandboxPatchPromotionInput,
+  ) => {
+    if (!input.operatorConfirmed) {
+      throw new Error('Sandbox patch promotion apply requires explicit operator confirmation.');
+    }
+    const services = getServices();
+    if (!services.appConfigService.read().featureFlags.enableSandboxPatchPromotionApply) {
+      throw new Error('Sandbox patch promotion apply is disabled by feature flag.');
+    }
+
+    const result = await services.sandboxPatchPromotionApplyService.apply(input.checkpointId);
+    const promotion = result.promotion;
+    if (promotion) {
+      const output = result.status === 'blocked'
+        ? [
+            result.auditSummary,
+            'No workspace files were written.',
+          ].join('\n')
+        : [
+            result.auditSummary,
+            `Touched files: ${result.touchedFiles.join(', ')}`,
+          ].join('\n');
+      await services.runStepRepository.create({
+        runId: promotion.runId,
+        kind: 'checkpoint',
+        status: result.status === 'blocked' ? 'failed' : 'completed',
+        title: result.status === 'blocked'
+          ? '显式 promotion apply 阻塞'
+          : '显式 promotion apply 已应用',
+        output,
+      });
+      await services.runRepository.updateResult(
+        promotion.runId,
+        result.status === 'blocked' ? 'failed' : 'completed',
+        result.auditSummary,
+        'system',
+        result.status === 'blocked' ? result.auditSummary : null,
+      );
+      emitAppEvent('run.changed', promotion.runId);
+      emitAppEvent('task.changed', promotion.taskId);
+      emitAppEvent('brief.changed');
+    }
+
+    return result;
   });
 
   ipcMain.handle('taskFile:list', async (_event, taskId: string) => {

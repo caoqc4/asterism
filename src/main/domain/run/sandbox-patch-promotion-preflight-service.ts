@@ -2,7 +2,9 @@ import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { RunCheckpointRecord } from '../../../shared/types/run.js';
 import type { SandboxPatchPromotionRecord } from '../../../shared/types/sandbox-patch-promotion.js';
 import { evaluateSandboxPatchPromotionReadiness } from '../../../shared/sandbox-patch-promotion-readiness.js';
+import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import type { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import type { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import {
@@ -34,6 +36,7 @@ export class SandboxPatchPromotionPreflightService {
     private readonly promotionRepository: Pick<SandboxPatchPromotionRepository, 'findByCheckpointId'>,
     private readonly checkpointRepository: Pick<RunCheckpointRepository, 'findById'>,
     private readonly artifactRepository: Pick<ArtifactRepository, 'findById'>,
+    private readonly decisionRepository: Pick<DecisionRepository, 'get'> | null = null,
   ) {}
 
   async preflight(checkpointId: string): Promise<SandboxPatchPromotionPreflightResult> {
@@ -69,8 +72,9 @@ export class SandboxPatchPromotionPreflightService {
       return blocked(['Patch promotion artifact was not found.']);
     }
 
+    const allowSettledApprovedApply = await this.canApplySettledApprovedPromotion(checkpoint, promotion);
     const blockedReasons = [
-      ...validateCheckpointReadiness(checkpoint, promotion),
+      ...validateCheckpointReadiness(checkpoint, promotion, { allowSettledApprovedApply }),
       ...validateArtifact(artifact, promotion),
     ];
 
@@ -92,21 +96,37 @@ export class SandboxPatchPromotionPreflightService {
       ].join(' / '),
     };
   }
+
+  private async canApplySettledApprovedPromotion(
+    checkpoint: RunCheckpointRecord,
+    promotion: SandboxPatchPromotionRecord,
+  ): Promise<boolean> {
+    if (checkpoint.status !== 'resolved' || promotion.status !== 'pending' || !this.decisionRepository) {
+      return false;
+    }
+
+    const decision = await this.decisionRepository.get(promotion.decisionId).catch(() => null);
+    return decision?.status === 'approved';
+  }
 }
 
 function validateCheckpointReadiness(
   checkpoint: RunCheckpointRecord,
   promotion: SandboxPatchPromotionRecord,
+  options: { allowSettledApprovedApply?: boolean } = {},
 ): string[] {
   const readiness = evaluateSandboxPatchPromotionReadiness(checkpoint);
   const blockedReasons: string[] = [];
 
   if (readiness.status !== 'ready') {
-    blockedReasons.push(
+    if (readiness.status === 'already_resolved' && options.allowSettledApprovedApply) {
+      return validateSettledCheckpointPayload(checkpoint, promotion);
+    }
+    return [
       readiness.blockedReasons.length
         ? readiness.blockedReasons.join(' ')
         : readiness.summary,
-    );
+    ];
   }
 
   if (readiness.artifactId !== promotion.artifactId) {
@@ -127,6 +147,62 @@ function validateCheckpointReadiness(
 
   if (!sameStringList(readiness.expectedFiles, promotion.expectedFiles)) {
     blockedReasons.push('Patch promotion expected files do not match checkpoint payload.');
+  }
+
+  return blockedReasons;
+}
+
+function validateSettledCheckpointPayload(
+  checkpoint: RunCheckpointRecord,
+  promotion: SandboxPatchPromotionRecord,
+): string[] {
+  const payload = parseRunCheckpointPayload(checkpoint.payload);
+  const blockedReasons: string[] = [];
+
+  if (checkpoint.kind !== 'patch_promotion') {
+    blockedReasons.push('Checkpoint is not a patch-promotion checkpoint.');
+  }
+
+  if (!payload) {
+    blockedReasons.push('Patch promotion checkpoint payload is missing or invalid.');
+    return blockedReasons;
+  }
+
+  if (payload.kind !== 'patch_promotion') {
+    blockedReasons.push('Patch promotion payload kind is not patch_promotion.');
+  }
+
+  const descriptorId = readString(payload.descriptorId);
+  if (descriptorId !== 'workspace.staged_patch') {
+    blockedReasons.push('Patch promotion descriptor must be workspace.staged_patch.');
+  }
+
+  const policySnapshot = isRecord(payload.policySnapshot) ? payload.policySnapshot : null;
+  const policyDescriptorId = policySnapshot ? readString(policySnapshot.descriptorId) : null;
+  if (policyDescriptorId !== 'workspace.staged_patch') {
+    blockedReasons.push('Patch promotion policy snapshot must target workspace.staged_patch.');
+  }
+
+  if (readString(payload.artifactId) !== promotion.artifactId) {
+    blockedReasons.push('Patch promotion artifact id does not match checkpoint payload.');
+  }
+  if (readString(payload.decisionId) !== promotion.decisionId) {
+    blockedReasons.push('Patch promotion Decision id does not match checkpoint payload.');
+  }
+  const sourceId = readString(payload.sourceId) ?? readString(payload.sessionId);
+  if (sourceId !== promotion.sourceId) {
+    blockedReasons.push('Patch promotion source id does not match checkpoint payload.');
+  }
+  if (readString(payload.patchDigest) !== promotion.patchDigest) {
+    blockedReasons.push('Patch promotion digest does not match checkpoint payload.');
+  }
+  const expectedFiles = readStringArray(payload.expectedFiles);
+  if (!sameStringList(expectedFiles, promotion.expectedFiles)) {
+    blockedReasons.push('Patch promotion expected files do not match checkpoint payload.');
+  }
+  const unsafeExpectedFiles = expectedFiles.filter((file) => !isSafeWorkspaceRelativePath(file));
+  if (unsafeExpectedFiles.length) {
+    blockedReasons.push(`Patch promotion expected files are unsafe: ${unsafeExpectedFiles.join(', ')}`);
   }
 
   return blockedReasons;
@@ -212,4 +288,39 @@ function sameStringList(left: string[], right: string[]): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(new Set(value
+    .map((item) => readString(item))
+    .filter((item): item is string => Boolean(item))));
+}
+
+function isSafeWorkspaceRelativePath(value: string): boolean {
+  const normalized = value.replaceAll('\\', '/').trim();
+  if (!normalized
+    || normalized.startsWith('/')
+    || normalized.startsWith('../')
+    || normalized.includes('/../')
+    || normalized === '.'
+    || normalized === '..') {
+    return false;
+  }
+
+  const segments = normalized.split('/');
+  return segments.every((segment) =>
+    Boolean(segment)
+    && segment !== '.git'
+    && segment !== '.taskplane'
+    && segment !== '.'
+    && segment !== '..'
+  );
 }

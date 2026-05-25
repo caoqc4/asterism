@@ -55,6 +55,7 @@ const api: ElectronApi = {
   deleteArtifact: (id) => ipcRenderer.invoke('artifact:delete', id),
   previewPatchArtifactSandboxReview: (input) => ipcRenderer.invoke('artifact:previewSandboxPatchReview', input),
   runPatchArtifactSandboxReview: (input) => ipcRenderer.invoke('artifact:runSandboxPatchReview', input),
+  applySandboxPatchPromotion: (input) => ipcRenderer.invoke('sandboxPatchPromotion:apply', input),
   listTaskFiles: (taskId) => ipcRenderer.invoke('taskFile:list', taskId),
   createTaskFile: (input) => ipcRenderer.invoke('taskFile:create', input),
   updateTaskFile: (input) => ipcRenderer.invoke('taskFile:update', input),

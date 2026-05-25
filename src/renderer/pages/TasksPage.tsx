@@ -1056,6 +1056,8 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const [patchReviewPreviewMessages, setPatchReviewPreviewMessages] = useState<Record<string, string>>({});
   const [previewingPatchReviewArtifactId, setPreviewingPatchReviewArtifactId] = useState<string | null>(null);
   const [runningPatchReviewArtifactId, setRunningPatchReviewArtifactId] = useState<string | null>(null);
+  const [applyingPatchPromotionCheckpointId, setApplyingPatchPromotionCheckpointId] = useState<string | null>(null);
+  const [sandboxPatchPromotionApplyEnabled, setSandboxPatchPromotionApplyEnabled] = useState(false);
   const [fileContentOverrides, setFileContentOverrides] = useState<Record<string, string>>(() => loadTaskFileContentOverrides());
   const [localTaskFiles, setLocalTaskFiles] = useState<Record<string, LocalTaskFileRecord[]>>(() => loadLocalTaskFiles());
   const [pendingFileSwitch, setPendingFileSwitch] = useState<PendingFileSwitch>(null);
@@ -1164,6 +1166,17 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       });
   }
 
+  function reloadSandboxPatchPromotionApplyFlag() {
+    if (!window.api?.getAiConfigStatus) return;
+    window.api.getAiConfigStatus()
+      .then((status) => {
+        setSandboxPatchPromotionApplyEnabled(Boolean(status.featureFlags.enableSandboxPatchPromotionApply));
+      })
+      .catch(() => {
+        setSandboxPatchPromotionApplyEnabled(false);
+      });
+  }
+
   function reloadTaskDetailForTask(taskId: string, isCancelled: () => boolean = () => false) {
     if (!window.api?.getTaskDetail) return;
     window.api.getTaskDetail(taskId)
@@ -1197,6 +1210,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       .finally(() => setLoading(false));
     reloadPendingDecisions();
     reloadWorkHabits();
+    reloadSandboxPatchPromotionApplyFlag();
 
     const unsub = window.api.subscribeToEvents((event) => {
       if (event.type === 'task.changed') {
@@ -1212,6 +1226,9 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       if (event.type === 'decision.changed') {
         reloadPendingDecisions();
         reloadRunsForTask();
+      }
+      if (event.type === 'settings.changed') {
+        reloadSandboxPatchPromotionApplyFlag();
       }
     });
     return () => unsub?.();
@@ -1660,6 +1677,12 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     && Boolean(window.api?.previewPatchArtifactSandboxReview);
   const selectedPatchReviewRunAvailable = isPatchArtifactFile(selectedFile)
     && Boolean(window.api?.runPatchArtifactSandboxReview);
+  const selectedPatchPromotionApplyAvailable = isPatchArtifactFile(selectedFile)
+    && Boolean(window.api?.applySandboxPatchPromotion)
+    && sandboxPatchPromotionApplyEnabled
+    && selectedPatchPromotionView?.tone === 'ready'
+    && selectedPatchPromotionView.decisionStatus === 'approved'
+    && selectedPatchPromotionView.promotionStatus === 'pending';
   const directChildTasks = selectedTask
     ? orderedChildrenForTask(selectedTask, allTasks)
     : [];
@@ -1837,6 +1860,55 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       }));
     } finally {
       setRunningPatchReviewArtifactId(null);
+    }
+  }
+
+  async function applySandboxPatchPromotion(view: SandboxPatchPromotionView | null, file: VirtualTaskFile | null) {
+    if (!view || !file?.artifactId || !window.api?.applySandboxPatchPromotion) return;
+    if (!guardDurablePanelAction({ taskId: file.taskId, confirmed: true }).allowed) return;
+    const confirmed = window.confirm('确认将这份 reviewed patch 应用到工作区？应用前仍会执行 promotion preflight。');
+    if (!confirmed) return;
+
+    setApplyingPatchPromotionCheckpointId(view.checkpointId);
+    setPatchReviewPreviewMessages((current) => ({
+      ...current,
+      [file.artifactId!]: '正在执行 promotion apply 预检并准备写入工作区...',
+    }));
+
+    try {
+      const result = await window.api.applySandboxPatchPromotion({
+        checkpointId: view.checkpointId,
+        operatorConfirmed: true,
+      });
+      const message = result.status === 'blocked'
+        ? `promotion apply 阻塞：${result.auditSummary}`
+        : [
+            result.status === 'already_applied' ? 'promotion 已经应用' : 'promotion apply 完成',
+            result.touchedFiles.length ? `文件：${result.touchedFiles.join(', ')}` : null,
+          ].filter(Boolean).join('；');
+      setPatchReviewPreviewMessages((current) => ({
+        ...current,
+        [file.artifactId!]: message,
+      }));
+      await recordPanelTimelineEvent(file.taskId, 'panel.artifact_written', {
+        artifactId: file.artifactId,
+        checkpointId: view.checkpointId,
+        noWorkspaceFilesWritten: result.status !== 'applied',
+        source: 'tasks_page',
+        status: result.status,
+        summary: result.auditSummary,
+        type: 'sandbox_promotion_apply',
+      });
+      reloadRunsForTask(file.taskId);
+      reloadTaskDetailForTask(file.taskId);
+      reloadTasks();
+    } catch (error) {
+      setPatchReviewPreviewMessages((current) => ({
+        ...current,
+        [file.artifactId!]: `promotion apply 失败：${error instanceof Error ? error.message : '未知错误'}`,
+      }));
+    } finally {
+      setApplyingPatchPromotionCheckpointId(null);
     }
   }
 
@@ -3037,6 +3109,13 @@ function resetCaptureDraft() {
               dirty={fileDirty}
               notice={selectedPatchReviewMessage}
               noticeTone={selectedPatchReviewTone}
+              noticeAction={selectedPatchPromotionApplyAvailable ? {
+                disabled: applyingPatchPromotionCheckpointId === selectedPatchPromotionView?.checkpointId,
+                label: applyingPatchPromotionCheckpointId === selectedPatchPromotionView?.checkpointId
+                  ? '应用中...'
+                  : '应用到工作区',
+                onClick: () => void applySandboxPatchPromotion(selectedPatchPromotionView, selectedFile),
+              } : null}
               onChange={(value) => {
                 setFileDraft(value);
                 setFileDirty(value !== selectedFile.content);
@@ -3696,6 +3775,7 @@ function FileWorkspace({
   draft,
   dirty,
   notice,
+  noticeAction,
   noticeTone,
   onChange,
 }: {
@@ -3703,6 +3783,11 @@ function FileWorkspace({
   draft: string;
   dirty: boolean;
   notice?: string | null;
+  noticeAction?: {
+    disabled?: boolean;
+    label: string;
+    onClick: () => void;
+  } | null;
   noticeTone?: SandboxPatchPromotionView['tone'] | null;
   onChange: (value: string) => void;
 }) {
@@ -3719,7 +3804,16 @@ function FileWorkspace({
       )}
       {notice && (
         <div className={`file-readonly-note${noticeTone ? ` ${noticeTone}` : ''}`}>
-          {notice}
+          <span>{notice}</span>
+          {noticeAction && (
+            <button
+              className="file-readonly-note-action"
+              disabled={noticeAction.disabled}
+              onClick={noticeAction.onClick}
+            >
+              {noticeAction.label}
+            </button>
+          )}
         </div>
       )}
       <textarea

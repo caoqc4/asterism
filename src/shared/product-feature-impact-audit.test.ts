@@ -64,6 +64,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('workspace write candidates that require reviewable promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService');
     expect(rightPanel?.evidence.join(' ')).toContain('missing-apply-record status');
+    expect(rightPanel?.evidence.join(' ')).toContain('explicit apply-to-workspace action');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
@@ -106,9 +107,11 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('enableSandboxPatchPromotionApply');
     expect(taskFiles?.evidence.join(' ')).toContain('approved-but-unapplied');
     expect(taskFiles?.evidence.join(' ')).toContain('sandboxPatchPromotions');
+    expect(taskFiles?.evidence.join(' ')).toContain('explicitly apply approved reviewed-patch promotions');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
-    expect(taskFiles?.gaps.join(' ')).toContain('final apply path is disabled by default');
+    expect(taskFiles?.gaps.join(' ')).toContain('disabled by default');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need an apply implementation');
+    expect(rightPanel?.gaps.join(' ')).not.toContain('fully normal operator-facing apply workflow');
     expect(rightPanel?.gaps.join(' ')).not.toContain('post-apply status projection');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Task-file and artifact Write Intent should be represented explicitly');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Artifact Write Intent still needs a dedicated artifact proposal/apply plan');

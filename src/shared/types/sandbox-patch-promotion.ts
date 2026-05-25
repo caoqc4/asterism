@@ -29,3 +29,29 @@ export type CreateSandboxPatchPromotionInput = {
   expectedFiles: string[];
   auditSummary?: string | null;
 };
+
+export type ApplySandboxPatchPromotionInput = {
+  checkpointId: string;
+  operatorConfirmed: boolean;
+};
+
+export type ApplySandboxPatchPromotionResult =
+  | {
+      auditSummary: string;
+      promotion: SandboxPatchPromotionRecord;
+      status: 'already_applied';
+      touchedFiles: string[];
+    }
+  | {
+      auditSummary: string;
+      promotion: SandboxPatchPromotionRecord;
+      status: 'applied';
+      touchedFiles: string[];
+    }
+  | {
+      auditSummary: string;
+      blockedReasons: string[];
+      promotion?: SandboxPatchPromotionRecord;
+      status: 'blocked';
+      touchedFiles: string[];
+    };

@@ -287,6 +287,11 @@ Taskplane currently has a working native CLI execution backend:
   Decision status in the task file workspace, including the fact that workspace
   application remains disabled by default and controlled by the promotion apply
   boundary.
+- When `enableSandboxPatchPromotionApply` is enabled, the task file workspace can
+  explicitly apply an approved reviewed-patch promotion after operator
+  confirmation. The main process reruns promotion preflight, writes only matching
+  reviewed files, records applied or blocked run evidence, and refreshes task/run
+  state.
 - Completed native run chat summaries mention both web research and local
   command/workspace activity when those events were recorded.
 - Codex JSONL `command_execution` items are projected as `shell_command` Run
@@ -333,9 +338,10 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   paths; a feature-flagged SandboxPatchPromotionApplyService can apply approved
   promotion checkpoints after preflight, and task file workspace views project
   applied, blocked, approved-but-unapplied, or missing-apply-record promotion
-  status from Run detail; final workspace application remains disabled by
-  default and still needs a clearer operator-facing apply workflow before it
-  becomes a normal happy path;
+  status from Run detail; when the apply flag is enabled, Tasks exposes an
+  explicit apply action for approved reviewed patches, but workspace application
+  remains disabled by default and still needs broader packaged smoke and recovery
+  UX before it becomes a normal happy path;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 
