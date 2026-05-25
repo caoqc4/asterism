@@ -248,8 +248,11 @@ Taskplane currently has a working native CLI execution backend:
   messages, so users can distinguish web research, workspace reads, commands,
   and tool calls without reading raw terminal output.
 - Native CLI `workspace_write` capability steps are treated as write candidates:
-  post-step verification requires artifact, task-file, or patch-review promotion
-  evidence before Taskplane considers them recoverable.
+  post-step verification requires reviewable promotion evidence before Taskplane
+  considers them recoverable. Accepted evidence is a run-backed patch artifact,
+  a patch-promotion checkpoint, or a ready `task_file.propose` /
+  `artifact.propose` Write Intent; ordinary note/run-output artifacts are not
+  enough by themselves.
 - Completed native run chat summaries mention both web research and local
   command/workspace activity when those events were recorded.
 - Codex JSONL `command_execution` items are projected as `shell_command` Run

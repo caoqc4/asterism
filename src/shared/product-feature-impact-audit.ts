@@ -124,13 +124,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent API chat invocations preserve the same trimmed Pilot decision snapshot in invocation provenance.',
       'Run Goal Contract and Agent CLI context bridge now carry selected-runtime capability declarations into the native CLI prompt before execution.',
       'Run verification and memory proposals remain product-controlled.',
-      'Post-step verification now treats native CLI capability=workspace_write steps as workspace write candidates that require promotion evidence instead of accepting ordinary command output as sufficient recovery evidence.',
+      'Post-step verification now treats native CLI capability=workspace_write steps as workspace write candidates that require reviewable promotion evidence instead of accepting ordinary command output as sufficient recovery evidence.',
     ],
     gaps: [
       'Write-enabled native runtime modes still need an apply implementation that converts approved promotion evidence into workspace mutations.',
     ],
     nextActions: [
-      'Keep future workspace-write promotion on artifact, task-file, or patch-review evidence surfaces before product-controlled persistence.',
+      'Keep future workspace-write promotion on patch artifacts, ready task_file/artifact Write Intent, or patch-review evidence surfaces before product-controlled persistence.',
     ],
   },
   {
@@ -325,13 +325,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Sandboxed coding and patch promotion keep local writes behind review or confirmation boundaries.',
       'Native CLI task_file.propose Write Intent is parsed into the existing confirmed task-file proposal surface and main-side writeback apply plan.',
       'Native CLI artifact.propose Write Intent is parsed into a confirmed task artifact proposal and saved through the main-side ArtifactRepository port as run-backed evidence.',
-      'Native CLI workspace_write capability steps now require artifact, task-file, or patch-review promotion evidence during post-step verification.',
+      'Native CLI workspace_write capability steps now require patch artifact, ready task_file/artifact Write Intent, or patch-review promotion evidence during post-step verification.',
     ],
     gaps: [
       'Workspace-write and sandbox promotion paths still need to decide when an Artifact should become a patch promotion, a task file, or a note artifact.',
     ],
     nextActions: [
-      'Align future workspace-write promotion with artifact.propose, task_file.propose, and patch-review evidence surfaces.',
+      'Align future workspace-write promotion with patch artifacts, artifact.propose, task_file.propose, and patch-review evidence surfaces.',
     ],
   },
   {

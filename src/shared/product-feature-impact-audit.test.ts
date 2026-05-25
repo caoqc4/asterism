@@ -57,7 +57,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Pilot 决策辅助计划');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API chat invocations preserve');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
-    expect(rightPanel?.evidence.join(' ')).toContain('workspace write candidates that require promotion evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('workspace write candidates that require reviewable promotion evidence');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
@@ -90,7 +90,7 @@ describe('product feature impact audit', () => {
     expect(taskMemory?.gaps.join(' ')).not.toContain('Automatic writeback should keep distinguishing');
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI task_file.propose Write Intent');
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI artifact.propose Write Intent');
-    expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require artifact');
+    expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Task-file and artifact Write Intent should be represented explicitly');
     expect(taskFiles?.gaps.join(' ')).not.toContain('Artifact Write Intent still needs a dedicated artifact proposal/apply plan');
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');

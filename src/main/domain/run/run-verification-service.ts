@@ -1,6 +1,10 @@
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { evaluateRuntimeStepEffect } from '../../../shared/runtime-step-effect-evaluator.js';
 import type { TaskMemoryGuidanceState } from '../../../shared/task-memory-guidance-state.js';
+import {
+  extractTaskplaneWriteIntentsFromText,
+  validateTaskplaneWriteIntent,
+} from '../../../shared/taskplane-write-intent.js';
 import type { RunDetailRecord, RunRecord } from '../../../shared/types/run.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
@@ -68,11 +72,32 @@ function hasPromotionEvidence(detail: RunDetailRecord): boolean {
   return Boolean(
     detail.artifacts?.some((artifact) => (
       artifact.kind === 'patch'
-      || artifact.kind === 'note'
-      || artifact.kind === 'run_output'
+      && artifact.sourceType === 'run'
+      && artifact.sourceId === detail.id
     ))
-    || detail.checkpoints?.some((checkpoint) => checkpoint.kind === 'patch_promotion'),
+    || detail.checkpoints?.some((checkpoint) => checkpoint.kind === 'patch_promotion')
+    || hasReadyTaskplanePromotionWriteIntent(detail),
   );
+}
+
+function hasReadyTaskplanePromotionWriteIntent(detail: RunDetailRecord): boolean {
+  return promotionEvidenceTexts(detail).some((text) => (
+    extractTaskplaneWriteIntentsFromText({
+      evidenceRunId: detail.id,
+      taskId: detail.taskId,
+      text,
+    }).some((intent) => (
+      (intent.type === 'task_file.propose' || intent.type === 'artifact.propose')
+      && validateTaskplaneWriteIntent(intent).status === 'ready'
+    ))
+  ));
+}
+
+function promotionEvidenceTexts(detail: RunDetailRecord): string[] {
+  return [
+    detail.output,
+    ...(detail.steps ?? []).flatMap((step) => [step.input, step.output, step.error]),
+  ].filter((value): value is string => Boolean(value?.trim()));
 }
 
 export async function persistTerminalRunVerifications(params: {

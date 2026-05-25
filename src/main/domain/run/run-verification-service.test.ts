@@ -43,6 +43,85 @@ describe('run verification service', () => {
       tone: 'pass',
     }));
   });
+
+  it('does not treat ordinary run output artifacts as workspace write promotion evidence', async () => {
+    const writer = { upsert: vi.fn().mockResolvedValue({}) };
+
+    await persistLightweightRunVerifications(buildRunDetail({
+      artifacts: [buildArtifact({ kind: 'run_output' })],
+      steps: [buildStep({
+        title: 'Codex CLI 工作区写入候选：apply_patch',
+        output: 'capability=workspace_write\napply_patch changed src/app.ts',
+      })],
+    }), writer, { includeRunLevel: false });
+
+    expect(writer.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      label: '写入候选需复核',
+      targetId: 'run_step_1',
+      targetType: 'step',
+      tone: 'warn',
+    }));
+  });
+
+  it('accepts ready task-file Write Intent as workspace write promotion evidence', async () => {
+    const writer = { upsert: vi.fn().mockResolvedValue({}) };
+
+    await persistLightweightRunVerifications(buildRunDetail({
+      output: [
+        'I prepared a reviewable task file proposal.',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'task_file.propose',
+            path: 'implementation-notes.md',
+            content: 'Reviewable notes for the workspace write candidate.',
+            summary: 'Save notes before applying workspace changes.',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      steps: [buildStep({
+        title: 'Codex CLI 工作区写入候选：apply_patch',
+        output: 'capability=workspace_write\napply_patch changed src/app.ts',
+      })],
+    }), writer, { includeRunLevel: false });
+
+    expect(writer.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      label: '执行后检查通过',
+      targetId: 'run_step_1',
+      targetType: 'step',
+      tone: 'pass',
+    }));
+  });
+
+  it('accepts patch promotion checkpoints as workspace write promotion evidence', async () => {
+    const writer = { upsert: vi.fn().mockResolvedValue({}) };
+
+    await persistLightweightRunVerifications(buildRunDetail({
+      checkpoints: [{
+        id: 'checkpoint_1',
+        kind: 'patch_promotion',
+        payload: null,
+        resolvedAt: null,
+        runId: 'run_1',
+        status: 'open',
+        stepId: null,
+        createdAt: now,
+      }],
+      steps: [buildStep({
+        title: 'Codex CLI 工作区写入候选：apply_patch',
+        output: 'capability=workspace_write\napply_patch changed src/app.ts',
+      })],
+    }), writer, { includeRunLevel: false });
+
+    expect(writer.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      label: '执行后检查通过',
+      targetId: 'run_step_1',
+      targetType: 'step',
+      tone: 'pass',
+    }));
+  });
 });
 
 function buildRunDetail(partial: Partial<RunDetailRecord> = {}): RunDetailRecord {
