@@ -781,6 +781,22 @@ describe('RunService', () => {
         runId: 'run_1',
         kind: 'plan',
         status: 'completed',
+        title: 'Agent API 上下文就绪判断',
+        input: 'Please draft this',
+        output: expect.stringContaining('decision=ready'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API 上下文就绪判断',
+        output: expect.stringContaining('recommendedMode=read_only_execute'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'plan',
+        status: 'completed',
         title: '任务记忆建议',
         input: JSON.stringify({
           targets: ['task_md'],
@@ -794,7 +810,7 @@ describe('RunService', () => {
       }),
     );
     expect(runStepRepository.update).toHaveBeenCalledWith(
-      'run_step_2',
+      'run_step_3',
       expect.objectContaining({ status: 'completed', output: 'Generated output' }),
     );
     expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
@@ -1187,7 +1203,7 @@ describe('RunService', () => {
       'run_1',
     );
     expect(runStepRepository.update).toHaveBeenCalledWith(
-      'run_step_2',
+      'run_step_3',
       expect.objectContaining({ status: 'failed', error: 'Executor exploded' }),
     );
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();

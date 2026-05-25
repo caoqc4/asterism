@@ -49,7 +49,7 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
-  it('keeps context readiness on native Agent CLI and future peer API runtimes without overclaiming retained API paths', () => {
+  it('keeps context readiness on Agent CLI, retained API, and future peer API runtimes', () => {
     const agentCli = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.triggerAgentCli');
     const futureApi = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.triggerAgentApi.future');
     const retainedRun = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'run.trigger');
@@ -61,7 +61,9 @@ describe('runtime entrypoint coverage', () => {
     expect(agentCli?.notes).toContain('subtask.propose Write Intent');
     expect(futureApi?.requiredGates).toContain('context_readiness');
     expect(futureApi?.coveredGates).toContain('context_readiness');
-    expect(retainedRun?.requiredGates).not.toContain('context_readiness');
+    expect(retainedRun?.requiredGates).toContain('context_readiness');
+    expect(retainedRun?.coveredGates).toContain('context_readiness');
+    expect(retainedRun?.notes).toContain('RunService records context.readiness.evaluate');
   });
 
   it('registers future Agent API execution as the same gated runtime class as Agent CLI', () => {

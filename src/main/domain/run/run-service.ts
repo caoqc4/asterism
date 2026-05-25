@@ -7,6 +7,10 @@ import {
   type RuntimeCapabilitySnapshot,
 } from '../../../shared/runtime-capability-snapshot.js';
 import {
+  evaluateRuntimeContextReadiness,
+  formatRuntimeContextReadinessForStep,
+} from '../../../shared/runtime-context-readiness.js';
+import {
   groupRuntimeEventsForReplay,
   projectRuntimeEvents,
 } from '../../../shared/runtime-event-record.js';
@@ -195,6 +199,18 @@ export class RunService {
     }
 
     const created = await this.runRepository.create(input);
+    const contextReadiness = evaluateRuntimeContextReadiness({
+      prompt: input.instructions ?? '',
+      task: taskForExecution,
+    });
+    await this.runStepRepository.create({
+      runId: created.id,
+      kind: 'plan',
+      status: 'completed',
+      title: 'Agent API 上下文就绪判断',
+      input: input.instructions ?? null,
+      output: formatRuntimeContextReadinessForStep(contextReadiness),
+    });
     const applicableWorkHabits = await this.buildApplicableWorkHabits(taskForExecution);
     const result =
       input.type === 'agent'
