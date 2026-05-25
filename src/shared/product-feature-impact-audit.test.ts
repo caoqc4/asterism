@@ -48,6 +48,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('decisions, next-step updates, blockers, completion proposals');
     expect(rightPanel?.evidence.join(' ')).toContain('web research capture and native CLI capability-tagged web/search events');
     expect(rightPanel?.evidence.join(' ')).toContain('command_execution items');
+    expect(rightPanel?.evidence.join(' ')).toContain('while the native process is still running');
     expect(rightPanel?.evidence.join(' ')).toContain('child-task advancement messages');
     expect(rightPanel?.evidence.join(' ')).toContain('context.readiness.evaluate');
     expect(rightPanel?.evidence.join(' ')).toContain('preserving operation mode');

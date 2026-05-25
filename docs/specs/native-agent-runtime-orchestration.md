@@ -234,6 +234,9 @@ Taskplane currently has a working native CLI execution backend:
   capability declarations into native CLI prompts before execution, so the
   runtime sees the same capability boundary shown in Taskplane UI.
 - Runtime JSONL or stream-json output is parsed into Run steps when possible.
+- Agent CLI stdout JSONL lines are projected into Run steps while the native
+  process is still running. If a custom executor cannot stream lines, Taskplane
+  falls back to parsing the completed stdout transcript.
 - The right panel polls active native CLI runs and projects the latest Run step
   into compact progress states such as preparing, researching, reading
   workspace, using tools, verifying, completed, or failed.

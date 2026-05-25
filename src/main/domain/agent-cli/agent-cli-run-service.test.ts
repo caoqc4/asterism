@@ -395,6 +395,106 @@ describe('AgentCliRunService', () => {
     }));
   });
 
+  it('streams native JSONL command progress before the executor exits', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    let resolveExecution!: () => void;
+    const executor: AgentCliExecutor = vi.fn().mockImplementation(async (params) => {
+      params.onStdoutLine?.(JSON.stringify({
+        type: 'item.started',
+        item: {
+          id: 'item_0',
+          type: 'command_execution',
+          command: '/bin/zsh -lc pwd',
+          aggregated_output: '',
+          exit_code: null,
+          status: 'in_progress',
+        },
+      }));
+      await new Promise<void>((resolve) => {
+        resolveExecution = resolve;
+      });
+      params.onStdoutLine?.(JSON.stringify({
+        type: 'item.completed',
+        item: {
+          id: 'item_0',
+          type: 'command_execution',
+          command: '/bin/zsh -lc pwd',
+          aggregated_output: '/Users/caoq/git/Taskplane\n',
+          exit_code: 0,
+          status: 'completed',
+        },
+      }));
+      params.onStdoutLine?.(JSON.stringify({
+        type: 'item.completed',
+        item: {
+          id: 'item_1',
+          type: 'agent_message',
+          text: '/Users/caoq/git/Taskplane',
+        },
+      }));
+      return {
+        exitCode: 0,
+        failureReason: null,
+        status: 'completed',
+        stderr: '',
+        stdout: [
+          JSON.stringify({
+            type: 'item.completed',
+            item: {
+              id: 'item_1',
+              type: 'agent_message',
+              text: '/Users/caoq/git/Taskplane',
+            },
+          }),
+        ].join('\n'),
+        summary: 'Agent CLI execution completed.',
+      };
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Run pwd.',
+      taskId: 'task_1',
+    });
+
+    await vi.waitFor(() => {
+      expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'tool_call',
+        title: 'Codex CLI 命令执行：command_execution',
+        output: expect.stringContaining('status=in_progress'),
+      }));
+    });
+    expect(runRepository.updateResult).not.toHaveBeenCalledWith(
+      'run_agent_cli_1',
+      'completed',
+      expect.any(String),
+      'ai',
+    );
+
+    resolveExecution();
+
+    await vi.waitFor(() => {
+      expect(runRepository.updateResult).toHaveBeenCalledWith(
+        'run_agent_cli_1',
+        'completed',
+        '/Users/caoq/git/Taskplane',
+        'ai',
+      );
+    });
+    const commandCalls = vi.mocked(runStepRepository.create).mock.calls.filter((call) => (
+      call[0].title === 'Codex CLI 命令执行：command_execution'
+    ));
+    expect(commandCalls).toHaveLength(2);
+  });
+
   it('projects Claude stream-json tool events into run steps', async () => {
     const runStepRepository = buildRunStepRepository();
     const executor = vi.fn().mockResolvedValue({

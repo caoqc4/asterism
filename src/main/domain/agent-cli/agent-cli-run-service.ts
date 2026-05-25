@@ -81,6 +81,7 @@ export type AgentCliExecutor = (params: {
   command: string;
   cwd: string;
   input: string;
+  onStdoutLine?: (line: string) => void | Promise<void>;
   outputLimitBytes: number;
   signal?: AbortSignal;
   timeoutMs: number;
@@ -132,6 +133,12 @@ type AgentCliParsedTranscript = {
   events: AgentCliParsedEvent[];
   finalText: string | null;
   rawJsonLineCount: number;
+};
+
+type AgentCliNativeTranscriptProjector = {
+  acceptLine(line: string): void;
+  drain(): Promise<void>;
+  snapshot(): AgentCliParsedTranscript;
 };
 
 type AgentCliNativeCapability =
@@ -615,22 +622,41 @@ export class AgentCliRunService {
     workloadLease: { finish(): void };
     workspaceRoot: string;
   }): Promise<void> {
+    const liveTranscript = createAgentCliNativeTranscriptProjector({
+      onEvent: async (event) => {
+        await this.runStepRepository.create({
+          runId: params.run.id,
+          kind: event.kind,
+          status: event.status,
+          title: event.title,
+          input: event.input,
+          output: event.output,
+        });
+      },
+      runtimeLabel: params.runAdapter.runtimeLabel,
+    });
     const execution = await this.executeWithFailureCapture({
       args: params.runArgs,
       command: params.runtimeCommand,
       cwd: params.workspaceRoot,
       input: params.input,
+      onStdoutLine: liveTranscript.acceptLine,
       outputLimitBytes: DEFAULT_AGENT_CLI_OUTPUT_LIMIT_BYTES,
       signal: params.abortController.signal,
       timeoutMs: DEFAULT_AGENT_CLI_TIMEOUT_MS,
     }).finally(() => {
       params.workloadLease.finish();
     });
-    const parsedTranscript = parseAgentCliNativeTranscript({
-      runtimeLabel: params.runAdapter.runtimeLabel,
-      stderr: execution.stderr,
-      stdout: execution.stdout,
-    });
+    await liveTranscript.drain();
+    const streamedTranscript = liveTranscript.snapshot();
+    const eventsAlreadyProjected = streamedTranscript.rawJsonLineCount > 0;
+    const parsedTranscript = eventsAlreadyProjected
+      ? streamedTranscript
+      : parseAgentCliNativeTranscript({
+          runtimeLabel: params.runAdapter.runtimeLabel,
+          stderr: execution.stderr,
+          stdout: execution.stdout,
+        });
     const evidenceOutput = parsedTranscript.finalText?.trim() || execution.stdout;
     const modelOutput = evidenceOutput || execution.summary;
     const normalizedExecution = {
@@ -654,15 +680,17 @@ export class AgentCliRunService {
           ].filter((line): line is string => line !== null).join('\n'),
         });
       }
-      for (const event of parsedTranscript.events) {
-        await this.runStepRepository.create({
-          runId: params.run.id,
-          kind: event.kind,
-          status: event.status,
-          title: event.title,
-          input: event.input,
-          output: event.output,
-        });
+      if (!eventsAlreadyProjected) {
+        for (const event of parsedTranscript.events) {
+          await this.runStepRepository.create({
+            runId: params.run.id,
+            kind: event.kind,
+            status: event.status,
+            title: event.title,
+            input: event.input,
+            output: event.output,
+          });
+        }
       }
       await this.runStepRepository.create({
         runId: params.run.id,
@@ -1510,35 +1538,54 @@ function parseAgentCliNativeTranscript(params: {
   stderr: string;
   stdout: string;
 }): AgentCliParsedTranscript {
+  const projector = createAgentCliNativeTranscriptProjector({ runtimeLabel: params.runtimeLabel });
+  for (const line of params.stdout.split(/\r?\n/)) {
+    projector.acceptLine(line);
+  }
+  return projector.snapshot();
+}
+
+function createAgentCliNativeTranscriptProjector(params: {
+  onEvent?: (event: AgentCliParsedEvent) => void | Promise<void>;
+  runtimeLabel: string;
+}): AgentCliNativeTranscriptProjector {
   const events: AgentCliParsedEvent[] = [];
   const finalCandidates: string[] = [];
   let rawJsonLineCount = 0;
+  let projectionChain = Promise.resolve();
 
-  for (const line of params.stdout.split(/\r?\n/)) {
+  const acceptLine = (line: string) => {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) continue;
+    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return;
     let parsed: unknown;
     try {
       parsed = JSON.parse(trimmed) as unknown;
     } catch {
-      continue;
+      return;
     }
-    if (!isRecord(parsed)) continue;
+    if (!isRecord(parsed)) return;
     rawJsonLineCount += 1;
     const finalText = extractAgentCliFinalText(parsed);
-    if (finalText) {
-      finalCandidates.push(finalText);
-    }
+    if (finalText) finalCandidates.push(finalText);
+
     const event = mapAgentCliJsonEventToRunStep(parsed, params.runtimeLabel);
-    if (event && events.length < 12) {
-      events.push(event);
+    if (!event || events.length >= 12) return;
+    events.push(event);
+    if (params.onEvent) {
+      projectionChain = projectionChain
+        .then(() => params.onEvent?.(event))
+        .catch(() => undefined);
     }
-  }
+  };
 
   return {
-    events,
-    finalText: finalCandidates.at(-1) ?? null,
-    rawJsonLineCount,
+    acceptLine,
+    drain: () => projectionChain,
+    snapshot: () => ({
+      events: [...events],
+      finalText: finalCandidates.at(-1) ?? null,
+      rawJsonLineCount,
+    }),
   };
 }
 
@@ -1792,6 +1839,7 @@ export function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]):
     let settled = false;
     let stdout = '';
     let stderr = '';
+    let stdoutLineBuffer = '';
     let terminalOverride: AgentCliExecutionResult | null = null;
     let terminationTimer: ReturnType<typeof setTimeout> | null = null;
     const append = (current: string, chunk: Buffer) =>
@@ -1799,10 +1847,26 @@ export function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]):
     const finish = (result: AgentCliExecutionResult) => {
       if (settled) return;
       settled = true;
+      flushStdoutLineBuffer();
       clearTimeout(timer);
       if (terminationTimer) clearTimeout(terminationTimer);
       params.signal?.removeEventListener('abort', onAbort);
       resolve(result);
+    };
+    const emitStdoutLine = (line: string) => {
+      if (!params.onStdoutLine) return;
+      void Promise.resolve(params.onStdoutLine(line)).catch(() => undefined);
+    };
+    const appendStdoutLines = (text: string) => {
+      stdoutLineBuffer += text;
+      const lines = stdoutLineBuffer.split(/\r?\n/);
+      stdoutLineBuffer = lines.pop() ?? '';
+      for (const line of lines) emitStdoutLine(line);
+    };
+    const flushStdoutLineBuffer = () => {
+      if (!stdoutLineBuffer.trim()) return;
+      emitStdoutLine(stdoutLineBuffer);
+      stdoutLineBuffer = '';
     };
     const cancellationReason = () =>
       typeof params.signal?.reason === 'string'
@@ -1844,6 +1908,7 @@ export function executeAgentCliCommand(params: Parameters<AgentCliExecutor>[0]):
 
     child.stdout.on('data', (chunk: Buffer) => {
       stdout = append(stdout, chunk);
+      appendStdoutLines(chunk.toString('utf8'));
     });
     child.stderr.on('data', (chunk: Buffer) => {
       stderr = append(stderr, chunk);
