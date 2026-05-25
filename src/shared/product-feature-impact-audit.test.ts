@@ -53,6 +53,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('backendPlan');
     expect(rightPanel?.evidence.join(' ')).toContain('Pilot 决策辅助计划');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API chat invocations preserve');
+    expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
@@ -87,6 +88,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.gaps.join(' ')).not.toContain('still need to call it through main-side ports');
     expect(capabilities?.evidence.join(' ')).toContain('adapter-level native capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
+    expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');

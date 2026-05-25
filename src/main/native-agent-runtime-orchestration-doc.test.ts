@@ -25,6 +25,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('workspace reads, commands');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('AI Runtime settings surface shows these before a run starts');
+    expect(content).toContain('selected-runtime');
+    expect(content).toContain('native CLI prompts before execution');
     expect(content).toContain('task records, task files,');
     expect(content).toContain('artifacts, source contexts, decisions, next-step updates, blockers');
     expect(content).toContain('for task, source, decision, subtask, task-file, and artifact writes');

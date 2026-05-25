@@ -227,6 +227,9 @@ Taskplane currently has a working native CLI execution backend:
   structured events, runtime-dependent web/search, workspace read/write
   boundaries, hooks, subagents, and product-controlled memory/compact/clear; the
   AI Runtime settings surface shows these before a run starts.
+- The Run Goal Contract and Agent CLI context bridge pass those selected-runtime
+  capability declarations into native CLI prompts before execution, so the
+  runtime sees the same capability boundary shown in Taskplane UI.
 - Runtime JSONL or stream-json output is parsed into Run steps when possible.
 - The right panel polls active native CLI runs and projects the latest Run step
   into compact progress states such as preparing, researching, reading

@@ -207,6 +207,37 @@ describe('agent-runtime-goal', () => {
     expect(formatRunGoalContractForPrompt(contract)).toContain('Task Goal: status=paused');
   });
 
+  it('carries selected runtime capability declarations in the Run Goal Contract', () => {
+    const contract = buildRunGoalContract({
+      contextGateSummary: 'gate ready',
+      contextManifest: { summary: 'manifest ready' } as RuntimeContextManifest,
+      executionKind: 'cli',
+      prompt: 'Inspect native capabilities.',
+      runId: 'run_1',
+      runtimeCapabilities: buildDefaultAgentCliRuntimeCapabilities('codex', 'Codex CLI', '0.133.0'),
+      runtimeId: 'codex',
+      runtimeLabel: 'Codex CLI',
+      sandboxMode: 'read-only',
+      task: {
+        completionCriteria: [],
+        id: 'task_1',
+        nextStep: 'Inspect native capabilities.',
+        resumeCard: null,
+        timeline: [],
+        title: 'Task 1',
+      } as unknown as TaskDetail,
+    });
+
+    expect(contract.runtimeCapabilities).toEqual(expect.arrayContaining([
+      'native_goal=available',
+      'web_search=runtime_dependent',
+      'workspace_write=unsupported',
+      'memory=product_controlled',
+    ]));
+    expect(formatRunGoalContractForStep(contract)).toContain('runtimeCapabilities=');
+    expect(formatRunGoalContractForPrompt(contract)).toContain('Runtime capabilities:');
+  });
+
   it('uses Task Goal timeline completion conditions when task criteria are not persisted yet', () => {
     const contract = buildRunGoalContract({
       contextGateSummary: 'gate ready',

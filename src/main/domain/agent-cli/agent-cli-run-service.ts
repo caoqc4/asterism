@@ -37,7 +37,10 @@ import {
   type TaskMemoryGuidanceState,
 } from '../../../shared/task-memory-guidance-state.js';
 import { isTaskMdPath } from '../../../shared/task-memory-path.js';
-import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status.js';
+import {
+  agentCliRuntimeCapabilities,
+  type AgentCliRuntimeId,
+} from '../../../shared/agent-cli-runtime-status.js';
 import type {
   CancelAgentCliRunInput,
   CancelAgentCliRunResult,
@@ -238,6 +241,7 @@ export class AgentCliRunService {
     if (runtime.authState !== 'ready') {
       throw new Error(runtime.missingReason ?? `${adapter.acceptedLabel} is not authenticated; use the official CLI login flow before execution.`);
     }
+    const runtimeCapabilities = agentCliRuntimeCapabilities(runtime);
 
     const startVerification = evaluateRuntimeVerification({
       mode: 'subtask_start',
@@ -337,6 +341,7 @@ export class AgentCliRunService {
       executionKind: 'cli',
       prompt: request.prompt,
       runId: run.id,
+      runtimeCapabilities,
       runtimeId,
       runtimeLabel: adapter.runtimeLabel,
       sandboxMode,

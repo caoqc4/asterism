@@ -82,6 +82,7 @@ export type RunGoalContract = {
   completionConditions: string[];
   validationEvidence: string[];
   constraints: string[];
+  runtimeCapabilities: string[];
   contextManifestSummary: string;
   contextGateSummary: string;
   expectedOutput: string[];
@@ -312,6 +313,7 @@ export function buildRunGoalContract(params: {
   executionKind: AgentRuntimeExecutionKind;
   prompt: string;
   runId: string;
+  runtimeCapabilities?: AgentRuntimeAdapterCapabilities | null;
   runtimeId: RunGoalContract['runtimeId'];
   runtimeLabel: string;
   sandboxMode: RunGoalContract['sandboxMode'];
@@ -360,6 +362,7 @@ export function buildRunGoalContract(params: {
         ? 'Codex runs with read-only sandbox intent; Claude runs in plan mode when selected.'
         : `Runtime permission mode: ${params.sandboxMode}.`,
     ],
+    runtimeCapabilities: formatRuntimeCapabilityDeclarations(params.runtimeCapabilities),
     contextManifestSummary: params.contextManifest.summary,
     contextGateSummary: params.contextGateSummary,
     expectedOutput: [
@@ -368,6 +371,30 @@ export function buildRunGoalContract(params: {
         : ['Key findings', 'Recommended next step', 'Risks or open questions', 'Verification checks']),
     ],
   };
+}
+
+export function formatRuntimeCapabilityDeclarations(
+  capabilities: AgentRuntimeAdapterCapabilities | null | undefined,
+): string[] {
+  if (!capabilities) return ['adapter_capabilities=unavailable'];
+
+  const native = capabilities.nativeCapabilities;
+  return uniqueCleanStrings([
+    `runtime=${capabilities.label}`,
+    `execution=${capabilities.executionKind}`,
+    `default_permission=${capabilities.defaultPermissionMode}`,
+    `native_goal=${capabilities.nativeGoalMode.availability}`,
+    `structured_events=${native?.structuredProgressEvents.availability ?? (capabilities.supportsStructuredProgressEvents ? 'available' : 'unsupported')}`,
+    native ? `web_search=${native.webSearch.availability}` : null,
+    native ? `workspace_read=${native.workspaceRead.availability}` : null,
+    `workspace_write=${native?.workspaceWrite.availability ?? (capabilities.supportsWorkspaceWrite ? 'available' : 'unsupported')}`,
+    native ? `hooks=${native.hooks.availability}` : null,
+    native ? `subagents=${native.subagents.availability}` : null,
+    native ? `memory=${native.memory.availability}` : null,
+    native ? `compact=${native.compact.availability}` : null,
+    native ? `clear=${native.clear.availability}` : null,
+    capabilities.defaultResetStrategy ? `reset=${capabilities.defaultResetStrategy}` : null,
+  ].filter((item): item is string => item !== null));
 }
 
 function isChildTaskConversationRequest(prompt: string): boolean {
@@ -423,6 +450,7 @@ export function formatRunGoalContractForStep(contract: RunGoalContract): string 
     `completionConditions=${contract.completionConditions.length}`,
     `validationEvidence=${contract.validationEvidence.length}`,
     `constraints=${contract.constraints.length}`,
+    `runtimeCapabilities=${contract.runtimeCapabilities.length}`,
     contract.contextGateSummary,
     contract.contextManifestSummary,
   ].join(' / ');
@@ -435,6 +463,7 @@ export function formatRunGoalContractForPrompt(contract: RunGoalContract): strin
     `- Completion conditions: ${contract.completionConditions.join(' | ')}`,
     `- Validation evidence expected: ${contract.validationEvidence.join(' | ')}`,
     `- Constraints: ${contract.constraints.join(' | ')}`,
+    `- Runtime capabilities: ${contract.runtimeCapabilities.join(' | ')}`,
     `- Expected output: ${contract.expectedOutput.join(' | ')}`,
   ].join('\n');
 }

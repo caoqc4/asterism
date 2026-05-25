@@ -90,6 +90,7 @@ function buildContract(): RunGoalContract {
     completionConditions: ['Output is reviewable.'],
     validationEvidence: ['Terminal output persisted.'],
     constraints: ['Do not modify files.'],
+    runtimeCapabilities: ['workspace_write=unsupported'],
     contextManifestSummary: 'manifest ready',
     contextGateSummary: 'gate ready',
     expectedOutput: ['Key findings'],

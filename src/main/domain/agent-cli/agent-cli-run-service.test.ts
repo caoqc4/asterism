@@ -1328,6 +1328,10 @@ describe('AgentCliRunService', () => {
     expect(prompt).toContain('Gmail launch digest');
     expect(prompt).toContain('Confirmed Gmail source says the launch note needs legal review.');
     expect(prompt).not.toContain('token=secret');
+    expect(prompt).toContain('Runtime capabilities:');
+    expect(prompt).toContain('web_search=runtime_dependent');
+    expect(prompt).toContain('workspace_write=unsupported');
+    expect(prompt).toContain('memory=product_controlled');
     expect(prompt).toContain('Native mode: do not downgrade the selected official CLI.');
   });
 
