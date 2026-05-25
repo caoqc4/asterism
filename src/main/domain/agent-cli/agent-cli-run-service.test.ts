@@ -817,6 +817,73 @@ describe('AgentCliRunService', () => {
     }));
   });
 
+  it('captures web research for fresh current pricing requests', async () => {
+    const runStepRepository = buildRunStepRepository();
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        output_text: 'Use the current pricing page before estimating costs.',
+        sources: [{
+          title: 'Model pricing',
+          url: 'https://example.com/pricing',
+          snippet: 'Current model pricing.',
+        }],
+      }),
+      ok: true,
+      status: 200,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: '已结合当前价格给出方案。',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(buildTask({
+        nextStep: 'Estimate model operating cost.',
+        summary: 'Prepare an operating-cost plan.',
+        title: 'Plan model budget',
+      })),
+      {
+        getStatus: vi.fn().mockResolvedValue(buildAiStatus({
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          featureFlags: {
+            enableScheduler: false,
+            enableProviderNativeToolCalls: true,
+            agentCliCapabilityMode: 'native',
+          },
+        })),
+        resolveOpenAiWebResearchConfig: vi.fn().mockResolvedValue({
+          apiKey: 'test-openai-key',
+          model: 'gpt-5-mini',
+          provider: 'openai',
+        }),
+      },
+      buildRunRepository(),
+      runStepRepository,
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Check the current model pricing before drafting the budget.',
+      taskId: 'task_1',
+    });
+
+    expect(fetchMock).toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('status=captured'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('query=Plan model budget'),
+    }));
+  });
+
   it('does not report captured web research when source context persistence fails', async () => {
     const runStepRepository = buildRunStepRepository();
     const taskService = buildTaskService(buildTask({

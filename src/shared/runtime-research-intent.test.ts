@@ -31,6 +31,18 @@ describe('evaluateRuntimeResearchIntent', () => {
     expect(evaluateRuntimeResearchIntent('比较 Claude Code release notes。').shouldUseExternalResearch).toBe(true);
   });
 
+  it('treats latest current and pricing requests as fresh external research', () => {
+    expect(evaluateRuntimeResearchIntent('Check the latest model pricing before drafting the plan.').shouldUseExternalResearch).toBe(true);
+    expect(evaluateRuntimeResearchIntent('Review current API status and recent release changes.').shouldUseExternalResearch).toBe(true);
+    expect(evaluateRuntimeResearchIntent('比较 2026 年最新模型定价。').shouldUseExternalResearch).toBe(true);
+  });
+
+  it('does not treat current task wording as fresh external research', () => {
+    expect(evaluateRuntimeResearchIntent('Continue the current task and summarize the next step.').shouldUseExternalResearch).toBe(false);
+    expect(evaluateRuntimeResearchIntent('Review the current API implementation in this repo.').shouldUseExternalResearch).toBe(false);
+    expect(evaluateRuntimeResearchIntent('检查当前任务下一步。').shouldUseExternalResearch).toBe(false);
+  });
+
   it('does not treat local docs folders as external documentation research', () => {
     const intent = evaluateRuntimeResearchIntent('请搜索本地 docs 文件夹里的 API 说明。');
 

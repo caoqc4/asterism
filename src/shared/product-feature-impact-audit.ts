@@ -119,6 +119,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Confirmed run-backed patch artifacts can be normalized into imported_patch_artifact sandbox draft sources and previewed through the existing sandbox patch review planner before any workspace promotion Decision.',
       'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI capability-tagged web/search events.',
       'Pre-run web research trigger conditions ignore bare runtime names and generic current-task wording, so selecting Codex CLI or Claude Code does not itself request external research.',
+      'Pre-run web research trigger conditions now recognize fresh external requests such as latest/current pricing, current API status, and recent release changes without treating current-task wording as research.',
       'Codex JSONL command_execution items are projected as shell_command run steps, so right-panel progress can show local command activity instead of only raw terminal output.',
       'Agent CLI stdout JSONL lines are now projected into Run steps while the native process is still running, with completion-time transcript parsing kept as a fallback.',
       'Completed native run chat summaries now mention local command or workspace activity as well as web research activity.',
@@ -385,6 +386,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Runtime-native goal audit runs now attach the shared native goal forwarding readiness summary, missing evidence, and closed boundary notes without executing the CLI.',
       'Native CLI provider events are projected into runtime-neutral capability progress states for web search, workspace reads/writes, command execution, MCP, and hooks.',
       'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
+      'Fresh external research wording such as latest/current pricing or recent release changes is now covered by the pre-run web research trigger while local current-task wording remains excluded.',
     ],
     gaps: [
       'Runtime capability probes still need native compact/clear readiness checks once providers expose stable non-executing signals.',
