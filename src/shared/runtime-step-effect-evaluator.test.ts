@@ -44,6 +44,23 @@ describe('runtime step effect evaluator', () => {
     });
   });
 
+  it('requires promotion evidence for native workspace write candidates', () => {
+    expect(evaluateRuntimeStepEffect(buildStep({
+      kind: 'tool_call',
+      title: 'Codex CLI 工作区写入候选：apply_patch',
+      output: [
+        'capability=workspace_write',
+        'provider_event=item.completed',
+        'apply_patch changed src/app.ts',
+      ].join('\n'),
+    }))).toMatchObject({
+      producedDurableChange: true,
+      hasRecoveryNote: true,
+      requiresPromotionEvidence: true,
+      reasons: expect.arrayContaining(['workspace write candidate requires promotion evidence']),
+    });
+  });
+
   it('flags durable changes without a recovery note', () => {
     expect(evaluateRuntimeStepEffect(buildStep({
       kind: 'decision',

@@ -29,6 +29,8 @@ export async function persistLightweightRunVerifications(
       step,
       producedDurableChange: stepEffect.producedDurableChange,
       hasRecoveryNote: stepEffect.hasRecoveryNote,
+      requiresPromotionEvidence: stepEffect.requiresPromotionEvidence,
+      hasPromotionEvidence: hasPromotionEvidence(detail),
       applicableWorkHabitCount: options.applicableWorkHabitSummaries?.length,
     });
     await runVerificationRepository.upsert({
@@ -60,6 +62,17 @@ export async function persistLightweightRunVerifications(
     detail: runCheck.detail,
     source: runCheck.source,
   });
+}
+
+function hasPromotionEvidence(detail: RunDetailRecord): boolean {
+  return Boolean(
+    detail.artifacts?.some((artifact) => (
+      artifact.kind === 'patch'
+      || artifact.kind === 'note'
+      || artifact.kind === 'run_output'
+    ))
+    || detail.checkpoints?.some((checkpoint) => checkpoint.kind === 'patch_promotion'),
+  );
 }
 
 export async function persistTerminalRunVerifications(params: {

@@ -113,6 +113,8 @@ export type RuntimeVerificationInput =
       producedDurableChange?: boolean;
       hasTaskRecord?: boolean;
       hasRecoveryNote?: boolean;
+      requiresPromotionEvidence?: boolean;
+      hasPromotionEvidence?: boolean;
       applicableWorkHabitCount?: number;
     }
   | ({
@@ -346,6 +348,19 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
           requiresUserConfirmation: true,
           shouldPersistTaskRecord: true,
           suggestedNextAction: 'confirm',
+        };
+      }
+      if (input.requiresPromotionEvidence && !input.hasPromotionEvidence) {
+        return {
+          mode: input.mode,
+          tone: 'warn',
+          label: '写入候选需复核',
+          detail: '原生 runtime 暴露了 workspace write candidate；必须先形成 artifact、task file 或 patch-review evidence，才能进入产品控制的持久化或提升流程。',
+          source: 'lightweight_rule_engine',
+          canProceed: false,
+          requiresUserConfirmation: true,
+          shouldPersistTaskRecord: true,
+          suggestedNextAction: 'inspect',
         };
       }
       if (input.producedDurableChange && !(input.hasTaskRecord ?? input.hasRecoveryNote)) {

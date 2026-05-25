@@ -197,6 +197,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'runtime-verification has first-pass pre_step and post_step modes for action permission, pending decisions, required context, and durable-change recovery notes.',
       'Run verification persistence now writes step verifications through post_step verification.',
       'runtime-step-effect-evaluator infers durable step changes and recovery-note presence before post_step verification.',
+      'runtime-step-effect-evaluator flags native CLI workspace_write candidates so post_step requires promotion evidence instead of treating raw command output as enough recovery evidence.',
       'Run acceptance verification is registered as a non-executing verification_harness entrypoint: it consumes terminal evidence and Run Goal Contract through post_step, and future API verifier subagents may only augment that boundary rather than become a second execution runtime.',
       'API verifier shadow readiness is modeled as a non-executing projection: persisted lightweight and ai_verifier run-level records can be projected into representative shadow samples, and assist-mode promotion remains blocked until the local readiness thresholds pass.',
       'RunService checks completed Run output artifact writes with post_step durable-change verification before persisting generated output.',

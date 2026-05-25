@@ -393,6 +393,29 @@ describe('runtime verification', () => {
     });
   });
 
+  it('requires promotion evidence for workspace write candidates even when the step has output', () => {
+    expect(evaluateRuntimeVerification({
+      mode: 'post_step',
+      step: buildStep({
+        status: 'completed',
+        title: 'Codex CLI 工作区写入候选：apply_patch',
+        output: 'capability=workspace_write\napply_patch changed src/app.ts',
+      }),
+      producedDurableChange: true,
+      hasRecoveryNote: true,
+      requiresPromotionEvidence: true,
+      hasPromotionEvidence: false,
+    })).toMatchObject({
+      mode: 'post_step',
+      tone: 'warn',
+      label: '写入候选需复核',
+      canProceed: false,
+      requiresUserConfirmation: true,
+      shouldPersistTaskRecord: true,
+      suggestedNextAction: 'inspect',
+    });
+  });
+
   it('normalizes subtask-start readiness into runtime verification', () => {
     expect(evaluateRuntimeVerification({
       mode: 'subtask_start',

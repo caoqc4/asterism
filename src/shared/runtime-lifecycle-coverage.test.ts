@@ -78,6 +78,13 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('without claiming task completion or subtask_start');
   });
 
+  it('tracks workspace-write candidates as promotion-evidence boundaries', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('workspace_write candidates');
+    expect(text).toContain('requires promotion evidence');
+  });
+
   it('tracks pending-memory checks for new run start', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
