@@ -13,18 +13,18 @@ const RUNTIME_ADAPTERS = {
     authArgs: ['login', 'status'],
     command: 'codex',
     execArgs: (workspaceRoot) => [
-      'exec',
-      '--json',
       '--search',
       '--sandbox',
       'read-only',
       '--cd',
       workspaceRoot,
+      'exec',
+      '--json',
       '--skip-git-repo-check',
       '-',
     ],
     label: 'Codex CLI',
-    readinessHint: 'Codex native web search requires a CLI build that accepts codex exec --search.',
+    readinessHint: 'Codex native web search requires a CLI build that accepts codex --search exec.',
   },
   claude: {
     authArgs: ['auth', 'status'],
@@ -120,10 +120,10 @@ export function runAgentCliNativeWebSearchSmoke() {
     }
 
     console.log('workspace=unchanged');
-    console.log('network=called');
 
     if (execResult.status !== 0) {
       console.log('status=failed');
+      console.log('network=not-confirmed');
       console.log(`execStatus=${execResult.status}`);
       console.log(`output=${preview(execResult.output)}`);
       console.log(`note=${adapter.readinessHint}`);
@@ -132,6 +132,7 @@ export function runAgentCliNativeWebSearchSmoke() {
 
     if (!execResult.output.includes(EXPECTED_PHRASE)) {
       console.log('status=failed');
+      console.log('network=not-confirmed');
       console.log('phrase=missing');
       console.log(`output=${preview(execResult.output)}`);
       console.log(`note=${adapter.readinessHint}`);
@@ -139,6 +140,7 @@ export function runAgentCliNativeWebSearchSmoke() {
     }
 
     console.log('phrase=matched');
+    console.log('network=called');
     console.log('status=passed');
     return 0;
   } finally {

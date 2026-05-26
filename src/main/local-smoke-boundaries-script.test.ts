@@ -568,6 +568,16 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('workspace=unchanged');
   });
 
+  it('keeps Codex native web/search smoke using top-level search before exec', () => {
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/agent-cli-native-web-search-smoke.mjs'), 'utf8');
+
+    expect(script).toContain("'--search',");
+    expect(script).toContain("'exec',");
+    expect(script.indexOf("'--search',")).toBeLessThan(script.indexOf("'exec',"));
+    expect(script).toContain('codex --search exec');
+    expect(script).not.toContain('codex exec --search');
+  });
+
   it('documents opt-in Codex CLI read-only live evidence without making it a default smoke requirement', () => {
     const testingDoc = fs.readFileSync(new URL('../../docs/TESTING.md', import.meta.url), 'utf8');
     const configurationDoc = fs.readFileSync(new URL('../../docs/CONFIGURATION.md', import.meta.url), 'utf8');

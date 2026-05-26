@@ -340,13 +340,15 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('unverified native search');
     expect(capabilities?.evidence.join(' ')).toContain('manual Agent CLI native web/search smoke');
     expect(capabilities?.evidence.join(' ')).toContain('cli=not-called, network=not-called, and workspace=unchanged');
+    expect(capabilities?.evidence.join(' ')).toContain('Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-26');
+    expect(capabilities?.evidence.join(' ')).toContain('--search is a top-level Codex option before exec');
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
     expect(capabilities?.gaps.join(' ')).not.toContain('compact/clear readiness checks');
     expect(capabilities?.gaps.join(' ')).not.toContain('hook config semantics');
     expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('provider-owned package metadata checks');
-    expect(capabilities?.nextActions.join(' ')).toContain('Record passing opt-in native web/search smoke evidence');
+    expect(capabilities?.nextActions.join(' ')).toContain('Record Claude native web/search smoke evidence');
     expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
@@ -362,6 +364,8 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('without external network or provider calls');
     expect(smoke?.evidence.join(' ')).toContain('manual Agent CLI native web/search smoke');
     expect(smoke?.evidence.join(' ')).toContain('network=not-called');
+    expect(smoke?.evidence.join(' ')).toContain('Codex native web/search smoke passed locally on 2026-05-26');
+    expect(smoke?.evidence.join(' ')).toContain('status=passed');
     expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
 });

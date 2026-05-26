@@ -203,6 +203,11 @@ The default command must report `status=skip`, `cli=not-called`,
 evidence for exact native web/search readiness; it is intentionally separate
 from static no-start capability probes.
 
+On 2026-05-26, local Codex CLI `codex-cli 0.125.0` passed this opt-in native
+web/search smoke with `auth=ready`, `workspace=unchanged`, `phrase=matched`,
+`network=called`, and `status=passed`. The Codex argument order matters:
+`--search` is a top-level option, so the smoke uses `codex --search exec ...`.
+
 That smoke covers the first-version Agent CLI product loop inside the packaged
 app: task-bound run creation, accepted and terminal run evidence, cancellation
 evidence, read-only workspace protection, task dynamics replay, Run Goal
