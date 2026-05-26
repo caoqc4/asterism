@@ -11,6 +11,7 @@ import {
   buildProductHarnessVerificationAssistInvocation,
   evaluateAgentApiDecompositionPromotionReadiness,
   evaluateAgentApiExecutionPromotionReadiness,
+  evaluateAgentApiExecutionPromotionReadinessForInvocation,
 } from './ai-runtime-invocation.js';
 import { buildSubtaskCreateManyWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
 
@@ -282,6 +283,18 @@ describe('ai runtime invocation contract', () => {
     expect(invocation.requiredGates).toContain('context_readiness');
     expect(invocation.requiredGates).toContain('runtime_context_assembly');
     expect(invocation.requiredGates).toContain('post_step');
+
+    const readiness = evaluateAgentApiExecutionPromotionReadinessForInvocation(invocation);
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      satisfiedRequirements: [],
+      satisfiedGates: [],
+      missingRequirements: invocation.promotionRequirements,
+      missingGates: invocation.requiredGates,
+    });
+    expect(readiness.summary).toContain('requirements=0/11');
+    expect(readiness.summary).toContain('gates=0/9');
   });
 
   it('keeps Agent API execution promotion closed until every requirement and gate has service evidence', () => {

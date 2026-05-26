@@ -376,6 +376,19 @@ export function evaluateAgentApiExecutionPromotionReadiness(params: {
   };
 }
 
+export function evaluateAgentApiExecutionPromotionReadinessForInvocation(
+  invocation: ExecutionRunInvocationResult,
+): AgentApiExecutionPromotionReadiness {
+  if (invocation.phase !== 'execution_run' || invocation.layer !== 'api_runtime' || invocation.status !== 'completed') {
+    return evaluateAgentApiExecutionPromotionReadiness();
+  }
+
+  return evaluateAgentApiExecutionPromotionReadiness({
+    satisfiedGates: invocation.requiredGates,
+    satisfiedRequirements: invocation.promotionRequirements,
+  });
+}
+
 function agentApiExecutionRequiredGates(): RuntimeEntrypointGate[] {
   return RUNTIME_ENTRYPOINT_COVERAGE.find((entrypoint) => entrypoint.id === 'run.triggerAgentApi.future')?.requiredGates
     ?? requiredRuntimeEntrypointGatesForKind('provider_visible_execution');

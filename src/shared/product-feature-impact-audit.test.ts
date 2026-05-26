@@ -160,6 +160,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible preflight');
     expect(rightPanel?.evidence.join(' ')).toContain('Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary');
     expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness');
+    expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadinessForInvocation');
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries');
