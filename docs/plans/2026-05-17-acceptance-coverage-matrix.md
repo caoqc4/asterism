@@ -1,6 +1,6 @@
 # Alpha Acceptance Coverage Matrix
 
-Updated: 2026-05-20
+Updated: 2026-05-26
 
 This matrix keeps local alpha acceptance grounded in first principles: protect the durable task-management flows that make the product usable, and keep smoke coverage small enough that failures point to real product regressions instead of brittle script noise.
 
@@ -20,6 +20,7 @@ This matrix keeps local alpha acceptance grounded in first principles: protect t
 | Docker/local sandbox mutation | Real local-container sandbox execution | `TASKPLANE_ENABLE_LOCAL_CONTAINER_SANDBOX=true` preflight/live commands | Optional, requires Docker and explicit env |
 | Real external connectors | Gmail/Calendar/GitHub style external access | Not in local alpha smoke | Deferred until connectors exist |
 | Runtime-native goal discovery | Optional Codex/Claude native goal compatibility discovery | `npm run manual:agent-cli-native-goal-discovery` | Manual only; not a first-version gate; default probes help/version and candidate execution requires explicit env |
+| Agent API execution preflight | Provider-visible Agent API text-call readiness without promoting task execution | `npm run manual:agent-api-execution-preflight-smoke` / `TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE=true npm run manual:agent-api-execution-preflight-smoke` | Manual only; default skipped; passed locally on 2026-05-26 with fal-openrouter / google/gemini-2.5-flash; full execution_run remains deferred |
 | Packaged Codex live task run | Real local Codex account through packaged task panel with isolated app data and temporary workspace | `TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac` | Manual only; passed locally on 2026-05-20; default skipped |
 | Packaged Claude live task run | Real local Claude Code account through the same packaged task panel smoke harness | `TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:claude-agent-cli-task-live:mac` | Manual only; default skipped until account readiness is available |
 
@@ -50,6 +51,7 @@ by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 - Context refresh preservation: `smoke:context-refresh:mac` verifies a task-bound right-panel discussion can be manually archived before refresh, with a Task Record, Source Context, and `panel.context_refreshed` timeline event persisted in SQLite before the chat context is cleared.
 - Agent CLI task loop: `accept:packaged-recovery:mac` includes `smoke:agent-cli-task:mac`, which uses a fake Codex executable to verify task-bound execution evidence, cancellation evidence, Taskplane-owned `/goal` completion conditions in the run contract and memory proposal, task dynamics replay, native-goal audit evidence, and no workspace writes without requiring a live CLI account.
 - Reviewed patch apply: `accept:agent-local` includes `accept:sandbox-coding:patch-promotion-apply-smoke`, which runs against built main-process modules and verifies default no-write approval, feature-flagged apply success, and blocked workspace-drift recovery evidence without Docker, packaged UI automation, or provider calls.
+- Agent API execution preflight: `manual:agent-api-execution-preflight-smoke` is opt-in and default-skipped. The default path reports `provider=not-called`, `executionRun=deferred`, and `workspace=unchanged`; the live path sends one minimal provider text request and verifies a disposable workspace stays unchanged. On 2026-05-26, it passed locally with `fal-openrouter / google/gemini-2.5-flash`, `provider=called`, `phrase=matched`, `workspace=unchanged`, and `status=passed`. This is provider-readiness evidence, not a packaged task execution path.
 - Agent CLI packaged live loop: `manual:agent-cli-task-live:mac` is opt-in and default-skipped. After `npm run dist:mac:dir`, `TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac` launches the packaged app with isolated user data and a temporary workspace, injects the detected local Codex runtime, calls the user's real Codex account through the task panel, and verifies terminal output plus no workspace writes. The same harness can run Claude Code through `TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:claude-agent-cli-task-live:mac` when a local Claude account is ready. Both stay outside default acceptance because they may spend provider quota.
 
 ## Known Boundaries
@@ -58,4 +60,4 @@ by `smoke:release:mac` through `smoke:timeline-ui:mac`.
 - Live provider and Docker-backed mutation paths remain opt-in because they need external credentials or host capabilities.
 - The smoke suite does not attempt exhaustive UI layout verification; it protects high-value real workflows only.
 - Ordinary task context switches are covered by renderer/runtime-handoff tests and task-dynamics projection tests. A packaged task-switch smoke is intentionally deferred until the retained task detail UI exposes a stable cross-task navigation hook; otherwise the smoke would mostly test list navigation mechanics instead of the context-switch safety boundary.
-- Agent API execution is represented only as a deferred runtime-entrypoint contract. It has no packaged smoke or IPC execution path in the first Agent CLI alpha; when implemented later it must satisfy the same `provider_visible_execution` harness gates as Agent CLI.
+- Agent API execution is represented only as a deferred runtime-entrypoint contract. It now has an opt-in provider-visible preflight smoke, but still has no packaged task execution smoke or IPC execution path in the first Agent CLI alpha; when implemented later it must satisfy the same `provider_visible_execution` harness gates as Agent CLI.

@@ -203,7 +203,8 @@ describe('local smoke script default boundaries', () => {
     );
 
     expect(matrix).toContain('Agent API execution is represented only as a deferred runtime-entrypoint contract');
-    expect(matrix).toContain('no packaged smoke or IPC execution path in the first Agent CLI alpha');
+    expect(matrix).toContain('opt-in provider-visible preflight smoke');
+    expect(matrix).toContain('no packaged task execution smoke or IPC execution path in the first Agent CLI alpha');
     expect(matrix).toContain('same `provider_visible_execution` harness gates as Agent CLI');
   });
 
@@ -719,7 +720,8 @@ describe('local smoke script default boundaries', () => {
     expect(plan).not.toContain('Remaining next steps are hardening the Taskplane-owned goal loop');
     expect(runtimeDeepeningPlan).toContain('The product-owned Agent CLI goal loop is now stable');
     expect(runtimeDeepeningPlan).toContain('native forwarding should remain deferred');
-    expect(matrix).toContain('Updated: 2026-05-20');
+    expect(matrix).toContain('Updated: 2026-05-26');
+    expect(matrix).toContain('Agent API execution preflight');
     expect(matrix).toContain('Packaged Codex live task run');
     expect(matrix).toContain('Manual only; passed locally on 2026-05-20; default skipped');
   });
