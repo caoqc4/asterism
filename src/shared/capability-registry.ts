@@ -536,6 +536,8 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       'supportedPhases=chat,decomposition,decision,scheduled_brief',
       'executionRun=deferred',
       agentApiExecutionRunGateSummary(),
+      'providerToolReadiness=not_declared',
+      'startupProbe=never',
       selected ? 'selected=true' : null,
       providerConfigured ? 'provider=configured' : 'provider=missing',
     ].filter(Boolean).join(' / '),

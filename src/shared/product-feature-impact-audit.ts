@@ -438,6 +438,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'CapabilityRegistry now carries selected Agent CLI native web/search readiness separately from aggregate runtime counts, and downgrades selected native search to unverified when the selected runtime still needs login.',
       'AI Runtime settings now reuse CapabilitySafetyStrip for agent_cli.runtimes, showing shared runtime status, safe-read-only probe policy, and execution boundary before native CLI launch.',
       'AI Runtime settings also reuse CapabilitySafetyStrip for agent_api.runtime, showing provider-backed phase availability, non-startup probe policy, and deferred execution_run boundary.',
+      'Agent API Runtime capability summaries now expose providerToolReadiness=not_declared and startupProbe=never, so provider tool/search readiness is not implied by provider configuration or checked through startup calls.',
       'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution, including visible native search, hook, and subagent readiness labels plus memory, compact, clear, and write boundaries.',
       'Probed native compact/clear signals are promoted into adapter capability support while context reset still requires Taskplane preservation gates and persistent-session ownership before a runtime-native reset strategy can be selected.',
       'Run Goal Contract and Agent CLI context bridge pass selected-runtime capability declarations into native CLI prompts.',
@@ -452,7 +453,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-26 with auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed; the smoke records that --search is a top-level Codex option before exec.',
     ],
     gaps: [
-      'Future API and optional non-Codex provider compatibility still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, and one Codex opt-in live smoke pass; this no longer blocks the Codex-verified CLI-first capability path.',
+      'Future API and optional non-Codex provider compatibility still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, Agent API no-start provider tool/search non-declaration, and one Codex opt-in live smoke pass; this no longer blocks the Codex-verified CLI-first capability path.',
     ],
     nextActions: [
       'Keep adding static readiness probes only when providers expose stable non-executing metadata; record non-Codex provider live smoke opportunistically when local account support is available, not as a CLI-first blocker.',

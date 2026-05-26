@@ -382,6 +382,9 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('safe-read-only probe policy');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilitySafetyStrip for agent_api.runtime');
     expect(capabilities?.evidence.join(' ')).toContain('deferred execution_run boundary');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolReadiness=not_declared');
+    expect(capabilities?.evidence.join(' ')).toContain('startupProbe=never');
+    expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
     expect(capabilities?.evidence.join(' ')).toContain('visible native search, hook, and subagent readiness labels');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
@@ -401,6 +404,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('hook config semantics');
     expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('provider-owned package metadata checks');
+    expect(capabilities?.gaps.join(' ')).toContain('Agent API no-start provider tool/search non-declaration');
     expect(capabilities?.gaps.join(' ')).toContain('auth-gated no-start help-output');
     expect(capabilities?.gaps.join(' ')).toContain('no longer blocks the Codex-verified CLI-first capability path');
     expect(capabilities?.nextActions.join(' ')).toContain('opportunistically when local account support is available');

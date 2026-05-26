@@ -120,7 +120,7 @@ describe('AiConfigService', () => {
     expect(status.capabilityRegistry?.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
       status: 'disabled',
       visibility: 'hidden',
-      summary: 'executionKind=api / status=development / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / provider=missing',
+      summary: 'executionKind=api / status=development / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / providerToolReadiness=not_declared / startupProbe=never / provider=missing',
       missingReason: 'Agent API Runtime is a peer AI invocation runtime; supported provider-backed phases require selecting API Runtime and configuring a provider key. Full task execution_run remains deferred behind Taskplane harness gates.',
     });
     expect(status.externalAccessStatus).toEqual({
