@@ -95,7 +95,7 @@ function buildSandboxPatchPromotionView(params: {
   if (params.promotion?.status === 'applied') {
     return {
       ...base,
-      detail: `${fileLabel}；已通过 promotion apply 服务写入工作区${params.promotion.appliedAt ? `（${params.promotion.appliedAt}）` : ''}。`,
+      detail: `${fileLabel}；已通过 promotion apply 服务写入工作区${params.promotion.appliedAt ? `（${params.promotion.appliedAt}）` : ''}；请在 Run 证据中复核 touched files 和后续验证结果。`,
       label: 'promotion 已应用',
       tone: 'completed',
     };

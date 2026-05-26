@@ -352,13 +352,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Local agent acceptance now runs the reviewed patch promotion apply smoke against built main-process modules, covering default no-write approval, feature-flagged apply success, and blocked workspace-drift recovery evidence without Docker or provider calls.',
       'Packaged task-files smoke now covers the explicit reviewed-patch apply UI path against a temporary workspace, including applied promotion state, touched-file run evidence, blocked workspace-drift state, and no-write recovery evidence.',
       'Blocked promotion notices now explicitly say that the workspace was not written and point operators back to Run evidence before re-reviewing or regenerating the patch.',
+      'Applied promotion notices now point operators back to Run evidence to review touched files and post-apply verification results.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
     ],
     gaps: [
-      'Workspace-write promotion remains intentionally Decision-gated and disabled by default; the explicit apply action should stay outside the normal happy path until post-apply verification copy is clearer across UI surfaces.',
+      'Workspace-write promotion remains intentionally Decision-gated and disabled by default; the explicit apply action should stay outside the normal happy path until write-boundary guidance is obvious across UI surfaces.',
     ],
     nextActions: [
-      'Improve post-apply verification copy across Tasks, Decisions, and Run detail surfaces.',
+      'Keep explicit apply disabled by default while gathering more packaged and manual operator feedback.',
     ],
   },
   {

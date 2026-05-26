@@ -220,6 +220,8 @@ describe('projectSandboxPatchPromotionViews', () => {
       tone: 'completed',
     });
     expect(view?.detail).toContain('已通过 promotion apply 服务写入工作区');
+    expect(view?.detail).toContain('复核 touched files');
+    expect(view?.detail).toContain('后续验证结果');
   });
 
   it('projects blocked promotion records after workspace apply preflight fails', () => {
