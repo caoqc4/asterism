@@ -190,7 +190,7 @@ describe('capability registry', () => {
       visibility: 'hidden',
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
-      summary: expect.stringContaining('executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunKeyGates=context_readiness,post_step / selected=true / provider=configured'),
+      summary: expect.stringContaining('executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / selected=true / provider=configured'),
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
@@ -264,10 +264,10 @@ describe('capability registry', () => {
       status: 'available',
       configured: true,
       missingReason: null,
-      summary: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunKeyGates=context_readiness,post_step / selected=true / provider=configured',
+      summary: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / selected=true / provider=configured',
     });
     expect(RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'run.triggerAgentApi.future')?.requiredGates)
-      .toEqual(expect.arrayContaining(['context_readiness', 'post_step']));
+      .toEqual(expect.arrayContaining(['runtime_context_assembly', 'context_readiness', 'task_memory_coverage', 'task_memory_guidance', 'pre_step', 'subtask_start', 'post_step']));
   });
 
   it('keeps product surfaces hidden when they are not connected or ready', () => {

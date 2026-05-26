@@ -112,8 +112,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('skipped execution_run shape');
     expect(rightPanel?.evidence.join(' ')).toContain('execution_run as deferred');
     expect(rightPanel?.evidence.join(' ')).toContain('future provider-visible execution required gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('context_readiness and post_step');
-    expect(rightPanel?.evidence.join(' ')).toContain('capability registry diagnostics now surface deferred execution_run key gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step');
+    expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');
+    expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('configured workspace for native guidance');
     expect(capabilities?.evidence.join(' ')).toContain('native web/search readiness counts');

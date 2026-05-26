@@ -1,6 +1,10 @@
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
-import type { RuntimeEntrypointGate } from './runtime-entrypoint-coverage.js';
+import {
+  RUNTIME_ENTRYPOINT_COVERAGE,
+  requiredRuntimeEntrypointGatesForKind,
+  type RuntimeEntrypointGate,
+} from './runtime-entrypoint-coverage.js';
 import type { RuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 
 export type CapabilityRegistryStatus =
@@ -520,7 +524,12 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
 }
 
 function agentApiExecutionRunGateSummary(): string {
-  const keyGates = ['context_readiness', 'post_step'] satisfies RuntimeEntrypointGate[];
+  const requiredGates = RUNTIME_ENTRYPOINT_COVERAGE
+    .find((entrypoint) => entrypoint.id === 'run.triggerAgentApi.future')
+    ?.requiredGates
+    ?? requiredRuntimeEntrypointGatesForKind('provider_visible_execution');
+  const excludedSummaryGates = new Set<RuntimeEntrypointGate>(['simplicity_check', 'runtime_action']);
+  const keyGates = requiredGates.filter((gate) => !excludedSummaryGates.has(gate));
   return `executionRunKeyGates=${keyGates.join(',')}`;
 }
 
