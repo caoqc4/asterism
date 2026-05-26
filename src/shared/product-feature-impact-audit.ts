@@ -397,6 +397,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent CLI status probes parse lightweight provider help output for structured-event, hook-event, and native agent/subagent signals when the installed CLI exposes them.',
       'Agent CLI status probes now combine top-level and execution help output to detect native web/search activation, resume support, compact/clear context affordances, plan/read-only affordances, Claude hook events, Claude agents, and native memory-loading signals.',
       'Agent CLI status probes also inspect the configured workspace for native guidance and lifecycle assets such as AGENTS.md, CLAUDE.md, .claude/settings hooks, and .claude/agents without executing the runtime.',
+      'CapabilityRegistry now summarizes detected Agent CLI native web/search readiness counts, distinguishing runtime-dependent search support from unverified installed runtimes.',
       'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution, including native/search, hooks, subagents, memory, compact, clear, and write boundaries.',
       'Probed native compact/clear signals are promoted into adapter capability support while context reset still requires Taskplane preservation gates and persistent-session ownership before a runtime-native reset strategy can be selected.',
       'Run Goal Contract and Agent CLI context bridge pass selected-runtime capability declarations into native CLI prompts.',

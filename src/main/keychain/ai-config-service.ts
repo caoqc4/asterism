@@ -7,7 +7,11 @@ import type { AiConfigInput, AiConfigStatus, AiProvider, AiProviderKeysInput, Fe
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
 import type { AgentCliRuntimeStatus } from '../../shared/agent-cli-runtime-status.js';
-import { buildCapabilityRegistry, type CapabilityProductSurfaceStatus } from '../../shared/capability-registry.js';
+import {
+  agentCliStatusForCapability,
+  buildCapabilityRegistry,
+  type CapabilityProductSurfaceStatus,
+} from '../../shared/capability-registry.js';
 import { buildConfigurationSafetyReport } from '../../shared/configuration-safety-report.js';
 import { emptyExternalAccessStatus, externalAccessStatusForCapability, type ExternalAccessStatus } from '../../shared/external-access-status.js';
 import { buildRuntimeCapabilitySnapshot } from '../../shared/runtime-capability-snapshot.js';
@@ -113,17 +117,7 @@ async function buildCapabilityProductSurfaceStatus(
 
   return {
     externalAccess: externalAccessStatusForCapability(externalAccessStatus ?? emptyExternalAccessStatus()),
-    agentCli: agentCliRuntimeStatus
-      ? {
-        catalogueCount: agentCliRuntimeStatus.catalogueCount,
-        detectedCount: agentCliRuntimeStatus.detectedCount,
-        errorCount: agentCliRuntimeStatus.errorCount,
-        manualRunCount: agentCliRuntimeStatus.manualRunCount,
-        readyCount: agentCliRuntimeStatus.readyCount,
-        readyManualRunCount: agentCliRuntimeStatus.readyManualRunCount,
-        runningCount: agentCliRuntimeStatus.runningCount,
-      }
-      : null,
+    agentCli: agentCliRuntimeStatus ? agentCliStatusForCapability(agentCliRuntimeStatus) : null,
     skills,
     mcp,
   };

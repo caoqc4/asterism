@@ -1,4 +1,5 @@
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
+import type { AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
 import type { RuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 
 export type CapabilityRegistryStatus =
@@ -80,6 +81,8 @@ export type CapabilityProductSurfaceStatus = {
     runningCount?: number;
     errorCount?: number;
     manualRunCount?: number;
+    nativeWebSearchRuntimeDependentCount?: number;
+    nativeWebSearchUnverifiedCount?: number;
     readyManualRunCount?: number;
   } | null;
   browser?: {
@@ -256,6 +259,31 @@ export function capabilityRegistryAllowsWorkspaceVerification(
     && entry.status === 'available'
     && entry.requiredGate === 'runtime_pre_step'
   ));
+}
+
+export function agentCliStatusForCapability(
+  status: AgentCliRuntimeStatus,
+): NonNullable<CapabilityProductSurfaceStatus['agentCli']> {
+  const installedRuntimes = status.runtimes.filter((runtime) => runtime.installed);
+  const nativeWebSearchRuntimeDependentCount = installedRuntimes.filter((runtime) => (
+    runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'runtime_dependent'
+    || runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'available'
+  )).length;
+  const nativeWebSearchUnverifiedCount = installedRuntimes.filter((runtime) => (
+    runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'unverified'
+  )).length;
+
+  return {
+    catalogueCount: status.catalogueCount,
+    detectedCount: status.detectedCount,
+    errorCount: status.errorCount,
+    manualRunCount: status.manualRunCount,
+    nativeWebSearchRuntimeDependentCount,
+    nativeWebSearchUnverifiedCount,
+    readyCount: status.readyCount,
+    readyManualRunCount: status.readyManualRunCount,
+    runningCount: status.runningCount,
+  };
 }
 
 function statusFromSnapshot(
@@ -449,6 +477,12 @@ function agentCliCapability(
       `readyManualRun=${readyManualRunCount}`,
       `running=${status.runningCount ?? 0}`,
       `errors=${status.errorCount ?? 0}`,
+      typeof status.nativeWebSearchRuntimeDependentCount === 'number' && status.nativeWebSearchRuntimeDependentCount > 0
+        ? `nativeWebSearch=runtime_dependent:${status.nativeWebSearchRuntimeDependentCount}`
+        : null,
+      typeof status.nativeWebSearchUnverifiedCount === 'number' && status.nativeWebSearchUnverifiedCount > 0
+        ? `nativeWebSearchUnverified=${status.nativeWebSearchUnverifiedCount}`
+        : null,
       selected ? `selected=${selected}` : null,
       typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
     ].filter(Boolean).join(' / '),

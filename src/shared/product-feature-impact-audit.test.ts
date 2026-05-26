@@ -67,6 +67,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('execution_run as deferred');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('configured workspace for native guidance');
+    expect(capabilities?.evidence.join(' ')).toContain('native web/search readiness counts');
     expect(rightPanel?.evidence.join(' ')).toContain('workspace write candidates that require reviewable promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService');
     expect(rightPanel?.evidence.join(' ')).toContain('missing-apply-record status');

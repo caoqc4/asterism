@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  agentCliStatusForCapability,
   buildCapabilityRegistry,
   capabilityRegistryAllowsModelExecution,
   capabilityRegistryAllowsWorkspaceVerification,
 } from './capability-registry.js';
+import {
+  buildAgentCliRuntimeStatus,
+  buildDefaultAgentCliRuntimeCapabilities,
+} from './agent-cli-runtime-status.js';
 import { buildRuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AiConfigStatus } from './types/settings.js';
@@ -205,6 +210,46 @@ describe('capability registry', () => {
     expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
       status: 'available',
       summary: 'detected=1 / ready=1 / manualRun=1 / readyManualRun=1 / running=0 / errors=0 / selected=Codex CLI / catalogue=2',
+    });
+  });
+
+  it('summarizes native web search readiness for detected Agent CLI runtimes', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'codex' }) }),
+      productSurfaces: {
+        agentCli: agentCliStatusForCapability(buildAgentCliRuntimeStatus([
+          {
+            authState: 'ready',
+            capabilities: buildDefaultAgentCliRuntimeCapabilities('codex', 'Codex CLI', 'codex-cli 0.133.0', {
+              webSearch: true,
+            }),
+            command: 'codex',
+            executionSupport: 'manual_run',
+            id: 'codex',
+            installed: true,
+            label: 'Codex CLI',
+            missingReason: null,
+            version: 'codex-cli 0.133.0',
+            workload: 'idle',
+          },
+          {
+            authState: 'ready',
+            capabilities: buildDefaultAgentCliRuntimeCapabilities('claude', 'Claude Code', '2.1.144'),
+            command: 'claude',
+            executionSupport: 'manual_run',
+            id: 'claude',
+            installed: true,
+            label: 'Claude Code',
+            missingReason: null,
+            version: '2.1.144',
+            workload: 'idle',
+          },
+        ])),
+      },
+    });
+
+    expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
+      summary: 'detected=2 / ready=2 / manualRun=2 / readyManualRun=2 / running=0 / errors=0 / nativeWebSearch=runtime_dependent:1 / nativeWebSearchUnverified=1 / selected=Codex CLI / catalogue=2',
     });
   });
 
