@@ -86,8 +86,8 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
       id: 'sandbox.patch_promotion',
       state: status.featureFlags.enableSandboxPatchPromotionApply ? 'approval_required' : 'disabled_by_flag',
       reason: status.featureFlags.enableSandboxPatchPromotionApply
-        ? 'Sandbox patch promotion apply is enabled; approving a ready workspace.staged_patch Decision can write reviewed files after promotion preflight.'
-        : 'Sandbox patch promotion apply is disabled by feature flag; approvals remain preflight/no-write only.',
+        ? 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.'
+        : 'Sandbox patch promotion apply is disabled by feature flag; approvals remain preflight/no-write only and apply-to-workspace actions stay hidden.',
       requiresApproval: true,
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,

@@ -237,6 +237,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('explicitly apply approved reviewed-patch promotions');
     expect(taskFiles?.evidence.join(' ')).toContain('approval is still no-write');
     expect(taskFiles?.evidence.join(' ')).toContain('no apply-to-workspace action is available');
+    expect(taskFiles?.evidence.join(' ')).toContain('ConfigurationSafetyReport now describes sandbox patch promotion apply as an explicit operator action');
+    expect(taskFiles?.evidence.join(' ')).toContain('apply-to-workspace actions hidden');
     expect(taskFiles?.evidence.join(' ')).toContain('reviewed patch promotion apply smoke');
     expect(taskFiles?.evidence.join(' ')).toContain('blocked workspace-drift recovery evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('Packaged task-files smoke now covers the explicit reviewed-patch apply UI path');
