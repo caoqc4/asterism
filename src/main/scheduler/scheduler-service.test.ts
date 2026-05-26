@@ -1057,6 +1057,7 @@ describe('SchedulerService', () => {
     });
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Next step: Prepare the weekly update.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Run limit: 1/3.');
     expect(result).toMatchObject({
       status: 'started',
       run: {

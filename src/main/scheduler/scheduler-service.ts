@@ -92,6 +92,7 @@ function buildScheduledEventCodeAgentRunInput(
       'Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.',
       `Next step: ${nextStep}`,
       `Trigger evidence: ${plan.triggerRunEvidenceRequired.join(',')}.`,
+      `Run limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
       'Do not apply workspace changes directly; produce reviewable patch artifacts or proposals through Taskplane gates.',
     ].join('\n'),
     requestedChecks: [],

@@ -102,6 +102,7 @@ try {
   assert(triggerCalls[0].useModelProducer === true, 'sweep did not route through the model-producer Code Agent path');
   assert(triggerCalls[0].patchIntent.includes('reviewable patch artifacts or proposals'), 'sweep did not preserve no-direct-write guidance');
   assert(triggerCalls[0].patchIntent.includes('Trigger evidence: context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step.'), 'sweep did not pass the trigger Run evidence contract into the bounded run');
+  assert(triggerCalls[0].patchIntent.includes('Run limit: 2/3.'), 'sweep did not pass persisted run-limit state into the bounded run');
   assert(timelineEvents.length === 1, 'sweep did not record trigger timeline evidence');
   assert(timelineEvents[0].type === 'panel.scheduled_event_agent_triggered', 'sweep recorded the wrong timeline event type');
   assert(timelineEvents[0].payload.runId === run.id, 'timeline evidence did not preserve the run id');
@@ -119,6 +120,7 @@ try {
     `runId=${run.id}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
+    'runLimitEvidence=passed',
     'timelineEvidence=recorded',
     'workspace=unchanged',
     'provider=not-called',

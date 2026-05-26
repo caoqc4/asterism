@@ -245,6 +245,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('injected Code Agent trigger port');
     expect(workHabits?.evidence.join(' ')).toContain('schedulerTriggerServiceConnected=true');
     expect(workHabits?.evidence.join(' ')).toContain('operatorConfirmed=true');
+    expect(workHabits?.evidence.join(' ')).toContain('run-limit evidence');
     expect(workHabits?.evidence.join(' ')).toContain('scheduler:triggerScheduledEventAgentRun');
     expect(workHabits?.evidence.join(' ')).toContain('启动一次');
     expect(workHabits?.evidence.join(' ')).toContain('without enabling a background scheduler job');
@@ -261,6 +262,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
     expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by in-sweep run-limit counting');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('runLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('targetTaskId timeline evidence');
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
