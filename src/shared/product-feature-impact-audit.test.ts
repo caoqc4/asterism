@@ -262,6 +262,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
+    expect(workHabits?.evidence.join(' ')).toContain('runtime-start satisfied/missing requirements');
     expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence');
     expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
     expect(workHabits?.evidence.join(' ')).toContain('15-minute background scheduler job');
@@ -273,6 +274,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by in-sweep run-limit counting');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runLimitEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=passed');
     expect(workHabits?.evidence.join(' ')).toContain('targetTaskId timeline evidence');
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');

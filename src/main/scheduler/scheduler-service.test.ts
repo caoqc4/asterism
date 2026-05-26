@@ -1098,6 +1098,12 @@ describe('SchedulerService', () => {
         runStatus: 'completed',
         targetTaskId: 'task_auto',
         standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        runtimeStartMissingRequirements: [],
+        runtimeStartSatisfiedRequirements: expect.arrayContaining([
+          'trigger_plan_ready',
+          'scheduler_trigger_service',
+          'run_limit_count',
+        ]),
         schedulerTriggerServiceConnected: true,
         runtimeStartAllowed: true,
         triggeredAt: '2026-05-26T11:00:00.000Z',

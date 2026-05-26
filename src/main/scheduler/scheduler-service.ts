@@ -339,6 +339,8 @@ export class SchedulerService {
         targetTaskId: task.id,
         planSummary: plan.summary,
         standingApprovalPolicyId: plan.policy?.id ?? null,
+        runtimeStartMissingRequirements: plan.runtimeStartMissingRequirements,
+        runtimeStartSatisfiedRequirements: plan.runtimeStartSatisfiedRequirements,
         triggerRunEvidenceRequired: plan.triggerRunEvidenceRequired,
         runLimit: plan.runLimit,
         schedulerTriggerServiceConnected: plan.schedulerTriggerServiceConnected,
