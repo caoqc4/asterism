@@ -329,9 +329,10 @@ Taskplane currently has a working native CLI execution backend:
   reviewed files, records applied or blocked run evidence, and refreshes task/run
   state.
 - Future API/runtime-generated patch promotion must first prove the
-  selected-runtime contract, then reuse the same run-bound reviewed-patch apply
-  workflow: patch artifact, promotion Decision, promotion preflight, explicit
-  operator apply, same-run evidence chain, and post-apply Run evidence.
+  selected-runtime contract and target-task identity, then reuse the same
+  run-bound reviewed-patch apply workflow: patch artifact, promotion Decision,
+  promotion preflight, explicit operator apply, same-run evidence chain, and
+  post-apply Run evidence.
 - Blocked promotion notices explicitly state that no workspace files were
   written and point operators back to Run evidence before re-reviewing or
   regenerating the patch.

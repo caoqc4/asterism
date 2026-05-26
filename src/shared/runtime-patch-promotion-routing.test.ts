@@ -13,6 +13,7 @@ describe('runtime patch promotion routing readiness', () => {
       ready: false,
       missingRequirements: [
         'selected_runtime_contract',
+        'target_task_identity',
         'promotion_preflight',
         'explicit_operator_apply',
         'same_run_evidence_chain',
@@ -21,6 +22,7 @@ describe('runtime patch promotion routing readiness', () => {
     });
     expect(readiness.summary).toContain('ready=no');
     expect(readiness.summary).toContain('selectedRuntimeContract=missing');
+    expect(readiness.summary).toContain('targetTaskIdentity=missing');
     expect(readiness.summary).toContain('patchArtifact=ready');
     expect(readiness.summary).toContain('promotionDecision=ready');
     expect(readiness.summary).toContain('promotionPreflight=missing');
@@ -35,6 +37,7 @@ describe('runtime patch promotion routing readiness', () => {
       promotionPreflightReady: true,
       sameRunEvidenceChainReady: true,
       selectedRuntimeContractReady: true,
+      targetTaskIdentityReady: true,
     });
 
     expect(readiness).toMatchObject({
@@ -43,6 +46,7 @@ describe('runtime patch promotion routing readiness', () => {
     });
     expect(readiness.summary).toContain('ready=yes');
     expect(readiness.summary).toContain('selectedRuntimeContract=ready');
+    expect(readiness.summary).toContain('targetTaskIdentity=ready');
     expect(readiness.summary).toContain('explicitOperatorApply=ready');
     expect(readiness.summary).toContain('sameRunEvidenceChain=ready');
     expect(readiness.summary).toContain('postApplyRunEvidence=ready');
@@ -58,6 +62,7 @@ describe('runtime patch promotion routing readiness', () => {
       promotionPreflightReady: true,
       sameRunEvidenceChainReady: false,
       selectedRuntimeContractReady: true,
+      targetTaskIdentityReady: true,
     });
 
     expect(readiness).toMatchObject({

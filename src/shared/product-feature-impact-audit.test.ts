@@ -344,10 +344,11 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('Terminal Run verification now carries same-run artifacts and checkpoints');
     expect(taskFiles?.evidence.join(' ')).toContain('can satisfy workspace_write promotion evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
-    expect(taskFiles?.evidence.join(' ')).toContain('selected-runtime contract, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence');
     expect(taskFiles?.cliOnlyClosure).toBe('supported');
     expect(taskFiles?.gaps.join(' ')).toContain('Future API/runtime-generated patch promotion');
     expect(taskFiles?.gaps.join(' ')).toContain('selected-runtime contract');
+    expect(taskFiles?.gaps.join(' ')).toContain('target-task identity');
     expect(taskFiles?.gaps.join(' ')).toContain('reviewed-patch apply workflow');
     expect(taskFiles?.gaps.join(' ')).toContain('same-run evidence chain');
     expect(taskFiles?.gaps.join(' ')).not.toContain('post-apply verification copy');
@@ -355,7 +356,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.nextActions.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
     expect(taskFiles?.gaps.join(' ')).not.toContain('packaged smoke and recovery UX');
     expect(taskFiles?.nextActions.join(' ')).toContain('product-controlled mutation path');
-    expect(taskFiles?.nextActions.join(' ')).toContain('selected-runtime, same-run patch artifacts');
+    expect(taskFiles?.nextActions.join(' ')).toContain('selected-runtime, target-task, same-run patch artifacts');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need an apply implementation');
     expect(rightPanel?.gaps.join(' ')).not.toContain('fully normal operator-facing apply workflow');
     expect(rightPanel?.gaps.join(' ')).not.toContain('post-apply status projection');
