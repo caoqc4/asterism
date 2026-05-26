@@ -796,11 +796,12 @@ Current implementation:
   `runtimeStartAllowed=false`.
 - `SchedulerService.diagnoseScheduledEventAgentTriggers` wires the planner to a
   scheduler diagnostic entrypoint. It reads selected-runtime readiness from AI
-  config status and returns ready/blocked plans, but it does not resolve runtime
-  config, schedule a trigger job, or start a native runtime. A native runtime
-  start path may consume these plans only after separate scheduler run-limit,
-  context readiness, task-memory, subtask-start, run evidence, and post-step
-  gates are connected.
+  config status, uses `RunRepository.countCreatedSinceByTask` for persisted
+  same-day run-limit counts when available, and returns ready/blocked plans. It
+  does not resolve runtime config, schedule a trigger job, or start a native
+  runtime. A native runtime start path may consume these plans only after
+  separate trigger-service run evidence, context readiness, task-memory,
+  subtask-start, durable run-limit counting, and post-step gates are connected.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

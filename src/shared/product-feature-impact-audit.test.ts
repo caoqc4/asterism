@@ -215,10 +215,12 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('does not resolve runtime config');
     expect(workHabits?.evidence.join(' ')).toContain('daily run-limit accounting input');
     expect(workHabits?.evidence.join(' ')).toContain('maxRunsPerDay has been reached');
+    expect(workHabits?.evidence.join(' ')).toContain('RunRepository.countCreatedSinceByTask');
+    expect(workHabits?.evidence.join(' ')).toContain('persisted same-day Run records');
     expect(workHabits?.gaps.join(' ')).toContain('L1 proposal diagnostics');
     expect(workHabits?.gaps.join(' ')).toContain('confirmed Task Dynamics authorization records');
     expect(workHabits?.gaps.join(' ')).toContain('dry-run trigger planner');
-    expect(workHabits?.gaps.join(' ')).toContain('no-start scheduler diagnostics');
+    expect(workHabits?.gaps.join(' ')).toContain('persisted daily run-limit accounting diagnostics');
     expect(workHabits?.nextActions.join(' ')).toContain('controlled native runtime start');
     expect(workHabits?.nextActions.join(' ')).toContain('durable run-limit counting');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');

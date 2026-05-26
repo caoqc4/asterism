@@ -66,6 +66,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('`maxRunsPerDay` is reached');
     expect(content).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
     expect(content).toContain('scheduler diagnostic entrypoint');
+    expect(content).toContain('RunRepository.countCreatedSinceByTask');
+    expect(content).toContain('persisted');
     expect(content).toContain('does not resolve runtime');
     expect(content).toContain('runtimeStartAllowed=false');
     expect(content).toContain('adapter-level native capability declarations');

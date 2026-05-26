@@ -165,4 +165,42 @@ describe('RunRepository integration', () => {
     expect(staleRuns.map((run) => run.id)).toContain(oldRun.id);
     expect(staleRuns.map((run) => run.id)).not.toContain(freshRun.id);
   });
+
+  it('counts created runs by task since a provided timestamp', async () => {
+    const task = await taskRepository.create({
+      title: 'Count scheduled runs',
+    });
+    const otherTask = await taskRepository.create({
+      title: 'Other scheduled run',
+    });
+
+    const oldRun = await runRepository.create({ taskId: task.id, type: 'agent' });
+    const todayRun = await runRepository.create({ taskId: task.id, type: 'agent' });
+    const todayDraft = await runRepository.create({ taskId: task.id, type: 'draft' });
+    const otherTodayRun = await runRepository.create({ taskId: otherTask.id, type: 'agent' });
+
+    const db = initDatabase();
+    await db
+      .update(runs)
+      .set({
+        createdAt: '2026-05-25T23:59:59.000Z',
+      })
+      .where(eq(runs.id, oldRun.id));
+    for (const run of [todayRun, todayDraft, otherTodayRun]) {
+      await db
+        .update(runs)
+        .set({
+          createdAt: '2026-05-26T10:00:00.000Z',
+        })
+        .where(eq(runs.id, run.id));
+    }
+
+    await expect(runRepository.countCreatedSinceByTask(
+      [task.id, otherTask.id, task.id],
+      '2026-05-26T00:00:00.000Z',
+    )).resolves.toEqual({
+      [task.id]: 2,
+      [otherTask.id]: 1,
+    });
+  });
 });

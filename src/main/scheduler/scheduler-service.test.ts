@@ -584,6 +584,127 @@ describe('SchedulerService', () => {
     expect(scheduledJobs).toHaveLength(0);
   });
 
+  it('loads scheduler diagnostic run-limit counts from the run repository when not provided', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail();
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 3 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({
+        featureFlags: {
+          enableScheduler: true,
+          enableSandboxCodingAgent: true,
+        },
+        sandboxBackendStatus: {
+          readiness: {
+            blockedReasons: [],
+            ready: true,
+            summary: 'Sandbox ready.',
+          },
+          producerBackendReadiness: {
+            blockedReasons: [],
+            ready: true,
+            summary: 'Producer ready.',
+          },
+          probe: {
+            backendId: 'local-container',
+            environmentPolicy: 'empty',
+            isolation: 'container',
+            kind: 'local_container',
+            networkMode: 'disabled',
+            status: 'available',
+            supportsOutputLimits: true,
+            supportsPatchArtifacts: true,
+            supportsStagedWrites: true,
+            supportsStructuredCommands: true,
+            supportsTargetedCommands: true,
+            supportsWorkspaceMount: true,
+          },
+          summary: 'Sandbox ready.',
+        },
+        toolScaffoldSummaries: [],
+        workspaceRoot: '/tmp/workspace',
+      }),
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const policy = {
+      id: 'standing_approval:task_auto:coding:local_sandbox',
+      allowedAutonomyLevel: 'L2_limited_authorized_action',
+      allowedLanes: ['coding'],
+      allowedRuntimeIds: ['local_sandbox'],
+      createdAt: '2026-05-26T10:00:00.000Z',
+      expiresAt: '2026-05-27T10:00:00.000Z',
+      maxRunsPerDay: 3,
+      reason: 'Allow bounded weekly update preparation.',
+      riskCeiling: 'low',
+      status: 'active',
+      taskFacets: ['scheduled'],
+      taskId: 'task_auto',
+      taskTypes: ['routine'],
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+    );
+
+    const diagnostics = await service.diagnoseScheduledEventAgentTriggers([
+      {
+        ...task,
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: task.id,
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:05:00.000Z',
+        }],
+      },
+    ], now);
+
+    expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
+      ['task_auto'],
+      '2026-05-26T00:00:00.000Z',
+    );
+    expect(diagnostics[0]).toMatchObject({
+      status: 'blocked',
+      runLimit: {
+        maxRunsPerDay: 3,
+        runsStartedToday: 3,
+      },
+      blockedReasons: expect.arrayContaining([
+        'Scheduled/event trigger daily run limit reached: 3/3.',
+      ]),
+    });
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(scheduledJobs).toHaveLength(0);
+  });
+
   it('falls back to plain brief generation when brief template selection fails', async () => {
     const homeData = {
       ...buildHomeData(),

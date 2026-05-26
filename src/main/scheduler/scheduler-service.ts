@@ -18,6 +18,14 @@ function olderThanMinutes(minutes: number): string {
   return new Date(Date.now() - minutes * 60_000).toISOString();
 }
 
+function startOfUtcDay(date: Date): string {
+  return new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  )).toISOString();
+}
+
 export class SchedulerService {
   private jobs: ScheduledTask[] = [];
   private started = false;
@@ -105,19 +113,29 @@ export class SchedulerService {
       | 'waitingReason'
     >[],
     now: Date = new Date(),
-    runCountsStartedTodayByTaskId: Record<string, number> = {},
+    runCountsStartedTodayByTaskId: Record<string, number> | null = null,
   ): Promise<AgentScheduledEventTriggerPlan[]> {
     const getStatus = (this.aiConfigService as { getStatus?: AiConfigService['getStatus'] }).getStatus;
     const aiStatus = typeof getStatus === 'function' ? await getStatus.call(this.aiConfigService).catch(() => null) : null;
+    const runCounts = runCountsStartedTodayByTaskId
+      ?? await this.countRunsStartedToday(tasks.map((task) => task.id), now);
 
     return tasks.map((task) => planScheduledEventAgentTrigger({
       aiStatus,
       now,
-      runLimit: runCountsStartedTodayByTaskId[task.id] === undefined
+      runLimit: runCounts[task.id] === undefined
         ? null
-        : { runsStartedToday: runCountsStartedTodayByTaskId[task.id] },
+        : { runsStartedToday: runCounts[task.id] },
       task,
     }));
+  }
+
+  private async countRunsStartedToday(taskIds: string[], now: Date): Promise<Record<string, number>> {
+    const countCreatedSinceByTask = (this.runRepository as {
+      countCreatedSinceByTask?: (taskIds: string[], sinceIso: string) => Promise<Record<string, number>>;
+    }).countCreatedSinceByTask;
+    if (typeof countCreatedSinceByTask !== 'function') return {};
+    return countCreatedSinceByTask.call(this.runRepository, taskIds, startOfUtcDay(now)).catch(() => ({}));
   }
 
   private async runStartupRecovery(): Promise<void> {

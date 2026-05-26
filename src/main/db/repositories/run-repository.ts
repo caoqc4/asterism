@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lt } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lt } from 'drizzle-orm';
 
 import type {
   CreateRunInput,
@@ -128,5 +128,29 @@ export class RunRepository {
       .orderBy(desc(runs.updatedAt));
 
     return rows.map(toRecord);
+  }
+
+  async countCreatedSinceByTask(taskIds: string[], sinceIso: string): Promise<Record<string, number>> {
+    const uniqueTaskIds = [...new Set(taskIds.filter((taskId) => taskId.trim()))];
+    if (!uniqueTaskIds.length) return {};
+
+    const db = initDatabase();
+    const rows = await db
+      .select({
+        id: runs.id,
+        taskId: runs.taskId,
+      })
+      .from(runs)
+      .where(
+        and(
+          inArray(runs.taskId, uniqueTaskIds),
+          gte(runs.createdAt, sinceIso),
+        ),
+      );
+
+    return rows.reduce<Record<string, number>>((counts, row) => {
+      counts[row.taskId] = (counts[row.taskId] ?? 0) + 1;
+      return counts;
+    }, {});
   }
 }
