@@ -23,6 +23,11 @@ function formatCounts(counts) {
     .join(' ');
 }
 
+function idsFor(items, predicate) {
+  const ids = items.filter(predicate).map((item) => item.id);
+  return ids.length > 0 ? ids.join(',') : '<none>';
+}
+
 try {
   await build({
     bundle: true,
@@ -44,6 +49,10 @@ try {
   console.log(`status ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'status'))}`);
   console.log(`cliOnlyClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'cliOnlyClosure'))}`);
   console.log(`futureApiClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'futureApiClosure'))}`);
+  console.log(`focus p0CliPartial=${idsFor(
+    PRODUCT_FEATURE_IMPACT_AUDIT,
+    (item) => item.priority === 'p0' && item.cliOnlyClosure === 'partial',
+  )}`);
 
   for (const item of PRODUCT_FEATURE_IMPACT_AUDIT) {
     console.log(`${item.priority} ${item.status} cli=${item.cliOnlyClosure} api=${item.futureApiClosure} ${item.id}`);
