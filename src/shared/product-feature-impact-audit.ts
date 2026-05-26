@@ -483,12 +483,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'buildStandingApprovalConfirmationDraft now creates a confirmation-only L2 authorization draft with policy, evaluation, scope summary, and explicit schedulerTriggerAllowed=false / workspaceWriteAllowed=false boundaries; it only tolerates the known scheduled/event entrypoint blocker and blocks other automation readiness gaps.',
       'TasksPage Task Dynamics now exposes the Standing Approval draft for scheduled/event/routine tasks as an operator card, making the L2 authorization shape visible while keeping scheduler triggers and workspace writes unavailable.',
       'TasksPage can now confirm the Standing Approval draft into a panel.standing_approval_confirmed Task Dynamics event through the existing TaskService timeline mutation guard, while still leaving schedulerTriggerAllowed=false and workspaceWriteAllowed=false.',
+      'planScheduledEventAgentTrigger now acts as the shared dry-run scheduled/event trigger planner: it consumes confirmed Standing Approval Task Dynamics records, re-checks runtime readiness, task readiness, policy expiry/scope/risk, task automation class, and returns a ready/blocked plan while keeping runtimeStartAllowed=false until a real trigger service is wired.',
     ],
     gaps: [
-      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics, shared Standing Approval evaluation, confirmation-only drafts, and confirmed Task Dynamics authorization records; scheduled/event tasks still need a dedicated trigger service before L2 automatic native runtime starts.',
+      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics, shared Standing Approval evaluation, confirmation-only drafts, confirmed Task Dynamics authorization records, and a dry-run trigger planner; scheduled/event tasks still need a connected trigger service before L2 automatic native runtime starts.',
     ],
     nextActions: [
-      'Add the dedicated scheduled/event trigger service that consumes confirmed Standing Approval records without bypassing context readiness, task-memory, subtask_start, and post-step gates.',
+      'Wire the scheduled/event trigger planner to a no-start scheduler diagnostic entrypoint, then promote it to native runtime start only after it produces Run evidence through context readiness, task-memory, subtask_start, and post-step gates.',
     ],
   },
   {

@@ -207,9 +207,13 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('operator card');
     expect(workHabits?.evidence.join(' ')).toContain('panel.standing_approval_confirmed');
     expect(workHabits?.evidence.join(' ')).toContain('TaskService timeline mutation guard');
+    expect(workHabits?.evidence.join(' ')).toContain('planScheduledEventAgentTrigger');
+    expect(workHabits?.evidence.join(' ')).toContain('dry-run scheduled/event trigger planner');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false');
     expect(workHabits?.gaps.join(' ')).toContain('L1 proposal diagnostics');
     expect(workHabits?.gaps.join(' ')).toContain('confirmed Task Dynamics authorization records');
-    expect(workHabits?.nextActions.join(' ')).toContain('dedicated scheduled/event trigger service');
+    expect(workHabits?.gaps.join(' ')).toContain('dry-run trigger planner');
+    expect(workHabits?.nextActions.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
     expect(rightPanel?.writeIntents).toContain('subtask.propose');
@@ -317,8 +321,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
-    expect(workHabits?.gaps.join(' ')).toContain('dedicated trigger service before L2 automatic native runtime starts');
-    expect(workHabits?.nextActions.join(' ')).toContain('confirmed Standing Approval records');
+    expect(workHabits?.gaps.join(' ')).toContain('connected trigger service before L2 automatic native runtime starts');
+    expect(workHabits?.nextActions.join(' ')).toContain('native runtime start');
     expect(workHabits?.nextActions.join(' ')).toContain('context readiness');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code mode');
     expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');

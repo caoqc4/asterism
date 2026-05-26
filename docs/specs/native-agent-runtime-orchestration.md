@@ -782,6 +782,12 @@ Current implementation:
   and evaluation evidence, but still carries `schedulerTriggerAllowed=false` and
   `workspaceWriteAllowed=false`; a separate scheduled/event trigger service is
   still required before any automatic native runtime start.
+- `planScheduledEventAgentTrigger` is the shared no-start trigger planner. It
+  consumes confirmed Standing Approval Task Dynamics records, re-checks runtime
+  readiness, task readiness, policy expiry/scope/risk, and scheduled/event task
+  class, then returns a ready/blocked plan with `runtimeStartAllowed=false`.
+  Wiring it to scheduler diagnostics must happen before any native runtime start
+  path consumes the plan.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

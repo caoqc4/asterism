@@ -135,6 +135,19 @@ export type AgentStandingApprovalConfirmationDraft = {
   summary: string;
 };
 
+export type AgentScheduledEventTriggerPlan = {
+  status: 'ready' | 'blocked';
+  triggerPlanReady: boolean;
+  runtimeStartAllowed: false;
+  schedulerTriggerServiceConnected: false;
+  policy: AgentStandingApprovalPolicy | null;
+  readiness: AgentAutomationReadinessEvaluation;
+  standingApproval: AgentStandingApprovalEvaluation;
+  blockedReasons: string[];
+  evidence: string[];
+  summary: string;
+};
+
 export type AgentExecutionOrchestrationSnapshot = {
   runtime: ExecutionRuntimeSnapshot;
   profile: AgentProfileSnapshot;
@@ -879,6 +892,89 @@ export function buildStandingApprovalConfirmationDraft(params: {
   };
 }
 
+export function planScheduledEventAgentTrigger(params: {
+  aiStatus: Pick<
+    AiConfigStatus,
+    'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'
+  > | null;
+  lane?: AgentExecutionOrchestrationLane;
+  now: Date;
+  runtimeId?: string;
+  task: Pick<
+    TaskDetail,
+    | 'activeBlocker'
+    | 'activeDependency'
+    | 'activeWaitingItem'
+    | 'completionCriteria'
+    | 'id'
+    | 'nextStep'
+    | 'processTemplates'
+    | 'riskLevel'
+    | 'sourceContexts'
+    | 'state'
+    | 'summary'
+    | 'taskFacets'
+    | 'taskType'
+    | 'timeline'
+    | 'waitingReason'
+  >;
+}): AgentScheduledEventTriggerPlan {
+  const lane = params.lane ?? 'coding';
+  const snapshot = buildAgentExecutionOrchestrationSnapshot(params.aiStatus);
+  const runtimeId = params.runtimeId ?? snapshot.runtime.id;
+  const readiness = evaluateSkillInformedAutomationReadiness({
+    snapshot,
+    task: params.task,
+  });
+  const policy = findConfirmedStandingApprovalPolicy({
+    lane,
+    runtimeId,
+    task: params.task,
+  });
+  const standingApproval = evaluateStandingApprovalForAutomation({
+    lane,
+    now: params.now.toISOString(),
+    policy,
+    readiness,
+    runtimeId,
+    task: params.task,
+  });
+  const blockedReasons = [...standingApproval.blockedReasons];
+  const evidence = [
+    ...standingApproval.evidence,
+    `runtime=${snapshot.runtime.status}`,
+  ];
+
+  if (!isScheduledEventOrRoutineTask(params.task)) {
+    blockedReasons.push('Scheduled/event trigger planner only handles scheduled, event, or routine tasks.');
+  } else {
+    evidence.push('taskAutomationClass=scheduled_event_or_routine');
+  }
+
+  const status = blockedReasons.length === 0 ? 'ready' : 'blocked';
+
+  return {
+    status,
+    triggerPlanReady: status === 'ready',
+    runtimeStartAllowed: false,
+    schedulerTriggerServiceConnected: false,
+    policy,
+    readiness,
+    standingApproval,
+    blockedReasons,
+    evidence,
+    summary: [
+      'Scheduled/event trigger plan',
+      `status=${status}`,
+      `triggerPlanReady=${status === 'ready' ? 'yes' : 'no'}`,
+      'runtimeStartAllowed=false',
+      'schedulerTriggerServiceConnected=false',
+      `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
+      `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
+    ].join(' / '),
+  };
+}
+
 function isRiskAllowedByStandingApproval(
   ceiling: AgentStandingApprovalRiskCeiling,
   risk: TaskDetail['riskLevel'],
@@ -890,6 +986,46 @@ function isRiskAllowedByStandingApproval(
 
 function isStandingApprovalToleratedReadinessBlocker(reason: string): boolean {
   return reason === 'Scheduled, event-triggered, and routine tasks need a policy-gated scheduled/event execution entrypoint before automatic native runtime start.';
+}
+
+function findConfirmedStandingApprovalPolicy(params: {
+  lane: AgentExecutionOrchestrationLane;
+  runtimeId: string;
+  task: Pick<TaskDetail, 'id' | 'timeline'>;
+}): AgentStandingApprovalPolicy | null {
+  for (const event of [...params.task.timeline].sort((left, right) => right.createdAt.localeCompare(left.createdAt))) {
+    if (event.type !== 'panel.standing_approval_confirmed' || !event.payload) continue;
+    try {
+      const payload = JSON.parse(event.payload) as {
+        policy?: AgentStandingApprovalPolicy;
+        schedulerTriggerAllowed?: unknown;
+        workspaceWriteAllowed?: unknown;
+      };
+      if (
+        payload.schedulerTriggerAllowed !== false
+        || payload.workspaceWriteAllowed !== false
+        || payload.policy?.taskId !== params.task.id
+        || !payload.policy.allowedLanes?.includes(params.lane)
+        || !payload.policy.allowedRuntimeIds?.includes(params.runtimeId)
+      ) {
+        continue;
+      }
+      return payload.policy;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function isScheduledEventOrRoutineTask(
+  task: Pick<TaskDetail, 'taskFacets' | 'taskType'>,
+): boolean {
+  const kinds = new Set([
+    task.taskType,
+    ...(task.taskFacets ?? []),
+  ].filter(Boolean));
+  return kinds.has('scheduled') || kinds.has('event') || kinds.has('routine');
 }
 
 function mapRunStatusToLifecycleStage(runStatus: RunStatus): AgentRunLifecycleStage {

@@ -8,6 +8,7 @@ import {
   buildStandingApprovalConfirmationDraft,
   evaluateStandingApprovalForAutomation,
   evaluateSkillInformedAutomationReadiness,
+  planScheduledEventAgentTrigger,
   projectAgentRunLifecycle,
   validateAgentExecutionOrchestrationRequest,
 } from './agent-orchestration.js';
@@ -747,10 +748,95 @@ describe('agent orchestration snapshot', () => {
     });
     expect(draft.title).toContain('暂不可授权');
   });
+
+  it('plans a scheduled/event trigger from confirmed standing approval without starting runtime', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+
+    const plan = planScheduledEventAgentTrigger({
+      aiStatus: readyAutomationAiStatus(),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      task: {
+        ...task,
+        id: 'task_1',
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: 'task_1',
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy: draft.policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:01:00.000Z',
+        }],
+      },
+    });
+
+    expect(plan).toMatchObject({
+      status: 'ready',
+      triggerPlanReady: true,
+      runtimeStartAllowed: false,
+      schedulerTriggerServiceConnected: false,
+      policy: {
+        id: 'standing_approval:task_1:coding:local_sandbox',
+      },
+      standingApproval: {
+        accepted: true,
+      },
+    });
+    expect(plan.summary).toContain('runtimeStartAllowed=false');
+    expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
+  });
+
+  it('blocks scheduled/event trigger planning without confirmed standing approval or task automation class', () => {
+    const task = matureAutomationTask({
+      taskFacets: [],
+      taskType: 'simple',
+    });
+
+    const plan = planScheduledEventAgentTrigger({
+      aiStatus: readyAutomationAiStatus(),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      task: {
+        ...task,
+        id: 'task_1',
+        timeline: [],
+      },
+    });
+
+    expect(plan).toMatchObject({
+      status: 'blocked',
+      triggerPlanReady: false,
+      runtimeStartAllowed: false,
+      schedulerTriggerServiceConnected: false,
+      policy: null,
+      blockedReasons: expect.arrayContaining([
+        'Standing Approval policy is missing.',
+        'Scheduled/event trigger planner only handles scheduled, event, or routine tasks.',
+      ]),
+    });
+  });
 });
 
-function readyAutomationSnapshot() {
-  return buildAgentExecutionOrchestrationSnapshot({
+function readyAutomationAiStatus(): Pick<AiConfigStatus, 'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'> {
+  return {
     featureFlags: {
       enableScheduler: true,
       enableSandboxCodingAgent: true,
@@ -798,7 +884,11 @@ function readyAutomationSnapshot() {
     },
     toolScaffoldSummaries: [],
     workspaceRoot: '/tmp/workspace',
-  });
+  };
+}
+
+function readyAutomationSnapshot() {
+  return buildAgentExecutionOrchestrationSnapshot(readyAutomationAiStatus());
 }
 
 function matureAutomationTask(

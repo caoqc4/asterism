@@ -57,6 +57,10 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('panel.standing_approval_confirmed');
     expect(content).toContain('timeline mutation guard');
     expect(content).toContain('separate scheduled/event trigger service');
+    expect(content).toContain('planScheduledEventAgentTrigger');
+    expect(content).toContain('shared no-start trigger planner');
+    expect(content).toContain('confirmed Standing Approval Task Dynamics records');
+    expect(content).toContain('runtimeStartAllowed=false');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');
     expect(content).toContain('compact/clear context');
