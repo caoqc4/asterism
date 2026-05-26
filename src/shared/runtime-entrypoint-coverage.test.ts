@@ -483,6 +483,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).not.toContain('decision_write_boundary');
     expect(entry?.requiredGates).not.toContain('decision_action');
     expect(entry?.notes).toContain('draft an approval item');
+    expect(entry?.notes).toContain('explicit target task');
     expect(entry?.notes).toContain('planSchedulerDecisionProposal');
     expect(entry?.notes).toContain('cannot persist a Decision');
     expect(entry?.notes).toContain('expose IPC/scheduler triggers');

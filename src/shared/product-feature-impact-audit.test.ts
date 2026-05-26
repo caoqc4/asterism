@@ -194,6 +194,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('without operator confirmation or standing approval');
     expect(decisions?.evidence.join(' ')).toContain('planSchedulerDecisionProposal');
     expect(decisions?.evidence.join(' ')).toContain('approval-item-only');
+    expect(decisions?.evidence.join(' ')).toContain('target-task identity');
     expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('writebackDispatchAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false');
