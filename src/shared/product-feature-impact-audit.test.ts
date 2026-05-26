@@ -122,6 +122,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('no-write recovery evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace was not written');
     expect(taskFiles?.evidence.join(' ')).toContain('post-apply verification results');
+    expect(taskFiles?.evidence.join(' ')).toContain('only reviewed patch files passing promotion preflight');
+    expect(taskFiles?.evidence.join(' ')).toContain('drift blocks apply');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
     expect(taskFiles?.gaps.join(' ')).toContain('disabled by default');
     expect(taskFiles?.gaps.join(' ')).toContain('write-boundary guidance');

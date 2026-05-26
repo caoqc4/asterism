@@ -6335,9 +6335,11 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
     await user.click(await findTaskFileButton(/apply-reviewed\.patch/));
+    expect(await screen.findByText(/只写入 reviewed patch 中通过 preflight 的匹配文件/)).toBeTruthy();
     await user.click(await screen.findByRole('button', { name: '应用到工作区' }));
 
-    expect(confirmSpy).toHaveBeenCalled();
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('只会写入 reviewed patch 中通过 promotion preflight 的匹配文件'));
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('工作区内容已漂移'));
     await waitFor(() => {
       expect(harness.api.applySandboxPatchPromotion).toHaveBeenCalledWith({
         checkpointId: 'run_checkpoint_patch_apply',
@@ -6346,6 +6348,7 @@ describe('App redesign v1', () => {
     });
     expect(await screen.findByText(/promotion apply 完成/)).toBeTruthy();
     expect(screen.getByText(/文件：notes\.md/)).toBeTruthy();
+    expect(screen.getByText(/Run 证据已刷新，请复核 touched files 和后续验证结果/)).toBeTruthy();
     confirmSpy.mockRestore();
   });
 

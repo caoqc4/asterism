@@ -1866,7 +1866,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   async function applySandboxPatchPromotion(view: SandboxPatchPromotionView | null, file: VirtualTaskFile | null) {
     if (!view || !file?.artifactId || !window.api?.applySandboxPatchPromotion) return;
     if (!guardDurablePanelAction({ taskId: file.taskId, confirmed: true }).allowed) return;
-    const confirmed = window.confirm('确认将这份 reviewed patch 应用到工作区？应用前仍会执行 promotion preflight。');
+    const confirmed = window.confirm('确认将这份 reviewed patch 应用到工作区？Taskplane 只会写入 reviewed patch 中通过 promotion preflight 的匹配文件；如果工作区内容已漂移，apply 会阻塞并记录 Run 证据。');
     if (!confirmed) return;
 
     setApplyingPatchPromotionCheckpointId(view.checkpointId);
@@ -1885,6 +1885,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         : [
             result.status === 'already_applied' ? 'promotion 已经应用' : 'promotion apply 完成',
             result.touchedFiles.length ? `文件：${result.touchedFiles.join(', ')}` : null,
+            'Run 证据已刷新，请复核 touched files 和后续验证结果',
           ].filter(Boolean).join('；');
       setPatchReviewPreviewMessages((current) => ({
         ...current,
@@ -3110,6 +3111,7 @@ function resetCaptureDraft() {
               notice={selectedPatchReviewMessage}
               noticeTone={selectedPatchReviewTone}
               noticeAction={selectedPatchPromotionApplyAvailable ? {
+                description: '只写入 reviewed patch 中通过 preflight 的匹配文件；完成或阻塞后请复核 Run 证据。',
                 disabled: applyingPatchPromotionCheckpointId === selectedPatchPromotionView?.checkpointId,
                 label: applyingPatchPromotionCheckpointId === selectedPatchPromotionView?.checkpointId
                   ? '应用中...'
@@ -3784,6 +3786,7 @@ function FileWorkspace({
   dirty: boolean;
   notice?: string | null;
   noticeAction?: {
+    description?: string;
     disabled?: boolean;
     label: string;
     onClick: () => void;
@@ -3804,7 +3807,10 @@ function FileWorkspace({
       )}
       {notice && (
         <div className={`file-readonly-note${noticeTone ? ` ${noticeTone}` : ''}`}>
-          <span>{notice}</span>
+          <span className="file-readonly-note-copy">
+            <span>{notice}</span>
+            {noticeAction?.description && <small>{noticeAction.description}</small>}
+          </span>
           {noticeAction && (
             <button
               className="file-readonly-note-action"

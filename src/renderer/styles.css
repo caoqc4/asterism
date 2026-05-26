@@ -3700,6 +3700,18 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   gap: 10px;
 }
+.file-readonly-note-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.file-readonly-note-copy small {
+  color: inherit;
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: 0.82;
+}
 .file-readonly-note.pending {
   border-color: var(--amber-line);
   background: var(--amber-soft);

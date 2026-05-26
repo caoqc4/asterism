@@ -303,6 +303,9 @@ Taskplane currently has a working native CLI execution backend:
   regenerating the patch.
 - Applied promotion notices point operators back to Run evidence to review
   touched files and post-apply verification results after workspace writes.
+- Tasks file workspace apply guidance states that only reviewed patch files
+  passing promotion preflight are written, workspace drift blocks apply, and
+  operators should review Run evidence after completion.
 - Completed native run chat summaries mention both web research and local
   command/workspace activity when those events were recorded.
 - Codex JSONL `command_execution` items are projected as `shell_command` Run
