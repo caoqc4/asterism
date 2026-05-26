@@ -12,6 +12,7 @@ import {
   detectPackagedCliCapabilitySignals,
   detectWorkspaceCapabilitySignals,
   executableProbeFailureReason,
+  gateAgentCliCapabilitySignalsByAuth,
   mergeAgentCliCapabilitySignals,
   nativeCapabilityProbeArgs,
   parseAgentCliCapabilitySignals,
@@ -193,6 +194,53 @@ describe('agent cli runtime status service', () => {
           compact: { availability: 'runtime_dependent' },
         },
       },
+    });
+  });
+
+  it('keeps native web search unverified until the detected runtime auth is ready', async () => {
+    const service = new AgentCliRuntimeStatusService(async (command) => ({
+      authState: command === 'claude' ? 'needs_login' : 'unknown',
+      capabilitySignals: command === 'claude'
+        ? {
+            hooks: true,
+            webSearch: true,
+          }
+        : null,
+      installed: command === 'claude',
+      version: command === 'claude' ? 'claude 2.1.144' : null,
+    }));
+
+    const status = await service.getStatus();
+    const claude = status.runtimes.find((runtime) => runtime.id === 'claude');
+
+    expect(claude).toMatchObject({
+      authState: 'needs_login',
+      capabilities: {
+        nativeCapabilities: {
+          hooks: { availability: 'runtime_dependent' },
+          webSearch: { availability: 'unverified' },
+        },
+      },
+    });
+  });
+
+  it('only gates web search capability signals on auth readiness', () => {
+    expect(gateAgentCliCapabilitySignalsByAuth('needs_login', {
+      hooks: true,
+      nativeMemory: true,
+      webSearch: true,
+    })).toEqual({
+      hooks: true,
+      nativeMemory: true,
+      webSearch: false,
+    });
+
+    expect(gateAgentCliCapabilitySignalsByAuth('ready', {
+      hooks: true,
+      webSearch: true,
+    })).toEqual({
+      hooks: true,
+      webSearch: true,
     });
   });
 

@@ -254,6 +254,34 @@ describe('capability registry', () => {
     });
   });
 
+  it('does not summarize native web search as runtime-dependent for runtimes that still need login', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'claude' }) }),
+      productSurfaces: {
+        agentCli: agentCliStatusForCapability(buildAgentCliRuntimeStatus([
+          {
+            authState: 'needs_login',
+            capabilities: buildDefaultAgentCliRuntimeCapabilities('claude', 'Claude Code', '2.1.144', {
+              webSearch: true,
+            }),
+            command: 'claude',
+            executionSupport: 'manual_run',
+            id: 'claude',
+            installed: true,
+            label: 'Claude Code',
+            missingReason: 'Claude Code login required.',
+            version: '2.1.144',
+            workload: 'idle',
+          },
+        ]), 'claude'),
+      },
+    });
+
+    expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
+      summary: 'detected=1 / ready=0 / manualRun=1 / readyManualRun=0 / running=0 / errors=0 / nativeWebSearchUnverified=1 / selected=Claude Code / selectedNativeWebSearch=unverified / catalogue=2',
+    });
+  });
+
   it('marks selected Agent API Runtime as available for supported provider-backed phases', () => {
     const registry = buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus({ runtimeMode: 'api' }) }),

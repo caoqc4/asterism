@@ -277,12 +277,21 @@ export function agentCliStatusForCapability(
     ? installedRuntimes.find((runtime) => runtime.id === selectedRuntimeId) ?? null
     : null;
   const nativeWebSearchRuntimeDependentCount = installedRuntimes.filter((runtime) => (
-    runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'runtime_dependent'
-    || runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'available'
+    runtime.authState === 'ready'
+    && (
+      runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'runtime_dependent'
+      || runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'available'
+    )
   )).length;
   const nativeWebSearchUnverifiedCount = installedRuntimes.filter((runtime) => (
-    runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'unverified'
+    runtime.authState !== 'ready'
+    || runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'unverified'
   )).length;
+  const selectedNativeWebSearchAvailability = selectedRuntime?.authState === 'ready'
+    ? selectedRuntime.capabilities?.nativeCapabilities?.webSearch.availability
+    : selectedRuntime?.capabilities?.nativeCapabilities?.webSearch.availability
+      ? 'unverified'
+      : undefined;
 
   return {
     catalogueCount: status.catalogueCount,
@@ -290,7 +299,7 @@ export function agentCliStatusForCapability(
     errorCount: status.errorCount,
     manualRunCount: status.manualRunCount,
     nativeWebSearchRuntimeDependentCount,
-    selectedNativeWebSearchAvailability: selectedRuntime?.capabilities?.nativeCapabilities?.webSearch.availability,
+    selectedNativeWebSearchAvailability,
     nativeWebSearchUnverifiedCount,
     readyCount: status.readyCount,
     readyManualRunCount: status.readyManualRunCount,

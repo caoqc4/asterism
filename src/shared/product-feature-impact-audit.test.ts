@@ -361,6 +361,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('usable agent markdown with a heading or metadata');
     expect(capabilities?.evidence.join(' ')).toContain('provider-owned package.json capability/tool declarations');
     expect(capabilities?.evidence.join(' ')).toContain('ignoring arbitrary wrapper packages');
+    expect(capabilities?.evidence.join(' ')).toContain('auth-gates native web/search capability promotion');
+    expect(capabilities?.evidence.join(' ')).toContain('installed-but-not-logged-in runtime');
     expect(capabilities?.evidence.join(' ')).toContain('selected Agent CLI native web/search readiness');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilitySafetyStrip for agent_cli.runtimes');
     expect(capabilities?.evidence.join(' ')).toContain('safe-read-only probe policy');
@@ -384,6 +386,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('hook config semantics');
     expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('provider-owned package metadata checks');
+    expect(capabilities?.gaps.join(' ')).toContain('auth-gated no-start help-output');
     expect(capabilities?.nextActions.join(' ')).toContain('Record Claude native web/search smoke evidence');
     expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');

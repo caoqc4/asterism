@@ -60,17 +60,19 @@ export class AgentCliRuntimeStatusService {
         };
       }
 
+      const authState = probe.authState ?? 'unknown';
+      const detectedCapabilitySignals = mergeAgentCliCapabilitySignals(
+        probe.capabilitySignals ?? null,
+        detectWorkspaceCapabilitySignals(runtime.id, options.workspaceRoot),
+      );
       return {
         ...runtime,
-        authState: probe.authState ?? 'unknown',
+        authState,
         capabilities: buildDefaultAgentCliRuntimeCapabilities(
           runtime.id,
           runtime.label,
           probe.version,
-          mergeAgentCliCapabilitySignals(
-            probe.capabilitySignals ?? null,
-            detectWorkspaceCapabilitySignals(runtime.id, options.workspaceRoot),
-          ),
+          gateAgentCliCapabilitySignalsByAuth(authState, detectedCapabilitySignals),
         ),
         executablePath: probe.executablePath ?? null,
         installed: true,
@@ -89,6 +91,17 @@ export class AgentCliRuntimeStatusService {
       new Date().toISOString(),
     );
   }
+}
+
+export function gateAgentCliCapabilitySignalsByAuth(
+  authState: AgentCliAuthState,
+  signals: AgentCliRuntimeCapabilityProbeSignals | null,
+): AgentCliRuntimeCapabilityProbeSignals | null {
+  if (!signals?.webSearch || authState === 'ready') return signals;
+  return {
+    ...signals,
+    webSearch: false,
+  };
 }
 
 export function createAgentCliRuntimeStatusService(): AgentCliRuntimeStatusService {

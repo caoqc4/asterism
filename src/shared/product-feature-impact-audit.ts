@@ -433,8 +433,9 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Claude workspace subagent metadata probes now require usable .claude/agents/*.md files with headings or metadata, so placeholder directories, empty files, or placeholder-only files no longer count as subagent readiness.',
       'Agent CLI workspace metadata probes now read explicit web/search declarations from .codex/config.* and .claude/settings*.json without executing the runtime, and Claude subagent readiness now requires usable agent markdown with a heading or metadata rather than placeholder-only files.',
       'Agent CLI package metadata probes now read explicit provider-owned package.json capability/tool declarations when the executable resolves inside a Codex/OpenAI or Claude/Anthropic package, while ignoring arbitrary wrapper packages.',
+      'Agent CLI status now auth-gates native web/search capability promotion, so help/workspace/package metadata cannot make an installed-but-not-logged-in runtime appear search-ready.',
       'CapabilityRegistry now summarizes detected Agent CLI native web/search readiness counts, distinguishing runtime-dependent search support from unverified installed runtimes.',
-      'CapabilityRegistry now carries selected Agent CLI native web/search readiness separately from aggregate runtime counts, so selected Codex/Claude search readiness is visible without inferring it from catalogue totals.',
+      'CapabilityRegistry now carries selected Agent CLI native web/search readiness separately from aggregate runtime counts, and downgrades selected native search to unverified when the selected runtime still needs login.',
       'AI Runtime settings now reuse CapabilitySafetyStrip for agent_cli.runtimes, showing shared runtime status, safe-read-only probe policy, and execution boundary before native CLI launch.',
       'AI Runtime settings also reuse CapabilitySafetyStrip for agent_api.runtime, showing provider-backed phase availability, non-startup probe policy, and deferred execution_run boundary.',
       'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution, including visible native search, hook, and subagent readiness labels plus memory, compact, clear, and write boundaries.',
@@ -450,7 +451,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-26 with auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed; the smoke records that --search is a top-level Codex option before exec.',
     ],
     gaps: [
-      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior beyond the current no-start help-output, workspace-metadata, provider-owned package metadata checks, and one Codex opt-in live smoke pass.',
+      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, and one Codex opt-in live smoke pass.',
     ],
     nextActions: [
       'Record Claude native web/search smoke evidence when a local Claude account is ready, and keep adding static readiness probes only when providers expose stable non-executing metadata.',
