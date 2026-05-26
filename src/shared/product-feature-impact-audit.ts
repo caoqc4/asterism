@@ -247,7 +247,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     id: 'task_memory_and_context_clear',
     label: 'Task.md, Task Records, Source Context, and context clearing',
     priority: 'p0',
-    status: 'partial',
+    status: 'covered',
     boundaries: ['persist', 'clear'],
     movements: ['persist', 'handoff', 'pause'],
     ruleSkills: [
@@ -273,12 +273,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Manual task-session refresh now asks shared TaskAdvancementOrchestrator for a context-refresh handoff movement before existing memory and clearing gates run.',
       'TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation and suppresses generic pending-memory guidance before durable Task Records are proposed.',
       'Task Dynamics now surfaces run-detail task-memory proposals through the same TaskMemoryWriteApplyPlan-backed approval queue and main-side writeback IPC outside the right panel.',
+      'MemorySurfaceWriteCoverage registers retained task-memory proposal confirmation entrypoints for RightPanel and Task Dynamics, requiring TaskMemoryWriteApplyPlan, TaskMdUpdateNeedEvaluation, TaskRecordWorthinessEvaluation, pre-step, post-step, and simplicity guards.',
+      'MemorySurfaceWriteCoverage binds retained task-memory write IPC channels to the same surface coverage matrix, so covered memory-write paths declare their surfaces, policies, guards, and service boundary before they count as retained behavior.',
     ],
     gaps: [
-      'Future task-memory confirmation surfaces beyond RightPanel and Task Dynamics must reuse TaskMemoryWriteApplyPlan and TaskRecordWorthinessEvaluation instead of rebuilding Task Record writes.',
+      'Future retained task-memory confirmation surfaces must be added to MemorySurfaceWriteCoverage before they count as covered behavior.',
     ],
     nextActions: [
-      'Keep future task-memory proposal surfaces registered in MemorySurfaceWriteCoverage and routed through main-side writeback dispatch.',
+      'Keep future task-memory proposal surfaces registered in MemorySurfaceWriteCoverage and routed through TaskMemoryWriteApplyPlan plus main-side writeback dispatch.',
     ],
   },
   {

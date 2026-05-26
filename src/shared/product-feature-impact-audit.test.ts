@@ -170,8 +170,12 @@ describe('product feature impact audit', () => {
       .toContain('recordPath evidence');
     expect(taskMemory?.evidence.join(' ')).toContain('TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation');
     expect(taskMemory?.evidence.join(' ')).toContain('Task Dynamics now surfaces run-detail task-memory proposals');
-    expect(taskMemory?.gaps.join(' ')).toContain('beyond RightPanel and Task Dynamics');
+    expect(taskMemory?.evidence.join(' ')).toContain('MemorySurfaceWriteCoverage registers retained task-memory proposal confirmation entrypoints');
+    expect(taskMemory?.evidence.join(' ')).toContain('TaskMemoryWriteApplyPlan, TaskMdUpdateNeedEvaluation, TaskRecordWorthinessEvaluation');
+    expect(taskMemory?.evidence.join(' ')).toContain('binds retained task-memory write IPC channels');
+    expect(taskMemory?.status).toBe('covered');
     expect(taskMemory?.nextActions.join(' ')).toContain('MemorySurfaceWriteCoverage');
+    expect(taskMemory?.nextActions.join(' ')).toContain('TaskMemoryWriteApplyPlan plus main-side writeback dispatch');
     expect(taskMemory?.gaps.join(' ')).not.toContain('Automatic writeback should keep distinguishing');
     expect(taskMemory?.gaps.join(' ')).not.toContain('Future non-RightPanel task-memory confirmation surfaces');
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI task_file.propose Write Intent');
