@@ -219,6 +219,10 @@ Taskplane currently has a working native CLI execution backend:
 - Shared AI Runtime invocation provenance includes a skipped `execution_run`
   shape for deferred Agent API task execution, so UI and service code can refer
   to API execution readiness without silently starting provider-visible work.
+  Agent API capability diagnostics label `execution_run` as deferred, and the
+  deferred invocation reason states that no provider-visible execution run starts
+  until Taskplane context-readiness, run evidence, verification, and writeback
+  gates are satisfied.
 - The current Pilot operation mode is either `product_control_layer` or
   `bounded_decision_backend`. `persistent_ai_pilot_reserved` is a future
   explicit watch/autopilot capability, not the default runtime shape.

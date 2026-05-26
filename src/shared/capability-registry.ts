@@ -467,7 +467,7 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
     configured: availableForSelectedProviderPhases,
     missingReason: availableForSelectedProviderPhases
       ? null
-      : 'Agent API Runtime is a peer AI invocation runtime; supported provider-backed phases require selecting API Runtime and configuring a provider key. Full task execution remains in development.',
+      : 'Agent API Runtime is a peer AI invocation runtime; supported provider-backed phases require selecting API Runtime and configuring a provider key. Full task execution_run remains deferred behind Taskplane harness gates.',
     visibility: 'hidden',
     access: 'mutating',
     requiresApproval: true,
@@ -476,7 +476,7 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       'executionKind=api',
       availableForSelectedProviderPhases ? 'status=partial' : 'status=development',
       'supportedPhases=chat,decomposition,decision,scheduled_brief',
-      'executionRun=development',
+      'executionRun=deferred',
       selected ? 'selected=true' : null,
       providerConfigured ? 'provider=configured' : 'provider=missing',
     ].filter(Boolean).join(' / '),

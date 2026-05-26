@@ -184,7 +184,9 @@ describe('ai runtime invocation contract', () => {
       },
       status: 'skipped',
     });
-    expect(invocation.summary).toContain('provider-visible execution harness gates');
+    expect(invocation.summary).toContain('no provider-visible execution_run starts');
+    expect(invocation.summary).toContain('context-readiness');
+    expect(invocation.summary).toContain('writeback harness gates');
     expect(invocation.deferredReason).toContain('Agent API Runtime task execution remains deferred');
   });
 

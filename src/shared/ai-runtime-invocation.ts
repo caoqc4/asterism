@@ -200,7 +200,7 @@ export function buildDeferredAgentApiExecutionRunInvocation(params: {
   deferredReason?: string | null;
 } = {}): ExecutionRunInvocationResult {
   const deferredReason = params.deferredReason
-    ?? 'Agent API Runtime task execution remains deferred until it satisfies the provider-visible execution harness gates.';
+    ?? 'Agent API Runtime task execution remains deferred: no provider-visible execution_run starts until the runtime satisfies Taskplane context-readiness, run evidence, verification, and writeback harness gates.';
   return {
     phase: 'execution_run',
     layer: 'api_runtime',

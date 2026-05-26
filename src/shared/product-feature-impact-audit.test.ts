@@ -64,6 +64,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate');
     expect(rightPanel?.evidence.join(' ')).toContain('deferred Agent API task execution');
     expect(rightPanel?.evidence.join(' ')).toContain('skipped execution_run shape');
+    expect(rightPanel?.evidence.join(' ')).toContain('execution_run as deferred');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('configured workspace for native guidance');
     expect(rightPanel?.evidence.join(' ')).toContain('workspace write candidates that require reviewable promotion evidence');
