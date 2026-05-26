@@ -78,6 +78,7 @@ describe('evaluateRuntimeResearchIntent', () => {
 
     expect(evaluateRuntimeResearchIntent('不用搜索，直接根据本地实现分析最新 API 变化。').shouldUseExternalResearch).toBe(false);
     expect(evaluateRuntimeResearchIntent('别联网，整理目前 OpenAI API 限制。').shouldUseExternalResearch).toBe(false);
+    expect(evaluateRuntimeResearchIntent('不需要联网，按已有 Source Context 总结当前价格。').shouldUseExternalResearch).toBe(false);
     expect(evaluateRuntimeResearchIntent('Summarize current pricing without web research.').shouldUseExternalResearch).toBe(false);
   });
 
