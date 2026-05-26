@@ -1,0 +1,251 @@
+#!/usr/bin/env node
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const root = process.cwd();
+const distMain = path.join(root, 'dist-electron', 'main');
+
+await assertBuiltModule(path.join(distMain, 'scheduler', 'scheduler-service.js'));
+
+const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'taskplane-scheduled-event-agent-sweep-smoke-'));
+const workspaceFile = path.join(tempRoot, 'TASK.md');
+
+const { SchedulerService } = await import(fileUrl('scheduler/scheduler-service.js'));
+
+try {
+  await fs.writeFile(workspaceFile, 'Scheduled/event Agent sweep smoke fixture. Do not modify files.\n', 'utf8');
+  const beforeWorkspace = await fs.readFile(workspaceFile, 'utf8');
+  const run = {
+    createdAt: '2026-05-26T00:00:00.000Z',
+    failureReason: null,
+    id: 'run_scheduled_event_sweep_smoke',
+    instructions: null,
+    output: null,
+    outputSource: null,
+    status: 'running',
+    taskId: 'task_scheduled_event_sweep_smoke',
+    type: 'agent',
+    updatedAt: '2026-05-26T00:00:00.000Z',
+  };
+  const triggerCalls = [];
+  const timelineEvents = [];
+  const runRepository = {
+    countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+    listIncompleteOlderThan: async () => [],
+    updateResult: async () => null,
+  };
+  const service = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    runRepository,
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        triggerCalls.push(input);
+        return run;
+      },
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        timelineEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
+    },
+  );
+
+  const result = await service.runScheduledEventAgentTriggerSweep(
+    'manual',
+    new Date('2026-05-26T11:00:00.000Z'),
+  );
+  const afterWorkspace = await fs.readFile(workspaceFile, 'utf8');
+
+  assert(result.status === 'completed', 'sweep did not complete');
+  assert(result.checkedTaskCount === 1, 'sweep did not check the scheduled task candidate');
+  assert(result.startedRunCount === 1, 'sweep did not start exactly one bounded run');
+  assert(result.blockedTaskCount === 0, 'sweep unexpectedly blocked the ready task');
+  assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
+  assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
+  assert(triggerCalls[0].useModelProducer === true, 'sweep did not route through the model-producer Code Agent path');
+  assert(triggerCalls[0].patchIntent.includes('reviewable patch artifacts or proposals'), 'sweep did not preserve no-direct-write guidance');
+  assert(timelineEvents.length === 1, 'sweep did not record trigger timeline evidence');
+  assert(timelineEvents[0].type === 'panel.scheduled_event_agent_triggered', 'sweep recorded the wrong timeline event type');
+  assert(timelineEvents[0].payload.runId === run.id, 'timeline evidence did not preserve the run id');
+  assert(timelineEvents[0].payload.standingApprovalPolicyId === 'standing_approval:task_scheduled_event_sweep_smoke:coding:local_sandbox', 'timeline evidence did not preserve the Standing Approval policy id');
+  assert(timelineEvents[0].payload.runtimeStartAllowed === true, 'timeline evidence did not preserve runtimeStartAllowed=true');
+  assert(beforeWorkspace === afterWorkspace, 'scheduled/event Agent sweep smoke mutated the workspace fixture');
+
+  console.log([
+    'Scheduled/event Agent sweep smoke: ready',
+    `status=${result.status}`,
+    `checked=${result.checkedTaskCount}`,
+    `started=${result.startedRunCount}`,
+    `blocked=${result.blockedTaskCount}`,
+    `runId=${run.id}`,
+    'timelineEvidence=recorded',
+    'workspace=unchanged',
+    'provider=not-called',
+    'docker=not-started',
+  ].join(' / '));
+} finally {
+  await fs.rm(tempRoot, { force: true, recursive: true });
+}
+
+function buildReadyScheduledTask() {
+  const taskId = 'task_scheduled_event_sweep_smoke';
+
+  return {
+    activeBlocker: null,
+    activeDependency: null,
+    activeWaitingItem: null,
+    completionCriteria: [{
+      createdAt: '2026-05-26T00:00:00.000Z',
+      id: 'criterion_scheduled_event_sweep_smoke',
+      satisfiedAt: null,
+      status: 'open',
+      taskId,
+      text: 'Review the scheduled/event Agent sweep smoke result.',
+      updatedAt: '2026-05-26T00:00:00.000Z',
+      verificationResponsibility: null,
+      verificationResponsibilityLabel: null,
+    }],
+    id: taskId,
+    nextStep: 'Prepare one bounded scheduled/event sweep smoke update.',
+    processTemplates: [{
+      archivedAt: null,
+      bindingId: 'binding_scheduled_event_sweep_smoke',
+      bindingNote: null,
+      bindingStatus: 'active',
+      bindingUpdatedAt: '2026-05-26T00:00:00.000Z',
+      boundAt: '2026-05-26T00:00:00.000Z',
+      content: 'Prepare one bounded update and leave durable evidence.',
+      createdAt: '2026-05-26T00:00:00.000Z',
+      id: 'process_scheduled_event_sweep_smoke',
+      kind: 'sop',
+      removedAt: null,
+      status: 'active',
+      summary: null,
+      tags: [],
+      taskId,
+      title: 'Scheduled/event sweep smoke SOP',
+      updatedAt: '2026-05-26T00:00:00.000Z',
+    }],
+    riskLevel: 'low',
+    sourceContexts: [],
+    state: 'planned',
+    summary: 'Known scheduled/event Agent sweep smoke task.',
+    taskFacets: ['scheduled', 'routine'],
+    taskType: 'routine',
+    timeline: [{
+      createdAt: '2026-05-26T10:05:00.000Z',
+      id: 'timeline_scheduled_event_sweep_standing_approval',
+      payload: JSON.stringify({
+        policy: {
+          allowedAutonomyLevel: 'L2_limited_authorized_action',
+          allowedLanes: ['coding'],
+          allowedRuntimeIds: ['local_sandbox'],
+          createdAt: '2026-05-26T10:00:00.000Z',
+          expiresAt: '2026-05-27T10:00:00.000Z',
+          id: `standing_approval:${taskId}:coding:local_sandbox`,
+          maxRunsPerDay: 3,
+          reason: 'Allow bounded scheduled/event Agent sweep smoke execution.',
+          riskCeiling: 'low',
+          status: 'active',
+          taskFacets: ['scheduled'],
+          taskId,
+          taskTypes: ['routine'],
+        },
+        schedulerTriggerAllowed: false,
+        workspaceWriteAllowed: false,
+      }),
+      taskId,
+      type: 'panel.standing_approval_confirmed',
+    }],
+    waitingReason: null,
+  };
+}
+
+function buildReadyAiStatus(workspaceRoot) {
+  return {
+    featureFlags: {
+      enableSandboxCodingAgent: true,
+      enableScheduler: true,
+    },
+    sandboxBackendStatus: {
+      probe: {
+        backendId: 'local-container',
+        environmentPolicy: 'empty',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        status: 'available',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      producerBackendReadiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Producer ready.',
+      },
+      readiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Sandbox ready.',
+      },
+      summary: 'Sandbox ready.',
+    },
+    toolScaffoldSummaries: [],
+    workspaceRoot,
+  };
+}
+
+async function assertBuiltModule(filePath) {
+  try {
+    await fs.access(filePath);
+  } catch {
+    throw new Error('Run npm run build:main before the scheduled/event Agent sweep smoke.');
+  }
+}
+
+function fileUrl(relativePath) {
+  return pathToFileURL(path.join(distMain, relativePath)).href;
+}
+
+function assert(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
+}

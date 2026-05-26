@@ -500,9 +500,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Task Dynamics now exposes a confirmed Standing Approval "启动一次" operator action backed by scheduler:triggerScheduledEventAgentRun IPC, so scheduled/event tasks can start one bounded Agent run without enabling a background scheduler job.',
       'SchedulerService.triggerScheduledEventAgentRun now records panel.scheduled_event_agent_triggered timeline evidence after a run starts, preserving run id, Standing Approval policy id, run-limit state, schedulerTriggerServiceConnected, runtimeStartAllowed, and required trigger evidence in Task Dynamics.',
       'SchedulerService.runScheduledEventAgentTriggerSweep wires the same trigger service into a 15-minute background scheduler job only when both the Code Agent trigger port and scheduled/event task-source port are connected; the sweep reuses persisted run-limit counts and the shared planner before starting any run.',
+      'The scheduled/event Agent sweep smoke now exercises the built main SchedulerService sweep path without provider calls or Docker, proving checked=1, started=1, timelineEvidence=recorded, workspace=unchanged, provider=not-called, and docker=not-started.',
     ],
     gaps: [
-      'Routine/event-triggered Agent task execution now has a narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, and background scheduler job wiring, but it still needs broader runtime coverage and live soak evidence before it can count as complete L2 automatic native runtime start.',
+      'Routine/event-triggered Agent task execution now has a narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, and a local sweep smoke, but it still needs broader runtime coverage and live soak evidence before it can count as complete L2 automatic native runtime start.',
     ],
     nextActions: [
       'Broaden scheduled/event runtime coverage only after live background-triggered execution proves context readiness, task-memory, subtask_start, durable run-limit counting, terminal Run evidence, and post-step gates across the selected native runtime path.',

@@ -313,6 +313,22 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('No workspace files were written.');
   });
 
+  it('keeps scheduled/event Agent sweep smoke in local agent acceptance without provider calls', () => {
+    const scripts = readPackageScripts();
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/scheduled-event-agent-sweep-smoke.mjs'), 'utf8');
+
+    expect(scripts['accept:scheduled-event-agent-sweep-smoke']).toBe(
+      'npm run build:main && node scripts/scheduled-event-agent-sweep-smoke.mjs',
+    );
+    expect(scripts['accept:agent-local']).toContain('npm run accept:scheduled-event-agent-sweep-smoke');
+    expect(script).toContain('runScheduledEventAgentTriggerSweep');
+    expect(script).toContain('panel.scheduled_event_agent_triggered');
+    expect(script).toContain('timelineEvidence=recorded');
+    expect(script).toContain('workspace=unchanged');
+    expect(script).toContain('provider=not-called');
+    expect(script).toContain('docker=not-started');
+  });
+
   it('keeps Agent CLI web research bridge smoke mocked and non-live', () => {
     const scripts = readPackageScripts();
     const script = fs.readFileSync(path.join(process.cwd(), 'scripts/agent-cli-web-research-bridge-smoke.mjs'), 'utf8');
