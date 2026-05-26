@@ -6369,6 +6369,9 @@ describe('App redesign v1', () => {
     expect(notice.textContent).toContain('Apply flag 当前关闭');
     expect(notice.textContent).toContain('no-write 状态');
     expect(notice.textContent).toContain('重新复核 Run 证据');
+    const disabledApplyButton = screen.getByRole('button', { name: '应用到工作区已关闭' }) as HTMLButtonElement;
+    expect(disabledApplyButton.disabled).toBe(true);
+    expect(noticeElement?.textContent).toContain('默认不写工作区');
     expect(screen.queryByRole('button', { name: '应用到工作区' })).toBeNull();
   });
 

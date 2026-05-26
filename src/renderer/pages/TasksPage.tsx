@@ -1698,6 +1698,14 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     && Boolean(window.api?.runPatchArtifactSandboxReview);
   const selectedPatchPromotionApplyAvailable = patchPromotionApplyAvailableFor(selectedFile, selectedPatchPromotionView);
   const contextMenuPatchPromotionApplyAvailable = patchPromotionApplyAvailableFor(contextMenuFile, contextMenuPatchPromotionView);
+  const selectedPatchPromotionApplyDisabledAction = selectedPatchPromotionApplyFlagGuidance
+    ? {
+        description: '默认不写工作区；开启 apply flag 后仍需手动触发 promotion preflight。',
+        disabled: true,
+        label: '应用到工作区已关闭',
+        onClick: () => undefined,
+      }
+    : null;
   const directChildTasks = selectedTask
     ? orderedChildrenForTask(selectedTask, allTasks)
     : [];
@@ -3132,7 +3140,7 @@ function resetCaptureDraft() {
                   ? '应用中...'
                   : '应用到工作区',
                 onClick: () => void applySandboxPatchPromotion(selectedPatchPromotionView, selectedFile),
-              } : null}
+              } : selectedPatchPromotionApplyDisabledAction}
               onChange={(value) => {
                 setFileDraft(value);
                 setFileDirty(value !== selectedFile.content);
