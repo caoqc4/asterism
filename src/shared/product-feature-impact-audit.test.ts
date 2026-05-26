@@ -260,6 +260,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
     expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by in-sweep run-limit counting');
+    expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('targetTaskId timeline evidence');
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
