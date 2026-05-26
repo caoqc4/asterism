@@ -205,7 +205,12 @@ describe('agent cli runtime status service', () => {
       fs.writeFileSync(path.join(tempRoot, '.claude', 'agents', 'reviewer.md'), '# Reviewer\n');
       fs.writeFileSync(path.join(tempRoot, '.claude', 'settings.json'), JSON.stringify({
         hooks: {
-          PreToolUse: [],
+          PreToolUse: [{
+            hooks: [{
+              command: 'npm test',
+              type: 'command',
+            }],
+          }],
         },
       }));
 
@@ -216,6 +221,30 @@ describe('agent cli runtime status service', () => {
         hooks: true,
         nativeMemory: true,
         subagents: true,
+      });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat empty Claude hook settings as configured hook readiness', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-empty-hook-signals-'));
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, '.claude'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'settings.json'), JSON.stringify({
+        hooks: {
+          PreToolUse: [],
+          PostToolUse: {},
+        },
+      }));
+      fs.writeFileSync(path.join(tempRoot, 'CLAUDE.md'), '# Claude guidance\n');
+
+      expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).toMatchObject({
+        nativeMemory: true,
+      });
+      expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).not.toMatchObject({
+        hooks: true,
       });
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });

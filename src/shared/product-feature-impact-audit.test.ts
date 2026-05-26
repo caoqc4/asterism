@@ -276,6 +276,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('provider help output');
     expect(capabilities?.evidence.join(' ')).toContain('compact/clear context affordances');
     expect(capabilities?.evidence.join(' ')).toContain('adapter capability support');
+    expect(capabilities?.evidence.join(' ')).toContain('non-empty configured hook commands or hook entries');
+    expect(capabilities?.evidence.join(' ')).toContain('empty .claude/settings hook placeholders no longer count as hook readiness');
     expect(capabilities?.evidence.join(' ')).toContain('selected Agent CLI native web/search readiness');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilitySafetyStrip for agent_cli.runtimes');
     expect(capabilities?.evidence.join(' ')).toContain('safe-read-only probe policy');

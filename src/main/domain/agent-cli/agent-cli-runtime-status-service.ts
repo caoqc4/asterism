@@ -315,11 +315,21 @@ function claudeSettingsDeclareHooks(workspaceRoot: string): boolean {
       const raw = fs.readFileSync(settingsPath, 'utf8');
       if (!raw.trim()) return false;
       const parsed = JSON.parse(raw) as { hooks?: unknown };
-      return Boolean(parsed.hooks);
+      return hasConfiguredClaudeHook(parsed.hooks);
     } catch {
       return false;
     }
   });
+}
+
+function hasConfiguredClaudeHook(value: unknown): boolean {
+  if (value == null || value === false) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.some(hasConfiguredClaudeHook);
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(hasConfiguredClaudeHook);
+  }
+  return Boolean(value);
 }
 
 function installedRuntimeMissingReason(
