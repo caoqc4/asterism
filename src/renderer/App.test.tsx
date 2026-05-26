@@ -3198,6 +3198,38 @@ describe('App redesign v1', () => {
     expect(screen.queryByText(/原生 CLI 联网动作/)).toBeNull();
   });
 
+  it('summarizes native workspace write steps as reviewable candidates after completed runs', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请处理本地 patch。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created') as RunRecord & { steps?: RunStepRecord[] };
+    expect(run).toBeTruthy();
+    Object.assign(run, {
+      output: '已生成 patch 候选。',
+      outputSource: 'ai',
+      status: 'completed',
+      steps: [
+        buildRunStep({
+          id: 'step_workspace_write_candidate',
+          runId: 'run_agent_cli_created',
+          index: 0,
+          title: 'Codex CLI 工作区写入候选：apply_patch',
+          output: 'capability=workspace_write\nprovider_event=item.completed\napply_patch changed src/app.ts',
+        }),
+      ],
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText(/原生 CLI 工作区写入候选：.*apply_patch/)).toBeTruthy();
+    expect(screen.getByText(/reviewed patch、任务文件提案或 promotion evidence 审查/)).toBeTruthy();
+    expect(screen.queryByText(/原生 CLI 本地动作：.*工作区写入候选/)).toBeNull();
+  });
+
   it('captures a global right-panel discussion as a task before planning', async () => {
     const user = userEvent.setup();
     render(<App />);

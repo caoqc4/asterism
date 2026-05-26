@@ -135,7 +135,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Codex JSONL command_execution items are projected as shell_command run steps, so right-panel progress can show local command activity instead of only raw terminal output.',
       'Agent CLI stdout JSONL lines are now projected into Run steps while the native process is still running, with completion-time transcript parsing kept as a fallback.',
       'Right-panel Agent CLI progress now distinguishes native workspace_write capability events as reviewable write candidates that require reviewed patch, task-file proposal, or promotion evidence instead of presenting them as ordinary workspace activity.',
-      'Completed native run chat summaries now mention local command or workspace activity as well as web research activity.',
+      'Completed native run chat summaries now mention local command or workspace activity as well as web research activity, while workspace_write steps are summarized as reviewable write candidates instead of ordinary local activity.',
       'Right-panel task chat now runs through shared PilotDecision and TaskAdvancementOrchestrator before Agent CLI launch, preserving operation mode, backendPlan, message priority, user-owned approval boundaries, and executor routing.',
       'Agent CLI run records preserve the trimmed Pilot decision snapshot as a Pilot 决策辅助计划 step for phase-2 auditability.',
       'Agent API chat invocations preserve the same trimmed Pilot decision snapshot in invocation provenance.',
