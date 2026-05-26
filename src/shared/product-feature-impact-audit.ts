@@ -308,7 +308,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'post_step',
       'operator_confirmation',
     ],
-    cliOnlyClosure: 'partial',
+    cliOnlyClosure: 'supported',
     futureApiClosure: 'partial',
     evidence: [
       'Decision services and checkpoint recovery are registered as runtime entrypoints.',
@@ -317,6 +317,9 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Main-side writeback dispatch adapter routes confirmed plans through task, decision, and task-file services.',
       'Right-panel confirmation calls the main-side writeback adapter before emitting task, decision, and brief refresh events.',
       'Task Dynamics can approve Run-detail structured Write Intent through the same TaskplaneWritebackApprovalItem queue and main-side writeback adapter.',
+      'DecisionService.draft is registered as a task-bound decision_draft entrypoint: API-runtime drafts run only when API Runtime is selected, selected Agent CLI modes stay product_harness/skipped, and Decision persistence remains behind decision.create.',
+      'Approved checkpoint Decision resume is limited to open tool_permission, browser-controlled, or patch-promotion checkpoints, rechecks target-task readiness and pending task-memory guidance, and cannot turn ordinary Decision approval into arbitrary tool execution.',
+      'Decision actions in DecisionService and DecisionsPage pass through decision_action, task-memory guidance, pre-step, and post-step gates before approve, defer, or cancel effects are recorded.',
       'RuntimeEntrypointCoverage now registers future scheduler/background Decisions as proposal-only decision_draft work that cannot persist Decisions or invoke writeback without operator confirmation or standing approval.',
       'Completion verification is separate from model output.',
       'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
