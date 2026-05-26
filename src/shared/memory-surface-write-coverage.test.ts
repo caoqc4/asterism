@@ -49,6 +49,29 @@ describe('memory surface write coverage', () => {
     }
   });
 
+  it('registers task-memory proposal confirmations beyond the right panel', () => {
+    const proposalEntrypoints = memorySurfaceWriteEntrypoints()
+      .filter((entrypoint) => entrypoint.guards.includes('task_memory_write_apply_plan'));
+
+    expect(proposalEntrypoints.map((entrypoint) => entrypoint.id)).toEqual(expect.arrayContaining([
+      'right_panel.task_memory_write_proposal',
+      'tasks.task_dynamics_memory_write_proposal',
+    ]));
+
+    const taskDynamics = proposalEntrypoints.find((entrypoint) => entrypoint.id === 'tasks.task_dynamics_memory_write_proposal');
+    expect(taskDynamics).toMatchObject({
+      ipcChannels: ['taskplaneWriteback:apply'],
+      owner: 'TasksPage',
+      surfaces: ['task_md', 'task_record'],
+      writePolicies: ['dedicated_evaluator'],
+    });
+    expect(taskDynamics?.guards).toEqual(expect.arrayContaining([
+      'task_record_worthiness',
+      'task_md_update_need',
+      'task_memory_write_apply_plan',
+    ]));
+  });
+
   it('does not let source, AI output, or artifact writers masquerade as ordinary files', () => {
     const sourceEntrypoints = memorySurfaceWriteEntrypoints()
       .filter((entrypoint) => entrypoint.surfaces.includes('source_material'));

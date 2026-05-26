@@ -157,6 +157,18 @@ export const MEMORY_SURFACE_WRITE_ENTRYPOINTS: MemorySurfaceWriteEntrypoint[] = 
     note: 'Pending task-memory guidance is applied through the shared write proposal plan after confirmation.',
   },
   {
+    id: 'tasks.task_dynamics_memory_write_proposal',
+    owner: 'TasksPage',
+    kind: 'renderer_memory_action',
+    ipcChannels: [
+      'taskplaneWriteback:apply',
+    ],
+    surfaces: ['task_md', 'task_record'],
+    writePolicies: ['dedicated_evaluator'],
+    guards: ['task_memory_write_apply_plan', 'task_md_update_need', 'task_record_worthiness', 'pre_step', 'post_step', 'simplicity_check'],
+    note: 'Task Dynamics run-detail memory proposals reuse the shared approval queue and main-side writeback apply boundary after operator confirmation.',
+  },
+  {
     id: 'right_panel.task_file_proposal',
     owner: 'RightPanel',
     kind: 'renderer_file_action',

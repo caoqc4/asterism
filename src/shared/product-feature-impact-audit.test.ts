@@ -109,7 +109,11 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('recordPath evidence');
     expect(taskMemory?.evidence.join(' ')).toContain('TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation');
+    expect(taskMemory?.evidence.join(' ')).toContain('Task Dynamics now surfaces run-detail task-memory proposals');
+    expect(taskMemory?.gaps.join(' ')).toContain('beyond RightPanel and Task Dynamics');
+    expect(taskMemory?.nextActions.join(' ')).toContain('MemorySurfaceWriteCoverage');
     expect(taskMemory?.gaps.join(' ')).not.toContain('Automatic writeback should keep distinguishing');
+    expect(taskMemory?.gaps.join(' ')).not.toContain('Future non-RightPanel task-memory confirmation surfaces');
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI task_file.propose Write Intent');
     expect(taskFiles?.evidence.join(' ')).toContain('Native CLI artifact.propose Write Intent');
     expect(taskFiles?.evidence.join(' ')).toContain('artifact.propose kind=patch');

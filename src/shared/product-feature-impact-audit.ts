@@ -259,12 +259,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'SourceContext creation carries source-quality metadata before persistence.',
       'Manual task-session refresh now asks shared TaskAdvancementOrchestrator for a context-refresh handoff movement before existing memory and clearing gates run.',
       'TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation and suppresses generic pending-memory guidance before durable Task Records are proposed.',
+      'Task Dynamics now surfaces run-detail task-memory proposals through the same TaskMemoryWriteApplyPlan-backed approval queue and main-side writeback IPC outside the right panel.',
     ],
     gaps: [
-      'Future non-RightPanel task-memory confirmation surfaces must reuse TaskMemoryWriteApplyPlan and TaskRecordWorthinessEvaluation instead of rebuilding Task Record writes.',
+      'Future task-memory confirmation surfaces beyond RightPanel and Task Dynamics must reuse TaskMemoryWriteApplyPlan and TaskRecordWorthinessEvaluation instead of rebuilding Task Record writes.',
     ],
     nextActions: [
-      'Extend the same write-intent proposal/apply boundary to future task-memory surfaces as they appear.',
+      'Keep future task-memory proposal surfaces registered in MemorySurfaceWriteCoverage and routed through main-side writeback dispatch.',
     ],
   },
   {

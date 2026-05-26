@@ -311,6 +311,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryWriteApplyPlan turns a confirmed TaskMemoryWriteProposal into a create/update TaskFile input, normalizes memory paths, and blocks target/path mismatches or unsafe updates without an existing file id.',
       'RunDetailRecord carries taskMemoryWriteProposals next to taskMemoryGuidance so runtime detail reads can reuse the same missing-memory write plan.',
       'RightPanel can surface pending RunDetail taskMemoryWriteProposals through the existing task-file proposal confirmation card, convert them into Taskplane writeback plans, and apply them through main-side dispatch after user confirmation.',
+      'TasksPage Task Dynamics can surface the same RunDetail taskMemoryWriteProposals in the run-detail writeback approval queue and apply them through main-side writeback dispatch after operator confirmation.',
       'Run start pre-step verification consumes pending TaskMemoryGuidanceState, so ordinary runs, Code Agent runs, operator-started runs, and Agent CLI runs cannot bypass unresolved task-memory writes.',
       'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
       'AutoContextClearReadiness wraps TaskMemoryCoverageEvaluation into safe_to_clear, needs_memory_write, needs_user_decision, keep_context, and not_applicable outcomes without introducing a hard message-count rule.',
@@ -336,7 +337,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     nextImplementation: [
       'Require future durable information write paths and IPC channels to be registered in MemorySurfaceWriteCoverage before treating the write surface as retained behavior.',
       'Keep future connector source ingestion on ConnectorSourceIngestionPlan plus source-context write guards rather than writing SourceContext records directly.',
-      'Connect any future TasksPage task-memory proposal confirmation controls to TaskMemoryWriteApplyPlan instead of rebuilding write inputs locally.',
+      'Keep future TasksPage task-memory proposal confirmation controls on TaskMemoryWriteApplyPlan instead of rebuilding write inputs locally.',
       'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
       'Keep any future background scheduler or non-panel clearing entry point wired to AutoContextClearReadiness instead of adding a second clearing rule.',
       'Keep cross-task learning tests ensuring task-specific corrections do not become global rules.',
