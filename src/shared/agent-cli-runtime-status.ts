@@ -207,7 +207,7 @@ function buildNativeCapabilityDeclarations(
     ? nativeCapability(
         'native web/search',
         'runtime_dependent',
-        `${label} help output exposes native web/search activation; Taskplane records visible web/search events and can still use its own source-capture bridge when configured.`,
+        `${label} runtime probe exposes native web/search activation; Taskplane records visible web/search events and can still use its own source-capture bridge when configured.`,
       )
     : nativeCapability(
         'native web/search',
@@ -218,7 +218,7 @@ function buildNativeCapabilityDeclarations(
     ? nativeCapability(
         'hooks',
         'runtime_dependent',
-        `${label} help output exposes hook event streaming; Taskplane records visible hook events while deterministic product gates remain the enforcement source.`,
+        `${label} runtime probe exposes hook event streaming or configured hook metadata; Taskplane records visible hook events while deterministic product gates remain the enforcement source.`,
       )
     : nativeCapability(
         'hooks',
@@ -229,7 +229,7 @@ function buildNativeCapabilityDeclarations(
     ? nativeCapability(
         'subagents',
         'runtime_dependent',
-        `${label} help output exposes agent/subagent selection; Taskplane treats product subagent delegation as an explicit future routing decision.`,
+        `${label} runtime probe exposes agent/subagent selection or usable subagent metadata; Taskplane treats product subagent delegation as an explicit future routing decision.`,
       )
     : nativeCapability(
         'subagents',

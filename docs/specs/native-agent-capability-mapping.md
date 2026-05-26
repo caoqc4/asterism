@@ -263,10 +263,13 @@ plan permission mode, resume, and native memory-loading hints are visible in
 runtime status without starting an execution run.
 Workspace-local checks may also inspect only known lightweight project files or
 directories such as `AGENTS.md`, `CLAUDE.md`, `.claude/settings*.json`, and
-`.claude/agents/`. Claude hook readiness requires non-empty configured hook
-commands or hook entries, and Claude subagent readiness requires non-empty
-`.claude/agents/*.md` files. These checks are evidence for capability display
-and routing; they do not grant write authority or execute the runtime.
+`.claude/agents/`. The same no-start metadata probe may read `.codex/config.*`
+and `.claude/settings*.json` for explicit web/search tool declarations. Claude
+hook readiness requires non-empty configured hook commands or hook entries, and
+Claude subagent readiness requires usable `.claude/agents/*.md` content with a
+heading or metadata, not placeholder-only files. These checks are evidence for
+capability display and routing; they do not grant write authority or execute the
+runtime.
 
 ## Relationship To Other Specs
 

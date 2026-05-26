@@ -251,11 +251,13 @@ Taskplane currently has a working native CLI execution backend:
   pass and the adapter owns a persistent session.
 - The status probe also inspects configured-workspace native guidance files and
   directories such as `AGENTS.md`, `CLAUDE.md`, `.claude/settings*.json`, and
-  `.claude/agents/` as capability evidence only. Claude hook readiness requires
-  non-empty configured hook commands or hook entries, and Claude subagent
-  readiness requires non-empty `.claude/agents/*.md` files, so placeholders do
-  not count as readiness. These checks do not execute the runtime and do not
-  grant write permissions.
+  `.claude/agents/` as capability evidence only. The same no-start metadata
+  probe can read `.codex/config.*` and `.claude/settings*.json` for explicit
+  web/search tool declarations. Claude hook readiness requires non-empty
+  configured hook commands or hook entries, and Claude subagent readiness
+  requires usable `.claude/agents/*.md` content with a heading or metadata, so
+  empty files and placeholder-only files do not count as readiness. These checks
+  do not execute the runtime and do not grant write permissions.
 - The Run Goal Contract and Agent CLI context bridge pass those selected-runtime
   capability declarations into native CLI prompts before execution, so the
   runtime sees the same capability boundary shown in Taskplane UI.

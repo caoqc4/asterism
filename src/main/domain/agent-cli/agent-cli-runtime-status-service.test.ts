@@ -200,10 +200,13 @@ describe('agent cli runtime status service', () => {
 
     try {
       fs.writeFileSync(path.join(tempRoot, 'AGENTS.md'), '# Agent guidance\n');
+      fs.mkdirSync(path.join(tempRoot, '.codex'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, '.codex', 'config.toml'), 'web_search = true\n');
       fs.writeFileSync(path.join(tempRoot, 'CLAUDE.md'), '# Claude guidance\n');
       fs.mkdirSync(path.join(tempRoot, '.claude', 'agents'), { recursive: true });
       fs.writeFileSync(path.join(tempRoot, '.claude', 'agents', 'reviewer.md'), '# Reviewer\n');
       fs.writeFileSync(path.join(tempRoot, '.claude', 'settings.json'), JSON.stringify({
+        allowedTools: ['WebSearch'],
         hooks: {
           PreToolUse: [{
             hooks: [{
@@ -216,11 +219,81 @@ describe('agent cli runtime status service', () => {
 
       expect(detectWorkspaceCapabilitySignals('codex', tempRoot)).toMatchObject({
         nativeMemory: true,
+        webSearch: true,
       });
       expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).toMatchObject({
         hooks: true,
         nativeMemory: true,
         subagents: true,
+        webSearch: true,
+      });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat placeholder Claude agent markdown as subagent readiness', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-placeholder-agent-signals-'));
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, '.claude', 'agents'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'agents', 'placeholder.md'), 'placeholder\n');
+
+      expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).toBeNull();
+
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'agents', 'usable.md'), [
+        '---',
+        'name: reviewer',
+        'description: Reviews code changes',
+        '---',
+        '',
+      ].join('\n'));
+
+      expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).toMatchObject({
+        subagents: true,
+      });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('promotes metadata web search signals through runtime status without executing a runtime', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-metadata-signals-'));
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, '.codex'), { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, '.claude'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, '.codex', 'config.json'), JSON.stringify({
+        tools: {
+          web_search: true,
+        },
+      }));
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'settings.local.json'), JSON.stringify({
+        permissions: {
+          allow: ['WebFetch'],
+        },
+      }));
+      const service = new AgentCliRuntimeStatusService(async (command) => ({
+        authState: 'ready',
+        installed: true,
+        version: command === 'codex' ? 'codex-cli 0.133.0' : 'claude 2.1.144',
+      }));
+
+      const status = await service.getStatus({ workspaceRoot: tempRoot });
+
+      expect(status.runtimes.find((runtime) => runtime.id === 'codex')).toMatchObject({
+        capabilities: {
+          nativeCapabilities: {
+            webSearch: { availability: 'runtime_dependent' },
+          },
+        },
+      });
+      expect(status.runtimes.find((runtime) => runtime.id === 'claude')).toMatchObject({
+        capabilities: {
+          nativeCapabilities: {
+            webSearch: { availability: 'runtime_dependent' },
+          },
+        },
       });
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });

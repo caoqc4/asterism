@@ -215,20 +215,24 @@ export function detectWorkspaceCapabilitySignals(
   if (!stat.isDirectory()) return null;
 
   if (runtimeId === 'codex') {
+    const metadataSignals = detectCodexMetadataSignals(root);
     return compactSignals({
       nativeMemory: fileExists(path.join(root, 'AGENTS.md'))
         || fileExists(path.join(root, '.codex', 'AGENTS.md')),
+      webSearch: metadataSignals.webSearch,
     });
   }
 
   if (runtimeId === 'claude') {
+    const settingsSignals = detectClaudeSettingsSignals(root);
     return compactSignals({
-      hooks: claudeSettingsDeclareHooks(root)
+      hooks: settingsSignals.hooks
         || directoryHasEntries(path.join(root, '.claude', 'hooks')),
       nativeMemory: fileExists(path.join(root, 'CLAUDE.md'))
         || fileExists(path.join(root, '.claude', 'CLAUDE.md'))
         || fileExists(path.join(root, '.claude', 'memory.md')),
-      subagents: directoryHasNonEmptyMarkdownFile(path.join(root, '.claude', 'agents')),
+      subagents: directoryHasUsableClaudeAgentMarkdownFile(path.join(root, '.claude', 'agents')),
+      webSearch: settingsSignals.webSearch,
     });
   }
 
@@ -306,7 +310,7 @@ function directoryHasEntries(directoryPath: string): boolean {
   }
 }
 
-function directoryHasNonEmptyMarkdownFile(directoryPath: string): boolean {
+function directoryHasUsableClaudeAgentMarkdownFile(directoryPath: string): boolean {
   try {
     if (!fs.statSync(directoryPath).isDirectory()) return false;
     return fs.readdirSync(directoryPath).some((entry) => {
@@ -314,7 +318,9 @@ function directoryHasNonEmptyMarkdownFile(directoryPath: string): boolean {
       const filePath = path.join(directoryPath, entry);
       try {
         const stat = fs.statSync(filePath);
-        return stat.isFile() && stat.size > 0;
+        if (!stat.isFile() || stat.size === 0) return false;
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        return hasUsableClaudeAgentContent(content);
       } catch {
         return false;
       }
@@ -324,20 +330,48 @@ function directoryHasNonEmptyMarkdownFile(directoryPath: string): boolean {
   }
 }
 
-function claudeSettingsDeclareHooks(workspaceRoot: string): boolean {
+function detectCodexMetadataSignals(workspaceRoot: string): AgentCliRuntimeCapabilityProbeSignals {
+  return [
+    path.join(workspaceRoot, '.codex', 'config.toml'),
+    path.join(workspaceRoot, '.codex', 'config.json'),
+  ].reduce<AgentCliRuntimeCapabilityProbeSignals>((signals, metadataPath) => {
+    try {
+      const raw = fs.readFileSync(metadataPath, 'utf8');
+      if (codexMetadataDeclaresWebSearch(raw)) signals.webSearch = true;
+    } catch {
+      // Metadata probes are best-effort and must not block runtime status.
+    }
+    return signals;
+  }, {});
+}
+
+function codexMetadataDeclaresWebSearch(raw: string): boolean {
+  if (!raw.trim()) return false;
+  try {
+    const parsed = JSON.parse(raw);
+    return containsNativeWebSearchSignal(parsed);
+  } catch {
+    return /(?:^|\n)\s*(?:web[_-]?search|search)\s*=\s*true\b/i.test(raw)
+      || /\b(?:web[_-]?search|browser_search)\b[\s\S]{0,120}\b(?:enabled|available|true)\b/i.test(raw);
+  }
+}
+
+function detectClaudeSettingsSignals(workspaceRoot: string): AgentCliRuntimeCapabilityProbeSignals {
   return [
     path.join(workspaceRoot, '.claude', 'settings.json'),
     path.join(workspaceRoot, '.claude', 'settings.local.json'),
-  ].some((settingsPath) => {
+  ].reduce<AgentCliRuntimeCapabilityProbeSignals>((signals, settingsPath) => {
     try {
       const raw = fs.readFileSync(settingsPath, 'utf8');
-      if (!raw.trim()) return false;
+      if (!raw.trim()) return signals;
       const parsed = JSON.parse(raw) as { hooks?: unknown };
-      return hasConfiguredClaudeHook(parsed.hooks);
+      if (hasConfiguredClaudeHook(parsed.hooks)) signals.hooks = true;
+      if (containsNativeWebSearchSignal(parsed)) signals.webSearch = true;
     } catch {
-      return false;
+      // Metadata probes are best-effort and must not block runtime status.
     }
-  });
+    return signals;
+  }, {});
 }
 
 function hasConfiguredClaudeHook(value: unknown): boolean {
@@ -348,6 +382,28 @@ function hasConfiguredClaudeHook(value: unknown): boolean {
     return Object.values(value as Record<string, unknown>).some(hasConfiguredClaudeHook);
   }
   return Boolean(value);
+}
+
+function hasUsableClaudeAgentContent(content: string): boolean {
+  if (!content) return false;
+  if (/^(todo|tbd|placeholder)$/i.test(content)) return false;
+  return /(?:^|\n)#\s+\S/.test(content)
+    || /^---[\s\S]*\b(?:name|description)\s*:/i.test(content)
+    || /\b(?:name|description|tools|model)\s*:/i.test(content);
+}
+
+function containsNativeWebSearchSignal(value: unknown): boolean {
+  if (value == null || value === false) return false;
+  if (typeof value === 'string') {
+    return /\b(?:WebSearch|WebFetch|web[_-]?search|web[_-]?fetch|browser_search|chrome)\b/i.test(value);
+  }
+  if (Array.isArray(value)) return value.some(containsNativeWebSearchSignal);
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).some(([key, nested]) => (
+      containsNativeWebSearchSignal(key) || containsNativeWebSearchSignal(nested)
+    ));
+  }
+  return false;
 }
 
 function installedRuntimeMissingReason(

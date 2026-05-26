@@ -68,9 +68,11 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('provider help output');
     expect(content).toContain('compact/clear context');
     expect(content).toContain('adapter capability support');
-    expect(content).toContain('non-empty configured hook commands or hook entries');
-    expect(content).toContain('non-empty `.claude/agents/*.md` files');
-    expect(content).toContain('placeholders do');
+    expect(content).toContain('.codex/config.*');
+    expect(content).toContain('web/search tool declarations');
+    expect(content).toContain('hook commands or hook entries');
+    expect(content).toContain('usable `.claude/agents/*.md` content');
+    expect(content).toContain('placeholder-only files do');
     expect(content).toContain('not count as readiness');
     expect(content).toContain('AI Runtime settings surface shows these before a run starts');
     expect(content).toContain('selected-runtime');

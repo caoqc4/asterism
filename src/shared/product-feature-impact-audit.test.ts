@@ -304,8 +304,10 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('adapter capability support');
     expect(capabilities?.evidence.join(' ')).toContain('non-empty configured hook commands or hook entries');
     expect(capabilities?.evidence.join(' ')).toContain('empty .claude/settings hook placeholders no longer count as hook readiness');
-    expect(capabilities?.evidence.join(' ')).toContain('non-empty .claude/agents/*.md files');
-    expect(capabilities?.evidence.join(' ')).toContain('placeholder directories or empty files no longer count as subagent readiness');
+    expect(capabilities?.evidence.join(' ')).toContain('usable .claude/agents/*.md files');
+    expect(capabilities?.evidence.join(' ')).toContain('placeholder directories, empty files, or placeholder-only files no longer count as subagent readiness');
+    expect(capabilities?.evidence.join(' ')).toContain('.codex/config.* and .claude/settings*.json');
+    expect(capabilities?.evidence.join(' ')).toContain('usable agent markdown with a heading or metadata');
     expect(capabilities?.evidence.join(' ')).toContain('selected Agent CLI native web/search readiness');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilitySafetyStrip for agent_cli.runtimes');
     expect(capabilities?.evidence.join(' ')).toContain('safe-read-only probe policy');
@@ -323,7 +325,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
     expect(capabilities?.gaps.join(' ')).not.toContain('compact/clear readiness checks');
     expect(capabilities?.gaps.join(' ')).not.toContain('hook config semantics');
-    expect(capabilities?.gaps.join(' ')).toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
+    expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
+    expect(capabilities?.nextActions.join(' ')).toContain('provider-owned packaged CLI metadata probes');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
     expect(workHabits?.gaps.join(' ')).toContain('connected trigger service before L2 automatic native runtime starts');

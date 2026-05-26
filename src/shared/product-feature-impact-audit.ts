@@ -422,7 +422,8 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent CLI status probes now combine top-level and execution help output to detect native web/search activation, resume support, compact/clear context affordances, plan/read-only affordances, Claude hook events, Claude agents, and native memory-loading signals.',
       'Agent CLI status probes also inspect the configured workspace for native guidance and lifecycle assets such as AGENTS.md, CLAUDE.md, .claude/settings hooks, and .claude/agents without executing the runtime.',
       'Claude workspace hook metadata probes now require non-empty configured hook commands or hook entries, so empty .claude/settings hook placeholders no longer count as hook readiness.',
-      'Claude workspace subagent metadata probes now require non-empty .claude/agents/*.md files, so placeholder directories or empty files no longer count as subagent readiness.',
+      'Claude workspace subagent metadata probes now require usable .claude/agents/*.md files with headings or metadata, so placeholder directories, empty files, or placeholder-only files no longer count as subagent readiness.',
+      'Agent CLI workspace metadata probes now read explicit web/search declarations from .codex/config.* and .claude/settings*.json without executing the runtime, and Claude subagent readiness now requires usable agent markdown with a heading or metadata rather than placeholder-only files.',
       'CapabilityRegistry now summarizes detected Agent CLI native web/search readiness counts, distinguishing runtime-dependent search support from unverified installed runtimes.',
       'CapabilityRegistry now carries selected Agent CLI native web/search readiness separately from aggregate runtime counts, so selected Codex/Claude search readiness is visible without inferring it from catalogue totals.',
       'AI Runtime settings now reuse CapabilitySafetyStrip for agent_cli.runtimes, showing shared runtime status, safe-read-only probe policy, and execution boundary before native CLI launch.',
@@ -438,10 +439,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Fresh external research wording such as latest/current pricing or recent release changes is now covered by the pre-run web research trigger while local current-task wording remains excluded.',
     ],
     gaps: [
-      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior, provider-owned packaged CLI metadata, and richer hook/subagent semantics beyond current non-empty workspace metadata checks.',
+      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior and provider-owned packaged CLI metadata beyond the current no-start help-output and workspace-metadata checks.',
     ],
     nextActions: [
-      'Add optional runtime-specific metadata probes for provider-owned capability files and search readiness when stable non-executing locations are available.',
+      'Add optional provider-owned packaged CLI metadata probes for exact search readiness when stable non-executing locations are available.',
       'Keep native goal passthrough closed until command shape, progress/control evidence, and packaged smoke move from audit output into verified adapter evidence.',
     ],
   },
