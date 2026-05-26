@@ -90,6 +90,9 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('patch-promotion checkpoint and Decision status');
     expect(workHabits?.evidence.join(' ')).toContain('automation readiness as a diagnostic-only entrypoint');
     expect(workHabits?.evidence.join(' ')).toContain('no runtime_action/pre_step/post_step execution gates');
+    expect(workHabits?.evidence.join(' ')).toContain('future scheduled/event/routine Agent execution as a separate deferred provider-visible execution contract');
+    expect(workHabits?.evidence.join(' ')).toContain('before any IPC or scheduler trigger can exist');
+    expect(workHabits?.nextActions.join(' ')).toContain('standing-approval model');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
     expect(rightPanel?.writeIntents).toContain('subtask.propose');

@@ -446,6 +446,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Scheduled briefs use product-harness fallback when provider execution is unavailable.',
       'RuntimeEntrypointCoverage now classifies scheduler stale-run recovery as scheduler_maintenance behind the scheduler feature flag, with post-step Run evidence and no Agent CLI/API startup.',
       'RuntimeEntrypointCoverage now registers automation readiness as a diagnostic-only entrypoint with runtime-context assembly but no runtime_action/pre_step/post_step execution gates.',
+      'RuntimeEntrypointCoverage now registers future scheduled/event/routine Agent execution as a separate deferred provider-visible execution contract with scheduler configuration, confirmation, context readiness, task-memory, subtask_start, and post-step gates before any IPC or scheduler trigger can exist.',
       'AgentAutomationReadiness now keeps scheduled, event-triggered, and routine tasks diagnostic-only for automatic starts until a separate scheduled/event execution entrypoint exists, even when procedure, inputs, runtime, risk, and completion criteria are ready.',
       'Read-only orchestration diagnostics now expose the automatic-start boundary, distinguishing manual/operator-started readiness from scheduled/event tasks that require a separate execution entrypoint.',
     ],
@@ -453,7 +454,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Routine/event-triggered Agent CLI task execution remains intentionally unimplemented; scheduled/event tasks can be diagnosed for readiness but cannot automatically start native runtimes.',
     ],
     nextActions: [
-      'Design a separate scheduled/event execution entrypoint and confirmation model before allowing diagnostic-only readiness to become automatic native runtime execution.',
+      'Design the separate scheduled/event execution entrypoint confirmation and standing-approval model before wiring the deferred contract to any scheduler trigger.',
     ],
   },
   {

@@ -262,6 +262,29 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint');
   });
 
+  it('registers future scheduled/event Agent execution as a separate deferred contract', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'automation.scheduledEventAgentRun.future');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('provider_visible_execution');
+    expect(entry?.ipcChannels).toBeUndefined();
+    expect(entry?.requiredGates).toEqual(expect.arrayContaining([
+      'product_config_boundary',
+      'operator_confirmation',
+      'runtime_action',
+      'runtime_context_assembly',
+      'context_readiness',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'pre_step',
+      'subtask_start',
+      'post_step',
+    ]));
+    expect(entry?.notes).toContain('Deferred contract only');
+    expect(entry?.notes).toContain('readiness diagnostics do not start Agent CLI/API runtimes');
+    expect(entry?.notes).toContain('before exposing any IPC or scheduler trigger');
+  });
+
   it('registers phase closeout as a handoff boundary without equating it to completion', () => {
     expect(requiredRuntimeEntrypointGatesForKind('phase_closeout_handoff')).toEqual([
       'simplicity_check',
@@ -535,6 +558,7 @@ describe('runtime entrypoint coverage', () => {
       'ai.taskChat',
       'artifact.runSandboxPatchReview',
       'automation.readinessDiagnostic',
+      'automation.scheduledEventAgentRun.future',
       'brief.scheduledSnapshot',
       'context.refreshOrLeave',
       'context.taskSwitch',
