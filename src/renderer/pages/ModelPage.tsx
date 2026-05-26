@@ -8,6 +8,7 @@ import type {
   AgentRuntimeNativeCapabilityDeclaration,
 } from '@shared/agent-runtime-goal';
 import type { AgentCliCapabilityMode, AiConfigStatus, AiProvider, AiRuntimeMode, FeatureFlags } from '@shared/types/settings';
+import { CapabilitySafetyStrip } from '../components/CapabilitySafetyStrip';
 
 interface ModelDef {
   id: string;
@@ -335,6 +336,12 @@ export function ModelPage() {
       setTimeout(() => setSaveResult(null), 2500);
     }
   }
+
+  const agentCliCapability = status?.capabilityRegistry
+    ?.find((entry) => entry.id === 'agent_cli.runtimes') ?? null;
+  const agentCliSafety = status?.configurationSafetyReport?.surfaces
+    .find((surface) => surface.id === 'agent_cli.runtimes') ?? null;
+
   const apiConfigPanel = apiModelOpen ? (
     <div className="agent-cli-api-config-panel">
       <div className="agent-cli-api-config-title">模型服务配置</div>
@@ -443,6 +450,8 @@ export function ModelPage() {
         runtimeMode={selectedRuntimeMode}
         apiConfigured={Boolean(status?.configured)}
         apiProviderSummary={status?.configured ? `${status.provider} / ${status.model}` : null}
+        capability={agentCliCapability}
+        safety={agentCliSafety}
         onToggleApiConfig={() => setApiModelOpen((value) => !value)}
         onSelectRuntimeMode={(runtimeMode) => void saveRuntimeMode(runtimeMode)}
         onSelectCapabilityMode={(mode) => void saveAgentCliCapabilityMode(mode)}
@@ -478,6 +487,7 @@ function AgentCliRuntimeSection({
   apiConfigPanel,
   apiProviderSummary,
   capabilityMode,
+  capability,
   workspaceRoot,
   onWorkspaceRootChange,
   onSave,
@@ -493,6 +503,7 @@ function AgentCliRuntimeSection({
   runtimeMode,
   saveDisabled,
   saveLabel,
+  safety,
   suggestedWorkspaceRoot,
   status,
   apiConfigured,
@@ -501,6 +512,7 @@ function AgentCliRuntimeSection({
   apiConfigPanel: ReactNode;
   apiProviderSummary: string | null;
   capabilityMode: AgentCliCapabilityMode;
+  capability: NonNullable<AiConfigStatus['capabilityRegistry']>[number] | null;
   workspaceRoot: string;
   onWorkspaceRootChange: (value: string) => void;
   onSave: () => void;
@@ -517,6 +529,7 @@ function AgentCliRuntimeSection({
   runtimeMode: AiRuntimeMode;
   saveDisabled: boolean;
   saveLabel: string;
+  safety: NonNullable<AiConfigStatus['configurationSafetyReport']>['surfaces'][number] | null;
   suggestedWorkspaceRoot: string | null;
   status: AiConfigStatus['agentCliRuntimeStatus'] | null;
 }) {
@@ -550,6 +563,16 @@ function AgentCliRuntimeSection({
           </button>
         </div>
       </div>
+
+      <CapabilitySafetyStrip
+        boundaryLabel="执行边界"
+        boundaryValue="任务前检查 + 用户确认"
+        capability={capability}
+        emptyReason="Agent CLI 运行时状态尚未进入共享能力注册表；不会自动启动原生 CLI。"
+        safety={safety}
+        statusLabel="运行时状态"
+        unconfiguredLabel="需登录"
+      />
 
       <div className="agent-cli-runtime-list" aria-label="Agent CLI runtimes">
         <AgentCliRuntimeRow

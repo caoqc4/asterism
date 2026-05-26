@@ -421,6 +421,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent CLI status probes also inspect the configured workspace for native guidance and lifecycle assets such as AGENTS.md, CLAUDE.md, .claude/settings hooks, and .claude/agents without executing the runtime.',
       'CapabilityRegistry now summarizes detected Agent CLI native web/search readiness counts, distinguishing runtime-dependent search support from unverified installed runtimes.',
       'CapabilityRegistry now carries selected Agent CLI native web/search readiness separately from aggregate runtime counts, so selected Codex/Claude search readiness is visible without inferring it from catalogue totals.',
+      'AI Runtime settings now reuse CapabilitySafetyStrip for agent_cli.runtimes, showing shared runtime status, safe-read-only probe policy, and execution boundary before native CLI launch.',
       'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution, including visible native search, hook, and subagent readiness labels plus memory, compact, clear, and write boundaries.',
       'Probed native compact/clear signals are promoted into adapter capability support while context reset still requires Taskplane preservation gates and persistent-session ownership before a runtime-native reset strategy can be selected.',
       'Run Goal Contract and Agent CLI context bridge pass selected-runtime capability declarations into native CLI prompts.',

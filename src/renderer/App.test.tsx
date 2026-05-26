@@ -1273,6 +1273,13 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/Agent CLI 和 Agent API 是同级 AI 调用层/)).toBeTruthy();
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
     expect(screen.getByText(/选择 Taskplane 各 AI 阶段的默认调用层/)).toBeTruthy();
+    expect(screen.getByText('运行时状态')).toBeTruthy();
+    expect(screen.getByText('需登录')).toBeTruthy();
+    expect(screen.getByText('执行边界')).toBeTruthy();
+    expect(screen.getByText('任务前检查 + 用户确认')).toBeTruthy();
+    expect(screen.getByText(/Agent CLI authentication is not confirmed/)).toBeTruthy();
+    expect(screen.getByText(/探测策略/)).toBeTruthy();
+    expect(screen.getByText(/安全只读/)).toBeTruthy();
     expect(screen.getByLabelText('Agent CLI runtimes')).toBeTruthy();
     expect(screen.getByText('已登录')).toBeTruthy();
     expect(screen.getAllByText('未安装').length).toBeGreaterThan(0);

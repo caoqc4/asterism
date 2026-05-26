@@ -44,6 +44,8 @@ describe('capability consumer coverage', () => {
     expect(modelSource).toContain('Agent CLI');
     expect(modelSource).toContain('Agent API Runtime');
     expect(modelSource).toContain('模型服务配置');
+    expect(modelSource).toContain('CapabilitySafetyStrip');
+    expect(modelSource).toContain('agent_cli.runtimes');
     expect(agentSummarySource).toContain('capabilityRegistry');
     expect(agentSummarySource).toContain('optional Skills/MCP capabilities');
   });
