@@ -505,6 +505,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Task Dynamics now exposes a confirmed Standing Approval "启动一次" operator action backed by scheduler:triggerScheduledEventAgentRun IPC, so scheduled/event tasks can start one bounded Agent run without enabling a background scheduler job.',
       'SchedulerService.triggerScheduledEventAgentRun now records panel.scheduled_event_agent_triggered timeline evidence after a run starts, preserving run id, Standing Approval policy id, run-limit state, schedulerTriggerServiceConnected, runtimeStartAllowed, and required trigger evidence in Task Dynamics.',
       'SchedulerService.runScheduledEventAgentTriggerSweep wires the same trigger service into a 15-minute background scheduler job only when both the Code Agent trigger port and scheduled/event task-source port are connected; the sweep reuses persisted run-limit counts and the shared planner before starting any run.',
+      'SchedulerService.runScheduledEventAgentTriggerSweep now increments the in-sweep run-limit count after each started run, so duplicate candidates in one sweep cannot exceed the Standing Approval daily cap.',
       'The scheduled/event Agent sweep smoke now exercises the built main SchedulerService sweep path without provider calls or Docker, proving checked=1, started=1, timelineEvidence=recorded, workspace=unchanged, provider=not-called, and docker=not-started.',
     ],
     gaps: [

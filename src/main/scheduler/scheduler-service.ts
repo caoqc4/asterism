@@ -214,7 +214,11 @@ export class SchedulerService {
       const results: ScheduledEventAgentTriggerResult[] = [];
 
       for (const task of tasks) {
-        results.push(await this.triggerScheduledEventAgentRun(task, now, runCounts));
+        const result = await this.triggerScheduledEventAgentRun(task, now, runCounts);
+        results.push(result);
+        if (result.status === 'started') {
+          runCounts[task.id] = (runCounts[task.id] ?? 0) + 1;
+        }
       }
 
       const startedRunCount = results.filter((result) => result.status === 'started').length;
