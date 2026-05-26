@@ -310,7 +310,7 @@ export class SchedulerService {
     const run = await this.scheduledEventAgentRunPort.triggerCodeAgentRun(
       buildScheduledEventCodeAgentRunInput(task, plan),
     );
-    const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run);
+    const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now);
 
     return {
       status: 'started',
@@ -324,6 +324,7 @@ export class SchedulerService {
     task: ScheduledEventAgentTaskInput,
     plan: AgentScheduledEventTriggerPlan,
     run: RunRecord,
+    now: Date,
   ): Promise<'recorded' | 'not_connected'> {
     if (!this.scheduledEventAgentTimelinePort) return 'not_connected';
 
@@ -339,7 +340,7 @@ export class SchedulerService {
         runLimit: plan.runLimit,
         schedulerTriggerServiceConnected: plan.schedulerTriggerServiceConnected,
         runtimeStartAllowed: plan.runtimeStartAllowed,
-        triggeredAt: new Date().toISOString(),
+        triggeredAt: now.toISOString(),
       },
     });
 
