@@ -237,9 +237,12 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('scheduler:triggerScheduledEventAgentRun');
     expect(workHabits?.evidence.join(' ')).toContain('启动一次');
     expect(workHabits?.evidence.join(' ')).toContain('without enabling a background scheduler job');
-    expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, and Task Dynamics launch action');
+    expect(workHabits?.evidence.join(' ')).toContain('panel.scheduled_event_agent_triggered');
+    expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
+    expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence');
+    expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, and trigger timeline evidence');
     expect(workHabits?.gaps.join(' ')).toContain('background scheduler job wiring');
-    expect(workHabits?.gaps.join(' ')).toContain('run-evidence persistence checks across live execution');
+    expect(workHabits?.gaps.join(' ')).not.toContain('run-evidence persistence checks across live execution');
     expect(workHabits?.nextActions.join(' ')).toContain('background scheduler jobs');
     expect(workHabits?.nextActions.join(' ')).toContain('durable run-limit counting');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');

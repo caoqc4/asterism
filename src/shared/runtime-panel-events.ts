@@ -20,6 +20,7 @@ export const PANEL_RUNTIME_TIMELINE_EVENT_TYPES = [
   'panel.project_membership_changed',
   'panel.completion_handoff',
   'panel.standing_approval_confirmed',
+  'panel.scheduled_event_agent_triggered',
 ] as const;
 
 export type PanelRuntimeTimelineEventType = typeof PANEL_RUNTIME_TIMELINE_EVENT_TYPES[number];
@@ -59,5 +60,6 @@ export function getPanelRuntimeTimelineEventTitle(type: PanelRuntimeTimelineEven
     case 'panel.project_membership_changed': return '任务项目归属已更新';
     case 'panel.completion_handoff': return '任务完成交接已记录';
     case 'panel.standing_approval_confirmed': return 'Standing Approval 已确认';
+    case 'panel.scheduled_event_agent_triggered': return 'Scheduled Agent 已启动';
   }
 }

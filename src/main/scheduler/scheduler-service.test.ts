@@ -851,6 +851,9 @@ describe('SchedulerService', () => {
     const triggerPort = {
       triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
     };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
     const { SchedulerService } = await import('./scheduler-service.js');
     const service = new SchedulerService(
       {
@@ -875,6 +878,7 @@ describe('SchedulerService', () => {
         select: vi.fn(),
       } as never,
       triggerPort,
+      timelinePort,
     );
 
     const result = await service.triggerScheduledEventAgentRun(task, now);
@@ -910,6 +914,25 @@ describe('SchedulerService', () => {
     });
     expect(result.summary).toContain('trigger=started');
     expect(result.summary).toContain('runId=run_scheduled_1');
+    expect(result.summary).toContain('timelineEvidence=recorded');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_1',
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        schedulerTriggerServiceConnected: true,
+        runtimeStartAllowed: true,
+        triggerRunEvidenceRequired: expect.arrayContaining([
+          'context_readiness',
+          'task_memory_coverage',
+          'task_memory_guidance',
+          'subtask_start',
+          'run_limit_count',
+          'post_step',
+        ]),
+      }),
+    });
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
     expect(scheduledJobs).toHaveLength(0);
   });

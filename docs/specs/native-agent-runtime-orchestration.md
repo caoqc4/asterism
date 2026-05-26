@@ -822,7 +822,11 @@ Current implementation:
   when the plan is ready. The generated run request keeps
   `operatorConfirmed=true`, uses the model-producer path, and instructs the run
   to produce reviewable patch artifacts or proposals rather than direct
-  workspace writes.
+  workspace writes. After a run starts, the service records
+  `panel.scheduled_event_agent_triggered` with the run id, standing approval
+  policy id, run-limit state, and required trigger evidence so Task Dynamics can
+  distinguish this operator-triggered autonomous action from ordinary run
+  creation.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

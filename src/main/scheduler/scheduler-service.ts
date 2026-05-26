@@ -26,6 +26,14 @@ export type ScheduledEventAgentRunPort = {
   triggerCodeAgentRun: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
 };
 
+export type ScheduledEventAgentTimelinePort = {
+  recordTimelineEvent: (input: {
+    taskId: string;
+    type: 'panel.scheduled_event_agent_triggered';
+    payload?: Record<string, unknown>;
+  }) => Promise<void>;
+};
+
 export type ScheduledEventAgentTaskInput = Pick<
   TaskDetail,
   | 'activeBlocker'
@@ -94,6 +102,7 @@ export class SchedulerService {
     private readonly briefExecutor: BriefExecutor,
     private readonly briefProcessTemplateSelector: BriefProcessTemplateSelector = new BriefProcessTemplateSelector(),
     private readonly scheduledEventAgentRunPort: ScheduledEventAgentRunPort | null = null,
+    private readonly scheduledEventAgentTimelinePort: ScheduledEventAgentTimelinePort | null = null,
   ) {}
 
   async start(): Promise<void> {
@@ -212,13 +221,39 @@ export class SchedulerService {
     const run = await this.scheduledEventAgentRunPort.triggerCodeAgentRun(
       buildScheduledEventCodeAgentRunInput(task, plan),
     );
+    const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run);
 
     return {
       status: 'started',
       plan,
       run,
-      summary: `${plan.summary} / trigger=started / runId=${run.id}`,
+      summary: `${plan.summary} / trigger=started / runId=${run.id} / timelineEvidence=${timelineEvidence}`,
     };
+  }
+
+  private async recordScheduledEventAgentTriggered(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    run: RunRecord,
+  ): Promise<'recorded' | 'not_connected'> {
+    if (!this.scheduledEventAgentTimelinePort) return 'not_connected';
+
+    await this.scheduledEventAgentTimelinePort.recordTimelineEvent({
+      taskId: task.id,
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: {
+        runId: run.id,
+        planSummary: plan.summary,
+        standingApprovalPolicyId: plan.policy?.id ?? null,
+        triggerRunEvidenceRequired: plan.triggerRunEvidenceRequired,
+        runLimit: plan.runLimit,
+        schedulerTriggerServiceConnected: plan.schedulerTriggerServiceConnected,
+        runtimeStartAllowed: plan.runtimeStartAllowed,
+        triggeredAt: new Date().toISOString(),
+      },
+    });
+
+    return 'recorded';
   }
 
   private async countRunsStartedToday(taskIds: string[], now: Date): Promise<Record<string, number>> {

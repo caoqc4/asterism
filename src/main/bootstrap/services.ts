@@ -224,6 +224,13 @@ schedulerService = new SchedulerService(
       return run;
     },
   },
+  {
+    recordTimelineEvent: async (input) => {
+      await taskService.recordTimelineEvent(input);
+      emitAppEvent('task.changed', input.taskId);
+      emitAppEvent('brief.changed');
+    },
+  },
 );
 const patchArtifactSandboxReviewRunService = new PatchArtifactSandboxReviewRunService(
   artifactRepository,

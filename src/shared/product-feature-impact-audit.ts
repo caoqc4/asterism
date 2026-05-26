@@ -498,9 +498,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Scheduled/event trigger plans now carry the trigger Run evidence contract for context readiness, task-memory coverage, task-memory guidance, subtask_start, run-limit count, and post-step evidence.',
       'SchedulerService.triggerScheduledEventAgentRun now provides a narrow main-side trigger-service connection: it requires an injected Code Agent trigger port, reuses Standing Approval and persisted same-day run-limit checks, starts only ready plans with schedulerTriggerServiceConnected=true, and emits a bounded model-producer Code Agent run request with operatorConfirmed=true.',
       'Task Dynamics now exposes a confirmed Standing Approval "启动一次" operator action backed by scheduler:triggerScheduledEventAgentRun IPC, so scheduled/event tasks can start one bounded Agent run without enabling a background scheduler job.',
+      'SchedulerService.triggerScheduledEventAgentRun now records panel.scheduled_event_agent_triggered timeline evidence after a run starts, preserving run id, Standing Approval policy id, run-limit state, schedulerTriggerServiceConnected, runtimeStartAllowed, and required trigger evidence in Task Dynamics.',
     ],
     gaps: [
-      'Routine/event-triggered Agent task execution now has a narrow trigger-service connection, explicit operator IPC, and Task Dynamics launch action, but it still needs background scheduler job wiring, run-evidence persistence checks across live execution, and broader runtime coverage before it can count as complete L2 automatic native runtime start.',
+      'Routine/event-triggered Agent task execution now has a narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, and trigger timeline evidence, but it still needs background scheduler job wiring and broader runtime coverage before it can count as complete L2 automatic native runtime start.',
     ],
     nextActions: [
       'Wire the scheduled/event trigger service into background scheduler jobs only after live operator-triggered execution proves context readiness, task-memory, subtask_start, durable run-limit counting, terminal Run evidence, and post-step gates.',
