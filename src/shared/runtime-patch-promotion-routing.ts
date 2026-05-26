@@ -1,17 +1,19 @@
 export type RuntimePatchPromotionRoutingReadiness = {
   ready: boolean;
-  missingRequirements: Array<
-    | 'selected_runtime_contract'
-    | 'target_task_identity'
-    | 'patch_artifact'
-    | 'promotion_decision'
-    | 'promotion_preflight'
-    | 'explicit_operator_apply'
-    | 'same_run_evidence_chain'
-    | 'post_apply_run_evidence'
-  >;
+  satisfiedRequirements: RuntimePatchPromotionRoutingRequirement[];
+  missingRequirements: RuntimePatchPromotionRoutingRequirement[];
   summary: string;
 };
+
+export type RuntimePatchPromotionRoutingRequirement =
+  | 'selected_runtime_contract'
+  | 'target_task_identity'
+  | 'patch_artifact'
+  | 'promotion_decision'
+  | 'promotion_preflight'
+  | 'explicit_operator_apply'
+  | 'same_run_evidence_chain'
+  | 'post_apply_run_evidence';
 
 export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   explicitOperatorApply?: boolean;
@@ -23,7 +25,17 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   selectedRuntimeContractReady?: boolean;
   targetTaskIdentityReady?: boolean;
 }): RuntimePatchPromotionRoutingReadiness {
-  const missingRequirements: RuntimePatchPromotionRoutingReadiness['missingRequirements'] = [];
+  const requiredRequirements: RuntimePatchPromotionRoutingRequirement[] = [
+    'selected_runtime_contract',
+    'target_task_identity',
+    'patch_artifact',
+    'promotion_decision',
+    'promotion_preflight',
+    'explicit_operator_apply',
+    'same_run_evidence_chain',
+    'post_apply_run_evidence',
+  ];
+  const missingRequirements: RuntimePatchPromotionRoutingRequirement[] = [];
 
   if (!params.selectedRuntimeContractReady) missingRequirements.push('selected_runtime_contract');
   if (!params.targetTaskIdentityReady) missingRequirements.push('target_task_identity');
@@ -35,13 +47,17 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   if (!params.postApplyRunEvidenceReady) missingRequirements.push('post_apply_run_evidence');
 
   const ready = missingRequirements.length === 0;
+  const missingRequirementSet = new Set(missingRequirements);
+  const satisfiedRequirements = requiredRequirements.filter((requirement) => !missingRequirementSet.has(requirement));
 
   return {
     ready,
+    satisfiedRequirements,
     missingRequirements,
     summary: [
       'Runtime patch promotion routing readiness',
       `ready=${ready ? 'yes' : 'no'}`,
+      `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `targetTaskIdentity=${params.targetTaskIdentityReady ? 'ready' : 'missing'}`,
       `patchArtifact=${params.patchArtifactReady ? 'ready' : 'missing'}`,

@@ -11,6 +11,10 @@ describe('runtime patch promotion routing readiness', () => {
 
     expect(readiness).toMatchObject({
       ready: false,
+      satisfiedRequirements: [
+        'patch_artifact',
+        'promotion_decision',
+      ],
       missingRequirements: [
         'selected_runtime_contract',
         'target_task_identity',
@@ -21,6 +25,7 @@ describe('runtime patch promotion routing readiness', () => {
       ],
     });
     expect(readiness.summary).toContain('ready=no');
+    expect(readiness.summary).toContain('requirements=2/8');
     expect(readiness.summary).toContain('selectedRuntimeContract=missing');
     expect(readiness.summary).toContain('targetTaskIdentity=missing');
     expect(readiness.summary).toContain('patchArtifact=ready');
@@ -42,9 +47,20 @@ describe('runtime patch promotion routing readiness', () => {
 
     expect(readiness).toMatchObject({
       ready: true,
+      satisfiedRequirements: [
+        'selected_runtime_contract',
+        'target_task_identity',
+        'patch_artifact',
+        'promotion_decision',
+        'promotion_preflight',
+        'explicit_operator_apply',
+        'same_run_evidence_chain',
+        'post_apply_run_evidence',
+      ],
       missingRequirements: [],
     });
     expect(readiness.summary).toContain('ready=yes');
+    expect(readiness.summary).toContain('requirements=8/8');
     expect(readiness.summary).toContain('selectedRuntimeContract=ready');
     expect(readiness.summary).toContain('targetTaskIdentity=ready');
     expect(readiness.summary).toContain('explicitOperatorApply=ready');
@@ -67,8 +83,18 @@ describe('runtime patch promotion routing readiness', () => {
 
     expect(readiness).toMatchObject({
       ready: false,
+      satisfiedRequirements: [
+        'selected_runtime_contract',
+        'target_task_identity',
+        'patch_artifact',
+        'promotion_decision',
+        'promotion_preflight',
+        'explicit_operator_apply',
+        'post_apply_run_evidence',
+      ],
       missingRequirements: ['same_run_evidence_chain'],
     });
+    expect(readiness.summary).toContain('requirements=7/8');
     expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
   });
 });

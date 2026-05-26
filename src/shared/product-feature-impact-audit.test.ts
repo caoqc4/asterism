@@ -349,6 +349,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('Terminal Run verification now carries same-run artifacts and checkpoints');
     expect(taskFiles?.evidence.join(' ')).toContain('can satisfy workspace_write promotion evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
+    expect(taskFiles?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
     expect(taskFiles?.evidence.join(' ')).toContain('selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence');
     expect(taskFiles?.cliOnlyClosure).toBe('supported');
     expect(taskFiles?.gaps.join(' ')).toContain('Future API/runtime-generated patch promotion');

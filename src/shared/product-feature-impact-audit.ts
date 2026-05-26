@@ -391,6 +391,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
       'Terminal Run verification now carries same-run artifacts and checkpoints into post-step self-checks when repository evidence is available, so run-backed patch artifacts and patch-promotion checkpoints can satisfy workspace_write promotion evidence instead of being invisible to terminal verification.',
       'evaluateRuntimePatchPromotionRoutingReadiness now keeps future API/runtime-generated patch promotion blocked unless the path includes a selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence.',
+      'Runtime patch promotion readiness now returns satisfied and missing requirement lists plus requirements=x/8 summary evidence, matching the Agent API promotion readiness style without opening direct workspace writes.',
     ],
     gaps: [
       'Future API/runtime-generated patch promotion still needs to prove the selected-runtime contract, target-task identity, and reuse the reviewed-patch apply workflow and same-run evidence chain; direct workspace-write runtime modes remain intentionally separate from the common run path.',
