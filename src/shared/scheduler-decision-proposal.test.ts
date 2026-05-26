@@ -14,12 +14,19 @@ describe('scheduler decision proposal contract', () => {
       writebackDispatchAllowed: false,
       authorizations: [],
       targetTaskId: null,
+      satisfiedRequirements: [],
+      missingRequirements: [
+        'approval_queue',
+        'target_task_identity',
+        'authorization',
+      ],
       blockedReasons: [
         'Task Dynamics writeback approval queue is not connected.',
         'Scheduler/background Decision proposal requires a target task identity.',
         'Scheduler/background Decision proposal requires operator confirmation or active Standing Approval.',
       ],
     });
+    expect(plan.summary).toContain('requirements=0/3');
     expect(plan.summary).toContain('approvalItemAllowed=false');
     expect(plan.summary).toContain('decisionPersistenceAllowed=false');
     expect(plan.summary).toContain('writebackDispatchAllowed=false');
@@ -42,8 +49,15 @@ describe('scheduler decision proposal contract', () => {
       writebackDispatchAllowed: false,
       authorizations: ['operator_confirmation'],
       targetTaskId: 'task_decision_1',
+      satisfiedRequirements: [
+        'approval_queue',
+        'target_task_identity',
+        'authorization',
+      ],
+      missingRequirements: [],
       blockedReasons: [],
     });
+    expect(plan.summary).toContain('requirements=3/3');
     expect(plan.summary).toContain('authorization=operator_confirmation');
     expect(plan.summary).toContain('targetTask=task_decision_1');
     expect(plan.summary).toContain('blocked=none');
@@ -64,8 +78,15 @@ describe('scheduler decision proposal contract', () => {
       writebackDispatchAllowed: false,
       authorizations: ['standing_approval'],
       targetTaskId: 'task_decision_2',
+      satisfiedRequirements: [
+        'approval_queue',
+        'target_task_identity',
+        'authorization',
+      ],
+      missingRequirements: [],
       blockedReasons: [],
     });
+    expect(plan.summary).toContain('requirements=3/3');
     expect(plan.summary).toContain('authorization=standing_approval');
   });
 });

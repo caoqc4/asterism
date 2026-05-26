@@ -329,6 +329,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Decision actions in DecisionService and DecisionsPage pass through decision_action, task-memory guidance, pre-step, and post-step gates before approve, defer, or cancel effects are recorded.',
       'RuntimeEntrypointCoverage now registers future scheduler/background Decisions as proposal-only decision_draft work that cannot persist Decisions or invoke writeback without operator confirmation or standing approval.',
       'planSchedulerDecisionProposal now models the scheduler/background Decision proposal boundary as approval-item-only: it requires target-task identity, the Task Dynamics writeback approval queue, plus operator confirmation or active Standing Approval, while keeping decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false.',
+      'Scheduler/background Decision proposal plans now return satisfied and missing requirement lists plus requirements=x/3 summary evidence without opening Decision persistence, writeback dispatch, or scheduler triggers.',
       'Future scheduler/background Decision drafts also remain without IPC or scheduler triggers until that same operator-confirmation or standing-approval model exists.',
       'Completion verification is separate from model output.',
       'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',

@@ -199,6 +199,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('writebackDispatchAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false');
+    expect(decisions?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
+    expect(decisions?.evidence.join(' ')).toContain('requirements=x/3');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
     expect(decisions?.evidence.join(' ')).toContain('selected Agent CLI modes stay product_harness/skipped');
     expect(decisions?.evidence.join(' ')).toContain('Approved checkpoint Decision resume is limited to open tool_permission');
