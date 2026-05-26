@@ -235,6 +235,7 @@ describe('ai runtime invocation contract', () => {
     expect(invocation.summary).toContain('writeback harness gates');
     expect(invocation.deferredReason).toContain('Agent API Runtime task execution remains deferred');
     expect(invocation.promotionRequirements).toEqual([
+      'selected_runtime_contract',
       'provider_visible_preflight',
       'runtime_context_manifest',
       'context_readiness_step',
@@ -247,6 +248,7 @@ describe('ai runtime invocation contract', () => {
     ]);
     expect(invocation.promotionRequirements).toContain('write_intent_extraction');
     expect(invocation.promotionRequirements).toContain('reviewed_patch_apply_boundary');
+    expect(invocation.promotionRequirements).toContain('selected_runtime_contract');
     expect(invocation.requiredGates).toEqual([
       'simplicity_check',
       'runtime_action',
@@ -271,6 +273,7 @@ describe('ai runtime invocation contract', () => {
         'runtime_context_assembly',
       ],
       satisfiedRequirements: [
+        'selected_runtime_contract',
         'provider_visible_preflight',
         'runtime_context_manifest',
         'context_readiness_step',
@@ -280,6 +283,7 @@ describe('ai runtime invocation contract', () => {
     expect(blocked).toMatchObject({
       ready: false,
       satisfiedRequirements: [
+        'selected_runtime_contract',
         'provider_visible_preflight',
         'runtime_context_manifest',
         'context_readiness_step',
@@ -302,7 +306,7 @@ describe('ai runtime invocation contract', () => {
       ]),
     });
     expect(blocked.summary).toContain('ready=no');
-    expect(blocked.summary).toContain('requirements=3/9');
+    expect(blocked.summary).toContain('requirements=4/10');
     expect(blocked.summary).toContain('gates=3/9');
 
     const ready = evaluateAgentApiExecutionPromotionReadiness({
@@ -318,6 +322,7 @@ describe('ai runtime invocation contract', () => {
         'post_step',
       ],
       satisfiedRequirements: [
+        'selected_runtime_contract',
         'provider_visible_preflight',
         'runtime_context_manifest',
         'context_readiness_step',

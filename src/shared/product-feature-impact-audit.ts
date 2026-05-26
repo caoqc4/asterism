@@ -143,7 +143,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate before model-producer execution, including blocked early exits.',
       'Shared AI Runtime invocation contract now includes an explicit skipped execution_run shape for deferred Agent API task execution, and Agent API capability diagnostics now label execution_run as deferred so API Runtime can be represented without silently starting provider-visible work.',
       'Deferred Agent API execution_run invocations now carry the future provider-visible execution required gates, including runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step, as structured metadata rather than text-only rationale.',
-      'Deferred Agent API execution_run invocations now also carry structured promotion requirements for provider-visible preflight, runtime context manifest, context readiness, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, post-step verification, and Run evidence persistence.',
+      'Deferred Agent API execution_run invocations now also carry structured promotion requirements for selected-runtime contract, provider-visible preflight, runtime context manifest, context readiness, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, post-step verification, and Run evidence persistence.',
       'evaluateAgentApiExecutionPromotionReadiness now keeps Agent API execution promotion closed until every structured requirement and future provider-visible execution gate has matching service evidence.',
       'Agent API capability registry diagnostics now derive deferred execution_run key gates from the future provider-visible execution contract, so settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries without parsing invocation text.',
       'The opt-in Agent API execution preflight smoke verifies provider-visible text-call readiness through the shared provider mapping while defaulting to provider=not-called, executionRun=deferred, and workspace=unchanged.',
@@ -159,7 +159,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'The packaged task-files smoke now seeds approved reviewed-patch promotions, enables the apply flag in a temporary workspace, drives both applied and blocked Tasks UI apply actions, and verifies workspace file content plus applied/blocked run evidence.',
     ],
     gaps: [
-      'Future Agent API execution remains deferred; native CLI workspace-write mode stays separate from the common run path because reviewed-patch apply already owns the operator-facing workspace mutation boundary.',
+      'Future Agent API execution remains deferred; native CLI workspace-write mode stays separate from the common run path because selected-runtime contract and reviewed-patch apply already own the operator-facing workspace mutation boundary.',
     ],
     nextActions: [
       'Promote future Agent API execution only by replacing the deferred invocation after evaluateAgentApiExecutionPromotionReadiness reports ready with matching service evidence for every requirement and gate.',

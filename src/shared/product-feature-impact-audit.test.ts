@@ -155,6 +155,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('future provider-visible execution required gates');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step');
     expect(rightPanel?.evidence.join(' ')).toContain('structured promotion requirements');
+    expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime contract');
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible preflight');
     expect(rightPanel?.evidence.join(' ')).toContain('Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary');
     expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness');
@@ -180,7 +181,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.cliOnlyClosure).toBe('supported');
     expect(rightPanel?.gaps.join(' ')).toContain('Future Agent API execution remains deferred');
     expect(rightPanel?.nextActions.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness reports ready');
-    expect(rightPanel?.gaps.join(' ')).toContain('reviewed-patch apply already owns the operator-facing workspace mutation boundary');
+    expect(rightPanel?.gaps.join(' ')).toContain('selected-runtime contract and reviewed-patch apply already own the operator-facing workspace mutation boundary');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
