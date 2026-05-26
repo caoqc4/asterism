@@ -72,6 +72,7 @@ export type DecompositionDraftInvocationResult = RuntimeInvocationBase & {
 export type AgentApiDecompositionPromotionReadiness = {
   ready: boolean;
   missingRequirements: Array<
+    | 'selected_runtime_contract'
     | 'reversible_proposal_card'
     | 'subtask_create_many_apply_plan'
     | 'agent_api_decomposition_source'
@@ -177,9 +178,14 @@ export function buildApiRuntimeDecompositionDraftInvocation(params: {
 export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   applyPlan?: TaskplaneSubtaskWritebackApplyPlan | null;
   reversibleProposalCardReady?: boolean;
+  selectedRuntimeContractReady?: boolean;
 }): AgentApiDecompositionPromotionReadiness {
   const missingRequirements: AgentApiDecompositionPromotionReadiness['missingRequirements'] = [];
   const applyPlan = params.applyPlan ?? null;
+
+  if (!params.selectedRuntimeContractReady) {
+    missingRequirements.push('selected_runtime_contract');
+  }
 
   if (!params.reversibleProposalCardReady) {
     missingRequirements.push('reversible_proposal_card');
@@ -209,6 +215,7 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
     summary: [
       'Agent API decomposition promotion readiness',
       `ready=${ready ? 'yes' : 'no'}`,
+      `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,

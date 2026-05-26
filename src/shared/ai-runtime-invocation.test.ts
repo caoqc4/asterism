@@ -80,6 +80,7 @@ describe('ai runtime invocation contract', () => {
     expect(blocked).toMatchObject({
       ready: false,
       missingRequirements: [
+        'selected_runtime_contract',
         'reversible_proposal_card',
         'subtask_create_many_apply_plan',
         'agent_api_decomposition_source',
@@ -102,12 +103,14 @@ describe('ai runtime invocation contract', () => {
     const ready = evaluateAgentApiDecompositionPromotionReadiness({
       applyPlan,
       reversibleProposalCardReady: true,
+      selectedRuntimeContractReady: true,
     });
 
     expect(ready).toMatchObject({
       ready: true,
       missingRequirements: [],
     });
+    expect(ready.summary).toContain('selectedRuntimeContract=ready');
     expect(ready.summary).toContain('proposalCard=ready');
     expect(ready.summary).toContain('applyPlan=subtask.create_many');
     expect(ready.summary).toContain('source=agent_api_decomposition');
