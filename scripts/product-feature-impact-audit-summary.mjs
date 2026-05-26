@@ -62,6 +62,14 @@ try {
     PRODUCT_FEATURE_IMPACT_AUDIT,
     (item) => item.priority === 'p0' && item.cliOnlyClosure === 'partial',
   )}`);
+  console.log(`focus p0FutureApiPartial=${idsFor(
+    PRODUCT_FEATURE_IMPACT_AUDIT,
+    (item) => item.priority === 'p0' && item.futureApiClosure === 'partial',
+  )}`);
+  console.log(`focus p1CliPartial=${idsFor(
+    PRODUCT_FEATURE_IMPACT_AUDIT,
+    (item) => item.priority === 'p1' && item.cliOnlyClosure === 'partial',
+  )}`);
 
   for (const item of PRODUCT_FEATURE_IMPACT_AUDIT) {
     console.log(`${item.priority} ${item.status} cli=${item.cliOnlyClosure} api=${item.futureApiClosure} ${item.id}`);

@@ -142,6 +142,7 @@ export type AgentScheduledEventTriggerPlan = {
   schedulerTriggerServiceConnected: boolean;
   triggerRunEvidenceRequired: Array<
     | 'context_readiness'
+    | 'target_task_identity'
     | 'task_memory_coverage'
     | 'task_memory_guidance'
     | 'subtask_start'
@@ -959,6 +960,7 @@ export function planScheduledEventAgentTrigger(params: {
   const blockedReasons = [...standingApproval.blockedReasons];
   const evidence = [
     ...standingApproval.evidence,
+    `targetTask=${params.task.id}`,
     `runtime=${snapshot.runtime.status}`,
   ];
 
@@ -991,6 +993,7 @@ export function planScheduledEventAgentTrigger(params: {
     schedulerTriggerServiceConnected,
     triggerRunEvidenceRequired: [
       'context_readiness',
+      'target_task_identity',
       'task_memory_coverage',
       'task_memory_guidance',
       'subtask_start',
@@ -1014,7 +1017,7 @@ export function planScheduledEventAgentTrigger(params: {
       `triggerPlanReady=${status === 'ready' ? 'yes' : 'no'}`,
       `runtimeStartAllowed=${runtimeStartAllowed ? 'true' : 'false'}`,
       `schedulerTriggerServiceConnected=${schedulerTriggerServiceConnected ? 'true' : 'false'}`,
-      'triggerRunEvidence=context_readiness,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step',
+      'triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step',
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
     ].join(' / '),

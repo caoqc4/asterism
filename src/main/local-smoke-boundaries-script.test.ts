@@ -528,6 +528,12 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain(
       'focus p0CliPartial=<none>',
     );
+    expect(result.output).toContain(
+      'focus p0FutureApiPartial=right_panel_agent_run,task_creation_and_project_decomposition,decisions_checkpoints_completion,task_files_artifacts_local_writes,capabilities_external_skills_mcp',
+    );
+    expect(result.output).toContain(
+      'focus p1CliPartial=work_habits_settings_scheduled',
+    );
     expect(result.output).toContain('right_panel_agent_run');
     expect(result.output).toContain('smoke_tests_runtime_readiness_recovery');
     expect(result.output).not.toContain('issues');

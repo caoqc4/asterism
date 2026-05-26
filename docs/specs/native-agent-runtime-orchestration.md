@@ -806,8 +806,8 @@ Current implementation:
   plan stays no-start with `runtimeStartAllowed=false`; when a dedicated
   trigger service is explicitly connected, a ready plan may return
   `runtimeStartAllowed=true`. The plan also carries the trigger Run evidence
-  contract: context readiness, task-memory coverage, task-memory guidance,
-  subtask-start, run-limit count, and post-step evidence.
+  contract: context readiness, target-task identity, task-memory coverage,
+  task-memory guidance, subtask-start, run-limit count, and post-step evidence.
 - `SchedulerService.diagnoseScheduledEventAgentTriggers` wires the planner to a
   scheduler diagnostic entrypoint. It reads selected-runtime readiness from AI
   config status, uses `RunRepository.countCreatedSinceByTask` for persisted

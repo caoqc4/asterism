@@ -796,6 +796,7 @@ describe('agent orchestration snapshot', () => {
       schedulerTriggerServiceConnected: false,
       triggerRunEvidenceRequired: [
         'context_readiness',
+        'target_task_identity',
         'task_memory_coverage',
         'task_memory_guidance',
         'subtask_start',
@@ -811,7 +812,8 @@ describe('agent orchestration snapshot', () => {
     });
     expect(plan.summary).toContain('runtimeStartAllowed=false');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
-    expect(plan.summary).toContain('triggerRunEvidence=context_readiness,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
+    expect(plan.summary).toContain('triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
+    expect(plan.evidence).toContain('targetTask=task_1');
     expect(plan.summary).toContain('runLimit=not_counted/3');
   });
 

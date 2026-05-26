@@ -801,6 +801,7 @@ describe('SchedulerService', () => {
       schedulerTriggerServiceConnected: false,
       triggerRunEvidenceRequired: expect.arrayContaining([
         'context_readiness',
+        'target_task_identity',
         'task_memory_coverage',
         'task_memory_guidance',
         'subtask_start',
@@ -1055,7 +1056,7 @@ describe('SchedulerService', () => {
       useModelProducer: true,
     });
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Next step: Prepare the weekly update.');
-    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('context_readiness,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
     expect(result).toMatchObject({
       status: 'started',
       run: {
@@ -1085,6 +1086,7 @@ describe('SchedulerService', () => {
         runtimeStartAllowed: true,
         triggerRunEvidenceRequired: expect.arrayContaining([
           'context_readiness',
+          'target_task_identity',
           'task_memory_coverage',
           'task_memory_guidance',
           'subtask_start',
