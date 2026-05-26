@@ -793,7 +793,9 @@ Current implementation:
   readiness, task readiness, policy expiry/scope/risk, and scheduled/event task
   class, accepts explicit daily run-limit accounting input, blocks plans when
   `maxRunsPerDay` is reached, then returns a ready/blocked plan with
-  `runtimeStartAllowed=false`.
+  `runtimeStartAllowed=false`. The plan also carries the future trigger Run
+  evidence contract: context readiness, task-memory coverage, task-memory
+  guidance, subtask-start, run-limit count, and post-step evidence.
 - `SchedulerService.diagnoseScheduledEventAgentTriggers` wires the planner to a
   scheduler diagnostic entrypoint. It reads selected-runtime readiness from AI
   config status, uses `RunRepository.countCreatedSinceByTask` for persisted

@@ -794,6 +794,14 @@ describe('agent orchestration snapshot', () => {
       triggerPlanReady: true,
       runtimeStartAllowed: false,
       schedulerTriggerServiceConnected: false,
+      triggerRunEvidenceRequired: [
+        'context_readiness',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'run_limit_count',
+        'post_step',
+      ],
       policy: {
         id: 'standing_approval:task_1:coding:local_sandbox',
       },
@@ -803,6 +811,7 @@ describe('agent orchestration snapshot', () => {
     });
     expect(plan.summary).toContain('runtimeStartAllowed=false');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
+    expect(plan.summary).toContain('triggerRunEvidence=context_readiness,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
     expect(plan.summary).toContain('runLimit=not_counted/3');
   });
 

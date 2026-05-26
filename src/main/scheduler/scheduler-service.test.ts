@@ -570,6 +570,14 @@ describe('SchedulerService', () => {
       triggerPlanReady: true,
       runtimeStartAllowed: false,
       schedulerTriggerServiceConnected: false,
+      triggerRunEvidenceRequired: expect.arrayContaining([
+        'context_readiness',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'run_limit_count',
+        'post_step',
+      ]),
       policy: {
         id: 'standing_approval:task_auto:coding:local_sandbox',
       },

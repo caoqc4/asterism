@@ -140,6 +140,14 @@ export type AgentScheduledEventTriggerPlan = {
   triggerPlanReady: boolean;
   runtimeStartAllowed: false;
   schedulerTriggerServiceConnected: false;
+  triggerRunEvidenceRequired: Array<
+    | 'context_readiness'
+    | 'task_memory_coverage'
+    | 'task_memory_guidance'
+    | 'subtask_start'
+    | 'run_limit_count'
+    | 'post_step'
+  >;
   policy: AgentStandingApprovalPolicy | null;
   runLimit: {
     maxRunsPerDay: number | null;
@@ -978,6 +986,14 @@ export function planScheduledEventAgentTrigger(params: {
     triggerPlanReady: status === 'ready',
     runtimeStartAllowed: false,
     schedulerTriggerServiceConnected: false,
+    triggerRunEvidenceRequired: [
+      'context_readiness',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'subtask_start',
+      'run_limit_count',
+      'post_step',
+    ],
     policy,
     runLimit: {
       maxRunsPerDay: policy?.maxRunsPerDay ?? null,
@@ -995,6 +1011,7 @@ export function planScheduledEventAgentTrigger(params: {
       `triggerPlanReady=${status === 'ready' ? 'yes' : 'no'}`,
       'runtimeStartAllowed=false',
       'schedulerTriggerServiceConnected=false',
+      'triggerRunEvidence=context_readiness,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step',
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
     ].join(' / '),
