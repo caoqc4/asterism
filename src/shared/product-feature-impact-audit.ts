@@ -199,12 +199,12 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Subtask draft confirmation is represented as a subtask.create_many writeback apply plan and dispatched through the main-side task service adapter.',
       'Subtask create-many writeback timeline evidence now records that decomposition output was draft-only before operator confirmation.',
       'The retained Agent API decomposition confirmation path now builds an agent_api_decomposition subtask.create_many apply plan instead of writing child tasks directly from the renderer.',
-      'evaluateAgentApiDecompositionPromotionReadiness now keeps future Agent API decomposition promotion closed unless the draft has a selected-runtime contract, a reversible proposal card, an agent_api_decomposition subtask.create_many apply plan, an operator-confirmed create-many boundary, and draft-only timeline evidence.',
+      'evaluateAgentApiDecompositionPromotionReadiness now keeps future Agent API decomposition promotion closed unless the draft has a selected-runtime contract, parent-task identity, a reversible proposal card, an agent_api_decomposition subtask.create_many apply plan, an operator-confirmed create-many boundary, and draft-only timeline evidence.',
       'Agent API task execution has a shared deferred execution_run invocation shape, so future API execution can join the same invocation contract before durable child creation or run execution is promoted.',
       'The main-side subtask apply path promotes the parent to a project, creates planned child tasks, stores child and parent completion criteria, stores matched dependencies, records the project timeline with childTaskIds and recordPath evidence, and writes an AI 项目拆解自检 task record when review context exists.',
     ],
     gaps: [
-      'Future Agent API decomposition generation is still not the primary task-bound runtime path; if promoted, it should prove the selected-runtime contract and surface the same reversible proposal card before confirmation.',
+      'Future Agent API decomposition generation is still not the primary task-bound runtime path; if promoted, it should prove the selected-runtime contract and parent-task identity, then surface the same reversible proposal card before confirmation.',
     ],
     nextActions: [
       'When Agent API decomposition is promoted, require evaluateAgentApiDecompositionPromotionReadiness to pass before feeding confirmation through TaskplaneWritebackApplyPlan.',

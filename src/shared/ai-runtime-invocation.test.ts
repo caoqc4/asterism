@@ -81,6 +81,7 @@ describe('ai runtime invocation contract', () => {
       ready: false,
       missingRequirements: [
         'selected_runtime_contract',
+        'parent_task_identity',
         'reversible_proposal_card',
         'subtask_create_many_apply_plan',
         'agent_api_decomposition_source',
@@ -111,6 +112,7 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: [],
     });
     expect(ready.summary).toContain('selectedRuntimeContract=ready');
+    expect(ready.summary).toContain('parentTask=task_project');
     expect(ready.summary).toContain('proposalCard=ready');
     expect(ready.summary).toContain('applyPlan=subtask.create_many');
     expect(ready.summary).toContain('source=agent_api_decomposition');

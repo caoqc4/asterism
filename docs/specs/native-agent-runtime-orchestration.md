@@ -847,8 +847,8 @@ Current implementation:
 Remaining work:
 
 - If Agent API decomposition is promoted as a primary runtime path, require the
-  selected-runtime contract and keep draft generation task-bound and reversible
-  before it reaches writeback confirmation.
+  selected-runtime contract and parent-task identity, then keep draft generation
+  task-bound and reversible before it reaches writeback confirmation.
 - If Agent API task execution is promoted, replace the skipped `execution_run`
   invocation with a real provider-visible execution entrypoint only after the
   selected-runtime contract, target-task identity, context readiness,

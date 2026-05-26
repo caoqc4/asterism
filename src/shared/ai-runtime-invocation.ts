@@ -73,6 +73,7 @@ export type AgentApiDecompositionPromotionReadiness = {
   ready: boolean;
   missingRequirements: Array<
     | 'selected_runtime_contract'
+    | 'parent_task_identity'
     | 'reversible_proposal_card'
     | 'subtask_create_many_apply_plan'
     | 'agent_api_decomposition_source'
@@ -188,6 +189,10 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
     missingRequirements.push('selected_runtime_contract');
   }
 
+  if (!applyPlan?.input.parentTaskId?.trim()) {
+    missingRequirements.push('parent_task_identity');
+  }
+
   if (!params.reversibleProposalCardReady) {
     missingRequirements.push('reversible_proposal_card');
   }
@@ -217,6 +222,7 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
       'Agent API decomposition promotion readiness',
       `ready=${ready ? 'yes' : 'no'}`,
       `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
+      `parentTask=${applyPlan?.input.parentTaskId?.trim() || 'missing'}`,
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
