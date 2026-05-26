@@ -482,6 +482,28 @@ describe('local smoke script default boundaries', () => {
     expect(scripts['diagnostics:canonical-data:optional']).not.toContain('--db ');
   });
 
+  it('keeps product progress audit read-only and source-backed', () => {
+    const scripts = readPackageScripts();
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/product-feature-impact-audit-summary.mjs'), 'utf8');
+    const result = runScript('scripts/product-feature-impact-audit-summary.mjs');
+
+    expect(scripts['audit:product-progress']).toBe('node scripts/product-feature-impact-audit-summary.mjs');
+    expect(script).toContain('src/shared/product-feature-impact-audit.ts');
+    expect(script).toContain('findProductFeatureImpactAuditIssues');
+    expect(script).toContain('Taskplane product feature impact audit');
+    expect(script).not.toContain('better-sqlite3');
+    expect(script).not.toContain('keytar');
+    expect(script).not.toContain('OpenAI');
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('features=9');
+    expect(result.output).toContain('status ');
+    expect(result.output).toContain('cliOnlyClosure ');
+    expect(result.output).toContain('futureApiClosure ');
+    expect(result.output).toContain('right_panel_agent_run');
+    expect(result.output).toContain('smoke_tests_runtime_readiness_recovery');
+    expect(result.output).not.toContain('issues');
+  });
+
   it('keeps sandbox producer preview smoke skipped without Docker or AI by default', () => {
     const result = runScript('scripts/sandbox-coding-producer-preview-smoke.mjs');
 

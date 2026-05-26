@@ -52,6 +52,7 @@ Read-only local data diagnostics:
 
 ```bash
 npm run diagnostics:canonical-data
+npm run audit:product-progress
 ```
 
 This checks the local SQLite database against the canonical data contract. Use
@@ -60,6 +61,9 @@ This checks the local SQLite database against the canonical data contract. Use
 `npm run diagnostics:canonical-data:optional` is the same read-only check but
 skips successfully when no local database exists, which keeps fresh local alpha
 environments reproducible.
+`npm run audit:product-progress` reads the source product feature audit only,
+prints status / CLI / future API closure counts, and fails if audit structure
+checks find a regression.
 
 For a single Vitest file:
 
