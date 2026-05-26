@@ -492,6 +492,9 @@ describe('SchedulerService', () => {
       type: 'panel.scheduled_event_agent_triggered',
       payload: expect.objectContaining({
         runId: 'run_scheduled_cron_1',
+        runFailureReason: null,
+        runOutputSource: null,
+        runStatus: 'running',
         runtimeStartAllowed: true,
         triggeredAt: '2026-05-26T11:00:00.000Z',
         runLimit: {
@@ -1011,6 +1014,9 @@ describe('SchedulerService', () => {
     const run = {
       ...buildRunRecord(),
       id: 'run_scheduled_1',
+      output: 'Code Agent preview completed.',
+      outputSource: 'system',
+      status: 'completed',
       taskId: 'task_auto',
       type: 'agent',
     } satisfies RunRecord;
@@ -1087,6 +1093,9 @@ describe('SchedulerService', () => {
       type: 'panel.scheduled_event_agent_triggered',
       payload: expect.objectContaining({
         runId: 'run_scheduled_1',
+        runFailureReason: null,
+        runOutputSource: 'system',
+        runStatus: 'completed',
         targetTaskId: 'task_auto',
         standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
         schedulerTriggerServiceConnected: true,
