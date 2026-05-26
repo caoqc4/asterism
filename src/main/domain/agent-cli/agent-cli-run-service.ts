@@ -22,6 +22,7 @@ import {
   buildRunGoalContract,
   formatRunGoalContractForPrompt,
   formatRunGoalContractForStep,
+  type AgentRuntimeAdapterCapabilities,
   type RunGoalContract,
 } from '../../../shared/agent-runtime-goal.js';
 import {
@@ -317,6 +318,7 @@ export class AgentCliRunService {
     const webResearchPreparation = await this.prepareWebResearchSourceContext({
       capabilityMode,
       prompt: request.prompt,
+      runtimeCapabilities,
       task,
     });
     task = webResearchPreparation.task;
@@ -515,6 +517,7 @@ export class AgentCliRunService {
   private async prepareWebResearchSourceContext(params: {
     capabilityMode: AgentCliCapabilityMode;
     prompt: string;
+    runtimeCapabilities: AgentRuntimeAdapterCapabilities;
     task: TaskDetail;
   }): Promise<{ preparation: AgentCliWebResearchPreparation; task: TaskDetail }> {
     if (params.capabilityMode === 'restricted') {
@@ -546,7 +549,7 @@ export class AgentCliRunService {
         preparation: {
           capabilityMode: params.capabilityMode,
           query: null,
-          reason: 'Taskplane has no configured source-context writer or OpenAI web research bridge; the native CLI may still use its own research tools.',
+          reason: `Taskplane has no configured source-context writer or OpenAI web research bridge. ${nativeWebSearchFallbackReason(params.runtimeCapabilities)}`,
           sourceCount: 0,
           status: 'skipped',
         },
@@ -564,7 +567,7 @@ export class AgentCliRunService {
         preparation: {
           capabilityMode: params.capabilityMode,
           query,
-          reason: `Taskplane web research bridge is unavailable: ${message}. The native CLI may still use its own research tools.`,
+          reason: `Taskplane web research bridge is unavailable: ${message}. ${nativeWebSearchFallbackReason(params.runtimeCapabilities)}`,
           sourceCount: 0,
           status: 'skipped',
         },
@@ -584,7 +587,7 @@ export class AgentCliRunService {
         preparation: {
           capabilityMode: params.capabilityMode,
           query,
-          reason: `Taskplane web research request failed: ${research.error}. The native CLI may still use its own research tools.`,
+          reason: `Taskplane web research request failed: ${research.error}. ${nativeWebSearchFallbackReason(params.runtimeCapabilities)}`,
           sourceCount: 0,
           status: 'skipped',
         },
@@ -596,7 +599,7 @@ export class AgentCliRunService {
         preparation: {
           capabilityMode: params.capabilityMode,
           query,
-          reason: 'Taskplane web research returned no usable summary or sources.',
+          reason: `Taskplane web research returned no usable summary or sources. ${nativeWebSearchFallbackReason(params.runtimeCapabilities)}`,
           sourceCount: 0,
           status: 'skipped',
         },
@@ -624,7 +627,7 @@ export class AgentCliRunService {
         preparation: {
           capabilityMode: params.capabilityMode,
           query,
-          reason: `Taskplane web research produced ${createdInputs.length} source context item(s), but none could be saved; the native CLI may still use its own research tools.`,
+          reason: `Taskplane web research produced ${createdInputs.length} source context item(s), but none could be saved. ${nativeWebSearchFallbackReason(params.runtimeCapabilities)}`,
           sourceCount: 0,
           status: 'skipped',
         },
@@ -1224,6 +1227,20 @@ function formatAgentCliWebResearchPreparation(preparation: AgentCliWebResearchPr
     preparation.query ? `query=${truncateAgentCliContextLine(preparation.query, 600)}` : null,
     `reason=${preparation.reason}`,
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function nativeWebSearchFallbackReason(capabilities: AgentRuntimeAdapterCapabilities): string {
+  const availability = capabilities.nativeCapabilities?.webSearch.availability;
+  if (availability === 'available' || availability === 'runtime_dependent') {
+    return 'Selected native CLI reports web/search support; Taskplane will project visible native web/search events when they appear.';
+  }
+  if (availability === 'unverified') {
+    return 'Selected native CLI web/search is unverified by the current probe; Taskplane will only project native web/search when visible events appear.';
+  }
+  if (availability === 'unsupported') {
+    return 'Selected native CLI web/search is not available according to the current probe.';
+  }
+  return 'Selected native CLI web/search readiness is unknown.';
 }
 
 function buildWebResearchQuery(task: TaskDetail, prompt: string): string {

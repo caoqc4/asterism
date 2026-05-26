@@ -956,6 +956,10 @@ describe('AgentCliRunService', () => {
       title: 'Agent CLI 联网调研准备',
       output: expect.stringContaining('none could be saved'),
     }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('Selected native CLI web/search is unverified by the current probe'),
+    }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.not.stringContaining('https://developers.openai.com/codex'),
     }));

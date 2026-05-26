@@ -275,6 +275,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness summary and missing evidence');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
+    expect(capabilities?.evidence.join(' ')).toContain('fallback copy now uses the selected runtime native web/search readiness');
+    expect(capabilities?.evidence.join(' ')).toContain('unverified native search');
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
     expect(capabilities?.gaps.join(' ')).not.toContain('compact/clear readiness checks');

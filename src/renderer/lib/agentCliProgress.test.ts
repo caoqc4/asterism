@@ -126,7 +126,7 @@ describe('deriveAgentCliProgress', () => {
             'capability_mode=native',
             'sources=0',
             'query=Codex CLI docs',
-            'reason=Taskplane web research produced 2 source context item(s), but none could be saved; the native CLI may still use its own research tools.',
+            'reason=Taskplane web research produced 2 source context item(s), but none could be saved. Selected native CLI web/search is unverified by the current probe; Taskplane will only project native web/search when visible events appear.',
           ].join('\n'),
         }),
       ],
