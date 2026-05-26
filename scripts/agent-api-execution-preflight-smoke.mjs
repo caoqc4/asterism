@@ -98,6 +98,7 @@ export function printAgentApiExecutionPreflight(preflight) {
   console.log(`baseUrl=${preflight.baseUrl ? '<set>' : '<empty>'}`);
   console.log(`apiKey=${preflight.hasApiKey ? '<set>' : '<empty>'}`);
   console.log('executionRun=deferred');
+  console.log('promotionReady=no');
   console.log(`promotionRequirements=0/${EXECUTION_RUN_PROMOTION_REQUIREMENTS.length}`);
   console.log(`requiredGates=0/${EXECUTION_RUN_REQUIRED_GATES.length}`);
   console.log(`promotionRequirementList=${EXECUTION_RUN_PROMOTION_REQUIREMENTS.join(',')}`);

@@ -363,8 +363,8 @@ requirement, and run-status evidence, and keep `workspace=unchanged`, `provider=
 
 The Agent API execution preflight is deliberately narrower than a full task
 run: default output must include `status=skip`, `provider=not-called`,
-`executionRun=deferred`, `promotionRequirements=0/11`, `requiredGates=0/9`,
-and `workspace=unchanged`. A passing opt-in run proves that the configured
+`executionRun=deferred`, `promotionReady=no`, `promotionRequirements=0/11`,
+`requiredGates=0/9`, and `workspace=unchanged`. A passing opt-in run proves that the configured
 provider can answer one Taskplane Agent API Runtime text request, while full
 provider-visible task `execution_run` remains deferred behind the shared
 context-readiness, Run Goal Contract, Write Intent, verification, and
