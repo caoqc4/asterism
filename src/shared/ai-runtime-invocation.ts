@@ -105,6 +105,7 @@ export type ExecutionRunInvocationResult = RuntimeInvocationBase & {
 
 export type AgentApiExecutionPromotionRequirement =
   | 'selected_runtime_contract'
+  | 'target_task_identity'
   | 'provider_visible_preflight'
   | 'runtime_context_manifest'
   | 'context_readiness_step'
@@ -310,6 +311,7 @@ export function buildDeferredAgentApiExecutionRunInvocation(params: {
 export function agentApiExecutionPromotionRequirements(): AgentApiExecutionPromotionRequirement[] {
   return [
     'selected_runtime_contract',
+    'target_task_identity',
     'provider_visible_preflight',
     'runtime_context_manifest',
     'context_readiness_step',

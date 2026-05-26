@@ -156,6 +156,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step');
     expect(rightPanel?.evidence.join(' ')).toContain('structured promotion requirements');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime contract');
+    expect(rightPanel?.evidence.join(' ')).toContain('target-task identity');
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible preflight');
     expect(rightPanel?.evidence.join(' ')).toContain('Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary');
     expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness');
