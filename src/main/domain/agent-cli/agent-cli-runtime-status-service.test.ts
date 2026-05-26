@@ -251,6 +251,33 @@ describe('agent cli runtime status service', () => {
     }
   });
 
+  it('requires non-empty Claude agent markdown files for workspace subagent readiness', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-empty-agent-signals-'));
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, '.claude', 'agents'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'agents', 'empty.md'), '');
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'agents', 'notes.txt'), 'not an agent markdown file\n');
+      fs.writeFileSync(path.join(tempRoot, 'CLAUDE.md'), '# Claude guidance\n');
+
+      expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).toMatchObject({
+        nativeMemory: true,
+      });
+      expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).not.toMatchObject({
+        subagents: true,
+      });
+
+      fs.writeFileSync(path.join(tempRoot, '.claude', 'agents', 'reviewer.md'), '# Reviewer\n');
+
+      expect(detectWorkspaceCapabilitySignals('claude', tempRoot)).toMatchObject({
+        nativeMemory: true,
+        subagents: true,
+      });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('merges provider help signals with workspace signals conservatively', () => {
     expect(mergeAgentCliCapabilitySignals(
       { structuredProgressEvents: false, webSearch: true },

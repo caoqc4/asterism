@@ -228,7 +228,7 @@ export function detectWorkspaceCapabilitySignals(
       nativeMemory: fileExists(path.join(root, 'CLAUDE.md'))
         || fileExists(path.join(root, '.claude', 'CLAUDE.md'))
         || fileExists(path.join(root, '.claude', 'memory.md')),
-      subagents: directoryHasEntries(path.join(root, '.claude', 'agents')),
+      subagents: directoryHasNonEmptyMarkdownFile(path.join(root, '.claude', 'agents')),
     });
   }
 
@@ -301,6 +301,24 @@ function directoryHasEntries(directoryPath: string): boolean {
   try {
     return fs.statSync(directoryPath).isDirectory()
       && fs.readdirSync(directoryPath).some((entry) => !entry.startsWith('.'));
+  } catch {
+    return false;
+  }
+}
+
+function directoryHasNonEmptyMarkdownFile(directoryPath: string): boolean {
+  try {
+    if (!fs.statSync(directoryPath).isDirectory()) return false;
+    return fs.readdirSync(directoryPath).some((entry) => {
+      if (entry.startsWith('.') || !/\.md$/i.test(entry)) return false;
+      const filePath = path.join(directoryPath, entry);
+      try {
+        const stat = fs.statSync(filePath);
+        return stat.isFile() && stat.size > 0;
+      } catch {
+        return false;
+      }
+    });
   } catch {
     return false;
   }
