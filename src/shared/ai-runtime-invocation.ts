@@ -99,6 +99,15 @@ export type AgentApiExecutionPromotionRequirement =
   | 'post_step_verification'
   | 'run_evidence_persistence';
 
+export type AgentApiExecutionPromotionReadiness = {
+  ready: boolean;
+  satisfiedRequirements: AgentApiExecutionPromotionRequirement[];
+  missingRequirements: AgentApiExecutionPromotionRequirement[];
+  satisfiedGates: RuntimeEntrypointGate[];
+  missingGates: RuntimeEntrypointGate[];
+  summary: string;
+};
+
 export type VerificationAssistInvocationResult = RuntimeInvocationBase & {
   phase: 'verification_assist';
   layer: 'product_harness';
@@ -244,6 +253,37 @@ export function agentApiExecutionPromotionRequirements(): AgentApiExecutionPromo
     'post_step_verification',
     'run_evidence_persistence',
   ];
+}
+
+export function evaluateAgentApiExecutionPromotionReadiness(params: {
+  satisfiedRequirements?: AgentApiExecutionPromotionRequirement[];
+  satisfiedGates?: RuntimeEntrypointGate[];
+} = {}): AgentApiExecutionPromotionReadiness {
+  const requiredRequirements = agentApiExecutionPromotionRequirements();
+  const requiredGates = agentApiExecutionRequiredGates();
+  const satisfiedRequirementSet = new Set(params.satisfiedRequirements ?? []);
+  const satisfiedGateSet = new Set(params.satisfiedGates ?? []);
+  const satisfiedRequirements = requiredRequirements.filter((requirement) => satisfiedRequirementSet.has(requirement));
+  const satisfiedGates = requiredGates.filter((gate) => satisfiedGateSet.has(gate));
+  const missingRequirements = requiredRequirements.filter((requirement) => !satisfiedRequirementSet.has(requirement));
+  const missingGates = requiredGates.filter((gate) => !satisfiedGateSet.has(gate));
+  const ready = missingRequirements.length === 0 && missingGates.length === 0;
+
+  return {
+    ready,
+    satisfiedRequirements,
+    missingRequirements,
+    satisfiedGates,
+    missingGates,
+    summary: [
+      'Agent API execution promotion readiness',
+      `ready=${ready ? 'yes' : 'no'}`,
+      `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `gates=${satisfiedGates.length}/${requiredGates.length}`,
+      `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+      `missingGates=${missingGates.length ? missingGates.join(',') : 'none'}`,
+    ].join(' / '),
+  };
 }
 
 function agentApiExecutionRequiredGates(): RuntimeEntrypointGate[] {

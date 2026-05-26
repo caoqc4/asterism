@@ -9,6 +9,7 @@ import {
   buildProductHarnessDecisionDraftInvocation,
   buildProductHarnessMemoryProposalInvocation,
   buildProductHarnessVerificationAssistInvocation,
+  evaluateAgentApiExecutionPromotionReadiness,
 } from './ai-runtime-invocation.js';
 
 describe('ai runtime invocation contract', () => {
@@ -214,6 +215,80 @@ describe('ai runtime invocation contract', () => {
     expect(invocation.requiredGates).toContain('context_readiness');
     expect(invocation.requiredGates).toContain('runtime_context_assembly');
     expect(invocation.requiredGates).toContain('post_step');
+  });
+
+  it('keeps Agent API execution promotion closed until every requirement and gate has service evidence', () => {
+    const blocked = evaluateAgentApiExecutionPromotionReadiness({
+      satisfiedGates: [
+        'simplicity_check',
+        'runtime_action',
+        'runtime_context_assembly',
+      ],
+      satisfiedRequirements: [
+        'runtime_context_manifest',
+        'context_readiness_step',
+      ],
+    });
+
+    expect(blocked).toMatchObject({
+      ready: false,
+      satisfiedRequirements: [
+        'runtime_context_manifest',
+        'context_readiness_step',
+      ],
+      missingRequirements: expect.arrayContaining([
+        'task_memory_guidance',
+        'run_goal_contract',
+        'write_intent_extraction',
+        'reviewed_patch_apply_boundary',
+        'post_step_verification',
+        'run_evidence_persistence',
+      ]),
+      missingGates: expect.arrayContaining([
+        'context_readiness',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'pre_step',
+        'subtask_start',
+        'post_step',
+      ]),
+    });
+    expect(blocked.summary).toContain('ready=no');
+    expect(blocked.summary).toContain('requirements=2/8');
+    expect(blocked.summary).toContain('gates=3/9');
+
+    const ready = evaluateAgentApiExecutionPromotionReadiness({
+      satisfiedGates: [
+        'simplicity_check',
+        'runtime_action',
+        'runtime_context_assembly',
+        'context_readiness',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'pre_step',
+        'subtask_start',
+        'post_step',
+      ],
+      satisfiedRequirements: [
+        'runtime_context_manifest',
+        'context_readiness_step',
+        'task_memory_guidance',
+        'run_goal_contract',
+        'write_intent_extraction',
+        'reviewed_patch_apply_boundary',
+        'post_step_verification',
+        'run_evidence_persistence',
+      ],
+    });
+
+    expect(ready).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+      missingGates: [],
+    });
+    expect(ready.summary).toContain('ready=yes');
+    expect(ready.summary).toContain('missingRequirements=none');
+    expect(ready.summary).toContain('missingGates=none');
   });
 
   it('wraps product-harness verification and memory proposal phases', () => {

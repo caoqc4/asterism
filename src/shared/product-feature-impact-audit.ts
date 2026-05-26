@@ -144,6 +144,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Shared AI Runtime invocation contract now includes an explicit skipped execution_run shape for deferred Agent API task execution, and Agent API capability diagnostics now label execution_run as deferred so API Runtime can be represented without silently starting provider-visible work.',
       'Deferred Agent API execution_run invocations now carry the future provider-visible execution required gates, including runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step, as structured metadata rather than text-only rationale.',
       'Deferred Agent API execution_run invocations now also carry structured promotion requirements for runtime context manifest, context readiness, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, post-step verification, and Run evidence persistence.',
+      'evaluateAgentApiExecutionPromotionReadiness now keeps Agent API execution promotion closed until every structured requirement and future provider-visible execution gate has matching service evidence.',
       'Agent API capability registry diagnostics now derive deferred execution_run key gates from the future provider-visible execution contract, so settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries without parsing invocation text.',
       'The opt-in Agent API execution preflight smoke verifies provider-visible text-call readiness through the shared provider mapping while defaulting to provider=not-called, executionRun=deferred, and workspace=unchanged.',
       'Local Agent API execution preflight evidence on 2026-05-26 passed with fal-openrouter / google/gemini-2.5-flash, provider=called, phrase=matched, workspace=unchanged, and status=passed.',
@@ -161,7 +162,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future Agent API execution remains deferred; native CLI workspace-write mode stays separate from the common run path because reviewed-patch apply already owns the operator-facing workspace mutation boundary.',
     ],
     nextActions: [
-      'Promote future Agent API execution only by replacing the deferred invocation after its structured promotion requirements have matching service evidence.',
+      'Promote future Agent API execution only by replacing the deferred invocation after evaluateAgentApiExecutionPromotionReadiness reports ready with matching service evidence for every requirement and gate.',
     ],
   },
   {
