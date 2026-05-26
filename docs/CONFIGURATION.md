@@ -421,6 +421,19 @@ fresh/current trigger detection, Source Context persistence, the
 `Agent CLI 联网调研准备` Run step, and renderer progress mapping. Live source
 capture still requires the OpenAI bridge configuration above.
 
+To collect opt-in evidence for the selected native CLI's own web/search tool,
+run one manual live smoke outside the default acceptance path:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true npm run manual:agent-cli-native-web-search-smoke
+TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-native-web-search-smoke
+```
+
+The default command reports `status=skip`, `cli=not-called`,
+`network=not-called`, and `workspace=unchanged`. Treat passing output as manual
+runtime-readiness evidence only; static status probes still rely on no-start
+help, workspace metadata, and provider-owned package metadata.
+
 ## Agent CLI Real Smoke
 
 Agent CLI smoke tests are opt-in and call the user's locally installed official

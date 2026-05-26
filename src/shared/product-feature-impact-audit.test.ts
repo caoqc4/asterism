@@ -335,13 +335,16 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.evidence.join(' ')).toContain('fallback copy now uses the selected runtime native web/search readiness');
     expect(capabilities?.evidence.join(' ')).toContain('unverified native search');
+    expect(capabilities?.evidence.join(' ')).toContain('manual Agent CLI native web/search smoke');
+    expect(capabilities?.evidence.join(' ')).toContain('cli=not-called, network=not-called, and workspace=unchanged');
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
     expect(capabilities?.gaps.join(' ')).not.toContain('compact/clear readiness checks');
     expect(capabilities?.gaps.join(' ')).not.toContain('hook config semantics');
     expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('provider-owned package metadata checks');
-    expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata or opt-in live smoke evidence');
+    expect(capabilities?.nextActions.join(' ')).toContain('Record passing opt-in native web/search smoke evidence');
+    expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
     expect(workHabits?.gaps.join(' ')).toContain('connected trigger service before L2 automatic native runtime starts');
@@ -354,6 +357,8 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('smoke:agent-cli-web-research');
     expect(smoke?.evidence.join(' ')).toContain('mocked OpenAI web_search output');
     expect(smoke?.evidence.join(' ')).toContain('without external network or provider calls');
+    expect(smoke?.evidence.join(' ')).toContain('manual Agent CLI native web/search smoke');
+    expect(smoke?.evidence.join(' ')).toContain('network=not-called');
     expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
 });

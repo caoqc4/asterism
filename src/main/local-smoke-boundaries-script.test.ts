@@ -22,6 +22,7 @@ const envKeys = [
   'TASKPLANE_AGENT_CLI_NATIVE_GOAL_TIMEOUT_MS',
   'TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME',
   'TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE',
+  'TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE',
   'TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE',
@@ -552,6 +553,21 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('workspace=unchanged');
   });
 
+  it('keeps Agent CLI native web/search smoke skipped without CLI or network by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/agent-cli-native-web-search-smoke.mjs');
+
+    expect(scripts['manual:agent-cli-native-web-search-smoke']).toBe('node scripts/agent-cli-native-web-search-smoke.mjs');
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Agent CLI native web/search smoke');
+    expect(result.output).toContain('runtime=codex');
+    expect(result.output).toContain('mode=opt-in live');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('cli=not-called');
+    expect(result.output).toContain('network=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
   it('documents opt-in Codex CLI read-only live evidence without making it a default smoke requirement', () => {
     const testingDoc = fs.readFileSync(new URL('../../docs/TESTING.md', import.meta.url), 'utf8');
     const configurationDoc = fs.readFileSync(new URL('../../docs/CONFIGURATION.md', import.meta.url), 'utf8');
@@ -587,6 +603,21 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('Agent CLI read-only smoke');
     expect(result.output).toContain('runtime=invalid');
     expect(result.output).toContain('cli=invalid');
+    expect(result.output).toContain('workspace=unchanged');
+    expect(result.output).toContain('TASKPLANE_AGENT_CLI_SMOKE_RUNTIME must be codex or claude');
+  });
+
+  it('validates the Agent CLI native web/search smoke runtime before calling a CLI', () => {
+    const result = runScript('scripts/agent-cli-native-web-search-smoke.mjs', '', {
+      TASKPLANE_AGENT_CLI_SMOKE_RUNTIME: 'unknown',
+      TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE: 'true',
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.output).toContain('Agent CLI native web/search smoke');
+    expect(result.output).toContain('runtime=invalid');
+    expect(result.output).toContain('cli=invalid');
+    expect(result.output).toContain('network=not-called');
     expect(result.output).toContain('workspace=unchanged');
     expect(result.output).toContain('TASKPLANE_AGENT_CLI_SMOKE_RUNTIME must be codex or claude');
   });

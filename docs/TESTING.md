@@ -189,6 +189,20 @@ progress projection without contacting external networks:
 npm run smoke:agent-cli-web-research
 ```
 
+Native CLI web/search behavior is checked by a separate opt-in live smoke, not
+by the default test or smoke path:
+
+```bash
+npm run manual:agent-cli-native-web-search-smoke
+TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true npm run manual:agent-cli-native-web-search-smoke
+TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-native-web-search-smoke
+```
+
+The default command must report `status=skip`, `cli=not-called`,
+`network=not-called`, and `workspace=unchanged`. A passing opt-in run is manual
+evidence for exact native web/search readiness; it is intentionally separate
+from static no-start capability probes.
+
 That smoke covers the first-version Agent CLI product loop inside the packaged
 app: task-bound run creation, accepted and terminal run evidence, cancellation
 evidence, read-only workspace protection, task dynamics replay, Run Goal

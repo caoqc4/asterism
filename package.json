@@ -45,6 +45,7 @@
     "manual:browser-controlled-resume-review-fixture": "npm run build:main && node scripts/browser-controlled-resume-review-fixture.mjs",
     "manual:browser-evidence-smoke": "npm run build:main && node scripts/browser-evidence-smoke.mjs",
     "manual:agent-cli-readonly-smoke": "node scripts/agent-cli-readonly-smoke.mjs",
+    "manual:agent-cli-native-web-search-smoke": "node scripts/agent-cli-native-web-search-smoke.mjs",
     "manual:agent-cli-task-live:mac": "node scripts/manual-agent-cli-task-live-mac.mjs",
     "manual:claude-agent-cli-task-live:mac": "cross-env TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude node scripts/manual-agent-cli-task-live-mac.mjs",
     "manual:agent-cli-native-goal-discovery": "node scripts/agent-cli-native-goal-discovery.mjs",

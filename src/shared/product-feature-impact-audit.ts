@@ -439,12 +439,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
       'Agent CLI web research preparation fallback copy now uses the selected runtime native web/search readiness, so skipped bridge steps distinguish verified/runtime-dependent native search from unverified native search instead of implying a hidden fallback.',
       'Fresh external research wording such as latest/current pricing or recent release changes is now covered by the pre-run web research trigger while local current-task wording remains excluded.',
+      'A default-skipped manual Agent CLI native web/search smoke now provides an opt-in live evidence path for exact runtime search behavior while reporting cli=not-called, network=not-called, and workspace=unchanged by default.',
     ],
     gaps: [
       'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior beyond the current no-start help-output, workspace-metadata, and provider-owned package metadata checks.',
     ],
     nextActions: [
-      'Keep adding exact native search readiness probes only when providers expose stable non-executing metadata or opt-in live smoke evidence.',
+      'Record passing opt-in native web/search smoke evidence when a local Codex or Claude account is ready, and keep adding static readiness probes only when providers expose stable non-executing metadata.',
       'Keep native goal passthrough closed until command shape, progress/control evidence, and packaged smoke move from audit output into verified adapter evidence.',
     ],
   },
@@ -526,12 +527,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'The packaged Agent CLI live smoke harness now supports a default-skipped Claude Code mode through TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude, preserving the same isolated app data, temporary workspace, terminal-output, and no-workspace-change checks for future account-ready validation.',
       'Default-skipped packaged Agent CLI live smoke output now states accountReadiness=not-checked and manualEvidence=not-recorded, so skipped Codex/Claude runs cannot be mistaken for account-ready acceptance evidence.',
       'The non-live smoke:agent-cli-web-research bridge smoke locks fresh/current trigger detection, mocked OpenAI web_search output, Source Context persistence, preparation Run progress, and renderer progress mapping without external network or provider calls.',
+      'The manual Agent CLI native web/search smoke is default-skipped and reports cli=not-called, network=not-called, and workspace=unchanged unless explicitly enabled for one live native search request.',
     ],
     gaps: [
       'Claude real-account execution smoke has a manual opt-in packaged harness, but a passing run remains pending until account readiness is available.',
     ],
     nextActions: [
-      'Run and record the Claude packaged live smoke once local account credentials are available.',
+      'Run and record the Claude packaged live smoke plus the opt-in native web/search smoke once local account credentials are available.',
     ],
   },
 ];
