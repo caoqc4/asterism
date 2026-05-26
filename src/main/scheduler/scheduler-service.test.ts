@@ -1081,6 +1081,7 @@ describe('SchedulerService', () => {
       type: 'panel.scheduled_event_agent_triggered',
       payload: expect.objectContaining({
         runId: 'run_scheduled_1',
+        targetTaskId: 'task_auto',
         standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
         schedulerTriggerServiceConnected: true,
         runtimeStartAllowed: true,

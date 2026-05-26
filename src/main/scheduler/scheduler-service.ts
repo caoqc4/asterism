@@ -331,6 +331,7 @@ export class SchedulerService {
       type: 'panel.scheduled_event_agent_triggered',
       payload: {
         runId: run.id,
+        targetTaskId: task.id,
         planSummary: plan.summary,
         standingApprovalPolicyId: plan.policy?.id ?? null,
         triggerRunEvidenceRequired: plan.triggerRunEvidenceRequired,

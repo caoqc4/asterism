@@ -248,6 +248,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('启动一次');
     expect(workHabits?.evidence.join(' ')).toContain('without enabling a background scheduler job');
     expect(workHabits?.evidence.join(' ')).toContain('panel.scheduled_event_agent_triggered');
+    expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
     expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence');
     expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
@@ -258,6 +259,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
     expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by in-sweep run-limit counting');
+    expect(workHabits?.evidence.join(' ')).toContain('targetTaskId timeline evidence');
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
     expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, and a local sweep smoke');
