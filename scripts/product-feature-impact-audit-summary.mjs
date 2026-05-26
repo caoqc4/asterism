@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-product-audit-'));
 const bundledPath = path.join(tempRoot, 'product-feature-impact-audit.mjs');
+const includeNextActions = process.argv.includes('--next');
 
 function countBy(items, key) {
   return items.reduce((counts, item) => {
@@ -46,6 +47,15 @@ try {
 
   for (const item of PRODUCT_FEATURE_IMPACT_AUDIT) {
     console.log(`${item.priority} ${item.status} cli=${item.cliOnlyClosure} api=${item.futureApiClosure} ${item.id}`);
+  }
+
+  if (includeNextActions) {
+    console.log('openNextActions');
+    for (const item of PRODUCT_FEATURE_IMPACT_AUDIT.filter((candidate) => candidate.status !== 'covered')) {
+      console.log(`${item.id}`);
+      console.log(`  gap=${item.gaps[0] ?? '<none>'}`);
+      console.log(`  next=${item.nextActions[0] ?? '<none>'}`);
+    }
   }
 
   if (issues.length > 0) {

@@ -44,13 +44,13 @@ function sanitizedEnv(envFilePath: string, overrides: NodeJS.ProcessEnv = {}) {
   };
 }
 
-function runScript(scriptPath: string, envContents = '', overrides: NodeJS.ProcessEnv = {}) {
+function runScript(scriptPath: string, envContents = '', overrides: NodeJS.ProcessEnv = {}, args: string[] = []) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-local-smoke-boundary-test-'));
   const envFilePath = path.join(tempRoot, '.env');
   fs.writeFileSync(envFilePath, envContents);
 
   try {
-    const result = spawnSync(process.execPath, [scriptPath], {
+    const result = spawnSync(process.execPath, [scriptPath, ...args], {
       cwd: process.cwd(),
       encoding: 'utf8',
       env: sanitizedEnv(envFilePath, overrides),
@@ -486,11 +486,13 @@ describe('local smoke script default boundaries', () => {
     const scripts = readPackageScripts();
     const script = fs.readFileSync(path.join(process.cwd(), 'scripts/product-feature-impact-audit-summary.mjs'), 'utf8');
     const result = runScript('scripts/product-feature-impact-audit-summary.mjs');
+    const nextResult = runScript('scripts/product-feature-impact-audit-summary.mjs', '', {}, ['--next']);
 
     expect(scripts['audit:product-progress']).toBe('node scripts/product-feature-impact-audit-summary.mjs');
     expect(script).toContain('src/shared/product-feature-impact-audit.ts');
     expect(script).toContain('findProductFeatureImpactAuditIssues');
     expect(script).toContain('Taskplane product feature impact audit');
+    expect(script).toContain('process.argv.includes');
     expect(script).not.toContain('better-sqlite3');
     expect(script).not.toContain('keytar');
     expect(script).not.toContain('OpenAI');
@@ -502,6 +504,14 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('right_panel_agent_run');
     expect(result.output).toContain('smoke_tests_runtime_readiness_recovery');
     expect(result.output).not.toContain('issues');
+    expect(result.output).not.toContain('openNextActions');
+    expect(nextResult.status).toBe(0);
+    const openNextActions = nextResult.output.split('openNextActions')[1] ?? '';
+    expect(nextResult.output).toContain('openNextActions');
+    expect(openNextActions).toContain('right_panel_agent_run');
+    expect(openNextActions).toContain('gap=');
+    expect(openNextActions).toContain('next=');
+    expect(openNextActions).not.toContain('subtask_start_and_task_switch');
   });
 
   it('keeps sandbox producer preview smoke skipped without Docker or AI by default', () => {
