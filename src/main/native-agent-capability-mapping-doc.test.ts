@@ -35,6 +35,8 @@ describe('Native Agent Capability Mapping spec', () => {
     expect(spec).toContain('If the answer can be discovered, research or inspect instead of asking.');
     expect(spec).toContain('adapter-level native capability declarations surfaced before execution');
     expect(spec).toContain('minimum pre-run contract');
+    expect(spec).toContain('provider-owned');
+    expect(spec).toContain('package.json');
     expect(spec).toContain('.codex/config.*');
     expect(spec).toContain('explicit web/search tool declarations');
     expect(spec).toContain('placeholder-only files');

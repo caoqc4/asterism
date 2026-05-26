@@ -261,6 +261,11 @@ claiming a native capability. Current probes combine top-level and execution
 help output so Codex `--search` / `resume` and Claude hook events, agents,
 plan permission mode, resume, and native memory-loading hints are visible in
 runtime status without starting an execution run.
+Installed CLI packages may also contribute explicit provider-owned
+`package.json` capability metadata when the executable resolves inside a
+matching Codex/OpenAI or Claude/Anthropic package. Only explicit structured
+capability/tool declarations are considered; package descriptions and arbitrary
+wrapper packages do not grant readiness.
 Workspace-local checks may also inspect only known lightweight project files or
 directories such as `AGENTS.md`, `CLAUDE.md`, `.claude/settings*.json`, and
 `.claude/agents/`. The same no-start metadata probe may read `.codex/config.*`

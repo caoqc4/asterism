@@ -126,6 +126,7 @@ export async function probeAgentCliCommand(command: string, runtimeId: AgentCliR
   const capabilityProbePromise = Promise.all(
     nativeCapabilityProbeArgs(runtimeId).map((args) => runProbe(executable, args)),
   );
+  const packagedMetadataSignals = detectPackagedCliCapabilitySignals(executable, runtimeId);
   const [versionProbe, authProbe, capabilityProbe] = await Promise.all([
     runProbe(executable, ['--version']),
     authProbePromise,
@@ -147,13 +148,16 @@ export async function probeAgentCliCommand(command: string, runtimeId: AgentCliR
   return {
     authReason: authStatus?.reason ?? null,
     authState: authStatus?.state,
-    capabilitySignals: capabilityProbe.some((probe) => probe.exitCode === 0)
-      ? parseAgentCliCapabilitySignals(
+    capabilitySignals: mergeAgentCliCapabilitySignals(
+      capabilityProbe.some((probe) => probe.exitCode === 0)
+        ? parseAgentCliCapabilitySignals(
           runtimeId,
           capabilityProbe.map((probe) => probe.stdout).join('\n'),
           capabilityProbe.map((probe) => probe.stderr).join('\n'),
         )
-      : null,
+        : null,
+      packagedMetadataSignals,
+    ),
     executablePath,
     installed: true,
     version: versionProbe.exitCode === 0
@@ -237,6 +241,27 @@ export function detectWorkspaceCapabilitySignals(
   }
 
   return null;
+}
+
+export function detectPackagedCliCapabilitySignals(
+  executablePath: string | null | undefined,
+  runtimeId: AgentCliRuntimeId,
+): AgentCliRuntimeCapabilityProbeSignals | null {
+  if (!executablePath?.trim()) return null;
+
+  const packageJsonPath = findProviderOwnedPackageJson(executablePath, runtimeId);
+  if (!packageJsonPath) return null;
+
+  try {
+    const raw = fs.readFileSync(packageJsonPath, 'utf8');
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isProviderOwnedCliPackage(parsed, runtimeId)) return null;
+    return compactSignals({
+      webSearch: packageMetadataDeclaresWebSearch(parsed),
+    });
+  } catch {
+    return null;
+  }
 }
 
 export function mergeAgentCliCapabilitySignals(
@@ -345,6 +370,56 @@ function detectCodexMetadataSignals(workspaceRoot: string): AgentCliRuntimeCapab
   }, {});
 }
 
+function findProviderOwnedPackageJson(
+  executablePath: string,
+  runtimeId: AgentCliRuntimeId,
+): string | null {
+  let current: string;
+  try {
+    current = path.dirname(fs.realpathSync(executablePath));
+  } catch {
+    current = path.dirname(executablePath);
+  }
+
+  for (let depth = 0; depth < 8; depth += 1) {
+    const packageJsonPath = path.join(current, 'package.json');
+    try {
+      const parsed = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as unknown;
+      if (isProviderOwnedCliPackage(parsed, runtimeId)) return packageJsonPath;
+    } catch {
+      // Keep walking; package metadata probes are optional and best-effort.
+    }
+
+    const next = path.dirname(current);
+    if (next === current) break;
+    current = next;
+  }
+
+  return null;
+}
+
+function isProviderOwnedCliPackage(value: unknown, runtimeId: AgentCliRuntimeId): boolean {
+  if (!isRecord(value) || typeof value.name !== 'string') return false;
+  const name = value.name.toLowerCase();
+  return runtimeId === 'codex'
+    ? /\b(openai|codex)\b/.test(name)
+    : /\b(anthropic|claude)\b/.test(name);
+}
+
+function packageMetadataDeclaresWebSearch(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return [
+    value.taskplane,
+    value.capabilities,
+    value.nativeCapabilities,
+    value.features,
+    value.tools,
+    value.permissions,
+    value.cli,
+    value.config,
+  ].some(containsNativeWebSearchSignal);
+}
+
 function codexMetadataDeclaresWebSearch(raw: string): boolean {
   if (!raw.trim()) return false;
   try {
@@ -404,6 +479,10 @@ function containsNativeWebSearchSignal(value: unknown): boolean {
     ));
   }
   return false;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function installedRuntimeMissingReason(

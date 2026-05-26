@@ -9,6 +9,7 @@ import type { AgentCliRuntimeId } from '../../../shared/agent-cli-runtime-status
 import {
   AGENT_CLI_RUNTIME_FIXTURE_ENV,
   AgentCliRuntimeStatusService,
+  detectPackagedCliCapabilitySignals,
   detectWorkspaceCapabilitySignals,
   executableProbeFailureReason,
   mergeAgentCliCapabilitySignals,
@@ -295,6 +296,49 @@ describe('agent cli runtime status service', () => {
           },
         },
       });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('detects explicit provider-owned package metadata without executing the CLI', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-package-signals-'));
+
+    try {
+      const packageRoot = path.join(tempRoot, 'node_modules', '@openai', 'codex');
+      fs.mkdirSync(path.join(packageRoot, 'bin'), { recursive: true });
+      fs.writeFileSync(path.join(packageRoot, 'bin', 'codex.js'), '#!/usr/bin/env node\n');
+      fs.writeFileSync(path.join(packageRoot, 'package.json'), JSON.stringify({
+        name: '@openai/codex',
+        taskplane: {
+          nativeCapabilities: {
+            web_search: true,
+          },
+        },
+      }));
+
+      expect(detectPackagedCliCapabilitySignals(path.join(packageRoot, 'bin', 'codex.js'), 'codex')).toMatchObject({
+        webSearch: true,
+      });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores non-provider package metadata even when it mentions search tools', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-agent-cli-package-ignore-'));
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, 'bin'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, 'bin', 'codex.js'), '#!/usr/bin/env node\n');
+      fs.writeFileSync(path.join(tempRoot, 'package.json'), JSON.stringify({
+        name: 'local-wrapper',
+        capabilities: {
+          web_search: true,
+        },
+      }));
+
+      expect(detectPackagedCliCapabilitySignals(path.join(tempRoot, 'bin', 'codex.js'), 'codex')).toBeNull();
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

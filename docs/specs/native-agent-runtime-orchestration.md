@@ -258,6 +258,11 @@ Taskplane currently has a working native CLI execution backend:
   requires usable `.claude/agents/*.md` content with a heading or metadata, so
   empty files and placeholder-only files do not count as readiness. These checks
   do not execute the runtime and do not grant write permissions.
+- The status probe can also read explicit provider-owned CLI `package.json`
+  capability metadata when the executable resolves inside a matching
+  Codex/OpenAI or Claude/Anthropic package. Only structured capability/tool
+  declarations count; arbitrary wrappers or descriptive package text do not
+  promote native web/search readiness.
 - The Run Goal Contract and Agent CLI context bridge pass those selected-runtime
   capability declarations into native CLI prompts before execution, so the
   runtime sees the same capability boundary shown in Taskplane UI.

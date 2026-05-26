@@ -78,6 +78,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('adapter capability support');
     expect(content).toContain('.codex/config.*');
     expect(content).toContain('web/search tool declarations');
+    expect(content).toContain('provider-owned CLI `package.json`');
+    expect(content).toContain('arbitrary wrappers');
     expect(content).toContain('hook commands or hook entries');
     expect(content).toContain('usable `.claude/agents/*.md` content');
     expect(content).toContain('placeholder-only files do');
