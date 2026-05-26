@@ -9,8 +9,10 @@ import {
   buildProductHarnessDecisionDraftInvocation,
   buildProductHarnessMemoryProposalInvocation,
   buildProductHarnessVerificationAssistInvocation,
+  evaluateAgentApiDecompositionPromotionReadiness,
   evaluateAgentApiExecutionPromotionReadiness,
 } from './ai-runtime-invocation.js';
+import { buildSubtaskCreateManyWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
 
 describe('ai runtime invocation contract', () => {
   it('wraps local task type review in the same invocation shape future runtimes can return', () => {
@@ -67,6 +69,49 @@ describe('ai runtime invocation contract', () => {
     });
     expect(invocation.draft.subtasks).toHaveLength(1);
     expect(invocation.summary).toContain('1 个项目子任务草稿');
+  });
+
+  it('promotes Agent API decomposition only through a reversible proposal card and create-many apply plan', () => {
+    const blocked = evaluateAgentApiDecompositionPromotionReadiness({
+      applyPlan: null,
+      reversibleProposalCardReady: false,
+    });
+
+    expect(blocked).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'reversible_proposal_card',
+        'subtask_create_many_apply_plan',
+        'agent_api_decomposition_source',
+        'operator_confirmation_boundary',
+        'draft_only_timeline_evidence',
+      ],
+    });
+    expect(blocked.summary).toContain('ready=no');
+
+    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [{
+        acceptanceCriteria: '范围文档可验收',
+        dependency: null,
+        summary: '确认范围',
+        title: '需求与范围确认',
+      }],
+    });
+    const ready = evaluateAgentApiDecompositionPromotionReadiness({
+      applyPlan,
+      reversibleProposalCardReady: true,
+    });
+
+    expect(ready).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+    });
+    expect(ready.summary).toContain('proposalCard=ready');
+    expect(ready.summary).toContain('applyPlan=subtask.create_many');
+    expect(ready.summary).toContain('source=agent_api_decomposition');
+    expect(ready.summary).toContain('missing=none');
   });
 
   it('wraps decision drafts with API-runtime provenance', () => {

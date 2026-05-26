@@ -4,6 +4,7 @@ import type { DecisionDraftRecord } from './types/decision.js';
 import type { PilotDecisionSnapshot } from './pilot-decision-contract.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
+import type { TaskplaneSubtaskWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
 import {
   RUNTIME_ENTRYPOINT_COVERAGE,
   requiredRuntimeEntrypointGatesForKind,
@@ -66,6 +67,18 @@ export type DecompositionDraftInvocationResult = RuntimeInvocationBase & {
   phase: 'decomposition_draft';
   layer: 'selected_runtime' | 'api_runtime';
   draft: ProjectDecompositionResult;
+};
+
+export type AgentApiDecompositionPromotionReadiness = {
+  ready: boolean;
+  missingRequirements: Array<
+    | 'reversible_proposal_card'
+    | 'subtask_create_many_apply_plan'
+    | 'agent_api_decomposition_source'
+    | 'operator_confirmation_boundary'
+    | 'draft_only_timeline_evidence'
+  >;
+  summary: string;
 };
 
 export type DecisionDraftInvocationResult = RuntimeInvocationBase & {
@@ -156,6 +169,49 @@ export function buildApiRuntimeDecompositionDraftInvocation(params: {
     status: 'completed',
     summary: params.summary ?? `已生成 ${params.draft.subtasks.length} 个项目子任务草稿。`,
     draft: params.draft,
+  };
+}
+
+export function evaluateAgentApiDecompositionPromotionReadiness(params: {
+  applyPlan?: TaskplaneSubtaskWritebackApplyPlan | null;
+  reversibleProposalCardReady?: boolean;
+}): AgentApiDecompositionPromotionReadiness {
+  const missingRequirements: AgentApiDecompositionPromotionReadiness['missingRequirements'] = [];
+  const applyPlan = params.applyPlan ?? null;
+
+  if (!params.reversibleProposalCardReady) {
+    missingRequirements.push('reversible_proposal_card');
+  }
+
+  if (applyPlan?.action !== 'subtask.create_many') {
+    missingRequirements.push('subtask_create_many_apply_plan');
+  }
+
+  if (applyPlan?.input.source !== 'agent_api_decomposition') {
+    missingRequirements.push('agent_api_decomposition_source');
+  }
+
+  if (applyPlan?.timeline.payload.confirmationBoundary !== 'operator_confirmed_subtask_create_many') {
+    missingRequirements.push('operator_confirmation_boundary');
+  }
+
+  if (applyPlan?.timeline.payload.draftOnlyBeforeConfirmation !== true) {
+    missingRequirements.push('draft_only_timeline_evidence');
+  }
+
+  const ready = missingRequirements.length === 0;
+
+  return {
+    ready,
+    missingRequirements,
+    summary: [
+      'Agent API decomposition promotion readiness',
+      `ready=${ready ? 'yes' : 'no'}`,
+      `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
+      `applyPlan=${applyPlan?.action ?? 'missing'}`,
+      `source=${applyPlan?.input.source ?? 'missing'}`,
+      `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+    ].join(' / '),
   };
 }
 
