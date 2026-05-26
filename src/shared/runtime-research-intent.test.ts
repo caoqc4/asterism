@@ -37,12 +37,15 @@ describe('evaluateRuntimeResearchIntent', () => {
     expect(evaluateRuntimeResearchIntent('比较 2026 年最新模型定价。').shouldUseExternalResearch).toBe(true);
     expect(evaluateRuntimeResearchIntent('确认目前 API 价格和限制。').shouldUseExternalResearch).toBe(true);
     expect(evaluateRuntimeResearchIntent('查看现在的官方文档状态。').shouldUseExternalResearch).toBe(true);
+    expect(evaluateRuntimeResearchIntent('结合本地实现，确认目前 OpenAI API 限制。').shouldUseExternalResearch).toBe(true);
+    expect(evaluateRuntimeResearchIntent('Check the current OpenAI API rate limits before changing the integration.').shouldUseExternalResearch).toBe(true);
   });
 
   it('does not treat current task wording as fresh external research', () => {
     expect(evaluateRuntimeResearchIntent('Continue the current task and summarize the next step.').shouldUseExternalResearch).toBe(false);
     expect(evaluateRuntimeResearchIntent('Review the current API implementation in this repo.').shouldUseExternalResearch).toBe(false);
     expect(evaluateRuntimeResearchIntent('检查当前任务下一步。').shouldUseExternalResearch).toBe(false);
+    expect(evaluateRuntimeResearchIntent('分析现在本地实现状态。').shouldUseExternalResearch).toBe(false);
   });
 
   it('does not treat local docs folders as external documentation research', () => {
