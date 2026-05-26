@@ -197,6 +197,46 @@ describe('evaluateRuntimeContextReadiness', () => {
     });
   });
 
+  it('does not trust future-dated source context as fresh evidence', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      now: '2026-05-26T00:00:00.000Z',
+      prompt: '确认当前模型价格。',
+      task: buildReadinessTask({
+        nextStep: '确认当前模型价格。',
+        sourceContexts: [{
+          archivedAt: null,
+          batchId: null,
+          capturedAt: '2026-06-01T00:00:00.000Z',
+          containsSensitiveData: false,
+          content: 'Future-dated pricing summary.',
+          createdAt: '2026-06-01T00:00:00.000Z',
+          credibility: 'verified',
+          id: 'source_future_pricing',
+          isDuplicate: false,
+          isKey: true,
+          kind: 'note',
+          note: null,
+          sourceRole: 'digest',
+          status: 'active',
+          taskId: 'task_1',
+          title: 'Future-dated pricing summary',
+          updatedAt: '2026-06-01T00:00:00.000Z',
+          uri: null,
+        }],
+        summary: '需要整理模型价格。',
+        title: '确认当前模型价格',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      decision: 'self_research',
+      movement: 'research',
+      recommendedMode: 'native_research',
+      shouldSelfResearch: true,
+    });
+    expect(evaluation.missing).toContain('fresh_source_evidence');
+  });
+
   it('uses plan-first for code or repository changes that need verification planning', () => {
     const evaluation = evaluateRuntimeContextReadiness({
       prompt: '实现前后端 API 接入并跑测试。',
