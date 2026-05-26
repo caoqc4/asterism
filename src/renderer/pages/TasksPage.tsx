@@ -1665,10 +1665,18 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const selectedPatchPromotionView = selectedFile?.artifactId
     ? patchPromotionViewsByArtifactId.get(selectedFile.artifactId) ?? null
     : null;
+  const selectedPatchPromotionApplyFlagGuidance = isPatchArtifactFile(selectedFile)
+    && selectedPatchPromotionView?.tone === 'ready'
+    && selectedPatchPromotionView.decisionStatus === 'approved'
+    && selectedPatchPromotionView.promotionStatus === 'pending'
+    && !sandboxPatchPromotionApplyEnabled
+      ? 'Apply flag 当前关闭；这次审批仍是 no-write 状态。开启 apply flag 后仍需重新复核 Run 证据，并通过显式应用动作触发 promotion preflight。'
+      : null;
   const selectedPatchReviewMessage = selectedFile?.artifactId
     ? [
         patchReviewPreviewMessages[selectedFile.artifactId] ?? null,
         selectedPatchPromotionView ? formatSandboxPatchPromotionNotice(selectedPatchPromotionView) : null,
+        selectedPatchPromotionApplyFlagGuidance,
       ].filter(Boolean).join(' ')
       || null
     : null;

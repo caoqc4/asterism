@@ -6226,6 +6226,10 @@ describe('App redesign v1', () => {
     expect(noticeElement?.className).toContain('ready');
     expect(noticeElement?.className).not.toContain('completed');
     expect(notice.textContent).toContain('工作区仍未应用');
+    expect(notice.textContent).toContain('Apply flag 当前关闭');
+    expect(notice.textContent).toContain('no-write 状态');
+    expect(notice.textContent).toContain('重新复核 Run 证据');
+    expect(screen.queryByRole('button', { name: '应用到工作区' })).toBeNull();
   });
 
   it('applies approved reviewed patch promotions from the task file notice when the apply flag is enabled', async () => {
