@@ -167,7 +167,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('reviewed patch promotion apply smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('workspace-drift blocked recovery evidence');
     expect(rightPanel?.gaps.join(' ')).not.toContain('broader recovery copy is still needed');
-    expect(rightPanel?.gaps.join(' ')).toContain('explicit apply feedback');
+    expect(rightPanel?.cliOnlyClosure).toBe('supported');
+    expect(rightPanel?.gaps.join(' ')).toContain('Future Agent API execution remains deferred');
+    expect(rightPanel?.gaps.join(' ')).toContain('reviewed-patch apply already owns the operator-facing workspace mutation boundary');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');
@@ -287,12 +289,13 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
     expect(taskFiles?.evidence.join(' ')).toContain('Terminal Run verification now carries same-run artifacts and checkpoints');
     expect(taskFiles?.evidence.join(' ')).toContain('can satisfy workspace_write promotion evidence');
-    expect(taskFiles?.gaps.join(' ')).toContain('disabled by default');
-    expect(taskFiles?.gaps.join(' ')).toContain('write-boundary guidance');
+    expect(taskFiles?.cliOnlyClosure).toBe('supported');
+    expect(taskFiles?.gaps.join(' ')).toContain('Future API/runtime-generated patch promotion');
+    expect(taskFiles?.gaps.join(' ')).toContain('reviewed-patch apply workflow');
     expect(taskFiles?.gaps.join(' ')).not.toContain('post-apply verification copy');
     expect(taskFiles?.gaps.join(' ')).not.toContain('blocked preflight recovery copy');
     expect(taskFiles?.gaps.join(' ')).not.toContain('packaged smoke and recovery UX');
-    expect(taskFiles?.nextActions.join(' ')).toContain('disabled by default');
+    expect(taskFiles?.nextActions.join(' ')).toContain('product-controlled mutation path');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need an apply implementation');
     expect(rightPanel?.gaps.join(' ')).not.toContain('fully normal operator-facing apply workflow');
     expect(rightPanel?.gaps.join(' ')).not.toContain('post-apply status projection');

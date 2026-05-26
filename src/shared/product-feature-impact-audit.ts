@@ -110,7 +110,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'post_step',
       'operator_confirmation',
     ],
-    cliOnlyClosure: 'partial',
+    cliOnlyClosure: 'supported',
     futureApiClosure: 'partial',
     evidence: [
       'Agent CLI runs return runtime evidence and compact progress projection.',
@@ -155,10 +155,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'The packaged task-files smoke now seeds approved reviewed-patch promotions, enables the apply flag in a temporary workspace, drives both applied and blocked Tasks UI apply actions, and verifies workspace file content plus applied/blocked run evidence.',
     ],
     gaps: [
-      'Write-enabled native runtime modes remain intentionally feature-flagged; workspace mutation should stay outside the common happy path until explicit apply feedback proves the boundary is obvious.',
+      'Future Agent API execution remains deferred; native CLI workspace-write mode stays separate from the common run path because reviewed-patch apply already owns the operator-facing workspace mutation boundary.',
     ],
     nextActions: [
-      'Keep future workspace-write promotion on patch artifacts, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review evidence surfaces before product-controlled persistence.',
+      'Promote future Agent API execution only through the same context-readiness, Write Intent, reviewed-patch apply, and Run evidence contract used by the CLI path.',
     ],
   },
   {
@@ -357,7 +357,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'post_step',
       'operator_confirmation',
     ],
-    cliOnlyClosure: 'partial',
+    cliOnlyClosure: 'supported',
     futureApiClosure: 'partial',
     evidence: [
       'Sandboxed coding and patch promotion keep local writes behind review or confirmation boundaries.',
@@ -385,10 +385,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Terminal Run verification now carries same-run artifacts and checkpoints into post-step self-checks when repository evidence is available, so run-backed patch artifacts and patch-promotion checkpoints can satisfy workspace_write promotion evidence instead of being invisible to terminal verification.',
     ],
     gaps: [
-      'Workspace-write promotion remains intentionally Decision-gated and disabled by default; the explicit apply action should stay outside the normal happy path until write-boundary guidance is obvious across UI surfaces.',
+      'Future API/runtime-generated patch promotion still needs to reuse the reviewed-patch apply workflow; direct workspace-write runtime modes remain intentionally separate from the common run path.',
     ],
     nextActions: [
-      'Keep explicit apply disabled by default while gathering more packaged and manual operator feedback.',
+      'Keep explicit apply as the product-controlled mutation path and route future runtime writes into patch artifacts, promotion Decisions, promotion preflight, and post-apply Run evidence.',
     ],
   },
   {
