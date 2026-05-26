@@ -442,6 +442,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Work habits are selected as applicable context and stay behind confirmation flows.',
       'Scheduled briefs use product-harness fallback when provider execution is unavailable.',
       'RuntimeEntrypointCoverage now classifies scheduler stale-run recovery as scheduler_maintenance behind the scheduler feature flag, with post-step Run evidence and no Agent CLI/API startup.',
+      'RuntimeEntrypointCoverage now registers automation readiness as a diagnostic-only entrypoint with runtime-context assembly but no runtime_action/pre_step/post_step execution gates.',
       'AgentAutomationReadiness now keeps scheduled, event-triggered, and routine tasks diagnostic-only for automatic starts until a separate scheduled/event execution entrypoint exists, even when procedure, inputs, runtime, risk, and completion criteria are ready.',
       'Read-only orchestration diagnostics now expose the automatic-start boundary, distinguishing manual/operator-started readiness from scheduled/event tasks that require a separate execution entrypoint.',
     ],

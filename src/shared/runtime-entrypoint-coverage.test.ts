@@ -240,6 +240,28 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('terminal Run evidence');
   });
 
+  it('registers automation readiness as diagnostic-only rather than runtime execution', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('automation_diagnostic')).toEqual([
+      'simplicity_check',
+      'runtime_context_assembly',
+    ]);
+
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'automation.readinessDiagnostic');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('automation_diagnostic');
+    expect(entry?.requiredGates).toEqual([
+      'simplicity_check',
+      'runtime_context_assembly',
+    ]);
+    expect(entry?.requiredGates).not.toContain('runtime_action');
+    expect(entry?.requiredGates).not.toContain('pre_step');
+    expect(entry?.requiredGates).not.toContain('post_step');
+    expect(entry?.notes).toContain('automaticStartAllowed remains false');
+    expect(entry?.notes).toContain('separate_scheduled_event_entrypoint_required');
+    expect(entry?.notes).toContain('cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint');
+  });
+
   it('registers phase closeout as a handoff boundary without equating it to completion', () => {
     expect(requiredRuntimeEntrypointGatesForKind('phase_closeout_handoff')).toEqual([
       'simplicity_check',
@@ -512,6 +534,7 @@ describe('runtime entrypoint coverage', () => {
       'agent.toolDurableWrites',
       'ai.taskChat',
       'artifact.runSandboxPatchReview',
+      'automation.readinessDiagnostic',
       'brief.scheduledSnapshot',
       'context.refreshOrLeave',
       'context.taskSwitch',

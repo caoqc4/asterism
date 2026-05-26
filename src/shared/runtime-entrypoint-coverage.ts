@@ -16,6 +16,7 @@ export type RuntimeEntrypointKind =
   | 'decision_draft'
   | 'decision_write'
   | 'decision_action'
+  | 'automation_diagnostic'
   | 'task_capture'
   | 'task_type_review'
   | 'task_state_transition'
@@ -177,6 +178,10 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'pre_step',
     'post_step',
   ],
+  automation_diagnostic: [
+    'simplicity_check',
+    'runtime_context_assembly',
+  ],
   task_capture: [
     'simplicity_check',
     'runtime_action',
@@ -277,6 +282,21 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'post_step',
     ],
     notes: 'This is product-harness maintenance behind the scheduler feature flag: it does not start an Agent CLI/API runtime, does not assemble provider-visible context, and writes terminal Run evidence only for already-incomplete Runs that exceed the recovery window.',
+  },
+  {
+    id: 'automation.readinessDiagnostic',
+    owner: 'AgentAutomationReadiness.evaluate',
+    kind: 'automation_diagnostic',
+    description: 'Read-only automation readiness diagnostic for manual/operator-started tasks and scheduled/event/routine task classes.',
+    requiredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+    ],
+    notes: 'This diagnostic scores procedure, inputs, selected-runtime readiness, risk, blockers, dependencies, and completion criteria, but automaticStartAllowed remains false. Scheduled, event-triggered, and routine tasks are labeled separate_scheduled_event_entrypoint_required and cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint.',
   },
   {
     id: 'run.trigger',
