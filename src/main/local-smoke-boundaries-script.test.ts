@@ -526,7 +526,7 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('cliOnlyClosure ');
     expect(result.output).toContain('futureApiClosure ');
     expect(result.output).toContain(
-      'focus p0CliPartial=capabilities_external_skills_mcp',
+      'focus p0CliPartial=<none>',
     );
     expect(result.output).toContain('right_panel_agent_run');
     expect(result.output).toContain('smoke_tests_runtime_readiness_recovery');

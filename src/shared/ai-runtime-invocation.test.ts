@@ -235,6 +235,7 @@ describe('ai runtime invocation contract', () => {
     expect(invocation.summary).toContain('writeback harness gates');
     expect(invocation.deferredReason).toContain('Agent API Runtime task execution remains deferred');
     expect(invocation.promotionRequirements).toEqual([
+      'provider_visible_preflight',
       'runtime_context_manifest',
       'context_readiness_step',
       'task_memory_guidance',
@@ -270,6 +271,7 @@ describe('ai runtime invocation contract', () => {
         'runtime_context_assembly',
       ],
       satisfiedRequirements: [
+        'provider_visible_preflight',
         'runtime_context_manifest',
         'context_readiness_step',
       ],
@@ -278,6 +280,7 @@ describe('ai runtime invocation contract', () => {
     expect(blocked).toMatchObject({
       ready: false,
       satisfiedRequirements: [
+        'provider_visible_preflight',
         'runtime_context_manifest',
         'context_readiness_step',
       ],
@@ -299,7 +302,7 @@ describe('ai runtime invocation contract', () => {
       ]),
     });
     expect(blocked.summary).toContain('ready=no');
-    expect(blocked.summary).toContain('requirements=2/8');
+    expect(blocked.summary).toContain('requirements=3/9');
     expect(blocked.summary).toContain('gates=3/9');
 
     const ready = evaluateAgentApiExecutionPromotionReadiness({
@@ -315,6 +318,7 @@ describe('ai runtime invocation contract', () => {
         'post_step',
       ],
       satisfiedRequirements: [
+        'provider_visible_preflight',
         'runtime_context_manifest',
         'context_readiness_step',
         'task_memory_guidance',

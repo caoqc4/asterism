@@ -103,6 +103,7 @@ export type ExecutionRunInvocationResult = RuntimeInvocationBase & {
 };
 
 export type AgentApiExecutionPromotionRequirement =
+  | 'provider_visible_preflight'
   | 'runtime_context_manifest'
   | 'context_readiness_step'
   | 'task_memory_guidance'
@@ -300,6 +301,7 @@ export function buildDeferredAgentApiExecutionRunInvocation(params: {
 
 export function agentApiExecutionPromotionRequirements(): AgentApiExecutionPromotionRequirement[] {
   return [
+    'provider_visible_preflight',
     'runtime_context_manifest',
     'context_readiness_step',
     'task_memory_guidance',

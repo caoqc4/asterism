@@ -155,6 +155,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('future provider-visible execution required gates');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step');
     expect(rightPanel?.evidence.join(' ')).toContain('structured promotion requirements');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider-visible preflight');
     expect(rightPanel?.evidence.join(' ')).toContain('Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary');
     expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness');
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
@@ -392,10 +393,12 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('provider-owned package metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('auth-gated no-start help-output');
-    expect(capabilities?.gaps.join(' ')).toContain('non-Codex provider compatibility evidence is optional');
+    expect(capabilities?.gaps.join(' ')).toContain('no longer blocks the Codex-verified CLI-first capability path');
     expect(capabilities?.nextActions.join(' ')).toContain('opportunistically when local account support is available');
-    expect(capabilities?.nextActions.join(' ')).toContain('not as a mainline blocker');
+    expect(capabilities?.nextActions.join(' ')).toContain('not as a CLI-first blocker');
     expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
+    expect(capabilities?.cliOnlyClosure).toBe('supported');
+    expect(capabilities?.futureApiClosure).toBe('partial');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
     expect(workHabits?.gaps.join(' ')).not.toContain('connected trigger service before L2 automatic native runtime starts');

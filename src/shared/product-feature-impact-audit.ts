@@ -143,7 +143,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate before model-producer execution, including blocked early exits.',
       'Shared AI Runtime invocation contract now includes an explicit skipped execution_run shape for deferred Agent API task execution, and Agent API capability diagnostics now label execution_run as deferred so API Runtime can be represented without silently starting provider-visible work.',
       'Deferred Agent API execution_run invocations now carry the future provider-visible execution required gates, including runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step, as structured metadata rather than text-only rationale.',
-      'Deferred Agent API execution_run invocations now also carry structured promotion requirements for runtime context manifest, context readiness, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, post-step verification, and Run evidence persistence.',
+      'Deferred Agent API execution_run invocations now also carry structured promotion requirements for provider-visible preflight, runtime context manifest, context readiness, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, post-step verification, and Run evidence persistence.',
       'evaluateAgentApiExecutionPromotionReadiness now keeps Agent API execution promotion closed until every structured requirement and future provider-visible execution gate has matching service evidence.',
       'Agent API capability registry diagnostics now derive deferred execution_run key gates from the future provider-visible execution contract, so settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries without parsing invocation text.',
       'The opt-in Agent API execution preflight smoke verifies provider-visible text-call readiness through the shared provider mapping while defaulting to provider=not-called, executionRun=deferred, and workspace=unchanged.',
@@ -420,7 +420,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'product_config_boundary',
       'operator_confirmation',
     ],
-    cliOnlyClosure: 'partial',
+    cliOnlyClosure: 'supported',
     futureApiClosure: 'partial',
     evidence: [
       'CapabilityRegistry keeps optional tools hidden until runtime gates expose model-visible tools.',
@@ -452,10 +452,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-26 with auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed; the smoke records that --search is a top-level Codex option before exec.',
     ],
     gaps: [
-      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, and one Codex opt-in live smoke pass; non-Codex provider compatibility evidence is optional and must not block the Codex-verified CLI-first path.',
+      'Future API and optional non-Codex provider compatibility still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, and one Codex opt-in live smoke pass; this no longer blocks the Codex-verified CLI-first capability path.',
     ],
     nextActions: [
-      'Keep adding static readiness probes only when providers expose stable non-executing metadata; record non-Codex provider live smoke opportunistically when local account support is available, not as a mainline blocker.',
+      'Keep adding static readiness probes only when providers expose stable non-executing metadata; record non-Codex provider live smoke opportunistically when local account support is available, not as a CLI-first blocker.',
       'Keep native goal passthrough closed until command shape, progress/control evidence, and packaged smoke move from audit output into verified adapter evidence.',
     ],
   },
