@@ -338,6 +338,8 @@ matures as a peer runtime. These commands are useful when maintaining that
 runtime boundary, but they are not the first-run Agent CLI validation path:
 
 ```bash
+npm run manual:agent-api-execution-preflight-smoke
+TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE=true npm run manual:agent-api-execution-preflight-smoke
 npm run accept:agent-local
 npm run accept:sandbox-coding
 npm run accept:sandbox-coding:code-agent-ui
@@ -347,6 +349,18 @@ npm run accept:sandbox-coding:model-producer-preflight
 The default preflight and smoke paths do not call external providers, start
 Docker checks, or mutate a selected workspace unless their explicit environment
 gates are enabled.
+
+The Agent API execution preflight is deliberately narrower than a full task
+run: default output must include `status=skip`, `provider=not-called`,
+`executionRun=deferred`, and `workspace=unchanged`. A passing opt-in run proves
+that the configured provider can answer one Taskplane Agent API Runtime text
+request, while full provider-visible task `execution_run` remains deferred
+behind the shared context-readiness, Run Goal Contract, Write Intent,
+verification, and evidence-persistence gates.
+
+On 2026-05-26, local `fal-openrouter / google/gemini-2.5-flash` passed this
+opt-in preflight with `provider=called`, `phrase=matched`,
+`workspace=unchanged`, and `status=passed`.
 
 Provider-spending checks are intentionally opt-in:
 

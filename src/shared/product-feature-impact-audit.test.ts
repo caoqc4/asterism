@@ -158,6 +158,11 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries');
+    expect(rightPanel?.evidence.join(' ')).toContain('Agent API execution preflight smoke');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider-visible text-call readiness');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider=not-called, executionRun=deferred, and workspace=unchanged');
+    expect(rightPanel?.evidence.join(' ')).toContain('fal-openrouter / google/gemini-2.5-flash');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider=called, phrase=matched, workspace=unchanged, and status=passed');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('configured workspace for native guidance');
     expect(capabilities?.evidence.join(' ')).toContain('native web/search readiness counts');

@@ -397,6 +397,26 @@ as failed.
 The Agent API Runtime remains a separate future invocation path. Current
 Taskplane execution work prioritizes the native Agent CLI path.
 
+To verify the future Agent API Runtime's provider-visible text-call readiness
+without promoting task execution, run the opt-in preflight smoke:
+
+```bash
+npm run manual:agent-api-execution-preflight-smoke
+TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE=true npm run manual:agent-api-execution-preflight-smoke
+```
+
+The default command reports `status=skip`, `provider=not-called`,
+`executionRun=deferred`, and `workspace=unchanged`. When explicitly enabled and
+provider config is complete, it sends one minimal text request through the same
+provider mapping used by the API text path and checks that a disposable
+workspace remains unchanged. Passing output is Agent API provider-readiness
+evidence only; full task `execution_run` remains deferred until the runtime
+satisfies the shared Taskplane harness gates.
+
+On 2026-05-26, this opt-in preflight passed locally with
+`fal-openrouter / google/gemini-2.5-flash`, `provider=called`,
+`phrase=matched`, `workspace=unchanged`, and `status=passed`.
+
 The capability mode is stored in `featureFlags.agentCliCapabilityMode`:
 
 - `native`: default. Respect the official CLI's native read-only capabilities.

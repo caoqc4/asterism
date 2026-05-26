@@ -21,6 +21,7 @@ const envKeys = [
   'TASKPLANE_AGENT_CLI_NATIVE_GOAL_STDIN',
   'TASKPLANE_AGENT_CLI_NATIVE_GOAL_TIMEOUT_MS',
   'TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME',
+  'TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE',
   'TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE',
   'TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE',
   'TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY',
@@ -566,6 +567,37 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('cli=not-called');
     expect(result.output).toContain('network=not-called');
     expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('keeps Agent API execution preflight smoke skipped without provider spend by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/agent-api-execution-preflight-smoke.mjs');
+
+    expect(scripts['manual:agent-api-execution-preflight-smoke']).toBe('node scripts/agent-api-execution-preflight-smoke.mjs');
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Agent API execution preflight smoke');
+    expect(result.output).toContain('mode=opt-in live');
+    expect(result.output).toContain('runtime=agent_api');
+    expect(result.output).toContain('executionRun=deferred');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('validates Agent API execution preflight config before calling a provider', () => {
+    const result = runScript('scripts/agent-api-execution-preflight-smoke.mjs', '', {
+      TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE: 'true',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Agent API execution preflight smoke');
+    expect(result.output).toContain('executionRun=deferred');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+    expect(result.output).toContain('TASKPLANE_AI_PROVIDER is empty.');
+    expect(result.output).toContain('TASKPLANE_AI_MODEL is empty.');
+    expect(result.output).toContain('TASKPLANE_AI_API_KEY is empty.');
   });
 
   it('keeps Codex native web/search smoke using top-level search before exec', () => {
