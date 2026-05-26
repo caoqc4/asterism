@@ -71,17 +71,19 @@ export type DecompositionDraftInvocationResult = RuntimeInvocationBase & {
 
 export type AgentApiDecompositionPromotionReadiness = {
   ready: boolean;
-  missingRequirements: Array<
-    | 'selected_runtime_contract'
-    | 'parent_task_identity'
-    | 'reversible_proposal_card'
-    | 'subtask_create_many_apply_plan'
-    | 'agent_api_decomposition_source'
-    | 'operator_confirmation_boundary'
-    | 'draft_only_timeline_evidence'
-  >;
+  satisfiedRequirements: AgentApiDecompositionPromotionRequirement[];
+  missingRequirements: AgentApiDecompositionPromotionRequirement[];
   summary: string;
 };
+
+export type AgentApiDecompositionPromotionRequirement =
+  | 'selected_runtime_contract'
+  | 'parent_task_identity'
+  | 'reversible_proposal_card'
+  | 'subtask_create_many_apply_plan'
+  | 'agent_api_decomposition_source'
+  | 'operator_confirmation_boundary'
+  | 'draft_only_timeline_evidence';
 
 export type DecisionDraftInvocationResult = RuntimeInvocationBase & {
   phase: 'decision_draft';
@@ -182,7 +184,16 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   reversibleProposalCardReady?: boolean;
   selectedRuntimeContractReady?: boolean;
 }): AgentApiDecompositionPromotionReadiness {
-  const missingRequirements: AgentApiDecompositionPromotionReadiness['missingRequirements'] = [];
+  const requiredRequirements: AgentApiDecompositionPromotionRequirement[] = [
+    'selected_runtime_contract',
+    'parent_task_identity',
+    'reversible_proposal_card',
+    'subtask_create_many_apply_plan',
+    'agent_api_decomposition_source',
+    'operator_confirmation_boundary',
+    'draft_only_timeline_evidence',
+  ];
+  const missingRequirements: AgentApiDecompositionPromotionRequirement[] = [];
   const applyPlan = params.applyPlan ?? null;
 
   if (!params.selectedRuntimeContractReady) {
@@ -214,13 +225,17 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   }
 
   const ready = missingRequirements.length === 0;
+  const missingRequirementSet = new Set(missingRequirements);
+  const satisfiedRequirements = requiredRequirements.filter((requirement) => !missingRequirementSet.has(requirement));
 
   return {
     ready,
+    satisfiedRequirements,
     missingRequirements,
     summary: [
       'Agent API decomposition promotion readiness',
       `ready=${ready ? 'yes' : 'no'}`,
+      `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `parentTask=${applyPlan?.input.parentTaskId?.trim() || 'missing'}`,
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
