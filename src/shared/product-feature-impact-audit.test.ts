@@ -24,6 +24,26 @@ describe('product feature impact audit', () => {
     expect(findProductFeatureImpactAuditIssues()).toEqual([]);
   });
 
+  it('does not let deferred contracts count as covered product completion', () => {
+    const partialRuntimeItem = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    expect(partialRuntimeItem).toBeDefined();
+
+    expect(findProductFeatureImpactAuditIssues([
+      {
+        ...partialRuntimeItem!,
+        status: 'covered',
+        evidence: [
+          'Deferred Agent API execution_run invocations carry future provider-visible execution required gates.',
+        ],
+      },
+    ])).toEqual([
+      {
+        featureId: 'right_panel_agent_run',
+        issue: 'Covered feature audit item must not use deferred or future-only evidence as completion proof.',
+      },
+    ]);
+  });
+
   it('requires every P0 runtime/writeback feature to have CLI-only closure and gates', () => {
     const p0Items = PRODUCT_FEATURE_IMPACT_AUDIT.filter((item) => item.priority === 'p0');
     expect(p0Items.length).toBeGreaterThan(0);

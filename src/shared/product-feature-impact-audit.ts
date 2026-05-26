@@ -63,6 +63,11 @@ export type ProductFeatureImpactAuditIssue = {
   issue: string;
 };
 
+const DEFERRED_COMPLETION_SIGNALS = [
+  /\b(?:deferred|diagnostic-only|unimplemented|not yet|pending until)\b/i,
+  /future (?:agent api|api|provider-visible|scheduled|background|execution|workspace-write)/i,
+];
+
 export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
   {
     id: 'right_panel_agent_run',
@@ -536,6 +541,18 @@ export function findProductFeatureImpactAuditIssues(
 
     if (item.priority === 'p0' && item.nextActions.length === 0) {
       issues.push({ featureId: item.id, issue: 'P0 feature audit item must declare next actions.' });
+    }
+
+    if (
+      item.status === 'covered' &&
+      item.evidence.some((evidence) => (
+        DEFERRED_COMPLETION_SIGNALS.some((signal) => signal.test(evidence))
+      ))
+    ) {
+      issues.push({
+        featureId: item.id,
+        issue: 'Covered feature audit item must not use deferred or future-only evidence as completion proof.',
+      });
     }
   }
 
