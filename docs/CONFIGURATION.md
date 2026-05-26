@@ -502,8 +502,10 @@ CLI `codex-cli 0.125.0` and passed with `auth=ready`, `workspace=unchanged`,
 `phrase=matched`, and `status=passed`.
 
 Claude Code support is implemented but its real smoke requires a local
-`claude` command and a valid Claude account. If that account is unavailable,
-keep Claude smoke non-blocking and continue validating the Codex path:
+`claude` command and a valid Claude account. Treat that smoke as optional
+secondary adapter compatibility evidence. If that account is unavailable, keep
+Claude smoke non-blocking and continue validating Codex CLI, Agent API,
+scheduled/event, writeback, and recovery paths:
 
 ```bash
 TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-readonly-smoke

@@ -531,12 +531,15 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).not.toContain('issues');
     expect(result.output).not.toContain('openNextActions');
     expect(nextResult.status).toBe(0);
-    const openNextActions = nextResult.output.split('openNextActions')[1] ?? '';
+    const openNextActions = (nextResult.output.split('openNextActions')[1] ?? '').split('optionalCompatibilityEvidence')[0] ?? '';
     expect(nextResult.output).toContain('openNextActions');
     expect(openNextActions).toContain('right_panel_agent_run');
     expect(openNextActions).toContain('gap=');
     expect(openNextActions).toContain('next=');
     expect(openNextActions).not.toContain('subtask_start_and_task_switch');
+    expect(openNextActions).not.toContain('smoke_tests_runtime_readiness_recovery');
+    expect(nextResult.output).toContain('optionalCompatibilityEvidence');
+    expect(nextResult.output.split('optionalCompatibilityEvidence')[1] ?? '').toContain('smoke_tests_runtime_readiness_recovery');
   });
 
   it('keeps sandbox producer preview smoke skipped without Docker or AI by default', () => {
@@ -645,14 +648,16 @@ describe('local smoke script default boundaries', () => {
     const configurationDoc = fs.readFileSync(new URL('../../docs/CONFIGURATION.md', import.meta.url), 'utf8');
 
     expect(testingDoc).toContain('Claude Code `2.1.144`');
-    expect(testingDoc).toContain('non-blocking secondary');
+    expect(testingDoc).toContain('optional secondary adapter');
+    expect(testingDoc).toContain('do not let it block Codex CLI, Agent API');
     expect(testingDoc).toContain('account/organization error');
     expect(testingDoc).toContain('401 authentication_failed');
     expect(testingDoc).toContain('Do not count a third-party model behind Claude Code as Claude account readiness');
     expect(testingDoc).toContain('workspace=unchanged');
     expect(configurationDoc).toContain('401 authentication_failed');
     expect(configurationDoc).toContain('Codex CLI adapter');
-    expect(configurationDoc).toContain('non-blocking account-readiness gap');
+    expect(configurationDoc).toContain('Treat that smoke as optional');
+    expect(configurationDoc).toContain('secondary adapter compatibility evidence');
     expect(configurationDoc).toContain('Taskplane workspace safety');
   });
 

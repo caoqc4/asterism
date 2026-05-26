@@ -451,10 +451,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-26 with auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed; the smoke records that --search is a top-level Codex option before exec.',
     ],
     gaps: [
-      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, and one Codex opt-in live smoke pass.',
+      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, and one Codex opt-in live smoke pass; Claude live evidence is secondary compatibility evidence and must not block the Codex-verified CLI-first path.',
     ],
     nextActions: [
-      'Record Claude native web/search smoke evidence when a local Claude account is ready, and keep adding static readiness probes only when providers expose stable non-executing metadata.',
+      'Keep adding static readiness probes only when providers expose stable non-executing metadata; record Claude native web/search smoke opportunistically when a local Claude account is available, not as a mainline blocker.',
       'Keep native goal passthrough closed until command shape, progress/control evidence, and packaged smoke move from audit output into verified adapter evidence.',
     ],
   },
@@ -545,12 +545,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'The manual Agent CLI native web/search smoke is default-skipped and reports cli=not-called, network=not-called, and workspace=unchanged unless explicitly enabled for one live native search request.',
       'The Codex native web/search smoke passed locally on 2026-05-26 with codex-cli 0.125.0, auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed.',
       'Claude Code 2.1.144 stream-json execution now uses --verbose in smoke harnesses; a 2026-05-26 focused probe reached provider execution and returned 401 authentication_failed while preserving workspace safety.',
+      'Claude live smoke is tracked as optional secondary adapter compatibility evidence; it must not block Codex CLI, Agent API, scheduled/event, or writeback acceptance progress.',
     ],
     gaps: [
-      'Claude real-account execution smoke has a manual opt-in packaged harness, but a passing run remains pending until account readiness is available.',
+      'Optional Claude real-account execution smoke has a manual opt-in packaged harness, but a passing run remains pending until account readiness is available; this is not a mainline product-completion blocker while Codex CLI live evidence exists.',
     ],
     nextActions: [
-      'Run and record the Claude packaged live smoke plus the opt-in native web/search smoke once local account credentials are available.',
+      'Continue non-Claude runtime and recovery coverage first; run Claude packaged live smoke only opportunistically when local account credentials are available.',
     ],
   },
 ];

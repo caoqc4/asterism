@@ -28,6 +28,15 @@ function idsFor(items, predicate) {
   return ids.length > 0 ? ids.join(',') : '<none>';
 }
 
+function isOptionalCompatibilityEvidence(item) {
+  if (item.id !== 'smoke_tests_runtime_readiness_recovery') return false;
+  const text = [
+    ...item.gaps,
+    ...item.nextActions,
+  ].join(' ');
+  return /optional|secondary compatibility|not (?:a )?mainline blocker|not as a mainline blocker/i.test(text);
+}
+
 try {
   await build({
     bundle: true,
@@ -59,11 +68,26 @@ try {
   }
 
   if (includeNextActions) {
+    const openItems = PRODUCT_FEATURE_IMPACT_AUDIT.filter((candidate) => (
+      candidate.status !== 'covered' && !isOptionalCompatibilityEvidence(candidate)
+    ));
+    const optionalItems = PRODUCT_FEATURE_IMPACT_AUDIT.filter((candidate) => (
+      candidate.status !== 'covered' && isOptionalCompatibilityEvidence(candidate)
+    ));
+
     console.log('openNextActions');
-    for (const item of PRODUCT_FEATURE_IMPACT_AUDIT.filter((candidate) => candidate.status !== 'covered')) {
+    for (const item of openItems) {
       console.log(`${item.id}`);
       console.log(`  gap=${item.gaps[0] ?? '<none>'}`);
       console.log(`  next=${item.nextActions[0] ?? '<none>'}`);
+    }
+    if (optionalItems.length > 0) {
+      console.log('optionalCompatibilityEvidence');
+      for (const item of optionalItems) {
+        console.log(`${item.id}`);
+        console.log(`  gap=${item.gaps[0] ?? '<none>'}`);
+        console.log(`  next=${item.nextActions[0] ?? '<none>'}`);
+      }
     }
   }
 

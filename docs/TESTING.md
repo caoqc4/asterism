@@ -258,14 +258,15 @@ passed the opt-in smoke with `auth=ready`, `workspace=unchanged`,
 TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=codex npm run manual:agent-cli-readonly-smoke
 ```
 
-The same local pass checked Claude Code `2.1.144` as a non-blocking secondary
-path. The CLI and auth status were detectable, but execution returned a provider
+The same local pass checked Claude Code `2.1.144` as optional secondary adapter
+compatibility evidence. The CLI and auth status were detectable, but execution returned a provider
 account/organization error while preserving `workspace=unchanged`. On
 2026-05-26, a focused Claude Code `stream-json --verbose` probe also reached
 provider execution and returned `401 authentication_failed`, confirming that the
 remaining gap is account/provider readiness rather than Taskplane workspace
 safety. Keep this as non-blocking evidence until a valid Claude account can pass
-the same opt-in read-only smoke.
+the same opt-in read-only smoke; do not let it block Codex CLI, Agent API,
+scheduled/event, writeback, or recovery acceptance progress.
 
 Do not count a third-party model behind Claude Code as Claude account readiness
 unless Claude Code itself exposes and documents that provider as a supported

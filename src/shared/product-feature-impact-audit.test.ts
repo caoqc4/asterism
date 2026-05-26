@@ -389,7 +389,9 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('provider-owned package metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('auth-gated no-start help-output');
-    expect(capabilities?.nextActions.join(' ')).toContain('Record Claude native web/search smoke evidence');
+    expect(capabilities?.gaps.join(' ')).toContain('Claude live evidence is secondary compatibility evidence');
+    expect(capabilities?.nextActions.join(' ')).toContain('opportunistically when a local Claude account is available');
+    expect(capabilities?.nextActions.join(' ')).toContain('not as a mainline blocker');
     expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
@@ -408,6 +410,10 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('Codex native web/search smoke passed locally on 2026-05-26');
     expect(smoke?.evidence.join(' ')).toContain('status=passed');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code 2.1.144 stream-json execution now uses --verbose');
+    expect(smoke?.evidence.join(' ')).toContain('optional secondary adapter compatibility evidence');
+    expect(smoke?.evidence.join(' ')).toContain('must not block Codex CLI, Agent API, scheduled/event, or writeback acceptance progress');
+    expect(smoke?.gaps.join(' ')).toContain('not a mainline product-completion blocker');
+    expect(smoke?.nextActions.join(' ')).toContain('Continue non-Claude runtime and recovery coverage first');
     expect(smoke?.evidence.join(' ')).toContain('401 authentication_failed');
     expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
