@@ -14,6 +14,7 @@ describe('runtime patch promotion routing readiness', () => {
       missingRequirements: [
         'promotion_preflight',
         'explicit_operator_apply',
+        'same_run_evidence_chain',
         'post_apply_run_evidence',
       ],
     });
@@ -23,13 +24,14 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('promotionPreflight=missing');
   });
 
-  it('allows future runtime patch promotion only through patch artifact, Decision, preflight, explicit apply, and evidence', () => {
+  it('allows future runtime patch promotion only through one run-bound patch artifact, Decision, preflight, explicit apply, and evidence', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadiness({
       explicitOperatorApply: true,
       patchArtifactReady: true,
       postApplyRunEvidenceReady: true,
       promotionDecisionReady: true,
       promotionPreflightReady: true,
+      sameRunEvidenceChainReady: true,
     });
 
     expect(readiness).toMatchObject({
@@ -38,7 +40,25 @@ describe('runtime patch promotion routing readiness', () => {
     });
     expect(readiness.summary).toContain('ready=yes');
     expect(readiness.summary).toContain('explicitOperatorApply=ready');
+    expect(readiness.summary).toContain('sameRunEvidenceChain=ready');
     expect(readiness.summary).toContain('postApplyRunEvidence=ready');
     expect(readiness.summary).toContain('missing=none');
+  });
+
+  it('blocks future runtime patch promotion when evidence is not tied to the same run', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadiness({
+      explicitOperatorApply: true,
+      patchArtifactReady: true,
+      postApplyRunEvidenceReady: true,
+      promotionDecisionReady: true,
+      promotionPreflightReady: true,
+      sameRunEvidenceChainReady: false,
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: ['same_run_evidence_chain'],
+    });
+    expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
   });
 });

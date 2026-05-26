@@ -5,6 +5,7 @@ export type RuntimePatchPromotionRoutingReadiness = {
     | 'promotion_decision'
     | 'promotion_preflight'
     | 'explicit_operator_apply'
+    | 'same_run_evidence_chain'
     | 'post_apply_run_evidence'
   >;
   summary: string;
@@ -16,6 +17,7 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   postApplyRunEvidenceReady?: boolean;
   promotionDecisionReady?: boolean;
   promotionPreflightReady?: boolean;
+  sameRunEvidenceChainReady?: boolean;
 }): RuntimePatchPromotionRoutingReadiness {
   const missingRequirements: RuntimePatchPromotionRoutingReadiness['missingRequirements'] = [];
 
@@ -23,6 +25,7 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   if (!params.promotionDecisionReady) missingRequirements.push('promotion_decision');
   if (!params.promotionPreflightReady) missingRequirements.push('promotion_preflight');
   if (!params.explicitOperatorApply) missingRequirements.push('explicit_operator_apply');
+  if (!params.sameRunEvidenceChainReady) missingRequirements.push('same_run_evidence_chain');
   if (!params.postApplyRunEvidenceReady) missingRequirements.push('post_apply_run_evidence');
 
   const ready = missingRequirements.length === 0;
@@ -37,6 +40,7 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
       `promotionDecision=${params.promotionDecisionReady ? 'ready' : 'missing'}`,
       `promotionPreflight=${params.promotionPreflightReady ? 'ready' : 'missing'}`,
       `explicitOperatorApply=${params.explicitOperatorApply ? 'ready' : 'missing'}`,
+      `sameRunEvidenceChain=${params.sameRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `postApplyRunEvidence=${params.postApplyRunEvidenceReady ? 'ready' : 'missing'}`,
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),

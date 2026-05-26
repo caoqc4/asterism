@@ -389,13 +389,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Tasks file workspace apply guidance now states that only reviewed patch files passing promotion preflight are written, drift blocks apply, and Run evidence must be reviewed after completion.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
       'Terminal Run verification now carries same-run artifacts and checkpoints into post-step self-checks when repository evidence is available, so run-backed patch artifacts and patch-promotion checkpoints can satisfy workspace_write promotion evidence instead of being invisible to terminal verification.',
-      'evaluateRuntimePatchPromotionRoutingReadiness now keeps future API/runtime-generated patch promotion blocked unless the path includes a patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence.',
+      'evaluateRuntimePatchPromotionRoutingReadiness now keeps future API/runtime-generated patch promotion blocked unless the path includes a same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence.',
     ],
     gaps: [
-      'Future API/runtime-generated patch promotion still needs to reuse the reviewed-patch apply workflow; direct workspace-write runtime modes remain intentionally separate from the common run path.',
+      'Future API/runtime-generated patch promotion still needs to reuse the reviewed-patch apply workflow and same-run evidence chain; direct workspace-write runtime modes remain intentionally separate from the common run path.',
     ],
     nextActions: [
-      'Keep explicit apply as the product-controlled mutation path and require evaluateRuntimePatchPromotionRoutingReadiness before routing future runtime writes into patch artifacts, promotion Decisions, promotion preflight, and post-apply Run evidence.',
+      'Keep explicit apply as the product-controlled mutation path and require evaluateRuntimePatchPromotionRoutingReadiness before routing future runtime writes into same-run patch artifacts, promotion Decisions, promotion preflight, explicit apply, and post-apply Run evidence.',
     ],
   },
   {
