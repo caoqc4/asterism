@@ -38,6 +38,16 @@ export type PriorityAttentionProjection<T extends PriorityRecommendationCandidat
   displayLimit: number | null;
 };
 
+export type PriorityRouteMovement = 'ask' | 'research' | 'shape' | 'execute' | 'verify' | 'persist' | 'pause';
+
+export type PriorityRoute = {
+  focusTaskId: string | null;
+  lane: PriorityLane;
+  reason: string;
+  recommendedMovement: PriorityRouteMovement;
+  escalationRequired: boolean;
+};
+
 export const PRIORITY_RECOMMENDATION_LANE_ORDER: Record<PriorityLane, number> = {
   escalate_now: 0,
   unblock_or_decide: 1,
@@ -215,4 +225,76 @@ export function projectPriorityAttention<T extends PriorityRecommendationCandida
     truncated: typeof displayLimit === 'number' && sorted.length > displayLimit,
     displayLimit,
   };
+}
+
+export function routePriorityAttention<T extends PriorityRecommendationCandidate & { reason?: string | null }>(params: {
+  candidates: T[];
+  taskById: Map<string, PriorityRecommendationTaskSignal>;
+}): PriorityRoute {
+  const [focus] = projectPriorityAttention({
+    candidates: params.candidates,
+    displayLimit: 1,
+    taskById: params.taskById,
+  }).items;
+
+  if (!focus) {
+    return {
+      escalationRequired: false,
+      focusTaskId: null,
+      lane: 'steady',
+      reason: 'No competing task attention signals are present.',
+      recommendedMovement: 'pause',
+    };
+  }
+
+  return {
+    escalationRequired: focus.lane === 'escalate_now',
+    focusTaskId: focus.taskId,
+    lane: focus.lane,
+    reason: priorityRouteReason(focus),
+    recommendedMovement: priorityRouteMovement(focus),
+  };
+}
+
+function priorityRouteReason(candidate: PriorityRecommendationCandidate & { reason?: string | null }): string {
+  const candidateReason = candidate.reason?.trim();
+  if (candidateReason) {
+    return candidateReason;
+  }
+
+  return `Shared priority route selected ${candidate.id} in lane ${candidate.lane}.`;
+}
+
+function priorityRouteMovement(candidate: PriorityRecommendationCandidate): PriorityRouteMovement {
+  if (candidate.lane === 'escalate_now' || candidate.id.startsWith('risk:')) {
+    return 'pause';
+  }
+
+  if (
+    candidate.lane === 'clarify'
+    || candidate.id.startsWith('waiting:')
+    || candidate.id.startsWith('next-step:')
+  ) {
+    return candidate.lane === 'clarify' ? 'shape' : 'execute';
+  }
+
+  if (
+    candidate.id.startsWith('decision:')
+    || candidate.id.startsWith('blocker:')
+    || candidate.id.startsWith('task-dependency:')
+    || candidate.id.startsWith('source-context:blocker:')
+  ) {
+    return 'ask';
+  }
+
+  if (
+    candidate.id.startsWith('artifact:')
+    || candidate.id.startsWith('completion-ready:')
+    || candidate.id.startsWith('near-completion:')
+    || candidate.id.startsWith('source-context:')
+  ) {
+    return 'verify';
+  }
+
+  return candidate.lane === 'steady' ? 'execute' : 'verify';
 }

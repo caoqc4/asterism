@@ -160,6 +160,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'HomeBriefData now carries the BriefAttentionBoundary summary next to recommendedActions, so retained Brief consumers can read attention lanes without changing the current layout.',
       'BriefFocusProjection turns recommended actions into the capped Brief task-card list with shared de-duplication, parent/child filtering, and display-limit behavior before the page renders it.',
       'BriefFocusProjection carries rank, source action id, attention lane, and attention reason into visible focus cards so Brief can explain why an item appears without adding another sorter.',
+      'PriorityRoute now folds the same shared attention ranking into focusTaskId, lane, reason, recommendedMovement, and escalationRequired evidence for future Pilot/Brief coordination without starting execution.',
       'BriefExecutor consumes HomeBriefData.briefFocusTasks and briefAttention so scheduled or fallback briefs preserve the visible focus list, attention-summary boundary, and display-limit explanation.',
       'BriefExecutor does not expose the full recommendedActions compatibility queue to generated or fallback briefs; hidden queue items must pass through BriefFocusProjection or BriefAttentionBoundary first.',
       'BriefProcessTemplateSelector uses the same HomeBriefData.briefFocusTasks when selecting method templates for generated briefs.',
@@ -172,7 +173,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Sorting must reconcile actionable priority, blockers, waiting state, dates, and recent intent.',
     ],
     gaps: [
-      'Priority ranking has a shared projection with display-limit metadata and per-card inclusion basis; deeper ranking-score traces remain intentionally outside the Brief UI for now.',
+      'Priority ranking has shared projection and route outputs with display-limit metadata and per-card inclusion basis; deeper ranking-score traces remain intentionally outside the Brief UI for now.',
       'BriefPage retains only a compatibility fallback for older HomeBriefData payloads; new payloads provide briefFocusTasks from shared/domain projection.',
       'Brief vs Tasks ordering and display-limit behavior has shared coverage tests; broader end-to-end page projection tests can still be added when UI work resumes.',
     ],

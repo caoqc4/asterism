@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   projectPriorityAttention,
+  routePriorityAttention,
   sortPriorityRecommendations,
   type PriorityRecommendationCandidate,
   type PriorityRecommendationTaskSignal,
@@ -72,5 +73,66 @@ describe('priority recommendation ranking', () => {
 
     expect(projection.items.map((item) => item.id)).toEqual(['next-step:task_upstream']);
     expect(projection.truncated).toBe(true);
+  });
+
+  it('returns a shared priority route for Pilot and Brief coordination without starting execution', () => {
+    const decision = candidate({
+      id: 'decision:decision_1',
+      taskId: 'task_decision',
+      lane: 'unblock_or_decide',
+      priority: 'high',
+      order: 2,
+    });
+    const staleRisk = candidate({
+      id: 'risk:task_risk',
+      taskId: 'task_risk',
+      lane: 'escalate_now',
+      priority: 'high',
+      order: 1,
+    });
+    const taskById = new Map<string, PriorityRecommendationTaskSignal>([
+      ['task_decision', { id: 'task_decision' }],
+      ['task_risk', { id: 'task_risk' }],
+    ]);
+
+    const route = routePriorityAttention({
+      candidates: [staleRisk, decision],
+      taskById,
+    });
+
+    expect(route).toMatchObject({
+      escalationRequired: false,
+      focusTaskId: 'task_decision',
+      lane: 'unblock_or_decide',
+      recommendedMovement: 'ask',
+    });
+    expect(route.reason).toContain('decision:decision_1');
+  });
+
+  it('routes high-risk attention to pause/escalation and empty queues to a no-focus pause', () => {
+    const route = routePriorityAttention({
+      candidates: [candidate({
+        id: 'risk:task_risk',
+        taskId: 'task_risk',
+        lane: 'escalate_now',
+        priority: 'high',
+      })],
+      taskById: new Map([['task_risk', { id: 'task_risk' }]]),
+    });
+
+    expect(route).toMatchObject({
+      escalationRequired: true,
+      focusTaskId: 'task_risk',
+      lane: 'escalate_now',
+      recommendedMovement: 'pause',
+    });
+
+    expect(routePriorityAttention({ candidates: [], taskById: new Map() })).toEqual({
+      escalationRequired: false,
+      focusTaskId: null,
+      lane: 'steady',
+      reason: 'No competing task attention signals are present.',
+      recommendedMovement: 'pause',
+    });
   });
 });
