@@ -64,6 +64,22 @@ describe('evaluateRuntimeContextReadiness', () => {
     expect(evaluation.shouldSelfResearch).toBe(false);
   });
 
+  it('honors explicit research opt-outs before self research readiness', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      prompt: '不需要联网，按已有 Source Context 总结当前价格。',
+      task: buildReadinessTask({
+        nextStep: '确认目前 OpenAI API 价格和限制。',
+        summary: '需要整理最新模型价格。',
+        title: '确认当前模型价格',
+      }),
+    });
+
+    expect(evaluation.decision).not.toBe('self_research');
+    expect(evaluation.movement).not.toBe('research');
+    expect(evaluation.recommendedMode).not.toBe('native_research');
+    expect(evaluation.shouldSelfResearch).toBe(false);
+  });
+
   it('treats product/tutorial context with sources as ready instead of asking weak preferences', () => {
     const evaluation = evaluateRuntimeContextReadiness({
       prompt: '偏基础教程和案例展示，继续推进。',
