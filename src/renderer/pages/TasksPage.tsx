@@ -1145,6 +1145,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const [appliedWritebackApprovalIds, setAppliedWritebackApprovalIds] = useState<Record<string, boolean>>({});
   const [writebackApprovalMessages, setWritebackApprovalMessages] = useState<Record<string, string>>({});
   const [confirmingStandingApprovalId, setConfirmingStandingApprovalId] = useState<string | null>(null);
+  const [triggeringScheduledEventId, setTriggeringScheduledEventId] = useState<string | null>(null);
   const [standingApprovalMessages, setStandingApprovalMessages] = useState<Record<string, string>>({});
   const [workHabits, setWorkHabits] = useState<WorkHabitRecord[]>([]);
 
@@ -1490,6 +1491,47 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       }));
     } finally {
       setConfirmingStandingApprovalId(null);
+    }
+  }
+
+  async function triggerScheduledEventAgentRun(draft: AgentStandingApprovalConfirmationDraft) {
+    if (!selectedTask || triggeringScheduledEventId) return;
+    if (!standingApprovalConfirmed) {
+      setStandingApprovalMessages((current) => ({
+        ...current,
+        [draft.id]: '请先确认 Standing Approval，再启动一次受控 Agent run。',
+      }));
+      return;
+    }
+    if (!window.api?.triggerScheduledEventAgentRun) {
+      setStandingApprovalMessages((current) => ({
+        ...current,
+        [draft.id]: '当前环境缺少 scheduled/event Agent trigger 入口。',
+      }));
+      return;
+    }
+
+    setTriggeringScheduledEventId(draft.id);
+    setStandingApprovalMessages((current) => ({
+      ...current,
+      [draft.id]: '正在启动一次受控 Agent run...',
+    }));
+    try {
+      const result = await window.api.triggerScheduledEventAgentRun({ taskId: selectedTask.id });
+      setStandingApprovalMessages((current) => ({
+        ...current,
+        [draft.id]: result.status === 'started'
+          ? `已启动受控 Agent run：${result.run?.id ?? 'unknown'}`
+          : `未启动：${result.summary}`,
+      }));
+      reloadTaskDetailForTask(selectedTask.id);
+    } catch (error) {
+      setStandingApprovalMessages((current) => ({
+        ...current,
+        [draft.id]: `启动失败：${error instanceof Error ? error.message : '未知错误'}`,
+      }));
+    } finally {
+      setTriggeringScheduledEventId(null);
     }
   }
 
@@ -3277,10 +3319,12 @@ function resetCaptureDraft() {
               standingApprovalDraft={standingApprovalDraft}
               standingApprovalConfirmed={standingApprovalConfirmed}
               confirmingStandingApprovalId={confirmingStandingApprovalId}
+              triggeringScheduledEventId={triggeringScheduledEventId}
               standingApprovalMessages={standingApprovalMessages}
               applyingWritebackApprovalId={applyingWritebackApprovalId}
               writebackApprovalMessages={writebackApprovalMessages}
               onConfirmStandingApproval={confirmStandingApprovalDraft}
+              onTriggerScheduledEventAgentRun={triggerScheduledEventAgentRun}
               onConfirmWriteback={confirmWritebackApproval}
               onSelectParent={selectTask}
             />
@@ -3998,10 +4042,12 @@ function TaskTimelineView({
   standingApprovalDraft,
   standingApprovalConfirmed,
   confirmingStandingApprovalId,
+  triggeringScheduledEventId,
   standingApprovalMessages,
   applyingWritebackApprovalId,
   writebackApprovalMessages,
   onConfirmStandingApproval,
+  onTriggerScheduledEventAgentRun,
   onConfirmWriteback,
   onSelectParent,
 }: {
@@ -4014,10 +4060,12 @@ function TaskTimelineView({
   standingApprovalDraft: AgentStandingApprovalConfirmationDraft | null;
   standingApprovalConfirmed: boolean;
   confirmingStandingApprovalId: string | null;
+  triggeringScheduledEventId: string | null;
   standingApprovalMessages: Record<string, string>;
   applyingWritebackApprovalId: string | null;
   writebackApprovalMessages: Record<string, string>;
   onConfirmStandingApproval: (draft: AgentStandingApprovalConfirmationDraft) => void;
+  onTriggerScheduledEventAgentRun: (draft: AgentStandingApprovalConfirmationDraft) => void;
   onConfirmWriteback: (item: TaskplaneWritebackApprovalItem) => void;
   onSelectParent: (taskId: string) => void;
 }) {
@@ -4087,6 +4135,15 @@ function TaskTimelineView({
                       ? '确认授权'
                       : '暂不可确认'}
               </button>
+              {standingApprovalConfirmed && (
+                <button
+                  className={`btn sm${triggeringScheduledEventId ? ' disabled' : ''}`}
+                  disabled={Boolean(triggeringScheduledEventId)}
+                  onClick={() => onTriggerScheduledEventAgentRun(standingApprovalDraft)}
+                >
+                  {triggeringScheduledEventId === standingApprovalDraft.id ? '启动中...' : '启动一次'}
+                </button>
+              )}
             </div>
           </div>
         )}

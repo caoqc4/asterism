@@ -274,6 +274,9 @@ describe('preload bridge', () => {
       schedulerAllowed: false,
       taskId: 'task_1',
     };
+    const triggerScheduledEventAgentRunInput = {
+      taskId: 'task_1',
+    };
     const createCodeAgentRunInput = {
       operatorConfirmed: true,
       patchIntent: 'Prepare a staged notes patch.',
@@ -363,6 +366,7 @@ describe('preload bridge', () => {
     await api.cancelAgentCliRun?.(cancelAgentCliRunInput);
     await api.triggerCodeAgentRun?.(createCodeAgentRunInput);
     await api.triggerOperatorStartedRun?.(operatorStartedRunInput);
+    await api.triggerScheduledEventAgentRun?.(triggerScheduledEventAgentRunInput);
     await api.continuePausedRun('run_1');
     await api.chatWithAI?.(chatInput);
     await api.decomposeProject?.(decomposeProjectInput);
@@ -443,6 +447,7 @@ describe('preload bridge', () => {
       ['run:cancelAgentCli', cancelAgentCliRunInput],
       ['run:triggerCodeAgent', createCodeAgentRunInput],
       ['run:triggerOperatorStarted', operatorStartedRunInput],
+      ['scheduler:triggerScheduledEventAgentRun', triggerScheduledEventAgentRunInput],
       ['run:continuePaused', 'run_1'],
       ['ai:chat', chatInput],
       ['ai:decomposeProject', decomposeProjectInput],

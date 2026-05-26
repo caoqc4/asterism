@@ -987,6 +987,39 @@ function createMockApi() {
       runs.push(run);
       return run;
     }),
+    triggerScheduledEventAgentRun: vi.fn().mockImplementation(async (input) => {
+      const run = buildRun({
+        id: 'run_scheduled_event_agent',
+        output: null,
+        outputSource: null,
+        status: 'running',
+        taskId: input.taskId,
+        type: 'agent',
+      });
+      runs.push(run);
+      return {
+        status: 'started',
+        plan: {
+          status: 'ready',
+          triggerPlanReady: true,
+          runtimeStartAllowed: true,
+          schedulerTriggerServiceConnected: true,
+          triggerRunEvidenceRequired: ['context_readiness'],
+          policy: null,
+          runLimit: {
+            maxRunsPerDay: 3,
+            runsStartedToday: 0,
+          },
+          readiness: {},
+          standingApproval: {},
+          blockedReasons: [],
+          evidence: [],
+          summary: 'Scheduled/event trigger plan / status=ready',
+        },
+        run,
+        summary: 'Scheduled/event trigger plan / trigger=started / runId=run_scheduled_event_agent',
+      };
+    }),
     recordRuntimeNativeGoalRequest: vi.fn().mockImplementation(async (input) => {
       const run = buildRun({
         id: 'run_native_goal_audit',
@@ -5078,6 +5111,134 @@ describe('App redesign v1', () => {
     });
     expect(await within(approvalDraft).findByText(/Standing Approval 已确认/)).toBeTruthy();
     expect(harness.api.applyTaskplaneWriteback).not.toHaveBeenCalled();
+  });
+
+  it('starts one scheduled/event Agent run from a confirmed Standing Approval card', async () => {
+    const user = userEvent.setup();
+    const routineTask = buildTask({
+      id: 'task_routine_auto',
+      title: '每周竞品更新',
+      riskLevel: 'low',
+      taskFacets: ['scheduled', 'routine'],
+      taskType: 'routine',
+    });
+    vi.mocked(harness.api.listTasks).mockResolvedValueOnce([routineTask]);
+    vi.mocked(harness.api.getTaskDetail).mockImplementation(async (taskId: string) => {
+      if (taskId !== routineTask.id) return null;
+      return {
+        ...buildTaskDetail(routineTask),
+        processTemplates: [{
+          id: 'template_auto',
+          bindingId: 'binding_auto',
+          taskId: routineTask.id,
+          title: '竞品更新 SOP',
+          summary: null,
+          content: 'Collect bounded competitor updates and prepare a review note.',
+          kind: 'sop',
+          tags: [],
+          status: 'active',
+          bindingStatus: 'active',
+          bindingNote: null,
+          boundAt: now,
+          bindingUpdatedAt: now,
+          createdAt: now,
+          updatedAt: now,
+          archivedAt: null,
+          removedAt: null,
+        }],
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: routineTask.id,
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy: {
+              id: 'standing_approval:task_routine_auto:coding:local_sandbox',
+              allowedAutonomyLevel: 'L2_limited_authorized_action',
+              allowedLanes: ['coding'],
+              allowedRuntimeIds: ['local_sandbox'],
+              createdAt: now,
+              expiresAt: '2026-05-27T00:00:00.000Z',
+              maxRunsPerDay: 3,
+              reason: 'Allow bounded weekly update preparation.',
+              riskCeiling: 'low',
+              status: 'active',
+              taskFacets: ['scheduled', 'routine'],
+              taskId: routineTask.id,
+              taskTypes: ['routine'],
+            },
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: now,
+        }],
+      };
+    });
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      featureFlags: {
+        ...buildAiStatus().featureFlags,
+        enableSandboxCodingAgent: true,
+      },
+      sandboxBackendStatus: {
+        probe: {
+          backendId: 'local-container',
+          environmentPolicy: 'empty',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          status: 'available',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        profile: {
+          credentialPassthrough: false,
+          environmentPolicy: 'empty',
+          id: 'local-container',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        readiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Sandbox backend ready.',
+        },
+        producerBackendReadiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Producer ready.',
+        },
+        summary: 'Sandbox backend ready.',
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /每周竞品更新/ }).length).toBeGreaterThan(0);
+    });
+    await user.click(screen.getAllByRole('button', { name: /每周竞品更新/ })[0]!);
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
+
+    const approvalDraft = await screen.findByLabelText('Standing Approval 授权草案');
+    expect(within(approvalDraft).getAllByText('已确认').length).toBeGreaterThan(0);
+    await user.click(within(approvalDraft).getByRole('button', { name: '启动一次' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerScheduledEventAgentRun).toHaveBeenCalledWith({
+        taskId: 'task_routine_auto',
+      });
+    });
+    expect(await within(approvalDraft).findByText(/已启动受控 Agent run：run_scheduled_event_agent/)).toBeTruthy();
   });
 
   it('lets task dynamics approve Run writeback proposals without opening the right panel', async () => {

@@ -8,6 +8,7 @@ import type {
   PreviewPatchArtifactSandboxReviewInput,
   ProjectDecompositionInput,
   RunPatchArtifactSandboxReviewInput,
+  TriggerScheduledEventAgentRunInput,
 } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
@@ -844,6 +845,18 @@ export function registerIpcHandlers(): void {
     emitAppEvent('task.changed', created.taskId);
     emitAppEvent('brief.changed');
     return created;
+  });
+
+  ipcMain.handle('scheduler:triggerScheduledEventAgentRun', async (_event, input: TriggerScheduledEventAgentRunInput) => {
+    if (!input?.taskId?.trim()) {
+      throw new Error('Scheduled event Agent trigger requires taskId.');
+    }
+    const services = getServices();
+    const task = await services.taskService.getDetail(input.taskId);
+    if (!task) {
+      throw new Error(`Task not found: ${input.taskId}`);
+    }
+    return services.schedulerService.triggerScheduledEventAgentRun(task);
   });
 
   ipcMain.handle('run:continuePaused', async (_event, runId: string) => {

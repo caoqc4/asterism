@@ -79,6 +79,7 @@ const api: ElectronApi = {
   cancelAgentCliRun: (input) => ipcRenderer.invoke('run:cancelAgentCli', input),
   triggerCodeAgentRun: (input) => ipcRenderer.invoke('run:triggerCodeAgent', input),
   triggerOperatorStartedRun: (input) => ipcRenderer.invoke('run:triggerOperatorStarted', input),
+  triggerScheduledEventAgentRun: (input) => ipcRenderer.invoke('scheduler:triggerScheduledEventAgentRun', input),
   continuePausedRun: (runId) => ipcRenderer.invoke('run:continuePaused', runId),
   chatWithAI: (input) => ipcRenderer.invoke('ai:chat', input),
   decomposeProject: (input) => ipcRenderer.invoke('ai:decomposeProject', input),

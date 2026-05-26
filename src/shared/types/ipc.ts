@@ -72,6 +72,7 @@ export type ProjectDecompositionResult = {
 
 import type { TaskplaneWritebackApplyPlan } from '../taskplane-writeback-apply-plan.js';
 import type { TaskplaneWritebackDispatchResult } from '../taskplane-writeback-dispatch.js';
+import type { AgentScheduledEventTriggerPlan } from '../agent-orchestration.js';
 import type { HomeBriefData } from './brief.js';
 import type {
   BlockerRecord,
@@ -194,6 +195,17 @@ export type RunPatchArtifactSandboxReviewInput = {
   artifactId: string;
   operatorConfirmed: boolean;
   requestedChecks?: CodeAgentAllowedCheck[];
+};
+
+export type TriggerScheduledEventAgentRunInput = {
+  taskId: string;
+};
+
+export type TriggerScheduledEventAgentRunResult = {
+  status: 'started' | 'blocked';
+  plan: AgentScheduledEventTriggerPlan;
+  run: RunRecord | null;
+  summary: string;
 };
 
 export type PatchArtifactSandboxReviewPreview =
@@ -355,6 +367,9 @@ export type ElectronApi = {
   cancelAgentCliRun?: (input: CancelAgentCliRunInput) => Promise<CancelAgentCliRunResult>;
   triggerCodeAgentRun?: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
   triggerOperatorStartedRun?: (input: OperatorStartedRunRequest) => Promise<RunRecord>;
+  triggerScheduledEventAgentRun?: (
+    input: TriggerScheduledEventAgentRunInput,
+  ) => Promise<TriggerScheduledEventAgentRunResult>;
   continuePausedRun: (runId: string) => Promise<RunRecord>;
   subscribeToEvents: (listener: (event: AppEvent) => void) => () => void;
   chatWithAI?: (input: ChatInput) => Promise<ChatResponse>;

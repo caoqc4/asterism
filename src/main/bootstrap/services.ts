@@ -128,14 +128,6 @@ const sandboxPatchPromotionApplyService = new SandboxPatchPromotionApplyService(
   sandboxPatchPromotionRepository,
   () => appConfigService.read().workspaceRoot ?? process.cwd(),
 );
-schedulerService = new SchedulerService(
-  appConfigService,
-  homeBriefService,
-  briefSnapshotRepository,
-  runRepository,
-  aiConfigService,
-  briefExecutor,
-);
 const decisionService = new DecisionService(
   decisionRepository,
   taskService,
@@ -214,6 +206,24 @@ const codeAgentRunService = new CodeAgentRunService(
   sandboxPatchPromotionRepository,
   undefined,
   runVerificationRepository,
+);
+schedulerService = new SchedulerService(
+  appConfigService,
+  homeBriefService,
+  briefSnapshotRepository,
+  runRepository,
+  aiConfigService,
+  briefExecutor,
+  undefined,
+  {
+    triggerCodeAgentRun: async (input) => {
+      const run = await codeAgentRunService.trigger(input);
+      emitAppEvent('run.changed', run.id);
+      emitAppEvent('task.changed', run.taskId);
+      emitAppEvent('brief.changed');
+      return run;
+    },
+  },
 );
 const patchArtifactSandboxReviewRunService = new PatchArtifactSandboxReviewRunService(
   artifactRepository,

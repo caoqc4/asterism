@@ -274,7 +274,8 @@ describe('runtime entrypoint coverage', () => {
 
     expect(entry).toBeTruthy();
     expect(entry?.kind).toBe('provider_visible_execution');
-    expect(entry?.ipcChannels).toBeUndefined();
+    expect(entry?.owner).toBe('SchedulerService.triggerScheduledEventAgentRun');
+    expect(entry?.ipcChannels).toEqual(['scheduler:triggerScheduledEventAgentRun']);
     expect(entry?.requiredGates).toEqual(expect.arrayContaining([
       'product_config_boundary',
       'operator_confirmation',
@@ -290,10 +291,11 @@ describe('runtime entrypoint coverage', () => {
     ]));
     expect(entry?.notes).toContain('SchedulerService.triggerScheduledEventAgentRun');
     expect(entry?.notes).toContain('injected Code Agent run port');
-    expect(entry?.notes).toContain('not exposed as IPC or a scheduled job');
+    expect(entry?.notes).toContain('explicit operator IPC scheduler:triggerScheduledEventAgentRun');
+    expect(entry?.notes).toContain('not as a scheduled job');
     expect(entry?.notes).toContain('readiness diagnostics do not start Agent CLI/API runtimes');
     expect(entry?.notes).toContain('standing approval');
-    expect(entry?.notes).toContain('before exposing any IPC or scheduler trigger');
+    expect(entry?.notes).toContain('before exposing any background scheduler trigger');
   });
 
   it('registers phase closeout as a handoff boundary without equating it to completion', () => {

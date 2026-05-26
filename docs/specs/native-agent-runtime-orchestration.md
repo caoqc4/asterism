@@ -814,9 +814,10 @@ Current implementation:
   does not resolve runtime config, schedule a trigger job, or start a native
   runtime.
 - `SchedulerService.triggerScheduledEventAgentRun` is the first narrow
-  trigger-service connection point. It is not exposed as IPC or a scheduled job:
-  it requires an injected Code Agent trigger port, reuses the same Standing
-  Approval and same-day run-limit checks, sets
+  trigger-service connection point. It is exposed only through the explicit
+  operator IPC `scheduler:triggerScheduledEventAgentRun`, not through a
+  scheduled job: it requires an injected Code Agent trigger port, reuses the
+  same Standing Approval and same-day run-limit checks, sets
   `schedulerTriggerServiceConnected=true`, and only starts a Code Agent run
   when the plan is ready. The generated run request keeps
   `operatorConfirmed=true`, uses the model-producer path, and instructs the run

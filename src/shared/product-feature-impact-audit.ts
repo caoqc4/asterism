@@ -482,7 +482,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Scheduled briefs use product-harness fallback when provider execution is unavailable.',
       'RuntimeEntrypointCoverage now classifies scheduler stale-run recovery as scheduler_maintenance behind the scheduler feature flag, with post-step Run evidence and no Agent CLI/API startup.',
       'RuntimeEntrypointCoverage now registers automation readiness as a diagnostic-only entrypoint with runtime-context assembly but no runtime_action/pre_step/post_step execution gates.',
-      'RuntimeEntrypointCoverage now registers scheduled/event/routine Agent execution as a separate gated provider-visible execution contract with scheduler configuration, confirmation, standing approval, context readiness, task-memory, subtask_start, and post-step gates before any IPC or scheduler trigger can exist.',
+      'RuntimeEntrypointCoverage now registers scheduled/event/routine Agent execution as a separate gated provider-visible execution contract with scheduler configuration, confirmation, standing approval, context readiness, task-memory, subtask_start, post-step gates, and explicit operator IPC before any background scheduler trigger can exist.',
       'AgentAutomationReadiness now keeps scheduled, event-triggered, and routine tasks diagnostic-only for automatic starts until a separate scheduled/event execution entrypoint exists, even when procedure, inputs, runtime, risk, and completion criteria are ready.',
       'Read-only orchestration diagnostics now expose the automatic-start boundary, distinguishing manual/operator-started readiness from scheduled/event tasks that require a separate execution entrypoint.',
       'AgentAutomationReadiness now projects an autonomy ladder level and next authorized-action level, so ready tasks surface L1 proposal capability and the standing-approval requirement for future L2 limited autonomous action instead of flattening all automation into disabled.',
@@ -497,12 +497,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'RunRepository.countCreatedSinceByTask now gives SchedulerService a real no-start daily run-count source for scheduled/event diagnostics, so run-limit blocking can be based on persisted same-day Run records instead of caller-supplied test data.',
       'Scheduled/event trigger plans now carry the trigger Run evidence contract for context readiness, task-memory coverage, task-memory guidance, subtask_start, run-limit count, and post-step evidence.',
       'SchedulerService.triggerScheduledEventAgentRun now provides a narrow main-side trigger-service connection: it requires an injected Code Agent trigger port, reuses Standing Approval and persisted same-day run-limit checks, starts only ready plans with schedulerTriggerServiceConnected=true, and emits a bounded model-producer Code Agent run request with operatorConfirmed=true.',
+      'Task Dynamics now exposes a confirmed Standing Approval "启动一次" operator action backed by scheduler:triggerScheduledEventAgentRun IPC, so scheduled/event tasks can start one bounded Agent run without enabling a background scheduler job.',
     ],
     gaps: [
-      'Routine/event-triggered Agent task execution now has a narrow trigger-service connection behind an injected Code Agent port, but it still needs scheduler job/IPC wiring, run-evidence persistence checks across live execution, and broader runtime coverage before it can count as complete L2 automatic native runtime start.',
+      'Routine/event-triggered Agent task execution now has a narrow trigger-service connection, explicit operator IPC, and Task Dynamics launch action, but it still needs background scheduler job wiring, run-evidence persistence checks across live execution, and broader runtime coverage before it can count as complete L2 automatic native runtime start.',
     ],
     nextActions: [
-      'Wire the scheduled/event trigger service into an explicit scheduler or operator surface only after live execution proves context readiness, task-memory, subtask_start, durable run-limit counting, terminal Run evidence, and post-step gates.',
+      'Wire the scheduled/event trigger service into background scheduler jobs only after live operator-triggered execution proves context readiness, task-memory, subtask_start, durable run-limit counting, terminal Run evidence, and post-step gates.',
     ],
   },
   {

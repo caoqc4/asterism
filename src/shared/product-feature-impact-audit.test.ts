@@ -202,7 +202,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('automation readiness as a diagnostic-only entrypoint');
     expect(workHabits?.evidence.join(' ')).toContain('no runtime_action/pre_step/post_step execution gates');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event/routine Agent execution as a separate gated provider-visible execution contract');
-    expect(workHabits?.evidence.join(' ')).toContain('before any IPC or scheduler trigger can exist');
+    expect(workHabits?.evidence.join(' ')).toContain('explicit operator IPC before any background scheduler trigger can exist');
     expect(workHabits?.evidence.join(' ')).toContain('autonomy ladder level');
     expect(workHabits?.evidence.join(' ')).toContain('L1 proposal capability');
     expect(workHabits?.evidence.join(' ')).toContain('standing_approval as an explicit deferred gate');
@@ -234,10 +234,13 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('injected Code Agent trigger port');
     expect(workHabits?.evidence.join(' ')).toContain('schedulerTriggerServiceConnected=true');
     expect(workHabits?.evidence.join(' ')).toContain('operatorConfirmed=true');
-    expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection behind an injected Code Agent port');
-    expect(workHabits?.gaps.join(' ')).toContain('scheduler job/IPC wiring');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduler:triggerScheduledEventAgentRun');
+    expect(workHabits?.evidence.join(' ')).toContain('启动一次');
+    expect(workHabits?.evidence.join(' ')).toContain('without enabling a background scheduler job');
+    expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, and Task Dynamics launch action');
+    expect(workHabits?.gaps.join(' ')).toContain('background scheduler job wiring');
     expect(workHabits?.gaps.join(' ')).toContain('run-evidence persistence checks across live execution');
-    expect(workHabits?.nextActions.join(' ')).toContain('explicit scheduler or operator surface');
+    expect(workHabits?.nextActions.join(' ')).toContain('background scheduler jobs');
     expect(workHabits?.nextActions.join(' ')).toContain('durable run-limit counting');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
@@ -361,7 +364,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
     expect(workHabits?.gaps.join(' ')).not.toContain('connected trigger service before L2 automatic native runtime starts');
-    expect(workHabits?.nextActions.join(' ')).toContain('explicit scheduler or operator surface');
+    expect(workHabits?.nextActions.join(' ')).toContain('background scheduler jobs');
     expect(workHabits?.nextActions.join(' ')).toContain('context readiness');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code mode');
     expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');
