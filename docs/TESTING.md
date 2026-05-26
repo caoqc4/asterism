@@ -355,10 +355,10 @@ gates are enabled.
 The scheduled/event Agent sweep smoke is local and non-live. It runs against
 built main-process modules and proves the scheduler sweep can load duplicate
 Standing Approval candidates, reuse persisted run-limit accounting, start one
-bounded Code Agent run, block the duplicate through in-sweep daily-limit
-counting, record
-`panel.scheduled_event_agent_triggered`, and keep `workspace=unchanged`,
-`provider=not-called`, and `docker=not-started`.
+bounded Code Agent run with the trigger Run evidence contract, block the
+duplicate through in-sweep daily-limit counting, record
+`panel.scheduled_event_agent_triggered` with target task evidence, and keep
+`workspace=unchanged`, `provider=not-called`, and `docker=not-started`.
 
 The Agent API execution preflight is deliberately narrower than a full task
 run: default output must include `status=skip`, `provider=not-called`,
