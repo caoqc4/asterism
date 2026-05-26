@@ -6,10 +6,17 @@ import type { ArtifactRecord } from '@shared/types/artifact';
 import type { TaskFileRecord } from '@shared/types/task-file';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { RunDetailRecord, RunRecord } from '@shared/types/run';
+import type { AiConfigStatus } from '@shared/types/settings';
 import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
 import { summarizeDecisionEffects } from '@shared/decision-effect-evaluator';
 import type { TaskCloseoutEvaluation } from '@shared/task-closeout-evaluator';
 import { evaluateRuntimeVerification, type RuntimeVerificationResult } from '@shared/runtime-verification';
+import {
+  buildAgentExecutionOrchestrationSnapshot,
+  buildStandingApprovalConfirmationDraft,
+  evaluateSkillInformedAutomationReadiness,
+  type AgentStandingApprovalConfirmationDraft,
+} from '@shared/agent-orchestration';
 import {
   classifyRuntimeFileSurface,
   classifySourceContextSurface,
@@ -945,6 +952,44 @@ function formatSecondaryFacets(task: Task, displayType: TaskType = task.type): s
     .map((facet) => TASK_TYPE_LABELS[facet]);
 }
 
+function isAutonomousTaskClass(task: Task): boolean {
+  return task.type === 'scheduled'
+    || task.type === 'event'
+    || task.type === 'routine'
+    || task.facets.includes('scheduled')
+    || task.facets.includes('event')
+    || task.facets.includes('routine');
+}
+
+function buildStandingApprovalDraftForTask(
+  task: Task,
+  detail: TaskDetail,
+  aiStatus: AiConfigStatus,
+): AgentStandingApprovalConfirmationDraft {
+  const taskForReadiness = {
+    ...detail,
+    taskFacets: task.facets,
+    taskType: task.type,
+  };
+  const snapshot = buildAgentExecutionOrchestrationSnapshot(aiStatus);
+  const readiness = evaluateSkillInformedAutomationReadiness({
+    snapshot,
+    task: taskForReadiness,
+  });
+
+  return buildStandingApprovalConfirmationDraft({
+    now: new Date(),
+    readiness,
+    runtimeId: snapshot.runtime.id,
+    task: {
+      id: task.id,
+      riskLevel: detail.riskLevel,
+      taskFacets: task.facets,
+      taskType: task.type,
+    },
+  });
+}
+
 function lensForTaskType(task: Task, allTasks: Task[]): Lens {
   const displayType = effectiveTaskType(task, allTasks);
   if (displayType !== task.type) return displayType;
@@ -1058,6 +1103,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const [runningPatchReviewArtifactId, setRunningPatchReviewArtifactId] = useState<string | null>(null);
   const [applyingPatchPromotionCheckpointId, setApplyingPatchPromotionCheckpointId] = useState<string | null>(null);
   const [sandboxPatchPromotionApplyEnabled, setSandboxPatchPromotionApplyEnabled] = useState(false);
+  const [aiConfigStatus, setAiConfigStatus] = useState<AiConfigStatus | null>(null);
   const [fileContentOverrides, setFileContentOverrides] = useState<Record<string, string>>(() => loadTaskFileContentOverrides());
   const [localTaskFiles, setLocalTaskFiles] = useState<Record<string, LocalTaskFileRecord[]>>(() => loadLocalTaskFiles());
   const [pendingFileSwitch, setPendingFileSwitch] = useState<PendingFileSwitch>(null);
@@ -1170,9 +1216,11 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     if (!window.api?.getAiConfigStatus) return;
     window.api.getAiConfigStatus()
       .then((status) => {
+        setAiConfigStatus(status);
         setSandboxPatchPromotionApplyEnabled(Boolean(status.featureFlags.enableSandboxPatchPromotionApply));
       })
       .catch(() => {
+        setAiConfigStatus(null);
         setSandboxPatchPromotionApplyEnabled(false);
       });
   }
@@ -1765,6 +1813,9 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         taskTitle: selectedTask.title,
       }).filter((item) => !appliedWritebackApprovalIds[item.id])
     : [];
+  const standingApprovalDraft = selectedTask && selectedTaskDetail && aiConfigStatus && isAutonomousTaskClass(selectedTask)
+    ? buildStandingApprovalDraftForTask(selectedTask, selectedTaskDetail, aiConfigStatus)
+    : null;
   const runtimeEvents = selectedTask
     ? projectRuntimeEvents({
         taskId: selectedTask.id,
@@ -3154,6 +3205,7 @@ function resetCaptureDraft() {
               events={runtimeEvents}
               runCount={selectedRuns.length}
               writebackApprovals={writebackApprovalItems}
+              standingApprovalDraft={standingApprovalDraft}
               applyingWritebackApprovalId={applyingWritebackApprovalId}
               writebackApprovalMessages={writebackApprovalMessages}
               onConfirmWriteback={confirmWritebackApproval}
@@ -3870,6 +3922,7 @@ function TaskTimelineView({
   events,
   runCount,
   writebackApprovals,
+  standingApprovalDraft,
   applyingWritebackApprovalId,
   writebackApprovalMessages,
   onConfirmWriteback,
@@ -3881,6 +3934,7 @@ function TaskTimelineView({
   events: RuntimeEventRecord[];
   runCount: number;
   writebackApprovals: TaskplaneWritebackApprovalItem[];
+  standingApprovalDraft: AgentStandingApprovalConfirmationDraft | null;
   applyingWritebackApprovalId: string | null;
   writebackApprovalMessages: Record<string, string>;
   onConfirmWriteback: (item: TaskplaneWritebackApprovalItem) => void;
@@ -3918,6 +3972,26 @@ function TaskTimelineView({
       <div className="preview-section">
         <div className="preview-label">任务动态</div>
         <p className="preview-config-note compact">{scopeCopy}</p>
+        {standingApprovalDraft && (
+          <div className="task-writeback-approvals" aria-label="Standing Approval 授权草案">
+            <div className="task-writeback-approval">
+              <div className="task-writeback-approval-main">
+                <div className="task-writeback-approval-title">
+                  <strong>{standingApprovalDraft.title}</strong>
+                  <span>{standingApprovalDraft.status === 'ready' ? 'L2 授权草案' : '授权未就绪'}</span>
+                </div>
+                <p>{standingApprovalDraft.evaluation.accepted ? '可确认有限自主行动策略；当前不会启动 scheduler，也不会写入工作区。' : '当前任务仍有授权前缺口；请先补齐 readiness。'}</p>
+                <small>{standingApprovalDraft.detail}</small>
+                {!standingApprovalDraft.evaluation.accepted && (
+                  <em>{standingApprovalDraft.evaluation.blockedReasons.join('；')}</em>
+                )}
+              </div>
+              <button className="btn sm disabled" disabled>
+                待接入确认
+              </button>
+            </div>
+          </div>
+        )}
         {writebackApprovals.length > 0 && (
           <div className="task-writeback-approvals" aria-label="待确认写回提案">
             {writebackApprovals.slice(0, 4).map((item) => {

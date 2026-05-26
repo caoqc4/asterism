@@ -4965,6 +4965,106 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('任务信息已更新')).toBeNull();
   });
 
+  it('surfaces a confirmation-only Standing Approval draft for autonomous task classes', async () => {
+    const user = userEvent.setup();
+    const routineTask = buildTask({
+      id: 'task_routine_auto',
+      title: '每周竞品更新',
+      riskLevel: 'low',
+      taskFacets: ['scheduled', 'routine'],
+      taskType: 'routine',
+    });
+    vi.mocked(harness.api.listTasks).mockResolvedValueOnce([routineTask]);
+    vi.mocked(harness.api.getTaskDetail).mockImplementation(async (taskId: string) => {
+      if (taskId !== routineTask.id) return null;
+      return {
+        ...buildTaskDetail(routineTask),
+        processTemplates: [{
+          id: 'template_auto',
+          bindingId: 'binding_auto',
+          taskId: routineTask.id,
+          title: '竞品更新 SOP',
+          summary: null,
+          content: 'Collect bounded competitor updates and prepare a review note.',
+          kind: 'sop',
+          tags: [],
+          status: 'active',
+          bindingStatus: 'active',
+          bindingNote: null,
+          boundAt: now,
+          bindingUpdatedAt: now,
+          createdAt: now,
+          updatedAt: now,
+          archivedAt: null,
+          removedAt: null,
+        }],
+      };
+    });
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      featureFlags: {
+        ...buildAiStatus().featureFlags,
+        enableSandboxCodingAgent: true,
+      },
+      sandboxBackendStatus: {
+        probe: {
+          backendId: 'local-container',
+          environmentPolicy: 'empty',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          status: 'available',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        profile: {
+          credentialPassthrough: false,
+          environmentPolicy: 'empty',
+          id: 'local-container',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        readiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Sandbox backend ready.',
+        },
+        producerBackendReadiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Producer ready.',
+        },
+        summary: 'Sandbox backend ready.',
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /每周竞品更新/ }).length).toBeGreaterThan(0);
+    });
+    await user.click(screen.getAllByRole('button', { name: /每周竞品更新/ })[0]!);
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
+
+    const approvalDraft = await screen.findByLabelText('Standing Approval 授权草案');
+    expect(within(approvalDraft).getByText(/Standing Approval 草案：允许 L2 有限自主行动/)).toBeTruthy();
+    expect(within(approvalDraft).getByText('L2 授权草案')).toBeTruthy();
+    expect(within(approvalDraft).getByText(/schedulerTriggerAllowed=false/)).toBeTruthy();
+    expect(within(approvalDraft).getByText(/workspaceWriteAllowed=false/)).toBeTruthy();
+    expect(within(approvalDraft).getByRole('button', { name: '待接入确认' }).hasAttribute('disabled')).toBe(true);
+    expect(harness.api.applyTaskplaneWriteback).not.toHaveBeenCalled();
+  });
+
   it('lets task dynamics approve Run writeback proposals without opening the right panel', async () => {
     const user = userEvent.setup();
     harness.runs[0] = {

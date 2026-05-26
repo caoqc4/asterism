@@ -122,6 +122,19 @@ export type AgentStandingApprovalEvaluation = {
   summary: string;
 };
 
+export type AgentStandingApprovalConfirmationDraft = {
+  id: string;
+  status: 'ready' | 'blocked';
+  title: string;
+  detail: string;
+  policy: AgentStandingApprovalPolicy;
+  evaluation: AgentStandingApprovalEvaluation;
+  confirmationRequired: true;
+  schedulerTriggerAllowed: false;
+  workspaceWriteAllowed: false;
+  summary: string;
+};
+
 export type AgentExecutionOrchestrationSnapshot = {
   runtime: ExecutionRuntimeSnapshot;
   profile: AgentProfileSnapshot;
@@ -760,8 +773,13 @@ export function evaluateStandingApprovalForAutomation(params: {
     }
   }
 
-  if (params.readiness.state === 'blocked') {
+  const readinessBlockers = params.readiness.blockedReasons.filter((reason) =>
+    !isStandingApprovalToleratedReadinessBlocker(reason));
+  if (params.readiness.state === 'blocked' || readinessBlockers.length > 0) {
     blockedReasons.push('Automation readiness is blocked.');
+    for (const reason of readinessBlockers) {
+      blockedReasons.push(`Automation readiness blocker: ${reason}`);
+    }
   } else {
     evidence.push(`readiness=${params.readiness.state}`);
   }
@@ -782,6 +800,86 @@ export function evaluateStandingApprovalForAutomation(params: {
   };
 }
 
+export function buildStandingApprovalConfirmationDraft(params: {
+  lane?: AgentExecutionOrchestrationLane;
+  maxRunsPerDay?: number;
+  now: Date;
+  readiness: AgentAutomationReadinessEvaluation;
+  runtimeId?: string;
+  task: Pick<TaskDetail, 'id' | 'riskLevel' | 'taskFacets' | 'taskType'>;
+}): AgentStandingApprovalConfirmationDraft {
+  const lane = params.lane ?? 'coding';
+  const runtimeId = params.runtimeId ?? 'local_sandbox';
+  const nowIso = params.now.toISOString();
+  const expiresAt = new Date(params.now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+  const riskCeiling: AgentStandingApprovalRiskCeiling = params.task.riskLevel === 'medium'
+    ? 'medium'
+    : 'low';
+  const taskTypes = params.task.taskType ? [params.task.taskType] : undefined;
+  const taskFacets = params.task.taskFacets?.length ? [...params.task.taskFacets] : undefined;
+  const policy: AgentStandingApprovalPolicy = {
+    id: [
+      'standing_approval',
+      params.task.id,
+      lane,
+      runtimeId,
+      nowIso,
+    ].join(':'),
+    allowedAutonomyLevel: 'L2_limited_authorized_action',
+    allowedLanes: [lane],
+    allowedRuntimeIds: [runtimeId],
+    createdAt: nowIso,
+    expiresAt,
+    maxRunsPerDay: params.maxRunsPerDay ?? 3,
+    reason: 'Allow this task to perform bounded L2 autonomous action under Taskplane standing approval.',
+    riskCeiling,
+    status: 'active',
+    taskFacets,
+    taskId: params.task.id,
+    taskTypes,
+  };
+  const evaluation = evaluateStandingApprovalForAutomation({
+    lane,
+    now: nowIso,
+    policy,
+    readiness: params.readiness,
+    runtimeId,
+    task: params.task,
+  });
+  const status = evaluation.accepted ? 'ready' : 'blocked';
+
+  return {
+    id: policy.id,
+    status,
+    title: status === 'ready'
+      ? 'Standing Approval 草案：允许 L2 有限自主行动'
+      : 'Standing Approval 草案：暂不可授权',
+    detail: [
+      `scope=task:${params.task.id}`,
+      `lane=${lane}`,
+      `runtime=${runtimeId}`,
+      `riskCeiling=${riskCeiling}`,
+      `maxRunsPerDay=${policy.maxRunsPerDay}`,
+      `expiresAt=${expiresAt}`,
+      'schedulerTriggerAllowed=false',
+      'workspaceWriteAllowed=false',
+    ].join(' / '),
+    policy,
+    evaluation,
+    confirmationRequired: true,
+    schedulerTriggerAllowed: false,
+    workspaceWriteAllowed: false,
+    summary: [
+      'Standing Approval confirmation draft',
+      `status=${status}`,
+      'confirmationRequired=yes',
+      'schedulerTriggerAllowed=false',
+      'workspaceWriteAllowed=false',
+      evaluation.summary,
+    ].join(' / '),
+  };
+}
+
 function isRiskAllowedByStandingApproval(
   ceiling: AgentStandingApprovalRiskCeiling,
   risk: TaskDetail['riskLevel'],
@@ -789,6 +887,10 @@ function isRiskAllowedByStandingApproval(
   if (risk === 'high') return false;
   if (ceiling === 'low') return risk === 'low';
   return risk === 'low' || risk === 'medium';
+}
+
+function isStandingApprovalToleratedReadinessBlocker(reason: string): boolean {
+  return reason === 'Scheduled, event-triggered, and routine tasks need a policy-gated scheduled/event execution entrypoint before automatic native runtime start.';
 }
 
 function mapRunStatusToLifecycleStage(runStatus: RunStatus): AgentRunLifecycleStage {

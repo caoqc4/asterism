@@ -772,6 +772,11 @@ Current implementation:
   and daily run limit, carries a visible reason, and automation readiness is not
   blocked. This evaluates authorization only; it does not create a scheduler
   trigger, IPC entrypoint, or workspace write path by itself.
+- `buildStandingApprovalConfirmationDraft` creates the operator-facing L2
+  authorization draft from the same readiness and policy evaluator. The draft is
+  confirmation-only, carries `schedulerTriggerAllowed=false` and
+  `workspaceWriteAllowed=false`, tolerates only the known scheduled/event
+  entrypoint blocker, and blocks other automation readiness gaps.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

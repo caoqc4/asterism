@@ -5,6 +5,7 @@ import {
   buildAgentExecutionOrchestrationSnapshot,
   buildCodeAgentOrchestrationRequest,
   buildOperatorStartedOrchestrationRequest,
+  buildStandingApprovalConfirmationDraft,
   evaluateStandingApprovalForAutomation,
   evaluateSkillInformedAutomationReadiness,
   projectAgentRunLifecycle,
@@ -661,6 +662,90 @@ describe('agent orchestration snapshot', () => {
       ]),
     });
     expect(approval.evidence).not.toContain('policyExpiry=future');
+  });
+
+  it('builds a confirmation-only standing approval draft without scheduler or workspace writes', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+
+    expect(draft).toMatchObject({
+      confirmationRequired: true,
+      schedulerTriggerAllowed: false,
+      status: 'ready',
+      workspaceWriteAllowed: false,
+      evaluation: {
+        accepted: true,
+        authorizedAutonomyLevel: 'L2_limited_authorized_action',
+      },
+      policy: {
+        allowedAutonomyLevel: 'L2_limited_authorized_action',
+        allowedLanes: ['coding'],
+        allowedRuntimeIds: ['local_sandbox'],
+        expiresAt: '2026-05-27T10:00:00.000Z',
+        maxRunsPerDay: 3,
+        riskCeiling: 'low',
+        status: 'active',
+        taskFacets: ['scheduled'],
+        taskId: 'task_1',
+        taskTypes: ['routine'],
+      },
+    });
+    expect(draft.detail).toContain('schedulerTriggerAllowed=false');
+    expect(draft.detail).toContain('workspaceWriteAllowed=false');
+    expect(draft.summary).toContain('confirmationRequired=yes');
+  });
+
+  it('blocks the standing approval draft when readiness is blocked', () => {
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task: matureAutomationTask({
+        completionCriteria: [],
+      }),
+    });
+
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: [],
+        taskType: 'simple',
+      },
+    });
+
+    expect(draft).toMatchObject({
+      confirmationRequired: true,
+      schedulerTriggerAllowed: false,
+      status: 'blocked',
+      workspaceWriteAllowed: false,
+      evaluation: {
+        accepted: false,
+        authorizedAutonomyLevel: null,
+        blockedReasons: expect.arrayContaining([
+          'Automation readiness is blocked.',
+          'Automation readiness blocker: Task needs at least one open completion criterion to bound execution.',
+        ]),
+      },
+    });
+    expect(draft.title).toContain('暂不可授权');
   });
 });
 

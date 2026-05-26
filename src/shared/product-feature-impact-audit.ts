@@ -480,12 +480,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'AgentAutomationReadiness now projects an autonomy ladder level and next authorized-action level, so ready tasks surface L1 proposal capability and the standing-approval requirement for future L2 limited autonomous action instead of flattening all automation into disabled.',
       'RuntimeEntrypointCoverage now models standing_approval as an explicit deferred gate for scheduled/event autonomous execution and scheduler/background Decision drafts.',
       'AgentStandingApprovalPolicy and evaluateStandingApprovalForAutomation now provide a narrow shared policy surface for L2 limited autonomous action, checking active status, expiry, task scope, lane, runtime, risk ceiling, daily run limit, visible reason, and existing automation readiness before any future scheduler trigger can use it.',
+      'buildStandingApprovalConfirmationDraft now creates a confirmation-only L2 authorization draft with policy, evaluation, scope summary, and explicit schedulerTriggerAllowed=false / workspaceWriteAllowed=false boundaries; it only tolerates the known scheduled/event entrypoint blocker and blocks other automation readiness gaps.',
+      'TasksPage Task Dynamics now exposes the Standing Approval draft for scheduled/event/routine tasks as a disabled operator card, making the L2 authorization shape visible while keeping scheduler triggers and workspace writes unavailable.',
     ],
     gaps: [
-      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics and shared Standing Approval evaluation; scheduled/event tasks still need a persisted approval surface and dedicated trigger service before L2 automatic native runtime starts.',
+      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics, shared Standing Approval evaluation, confirmation-only drafts, and a disabled Task Dynamics card; scheduled/event tasks still need a persisted approval record, enabled confirmation action, and dedicated trigger service before L2 automatic native runtime starts.',
     ],
     nextActions: [
-      'Persist and expose the smallest Standing Approval confirmation surface before wiring the deferred scheduled/event contract to any scheduler trigger.',
+      'Persist confirmed Standing Approval records and add an enabled confirmation action before wiring the deferred scheduled/event contract to any scheduler trigger.',
     ],
   },
   {
