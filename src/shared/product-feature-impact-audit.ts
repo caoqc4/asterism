@@ -531,6 +531,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'The non-live smoke:agent-cli-web-research bridge smoke locks fresh/current trigger detection, mocked OpenAI web_search output, Source Context persistence, preparation Run progress, and renderer progress mapping without external network or provider calls.',
       'The manual Agent CLI native web/search smoke is default-skipped and reports cli=not-called, network=not-called, and workspace=unchanged unless explicitly enabled for one live native search request.',
       'The Codex native web/search smoke passed locally on 2026-05-26 with codex-cli 0.125.0, auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed.',
+      'Claude Code 2.1.144 stream-json execution now uses --verbose in smoke harnesses; a 2026-05-26 focused probe reached provider execution and returned 401 authentication_failed while preserving workspace safety.',
     ],
     gaps: [
       'Claude real-account execution smoke has a manual opt-in packaged harness, but a passing run remains pending until account readiness is available.',

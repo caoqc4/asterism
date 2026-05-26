@@ -366,6 +366,8 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('network=not-called');
     expect(smoke?.evidence.join(' ')).toContain('Codex native web/search smoke passed locally on 2026-05-26');
     expect(smoke?.evidence.join(' ')).toContain('status=passed');
+    expect(smoke?.evidence.join(' ')).toContain('Claude Code 2.1.144 stream-json execution now uses --verbose');
+    expect(smoke?.evidence.join(' ')).toContain('401 authentication_failed');
     expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
 });

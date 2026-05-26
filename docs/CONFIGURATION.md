@@ -388,7 +388,7 @@ calling the CLI.
 
 When a CLI exposes structured terminal events, Taskplane asks for that stream
 and projects it into Run steps: Codex uses `codex exec --json`, and Claude Code
-uses `claude -p --output-format stream-json`. Parsed tool/search/browse events
+uses `claude -p --output-format stream-json --verbose`. Parsed tool/search/browse events
 become capability-tagged steps such as `Codex CLI 联网检索：web_search` or
 `Claude Code 命令执行：Bash`; if the stream shape changes or cannot be parsed,
 Taskplane falls back to the terminal stdout summary instead of treating the run
@@ -494,6 +494,12 @@ and authenticated CLI status, but the read-only execution returned a provider
 account/organization error. The temporary workspace remained unchanged, so this
 is a non-blocking account-readiness gap rather than a Taskplane workspace safety
 failure.
+On 2026-05-26, a focused Claude Code `stream-json --verbose` probe reached
+provider execution and returned `401 authentication_failed`, confirming that the
+remaining gap is Claude account/provider readiness. A Codex model should be
+validated through the Codex CLI adapter; do not treat a third-party model behind
+Claude Code as Claude readiness unless Claude Code exposes that provider as an
+official supported execution path.
 
 ## Scheduler Flag
 

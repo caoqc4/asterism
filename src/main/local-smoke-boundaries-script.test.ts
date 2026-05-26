@@ -598,9 +598,23 @@ describe('local smoke script default boundaries', () => {
     expect(testingDoc).toContain('Claude Code `2.1.144`');
     expect(testingDoc).toContain('non-blocking secondary');
     expect(testingDoc).toContain('account/organization error');
+    expect(testingDoc).toContain('401 authentication_failed');
+    expect(testingDoc).toContain('Do not count a third-party model behind Claude Code as Claude account readiness');
     expect(testingDoc).toContain('workspace=unchanged');
+    expect(configurationDoc).toContain('401 authentication_failed');
+    expect(configurationDoc).toContain('Codex CLI adapter');
     expect(configurationDoc).toContain('non-blocking account-readiness gap');
     expect(configurationDoc).toContain('Taskplane workspace safety');
+  });
+
+  it('keeps Claude smoke stream-json invocations verbose for current Claude Code', () => {
+    const readOnlySmoke = fs.readFileSync(path.join(process.cwd(), 'scripts/agent-cli-readonly-smoke.mjs'), 'utf8');
+    const webSearchSmoke = fs.readFileSync(path.join(process.cwd(), 'scripts/agent-cli-native-web-search-smoke.mjs'), 'utf8');
+    const configurationDoc = fs.readFileSync(new URL('../../docs/CONFIGURATION.md', import.meta.url), 'utf8');
+
+    expect(readOnlySmoke).toContain("'--output-format', 'stream-json', '--verbose'");
+    expect(webSearchSmoke).toContain("'--output-format', 'stream-json', '--verbose'");
+    expect(configurationDoc).toContain('claude -p --output-format stream-json --verbose');
   });
 
   it('validates the Agent CLI smoke runtime before calling a CLI', () => {

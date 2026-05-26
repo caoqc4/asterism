@@ -27,7 +27,7 @@ const RUNTIME_ADAPTERS = {
   claude: {
     authArgs: ['auth', 'status'],
     command: 'claude',
-    execArgs: () => ['-p', '--permission-mode', 'plan', '--output-format', 'stream-json'],
+    execArgs: () => ['-p', '--permission-mode', 'plan', '--output-format', 'stream-json', '--verbose'],
     label: 'Claude Code',
   },
 };
@@ -186,7 +186,10 @@ function firstLine(text) {
 }
 
 function preview(text) {
-  return text.replace(/\s+/g, ' ').trim().slice(0, 500) || '<empty>';
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  const authFailure = normalized.match(/(?:401|authentication_failed|account\/organization|unauthorized)[^}]{0,240}/i);
+  if (authFailure) return authFailure[0];
+  return normalized.slice(0, 500) || '<empty>';
 }
 
 function normalizeRuntime(value) {

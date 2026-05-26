@@ -260,9 +260,19 @@ TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=co
 
 The same local pass checked Claude Code `2.1.144` as a non-blocking secondary
 path. The CLI and auth status were detectable, but execution returned a provider
-account/organization error while preserving `workspace=unchanged`. Keep this as
-non-blocking evidence until a valid Claude account can pass the same opt-in
-read-only smoke.
+account/organization error while preserving `workspace=unchanged`. On
+2026-05-26, a focused Claude Code `stream-json --verbose` probe also reached
+provider execution and returned `401 authentication_failed`, confirming that the
+remaining gap is account/provider readiness rather than Taskplane workspace
+safety. Keep this as non-blocking evidence until a valid Claude account can pass
+the same opt-in read-only smoke.
+
+Do not count a third-party model behind Claude Code as Claude account readiness
+unless Claude Code itself exposes and documents that provider as a supported
+execution path. Current local help exposes Claude model selection and
+third-party infrastructure providers such as Bedrock/Vertex/Foundry, but no
+OpenAI/Codex-compatible model route; using Codex directly should stay in the
+Codex CLI adapter smoke path.
 
 Runtime-native goal discovery is an optional compatibility track, not a
 first-version product gate. By default it only probes local CLI version/help
