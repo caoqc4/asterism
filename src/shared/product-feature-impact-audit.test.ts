@@ -152,6 +152,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('adapter capability support');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
+    expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness summary and missing evidence');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');

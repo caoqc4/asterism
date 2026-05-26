@@ -87,6 +87,10 @@ import {
   type AgentRuntimeAdapterCapabilities,
 } from '@shared/agent-runtime-goal';
 import {
+  buildNativeGoalAuditReadinessEvidence,
+  evaluateNativeGoalForwardingReadiness,
+} from '@shared/native-goal-forwarding-readiness';
+import {
   selectApplicableWorkHabitMatches,
   getPersistedWorkHabitStorageSnapshot,
   recordWorkHabitApplications,
@@ -3217,8 +3221,18 @@ export function RightPanel({
       const runtimeLabel = targetRuntime ? AGENT_CLI_PANEL_RUNTIME_LABELS[targetRuntime] : '当前 runtime';
       const capabilities = targetRuntime ? agentCliCapabilities[targetRuntime] : null;
       const nativeGoalDecision = evaluateRuntimeNativeGoalForwarding(capabilities);
+      const nativeGoalReadinessEvidence = buildNativeGoalAuditReadinessEvidence({
+        adapterId: targetRuntime ?? command.runtimeId,
+        supportsNativeGoalMode: nativeGoalDecision.supportsNativeGoalMode,
+      });
+      const nativeGoalReadiness = evaluateNativeGoalForwardingReadiness(nativeGoalReadinessEvidence);
       await recordPanelTimelineEvent(activeTaskId, 'panel.runtime_native_goal_requested', {
         forwarded: nativeGoalDecision.forwarded,
+        nativeGoalForwardingReadiness: {
+          missingEvidence: nativeGoalReadiness.missingEvidence,
+          status: nativeGoalReadiness.status,
+          summary: nativeGoalReadiness.summary,
+        },
         objective: command.objective,
         reason: nativeGoalDecision.reason,
         runtimeId: targetRuntime ?? command.runtimeId,
@@ -3249,6 +3263,10 @@ export function RightPanel({
         '',
         'Taskplane 已识别这是显式 runtime-native goal 请求，但本版本不会直接透传到底层 CLI，避免目标状态落在 Taskplane 会话之外。',
         auditRun ? `审计 Run: ${auditRun.id}` : null,
+        `Readiness: ${nativeGoalReadiness.summary}`,
+        nativeGoalReadiness.missingEvidence.length
+          ? `Missing evidence: ${nativeGoalReadiness.missingEvidence.join(', ')}`
+          : 'Missing evidence: none',
         capabilities
           ? `Adapter capability: supportsNativeGoalMode=${String(nativeGoalDecision.supportsNativeGoalMode)}, passthroughRequiresExplicitNamespace=${String(nativeGoalDecision.passthroughRequiresExplicitNamespace)}, policy=${nativeGoalDecision.policy}`
           : 'Adapter capability: unavailable',

@@ -399,6 +399,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Probed native compact/clear signals are promoted into adapter capability support while context reset still requires Taskplane preservation gates and persistent-session ownership before a runtime-native reset strategy can be selected.',
       'Run Goal Contract and Agent CLI context bridge pass selected-runtime capability declarations into native CLI prompts.',
       'Runtime-native goal audit runs now attach the shared native goal forwarding readiness summary, missing evidence, and closed boundary notes without executing the CLI.',
+      'Right-panel runtime-native goal requests now show the native goal forwarding readiness summary and missing evidence in the operator response and panel timeline payload.',
       'Native CLI provider events are projected into runtime-neutral capability progress states for web search, workspace reads/writes, command execution, MCP, and hooks.',
       'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
       'Fresh external research wording such as latest/current pricing or recent release changes is now covered by the pre-run web research trigger while local current-task wording remains excluded.',

@@ -12,6 +12,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
 
     expect(content).toContain('pre-run web research bridge');
     expect(content).toContain('research query');
+    expect(content).toContain('Right-panel runtime-native goal responses');
+    expect(content).toContain('same readiness summary and missing evidence');
     expect(content).toContain('context.readiness.evaluate');
     expect(content).toContain('Pilot coordination is modeled as a product role');
     expect(content).toContain('Phase-2 Pilot assistance is bounded');

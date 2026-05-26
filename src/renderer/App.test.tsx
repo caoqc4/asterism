@@ -2480,6 +2480,10 @@ describe('App redesign v1', () => {
       type: 'panel.runtime_native_goal_requested',
       payload: expect.objectContaining({
         forwarded: false,
+        nativeGoalForwardingReadiness: expect.objectContaining({
+          missingEvidence: expect.arrayContaining(['command shape', 'progress evidence', 'control boundary', 'packaged smoke']),
+          status: 'audit_only',
+        }),
         objective: '跑完验收',
         runtimeId: 'codex',
         runtimeLabel: 'Codex CLI',
@@ -2493,6 +2497,8 @@ describe('App redesign v1', () => {
     }));
     expect(await screen.findByText(/Codex CLI native goal mode 需要更新 CLI 后才可用/)).toBeTruthy();
     expect(screen.getByText(/审计 Run: run_native_goal_audit/)).toBeTruthy();
+    expect(screen.getByText(/Readiness: codex native goal forwarding remains audit-only/)).toBeTruthy();
+    expect(screen.getByText(/Missing evidence: command shape, progress evidence, control boundary, packaged smoke/)).toBeTruthy();
     expect(screen.getByText(/显式 runtime-native goal 请求/)).toBeTruthy();
   });
 
