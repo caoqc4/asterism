@@ -439,6 +439,9 @@ describe('local smoke script default boundaries', () => {
     expect(taskFilesSmoke).toContain('Touched files: packaged-apply.md');
     expect(taskFilesSmoke).toContain('No workspace files were written.');
     expect(taskFilesSmoke).toContain('Patch promotion workspace content does not match reviewed base: packaged-blocked.md');
+    const configurationDoc = fs.readFileSync(new URL('../../docs/CONFIGURATION.md', import.meta.url), 'utf8');
+    expect(configurationDoc).toContain('reviewed-patch notices remain no-write');
+    expect(configurationDoc).toContain('disabled apply action');
   });
 
   it('keeps alpha local acceptance non-live and explicit', () => {

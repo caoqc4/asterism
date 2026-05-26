@@ -112,7 +112,9 @@ producer` in a Code Agent run and confirm the run notice.
 Keep `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=false` unless you are
 deliberately validating approved sandbox patch promotion against a disposable
 workspace. When enabled, approving a ready `workspace.staged_patch` Decision can
-write the reviewed files after promotion preflight passes.
+write the reviewed files after promotion preflight passes. When disabled,
+reviewed-patch notices remain no-write and show a disabled apply action instead
+of hiding the boundary.
 
 ### External Access: Gmail
 
