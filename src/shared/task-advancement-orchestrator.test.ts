@@ -71,6 +71,26 @@ describe('evaluateTaskAdvancement', () => {
     expect(evaluation.contextReadiness?.decision).toBe('ready');
   });
 
+  it('keeps declined web research out of task advancement research routing', () => {
+    const evaluation = evaluateTaskAdvancement({
+      entrypoint: 'child_advance',
+      hasTaskContext: true,
+      isChildTask: true,
+      prompt: '不需要联网，按已有 Source Context 总结当前价格。',
+      runtime: { agentCliReady: true },
+      task: buildTask({
+        nextStep: '确认目前 OpenAI API 价格和限制。',
+        summary: '需要整理最新模型价格。',
+        title: '确认当前模型价格',
+      }),
+    });
+
+    expect(evaluation.movement).not.toBe('research');
+    expect(evaluation.contextReadiness?.decision).not.toBe('self_research');
+    expect(evaluation.contextReadiness?.shouldSelfResearch).toBe(false);
+    expect(evaluation.requiredGates).toContain('context_readiness');
+  });
+
   it('keeps user-owned boundaries local instead of launching a runtime', () => {
     const evaluation = evaluateTaskAdvancement({
       entrypoint: 'right_panel_chat',
