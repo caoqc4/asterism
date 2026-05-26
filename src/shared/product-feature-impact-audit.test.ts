@@ -297,6 +297,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
     expect(capabilities?.gaps.join(' ')).not.toContain('compact/clear readiness checks');
+    expect(capabilities?.gaps.join(' ')).not.toContain('hook config semantics');
+    expect(capabilities?.gaps.join(' ')).toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
     expect(workHabits?.gaps.join(' ')).toContain('cannot automatically start native runtimes');

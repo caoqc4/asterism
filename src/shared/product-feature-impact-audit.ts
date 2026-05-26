@@ -438,7 +438,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Fresh external research wording such as latest/current pricing or recent release changes is now covered by the pre-run web research trigger while local current-task wording remains excluded.',
     ],
     gaps: [
-      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior, hook config semantics, and packaged CLI metadata as providers stabilize non-executing signals.',
+      'Runtime capability probes still need deeper provider-specific readiness checks for exact native web/search behavior, provider-owned packaged CLI metadata, and richer hook/subagent semantics beyond current non-empty workspace metadata checks.',
     ],
     nextActions: [
       'Add optional runtime-specific metadata probes for provider-owned capability files and search readiness when stable non-executing locations are available.',
