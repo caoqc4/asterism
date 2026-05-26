@@ -90,7 +90,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('web research capture and native CLI capability-tagged web/search events');
     expect(rightPanel?.evidence.join(' ')).toContain('web research query');
     expect(rightPanel?.evidence.join(' ')).toContain('ignore bare runtime names');
-    expect(rightPanel?.evidence.join(' ')).toContain('credible fresh Source Context evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('non-low-credibility fresh Source Context evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('future-dated');
     expect(rightPanel?.evidence.join(' ')).toContain('low-credibility source evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('explicit no-research opt-outs');
