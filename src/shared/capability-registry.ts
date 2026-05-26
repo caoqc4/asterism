@@ -1,5 +1,6 @@
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
+import type { RuntimeEntrypointGate } from './runtime-entrypoint-coverage.js';
 import type { RuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 
 export type CapabilityRegistryStatus =
@@ -511,10 +512,16 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       availableForSelectedProviderPhases ? 'status=partial' : 'status=development',
       'supportedPhases=chat,decomposition,decision,scheduled_brief',
       'executionRun=deferred',
+      agentApiExecutionRunGateSummary(),
       selected ? 'selected=true' : null,
       providerConfigured ? 'provider=configured' : 'provider=missing',
     ].filter(Boolean).join(' / '),
   };
+}
+
+function agentApiExecutionRunGateSummary(): string {
+  const keyGates = ['context_readiness', 'post_step'] satisfies RuntimeEntrypointGate[];
+  return `executionRunKeyGates=${keyGates.join(',')}`;
 }
 
 function browserCapability(
