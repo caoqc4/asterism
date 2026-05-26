@@ -44,6 +44,7 @@ describe('native-goal-forwarding-readiness', () => {
 
     expect(evidence).toMatchObject({
       adapterId: 'claude',
+      adapterCapabilityVerified: true,
       commandShapeVerified: false,
       memoryBoundaryVerified: true,
       sourceOfTruthBoundaryVerified: true,
@@ -55,11 +56,27 @@ describe('native-goal-forwarding-readiness', () => {
     });
     expect(evidence.notes?.join('\n')).toContain('Taskplane records the request as product-owned audit evidence');
   });
+
+  it('requires the adapter to declare native goal capability before passthrough can be ready', () => {
+    const readiness = evaluateNativeGoalForwardingReadiness({
+      ...completeEvidence(),
+      adapterCapabilityVerified: false,
+    });
+
+    expect(readiness).toEqual({
+      adapterId: 'codex',
+      missingEvidence: ['adapter capability'],
+      ready: false,
+      status: 'audit_only',
+      summary: 'codex native goal forwarding remains audit-only; missing adapter capability.',
+    });
+  });
 });
 
 function completeEvidence(): NativeGoalForwardingEvidence {
   return {
     adapterId: 'codex',
+    adapterCapabilityVerified: true,
     commandShapeVerified: true,
     controlBoundaryVerified: true,
     memoryBoundaryVerified: true,

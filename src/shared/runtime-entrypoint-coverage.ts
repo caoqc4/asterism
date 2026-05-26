@@ -534,7 +534,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'operator_confirmation',
     ],
-    notes: 'This creates system-output audit evidence only; runtime-native goal passthrough remains closed and no CLI command is executed. Opening a future passthrough entrypoint requires the native goal forwarding readiness gate to prove command shape, state reflection, progress evidence, cancellation/timeout control, memory boundary, Taskplane source-of-truth boundary, and packaged fake-runtime smoke.',
+    notes: 'This creates system-output audit evidence only; runtime-native goal passthrough remains closed and no CLI command is executed. Opening a future passthrough entrypoint requires the native goal forwarding readiness gate to prove adapter capability, command shape, state reflection, progress evidence, cancellation/timeout control, memory boundary, Taskplane source-of-truth boundary, and packaged fake-runtime smoke.',
   },
   {
     id: 'run.acceptanceVerification',

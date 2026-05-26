@@ -419,6 +419,7 @@ describe('runtime entrypoint coverage', () => {
     const nativeGoalAudit = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'run.recordRuntimeNativeGoalRequest');
     expect(nativeGoalAudit?.notes).toContain('runtime-native goal passthrough remains closed');
     expect(nativeGoalAudit?.notes).toContain('native goal forwarding readiness gate');
+    expect(nativeGoalAudit?.notes).toContain('adapter capability');
     expect(nativeGoalAudit?.notes).toContain('packaged fake-runtime smoke');
   });
 

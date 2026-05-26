@@ -2585,7 +2585,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Codex CLI native goal mode 需要更新 CLI 后才可用/)).toBeTruthy();
     expect(screen.getByText(/审计 Run: run_native_goal_audit/)).toBeTruthy();
     expect(screen.getByText(/Readiness: codex native goal forwarding remains audit-only/)).toBeTruthy();
-    expect(screen.getByText(/Missing evidence: command shape, progress evidence, control boundary, packaged smoke/)).toBeTruthy();
+    expect(screen.getByText(/Missing evidence: adapter capability, command shape, progress evidence, control boundary, packaged smoke/)).toBeTruthy();
     expect(screen.getByText(/显式 runtime-native goal 请求/)).toBeTruthy();
   });
 

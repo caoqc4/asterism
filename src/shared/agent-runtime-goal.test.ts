@@ -119,6 +119,7 @@ describe('agent-runtime-goal', () => {
 
     expect(evaluateNativeGoalForwardingReadiness({
       adapterId: 'codex',
+      adapterCapabilityVerified: true,
       commandShapeVerified: true,
       controlBoundaryVerified: false,
       memoryBoundaryVerified: true,

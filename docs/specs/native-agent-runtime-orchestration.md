@@ -92,8 +92,9 @@ capability. Therefore:
 - Taskplane `/goal` sets the durable Taskplane Task Goal and acceptance
   conditions.
 - Codex native Goal Mode can later implement a long-running execution run when
-  the selected adapter proves command shape, state reflection, progress,
-  cancellation, memory, source-of-truth, and packaged smoke evidence.
+  the selected adapter declares native goal capability and proves command shape,
+  state reflection, progress, cancellation, memory, source-of-truth, and
+  packaged smoke evidence.
 - A runtime-native goal result is still evidence. Taskplane must verify it,
   extract Write Intent, and persist through Taskplane services.
 - Native goal forwarding must stay explicit; product `/goal` must not silently

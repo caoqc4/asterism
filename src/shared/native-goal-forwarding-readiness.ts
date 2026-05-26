@@ -1,5 +1,6 @@
 export type NativeGoalForwardingEvidence = {
   adapterId: string;
+  adapterCapabilityVerified: boolean;
   commandShapeVerified: boolean;
   stateReflectionVerified: boolean;
   progressEvidenceVerified: boolean;
@@ -24,6 +25,7 @@ export type NativeGoalAuditReadinessInput = {
 };
 
 const evidenceLabels: Array<[keyof NativeGoalForwardingEvidence, string]> = [
+  ['adapterCapabilityVerified', 'adapter capability'],
   ['commandShapeVerified', 'command shape'],
   ['stateReflectionVerified', 'state reflection'],
   ['progressEvidenceVerified', 'progress evidence'],
@@ -57,6 +59,7 @@ export function buildNativeGoalAuditReadinessEvidence(
 ): NativeGoalForwardingEvidence {
   return {
     adapterId: input.adapterId,
+    adapterCapabilityVerified: input.supportsNativeGoalMode,
     commandShapeVerified: false,
     controlBoundaryVerified: false,
     memoryBoundaryVerified: true,

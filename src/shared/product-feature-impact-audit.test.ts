@@ -374,6 +374,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('visible native search, hook, and subagent readiness labels');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
     expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness summary and missing evidence');
+    expect(capabilities?.evidence.join(' ')).toContain('requires the selected adapter to declare native goal capability');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.evidence.join(' ')).toContain('fallback copy now uses the selected runtime native web/search readiness');
@@ -389,8 +390,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('provider-owned package metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('auth-gated no-start help-output');
-    expect(capabilities?.gaps.join(' ')).toContain('Claude live evidence is secondary compatibility evidence');
-    expect(capabilities?.nextActions.join(' ')).toContain('opportunistically when a local Claude account is available');
+    expect(capabilities?.gaps.join(' ')).toContain('non-Codex provider compatibility evidence is optional');
+    expect(capabilities?.nextActions.join(' ')).toContain('opportunistically when local account support is available');
     expect(capabilities?.nextActions.join(' ')).toContain('not as a mainline blocker');
     expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
