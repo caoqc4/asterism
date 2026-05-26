@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { persistLightweightRunVerifications } from './run-verification-service.js';
+import {
+  persistLightweightRunVerifications,
+  persistTerminalRunVerifications,
+} from './run-verification-service.js';
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { RunDetailRecord, RunStepRecord } from '../../../shared/types/run.js';
 
@@ -186,6 +189,30 @@ describe('run verification service', () => {
         output: 'capability=workspace_write\napply_patch changed src/app.ts',
       })],
     }), writer, { includeRunLevel: false });
+
+    expect(writer.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      label: '执行后检查通过',
+      targetId: 'run_step_1',
+      targetType: 'step',
+      tone: 'pass',
+    }));
+  });
+
+  it('passes terminal workspace write verification when optional run artifacts are supplied', async () => {
+    const writer = { upsert: vi.fn().mockResolvedValue({}) };
+    const step = buildStep({
+      title: 'Codex CLI 工作区写入候选：apply_patch',
+      output: 'capability=workspace_write\napply_patch changed src/app.ts',
+    });
+
+    await persistTerminalRunVerifications({
+      artifacts: [buildArtifact({ kind: 'patch' })],
+      run: buildRunDetail(),
+      runStepRepository: {
+        listForRun: vi.fn().mockResolvedValue([step]),
+      },
+      runVerificationRepository: writer,
+    });
 
     expect(writer.upsert).toHaveBeenCalledWith(expect.objectContaining({
       label: '执行后检查通过',

@@ -5,7 +5,9 @@ import {
   extractTaskplaneWriteIntentsFromText,
   validateTaskplaneWriteIntent,
 } from '../../../shared/taskplane-write-intent.js';
+import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { RunDetailRecord, RunRecord } from '../../../shared/types/run.js';
+import type { RunCheckpointRecord } from '../../../shared/types/run.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 
@@ -104,6 +106,8 @@ function promotionEvidenceTexts(detail: RunDetailRecord): string[] {
 }
 
 export async function persistTerminalRunVerifications(params: {
+  artifacts?: ArtifactRecord[];
+  checkpoints?: RunCheckpointRecord[];
   run: RunRecord;
   runStepRepository: RunStepReader;
   runVerificationRepository: RunVerificationWriter | null;
@@ -119,8 +123,8 @@ export async function persistTerminalRunVerifications(params: {
     {
       ...params.run,
       agentSessions: [],
-      artifacts: [],
-      checkpoints: [],
+      artifacts: params.artifacts ?? [],
+      checkpoints: params.checkpoints ?? [],
       steps,
       taskMemoryGuidance: params.taskMemoryGuidance ?? undefined,
     },

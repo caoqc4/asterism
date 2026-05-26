@@ -488,8 +488,14 @@ export class RunService {
     applicableWorkHabitSummaries: string[] = [],
   ): Promise<void> {
     const steps = await this.runStepRepository.listForRun(run.id);
+    const [artifacts, checkpoints] = await Promise.all([
+      this.artifactRepository.listForRun(run.id).catch(() => []),
+      this.runCheckpointRepository.listForRun(run.id).catch(() => []),
+    ]);
     const taskMemoryGuidance = await this.buildTaskMemoryGuidance(run.taskId, steps);
     await persistTerminalRunVerifications({
+      artifacts,
+      checkpoints,
       run,
       runStepRepository: this.runStepRepository,
       runVerificationRepository: this.runVerificationRepository,

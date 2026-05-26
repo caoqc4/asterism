@@ -33,6 +33,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('`command_execution` items');
     expect(content).toContain('workspace reads, commands');
     expect(content).toContain('`workspace_write` capability steps are treated as write candidates');
+    expect(content).toContain('Terminal Run verification carries same-run artifacts and checkpoints');
+    expect(content).toContain('promotion-evidence rule');
     expect(content).toContain('`artifact.propose` Write Intent may carry `kind: "patch"`');
     expect(content).toContain('`imported_patch_artifact` sandbox draft sources');
     expect(content).toContain('explicitly apply an approved reviewed-patch promotion');

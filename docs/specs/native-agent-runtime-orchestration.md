@@ -286,6 +286,10 @@ Taskplane currently has a working native CLI execution backend:
   a patch-promotion checkpoint, a ready `task_file.propose` Write Intent, or a
   ready `artifact.propose` Write Intent with `kind: "patch"`; ordinary note /
   run-output artifacts are not enough by themselves.
+- Terminal Run verification carries same-run artifacts and checkpoints into
+  post-step self-checks when repository evidence is available, so run-backed
+  patch artifacts and patch-promotion checkpoints can satisfy the same
+  `workspace_write` promotion-evidence rule used by Run detail verification.
 - Native CLI `artifact.propose` Write Intent may carry `kind: "patch"` when
   the content is reviewable diff evidence. Confirmed patch proposals are saved
   as run-backed patch artifacts through the main-side ArtifactRepository port;
