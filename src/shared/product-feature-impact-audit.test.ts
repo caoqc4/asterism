@@ -85,6 +85,10 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('source, structured, subtask, task-record, and task-memory confirmations');
     expect(rightPanel?.evidence.join(' ')).toContain('task records, task files, task artifacts');
     expect(rightPanel?.evidence.join(' ')).toContain('Task Dynamics now builds a Run-detail writeback approval queue');
+    expect(decisions?.evidence.join(' ')).toContain('scheduler/background Decisions as proposal-only decision_draft work');
+    expect(decisions?.evidence.join(' ')).toContain('without operator confirmation or standing approval');
+    expect(decisions?.gaps.join(' ')).toContain('deferred proposal-only contract');
+    expect(decisions?.nextActions.join(' ')).toContain('scheduler Decision proposal contract');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose Write Intent can now carry kind=patch');
     expect(rightPanel?.evidence.join(' ')).toContain('imported_patch_artifact sandbox draft sources');
     expect(taskFiles?.evidence.join(' ')).toContain('patch-promotion checkpoint and Decision status');

@@ -435,16 +435,39 @@ describe('runtime entrypoint coverage', () => {
       expect(entry.requiredGates).toContain('task_mutation');
       expect(entry.requiredGates).toContain('decision_draft_boundary');
       expect(entry.requiredGates).not.toContain('decision_action');
-      expect(entry.notes).toContain('decision_draft API-runtime invocations');
-      expect(entry.notes).toContain('only when API Runtime is selected');
-      expect(entry.notes).toContain('selected Agent CLI modes stay local product_harness/skipped');
     }
+    const taskDraft = RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'decision.draft');
+    expect(taskDraft?.notes).toContain('decision_draft API-runtime invocations');
+    expect(taskDraft?.notes).toContain('only when API Runtime is selected');
+    expect(taskDraft?.notes).toContain('selected Agent CLI modes stay local product_harness/skipped');
     for (const entry of runtimeEntrypointsByKind('decision_write')) {
       expect(entry.requiredGates).toContain('decision_write_boundary');
       expect(entry.requiredGates).toContain('pre_step');
       expect(entry.requiredGates).not.toContain('decision_action');
       expect(entry.requiredGates).not.toContain('runtime_context_assembly');
     }
+  });
+
+  it('registers future scheduler decisions as proposal-only before writeback', () => {
+    const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'decision.schedulerDraft.future');
+
+    expect(entry).toBeTruthy();
+    expect(entry?.kind).toBe('decision_draft');
+    expect(entry?.ipcChannels).toBeUndefined();
+    expect(entry?.requiredGates).toEqual(expect.arrayContaining([
+      'product_config_boundary',
+      'operator_confirmation',
+      'runtime_context_assembly',
+      'task_memory_guidance',
+      'task_mutation',
+      'pre_step',
+      'decision_draft_boundary',
+    ]));
+    expect(entry?.requiredGates).not.toContain('decision_write_boundary');
+    expect(entry?.requiredGates).not.toContain('decision_action');
+    expect(entry?.notes).toContain('draft an approval item');
+    expect(entry?.notes).toContain('cannot persist a Decision');
+    expect(entry?.notes).toContain('TaskplaneWritebackApprovalItem dispatch');
   });
 
   it('requires durable writes to pass task mutation boundaries', () => {
@@ -566,6 +589,7 @@ describe('runtime entrypoint coverage', () => {
       'decision.approvedCheckpointResume',
       'decision.create',
       'decision.draft',
+      'decision.schedulerDraft.future',
       'externalAccess.gmailOAuthCredential',
       'externalAccess.sourceIngestionCommit',
       'externalAccess.sourceIngestionPreview',

@@ -304,16 +304,17 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Main-side writeback dispatch adapter routes confirmed plans through task, decision, and task-file services.',
       'Right-panel confirmation calls the main-side writeback adapter before emitting task, decision, and brief refresh events.',
       'Task Dynamics can approve Run-detail structured Write Intent through the same TaskplaneWritebackApprovalItem queue and main-side writeback adapter.',
+      'RuntimeEntrypointCoverage now registers future scheduler/background Decisions as proposal-only decision_draft work that cannot persist Decisions or invoke writeback without operator confirmation or standing approval.',
       'Completion verification is separate from model output.',
       'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
       'Task completion modal now asks shared TaskAdvancementOrchestrator for a local completion-check verification movement before passed, waiting, or override-completed outcomes are recorded.',
       'Tasks detail project verification now asks shared TaskAdvancementOrchestrator for a selected-task verification movement before rendering local project readiness evidence.',
     ],
     gaps: [
-      'Future background scheduler decisions must still surface operator approval before invoking main-side writeback dispatch.',
+      'Future background scheduler decisions have a deferred proposal-only contract; wiring it still requires an operator confirmation or standing-approval model before main-side writeback dispatch.',
     ],
     nextActions: [
-      'Reuse the Task Dynamics writeback approval queue for any future non-panel runtime review surface.',
+      'Reuse the Task Dynamics writeback approval queue and scheduler Decision proposal contract for any future non-panel runtime review surface.',
     ],
   },
   {
