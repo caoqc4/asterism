@@ -871,8 +871,22 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
     }
   }
 
+  const nativeWorkspaceWriteStep = orderedSteps.find((step) => (
+    !/Agent CLI 联网调研准备/i.test(step.title)
+    && readStepKeyValue(step.output, 'capability')?.toLowerCase() === 'workspace_write'
+  ));
+  if (nativeWorkspaceWriteStep) {
+    const title = nativeWorkspaceWriteStep.title
+      .replace(/^(Codex CLI|Claude Code)\s*/i, '')
+      .replace(/^原生事件[:：]\s*/i, '')
+      .trim();
+    const detail = compactStepDetailForChat(nativeWorkspaceWriteStep.output);
+    lines.push(`原生 CLI 工作区写入候选：${truncateAgentCliChatLine(title || detail || '已记录', 56)}；需要 reviewed patch、任务文件提案或 promotion evidence 审查。`);
+  }
+
   const nativeWebStep = orderedSteps.find((step) => (
     !/Agent CLI 联网调研准备/i.test(step.title)
+    && step.id !== nativeWorkspaceWriteStep?.id
     && isNativeWebResearchStep(step)
   ));
   if (nativeWebStep) {
@@ -886,8 +900,9 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
 
   const nativeLocalStep = orderedSteps.find((step) => (
     !/Agent CLI 联网调研准备/i.test(step.title)
+    && step.id !== nativeWorkspaceWriteStep?.id
     && !isNativeWebResearchStep(step)
-    && /capability=(workspace_read|workspace_write|shell_command)|工作区|命令执行|shell|command_execution|bash|terminal/i.test(`${step.title}\n${step.output ?? ''}`)
+    && /capability=(workspace_read|shell_command)|工作区|命令执行|shell|command_execution|bash|terminal/i.test(`${step.title}\n${step.output ?? ''}`)
   ));
   if (nativeLocalStep) {
     const title = nativeLocalStep.title
@@ -895,12 +910,7 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
       .replace(/^原生事件[:：]\s*/i, '')
       .trim();
     const detail = compactStepDetailForChat(nativeLocalStep.output);
-    const capability = readStepKeyValue(nativeLocalStep.output, 'capability')?.toLowerCase();
-    lines.push(
-      capability === 'workspace_write'
-        ? `原生 CLI 工作区写入候选：${truncateAgentCliChatLine(title || detail || '已记录', 56)}；需要 reviewed patch、任务文件提案或 promotion evidence 审查。`
-        : `原生 CLI 本地动作：${truncateAgentCliChatLine(title || detail || '已记录', 56)}。`,
-    );
+    lines.push(`原生 CLI 本地动作：${truncateAgentCliChatLine(title || detail || '已记录', 56)}。`);
   }
 
   return lines.slice(0, 2).join('\n') || null;

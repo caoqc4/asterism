@@ -3230,6 +3230,58 @@ describe('App redesign v1', () => {
     expect(screen.queryByText(/原生 CLI 本地动作：.*工作区写入候选/)).toBeNull();
   });
 
+  it('keeps workspace write candidates visible when completed runs also include web activity', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请调研并处理 patch。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    const run = harness.runs.find((item) => item.id === 'run_agent_cli_created') as RunRecord & { steps?: RunStepRecord[] };
+    expect(run).toBeTruthy();
+    Object.assign(run, {
+      output: '已生成 patch 候选。',
+      outputSource: 'ai',
+      status: 'completed',
+      steps: [
+        buildRunStep({
+          id: 'step_web_prep',
+          runId: 'run_agent_cli_created',
+          index: 0,
+          title: 'Agent CLI 联网调研准备',
+          output: [
+            'status=captured',
+            'sources=2',
+            'query=Taskplane patch promotion',
+            'reason=Taskplane captured 2 / 2 source context item(s).',
+          ].join('\n'),
+        }),
+        buildRunStep({
+          id: 'step_native_web',
+          runId: 'run_agent_cli_created',
+          index: 1,
+          title: 'Codex CLI 联网检索：web_search',
+          output: 'capability=web_search\nprovider_event=item.completed\nFound source.',
+        }),
+        buildRunStep({
+          id: 'step_workspace_write_candidate',
+          runId: 'run_agent_cli_created',
+          index: 2,
+          title: 'Codex CLI 工作区写入候选：apply_patch',
+          output: 'capability=workspace_write\nprovider_event=item.completed\napply_patch changed src/app.ts',
+        }),
+      ],
+    });
+    harness.emit('run.changed', 'run_agent_cli_created');
+
+    expect(await screen.findByText(/联网调研：已保存 2 个来源到来源上下文/)).toBeTruthy();
+    expect(screen.getByText(/原生 CLI 工作区写入候选：.*apply_patch/)).toBeTruthy();
+    expect(screen.getByText(/reviewed patch、任务文件提案或 promotion evidence 审查/)).toBeTruthy();
+    expect(screen.queryByText(/原生 CLI 联网动作/)).toBeNull();
+  });
+
   it('captures a global right-panel discussion as a task before planning', async () => {
     const user = userEvent.setup();
     render(<App />);
