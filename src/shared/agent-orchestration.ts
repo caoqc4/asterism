@@ -512,6 +512,8 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     | 'sourceContexts'
     | 'state'
     | 'summary'
+    | 'taskFacets'
+    | 'taskType'
     | 'waitingReason'
   >;
   snapshot: AgentExecutionOrchestrationSnapshot;
@@ -527,6 +529,13 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     && (Boolean(params.task.summary?.trim()) || params.task.sourceContexts.length > 0);
   const hasRuntime = params.snapshot.runtime.status === 'ready';
   const hasOpenCompletionCriterion = params.task.completionCriteria.some((criteria) => criteria.status === 'open');
+  const taskKinds = new Set([
+    params.task.taskType,
+    ...(params.task.taskFacets ?? []),
+  ].filter(Boolean));
+  const scheduledOrEventTriggered = taskKinds.has('scheduled')
+    || taskKinds.has('event')
+    || taskKinds.has('routine');
 
   if (!hasProcedure) {
     blockedReasons.push('No applied skill or process template is attached to this task.');
@@ -568,6 +577,11 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     blockedReasons.push('Task needs at least one open completion criterion to bound execution.');
   } else {
     evidence.push('openCompletionCriterion=present');
+  }
+
+  if (scheduledOrEventTriggered) {
+    blockedReasons.push('Scheduled, event-triggered, and routine tasks need a separate scheduled/event execution entrypoint before automatic native runtime start.');
+    evidence.push(`taskAutomationClass=${Array.from(taskKinds).join(',')}`);
   }
 
   const state: AgentAutomationReadinessState = blockedReasons.length === 0

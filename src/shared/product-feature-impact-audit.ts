@@ -435,12 +435,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Work habits are selected as applicable context and stay behind confirmation flows.',
       'Scheduled briefs use product-harness fallback when provider execution is unavailable.',
       'RuntimeEntrypointCoverage now classifies scheduler stale-run recovery as scheduler_maintenance behind the scheduler feature flag, with post-step Run evidence and no Agent CLI/API startup.',
+      'AgentAutomationReadiness now keeps scheduled, event-triggered, and routine tasks diagnostic-only for automatic starts until a separate scheduled/event execution entrypoint exists, even when procedure, inputs, runtime, risk, and completion criteria are ready.',
     ],
     gaps: [
-      'Routine/event-triggered Agent CLI task execution remains intentionally unimplemented and still needs a runtime-neutral orchestration design before it can start native runtimes automatically.',
+      'Routine/event-triggered Agent CLI task execution remains intentionally unimplemented; scheduled/event tasks can be diagnosed for readiness but cannot automatically start native runtimes.',
     ],
     nextActions: [
-      'Design a separate scheduled/event execution entrypoint before enabling native runtime automation; it must not reuse scheduler_maintenance or scheduled Brief fallback semantics.',
+      'Design a separate scheduled/event execution entrypoint and confirmation model before allowing diagnostic-only readiness to become automatic native runtime execution.',
     ],
   },
   {

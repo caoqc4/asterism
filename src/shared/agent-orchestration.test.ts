@@ -455,4 +455,131 @@ describe('agent orchestration snapshot', () => {
       state: 'blocked',
     });
   });
+
+  it('keeps scheduled event and routine tasks from becoming automatic native runtime starts', () => {
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task: matureAutomationTask({
+        taskFacets: ['scheduled', 'event'],
+        taskType: 'routine',
+      }),
+    });
+
+    expect(readiness).toMatchObject({
+      automaticStartAllowed: false,
+      blockedReasons: expect.arrayContaining([
+        'Scheduled, event-triggered, and routine tasks need a separate scheduled/event execution entrypoint before automatic native runtime start.',
+      ]),
+      evidence: expect.arrayContaining([
+        'procedure=present',
+        'runtime=ready',
+        'taskAutomationClass=routine,scheduled,event',
+      ]),
+      state: 'diagnostic_only',
+    });
+    expect(readiness.summary).toContain('autoStart=no');
+  });
 });
+
+function readyAutomationSnapshot() {
+  return buildAgentExecutionOrchestrationSnapshot({
+    featureFlags: {
+      enableScheduler: true,
+      enableSandboxCodingAgent: true,
+    },
+    sandboxBackendStatus: {
+      probe: {
+        backendId: 'local-container',
+        environmentPolicy: 'empty',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        status: 'available',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      profile: {
+        credentialPassthrough: false,
+        environmentPolicy: 'empty',
+        id: 'local-container',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      readiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Sandbox backend ready.',
+      },
+      producerBackendReadiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Producer ready.',
+      },
+      summary: 'Sandbox backend ready.',
+    },
+    toolScaffoldSummaries: [],
+    workspaceRoot: '/tmp/workspace',
+  });
+}
+
+function matureAutomationTask(
+  overrides: Partial<Parameters<typeof evaluateSkillInformedAutomationReadiness>[0]['task']> = {},
+): Parameters<typeof evaluateSkillInformedAutomationReadiness>[0]['task'] {
+  return {
+    activeBlocker: null,
+    activeDependency: null,
+    activeWaitingItem: null,
+    completionCriteria: [
+      {
+        id: 'criterion_1',
+        taskId: 'task_1',
+        text: 'Patch is reviewable',
+        verificationResponsibility: null,
+        verificationResponsibilityLabel: null,
+        status: 'open',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        satisfiedAt: null,
+      },
+    ],
+    nextStep: 'Prepare the next staged patch.',
+    processTemplates: [
+      {
+        id: 'template_1',
+        bindingId: 'binding_1',
+        taskId: 'task_1',
+        title: 'Patch review workflow',
+        summary: null,
+        content: 'Prepare, test, and review a staged patch.',
+        kind: 'skill',
+        tags: [],
+        status: 'active',
+        bindingStatus: 'active',
+        bindingNote: null,
+        boundAt: '2026-01-01T00:00:00.000Z',
+        bindingUpdatedAt: '2026-01-01T00:00:00.000Z',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        archivedAt: null,
+        removedAt: null,
+      },
+    ],
+    riskLevel: 'low',
+    sourceContexts: [],
+    state: 'planned',
+    summary: 'Known low-risk patch workflow.',
+    waitingReason: null,
+    ...overrides,
+  };
+}

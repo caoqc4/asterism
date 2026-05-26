@@ -737,6 +737,11 @@ Current implementation:
 - Main-side Taskplane writeback dispatch calls the shared decision before
   applying validated Write Intent through task, decision, source, file, or
   subtask services.
+- `AgentAutomationReadiness` can diagnose scheduled, event-triggered, and
+  routine tasks when procedure, inputs, runtime, risk, and completion criteria
+  are present, but it still returns `automaticStartAllowed: false` and blocks
+  native runtime auto-start until a separate scheduled/event execution entrypoint
+  exists.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and
@@ -750,6 +755,10 @@ Remaining work:
 - If Agent API task execution is promoted, replace the skipped `execution_run`
   invocation with a real provider-visible execution entrypoint only after the
   same context readiness, task-memory, subtask-start, and post-step gates pass.
+- If scheduled/event native runtime execution is promoted, use a dedicated
+  scheduled/event entrypoint and confirmation model rather than
+  `scheduler_maintenance`, scheduled Brief assistance, or generic automation
+  readiness.
 
 ### Phase 5: API Decision Backend
 
