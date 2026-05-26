@@ -801,18 +801,27 @@ Current implementation:
   consumes confirmed Standing Approval Task Dynamics records, re-checks runtime
   readiness, task readiness, policy expiry/scope/risk, and scheduled/event task
   class, accepts explicit daily run-limit accounting input, blocks plans when
-  `maxRunsPerDay` is reached, then returns a ready/blocked plan with
-  `runtimeStartAllowed=false`. The plan also carries the future trigger Run
-  evidence contract: context readiness, task-memory coverage, task-memory
-  guidance, subtask-start, run-limit count, and post-step evidence.
+  `maxRunsPerDay` is reached, then returns a ready/blocked plan. By default the
+  plan stays no-start with `runtimeStartAllowed=false`; when a dedicated
+  trigger service is explicitly connected, a ready plan may return
+  `runtimeStartAllowed=true`. The plan also carries the trigger Run evidence
+  contract: context readiness, task-memory coverage, task-memory guidance,
+  subtask-start, run-limit count, and post-step evidence.
 - `SchedulerService.diagnoseScheduledEventAgentTriggers` wires the planner to a
   scheduler diagnostic entrypoint. It reads selected-runtime readiness from AI
   config status, uses `RunRepository.countCreatedSinceByTask` for persisted
   same-day run-limit counts when available, and returns ready/blocked plans. It
   does not resolve runtime config, schedule a trigger job, or start a native
-  runtime. A native runtime start path may consume these plans only after
-  separate trigger-service run evidence, context readiness, task-memory,
-  subtask-start, durable run-limit counting, and post-step gates are connected.
+  runtime.
+- `SchedulerService.triggerScheduledEventAgentRun` is the first narrow
+  trigger-service connection point. It is not exposed as IPC or a scheduled job:
+  it requires an injected Code Agent trigger port, reuses the same Standing
+  Approval and same-day run-limit checks, sets
+  `schedulerTriggerServiceConnected=true`, and only starts a Code Agent run
+  when the plan is ready. The generated run request keeps
+  `operatorConfirmed=true`, uses the model-producer path, and instructs the run
+  to produce reviewable patch artifacts or proposals rather than direct
+  workspace writes.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

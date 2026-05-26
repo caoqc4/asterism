@@ -6,6 +6,7 @@ import {
   type AgentScheduledEventTriggerPlan,
 } from '../../shared/agent-orchestration.js';
 import type { TaskDetail } from '../../shared/types/task.js';
+import type { CreateCodeAgentRunInput, RunRecord } from '../../shared/types/run.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repository.js';
 import { BriefProcessTemplateSelector } from '../domain/brief/process-template-selector.js';
@@ -13,6 +14,36 @@ import { RunRepository } from '../db/repositories/run-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { BriefExecutor, buildFallbackBrief } from '../executors/brief-executor.js';
 import { AiConfigService } from '../keychain/ai-config-service.js';
+
+export type ScheduledEventAgentTriggerResult = {
+  status: 'started' | 'blocked';
+  plan: AgentScheduledEventTriggerPlan;
+  run: RunRecord | null;
+  summary: string;
+};
+
+export type ScheduledEventAgentRunPort = {
+  triggerCodeAgentRun: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
+};
+
+export type ScheduledEventAgentTaskInput = Pick<
+  TaskDetail,
+  | 'activeBlocker'
+  | 'activeDependency'
+  | 'activeWaitingItem'
+  | 'completionCriteria'
+  | 'id'
+  | 'nextStep'
+  | 'processTemplates'
+  | 'riskLevel'
+  | 'sourceContexts'
+  | 'state'
+  | 'summary'
+  | 'taskFacets'
+  | 'taskType'
+  | 'timeline'
+  | 'waitingReason'
+>;
 
 function olderThanMinutes(minutes: number): string {
   return new Date(Date.now() - minutes * 60_000).toISOString();
@@ -24,6 +55,28 @@ function startOfUtcDay(date: Date): string {
     date.getUTCMonth(),
     date.getUTCDate(),
   )).toISOString();
+}
+
+function buildScheduledEventCodeAgentRunInput(
+  task: ScheduledEventAgentTaskInput,
+  plan: AgentScheduledEventTriggerPlan,
+): CreateCodeAgentRunInput {
+  const nextStep = task.nextStep?.trim()
+    || task.summary?.trim()
+    || 'Advance the scheduled or routine task using the smallest reviewable step.';
+
+  return {
+    taskId: task.id,
+    patchIntent: [
+      'Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.',
+      `Next step: ${nextStep}`,
+      `Trigger evidence: ${plan.triggerRunEvidenceRequired.join(',')}.`,
+      'Do not apply workspace changes directly; produce reviewable patch artifacts or proposals through Taskplane gates.',
+    ].join('\n'),
+    requestedChecks: [],
+    operatorConfirmed: true,
+    useModelProducer: true,
+  };
 }
 
 export class SchedulerService {
@@ -40,6 +93,7 @@ export class SchedulerService {
     private readonly aiConfigService: AiConfigService,
     private readonly briefExecutor: BriefExecutor,
     private readonly briefProcessTemplateSelector: BriefProcessTemplateSelector = new BriefProcessTemplateSelector(),
+    private readonly scheduledEventAgentRunPort: ScheduledEventAgentRunPort | null = null,
   ) {}
 
   async start(): Promise<void> {
@@ -94,24 +148,7 @@ export class SchedulerService {
   }
 
   async diagnoseScheduledEventAgentTriggers(
-    tasks: Pick<
-      TaskDetail,
-      | 'activeBlocker'
-      | 'activeDependency'
-      | 'activeWaitingItem'
-      | 'completionCriteria'
-      | 'id'
-      | 'nextStep'
-      | 'processTemplates'
-      | 'riskLevel'
-      | 'sourceContexts'
-      | 'state'
-      | 'summary'
-      | 'taskFacets'
-      | 'taskType'
-      | 'timeline'
-      | 'waitingReason'
-    >[],
+    tasks: ScheduledEventAgentTaskInput[],
     now: Date = new Date(),
     runCountsStartedTodayByTaskId: Record<string, number> | null = null,
   ): Promise<AgentScheduledEventTriggerPlan[]> {
@@ -128,6 +165,60 @@ export class SchedulerService {
         : { runsStartedToday: runCounts[task.id] },
       task,
     }));
+  }
+
+  async triggerScheduledEventAgentRun(
+    task: ScheduledEventAgentTaskInput,
+    now: Date = new Date(),
+    runCountsStartedTodayByTaskId: Record<string, number> | null = null,
+  ): Promise<ScheduledEventAgentTriggerResult> {
+    if (!this.scheduledEventAgentRunPort) {
+      const [plan] = await this.diagnoseScheduledEventAgentTriggers(
+        [task],
+        now,
+        runCountsStartedTodayByTaskId,
+      );
+      return {
+        status: 'blocked',
+        plan,
+        run: null,
+        summary: `${plan.summary} / trigger=blocked / reason=Scheduled event Agent trigger service is not connected.`,
+      };
+    }
+
+    const getStatus = (this.aiConfigService as { getStatus?: AiConfigService['getStatus'] }).getStatus;
+    const aiStatus = typeof getStatus === 'function' ? await getStatus.call(this.aiConfigService).catch(() => null) : null;
+    const runCounts = runCountsStartedTodayByTaskId
+      ?? await this.countRunsStartedToday([task.id], now);
+    const plan = planScheduledEventAgentTrigger({
+      aiStatus,
+      now,
+      runLimit: runCounts[task.id] === undefined
+        ? null
+        : { runsStartedToday: runCounts[task.id] },
+      schedulerTriggerServiceConnected: true,
+      task,
+    });
+
+    if (!plan.runtimeStartAllowed) {
+      return {
+        status: 'blocked',
+        plan,
+        run: null,
+        summary: `${plan.summary} / trigger=blocked`,
+      };
+    }
+
+    const run = await this.scheduledEventAgentRunPort.triggerCodeAgentRun(
+      buildScheduledEventCodeAgentRunInput(task, plan),
+    );
+
+    return {
+      status: 'started',
+      plan,
+      run,
+      summary: `${plan.summary} / trigger=started / runId=${run.id}`,
+    };
   }
 
   private async countRunsStartedToday(taskIds: string[], now: Date): Promise<Record<string, number>> {

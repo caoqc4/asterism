@@ -269,7 +269,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint');
   });
 
-  it('registers future scheduled/event Agent execution as a separate deferred contract', () => {
+  it('registers scheduled/event Agent execution as a separate gated trigger-service contract', () => {
     const entry = RUNTIME_ENTRYPOINT_COVERAGE.find((candidate) => candidate.id === 'automation.scheduledEventAgentRun.future');
 
     expect(entry).toBeTruthy();
@@ -288,7 +288,9 @@ describe('runtime entrypoint coverage', () => {
       'subtask_start',
       'post_step',
     ]));
-    expect(entry?.notes).toContain('Deferred contract only');
+    expect(entry?.notes).toContain('SchedulerService.triggerScheduledEventAgentRun');
+    expect(entry?.notes).toContain('injected Code Agent run port');
+    expect(entry?.notes).toContain('not exposed as IPC or a scheduled job');
     expect(entry?.notes).toContain('readiness diagnostics do not start Agent CLI/API runtimes');
     expect(entry?.notes).toContain('standing approval');
     expect(entry?.notes).toContain('before exposing any IPC or scheduler trigger');

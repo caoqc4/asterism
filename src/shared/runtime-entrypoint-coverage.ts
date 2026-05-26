@@ -303,7 +303,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     id: 'automation.scheduledEventAgentRun.future',
     owner: 'Future ScheduledEventAgentExecutionService.trigger',
     kind: 'provider_visible_execution',
-    description: 'Deferred scheduled/event/routine Agent execution entrypoint once automatic starts have a dedicated confirmation model.',
+    description: 'Scheduled/event/routine Agent execution entrypoint for bounded automatic starts after standing approval and trigger-service connection.',
     requiredGates: [
       'simplicity_check',
       'product_config_boundary',
@@ -332,7 +332,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'post_step',
     ],
-    notes: 'Deferred contract only: scheduled/event/routine readiness diagnostics do not start Agent CLI/API runtimes. A future automatic-start service must use this separate entrypoint with scheduler configuration, explicit operator confirmation or standing approval, context readiness, task-memory gates, target-task checks, and terminal run evidence before exposing any IPC or scheduler trigger.',
+    notes: 'SchedulerService.triggerScheduledEventAgentRun now provides a narrow main-side trigger-service connection through an injected Code Agent run port after standing approval, run-limit counting, task class, and runtime readiness pass. It is still not exposed as IPC or a scheduled job; readiness diagnostics do not start Agent CLI/API runtimes, and broader automatic starts must keep scheduler configuration, context readiness, task-memory gates, target-task checks, and terminal run evidence before exposing any IPC or scheduler trigger.',
   },
   {
     id: 'run.trigger',

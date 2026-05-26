@@ -67,7 +67,9 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('confirmed Standing Approval Task Dynamics records');
     expect(content).toContain('explicit daily run-limit accounting input');
     expect(content).toContain('`maxRunsPerDay` is reached');
-    expect(content).toContain('future trigger Run');
+    expect(content).toContain('dedicated');
+    expect(content).toContain('trigger service is explicitly connected');
+    expect(content).toContain('trigger Run');
     expect(content).toContain('run-limit count');
     expect(content).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
     expect(content).toContain('scheduler diagnostic entrypoint');
@@ -75,6 +77,9 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('persisted');
     expect(content).toContain('does not resolve runtime');
     expect(content).toContain('runtimeStartAllowed=false');
+    expect(content).toContain('SchedulerService.triggerScheduledEventAgentRun');
+    expect(content).toContain('injected Code Agent trigger port');
+    expect(content).toContain('operatorConfirmed=true');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');
     expect(content).toContain('compact/clear context');

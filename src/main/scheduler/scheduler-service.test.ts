@@ -183,6 +183,75 @@ function buildAutomationTaskDetail(partial: Partial<TaskDetail> = {}): TaskDetai
   };
 }
 
+function buildReadyAutomationAiConfigService() {
+  return {
+    getStatus: vi.fn().mockResolvedValue({
+      featureFlags: {
+        enableScheduler: true,
+        enableSandboxCodingAgent: true,
+      },
+      sandboxBackendStatus: {
+        readiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Sandbox ready.',
+        },
+        producerBackendReadiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Producer ready.',
+        },
+        probe: {
+          backendId: 'local-container',
+          environmentPolicy: 'empty',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          status: 'available',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        summary: 'Sandbox ready.',
+      },
+      toolScaffoldSummaries: [],
+      workspaceRoot: '/tmp/workspace',
+    }),
+    resolveRuntimeConfig: vi.fn(),
+  };
+}
+
+function buildStandingApprovalTimeline() {
+  return {
+    id: 'timeline_approval',
+    taskId: 'task_auto',
+    type: 'panel.standing_approval_confirmed',
+    payload: JSON.stringify({
+      policy: {
+        id: 'standing_approval:task_auto:coding:local_sandbox',
+        allowedAutonomyLevel: 'L2_limited_authorized_action',
+        allowedLanes: ['coding'],
+        allowedRuntimeIds: ['local_sandbox'],
+        createdAt: '2026-05-26T10:00:00.000Z',
+        expiresAt: '2026-05-27T10:00:00.000Z',
+        maxRunsPerDay: 3,
+        reason: 'Allow bounded weekly update preparation.',
+        riskCeiling: 'low',
+        status: 'active',
+        taskFacets: ['scheduled'],
+        taskId: 'task_auto',
+        taskTypes: ['routine'],
+      },
+      schedulerTriggerAllowed: false,
+      workspaceWriteAllowed: false,
+    }),
+    createdAt: '2026-05-26T10:05:00.000Z',
+  };
+}
+
 describe('SchedulerService', () => {
   beforeEach(() => {
     scheduledJobs.length = 0;
@@ -709,6 +778,138 @@ describe('SchedulerService', () => {
         'Scheduled/event trigger daily run limit reached: 3/3.',
       ]),
     });
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(scheduledJobs).toHaveLength(0);
+  });
+
+  it('blocks scheduled/event agent trigger starts when the trigger service port is not connected', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.status).toBe('blocked');
+    expect(result.run).toBeNull();
+    expect(result.plan).toMatchObject({
+      status: 'ready',
+      triggerPlanReady: true,
+      runtimeStartAllowed: false,
+      schedulerTriggerServiceConnected: false,
+    });
+    expect(result.summary).toContain('Scheduled event Agent trigger service is not connected');
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+  });
+
+  it('starts a bounded Code Agent run when scheduled/event trigger gates and standing approval pass', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_1',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
+      ['task_auto'],
+      '2026-05-26T00:00:00.000Z',
+    );
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      patchIntent: expect.stringContaining('Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.'),
+      requestedChecks: [],
+      operatorConfirmed: true,
+      useModelProducer: true,
+    });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Next step: Prepare the weekly update.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('context_readiness,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
+    expect(result).toMatchObject({
+      status: 'started',
+      run: {
+        id: 'run_scheduled_1',
+        taskId: 'task_auto',
+      },
+      plan: {
+        status: 'ready',
+        runtimeStartAllowed: true,
+        schedulerTriggerServiceConnected: true,
+        runLimit: {
+          maxRunsPerDay: 3,
+          runsStartedToday: 1,
+        },
+      },
+    });
+    expect(result.summary).toContain('trigger=started');
+    expect(result.summary).toContain('runId=run_scheduled_1');
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
     expect(scheduledJobs).toHaveLength(0);
   });

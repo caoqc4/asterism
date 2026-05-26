@@ -138,8 +138,8 @@ export type AgentStandingApprovalConfirmationDraft = {
 export type AgentScheduledEventTriggerPlan = {
   status: 'ready' | 'blocked';
   triggerPlanReady: boolean;
-  runtimeStartAllowed: false;
-  schedulerTriggerServiceConnected: false;
+  runtimeStartAllowed: boolean;
+  schedulerTriggerServiceConnected: boolean;
   triggerRunEvidenceRequired: Array<
     | 'context_readiness'
     | 'task_memory_coverage'
@@ -915,6 +915,7 @@ export function planScheduledEventAgentTrigger(params: {
     runsStartedToday: number;
   } | null;
   runtimeId?: string;
+  schedulerTriggerServiceConnected?: boolean;
   task: Pick<
     TaskDetail,
     | 'activeBlocker'
@@ -935,6 +936,7 @@ export function planScheduledEventAgentTrigger(params: {
   >;
 }): AgentScheduledEventTriggerPlan {
   const lane = params.lane ?? 'coding';
+  const schedulerTriggerServiceConnected = params.schedulerTriggerServiceConnected === true;
   const snapshot = buildAgentExecutionOrchestrationSnapshot(params.aiStatus);
   const runtimeId = params.runtimeId ?? snapshot.runtime.id;
   const readiness = evaluateSkillInformedAutomationReadiness({
@@ -980,12 +982,13 @@ export function planScheduledEventAgentTrigger(params: {
   }
 
   const status = blockedReasons.length === 0 ? 'ready' : 'blocked';
+  const runtimeStartAllowed = status === 'ready' && schedulerTriggerServiceConnected;
 
   return {
     status,
     triggerPlanReady: status === 'ready',
-    runtimeStartAllowed: false,
-    schedulerTriggerServiceConnected: false,
+    runtimeStartAllowed,
+    schedulerTriggerServiceConnected,
     triggerRunEvidenceRequired: [
       'context_readiness',
       'task_memory_coverage',
@@ -1009,8 +1012,8 @@ export function planScheduledEventAgentTrigger(params: {
       'Scheduled/event trigger plan',
       `status=${status}`,
       `triggerPlanReady=${status === 'ready' ? 'yes' : 'no'}`,
-      'runtimeStartAllowed=false',
-      'schedulerTriggerServiceConnected=false',
+      `runtimeStartAllowed=${runtimeStartAllowed ? 'true' : 'false'}`,
+      `schedulerTriggerServiceConnected=${schedulerTriggerServiceConnected ? 'true' : 'false'}`,
       'triggerRunEvidence=context_readiness,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step',
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
