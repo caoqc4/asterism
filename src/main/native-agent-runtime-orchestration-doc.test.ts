@@ -32,6 +32,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('`imported_patch_artifact` sandbox draft sources');
     expect(content).toContain('explicitly apply an approved reviewed-patch promotion');
     expect(content).toContain('records applied or blocked run evidence');
+    expect(content).toContain('no workspace files were');
+    expect(content).toContain('Run evidence before re-reviewing');
     expect(content).toContain('packaged task-files');
     expect(content).toContain('scheduled, event-triggered, and');
     expect(content).toContain('automaticStartAllowed: false');

@@ -298,6 +298,9 @@ Taskplane currently has a working native CLI execution backend:
   confirmation. The main process reruns promotion preflight, writes only matching
   reviewed files, records applied or blocked run evidence, and refreshes task/run
   state.
+- Blocked promotion notices explicitly state that no workspace files were
+  written and point operators back to Run evidence before re-reviewing or
+  regenerating the patch.
 - Completed native run chat summaries mention both web research and local
   command/workspace activity when those events were recorded.
 - Codex JSONL `command_execution` items are projected as `shell_command` Run
@@ -350,7 +353,7 @@ Native CLI integration is not a complete product-grade Agent experience yet:
   explicit apply action for approved reviewed patches, and packaged task-files
   smoke now drives applied and blocked UI actions against a temporary workspace.
   Workspace application remains disabled by default and still needs broader
-  blocked preflight recovery copy before it becomes a normal happy path;
+  post-apply verification copy before it becomes a normal happy path;
 - task advancement decisions remain distributed across UI, run service,
   verifier, and prompt guidance instead of one orchestrator.
 

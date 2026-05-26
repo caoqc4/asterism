@@ -120,11 +120,13 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('blocked workspace-drift recovery evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('Packaged task-files smoke now covers the explicit reviewed-patch apply UI path');
     expect(taskFiles?.evidence.join(' ')).toContain('no-write recovery evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('workspace was not written');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
     expect(taskFiles?.gaps.join(' ')).toContain('disabled by default');
-    expect(taskFiles?.gaps.join(' ')).toContain('blocked preflight recovery copy');
+    expect(taskFiles?.gaps.join(' ')).toContain('post-apply verification copy');
+    expect(taskFiles?.gaps.join(' ')).not.toContain('blocked preflight recovery copy');
     expect(taskFiles?.gaps.join(' ')).not.toContain('packaged smoke and recovery UX');
-    expect(taskFiles?.nextActions.join(' ')).toContain('Improve blocked preflight recovery copy');
+    expect(taskFiles?.nextActions.join(' ')).toContain('Improve post-apply verification copy');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need an apply implementation');
     expect(rightPanel?.gaps.join(' ')).not.toContain('fully normal operator-facing apply workflow');
     expect(rightPanel?.gaps.join(' ')).not.toContain('post-apply status projection');

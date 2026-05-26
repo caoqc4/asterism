@@ -105,7 +105,7 @@ function buildSandboxPatchPromotionView(params: {
     const reason = params.promotion.blockedReasons.join(' ') || params.promotion.auditSummary || 'apply 服务阻塞。';
     return {
       ...base,
-      detail: `${fileLabel}；promotion apply 被阻塞：${reason}`,
+      detail: `${fileLabel}；promotion apply 被阻塞：${reason}；工作区未写入，需要复核 Run 证据后重新 review 或重新生成 patch。`,
       label: 'promotion apply 被阻塞',
       tone: 'blocked',
     };

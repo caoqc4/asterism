@@ -239,5 +239,8 @@ describe('projectSandboxPatchPromotionViews', () => {
       tone: 'blocked',
     });
     expect(view?.detail).toContain('workspace content does not match reviewed base');
+    expect(view?.detail).toContain('工作区未写入');
+    expect(view?.detail).toContain('复核 Run 证据');
+    expect(view?.detail).toContain('重新 review 或重新生成 patch');
   });
 });
