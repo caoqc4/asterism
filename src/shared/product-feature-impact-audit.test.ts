@@ -269,6 +269,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('user-confirmed Decision, blocker, next-step, and completion proposal cards');
     expect(decisions?.evidence.join(' ')).toContain('task, decision, and task-file services');
     expect(decisions?.evidence.join(' ')).toContain('Task Dynamics can approve Run-detail structured Write Intent');
+    expect(decisions?.evidence.join(' ')).toContain('without IPC or scheduler triggers');
     expect(decisions?.gaps.join(' ')).not.toContain('proposal cards need unified right-panel handling');
     expect(decisions?.gaps.join(' ')).not.toContain('still need to call it through main-side ports');
     expect(decisions?.gaps.join(' ')).not.toContain('non-UI operator approval surfaces are still missing');

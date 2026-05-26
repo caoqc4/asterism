@@ -467,6 +467,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).not.toContain('decision_action');
     expect(entry?.notes).toContain('draft an approval item');
     expect(entry?.notes).toContain('cannot persist a Decision');
+    expect(entry?.notes).toContain('expose IPC/scheduler triggers');
     expect(entry?.notes).toContain('TaskplaneWritebackApprovalItem dispatch');
   });
 

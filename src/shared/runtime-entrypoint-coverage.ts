@@ -676,7 +676,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'pre_step',
       'decision_draft_boundary',
     ],
-    notes: 'Deferred contract only: scheduler/background decision work may draft an approval item, but cannot persist a Decision or invoke main-side writeback without operator confirmation or standing approval. Durable Decision creation remains behind decision.create or TaskplaneWritebackApprovalItem dispatch through the main-side writeback boundary.',
+    notes: 'Deferred contract only: scheduler/background decision work may draft an approval item, but cannot persist a Decision, invoke main-side writeback, or expose IPC/scheduler triggers without operator confirmation or standing approval. Durable Decision creation remains behind decision.create or TaskplaneWritebackApprovalItem dispatch through the main-side writeback boundary.',
   },
   {
     id: 'decision.create',
