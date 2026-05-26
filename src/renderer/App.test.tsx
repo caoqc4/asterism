@@ -1312,6 +1312,50 @@ describe('App redesign v1', () => {
     expect(screen.queryByText(/Safety Details/)).toBeNull();
   });
 
+  it('surfaces Agent API Runtime shared capability and safety state', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      runtimeMode: 'api',
+      capabilityRegistry: [{
+        id: 'agent_api.runtime',
+        label: 'Agent API Runtime',
+        family: 'agent_api',
+        status: 'available',
+        configured: true,
+        missingReason: null,
+        visibility: 'hidden',
+        access: 'mutating',
+        requiresApproval: true,
+        requiredGate: 'runtime_pre_step',
+        summary: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / selected=true / provider=configured',
+      }],
+      configurationSafetyReport: {
+        secretExposureSafe: true,
+        blockedReasons: [],
+        summary: 'configured=2 / approvalRequired=1 / blocked=0',
+        surfaces: [{
+          id: 'agent_api.runtime',
+          state: 'approval_required',
+          reason: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / selected=true / provider=configured',
+          diagnosticSummary: 'Provider configured; execution_run remains deferred.',
+          requiresApproval: true,
+          startupProbePolicy: 'never',
+          exposesSecretValue: false,
+        }],
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /AI Runtime/ }));
+
+    expect(await screen.findByText('API Runtime 状态')).toBeTruthy();
+    expect(screen.getByText('Provider 阶段可用；execution_run deferred')).toBeTruthy();
+    expect(screen.getByText('不自动')).toBeTruthy();
+    expect(screen.getByText(/executionRun=deferred/)).toBeTruthy();
+    expect(screen.getByText(/Provider configured; execution_run remains deferred/)).toBeTruthy();
+    expect(screen.getAllByText('可用').length).toBeGreaterThan(0);
+  });
+
   it('can explicitly select Agent API Runtime when provider config is available', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));

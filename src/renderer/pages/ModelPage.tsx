@@ -341,6 +341,10 @@ export function ModelPage() {
     ?.find((entry) => entry.id === 'agent_cli.runtimes') ?? null;
   const agentCliSafety = status?.configurationSafetyReport?.surfaces
     .find((surface) => surface.id === 'agent_cli.runtimes') ?? null;
+  const agentApiCapability = status?.capabilityRegistry
+    ?.find((entry) => entry.id === 'agent_api.runtime') ?? null;
+  const agentApiSafety = status?.configurationSafetyReport?.surfaces
+    .find((surface) => surface.id === 'agent_api.runtime') ?? null;
 
   const apiConfigPanel = apiModelOpen ? (
     <div className="agent-cli-api-config-panel">
@@ -451,7 +455,9 @@ export function ModelPage() {
         apiConfigured={Boolean(status?.configured)}
         apiProviderSummary={status?.configured ? `${status.provider} / ${status.model}` : null}
         capability={agentCliCapability}
+        apiCapability={agentApiCapability}
         safety={agentCliSafety}
+        apiSafety={agentApiSafety}
         onToggleApiConfig={() => setApiModelOpen((value) => !value)}
         onSelectRuntimeMode={(runtimeMode) => void saveRuntimeMode(runtimeMode)}
         onSelectCapabilityMode={(mode) => void saveAgentCliCapabilityMode(mode)}
@@ -488,6 +494,7 @@ function AgentCliRuntimeSection({
   apiProviderSummary,
   capabilityMode,
   capability,
+  apiCapability,
   workspaceRoot,
   onWorkspaceRootChange,
   onSave,
@@ -504,6 +511,7 @@ function AgentCliRuntimeSection({
   saveDisabled,
   saveLabel,
   safety,
+  apiSafety,
   suggestedWorkspaceRoot,
   status,
   apiConfigured,
@@ -513,6 +521,7 @@ function AgentCliRuntimeSection({
   apiProviderSummary: string | null;
   capabilityMode: AgentCliCapabilityMode;
   capability: NonNullable<AiConfigStatus['capabilityRegistry']>[number] | null;
+  apiCapability: NonNullable<AiConfigStatus['capabilityRegistry']>[number] | null;
   workspaceRoot: string;
   onWorkspaceRootChange: (value: string) => void;
   onSave: () => void;
@@ -530,6 +539,7 @@ function AgentCliRuntimeSection({
   saveDisabled: boolean;
   saveLabel: string;
   safety: NonNullable<AiConfigStatus['configurationSafetyReport']>['surfaces'][number] | null;
+  apiSafety: NonNullable<AiConfigStatus['configurationSafetyReport']>['surfaces'][number] | null;
   suggestedWorkspaceRoot: string | null;
   status: AiConfigStatus['agentCliRuntimeStatus'] | null;
 }) {
@@ -654,6 +664,17 @@ function AgentCliRuntimeSection({
             </button>
           </div>
         </div>
+        {(apiCapability || apiSafety) && (
+          <CapabilitySafetyStrip
+            boundaryLabel="执行边界"
+            boundaryValue="Provider 阶段可用；execution_run deferred"
+            capability={apiCapability}
+            emptyReason="Agent API Runtime 状态尚未进入共享能力注册表；不会作为 Agent CLI 的隐式兜底。"
+            safety={apiSafety}
+            statusLabel="API Runtime 状态"
+            unconfiguredLabel="需配置 Provider"
+          />
+        )}
         {apiConfigPanel}
       </div>
 

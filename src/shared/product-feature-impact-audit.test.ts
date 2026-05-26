@@ -275,6 +275,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('selected Agent CLI native web/search readiness');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilitySafetyStrip for agent_cli.runtimes');
     expect(capabilities?.evidence.join(' ')).toContain('safe-read-only probe policy');
+    expect(capabilities?.evidence.join(' ')).toContain('CapabilitySafetyStrip for agent_api.runtime');
+    expect(capabilities?.evidence.join(' ')).toContain('deferred execution_run boundary');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
     expect(capabilities?.evidence.join(' ')).toContain('visible native search, hook, and subagent readiness labels');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
