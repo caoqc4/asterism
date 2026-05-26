@@ -325,11 +325,14 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
     expect(taskFiles?.evidence.join(' ')).toContain('Terminal Run verification now carries same-run artifacts and checkpoints');
     expect(taskFiles?.evidence.join(' ')).toContain('can satisfy workspace_write promotion evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
+    expect(taskFiles?.evidence.join(' ')).toContain('patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence');
     expect(taskFiles?.cliOnlyClosure).toBe('supported');
     expect(taskFiles?.gaps.join(' ')).toContain('Future API/runtime-generated patch promotion');
     expect(taskFiles?.gaps.join(' ')).toContain('reviewed-patch apply workflow');
     expect(taskFiles?.gaps.join(' ')).not.toContain('post-apply verification copy');
     expect(taskFiles?.gaps.join(' ')).not.toContain('blocked preflight recovery copy');
+    expect(taskFiles?.nextActions.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
     expect(taskFiles?.gaps.join(' ')).not.toContain('packaged smoke and recovery UX');
     expect(taskFiles?.nextActions.join(' ')).toContain('product-controlled mutation path');
     expect(rightPanel?.gaps.join(' ')).not.toContain('still need an apply implementation');
