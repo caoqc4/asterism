@@ -23,6 +23,9 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('skipped `execution_run`');
     expect(content).toContain('`execution_run` as deferred');
     expect(content).toContain('no provider-visible execution run starts');
+    expect(content).toContain('structured promotion');
+    expect(content).toContain('Write Intent extraction');
+    expect(content).toContain('reviewed-patch apply');
     expect(content).toContain('`product_control_layer` or');
     expect(content).toContain('`persistent_ai_pilot_reserved` is a future');
     expect(content).toContain('future `wanman_matrix` executor');

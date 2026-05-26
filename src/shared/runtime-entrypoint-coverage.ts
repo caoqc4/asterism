@@ -501,7 +501,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'post_step',
     ],
-    notes: 'Deferred contract only: Agent API is a future peer execution runtime, not auxiliary provider assistance. When implemented, it must reuse the same Taskplane harness, context manifest, context readiness, task-memory guidance, subtask_start, and post-step verification gates as Agent CLI before exposing any IPC channel.',
+    notes: 'Deferred contract only: Agent API is a future peer execution runtime, not auxiliary provider assistance. When implemented, it must reuse the same Taskplane harness, context manifest, context readiness, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, subtask_start, post-step verification, and Run evidence persistence as Agent CLI before exposing any IPC channel.',
   },
   {
     id: 'run.cancelAgentCli',

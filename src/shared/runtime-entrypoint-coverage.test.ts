@@ -82,6 +82,10 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.ipcChannels).toBeUndefined();
     expect(entry?.notes).toContain('future peer execution runtime');
     expect(entry?.notes).toContain('not auxiliary provider assistance');
+    expect(entry?.notes).toContain('Run Goal Contract');
+    expect(entry?.notes).toContain('Write Intent extraction');
+    expect(entry?.notes).toContain('reviewed-patch apply boundary');
+    expect(entry?.notes).toContain('Run evidence persistence');
     expect(entry?.notes).toContain('before exposing any IPC channel');
   });
 

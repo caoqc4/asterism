@@ -154,6 +154,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('execution_run as deferred');
     expect(rightPanel?.evidence.join(' ')).toContain('future provider-visible execution required gates');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step');
+    expect(rightPanel?.evidence.join(' ')).toContain('structured promotion requirements');
+    expect(rightPanel?.evidence.join(' ')).toContain('Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
@@ -169,6 +171,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.gaps.join(' ')).not.toContain('broader recovery copy is still needed');
     expect(rightPanel?.cliOnlyClosure).toBe('supported');
     expect(rightPanel?.gaps.join(' ')).toContain('Future Agent API execution remains deferred');
+    expect(rightPanel?.nextActions.join(' ')).toContain('structured promotion requirements');
     expect(rightPanel?.gaps.join(' ')).toContain('reviewed-patch apply already owns the operator-facing workspace mutation boundary');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');

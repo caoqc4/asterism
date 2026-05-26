@@ -143,6 +143,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate before model-producer execution, including blocked early exits.',
       'Shared AI Runtime invocation contract now includes an explicit skipped execution_run shape for deferred Agent API task execution, and Agent API capability diagnostics now label execution_run as deferred so API Runtime can be represented without silently starting provider-visible work.',
       'Deferred Agent API execution_run invocations now carry the future provider-visible execution required gates, including runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step, as structured metadata rather than text-only rationale.',
+      'Deferred Agent API execution_run invocations now also carry structured promotion requirements for runtime context manifest, context readiness, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, post-step verification, and Run evidence persistence.',
       'Agent API capability registry diagnostics now derive deferred execution_run key gates from the future provider-visible execution contract, so settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries without parsing invocation text.',
       'Run Goal Contract and Agent CLI context bridge now carry selected-runtime capability declarations into the native CLI prompt before execution.',
       'Run verification and memory proposals remain product-controlled.',
@@ -158,7 +159,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future Agent API execution remains deferred; native CLI workspace-write mode stays separate from the common run path because reviewed-patch apply already owns the operator-facing workspace mutation boundary.',
     ],
     nextActions: [
-      'Promote future Agent API execution only through the same context-readiness, Write Intent, reviewed-patch apply, and Run evidence contract used by the CLI path.',
+      'Promote future Agent API execution only by replacing the deferred invocation after its structured promotion requirements have matching service evidence.',
     ],
   },
   {

@@ -85,8 +85,19 @@ export type ExecutionRunInvocationResult = RuntimeInvocationBase & {
   phase: 'execution_run';
   layer: 'selected_runtime' | 'api_runtime';
   deferredReason?: string | null;
+  promotionRequirements?: AgentApiExecutionPromotionRequirement[];
   requiredGates?: RuntimeEntrypointGate[];
 };
+
+export type AgentApiExecutionPromotionRequirement =
+  | 'runtime_context_manifest'
+  | 'context_readiness_step'
+  | 'task_memory_guidance'
+  | 'run_goal_contract'
+  | 'write_intent_extraction'
+  | 'reviewed_patch_apply_boundary'
+  | 'post_step_verification'
+  | 'run_evidence_persistence';
 
 export type VerificationAssistInvocationResult = RuntimeInvocationBase & {
   phase: 'verification_assist';
@@ -217,8 +228,22 @@ export function buildDeferredAgentApiExecutionRunInvocation(params: {
     status: 'skipped',
     summary: params.summary ?? deferredReason,
     deferredReason,
+    promotionRequirements: [...agentApiExecutionPromotionRequirements()],
     requiredGates: [...agentApiExecutionRequiredGates()],
   };
+}
+
+export function agentApiExecutionPromotionRequirements(): AgentApiExecutionPromotionRequirement[] {
+  return [
+    'runtime_context_manifest',
+    'context_readiness_step',
+    'task_memory_guidance',
+    'run_goal_contract',
+    'write_intent_extraction',
+    'reviewed_patch_apply_boundary',
+    'post_step_verification',
+    'run_evidence_persistence',
+  ];
 }
 
 function agentApiExecutionRequiredGates(): RuntimeEntrypointGate[] {
