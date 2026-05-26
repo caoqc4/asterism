@@ -188,6 +188,20 @@ describe('ai runtime invocation contract', () => {
     expect(invocation.summary).toContain('context-readiness');
     expect(invocation.summary).toContain('writeback harness gates');
     expect(invocation.deferredReason).toContain('Agent API Runtime task execution remains deferred');
+    expect(invocation.requiredGates).toEqual([
+      'simplicity_check',
+      'runtime_action',
+      'runtime_context_assembly',
+      'context_readiness',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'pre_step',
+      'subtask_start',
+      'post_step',
+    ]);
+    expect(invocation.requiredGates).toContain('context_readiness');
+    expect(invocation.requiredGates).toContain('runtime_context_assembly');
+    expect(invocation.requiredGates).toContain('post_step');
   });
 
   it('wraps product-harness verification and memory proposal phases', () => {

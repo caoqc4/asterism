@@ -5,6 +5,11 @@ import type { PilotDecisionSnapshot } from './pilot-decision-contract.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
 import {
+  RUNTIME_ENTRYPOINT_COVERAGE,
+  requiredRuntimeEntrypointGatesForKind,
+  type RuntimeEntrypointGate,
+} from './runtime-entrypoint-coverage.js';
+import {
   buildLocalTaskTypeReviewProposal,
   type TaskTypeReviewProposal,
 } from './task-type-review-proposal.js';
@@ -80,6 +85,7 @@ export type ExecutionRunInvocationResult = RuntimeInvocationBase & {
   phase: 'execution_run';
   layer: 'selected_runtime' | 'api_runtime';
   deferredReason?: string | null;
+  requiredGates?: RuntimeEntrypointGate[];
 };
 
 export type VerificationAssistInvocationResult = RuntimeInvocationBase & {
@@ -211,7 +217,13 @@ export function buildDeferredAgentApiExecutionRunInvocation(params: {
     status: 'skipped',
     summary: params.summary ?? deferredReason,
     deferredReason,
+    requiredGates: [...agentApiExecutionRequiredGates()],
   };
+}
+
+function agentApiExecutionRequiredGates(): RuntimeEntrypointGate[] {
+  return RUNTIME_ENTRYPOINT_COVERAGE.find((entrypoint) => entrypoint.id === 'run.triggerAgentApi.future')?.requiredGates
+    ?? requiredRuntimeEntrypointGatesForKind('provider_visible_execution');
 }
 
 export function buildProductHarnessVerificationAssistInvocation(params: {

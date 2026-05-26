@@ -65,6 +65,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('deferred Agent API task execution');
     expect(rightPanel?.evidence.join(' ')).toContain('skipped execution_run shape');
     expect(rightPanel?.evidence.join(' ')).toContain('execution_run as deferred');
+    expect(rightPanel?.evidence.join(' ')).toContain('future provider-visible execution required gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('context_readiness and post_step');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
     expect(capabilities?.evidence.join(' ')).toContain('configured workspace for native guidance');
     expect(capabilities?.evidence.join(' ')).toContain('native web/search readiness counts');
