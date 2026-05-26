@@ -406,7 +406,8 @@ TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE=true npm run manual:agent-api-
 ```
 
 The default command reports `status=skip`, `provider=not-called`,
-`executionRun=deferred`, and `workspace=unchanged`. When explicitly enabled and
+`executionRun=deferred`, `promotionRequirements=0/11`, `requiredGates=0/9`,
+and `workspace=unchanged`. When explicitly enabled and
 provider config is complete, it sends one minimal text request through the same
 provider mapping used by the API text path and checks that a disposable
 workspace remains unchanged. Passing output is Agent API provider-readiness

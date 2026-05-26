@@ -16,6 +16,30 @@ const SUPPORTED_PROVIDERS = new Set([
   'fal-openrouter',
 ]);
 const EXPECTED_PHRASE = 'TASKPLANE_AGENT_API_EXECUTION_PREFLIGHT_OK';
+const EXECUTION_RUN_PROMOTION_REQUIREMENTS = [
+  'selected_runtime_contract',
+  'target_task_identity',
+  'provider_visible_preflight',
+  'runtime_context_manifest',
+  'context_readiness_step',
+  'task_memory_guidance',
+  'run_goal_contract',
+  'write_intent_extraction',
+  'reviewed_patch_apply_boundary',
+  'post_step_verification',
+  'run_evidence_persistence',
+];
+const EXECUTION_RUN_REQUIRED_GATES = [
+  'simplicity_check',
+  'runtime_action',
+  'runtime_context_assembly',
+  'context_readiness',
+  'task_memory_coverage',
+  'task_memory_guidance',
+  'pre_step',
+  'subtask_start',
+  'post_step',
+];
 
 export function getAgentApiExecutionPreflight() {
   const envPath = process.env.TASKPLANE_ENV_FILE
@@ -74,6 +98,10 @@ export function printAgentApiExecutionPreflight(preflight) {
   console.log(`baseUrl=${preflight.baseUrl ? '<set>' : '<empty>'}`);
   console.log(`apiKey=${preflight.hasApiKey ? '<set>' : '<empty>'}`);
   console.log('executionRun=deferred');
+  console.log(`promotionRequirements=0/${EXECUTION_RUN_PROMOTION_REQUIREMENTS.length}`);
+  console.log(`requiredGates=0/${EXECUTION_RUN_REQUIRED_GATES.length}`);
+  console.log(`promotionRequirementList=${EXECUTION_RUN_PROMOTION_REQUIREMENTS.join(',')}`);
+  console.log(`requiredGateList=${EXECUTION_RUN_REQUIRED_GATES.join(',')}`);
 }
 
 export async function runAgentApiExecutionPreflightSmoke() {

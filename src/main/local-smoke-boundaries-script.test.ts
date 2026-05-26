@@ -608,6 +608,10 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('mode=opt-in live');
     expect(result.output).toContain('runtime=agent_api');
     expect(result.output).toContain('executionRun=deferred');
+    expect(result.output).toContain('promotionRequirements=0/11');
+    expect(result.output).toContain('requiredGates=0/9');
+    expect(result.output).toContain('promotionRequirementList=selected_runtime_contract,target_task_identity,provider_visible_preflight');
+    expect(result.output).toContain('requiredGateList=simplicity_check,runtime_action,runtime_context_assembly');
     expect(result.output).toContain('status=skip');
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('workspace=unchanged');
@@ -621,6 +625,8 @@ describe('local smoke script default boundaries', () => {
     expect(result.status).toBe(0);
     expect(result.output).toContain('Agent API execution preflight smoke');
     expect(result.output).toContain('executionRun=deferred');
+    expect(result.output).toContain('promotionRequirements=0/11');
+    expect(result.output).toContain('requiredGates=0/9');
     expect(result.output).toContain('status=skip');
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('workspace=unchanged');

@@ -363,11 +363,12 @@ evidence, and keep `workspace=unchanged`, `provider=not-called`, and
 
 The Agent API execution preflight is deliberately narrower than a full task
 run: default output must include `status=skip`, `provider=not-called`,
-`executionRun=deferred`, and `workspace=unchanged`. A passing opt-in run proves
-that the configured provider can answer one Taskplane Agent API Runtime text
-request, while full provider-visible task `execution_run` remains deferred
-behind the shared context-readiness, Run Goal Contract, Write Intent,
-verification, and evidence-persistence gates.
+`executionRun=deferred`, `promotionRequirements=0/11`, `requiredGates=0/9`,
+and `workspace=unchanged`. A passing opt-in run proves that the configured
+provider can answer one Taskplane Agent API Runtime text request, while full
+provider-visible task `execution_run` remains deferred behind the shared
+context-readiness, Run Goal Contract, Write Intent, verification, and
+evidence-persistence gates.
 
 On 2026-05-26, local `fal-openrouter / google/gemini-2.5-flash` passed this
 opt-in preflight with `provider=called`, `phrase=matched`,
