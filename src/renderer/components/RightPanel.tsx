@@ -851,10 +851,12 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
   if (webPreparationStep) {
     const status = readStepKeyValue(webPreparationStep.output, 'status');
     const sources = readStepKeyValue(webPreparationStep.output, 'sources');
+    const query = readStepKeyValue(webPreparationStep.output, 'query');
     const reason = readStepKeyValue(webPreparationStep.output, 'reason');
     if (status === 'captured') {
       const partial = reason ? /\bcaptured\s+\d+\s*\/\s*\d+\b/i.test(reason) : false;
-      lines.push(`联网调研：已保存 ${sources ?? '若干'} 个来源到来源上下文${partial ? '，部分来源保存失败' : ''}。`);
+      const queryLabel = query ? `；查询：${truncateAgentCliChatLine(query, 48)}` : '';
+      lines.push(`联网调研：已保存 ${sources ?? '若干'} 个来源到来源上下文${partial ? '，部分来源保存失败' : ''}${queryLabel}。`);
     } else if (status === 'skipped' && reason) {
       const saveFailed = /none could be saved|could not be saved|source context.*unavailable/i.test(reason);
       lines.push(

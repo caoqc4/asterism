@@ -166,7 +166,9 @@ function compactWebResearchPreparationDetail(
 ): string | undefined {
   if (status === 'captured') {
     const sources = readStepKeyValueRaw(output, 'sources');
-    return `已保存 ${sources && sources !== '0' ? sources : '若干'} 个来源到来源上下文。`;
+    const query = readStepKeyValueRaw(output, 'query');
+    const queryLabel = query ? `；查询：${compactLine(query)}` : '';
+    return `已保存 ${sources && sources !== '0' ? sources : '若干'} 个来源到来源上下文${queryLabel}。`;
   }
   if (status === 'not_needed') {
     return '当前任务没有识别到需要新鲜外部资料。';

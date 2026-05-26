@@ -112,7 +112,7 @@ describe('deriveAgentCliProgress', () => {
 
     expect(progress.state).toBe('researching');
     expect(progress.label).toContain('联网调研来源');
-    expect(progress.detail).toBe('已保存 3 个来源到来源上下文。');
+    expect(progress.detail).toBe('已保存 3 个来源到来源上下文；查询：Codex CLI docs。');
   });
 
   it('identifies web research source persistence failures as unsaved evidence', () => {

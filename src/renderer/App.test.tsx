@@ -3088,7 +3088,7 @@ describe('App redesign v1', () => {
     });
     harness.emit('run.changed', 'run_agent_cli_created');
 
-    expect(await screen.findByText(/联网调研：已保存 3 个来源到来源上下文/)).toBeTruthy();
+    expect(await screen.findByText(/联网调研：已保存 3 个来源到来源上下文.*查询：Codex CLI 教程/)).toBeTruthy();
     expect(screen.getByText(/原生 CLI 联网动作：.*web_search/)).toBeTruthy();
   });
 
