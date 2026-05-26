@@ -1,6 +1,7 @@
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AgentCliRuntimeId, AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
 import type { AgentRuntimeNativeCapabilityAvailability } from './agent-runtime-goal.js';
+import { agentApiExecutionPromotionRequirements } from './ai-runtime-invocation.js';
 import {
   RUNTIME_ENTRYPOINT_COVERAGE,
   requiredRuntimeEntrypointGatesForKind,
@@ -535,6 +536,7 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       availableForSelectedProviderPhases ? 'status=partial' : 'status=development',
       'supportedPhases=chat,decomposition,decision,scheduled_brief',
       'executionRun=deferred',
+      agentApiExecutionRunPromotionSummary(),
       agentApiExecutionRunGateSummary(),
       'providerToolReadiness=not_declared',
       'startupProbe=never',
@@ -542,6 +544,10 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       providerConfigured ? 'provider=configured' : 'provider=missing',
     ].filter(Boolean).join(' / '),
   };
+}
+
+function agentApiExecutionRunPromotionSummary(): string {
+  return `executionRunPromotionRequirements=0/${agentApiExecutionPromotionRequirements().length}`;
 }
 
 function agentApiExecutionRunGateSummary(): string {

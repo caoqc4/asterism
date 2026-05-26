@@ -184,7 +184,7 @@ describe('configuration safety report', () => {
 
     expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
       state: 'approval_required',
-      reason: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / providerToolReadiness=not_declared / startupProbe=never / selected=true / provider=configured',
+      reason: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / providerToolReadiness=not_declared / startupProbe=never / selected=true / provider=configured',
       requiresApproval: true,
       startupProbePolicy: 'never',
     });
