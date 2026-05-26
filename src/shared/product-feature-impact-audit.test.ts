@@ -190,6 +190,11 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Task Dynamics now builds a Run-detail writeback approval queue');
     expect(decisions?.evidence.join(' ')).toContain('scheduler/background Decisions as proposal-only decision_draft work');
     expect(decisions?.evidence.join(' ')).toContain('without operator confirmation or standing approval');
+    expect(decisions?.evidence.join(' ')).toContain('planSchedulerDecisionProposal');
+    expect(decisions?.evidence.join(' ')).toContain('approval-item-only');
+    expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed=false');
+    expect(decisions?.evidence.join(' ')).toContain('writebackDispatchAllowed=false');
+    expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
     expect(decisions?.evidence.join(' ')).toContain('selected Agent CLI modes stay product_harness/skipped');
     expect(decisions?.evidence.join(' ')).toContain('Approved checkpoint Decision resume is limited to open tool_permission');
@@ -197,7 +202,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('Decision actions in DecisionService and DecisionsPage pass through decision_action');
     expect(decisions?.cliOnlyClosure).toBe('supported');
     expect(decisions?.gaps.join(' ')).toContain('deferred proposal-only contract');
-    expect(decisions?.nextActions.join(' ')).toContain('scheduler Decision proposal contract');
+    expect(decisions?.nextActions.join(' ')).toContain('planSchedulerDecisionProposal');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose Write Intent can now carry kind=patch');
     expect(rightPanel?.evidence.join(' ')).toContain('imported_patch_artifact sandbox draft sources');
     expect(taskFiles?.evidence.join(' ')).toContain('patch-promotion checkpoint and Decision status');

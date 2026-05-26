@@ -326,6 +326,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Approved checkpoint Decision resume is limited to open tool_permission, browser-controlled, or patch-promotion checkpoints, rechecks target-task readiness and pending task-memory guidance, and cannot turn ordinary Decision approval into arbitrary tool execution.',
       'Decision actions in DecisionService and DecisionsPage pass through decision_action, task-memory guidance, pre-step, and post-step gates before approve, defer, or cancel effects are recorded.',
       'RuntimeEntrypointCoverage now registers future scheduler/background Decisions as proposal-only decision_draft work that cannot persist Decisions or invoke writeback without operator confirmation or standing approval.',
+      'planSchedulerDecisionProposal now models the scheduler/background Decision proposal boundary as approval-item-only: it requires the Task Dynamics writeback approval queue plus operator confirmation or active Standing Approval, while keeping decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false.',
       'Future scheduler/background Decision drafts also remain without IPC or scheduler triggers until that same operator-confirmation or standing-approval model exists.',
       'Completion verification is separate from model output.',
       'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
@@ -336,7 +337,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future background scheduler decisions have a deferred proposal-only contract; wiring it still requires an operator confirmation or standing-approval model before main-side writeback dispatch.',
     ],
     nextActions: [
-      'Reuse the Task Dynamics writeback approval queue and scheduler Decision proposal contract for any future non-panel runtime review surface.',
+      'Reuse planSchedulerDecisionProposal and the Task Dynamics writeback approval queue for any future non-panel runtime review surface before enabling writeback dispatch or scheduler triggers.',
     ],
   },
   {
