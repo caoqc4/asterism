@@ -37,6 +37,8 @@ console.log(`runtime=${RUNTIME_ID}`);
 if (!ENABLED) {
   console.log('status=skip');
   console.log(`set TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true to launch the packaged app and call the local ${RUNTIME.label} account`);
+  console.log('accountReadiness=not-checked');
+  console.log('manualEvidence=not-recorded');
   console.log('cli=not-called');
   console.log('packagedApp=not-launched');
   console.log('workspace=unchanged');

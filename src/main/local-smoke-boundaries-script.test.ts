@@ -324,18 +324,24 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('Agent CLI packaged task live smoke');
     expect(result.output).toContain('runtime=codex');
     expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('accountReadiness=not-checked');
+    expect(result.output).toContain('manualEvidence=not-recorded');
     expect(result.output).toContain('cli=not-called');
     expect(result.output).toContain('packagedApp=not-launched');
     expect(result.output).toContain('workspace=unchanged');
     expect(claudeResult.status).toBe(0);
     expect(claudeResult.output).toContain('runtime=claude');
     expect(claudeResult.output).toContain('status=skip');
+    expect(claudeResult.output).toContain('accountReadiness=not-checked');
+    expect(claudeResult.output).toContain('manualEvidence=not-recorded');
     expect(claudeResult.output).toContain('cli=not-called');
     expect(claudeResult.output).toContain('workspace=unchanged');
     expect(claudeResult.output).toContain('local Claude Code account');
     expect(testingDoc).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:claude-agent-cli-task-live:mac');
     expect(testingDoc).toContain('TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac');
-    expect(testingDoc).toContain('The default command stays skipped and must not');
+    expect(testingDoc).toContain('The default command stays skipped');
+    expect(testingDoc).toContain('accountReadiness=not-checked');
+    expect(testingDoc).toContain('manualEvidence=not-recorded');
     expect(testingDoc).toContain('packaged-app live smoke passed locally');
   });
 

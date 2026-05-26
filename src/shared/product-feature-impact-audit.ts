@@ -475,6 +475,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'Codex CLI packaged smoke verifies account readiness, run completion, output capture, and fixture safety.',
       'The packaged Agent CLI live smoke harness now supports a default-skipped Claude Code mode through TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude, preserving the same isolated app data, temporary workspace, terminal-output, and no-workspace-change checks for future account-ready validation.',
+      'Default-skipped packaged Agent CLI live smoke output now states accountReadiness=not-checked and manualEvidence=not-recorded, so skipped Codex/Claude runs cannot be mistaken for account-ready acceptance evidence.',
     ],
     gaps: [
       'Claude real-account execution smoke has a manual opt-in packaged harness, but a passing run remains pending until account readiness is available.',

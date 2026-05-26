@@ -164,6 +164,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.nextActions.join(' ')).toContain('separate scheduled/event execution entrypoint');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code mode');
     expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');
+    expect(smoke?.evidence.join(' ')).toContain('accountReadiness=not-checked');
+    expect(smoke?.evidence.join(' ')).toContain('manualEvidence=not-recorded');
     expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
 });

@@ -194,7 +194,8 @@ TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_S
 This launches the packaged app with isolated user data and a temporary workspace,
 injects only the detected local Agent CLI runtime status, runs one task-bound
 read-only Agent CLI request, checks the expected phrase in the terminal step, and
-fails if workspace files change. The default command stays skipped and must not
+fails if workspace files change. The default command stays skipped, reports
+`accountReadiness=not-checked` and `manualEvidence=not-recorded`, and must not
 call the CLI or launch the app.
 
 On 2026-05-20, this packaged-app live smoke passed locally with Codex CLI
