@@ -575,6 +575,22 @@ describe('agent orchestration snapshot', () => {
       accepted: true,
       authorizedAutonomyLevel: 'L2_limited_authorized_action',
       blockedReasons: [],
+      missingRequirements: [],
+      satisfiedRequirements: [
+        'policy_present',
+        'policy_active',
+        'visible_reason',
+        'valid_unexpired_window',
+        'l2_authorization',
+        'lane_allowed',
+        'runtime_allowed',
+        'task_scope',
+        'task_type_scope',
+        'task_facet_scope',
+        'risk_ceiling',
+        'run_limit_policy',
+        'automation_readiness',
+      ],
       evidence: expect.arrayContaining([
         'policy=approval_1',
         'policyStatus=active',
@@ -588,6 +604,7 @@ describe('agent orchestration snapshot', () => {
       ]),
     });
     expect(approval.summary).toContain('accepted=yes');
+    expect(approval.summary).toContain('requirements=13/13');
     expect(approval.summary).toContain('authorized=L2_limited_authorized_action');
   });
 
@@ -654,8 +671,21 @@ describe('agent orchestration snapshot', () => {
         'Standing Approval policy risk ceiling low does not allow medium risk.',
         'Standing Approval policy requires maxRunsPerDay between 1 and 24.',
       ]),
+      missingRequirements: expect.arrayContaining([
+        'policy_active',
+        'visible_reason',
+        'valid_unexpired_window',
+        'lane_allowed',
+        'runtime_allowed',
+        'task_scope',
+        'task_type_scope',
+        'risk_ceiling',
+        'run_limit_policy',
+        'automation_readiness',
+      ]),
     });
     expect(approval.summary).toContain('accepted=no');
+    expect(approval.summary).toContain('requirements=3/13');
   });
 
   it('blocks standing approval when timestamp evidence is invalid', () => {
@@ -695,6 +725,7 @@ describe('agent orchestration snapshot', () => {
       blockedReasons: expect.arrayContaining([
         'Standing Approval policy requires valid ISO timestamps.',
       ]),
+      missingRequirements: expect.arrayContaining(['valid_unexpired_window']),
     });
     expect(approval.evidence).not.toContain('policyExpiry=future');
   });
@@ -828,6 +859,13 @@ describe('agent orchestration snapshot', () => {
       triggerPlanReady: true,
       runtimeStartAllowed: false,
       schedulerTriggerServiceConnected: false,
+      runtimeStartMissingRequirements: [
+        'scheduler_trigger_service',
+        'run_limit_count',
+      ],
+      runtimeStartSatisfiedRequirements: [
+        'trigger_plan_ready',
+      ],
       triggerRunEvidenceRequired: [
         'context_readiness',
         'target_task_identity',
@@ -845,6 +883,7 @@ describe('agent orchestration snapshot', () => {
       },
     });
     expect(plan.summary).toContain('runtimeStartAllowed=false');
+    expect(plan.summary).toContain('runtimeStartRequirements=1/3');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
     expect(plan.summary).toContain('triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
     expect(plan.evidence).toContain('targetTask=task_1');
@@ -852,6 +891,67 @@ describe('agent orchestration snapshot', () => {
   });
 
   it('allows scheduled/event runtime start only when the dedicated trigger service is connected', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+
+    const plan = planScheduledEventAgentTrigger({
+      aiStatus: readyAutomationAiStatus(),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      runLimit: {
+        runsStartedToday: 0,
+      },
+      schedulerTriggerServiceConnected: true,
+      task: {
+        ...task,
+        id: 'task_1',
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: 'task_1',
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy: draft.policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:01:00.000Z',
+        }],
+      },
+    });
+
+    expect(plan).toMatchObject({
+      status: 'ready',
+      triggerPlanReady: true,
+      runtimeStartAllowed: true,
+      schedulerTriggerServiceConnected: true,
+      runtimeStartMissingRequirements: [],
+      runtimeStartSatisfiedRequirements: [
+        'trigger_plan_ready',
+        'scheduler_trigger_service',
+        'run_limit_count',
+      ],
+    });
+    expect(plan.summary).toContain('runtimeStartAllowed=true');
+    expect(plan.summary).toContain('runtimeStartRequirements=3/3');
+    expect(plan.summary).toContain('schedulerTriggerServiceConnected=true');
+  });
+
+  it('blocks scheduled/event runtime start when trigger service lacks run-limit accounting', () => {
     const task = matureAutomationTask({
       taskFacets: ['scheduled'],
       taskType: 'routine',
@@ -893,13 +993,22 @@ describe('agent orchestration snapshot', () => {
     });
 
     expect(plan).toMatchObject({
-      status: 'ready',
-      triggerPlanReady: true,
-      runtimeStartAllowed: true,
+      status: 'blocked',
+      triggerPlanReady: false,
+      runtimeStartAllowed: false,
       schedulerTriggerServiceConnected: true,
+      runtimeStartMissingRequirements: [
+        'trigger_plan_ready',
+        'run_limit_count',
+      ],
+      runtimeStartSatisfiedRequirements: [
+        'scheduler_trigger_service',
+      ],
+      blockedReasons: expect.arrayContaining([
+        'Scheduled/event trigger runtime start requires daily run-limit accounting.',
+      ]),
     });
-    expect(plan.summary).toContain('runtimeStartAllowed=true');
-    expect(plan.summary).toContain('schedulerTriggerServiceConnected=true');
+    expect(plan.summary).toContain('runtimeStartRequirements=1/3');
   });
 
   it('blocks scheduled/event trigger planning when daily run limit is reached', () => {
@@ -952,6 +1061,13 @@ describe('agent orchestration snapshot', () => {
         maxRunsPerDay: 3,
         runsStartedToday: 3,
       },
+      runtimeStartMissingRequirements: [
+        'trigger_plan_ready',
+        'scheduler_trigger_service',
+      ],
+      runtimeStartSatisfiedRequirements: [
+        'run_limit_count',
+      ],
       blockedReasons: expect.arrayContaining([
         'Scheduled/event trigger daily run limit reached: 3/3.',
       ]),
@@ -980,6 +1096,11 @@ describe('agent orchestration snapshot', () => {
       runtimeStartAllowed: false,
       schedulerTriggerServiceConnected: false,
       policy: null,
+      runtimeStartMissingRequirements: [
+        'trigger_plan_ready',
+        'scheduler_trigger_service',
+        'run_limit_count',
+      ],
       blockedReasons: expect.arrayContaining([
         'Standing Approval policy is missing.',
         'Scheduled/event trigger planner only handles scheduled, event, or routine tasks.',

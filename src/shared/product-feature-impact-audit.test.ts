@@ -226,6 +226,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('AgentStandingApprovalPolicy');
     expect(workHabits?.evidence.join(' ')).toContain('evaluateStandingApprovalForAutomation');
     expect(workHabits?.evidence.join(' ')).toContain('daily run limit');
+    expect(workHabits?.evidence.join(' ')).toContain('requirements=x/13');
     expect(workHabits?.evidence.join(' ')).toContain('buildStandingApprovalConfirmationDraft');
     expect(workHabits?.evidence.join(' ')).toContain('confirmation-only L2 authorization draft');
     expect(workHabits?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false / workspaceWriteAllowed=false');
@@ -237,7 +238,10 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('planScheduledEventAgentTrigger');
     expect(workHabits?.evidence.join(' ')).toContain('shared scheduled/event trigger planner');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false');
-    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=true only when a dedicated trigger service is connected');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=true only when a dedicated trigger service is connected and daily run-limit count evidence is present');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=x/3');
     expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
     expect(workHabits?.evidence.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
     expect(workHabits?.evidence.join(' ')).toContain('does not resolve runtime config');

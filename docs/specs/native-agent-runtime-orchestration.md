@@ -792,7 +792,8 @@ Current implementation:
   accepted only when the policy is active, unexpired, scoped to the task type or
   task id, allows the requested lane and runtime, stays within the risk ceiling
   and daily run limit, carries a visible reason, and automation readiness is not
-  blocked. This evaluates authorization only; it does not create a scheduler
+  blocked. The evaluator returns satisfied and missing requirement lists plus
+  `requirements=x/13` evidence. This evaluates authorization only; it does not create a scheduler
   trigger, IPC entrypoint, or workspace write path by itself.
 - `buildStandingApprovalConfirmationDraft` creates the operator-facing L2
   authorization draft from the same readiness and policy evaluator. The draft is
@@ -810,10 +811,14 @@ Current implementation:
   class, accepts explicit daily run-limit accounting input, blocks plans when
   `maxRunsPerDay` is reached, then returns a ready/blocked plan. By default the
   plan stays no-start with `runtimeStartAllowed=false`; when a dedicated
-  trigger service is explicitly connected, a ready plan may return
-  `runtimeStartAllowed=true`. The plan also carries the trigger Run evidence
-  contract: context readiness, target-task identity, task-memory coverage,
-  task-memory guidance, subtask-start, run-limit count, and post-step evidence.
+  trigger service is explicitly connected and daily run-limit count evidence is
+  present, a ready plan may return `runtimeStartAllowed=true`. The plan exposes
+  runtime-start satisfied and missing requirement lists plus
+  `runtimeStartRequirements=x/3` evidence for trigger-plan readiness, scheduler
+  trigger service connection, and run-limit count. The plan also carries the
+  trigger Run evidence contract: context readiness, target-task identity,
+  task-memory coverage, task-memory guidance, subtask-start, run-limit count,
+  and post-step evidence.
 - `SchedulerService.diagnoseScheduledEventAgentTriggers` wires the planner to a
   scheduler diagnostic entrypoint. It reads selected-runtime readiness from AI
   config status, uses `RunRepository.countCreatedSinceByTask` for persisted

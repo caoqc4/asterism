@@ -111,6 +111,21 @@ export type AgentAutomationReadinessEvaluation = {
 export type AgentStandingApprovalStatus = 'active' | 'paused' | 'expired' | 'revoked';
 export type AgentStandingApprovalRiskCeiling = 'low' | 'medium';
 
+export type AgentStandingApprovalRequirement =
+  | 'policy_present'
+  | 'policy_active'
+  | 'visible_reason'
+  | 'valid_unexpired_window'
+  | 'l2_authorization'
+  | 'lane_allowed'
+  | 'runtime_allowed'
+  | 'task_scope'
+  | 'task_type_scope'
+  | 'task_facet_scope'
+  | 'risk_ceiling'
+  | 'run_limit_policy'
+  | 'automation_readiness';
+
 export type AgentStandingApprovalPolicy = {
   id: string;
   status: AgentStandingApprovalStatus;
@@ -132,6 +147,8 @@ export type AgentStandingApprovalEvaluation = {
   authorizedAutonomyLevel: AgentAutonomyLevel | null;
   blockedReasons: string[];
   evidence: string[];
+  missingRequirements: AgentStandingApprovalRequirement[];
+  satisfiedRequirements: AgentStandingApprovalRequirement[];
   summary: string;
 };
 
@@ -147,6 +164,11 @@ export type AgentStandingApprovalConfirmationDraft = {
   workspaceWriteAllowed: false;
   summary: string;
 };
+
+export type AgentScheduledEventRuntimeStartRequirement =
+  | 'trigger_plan_ready'
+  | 'scheduler_trigger_service'
+  | 'run_limit_count';
 
 export type AgentScheduledEventTriggerPlan = {
   status: 'ready' | 'blocked';
@@ -169,6 +191,8 @@ export type AgentScheduledEventTriggerPlan = {
   };
   readiness: AgentAutomationReadinessEvaluation;
   standingApproval: AgentStandingApprovalEvaluation;
+  runtimeStartMissingRequirements: AgentScheduledEventRuntimeStartRequirement[];
+  runtimeStartSatisfiedRequirements: AgentScheduledEventRuntimeStartRequirement[];
   blockedReasons: string[];
   evidence: string[];
   summary: string;
@@ -753,53 +777,76 @@ export function evaluateStandingApprovalForAutomation(params: {
 }): AgentStandingApprovalEvaluation {
   const blockedReasons: string[] = [];
   const evidence: string[] = [];
+  const missingRequirements: AgentStandingApprovalRequirement[] = [];
   const { policy } = params;
 
   if (!policy) {
     blockedReasons.push('Standing Approval policy is missing.');
+    missingRequirements.push(
+      'policy_present',
+      'policy_active',
+      'visible_reason',
+      'valid_unexpired_window',
+      'l2_authorization',
+      'lane_allowed',
+      'runtime_allowed',
+      'task_scope',
+      'task_type_scope',
+      'task_facet_scope',
+      'risk_ceiling',
+      'run_limit_policy',
+    );
   } else {
     evidence.push(`policy=${policy.id}`);
 
     if (policy.status !== 'active') {
       blockedReasons.push(`Standing Approval policy is not active: ${policy.status}.`);
+      missingRequirements.push('policy_active');
     } else {
       evidence.push('policyStatus=active');
     }
 
     if (!policy.reason.trim()) {
       blockedReasons.push('Standing Approval policy requires a visible reason.');
+      missingRequirements.push('visible_reason');
     }
 
     const expiresAtMs = Date.parse(policy.expiresAt);
     const nowMs = Date.parse(params.now);
     if (Number.isNaN(expiresAtMs) || Number.isNaN(nowMs)) {
       blockedReasons.push('Standing Approval policy requires valid ISO timestamps.');
+      missingRequirements.push('valid_unexpired_window');
     } else if (expiresAtMs <= nowMs) {
       blockedReasons.push('Standing Approval policy has expired.');
+      missingRequirements.push('valid_unexpired_window');
     } else {
       evidence.push('policyExpiry=future');
     }
 
     if (policy.allowedAutonomyLevel !== 'L2_limited_authorized_action') {
       blockedReasons.push('Standing Approval policy must authorize L2 limited autonomous action.');
+      missingRequirements.push('l2_authorization');
     } else {
       evidence.push('authorized=L2_limited_authorized_action');
     }
 
     if (!policy.allowedLanes.includes(params.lane)) {
       blockedReasons.push(`Standing Approval policy does not allow lane ${params.lane}.`);
+      missingRequirements.push('lane_allowed');
     } else {
       evidence.push(`lane=${params.lane}`);
     }
 
     if (!policy.allowedRuntimeIds.includes(params.runtimeId)) {
       blockedReasons.push(`Standing Approval policy does not allow runtime ${params.runtimeId}.`);
+      missingRequirements.push('runtime_allowed');
     } else {
       evidence.push(`runtime=${params.runtimeId}`);
     }
 
     if (policy.taskId && policy.taskId !== params.task.id) {
       blockedReasons.push('Standing Approval policy is scoped to a different task.');
+      missingRequirements.push('task_scope');
     }
 
     const taskKinds = new Set<string>();
@@ -812,6 +859,7 @@ export function evaluateStandingApprovalForAutomation(params: {
 
     if (policy.taskTypes?.length && (!params.task.taskType || !policy.taskTypes.includes(params.task.taskType))) {
       blockedReasons.push(`Standing Approval policy does not allow task type ${params.task.taskType ?? 'unknown'}.`);
+      missingRequirements.push('task_type_scope');
     } else if (policy.taskTypes?.length) {
       evidence.push(`taskType=${params.task.taskType}`);
     }
@@ -820,6 +868,7 @@ export function evaluateStandingApprovalForAutomation(params: {
       const missingFacets = policy.taskFacets.filter((facet) => !taskKinds.has(facet));
       if (missingFacets.length > 0) {
         blockedReasons.push(`Standing Approval policy requires missing task facets: ${missingFacets.join(', ')}.`);
+        missingRequirements.push('task_facet_scope');
       } else {
         evidence.push(`taskFacets=${policy.taskFacets.join(',')}`);
       }
@@ -827,12 +876,14 @@ export function evaluateStandingApprovalForAutomation(params: {
 
     if (!isRiskAllowedByStandingApproval(policy.riskCeiling, params.task.riskLevel)) {
       blockedReasons.push(`Standing Approval policy risk ceiling ${policy.riskCeiling} does not allow ${params.task.riskLevel} risk.`);
+      missingRequirements.push('risk_ceiling');
     } else {
       evidence.push(`risk=${params.task.riskLevel}`);
     }
 
     if (!Number.isInteger(policy.maxRunsPerDay) || policy.maxRunsPerDay < 1 || policy.maxRunsPerDay > 24) {
       blockedReasons.push('Standing Approval policy requires maxRunsPerDay between 1 and 24.');
+      missingRequirements.push('run_limit_policy');
     } else {
       evidence.push(`maxRunsPerDay=${policy.maxRunsPerDay}`);
     }
@@ -842,6 +893,7 @@ export function evaluateStandingApprovalForAutomation(params: {
     !isStandingApprovalToleratedReadinessBlocker(reason));
   if (params.readiness.state === 'blocked' || readinessBlockers.length > 0) {
     blockedReasons.push('Automation readiness is blocked.');
+    missingRequirements.push('automation_readiness');
     for (const reason of readinessBlockers) {
       blockedReasons.push(`Automation readiness blocker: ${reason}`);
     }
@@ -849,15 +901,36 @@ export function evaluateStandingApprovalForAutomation(params: {
     evidence.push(`readiness=${params.readiness.state}`);
   }
 
+  const standingApprovalRequirements: AgentStandingApprovalRequirement[] = [
+    'policy_present',
+    'policy_active',
+    'visible_reason',
+    'valid_unexpired_window',
+    'l2_authorization',
+    'lane_allowed',
+    'runtime_allowed',
+    'task_scope',
+    'task_type_scope',
+    'task_facet_scope',
+    'risk_ceiling',
+    'run_limit_policy',
+    'automation_readiness',
+  ];
+  const missingRequirementSet = new Set(missingRequirements);
+  const satisfiedRequirements = standingApprovalRequirements.filter((requirement) =>
+    !missingRequirementSet.has(requirement));
   const accepted = blockedReasons.length === 0;
   return {
     accepted,
     authorizedAutonomyLevel: accepted ? 'L2_limited_authorized_action' : null,
     blockedReasons,
     evidence,
+    missingRequirements,
+    satisfiedRequirements,
     summary: [
       'Standing Approval',
       `accepted=${accepted ? 'yes' : 'no'}`,
+      `requirements=${satisfiedRequirements.length}/${standingApprovalRequirements.length}`,
       `authorized=${accepted ? 'L2_limited_authorized_action' : 'none'}`,
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
@@ -1010,20 +1083,39 @@ export function planScheduledEventAgentTrigger(params: {
   }
 
   const runsStartedToday = params.runLimit?.runsStartedToday;
+  let runLimitCountReady = false;
   if (policy && runsStartedToday !== undefined) {
     if (!Number.isInteger(runsStartedToday) || runsStartedToday < 0) {
       blockedReasons.push('Scheduled/event trigger run-limit accounting requires a non-negative integer run count.');
     } else if (runsStartedToday >= policy.maxRunsPerDay) {
+      runLimitCountReady = true;
       blockedReasons.push(`Scheduled/event trigger daily run limit reached: ${runsStartedToday}/${policy.maxRunsPerDay}.`);
     } else {
+      runLimitCountReady = true;
       evidence.push(`runLimit=${runsStartedToday}/${policy.maxRunsPerDay}`);
     }
   } else if (policy) {
     evidence.push(`runLimit=not_counted/${policy.maxRunsPerDay}`);
   }
 
+  if (schedulerTriggerServiceConnected && policy && !runLimitCountReady) {
+    blockedReasons.push('Scheduled/event trigger runtime start requires daily run-limit accounting.');
+  }
+
   const status = blockedReasons.length === 0 ? 'ready' : 'blocked';
   const runtimeStartAllowed = status === 'ready' && schedulerTriggerServiceConnected;
+  const runtimeStartRequirements: AgentScheduledEventRuntimeStartRequirement[] = [
+    'trigger_plan_ready',
+    'scheduler_trigger_service',
+    'run_limit_count',
+  ];
+  const runtimeStartMissingRequirements: AgentScheduledEventRuntimeStartRequirement[] = [];
+  if (status !== 'ready') runtimeStartMissingRequirements.push('trigger_plan_ready');
+  if (!schedulerTriggerServiceConnected) runtimeStartMissingRequirements.push('scheduler_trigger_service');
+  if (!runLimitCountReady) runtimeStartMissingRequirements.push('run_limit_count');
+  const runtimeStartMissingRequirementSet = new Set(runtimeStartMissingRequirements);
+  const runtimeStartSatisfiedRequirements = runtimeStartRequirements.filter((requirement) =>
+    !runtimeStartMissingRequirementSet.has(requirement));
 
   return {
     status,
@@ -1048,6 +1140,8 @@ export function planScheduledEventAgentTrigger(params: {
     },
     readiness,
     standingApproval,
+    runtimeStartMissingRequirements,
+    runtimeStartSatisfiedRequirements,
     blockedReasons,
     evidence,
     summary: [
@@ -1055,6 +1149,7 @@ export function planScheduledEventAgentTrigger(params: {
       `status=${status}`,
       `triggerPlanReady=${status === 'ready' ? 'yes' : 'no'}`,
       `runtimeStartAllowed=${runtimeStartAllowed ? 'true' : 'false'}`,
+      `runtimeStartRequirements=${runtimeStartSatisfiedRequirements.length}/${runtimeStartRequirements.length}`,
       `schedulerTriggerServiceConnected=${schedulerTriggerServiceConnected ? 'true' : 'false'}`,
       'triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step',
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
