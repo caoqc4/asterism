@@ -35,8 +35,8 @@ SQLite database when one exists, local agent/runtime gates, packaged release
 smoke, packaged recovery smoke, product-surface packaged smoke, and the
 read-only macOS release preflight.
 
-The product-surface packaged smoke includes Task files editing plus an
-approved reviewed-patch promotion apply path against a temporary workspace; run
+The product-surface packaged smoke includes Task files editing plus applied and
+blocked reviewed-patch promotion apply paths against a temporary workspace; run
 `npm run dist:mac:dir` first when validating that UI path locally.
 
 ## Focused Test Commands

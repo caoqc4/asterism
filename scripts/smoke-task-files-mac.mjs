@@ -54,6 +54,13 @@ function seedTaskFileFixture() {
     const promotionId = 'sandbox_patch_promotion_packaged_apply';
     const sourceId = 'sandbox_source_packaged_apply';
     const patchFile = 'packaged-apply.md';
+    const blockedRunId = 'run_packaged_patch_blocked';
+    const blockedArtifactId = 'artifact_packaged_reviewed_patch_blocked';
+    const blockedCheckpointId = 'run_checkpoint_packaged_patch_blocked';
+    const blockedDecisionId = 'decision_packaged_patch_blocked';
+    const blockedPromotionId = 'sandbox_patch_promotion_packaged_blocked';
+    const blockedSourceId = 'sandbox_source_packaged_blocked';
+    const blockedPatchFile = 'packaged-blocked.md';
     const now = '2026-05-05T09:00:00.000Z';
     const patchDiff = [
       `--- a/${patchFile}`,
@@ -94,6 +101,46 @@ function seedTaskFileFixture() {
         descriptorId: 'workspace.staged_patch',
       },
       preview: patchDiff,
+    });
+    const blockedPatchDiff = [
+      `--- a/${blockedPatchFile}`,
+      `+++ b/${blockedPatchFile}`,
+      '@@',
+      '-alpha packaged blocked',
+      '+beta packaged blocked',
+    ].join('\n');
+    const blockedPatchDigest = `sha256:${createHash('sha256').update(blockedPatchDiff, 'utf8').digest('hex')}`;
+    const blockedArtifactContent = JSON.stringify({
+      artifact: {
+        commandLogs: [],
+        diff: blockedPatchDiff,
+        files: [blockedPatchFile],
+        kind: 'patch',
+        riskSummary: 'Packaged smoke reviewed patch should block after workspace drift.',
+        summary: 'Reviewable blocked smoke patch',
+      },
+      review: {
+        audit: null,
+        sandboxSessionId: blockedSourceId,
+        sessionSummary: `sandbox=${blockedSourceId}`,
+      },
+    });
+    const blockedCheckpointPayload = JSON.stringify({
+      version: 1,
+      kind: 'patch_promotion',
+      artifactId: blockedArtifactId,
+      artifactSummary: 'Reviewable blocked smoke patch',
+      sourceId: blockedSourceId,
+      sessionId: blockedSourceId,
+      descriptorId: 'workspace.staged_patch',
+      decisionId: blockedDecisionId,
+      decisionTitle: '确认应用 packaged blocked reviewed patch',
+      expectedFiles: [blockedPatchFile],
+      patchDigest: blockedPatchDigest,
+      policySnapshot: {
+        descriptorId: 'workspace.staged_patch',
+      },
+      preview: blockedPatchDiff,
     });
 
     database.transaction(() => {
@@ -157,6 +204,27 @@ function seedTaskFileFixture() {
 
       database
         .prepare(`
+          INSERT INTO runs (
+            id, task_id, type, status, instructions, output, output_source,
+            failure_reason, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          blockedRunId,
+          taskId,
+          'agent',
+          'completed',
+          'Review a sandbox patch that should block after workspace drift.',
+          'Reviewed patch promotion is ready, but workspace drift should block apply.',
+          'ai',
+          null,
+          now,
+          now,
+        );
+
+      database
+        .prepare(`
           INSERT INTO artifacts (
             id, task_id, source_type, source_id, kind, title, content, created_at, updated_at
           )
@@ -176,6 +244,25 @@ function seedTaskFileFixture() {
 
       database
         .prepare(`
+          INSERT INTO artifacts (
+            id, task_id, source_type, source_id, kind, title, content, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          blockedArtifactId,
+          taskId,
+          'run',
+          blockedRunId,
+          'patch',
+          'Reviewable blocked smoke patch',
+          blockedArtifactContent,
+          now,
+          now,
+        );
+
+      database
+        .prepare(`
           INSERT INTO run_checkpoints (
             id, run_id, step_id, kind, status, payload, created_at, resolved_at
           )
@@ -188,6 +275,24 @@ function seedTaskFileFixture() {
           'patch_promotion',
           'resolved',
           checkpointPayload,
+          now,
+          now,
+        );
+
+      database
+        .prepare(`
+          INSERT INTO run_checkpoints (
+            id, run_id, step_id, kind, status, payload, created_at, resolved_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          blockedCheckpointId,
+          blockedRunId,
+          null,
+          'patch_promotion',
+          'resolved',
+          blockedCheckpointPayload,
           now,
           now,
         );
@@ -219,6 +324,31 @@ function seedTaskFileFixture() {
 
       database
         .prepare(`
+          INSERT INTO decision_requests (
+            id, task_id, title, status, scope, kind, source_type, source_id,
+            source_label, context, options, recommendation, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          blockedDecisionId,
+          taskId,
+          '确认应用 packaged blocked reviewed patch',
+          'approved',
+          'task',
+          'direction_choice',
+          'agent_checkpoint',
+          blockedCheckpointId,
+          'workspace.staged_patch',
+          JSON.stringify({ boundary: 'packaged smoke blocked reviewed patch apply' }),
+          JSON.stringify([]),
+          null,
+          now,
+          now,
+        );
+
+      database
+        .prepare(`
           INSERT INTO sandbox_patch_promotions (
             id, checkpoint_id, run_id, task_id, artifact_id, source_id, decision_id,
             patch_digest, expected_files, status, audit_summary, blocked_reasons,
@@ -238,6 +368,33 @@ function seedTaskFileFixture() {
           JSON.stringify([patchFile]),
           'pending',
           'Packaged smoke reviewed patch is approved but unapplied.',
+          JSON.stringify([]),
+          now,
+          now,
+          null,
+        );
+
+      database
+        .prepare(`
+          INSERT INTO sandbox_patch_promotions (
+            id, checkpoint_id, run_id, task_id, artifact_id, source_id, decision_id,
+            patch_digest, expected_files, status, audit_summary, blocked_reasons,
+            created_at, updated_at, applied_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          blockedPromotionId,
+          blockedCheckpointId,
+          blockedRunId,
+          taskId,
+          blockedArtifactId,
+          blockedSourceId,
+          blockedDecisionId,
+          blockedPatchDigest,
+          JSON.stringify([blockedPatchFile]),
+          'pending',
+          'Packaged smoke reviewed patch should block when workspace content drifts.',
           JSON.stringify([]),
           now,
           now,
@@ -296,6 +453,40 @@ function assertPatchPromotionApplied() {
   }
 }
 
+function assertPatchPromotionBlocked() {
+  const workspaceFile = path.join(workspacePath, 'packaged-blocked.md');
+  const content = fs.readFileSync(workspaceFile, 'utf8');
+  if (content !== 'operator drift packaged blocked\n') {
+    throw new Error('Blocked reviewed patch promotion unexpectedly changed the drifted workspace file.');
+  }
+
+  const database = new Database(dbPath, { fileMustExist: true });
+
+  try {
+    const promotion = database
+      .prepare('SELECT status, audit_summary, blocked_reasons, applied_at FROM sandbox_patch_promotions WHERE id = ?')
+      .get('sandbox_patch_promotion_packaged_blocked');
+    const evidence = database
+      .prepare('SELECT status, output FROM run_steps WHERE run_id = ? ORDER BY step_index DESC LIMIT 1')
+      .get('run_packaged_patch_blocked');
+
+    if (promotion?.status !== 'blocked' || promotion.applied_at) {
+      throw new Error('Packaged UI blocked apply did not mark the patch promotion as blocked.');
+    }
+    if (!promotion.audit_summary?.includes('Sandbox patch promotion apply blocked')) {
+      throw new Error('Packaged UI blocked apply did not record blocked audit summary.');
+    }
+    if (!promotion.blocked_reasons?.includes('Patch promotion workspace content does not match reviewed base: packaged-blocked.md')) {
+      throw new Error('Packaged UI blocked apply did not persist the workspace-drift reason.');
+    }
+    if (evidence?.status !== 'failed' || !evidence.output?.includes('No workspace files were written.')) {
+      throw new Error('Packaged UI blocked apply did not record no-write run evidence.');
+    }
+  } finally {
+    database.close();
+  }
+}
+
 async function assertTaskFileWorkspace(page) {
   await page.getByRole('button', { name: 'Tasks' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
@@ -316,6 +507,12 @@ async function assertTaskFileWorkspace(page) {
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: '应用到工作区' }).click();
   await page.getByText(/promotion apply 完成/).waitFor();
+
+  await page.getByRole('button', { name: /Reviewable blocked smoke patch/ }).click();
+  await page.getByText(/promotion 已审批，未应用/).waitFor();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: '应用到工作区' }).click();
+  await page.getByText(/promotion apply 阻塞/).waitFor();
 }
 
 if (process.platform !== 'darwin') {
@@ -346,6 +543,7 @@ try {
   await waitFor(() => fs.existsSync(dbPath) && fs.statSync(dbPath).size > 0, 'packaged app database');
   fs.mkdirSync(workspacePath, { recursive: true });
   fs.writeFileSync(path.join(workspacePath, 'packaged-apply.md'), 'alpha packaged apply\n', 'utf8');
+  fs.writeFileSync(path.join(workspacePath, 'packaged-blocked.md'), 'operator drift packaged blocked\n', 'utf8');
   seedTaskFileFixture();
 
   const page = await app.firstWindow({ timeout: timeoutMs });
@@ -353,6 +551,7 @@ try {
   await assertTaskFileWorkspace(page);
   assertSavedContent();
   assertPatchPromotionApplied();
+  assertPatchPromotionBlocked();
 
   await app.close();
   cleanup();

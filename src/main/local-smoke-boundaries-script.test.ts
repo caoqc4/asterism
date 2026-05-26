@@ -414,7 +414,10 @@ describe('local smoke script default boundaries', () => {
     expect(taskFilesSmoke).toContain('TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY');
     expect(taskFilesSmoke).toContain('应用到工作区');
     expect(taskFilesSmoke).toContain('assertPatchPromotionApplied');
+    expect(taskFilesSmoke).toContain('assertPatchPromotionBlocked');
     expect(taskFilesSmoke).toContain('Touched files: packaged-apply.md');
+    expect(taskFilesSmoke).toContain('No workspace files were written.');
+    expect(taskFilesSmoke).toContain('Patch promotion workspace content does not match reviewed base: packaged-blocked.md');
   });
 
   it('keeps alpha local acceptance non-live and explicit', () => {
