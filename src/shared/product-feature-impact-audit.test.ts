@@ -253,6 +253,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('increments the in-sweep run-limit count');
     expect(workHabits?.evidence.join(' ')).toContain('duplicate candidates in one sweep cannot exceed the Standing Approval daily cap');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
+    expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
+    expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by in-sweep run-limit counting');
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
     expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, and a local sweep smoke');

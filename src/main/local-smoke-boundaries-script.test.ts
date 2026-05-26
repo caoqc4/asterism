@@ -322,6 +322,8 @@ describe('local smoke script default boundaries', () => {
     );
     expect(scripts['accept:agent-local']).toContain('npm run accept:scheduled-event-agent-sweep-smoke');
     expect(script).toContain('runScheduledEventAgentTriggerSweep');
+    expect(script).toContain('duplicateRunLimit=blocked');
+    expect(script).toContain('daily run limit reached: 3/3');
     expect(script).toContain('panel.scheduled_event_agent_triggered');
     expect(script).toContain('timelineEvidence=recorded');
     expect(script).toContain('workspace=unchanged');

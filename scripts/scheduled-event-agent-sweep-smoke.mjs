@@ -32,7 +32,7 @@ try {
   const triggerCalls = [];
   const timelineEvents = [];
   const runRepository = {
-    countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+    countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 2 }),
     listIncompleteOlderThan: async () => [],
     updateResult: async () => null,
   };
@@ -79,7 +79,10 @@ try {
       },
     },
     {
-      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
+      listScheduledEventAgentTriggerCandidates: async () => {
+        const task = buildReadyScheduledTask();
+        return [task, task];
+      },
     },
   );
 
@@ -90,9 +93,10 @@ try {
   const afterWorkspace = await fs.readFile(workspaceFile, 'utf8');
 
   assert(result.status === 'completed', 'sweep did not complete');
-  assert(result.checkedTaskCount === 1, 'sweep did not check the scheduled task candidate');
+  assert(result.checkedTaskCount === 2, 'sweep did not check the duplicate scheduled task candidates');
   assert(result.startedRunCount === 1, 'sweep did not start exactly one bounded run');
-  assert(result.blockedTaskCount === 0, 'sweep unexpectedly blocked the ready task');
+  assert(result.blockedTaskCount === 1, 'sweep did not block the duplicate task after the daily limit was reached');
+  assert(result.summaries.join('\n').includes('daily run limit reached: 3/3'), 'sweep did not enforce the in-sweep daily run limit');
   assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
   assert(triggerCalls[0].useModelProducer === true, 'sweep did not route through the model-producer Code Agent path');
@@ -111,6 +115,7 @@ try {
     `started=${result.startedRunCount}`,
     `blocked=${result.blockedTaskCount}`,
     `runId=${run.id}`,
+    'duplicateRunLimit=blocked',
     'timelineEvidence=recorded',
     'workspace=unchanged',
     'provider=not-called',
