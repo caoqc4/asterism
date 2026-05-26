@@ -161,7 +161,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('workspace write candidates that require reviewable promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService');
     expect(rightPanel?.evidence.join(' ')).toContain('missing-apply-record status');
-    expect(rightPanel?.evidence.join(' ')).toContain('explicit apply-to-workspace action');
+    expect(rightPanel?.evidence.join(' ')).toContain('explicit notice and file context-menu apply-to-workspace actions');
+    expect(rightPanel?.evidence.join(' ')).toContain('file context-menu apply-to-workspace actions');
     expect(rightPanel?.evidence.join(' ')).toContain('reviewed patch promotion apply smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('workspace-drift blocked recovery evidence');
     expect(rightPanel?.gates).toContain('context_readiness');

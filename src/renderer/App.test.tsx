@@ -6446,6 +6446,133 @@ describe('App redesign v1', () => {
     confirmSpy.mockRestore();
   });
 
+  it('applies approved reviewed patch promotions from the task file context menu when the apply flag is enabled', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      featureFlags: {
+        ...buildAiStatus().featureFlags,
+        enableSandboxPatchPromotionApply: true,
+      },
+    }));
+    const reviewRun = buildRun({
+      id: 'run_review_context_apply',
+      taskId: 'task_risk',
+      updatedAt: '2026-01-01T00:07:00.000Z',
+    });
+    harness.runs.push(reviewRun);
+    harness.details.task_risk.artifacts.unshift({
+      id: 'artifact_patch_context_apply',
+      taskId: 'task_risk',
+      sourceType: 'run',
+      sourceId: reviewRun.id,
+      kind: 'patch',
+      title: 'context-reviewed.patch',
+      content: 'diff --git a/notes.md b/notes.md\n+reviewed change\n',
+      createdAt: now,
+      updatedAt: now,
+    });
+    harness.decisions.push(buildDecision({
+      id: 'decision_patch_context_apply',
+      taskId: 'task_risk',
+      title: '确认提升 sandbox patch',
+      status: 'approved',
+      kind: 'risk_approval',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_patch_context_apply',
+      sourceLabel: 'workspace.staged_patch',
+    }));
+    harness.api.getRunDetail = vi.fn().mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      if (!run) return null;
+      if (run.id !== reviewRun.id) return buildRunDetail(run);
+      return buildRunDetail(run, {
+        checkpoints: [
+          {
+            id: 'run_checkpoint_patch_context_apply',
+            runId: reviewRun.id,
+            stepId: 'run_step_patch_context_apply',
+            kind: 'patch_promotion',
+            status: 'resolved',
+            payload: JSON.stringify(createPatchPromotionCheckpointPayload({
+              artifactId: 'artifact_patch_context_apply',
+              artifactSummary: 'Reviewed patch.',
+              decisionId: 'decision_patch_context_apply',
+              decisionTitle: '确认提升 sandbox patch',
+              descriptorId: 'workspace.staged_patch',
+              expectedFiles: ['notes.md'],
+              patchDigest: 'sha256:abc',
+              policySnapshot: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+              sessionId: 'sandbox_1',
+            })),
+            createdAt: now,
+            resolvedAt: now,
+          },
+        ],
+        sandboxPatchPromotions: [
+          {
+            id: 'sandbox_patch_promotion_context_apply',
+            checkpointId: 'run_checkpoint_patch_context_apply',
+            runId: reviewRun.id,
+            taskId: 'task_risk',
+            artifactId: 'artifact_patch_context_apply',
+            sourceId: 'sandbox_1',
+            decisionId: 'decision_patch_context_apply',
+            patchDigest: 'sha256:abc',
+            expectedFiles: ['notes.md'],
+            status: 'pending',
+            auditSummary: null,
+            blockedReasons: [],
+            createdAt: now,
+            updatedAt: now,
+            appliedAt: null,
+          },
+        ],
+      });
+    });
+    vi.mocked(harness.api.applySandboxPatchPromotion!).mockResolvedValueOnce({
+      auditSummary: 'Sandbox patch promotion applied / checkpoint=run_checkpoint_patch_context_apply / files=notes.md',
+      promotion: {
+        id: 'sandbox_patch_promotion_context_apply',
+        checkpointId: 'run_checkpoint_patch_context_apply',
+        runId: reviewRun.id,
+        taskId: 'task_risk',
+        artifactId: 'artifact_patch_context_apply',
+        sourceId: 'sandbox_1',
+        decisionId: 'decision_patch_context_apply',
+        patchDigest: 'sha256:abc',
+        expectedFiles: ['notes.md'],
+        status: 'applied',
+        auditSummary: 'Sandbox patch promotion applied / checkpoint=run_checkpoint_patch_context_apply / files=notes.md',
+        blockedReasons: [],
+        createdAt: now,
+        updatedAt: now,
+        appliedAt: now,
+      },
+      status: 'applied',
+      touchedFiles: ['notes.md'],
+    });
+    window.api = harness.api;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
+    fireEvent.contextMenu(await findTaskFileButton(/context-reviewed\.patch/));
+    await user.click(await screen.findByRole('button', { name: '应用到工作区' }));
+
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('只会写入 reviewed patch 中通过 promotion preflight 的匹配文件'));
+    await waitFor(() => {
+      expect(harness.api.applySandboxPatchPromotion).toHaveBeenCalledWith({
+        checkpointId: 'run_checkpoint_patch_context_apply',
+        operatorConfirmed: true,
+      });
+    });
+    expect(await screen.findByText(/promotion apply 完成/)).toBeTruthy();
+    expect(screen.getByText(/Run 证据已刷新，请复核 touched files 和后续验证结果/)).toBeTruthy();
+    confirmSpy.mockRestore();
+  });
+
   it('refreshes patch promotion notices from run detail when decisions change', async () => {
     const user = userEvent.setup();
     let promotionSettled = false;

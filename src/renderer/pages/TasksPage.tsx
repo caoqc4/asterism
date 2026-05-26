@@ -1665,6 +1665,17 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const selectedPatchPromotionView = selectedFile?.artifactId
     ? patchPromotionViewsByArtifactId.get(selectedFile.artifactId) ?? null
     : null;
+  const contextMenuPatchPromotionView = contextMenuFile?.artifactId
+    ? patchPromotionViewsByArtifactId.get(contextMenuFile.artifactId) ?? null
+    : null;
+  function patchPromotionApplyAvailableFor(file: VirtualTaskFile | null, view: SandboxPatchPromotionView | null): boolean {
+    return isPatchArtifactFile(file)
+      && Boolean(window.api?.applySandboxPatchPromotion)
+      && sandboxPatchPromotionApplyEnabled
+      && view?.tone === 'ready'
+      && view.decisionStatus === 'approved'
+      && view.promotionStatus === 'pending';
+  }
   const selectedPatchPromotionApplyFlagGuidance = isPatchArtifactFile(selectedFile)
     && selectedPatchPromotionView?.tone === 'ready'
     && selectedPatchPromotionView.decisionStatus === 'approved'
@@ -1685,12 +1696,8 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     && Boolean(window.api?.previewPatchArtifactSandboxReview);
   const selectedPatchReviewRunAvailable = isPatchArtifactFile(selectedFile)
     && Boolean(window.api?.runPatchArtifactSandboxReview);
-  const selectedPatchPromotionApplyAvailable = isPatchArtifactFile(selectedFile)
-    && Boolean(window.api?.applySandboxPatchPromotion)
-    && sandboxPatchPromotionApplyEnabled
-    && selectedPatchPromotionView?.tone === 'ready'
-    && selectedPatchPromotionView.decisionStatus === 'approved'
-    && selectedPatchPromotionView.promotionStatus === 'pending';
+  const selectedPatchPromotionApplyAvailable = patchPromotionApplyAvailableFor(selectedFile, selectedPatchPromotionView);
+  const contextMenuPatchPromotionApplyAvailable = patchPromotionApplyAvailableFor(contextMenuFile, contextMenuPatchPromotionView);
   const directChildTasks = selectedTask
     ? orderedChildrenForTask(selectedTask, allTasks)
     : [];
@@ -3286,6 +3293,13 @@ function resetCaptureDraft() {
           onCopyPath={() => { copyFilePath(contextMenuFile); closeFileContextMenu(); }}
           onPreviewPatchReview={() => { closeFileContextMenu(); void previewPatchArtifactSandboxReview(contextMenuFile); }}
           onRunPatchReview={() => { closeFileContextMenu(); void runPatchArtifactSandboxReview(contextMenuFile); }}
+          onApplyPatchPromotion={contextMenuPatchPromotionApplyAvailable
+            ? () => {
+                selectTaskFile(contextMenuFile);
+                closeFileContextMenu();
+                void applySandboxPatchPromotion(contextMenuPatchPromotionView, contextMenuFile);
+              }
+            : null}
           onToggleSourceKey={() => { closeFileContextMenu(); void toggleSourceKey(contextMenuFile); }}
           onArchiveSource={() => { closeFileContextMenu(); void archiveSourceFile(contextMenuFile); }}
         />
@@ -5259,6 +5273,7 @@ interface FileContextMenuProps {
   onCopyPath: () => void;
   onPreviewPatchReview: () => void;
   onRunPatchReview: () => void;
+  onApplyPatchPromotion?: (() => void) | null;
   onToggleSourceKey: () => void;
   onArchiveSource: () => void;
 }
@@ -5276,6 +5291,7 @@ function FileContextMenu({
   onCopyPath,
   onPreviewPatchReview,
   onRunPatchReview,
+  onApplyPatchPromotion,
   onToggleSourceKey,
   onArchiveSource,
 }: FileContextMenuProps) {
@@ -5305,6 +5321,11 @@ function FileContextMenu({
       {canRunPatchReview && (
         <button className="ctx-menu-item" onClick={onRunPatchReview}>
           运行 review
+        </button>
+      )}
+      {onApplyPatchPromotion && (
+        <button className="ctx-menu-item" onClick={onApplyPatchPromotion}>
+          应用到工作区
         </button>
       )}
       {isSourceMaterial && (
