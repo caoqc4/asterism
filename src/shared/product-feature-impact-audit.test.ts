@@ -32,6 +32,8 @@ describe('product feature impact audit', () => {
       {
         ...partialRuntimeItem!,
         status: 'covered',
+        cliOnlyClosure: 'supported',
+        futureApiClosure: 'supported',
         evidence: [
           'Deferred Agent API execution_run invocations carry future provider-visible execution required gates.',
         ],
@@ -40,6 +42,23 @@ describe('product feature impact audit', () => {
       {
         featureId: 'right_panel_agent_run',
         issue: 'Covered feature audit item must not use deferred or future-only evidence as completion proof.',
+      },
+    ]);
+  });
+
+  it('requires covered product completion to have closed runtime coverage', () => {
+    const coveredItem = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'subtask_start_and_task_switch');
+    expect(coveredItem).toBeDefined();
+
+    expect(findProductFeatureImpactAuditIssues([
+      {
+        ...coveredItem!,
+        futureApiClosure: 'partial',
+      },
+    ])).toEqual([
+      {
+        featureId: 'subtask_start_and_task_switch',
+        issue: 'Covered feature audit item must not have partial or missing runtime closure.',
       },
     ]);
   });

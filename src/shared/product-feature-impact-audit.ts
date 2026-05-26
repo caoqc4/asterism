@@ -68,6 +68,10 @@ const DEFERRED_COMPLETION_SIGNALS = [
   /future (?:agent api|api|provider-visible|scheduled|background|execution|workspace-write)/i,
 ];
 
+function isClosedRuntimeClosure(closure: ProductFeatureRuntimeClosure): boolean {
+  return closure === 'supported' || closure === 'not_applicable';
+}
+
 export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
   {
     id: 'right_panel_agent_run',
@@ -552,6 +556,16 @@ export function findProductFeatureImpactAuditIssues(
       issues.push({
         featureId: item.id,
         issue: 'Covered feature audit item must not use deferred or future-only evidence as completion proof.',
+      });
+    }
+
+    if (
+      item.status === 'covered' &&
+      (!isClosedRuntimeClosure(item.cliOnlyClosure) || !isClosedRuntimeClosure(item.futureApiClosure))
+    ) {
+      issues.push({
+        featureId: item.id,
+        issue: 'Covered feature audit item must not have partial or missing runtime closure.',
       });
     }
   }
