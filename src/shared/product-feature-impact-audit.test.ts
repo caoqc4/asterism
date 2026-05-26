@@ -136,6 +136,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('command_execution items');
     expect(rightPanel?.evidence.join(' ')).toContain('while the native process is still running');
     expect(rightPanel?.evidence.join(' ')).toContain('local command or workspace activity');
+    expect(rightPanel?.evidence.join(' ')).toContain('reviewable write candidates');
+    expect(rightPanel?.evidence.join(' ')).toContain('reviewed patch, task-file proposal, or promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('child-task advancement messages');
     expect(rightPanel?.evidence.join(' ')).toContain('context.readiness.evaluate');
     expect(rightPanel?.evidence.join(' ')).toContain('preserving operation mode');

@@ -114,9 +114,15 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
       state: 'researching',
     };
   }
+  if (capability === 'workspace_write') {
+    return {
+      detail: compactStepDetail(output),
+      label: '检测到工作区写入候选，正在等待 reviewed patch、任务文件提案或 promotion evidence 审查。',
+      state: 'verifying',
+    };
+  }
   if (
     capability === 'workspace_read'
-    || capability === 'workspace_write'
     || capability === 'shell_command'
     || isWorkspaceOrCommandStep(haystack)
   ) {

@@ -168,6 +168,23 @@ describe('deriveAgentCliProgress', () => {
     expect(progress.label).toContain('读取工作区');
   });
 
+  it('shows workspace write capability events as reviewable write candidates', () => {
+    const progress = deriveAgentCliProgress(detail({
+      steps: [
+        step({
+          index: 1,
+          title: 'Codex CLI 工作区写入候选',
+          output: 'capability=workspace_write\napply_patch changed src/app.ts',
+        }),
+      ],
+    }));
+
+    expect(progress.state).toBe('verifying');
+    expect(progress.label).toContain('工作区写入候选');
+    expect(progress.label).toContain('promotion evidence');
+    expect(progress.detail).toBe('apply_patch changed src/app.ts');
+  });
+
   it('moves completed runs into result organization state', () => {
     const progress = deriveAgentCliProgress(detail({
       status: 'completed',
