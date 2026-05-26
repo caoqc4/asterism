@@ -766,6 +766,12 @@ Current implementation:
 - Read-only orchestration diagnostics expose the automatic-start boundary, so
   manual/operator-started readiness is distinct from scheduled/event tasks that
   require a separate execution entrypoint.
+- `AgentStandingApprovalPolicy` is the shared L2 authorization surface. It is
+  accepted only when the policy is active, unexpired, scoped to the task type or
+  task id, allows the requested lane and runtime, stays within the risk ceiling
+  and daily run limit, carries a visible reason, and automation readiness is not
+  blocked. This evaluates authorization only; it does not create a scheduler
+  trigger, IPC entrypoint, or workspace write path by itself.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

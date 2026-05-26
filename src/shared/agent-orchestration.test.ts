@@ -5,6 +5,7 @@ import {
   buildAgentExecutionOrchestrationSnapshot,
   buildCodeAgentOrchestrationRequest,
   buildOperatorStartedOrchestrationRequest,
+  evaluateStandingApprovalForAutomation,
   evaluateSkillInformedAutomationReadiness,
   projectAgentRunLifecycle,
   validateAgentExecutionOrchestrationRequest,
@@ -494,6 +495,172 @@ describe('agent orchestration snapshot', () => {
     expect(readiness.summary).toContain('standingApproval=required_for_auto_action');
     expect(readiness.summary).toContain('autoStart=no');
     expect(readiness.summary).toContain('boundary=separate_scheduled_event_entrypoint_required');
+  });
+
+  it('accepts a narrow standing approval policy for L2 limited autonomous action', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled', 'event'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+
+    const approval = evaluateStandingApprovalForAutomation({
+      lane: 'coding',
+      now: '2026-05-26T10:00:00.000Z',
+      policy: {
+        id: 'approval_1',
+        allowedAutonomyLevel: 'L2_limited_authorized_action',
+        allowedLanes: ['coding'],
+        allowedRuntimeIds: ['local_sandbox'],
+        createdAt: '2026-05-26T09:00:00.000Z',
+        expiresAt: '2026-05-27T09:00:00.000Z',
+        maxRunsPerDay: 3,
+        reason: 'Allow routine patch preparation to advance without repeated prompts.',
+        riskCeiling: 'medium',
+        status: 'active',
+        taskFacets: ['scheduled', 'event'],
+        taskId: 'task_1',
+        taskTypes: ['routine'],
+      },
+      readiness,
+      runtimeId: 'local_sandbox',
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled', 'event'],
+        taskType: 'routine',
+      },
+    });
+
+    expect(approval).toMatchObject({
+      accepted: true,
+      authorizedAutonomyLevel: 'L2_limited_authorized_action',
+      blockedReasons: [],
+      evidence: expect.arrayContaining([
+        'policy=approval_1',
+        'policyStatus=active',
+        'authorized=L2_limited_authorized_action',
+        'lane=coding',
+        'runtime=local_sandbox',
+        'taskType=routine',
+        'taskFacets=scheduled,event',
+        'risk=low',
+        'readiness=diagnostic_only',
+      ]),
+    });
+    expect(approval.summary).toContain('accepted=yes');
+    expect(approval.summary).toContain('authorized=L2_limited_authorized_action');
+  });
+
+  it('blocks standing approval when scope, expiry, risk, or readiness are not acceptable', () => {
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task: matureAutomationTask({
+        activeBlocker: {
+          id: 'blocker_1',
+          taskId: 'task_1',
+          title: 'Needs review',
+          kind: 'approval',
+          detail: null,
+          owner: null,
+          responsibility: null,
+          responsibilityLabel: null,
+          sourceContextId: null,
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      }),
+    });
+
+    const approval = evaluateStandingApprovalForAutomation({
+      lane: 'coding',
+      now: '2026-05-26T10:00:00.000Z',
+      policy: {
+        id: 'approval_2',
+        allowedAutonomyLevel: 'L2_limited_authorized_action',
+        allowedLanes: ['browser_evidence'],
+        allowedRuntimeIds: ['browser_session'],
+        createdAt: '2026-05-25T09:00:00.000Z',
+        expiresAt: '2026-05-26T09:00:00.000Z',
+        maxRunsPerDay: 0,
+        reason: '',
+        riskCeiling: 'low',
+        status: 'paused',
+        taskId: 'other_task',
+        taskTypes: ['routine'],
+      },
+      readiness,
+      runtimeId: 'local_sandbox',
+      task: {
+        id: 'task_1',
+        riskLevel: 'medium',
+        taskFacets: [],
+        taskType: 'simple',
+      },
+    });
+
+    expect(approval).toMatchObject({
+      accepted: false,
+      authorizedAutonomyLevel: null,
+      blockedReasons: expect.arrayContaining([
+        'Standing Approval policy is not active: paused.',
+        'Standing Approval policy requires a visible reason.',
+        'Standing Approval policy has expired.',
+        'Standing Approval policy does not allow lane coding.',
+        'Standing Approval policy does not allow runtime local_sandbox.',
+        'Standing Approval policy is scoped to a different task.',
+        'Standing Approval policy does not allow task type simple.',
+        'Standing Approval policy risk ceiling low does not allow medium risk.',
+        'Standing Approval policy requires maxRunsPerDay between 1 and 24.',
+      ]),
+    });
+    expect(approval.summary).toContain('accepted=no');
+  });
+
+  it('blocks standing approval when timestamp evidence is invalid', () => {
+    const task = matureAutomationTask();
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+
+    const approval = evaluateStandingApprovalForAutomation({
+      lane: 'coding',
+      now: 'not-a-date',
+      policy: {
+        id: 'approval_invalid_time',
+        allowedAutonomyLevel: 'L2_limited_authorized_action',
+        allowedLanes: ['coding'],
+        allowedRuntimeIds: ['local_sandbox'],
+        createdAt: '2026-05-26T09:00:00.000Z',
+        expiresAt: 'also-not-a-date',
+        maxRunsPerDay: 1,
+        reason: 'Allow one bounded autonomous preparation run.',
+        riskCeiling: 'low',
+        status: 'active',
+      },
+      readiness,
+      runtimeId: 'local_sandbox',
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: [],
+        taskType: 'simple',
+      },
+    });
+
+    expect(approval).toMatchObject({
+      accepted: false,
+      blockedReasons: expect.arrayContaining([
+        'Standing Approval policy requires valid ISO timestamps.',
+      ]),
+    });
+    expect(approval.evidence).not.toContain('policyExpiry=future');
   });
 });
 

@@ -479,12 +479,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Read-only orchestration diagnostics now expose the automatic-start boundary, distinguishing manual/operator-started readiness from scheduled/event tasks that require a separate execution entrypoint.',
       'AgentAutomationReadiness now projects an autonomy ladder level and next authorized-action level, so ready tasks surface L1 proposal capability and the standing-approval requirement for future L2 limited autonomous action instead of flattening all automation into disabled.',
       'RuntimeEntrypointCoverage now models standing_approval as an explicit deferred gate for scheduled/event autonomous execution and scheduler/background Decision drafts.',
+      'AgentStandingApprovalPolicy and evaluateStandingApprovalForAutomation now provide a narrow shared policy surface for L2 limited autonomous action, checking active status, expiry, task scope, lane, runtime, risk ceiling, daily run limit, visible reason, and existing automation readiness before any future scheduler trigger can use it.',
     ],
     gaps: [
-      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics; scheduled/event tasks can be diagnosed for readiness but need a Standing Approval policy before L2 automatic native runtime starts.',
+      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics and shared Standing Approval evaluation; scheduled/event tasks still need a persisted approval surface and dedicated trigger service before L2 automatic native runtime starts.',
     ],
     nextActions: [
-      'Implement the smallest Standing Approval policy surface for L2 limited autonomous action before wiring the deferred scheduled/event contract to any scheduler trigger.',
+      'Persist and expose the smallest Standing Approval confirmation surface before wiring the deferred scheduled/event contract to any scheduler trigger.',
     ],
   },
   {

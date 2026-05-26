@@ -11,7 +11,7 @@ import {
 } from './types/operator-started-run.js';
 import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput, RunStatus } from './types/run.js';
 import type { AiConfigStatus } from './types/settings.js';
-import type { TaskDetail } from './types/task.js';
+import type { TaskDetail, TaskExecutionType } from './types/task.js';
 
 export type ExecutionRuntimeStatus = 'not_checked' | 'ready' | 'blocked' | 'offline';
 export type ExecutionRuntimeKind =
@@ -90,6 +90,33 @@ export type AgentAutomationReadinessEvaluation = {
   automaticStartBoundary: AgentAutomationStartBoundary;
   automaticStartAllowed: false;
   standingApprovalRequired: boolean;
+  blockedReasons: string[];
+  evidence: string[];
+  summary: string;
+};
+
+export type AgentStandingApprovalStatus = 'active' | 'paused' | 'expired' | 'revoked';
+export type AgentStandingApprovalRiskCeiling = 'low' | 'medium';
+
+export type AgentStandingApprovalPolicy = {
+  id: string;
+  status: AgentStandingApprovalStatus;
+  taskId?: string | null;
+  taskTypes?: TaskExecutionType[];
+  taskFacets?: string[];
+  allowedLanes: AgentExecutionOrchestrationLane[];
+  allowedRuntimeIds: string[];
+  allowedAutonomyLevel: Extract<AgentAutonomyLevel, 'L2_limited_authorized_action'>;
+  riskCeiling: AgentStandingApprovalRiskCeiling;
+  maxRunsPerDay: number;
+  expiresAt: string;
+  createdAt: string;
+  reason: string;
+};
+
+export type AgentStandingApprovalEvaluation = {
+  accepted: boolean;
+  authorizedAutonomyLevel: AgentAutonomyLevel | null;
   blockedReasons: string[];
   evidence: string[];
   summary: string;
@@ -636,6 +663,132 @@ export function evaluateSkillInformedAutomationReadiness(params: {
       `boundary=${automaticStartBoundary}`,
     ].filter(Boolean).join(' / '),
   };
+}
+
+export function evaluateStandingApprovalForAutomation(params: {
+  lane: AgentExecutionOrchestrationLane;
+  now: string;
+  policy: AgentStandingApprovalPolicy | null;
+  readiness: AgentAutomationReadinessEvaluation;
+  runtimeId: string;
+  task: Pick<TaskDetail, 'id' | 'riskLevel' | 'taskFacets' | 'taskType'>;
+}): AgentStandingApprovalEvaluation {
+  const blockedReasons: string[] = [];
+  const evidence: string[] = [];
+  const { policy } = params;
+
+  if (!policy) {
+    blockedReasons.push('Standing Approval policy is missing.');
+  } else {
+    evidence.push(`policy=${policy.id}`);
+
+    if (policy.status !== 'active') {
+      blockedReasons.push(`Standing Approval policy is not active: ${policy.status}.`);
+    } else {
+      evidence.push('policyStatus=active');
+    }
+
+    if (!policy.reason.trim()) {
+      blockedReasons.push('Standing Approval policy requires a visible reason.');
+    }
+
+    const expiresAtMs = Date.parse(policy.expiresAt);
+    const nowMs = Date.parse(params.now);
+    if (Number.isNaN(expiresAtMs) || Number.isNaN(nowMs)) {
+      blockedReasons.push('Standing Approval policy requires valid ISO timestamps.');
+    } else if (expiresAtMs <= nowMs) {
+      blockedReasons.push('Standing Approval policy has expired.');
+    } else {
+      evidence.push('policyExpiry=future');
+    }
+
+    if (policy.allowedAutonomyLevel !== 'L2_limited_authorized_action') {
+      blockedReasons.push('Standing Approval policy must authorize L2 limited autonomous action.');
+    } else {
+      evidence.push('authorized=L2_limited_authorized_action');
+    }
+
+    if (!policy.allowedLanes.includes(params.lane)) {
+      blockedReasons.push(`Standing Approval policy does not allow lane ${params.lane}.`);
+    } else {
+      evidence.push(`lane=${params.lane}`);
+    }
+
+    if (!policy.allowedRuntimeIds.includes(params.runtimeId)) {
+      blockedReasons.push(`Standing Approval policy does not allow runtime ${params.runtimeId}.`);
+    } else {
+      evidence.push(`runtime=${params.runtimeId}`);
+    }
+
+    if (policy.taskId && policy.taskId !== params.task.id) {
+      blockedReasons.push('Standing Approval policy is scoped to a different task.');
+    }
+
+    const taskKinds = new Set<string>();
+    if (params.task.taskType) {
+      taskKinds.add(params.task.taskType);
+    }
+    for (const facet of params.task.taskFacets ?? []) {
+      taskKinds.add(facet);
+    }
+
+    if (policy.taskTypes?.length && (!params.task.taskType || !policy.taskTypes.includes(params.task.taskType))) {
+      blockedReasons.push(`Standing Approval policy does not allow task type ${params.task.taskType ?? 'unknown'}.`);
+    } else if (policy.taskTypes?.length) {
+      evidence.push(`taskType=${params.task.taskType}`);
+    }
+
+    if (policy.taskFacets?.length) {
+      const missingFacets = policy.taskFacets.filter((facet) => !taskKinds.has(facet));
+      if (missingFacets.length > 0) {
+        blockedReasons.push(`Standing Approval policy requires missing task facets: ${missingFacets.join(', ')}.`);
+      } else {
+        evidence.push(`taskFacets=${policy.taskFacets.join(',')}`);
+      }
+    }
+
+    if (!isRiskAllowedByStandingApproval(policy.riskCeiling, params.task.riskLevel)) {
+      blockedReasons.push(`Standing Approval policy risk ceiling ${policy.riskCeiling} does not allow ${params.task.riskLevel} risk.`);
+    } else {
+      evidence.push(`risk=${params.task.riskLevel}`);
+    }
+
+    if (!Number.isInteger(policy.maxRunsPerDay) || policy.maxRunsPerDay < 1 || policy.maxRunsPerDay > 24) {
+      blockedReasons.push('Standing Approval policy requires maxRunsPerDay between 1 and 24.');
+    } else {
+      evidence.push(`maxRunsPerDay=${policy.maxRunsPerDay}`);
+    }
+  }
+
+  if (params.readiness.state === 'blocked') {
+    blockedReasons.push('Automation readiness is blocked.');
+  } else {
+    evidence.push(`readiness=${params.readiness.state}`);
+  }
+
+  const accepted = blockedReasons.length === 0;
+  return {
+    accepted,
+    authorizedAutonomyLevel: accepted ? 'L2_limited_authorized_action' : null,
+    blockedReasons,
+    evidence,
+    summary: [
+      'Standing Approval',
+      `accepted=${accepted ? 'yes' : 'no'}`,
+      `authorized=${accepted ? 'L2_limited_authorized_action' : 'none'}`,
+      `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
+      `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
+    ].join(' / '),
+  };
+}
+
+function isRiskAllowedByStandingApproval(
+  ceiling: AgentStandingApprovalRiskCeiling,
+  risk: TaskDetail['riskLevel'],
+): boolean {
+  if (risk === 'high') return false;
+  if (ceiling === 'low') return risk === 'low';
+  return risk === 'low' || risk === 'medium';
 }
 
 function mapRunStatusToLifecycleStage(runStatus: RunStatus): AgentRunLifecycleStage {
