@@ -86,6 +86,7 @@ export function buildReadOnlyOrchestrationPresentation(params: {
           `evidence=${automationReadiness.evidence.length ? automationReadiness.evidence.join(',') : 'none'}`,
           `blocked=${automationReadiness.blockedReasons.length ? automationReadiness.blockedReasons.join('; ') : 'none'}`,
           `autoStart=${automationReadiness.automaticStartAllowed ? 'yes' : 'no'}`,
+          `boundary=${automationReadiness.automaticStartBoundary}`,
         ].join(' / ')
       : null,
     summary: [
@@ -96,6 +97,7 @@ export function buildReadOnlyOrchestrationPresentation(params: {
       'modelVisibleHiddenTools=no',
       `automation=${automationReadiness?.state ?? snapshot.profile.automationReadiness}`,
       `autoStart=${snapshot.lifecycle.automaticStartEnabled || automationReadiness?.automaticStartAllowed ? 'yes' : 'no'}`,
-    ].join(' / '),
+      automationReadiness ? `boundary=${automationReadiness.automaticStartBoundary}` : null,
+    ].filter(Boolean).join(' / '),
   };
 }

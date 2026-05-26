@@ -159,6 +159,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
     expect(capabilities?.gaps.join(' ')).not.toContain('compact/clear readiness checks');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
+    expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
     expect(workHabits?.gaps.join(' ')).toContain('cannot automatically start native runtimes');
     expect(workHabits?.nextActions.join(' ')).toContain('separate scheduled/event execution entrypoint');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code mode');

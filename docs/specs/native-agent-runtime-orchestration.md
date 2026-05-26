@@ -760,6 +760,9 @@ Current implementation:
   are present, but it still returns `automaticStartAllowed: false` and blocks
   native runtime auto-start until a separate scheduled/event execution entrypoint
   exists.
+- Read-only orchestration diagnostics expose the automatic-start boundary, so
+  manual/operator-started readiness is distinct from scheduled/event tasks that
+  require a separate execution entrypoint.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

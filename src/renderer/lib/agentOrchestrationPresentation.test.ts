@@ -71,7 +71,7 @@ function buildReadyAiStatus(): AiConfigStatus {
   };
 }
 
-function buildTaskDetail(): TaskDetail {
+function buildTaskDetail(partial: Partial<TaskDetail> = {}): TaskDetail {
   return {
     activeBlocker: null,
     activeDependency: null,
@@ -175,6 +175,7 @@ function buildTaskDetail(): TaskDetail {
     title: 'Preview agent orchestration',
     updatedAt: '2026-01-01T00:00:00.000Z',
     waitingReason: null,
+    ...partial,
   };
 }
 
@@ -279,10 +280,34 @@ describe('agent orchestration presentation', () => {
 
     expect(automationReadiness.state).toBe('eligible');
     expect(automationReadiness.automaticStartAllowed).toBe(false);
+    expect(automationReadiness.automaticStartBoundary).toBe('manual_or_operator_started');
     expect(presentation.automationReadiness).toBe(
-      'Automation readiness：eligible / evidence=procedure=present,inputs=present,runtime=ready,risk=medium,openCompletionCriterion=present / blocked=none / autoStart=no',
+      'Automation readiness：eligible / evidence=procedure=present,inputs=present,runtime=ready,risk=medium,openCompletionCriterion=present / blocked=none / autoStart=no / boundary=manual_or_operator_started',
     );
-    expect(presentation.summary).toContain('automation=eligible / autoStart=no');
+    expect(presentation.summary).toContain('automation=eligible / autoStart=no / boundary=manual_or_operator_started');
+  });
+
+  it('shows scheduled and event automation as diagnostic-only until a dedicated entrypoint exists', () => {
+    const snapshot = buildAgentExecutionOrchestrationSnapshot(buildReadyAiStatus());
+    const automationReadiness = evaluateSkillInformedAutomationReadiness({
+      snapshot,
+      task: buildTaskDetail({
+        taskFacets: ['scheduled', 'event'],
+        taskType: 'routine',
+      }),
+    });
+    const presentation = buildReadOnlyOrchestrationPresentation({
+      automationReadiness,
+      snapshot,
+    });
+
+    expect(automationReadiness).toMatchObject({
+      automaticStartAllowed: false,
+      automaticStartBoundary: 'separate_scheduled_event_entrypoint_required',
+      state: 'diagnostic_only',
+    });
+    expect(presentation.automationReadiness).toContain('boundary=separate_scheduled_event_entrypoint_required');
+    expect(presentation.summary).toContain('automation=diagnostic_only / autoStart=no / boundary=separate_scheduled_event_entrypoint_required');
   });
 
   it('keeps hidden families empty when every reserved family is already model-visible', () => {

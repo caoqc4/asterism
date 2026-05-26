@@ -73,9 +73,14 @@ export type AgentRunLifecycleProjection = {
 };
 
 export type AgentAutomationReadinessState = 'blocked' | 'diagnostic_only' | 'eligible';
+export type AgentAutomationStartBoundary =
+  | 'blocked_until_ready'
+  | 'manual_or_operator_started'
+  | 'separate_scheduled_event_entrypoint_required';
 
 export type AgentAutomationReadinessEvaluation = {
   state: AgentAutomationReadinessState;
+  automaticStartBoundary: AgentAutomationStartBoundary;
   automaticStartAllowed: false;
   blockedReasons: string[];
   evidence: string[];
@@ -589,9 +594,15 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     : evidence.length > 0
       ? 'diagnostic_only'
       : 'blocked';
+  const automaticStartBoundary: AgentAutomationStartBoundary = scheduledOrEventTriggered
+    ? 'separate_scheduled_event_entrypoint_required'
+    : state === 'blocked'
+      ? 'blocked_until_ready'
+      : 'manual_or_operator_started';
 
   return {
     state,
+    automaticStartBoundary,
     automaticStartAllowed: false,
     blockedReasons,
     evidence,
@@ -601,6 +612,7 @@ export function evaluateSkillInformedAutomationReadiness(params: {
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
       'autoStart=no',
+      `boundary=${automaticStartBoundary}`,
     ].join(' / '),
   };
 }

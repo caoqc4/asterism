@@ -467,6 +467,7 @@ describe('agent orchestration snapshot', () => {
 
     expect(readiness).toMatchObject({
       automaticStartAllowed: false,
+      automaticStartBoundary: 'separate_scheduled_event_entrypoint_required',
       blockedReasons: expect.arrayContaining([
         'Scheduled, event-triggered, and routine tasks need a separate scheduled/event execution entrypoint before automatic native runtime start.',
       ]),
@@ -478,6 +479,7 @@ describe('agent orchestration snapshot', () => {
       state: 'diagnostic_only',
     });
     expect(readiness.summary).toContain('autoStart=no');
+    expect(readiness.summary).toContain('boundary=separate_scheduled_event_entrypoint_required');
   });
 });
 

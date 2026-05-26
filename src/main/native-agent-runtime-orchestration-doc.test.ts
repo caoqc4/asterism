@@ -44,6 +44,7 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('packaged task-files');
     expect(content).toContain('scheduled, event-triggered, and');
     expect(content).toContain('automaticStartAllowed: false');
+    expect(content).toContain('automatic-start boundary');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');
     expect(content).toContain('compact/clear context');
