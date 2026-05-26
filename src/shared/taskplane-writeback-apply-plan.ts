@@ -150,6 +150,8 @@ export function buildSubtaskCreateManyWritebackApplyPlan(params: {
     timeline: {
       type: 'panel.project_decomposed',
       payload: {
+        confirmationBoundary: 'operator_confirmed_subtask_create_many',
+        draftOnlyBeforeConfirmation: true,
         evidenceRunId: params.evidenceRunId ?? null,
         nextStep: params.nextStep ?? null,
         review: params.review ?? null,

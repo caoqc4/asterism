@@ -768,6 +768,9 @@ Current implementation:
   parent summary, parent/child criteria, dependencies, project timeline, and
   the `AI 项目拆解自检.md` task record. The project-decomposition timeline now
   carries both created child task ids and the task record path as evidence.
+- Decomposition writeback timeline evidence records that generated subtasks were
+  draft-only before operator confirmation, keeping API and CLI decomposition
+  reversible until the shared create-many plan is approved.
 
 Remaining work:
 

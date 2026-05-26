@@ -224,6 +224,8 @@ describe('Taskplane writeback apply plans', () => {
       timeline: {
         type: 'panel.project_decomposed',
         payload: {
+          confirmationBoundary: 'operator_confirmed_subtask_create_many',
+          draftOnlyBeforeConfirmation: true,
           evidenceRunId: 'run_5',
           subtaskCount: 2,
         },
