@@ -216,6 +216,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('no runtime_action/pre_step/post_step execution gates');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event/routine Agent execution as a separate gated provider-visible execution contract');
     expect(workHabits?.evidence.join(' ')).toContain('explicit operator IPC before any background scheduler trigger can exist');
+    expect(workHabits?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
+    expect(workHabits?.evidence.join(' ')).toContain('requirements=x/9');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduled_event_entrypoint remains missing');
     expect(workHabits?.evidence.join(' ')).toContain('autonomy ladder level');
     expect(workHabits?.evidence.join(' ')).toContain('L1 proposal capability');
     expect(workHabits?.evidence.join(' ')).toContain('standing_approval as an explicit deferred gate');

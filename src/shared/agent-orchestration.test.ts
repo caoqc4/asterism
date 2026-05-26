@@ -400,10 +400,23 @@ describe('agent orchestration snapshot', () => {
         'risk=low',
         'openCompletionCriterion=present',
       ],
+      missingRequirements: [],
       nextAutonomyLevel: 'L2_limited_authorized_action',
+      satisfiedRequirements: [
+        'procedure',
+        'inputs',
+        'runtime',
+        'risk',
+        'waiting_clear',
+        'blocker_clear',
+        'dependency_clear',
+        'open_completion_criterion',
+        'scheduled_event_entrypoint',
+      ],
       standingApprovalRequired: true,
       state: 'eligible',
     });
+    expect(readiness.summary).toContain('requirements=9/9');
     expect(readiness.summary).toContain('autonomy=L1_proposal');
     expect(readiness.summary).toContain('next=L2_limited_authorized_action');
     expect(readiness.summary).toContain('autoStart=no');
@@ -462,10 +475,19 @@ describe('agent orchestration snapshot', () => {
         'Task has an active blocker.',
         'Task needs at least one open completion criterion to bound execution.',
       ]),
+      missingRequirements: expect.arrayContaining([
+        'procedure',
+        'inputs',
+        'runtime',
+        'risk',
+        'blocker_clear',
+        'open_completion_criterion',
+      ]),
       nextAutonomyLevel: 'L1_proposal',
       standingApprovalRequired: false,
       state: 'blocked',
     });
+    expect(readiness.summary).toContain('requirements=3/9');
   });
 
   it('keeps scheduled event and routine tasks at proposal autonomy until a standing approval exists', () => {
@@ -489,10 +511,22 @@ describe('agent orchestration snapshot', () => {
         'runtime=ready',
         'taskAutomationClass=routine,scheduled,event',
       ]),
+      missingRequirements: ['scheduled_event_entrypoint'],
       nextAutonomyLevel: 'L2_limited_authorized_action',
+      satisfiedRequirements: [
+        'procedure',
+        'inputs',
+        'runtime',
+        'risk',
+        'waiting_clear',
+        'blocker_clear',
+        'dependency_clear',
+        'open_completion_criterion',
+      ],
       standingApprovalRequired: true,
       state: 'diagnostic_only',
     });
+    expect(readiness.summary).toContain('requirements=8/9');
     expect(readiness.summary).toContain('autonomy=L1_proposal');
     expect(readiness.summary).toContain('standingApproval=required_for_auto_action');
     expect(readiness.summary).toContain('autoStart=no');

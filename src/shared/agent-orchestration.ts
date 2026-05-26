@@ -83,6 +83,17 @@ export type AgentAutonomyLevel =
   | 'L2_limited_authorized_action'
   | 'L3_policy_gated_workspace_write';
 
+export type AgentAutomationReadinessRequirement =
+  | 'procedure'
+  | 'inputs'
+  | 'runtime'
+  | 'risk'
+  | 'waiting_clear'
+  | 'blocker_clear'
+  | 'dependency_clear'
+  | 'open_completion_criterion'
+  | 'scheduled_event_entrypoint';
+
 export type AgentAutomationReadinessEvaluation = {
   state: AgentAutomationReadinessState;
   autonomyLevel: AgentAutonomyLevel;
@@ -92,6 +103,8 @@ export type AgentAutomationReadinessEvaluation = {
   standingApprovalRequired: boolean;
   blockedReasons: string[];
   evidence: string[];
+  missingRequirements: AgentAutomationReadinessRequirement[];
+  satisfiedRequirements: AgentAutomationReadinessRequirement[];
   summary: string;
 };
 
@@ -597,8 +610,20 @@ export function evaluateSkillInformedAutomationReadiness(params: {
   >;
   snapshot: AgentExecutionOrchestrationSnapshot;
 }): AgentAutomationReadinessEvaluation {
+  const requiredRequirements: AgentAutomationReadinessRequirement[] = [
+    'procedure',
+    'inputs',
+    'runtime',
+    'risk',
+    'waiting_clear',
+    'blocker_clear',
+    'dependency_clear',
+    'open_completion_criterion',
+    'scheduled_event_entrypoint',
+  ];
   const blockedReasons: string[] = [];
   const evidence: string[] = [];
+  const missingRequirements: AgentAutomationReadinessRequirement[] = [];
   const hasProcedure = params.task.processTemplates.some((template) =>
     template.kind === 'skill'
       || template.kind === 'workflow'
@@ -617,48 +642,57 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     || taskKinds.has('routine');
 
   if (!hasProcedure) {
+    missingRequirements.push('procedure');
     blockedReasons.push('No applied skill or process template is attached to this task.');
   } else {
     evidence.push('procedure=present');
   }
 
   if (!hasInputs) {
+    missingRequirements.push('inputs');
     blockedReasons.push('Task needs a clear next step plus summary or source context before automation readiness.');
   } else {
     evidence.push('inputs=present');
   }
 
   if (!hasRuntime) {
+    missingRequirements.push('runtime');
     blockedReasons.push(`Runtime is not ready: ${params.snapshot.runtime.status}.`);
   } else {
     evidence.push('runtime=ready');
   }
 
   if (params.task.riskLevel === 'high') {
+    missingRequirements.push('risk');
     blockedReasons.push('High-risk tasks require manual Decision or operator-started review before execution.');
   } else {
     evidence.push(`risk=${params.task.riskLevel}`);
   }
 
   if (params.task.state === 'waiting_external' || params.task.activeWaitingItem || params.task.waitingReason?.trim()) {
+    missingRequirements.push('waiting_clear');
     blockedReasons.push('Task is waiting on external input.');
   }
 
   if (params.task.activeBlocker) {
+    missingRequirements.push('blocker_clear');
     blockedReasons.push('Task has an active blocker.');
   }
 
   if (params.task.activeDependency) {
+    missingRequirements.push('dependency_clear');
     blockedReasons.push('Task has an active dependency.');
   }
 
   if (!hasOpenCompletionCriterion) {
+    missingRequirements.push('open_completion_criterion');
     blockedReasons.push('Task needs at least one open completion criterion to bound execution.');
   } else {
     evidence.push('openCompletionCriterion=present');
   }
 
   if (scheduledOrEventTriggered) {
+    missingRequirements.push('scheduled_event_entrypoint');
     blockedReasons.push('Scheduled, event-triggered, and routine tasks need a policy-gated scheduled/event execution entrypoint before automatic native runtime start.');
     evidence.push(`taskAutomationClass=${Array.from(taskKinds).join(',')}`);
   }
@@ -680,6 +714,8 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     ? 'L1_proposal'
     : 'L2_limited_authorized_action';
   const standingApprovalRequired = state !== 'blocked';
+  const missingRequirementSet = new Set(missingRequirements);
+  const satisfiedRequirements = requiredRequirements.filter((requirement) => !missingRequirementSet.has(requirement));
 
   return {
     state,
@@ -690,9 +726,12 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     standingApprovalRequired,
     blockedReasons,
     evidence,
+    missingRequirements,
+    satisfiedRequirements,
     summary: [
       'Automation readiness',
       `state=${state}`,
+      `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `autonomy=${autonomyLevel}`,
       nextAutonomyLevel ? `next=${nextAutonomyLevel}` : null,
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
