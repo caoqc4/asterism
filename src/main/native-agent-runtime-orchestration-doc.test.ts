@@ -79,7 +79,9 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('runtimeStartAllowed=false');
     expect(content).toContain('SchedulerService.triggerScheduledEventAgentRun');
     expect(content).toContain('scheduler:triggerScheduledEventAgentRun');
-    expect(content).toContain('injected Code Agent trigger port');
+    expect(content).toContain('15-minute');
+    expect(content).toContain('dedicated task-source port');
+    expect(content).toContain('Code Agent trigger');
     expect(content).toContain('operatorConfirmed=true');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');

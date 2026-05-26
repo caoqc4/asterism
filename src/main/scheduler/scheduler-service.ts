@@ -22,6 +22,19 @@ export type ScheduledEventAgentTriggerResult = {
   summary: string;
 };
 
+export type ScheduledEventAgentSweepResult = {
+  status: 'completed' | 'skipped';
+  checkedTaskCount: number;
+  startedRunCount: number;
+  blockedTaskCount: number;
+  summaries: string[];
+  summary: string;
+};
+
+export type ScheduledEventAgentTaskSourcePort = {
+  listScheduledEventAgentTriggerCandidates: () => Promise<ScheduledEventAgentTaskInput[]>;
+};
+
 export type ScheduledEventAgentRunPort = {
   triggerCodeAgentRun: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
 };
@@ -92,6 +105,8 @@ export class SchedulerService {
   private started = false;
   private lastBriefAt: string | null = null;
   private lastRunSweepAt: string | null = null;
+  private lastScheduledEventAgentSweepAt: string | null = null;
+  private scheduledEventAgentSweepInFlight = false;
 
   constructor(
     private readonly appConfigService: AppConfigService,
@@ -103,6 +118,7 @@ export class SchedulerService {
     private readonly briefProcessTemplateSelector: BriefProcessTemplateSelector = new BriefProcessTemplateSelector(),
     private readonly scheduledEventAgentRunPort: ScheduledEventAgentRunPort | null = null,
     private readonly scheduledEventAgentTimelinePort: ScheduledEventAgentTimelinePort | null = null,
+    private readonly scheduledEventAgentTaskSourcePort: ScheduledEventAgentTaskSourcePort | null = null,
   ) {}
 
   async start(): Promise<void> {
@@ -133,6 +149,14 @@ export class SchedulerService {
         void this.reconcileStaleRuns();
       }),
     );
+
+    if (this.scheduledEventAgentRunPort && this.scheduledEventAgentTaskSourcePort) {
+      this.jobs.push(
+        cron.schedule('*/15 * * * *', () => {
+          void this.runScheduledEventAgentTriggerSweep('cron');
+        }),
+      );
+    }
   }
 
   stop(): void {
@@ -153,7 +177,67 @@ export class SchedulerService {
       running: this.started,
       lastBriefAt: this.lastBriefAt,
       lastRunSweepAt: this.lastRunSweepAt,
+      lastScheduledEventAgentSweepAt: this.lastScheduledEventAgentSweepAt,
     };
+  }
+
+  async runScheduledEventAgentTriggerSweep(
+    kind: 'cron' | 'manual' = 'manual',
+    now: Date = new Date(),
+  ): Promise<ScheduledEventAgentSweepResult> {
+    if (!this.scheduledEventAgentRunPort || !this.scheduledEventAgentTaskSourcePort) {
+      return {
+        status: 'skipped',
+        checkedTaskCount: 0,
+        startedRunCount: 0,
+        blockedTaskCount: 0,
+        summaries: [],
+        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected`,
+      };
+    }
+
+    if (this.scheduledEventAgentSweepInFlight) {
+      return {
+        status: 'skipped',
+        checkedTaskCount: 0,
+        startedRunCount: 0,
+        blockedTaskCount: 0,
+        summaries: [],
+        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight`,
+      };
+    }
+
+    this.scheduledEventAgentSweepInFlight = true;
+    try {
+      const tasks = await this.scheduledEventAgentTaskSourcePort.listScheduledEventAgentTriggerCandidates();
+      const runCounts = await this.countRunsStartedToday(tasks.map((task) => task.id), now);
+      const results: ScheduledEventAgentTriggerResult[] = [];
+
+      for (const task of tasks) {
+        results.push(await this.triggerScheduledEventAgentRun(task, now, runCounts));
+      }
+
+      const startedRunCount = results.filter((result) => result.status === 'started').length;
+      const blockedTaskCount = results.length - startedRunCount;
+      this.lastScheduledEventAgentSweepAt = new Date().toISOString();
+
+      return {
+        status: 'completed',
+        checkedTaskCount: tasks.length,
+        startedRunCount,
+        blockedTaskCount,
+        summaries: results.map((result) => result.summary),
+        summary: [
+          `scheduledEventAgentSweep=${kind}`,
+          'status=completed',
+          `checked=${tasks.length}`,
+          `started=${startedRunCount}`,
+          `blocked=${blockedTaskCount}`,
+        ].join(' / '),
+      };
+    } finally {
+      this.scheduledEventAgentSweepInFlight = false;
+    }
   }
 
   async diagnoseScheduledEventAgentTriggers(

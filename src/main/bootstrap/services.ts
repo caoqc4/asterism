@@ -231,6 +231,25 @@ schedulerService = new SchedulerService(
       emitAppEvent('brief.changed');
     },
   },
+  {
+    listScheduledEventAgentTriggerCandidates: async () => {
+      const tasks = await taskService.list();
+      const candidateIds = tasks
+        .filter((task) => task.state !== 'completed' && task.state !== 'archived' && task.state !== 'running')
+        .filter((task) => {
+          const facets = task.taskFacets ?? [];
+          return task.taskType === 'scheduled'
+            || task.taskType === 'event'
+            || task.taskType === 'routine'
+            || facets.includes('scheduled')
+            || facets.includes('event')
+            || facets.includes('routine');
+        })
+        .map((task) => task.id);
+      const details = await Promise.all(candidateIds.map((taskId) => taskService.getDetail(taskId)));
+      return details.filter((detail) => detail !== null);
+    },
+  },
 );
 const patchArtifactSandboxReviewRunService = new PatchArtifactSandboxReviewRunService(
   artifactRepository,

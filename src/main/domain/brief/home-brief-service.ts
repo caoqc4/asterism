@@ -1812,6 +1812,7 @@ export class HomeBriefService {
         running: false,
         lastBriefAt: null,
         lastRunSweepAt: null,
+        lastScheduledEventAgentSweepAt: null,
       },
     };
   }

@@ -388,6 +388,7 @@ function buildBriefData(tasks: TaskListItemRecord[], decisions: DecisionRecord[]
       running: false,
       lastBriefAt: null,
       lastRunSweepAt: null,
+      lastScheduledEventAgentSweepAt: null,
     },
     priorityLane: 'continue_or_review',
     priorityHeadline: '今天 2 件最值得处理。',

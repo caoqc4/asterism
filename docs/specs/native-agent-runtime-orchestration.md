@@ -814,14 +814,16 @@ Current implementation:
   does not resolve runtime config, schedule a trigger job, or start a native
   runtime.
 - `SchedulerService.triggerScheduledEventAgentRun` is the first narrow
-  trigger-service connection point. It is exposed only through the explicit
-  operator IPC `scheduler:triggerScheduledEventAgentRun`, not through a
-  scheduled job: it requires an injected Code Agent trigger port, reuses the
-  same Standing Approval and same-day run-limit checks, sets
-  `schedulerTriggerServiceConnected=true`, and only starts a Code Agent run
-  when the plan is ready. The generated run request keeps
-  `operatorConfirmed=true`, uses the model-producer path, and instructs the run
-  to produce reviewable patch artifacts or proposals rather than direct
+  trigger-service connection point. It is exposed through the explicit operator
+  IPC `scheduler:triggerScheduledEventAgentRun` and through a 15-minute
+  scheduler sweep that only loads scheduled/event/routine candidates from a
+  dedicated task-source port: both paths require an injected Code Agent trigger
+  port, reuse the same Standing Approval and same-day run-limit checks, set
+  `schedulerTriggerServiceConnected=true`, and only start a Code Agent run when
+  the plan is ready. The generated run request keeps `operatorConfirmed=true`
+  because the confirmed Standing Approval is the operator confirmation boundary
+  for the bounded automatic action, uses the model-producer path, and instructs
+  the run to produce reviewable patch artifacts or proposals rather than direct
   workspace writes. After a run starts, the service records
   `panel.scheduled_event_agent_triggered` with the run id, standing approval
   policy id, run-limit state, and required trigger evidence so Task Dynamics can

@@ -292,10 +292,12 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('SchedulerService.triggerScheduledEventAgentRun');
     expect(entry?.notes).toContain('injected Code Agent run port');
     expect(entry?.notes).toContain('explicit operator IPC scheduler:triggerScheduledEventAgentRun');
-    expect(entry?.notes).toContain('not as a scheduled job');
+    expect(entry?.notes).toContain('15-minute scheduler sweep');
+    expect(entry?.notes).toContain('dedicated task-source port');
     expect(entry?.notes).toContain('readiness diagnostics do not start Agent CLI/API runtimes');
     expect(entry?.notes).toContain('standing approval');
-    expect(entry?.notes).toContain('before exposing any background scheduler trigger');
+    expect(entry?.notes).toContain('trigger timeline evidence');
+    expect(entry?.notes).toContain('before widening runtime coverage');
   });
 
   it('registers phase closeout as a handoff boundary without equating it to completion', () => {

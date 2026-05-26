@@ -57,6 +57,7 @@ function buildHomeData(): HomeBriefData {
       running: false,
       lastBriefAt: null,
       lastRunSweepAt: null,
+      lastScheduledEventAgentSweepAt: null,
     },
   };
 }
@@ -294,6 +295,7 @@ describe('SchedulerService', () => {
       running: false,
       lastBriefAt: null,
       lastRunSweepAt: null,
+      lastScheduledEventAgentSweepAt: null,
     });
     expect(scheduledJobs).toHaveLength(0);
   });
@@ -399,6 +401,101 @@ describe('SchedulerService', () => {
       expect(job.destroy).toHaveBeenCalledTimes(1);
     }
     expect(service.getStatus().running).toBe(false);
+  });
+
+  it('wires a background scheduled/event Agent sweep only when trigger and task-source ports are connected', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_cron_1',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    await service.start();
+
+    expect(scheduledJobs.map((job) => job.expression)).toEqual([
+      '0 * * * *',
+      '*/5 * * * *',
+      '*/15 * * * *',
+    ]);
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
+      status: 'completed',
+      checkedTaskCount: 1,
+      startedRunCount: 1,
+      blockedTaskCount: 0,
+    });
+    expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(1);
+    expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
+      ['task_auto'],
+      '2026-05-26T00:00:00.000Z',
+    );
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      patchIntent: expect.stringContaining('Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.'),
+      requestedChecks: [],
+      operatorConfirmed: true,
+      useModelProducer: true,
+    });
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_cron_1',
+        runtimeStartAllowed: true,
+      }),
+    });
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
   });
 
   it('does not mark runs failed when repository stale recovery returns no eligible runs', async () => {

@@ -240,10 +240,13 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
     expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence');
-    expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, and trigger timeline evidence');
-    expect(workHabits?.gaps.join(' ')).toContain('background scheduler job wiring');
+    expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
+    expect(workHabits?.evidence.join(' ')).toContain('15-minute background scheduler job');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduled/event task-source port');
+    expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, and background scheduler job wiring');
+    expect(workHabits?.gaps.join(' ')).toContain('broader runtime coverage and live soak evidence');
     expect(workHabits?.gaps.join(' ')).not.toContain('run-evidence persistence checks across live execution');
-    expect(workHabits?.nextActions.join(' ')).toContain('background scheduler jobs');
+    expect(workHabits?.nextActions.join(' ')).toContain('live background-triggered execution');
     expect(workHabits?.nextActions.join(' ')).toContain('durable run-limit counting');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
@@ -367,7 +370,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
     expect(workHabits?.gaps.join(' ')).not.toContain('connected trigger service before L2 automatic native runtime starts');
-    expect(workHabits?.nextActions.join(' ')).toContain('background scheduler jobs');
+    expect(workHabits?.nextActions.join(' ')).toContain('live background-triggered execution');
     expect(workHabits?.nextActions.join(' ')).toContain('context readiness');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code mode');
     expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');
