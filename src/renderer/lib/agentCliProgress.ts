@@ -117,7 +117,7 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
   if (capability === 'workspace_write') {
     return {
       detail: compactStepDetail(output),
-      label: '检测到工作区写入候选；原生 CLI 不会直接写入工作区，正在等待 reviewed patch、任务文件提案或 promotion evidence 审查。',
+      label: '检测到工作区写入候选；原生 CLI 不会直接写入工作区，正在等待 patch artifact、ready task_file Write Intent、ready patch artifact Write Intent 或 patch-review/promotion evidence 审查。',
       state: 'verifying',
     };
   }

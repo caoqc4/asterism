@@ -138,7 +138,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('local command or workspace activity');
     expect(rightPanel?.evidence.join(' ')).toContain('reviewable write candidates');
     expect(rightPanel?.evidence.join(' ')).toContain('no-direct-write reviewable write candidates');
-    expect(rightPanel?.evidence.join(' ')).toContain('reviewed patch, task-file proposal, or promotion evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review/promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('workspace_write steps are prioritized as no-direct-write reviewable write candidates');
     expect(rightPanel?.evidence.join(' ')).toContain('even when web activity is also present');
     expect(rightPanel?.evidence.join(' ')).toContain('child-task advancement messages');
@@ -166,6 +166,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('file context-menu apply-to-workspace actions');
     expect(rightPanel?.evidence.join(' ')).toContain('reviewed patch promotion apply smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('workspace-drift blocked recovery evidence');
+    expect(rightPanel?.gaps.join(' ')).not.toContain('broader recovery copy is still needed');
+    expect(rightPanel?.gaps.join(' ')).toContain('explicit apply feedback');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback apply plans');

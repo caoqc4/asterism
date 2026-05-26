@@ -182,7 +182,9 @@ describe('deriveAgentCliProgress', () => {
     expect(progress.state).toBe('verifying');
     expect(progress.label).toContain('工作区写入候选');
     expect(progress.label).toContain('不会直接写入工作区');
-    expect(progress.label).toContain('promotion evidence');
+    expect(progress.label).toContain('ready task_file Write Intent');
+    expect(progress.label).toContain('ready patch artifact Write Intent');
+    expect(progress.label).toContain('patch-review/promotion evidence');
     expect(progress.detail).toBe('apply_patch changed src/app.ts');
   });
 

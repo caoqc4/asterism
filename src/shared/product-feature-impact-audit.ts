@@ -134,7 +134,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Context readiness now requires non-low-credibility fresh Source Context evidence for latest/current external requests, rejects stale, future-dated, or low-credibility source evidence, and still honors explicit no-research opt-outs before self_research routing.',
       'Codex JSONL command_execution items are projected as shell_command run steps, so right-panel progress can show local command activity instead of only raw terminal output.',
       'Agent CLI stdout JSONL lines are now projected into Run steps while the native process is still running, with completion-time transcript parsing kept as a fallback.',
-      'Right-panel Agent CLI progress now distinguishes native workspace_write capability events as no-direct-write reviewable write candidates that require reviewed patch, task-file proposal, or promotion evidence instead of presenting them as ordinary workspace activity.',
+      'Right-panel Agent CLI progress now distinguishes native workspace_write capability events as no-direct-write reviewable write candidates that require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review/promotion evidence instead of presenting them as ordinary workspace activity.',
       'Completed native run chat summaries now mention local command or workspace activity as well as web research activity, while workspace_write steps are prioritized as no-direct-write reviewable write candidates instead of ordinary local activity even when web activity is also present.',
       'Right-panel task chat now runs through shared PilotDecision and TaskAdvancementOrchestrator before Agent CLI launch, preserving operation mode, backendPlan, message priority, user-owned approval boundaries, and executor routing.',
       'Agent CLI run records preserve the trimmed Pilot decision snapshot as a Pilot 决策辅助计划 step for phase-2 auditability.',
@@ -155,7 +155,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'The packaged task-files smoke now seeds approved reviewed-patch promotions, enables the apply flag in a temporary workspace, drives both applied and blocked Tasks UI apply actions, and verifies workspace file content plus applied/blocked run evidence.',
     ],
     gaps: [
-      'Write-enabled native runtime modes remain intentionally feature-flagged; broader recovery copy is still needed before workspace mutation can become a common happy path.',
+      'Write-enabled native runtime modes remain intentionally feature-flagged; workspace mutation should stay outside the common happy path until explicit apply feedback proves the boundary is obvious.',
     ],
     nextActions: [
       'Keep future workspace-write promotion on patch artifacts, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review evidence surfaces before product-controlled persistence.',
