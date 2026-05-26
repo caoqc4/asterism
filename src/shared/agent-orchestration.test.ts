@@ -388,6 +388,7 @@ describe('agent orchestration snapshot', () => {
 
     expect(readiness).toMatchObject({
       automaticStartAllowed: false,
+      autonomyLevel: 'L1_proposal',
       blockedReasons: [],
       evidence: [
         'procedure=present',
@@ -396,9 +397,14 @@ describe('agent orchestration snapshot', () => {
         'risk=low',
         'openCompletionCriterion=present',
       ],
+      nextAutonomyLevel: 'L2_limited_authorized_action',
+      standingApprovalRequired: true,
       state: 'eligible',
     });
+    expect(readiness.summary).toContain('autonomy=L1_proposal');
+    expect(readiness.summary).toContain('next=L2_limited_authorized_action');
     expect(readiness.summary).toContain('autoStart=no');
+    expect(readiness.summary).toContain('standingApproval=required_for_auto_action');
   });
 
   it('keeps risky or under-specified tasks diagnostic-only', () => {
@@ -444,6 +450,7 @@ describe('agent orchestration snapshot', () => {
 
     expect(readiness).toMatchObject({
       automaticStartAllowed: false,
+      autonomyLevel: 'L0_diagnostic',
       blockedReasons: expect.arrayContaining([
         'No applied skill or process template is attached to this task.',
         'Task needs a clear next step plus summary or source context before automation readiness.',
@@ -452,11 +459,13 @@ describe('agent orchestration snapshot', () => {
         'Task has an active blocker.',
         'Task needs at least one open completion criterion to bound execution.',
       ]),
+      nextAutonomyLevel: 'L1_proposal',
+      standingApprovalRequired: false,
       state: 'blocked',
     });
   });
 
-  it('keeps scheduled event and routine tasks from becoming automatic native runtime starts', () => {
+  it('keeps scheduled event and routine tasks at proposal autonomy until a standing approval exists', () => {
     const readiness = evaluateSkillInformedAutomationReadiness({
       snapshot: readyAutomationSnapshot(),
       task: matureAutomationTask({
@@ -468,16 +477,21 @@ describe('agent orchestration snapshot', () => {
     expect(readiness).toMatchObject({
       automaticStartAllowed: false,
       automaticStartBoundary: 'separate_scheduled_event_entrypoint_required',
+      autonomyLevel: 'L1_proposal',
       blockedReasons: expect.arrayContaining([
-        'Scheduled, event-triggered, and routine tasks need a separate scheduled/event execution entrypoint before automatic native runtime start.',
+        'Scheduled, event-triggered, and routine tasks need a policy-gated scheduled/event execution entrypoint before automatic native runtime start.',
       ]),
       evidence: expect.arrayContaining([
         'procedure=present',
         'runtime=ready',
         'taskAutomationClass=routine,scheduled,event',
       ]),
+      nextAutonomyLevel: 'L2_limited_authorized_action',
+      standingApprovalRequired: true,
       state: 'diagnostic_only',
     });
+    expect(readiness.summary).toContain('autonomy=L1_proposal');
+    expect(readiness.summary).toContain('standingApproval=required_for_auto_action');
     expect(readiness.summary).toContain('autoStart=no');
     expect(readiness.summary).toContain('boundary=separate_scheduled_event_entrypoint_required');
   });

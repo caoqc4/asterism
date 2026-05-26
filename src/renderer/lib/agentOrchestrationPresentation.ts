@@ -83,9 +83,12 @@ export function buildReadOnlyOrchestrationPresentation(params: {
     automationReadiness: automationReadiness
       ? [
           `Automation readiness：${automationReadiness.state}`,
+          `autonomy=${automationReadiness.autonomyLevel}`,
+          automationReadiness.nextAutonomyLevel ? `next=${automationReadiness.nextAutonomyLevel}` : 'next=none',
           `evidence=${automationReadiness.evidence.length ? automationReadiness.evidence.join(',') : 'none'}`,
           `blocked=${automationReadiness.blockedReasons.length ? automationReadiness.blockedReasons.join('; ') : 'none'}`,
           `autoStart=${automationReadiness.automaticStartAllowed ? 'yes' : 'no'}`,
+          `standingApproval=${automationReadiness.standingApprovalRequired ? 'required_for_auto_action' : 'not_ready'}`,
           `boundary=${automationReadiness.automaticStartBoundary}`,
         ].join(' / ')
       : null,
@@ -96,7 +99,9 @@ export function buildReadOnlyOrchestrationPresentation(params: {
       `hidden=${hiddenFamilies}`,
       'modelVisibleHiddenTools=no',
       `automation=${automationReadiness?.state ?? snapshot.profile.automationReadiness}`,
+      automationReadiness ? `autonomy=${automationReadiness.autonomyLevel}` : null,
       `autoStart=${snapshot.lifecycle.automaticStartEnabled || automationReadiness?.automaticStartAllowed ? 'yes' : 'no'}`,
+      automationReadiness ? `standingApproval=${automationReadiness.standingApprovalRequired ? 'required_for_auto_action' : 'not_ready'}` : null,
       automationReadiness ? `boundary=${automationReadiness.automaticStartBoundary}` : null,
     ].filter(Boolean).join(' / '),
   };

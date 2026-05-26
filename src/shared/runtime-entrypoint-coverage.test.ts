@@ -258,7 +258,10 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).not.toContain('pre_step');
     expect(entry?.requiredGates).not.toContain('post_step');
     expect(entry?.notes).toContain('automaticStartAllowed remains false');
+    expect(entry?.notes).toContain('current autonomy ladder level');
+    expect(entry?.notes).toContain('L1 proposal eligibility');
     expect(entry?.notes).toContain('separate_scheduled_event_entrypoint_required');
+    expect(entry?.notes).toContain('standing approval policy');
     expect(entry?.notes).toContain('cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint');
   });
 
@@ -271,6 +274,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).toEqual(expect.arrayContaining([
       'product_config_boundary',
       'operator_confirmation',
+      'standing_approval',
       'runtime_action',
       'runtime_context_assembly',
       'context_readiness',
@@ -282,6 +286,7 @@ describe('runtime entrypoint coverage', () => {
     ]));
     expect(entry?.notes).toContain('Deferred contract only');
     expect(entry?.notes).toContain('readiness diagnostics do not start Agent CLI/API runtimes');
+    expect(entry?.notes).toContain('standing approval');
     expect(entry?.notes).toContain('before exposing any IPC or scheduler trigger');
   });
 
@@ -457,6 +462,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.requiredGates).toEqual(expect.arrayContaining([
       'product_config_boundary',
       'operator_confirmation',
+      'standing_approval',
       'runtime_context_assembly',
       'task_memory_guidance',
       'task_mutation',
@@ -468,6 +474,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('draft an approval item');
     expect(entry?.notes).toContain('cannot persist a Decision');
     expect(entry?.notes).toContain('expose IPC/scheduler triggers');
+    expect(entry?.notes).toContain('standing approval');
     expect(entry?.notes).toContain('TaskplaneWritebackApprovalItem dispatch');
   });
 

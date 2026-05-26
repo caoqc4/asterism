@@ -193,7 +193,13 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('no runtime_action/pre_step/post_step execution gates');
     expect(workHabits?.evidence.join(' ')).toContain('future scheduled/event/routine Agent execution as a separate deferred provider-visible execution contract');
     expect(workHabits?.evidence.join(' ')).toContain('before any IPC or scheduler trigger can exist');
-    expect(workHabits?.nextActions.join(' ')).toContain('standing-approval model');
+    expect(workHabits?.evidence.join(' ')).toContain('autonomy ladder level');
+    expect(workHabits?.evidence.join(' ')).toContain('L1 proposal capability');
+    expect(workHabits?.evidence.join(' ')).toContain('standing_approval as an explicit deferred gate');
+    expect(workHabits?.gaps.join(' ')).toContain('L1 proposal diagnostics');
+    expect(workHabits?.gaps.join(' ')).toContain('Standing Approval policy');
+    expect(workHabits?.nextActions.join(' ')).toContain('Standing Approval policy surface');
+    expect(workHabits?.nextActions.join(' ')).toContain('L2 limited autonomous action');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
     expect(rightPanel?.writeIntents).toContain('subtask.propose');
@@ -301,8 +307,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
-    expect(workHabits?.gaps.join(' ')).toContain('cannot automatically start native runtimes');
-    expect(workHabits?.nextActions.join(' ')).toContain('separate scheduled/event execution entrypoint');
+    expect(workHabits?.gaps.join(' ')).toContain('Standing Approval policy before L2 automatic native runtime starts');
+    expect(workHabits?.nextActions.join(' ')).toContain('deferred scheduled/event contract');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code mode');
     expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');
     expect(smoke?.evidence.join(' ')).toContain('accountReadiness=not-checked');

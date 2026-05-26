@@ -34,6 +34,7 @@ export type RuntimeEntrypointGate =
   | 'task_memory_coverage'
   | 'task_memory_guidance'
   | 'runtime_handoff'
+  | 'standing_approval'
   | 'operator_confirmation'
   | 'pre_step'
   | 'post_step'
@@ -296,7 +297,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'runtime_context_assembly',
     ],
-    notes: 'This diagnostic scores procedure, inputs, selected-runtime readiness, risk, blockers, dependencies, and completion criteria, but automaticStartAllowed remains false. Scheduled, event-triggered, and routine tasks are labeled separate_scheduled_event_entrypoint_required and cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint.',
+    notes: 'This diagnostic scores procedure, inputs, selected-runtime readiness, risk, blockers, dependencies, completion criteria, and the current autonomy ladder level. It may identify L1 proposal eligibility, but automaticStartAllowed remains false. Scheduled, event-triggered, and routine tasks are labeled separate_scheduled_event_entrypoint_required and cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint until a standing approval policy is present.',
   },
   {
     id: 'automation.scheduledEventAgentRun.future',
@@ -307,6 +308,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'product_config_boundary',
       'operator_confirmation',
+      'standing_approval',
       'runtime_action',
       'runtime_context_assembly',
       'context_readiness',
@@ -320,6 +322,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'product_config_boundary',
       'operator_confirmation',
+      'standing_approval',
       'runtime_action',
       'runtime_context_assembly',
       'context_readiness',
@@ -660,6 +663,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'product_config_boundary',
       'operator_confirmation',
+      'standing_approval',
       'runtime_context_assembly',
       'task_memory_guidance',
       'task_mutation',
@@ -670,6 +674,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'product_config_boundary',
       'operator_confirmation',
+      'standing_approval',
       'runtime_context_assembly',
       'task_memory_guidance',
       'task_mutation',

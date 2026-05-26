@@ -77,11 +77,19 @@ export type AgentAutomationStartBoundary =
   | 'blocked_until_ready'
   | 'manual_or_operator_started'
   | 'separate_scheduled_event_entrypoint_required';
+export type AgentAutonomyLevel =
+  | 'L0_diagnostic'
+  | 'L1_proposal'
+  | 'L2_limited_authorized_action'
+  | 'L3_policy_gated_workspace_write';
 
 export type AgentAutomationReadinessEvaluation = {
   state: AgentAutomationReadinessState;
+  autonomyLevel: AgentAutonomyLevel;
+  nextAutonomyLevel: AgentAutonomyLevel | null;
   automaticStartBoundary: AgentAutomationStartBoundary;
   automaticStartAllowed: false;
+  standingApprovalRequired: boolean;
   blockedReasons: string[];
   evidence: string[];
   summary: string;
@@ -585,7 +593,7 @@ export function evaluateSkillInformedAutomationReadiness(params: {
   }
 
   if (scheduledOrEventTriggered) {
-    blockedReasons.push('Scheduled, event-triggered, and routine tasks need a separate scheduled/event execution entrypoint before automatic native runtime start.');
+    blockedReasons.push('Scheduled, event-triggered, and routine tasks need a policy-gated scheduled/event execution entrypoint before automatic native runtime start.');
     evidence.push(`taskAutomationClass=${Array.from(taskKinds).join(',')}`);
   }
 
@@ -599,21 +607,34 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     : state === 'blocked'
       ? 'blocked_until_ready'
       : 'manual_or_operator_started';
+  const autonomyLevel: AgentAutonomyLevel = state === 'blocked'
+    ? 'L0_diagnostic'
+    : 'L1_proposal';
+  const nextAutonomyLevel: AgentAutonomyLevel | null = state === 'blocked'
+    ? 'L1_proposal'
+    : 'L2_limited_authorized_action';
+  const standingApprovalRequired = state !== 'blocked';
 
   return {
     state,
+    autonomyLevel,
+    nextAutonomyLevel,
     automaticStartBoundary,
     automaticStartAllowed: false,
+    standingApprovalRequired,
     blockedReasons,
     evidence,
     summary: [
       'Automation readiness',
       `state=${state}`,
+      `autonomy=${autonomyLevel}`,
+      nextAutonomyLevel ? `next=${nextAutonomyLevel}` : null,
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
       'autoStart=no',
+      `standingApproval=${standingApprovalRequired ? 'required_for_auto_action' : 'not_ready'}`,
       `boundary=${automaticStartBoundary}`,
-    ].join(' / '),
+    ].filter(Boolean).join(' / '),
   };
 }
 

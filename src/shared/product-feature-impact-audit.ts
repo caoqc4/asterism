@@ -477,12 +477,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'RuntimeEntrypointCoverage now registers future scheduled/event/routine Agent execution as a separate deferred provider-visible execution contract with scheduler configuration, confirmation, context readiness, task-memory, subtask_start, and post-step gates before any IPC or scheduler trigger can exist.',
       'AgentAutomationReadiness now keeps scheduled, event-triggered, and routine tasks diagnostic-only for automatic starts until a separate scheduled/event execution entrypoint exists, even when procedure, inputs, runtime, risk, and completion criteria are ready.',
       'Read-only orchestration diagnostics now expose the automatic-start boundary, distinguishing manual/operator-started readiness from scheduled/event tasks that require a separate execution entrypoint.',
+      'AgentAutomationReadiness now projects an autonomy ladder level and next authorized-action level, so ready tasks surface L1 proposal capability and the standing-approval requirement for future L2 limited autonomous action instead of flattening all automation into disabled.',
+      'RuntimeEntrypointCoverage now models standing_approval as an explicit deferred gate for scheduled/event autonomous execution and scheduler/background Decision drafts.',
     ],
     gaps: [
-      'Routine/event-triggered Agent CLI task execution remains intentionally unimplemented; scheduled/event tasks can be diagnosed for readiness but cannot automatically start native runtimes.',
+      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics; scheduled/event tasks can be diagnosed for readiness but need a Standing Approval policy before L2 automatic native runtime starts.',
     ],
     nextActions: [
-      'Design the separate scheduled/event execution entrypoint confirmation and standing-approval model before wiring the deferred contract to any scheduler trigger.',
+      'Implement the smallest Standing Approval policy surface for L2 limited autonomous action before wiring the deferred scheduled/event contract to any scheduler trigger.',
     ],
   },
   {

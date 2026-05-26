@@ -282,9 +282,9 @@ describe('agent orchestration presentation', () => {
     expect(automationReadiness.automaticStartAllowed).toBe(false);
     expect(automationReadiness.automaticStartBoundary).toBe('manual_or_operator_started');
     expect(presentation.automationReadiness).toBe(
-      'Automation readiness：eligible / evidence=procedure=present,inputs=present,runtime=ready,risk=medium,openCompletionCriterion=present / blocked=none / autoStart=no / boundary=manual_or_operator_started',
+      'Automation readiness：eligible / autonomy=L1_proposal / next=L2_limited_authorized_action / evidence=procedure=present,inputs=present,runtime=ready,risk=medium,openCompletionCriterion=present / blocked=none / autoStart=no / standingApproval=required_for_auto_action / boundary=manual_or_operator_started',
     );
-    expect(presentation.summary).toContain('automation=eligible / autoStart=no / boundary=manual_or_operator_started');
+    expect(presentation.summary).toContain('automation=eligible / autonomy=L1_proposal / autoStart=no / standingApproval=required_for_auto_action / boundary=manual_or_operator_started');
   });
 
   it('shows scheduled and event automation as diagnostic-only until a dedicated entrypoint exists', () => {
@@ -304,10 +304,15 @@ describe('agent orchestration presentation', () => {
     expect(automationReadiness).toMatchObject({
       automaticStartAllowed: false,
       automaticStartBoundary: 'separate_scheduled_event_entrypoint_required',
+      autonomyLevel: 'L1_proposal',
+      nextAutonomyLevel: 'L2_limited_authorized_action',
+      standingApprovalRequired: true,
       state: 'diagnostic_only',
     });
+    expect(presentation.automationReadiness).toContain('autonomy=L1_proposal');
+    expect(presentation.automationReadiness).toContain('standingApproval=required_for_auto_action');
     expect(presentation.automationReadiness).toContain('boundary=separate_scheduled_event_entrypoint_required');
-    expect(presentation.summary).toContain('automation=diagnostic_only / autoStart=no / boundary=separate_scheduled_event_entrypoint_required');
+    expect(presentation.summary).toContain('automation=diagnostic_only / autonomy=L1_proposal / autoStart=no / standingApproval=required_for_auto_action / boundary=separate_scheduled_event_entrypoint_required');
   });
 
   it('keeps hidden families empty when every reserved family is already model-visible', () => {
