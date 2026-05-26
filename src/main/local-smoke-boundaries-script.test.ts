@@ -310,6 +310,21 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('No workspace files were written.');
   });
 
+  it('keeps Agent CLI web research bridge smoke mocked and non-live', () => {
+    const scripts = readPackageScripts();
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/agent-cli-web-research-bridge-smoke.mjs'), 'utf8');
+
+    expect(scripts['smoke:agent-cli-web-research']).toBe(
+      'node scripts/agent-cli-web-research-bridge-smoke.mjs',
+    );
+    expect(script).toContain('mode=mocked network=not-called provider=stubbed');
+    expect(script).toContain('src/main/domain/agent-cli/agent-cli-run-service.test.ts');
+    expect(script).toContain('src/renderer/lib/agentCliProgress.test.ts');
+    expect(script).toContain('web research|联网调研');
+    expect(script).not.toContain('TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true');
+    expect(script).not.toContain('TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true');
+  });
+
   it('keeps packaged Agent CLI live task smoke manual and skipped by default', () => {
     const scripts = readPackageScripts();
     const result = runScript('scripts/manual-agent-cli-task-live-mac.mjs');

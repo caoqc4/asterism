@@ -242,6 +242,9 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');
     expect(smoke?.evidence.join(' ')).toContain('accountReadiness=not-checked');
     expect(smoke?.evidence.join(' ')).toContain('manualEvidence=not-recorded');
+    expect(smoke?.evidence.join(' ')).toContain('smoke:agent-cli-web-research');
+    expect(smoke?.evidence.join(' ')).toContain('mocked OpenAI web_search output');
+    expect(smoke?.evidence.join(' ')).toContain('without external network or provider calls');
     expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
 });
