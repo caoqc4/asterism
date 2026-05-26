@@ -823,7 +823,6 @@ export function buildStandingApprovalConfirmationDraft(params: {
       params.task.id,
       lane,
       runtimeId,
-      nowIso,
     ].join(':'),
     allowedAutonomyLevel: 'L2_limited_authorized_action',
     allowedLanes: [lane],

@@ -777,6 +777,11 @@ Current implementation:
   confirmation-only, carries `schedulerTriggerAllowed=false` and
   `workspaceWriteAllowed=false`, tolerates only the known scheduled/event
   entrypoint blocker, and blocks other automation readiness gaps.
+- Confirming the draft writes `panel.standing_approval_confirmed` through the
+  existing TaskService timeline mutation guard. That record preserves the policy
+  and evaluation evidence, but still carries `schedulerTriggerAllowed=false` and
+  `workspaceWriteAllowed=false`; a separate scheduled/event trigger service is
+  still required before any automatic native runtime start.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

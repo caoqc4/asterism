@@ -481,13 +481,14 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'RuntimeEntrypointCoverage now models standing_approval as an explicit deferred gate for scheduled/event autonomous execution and scheduler/background Decision drafts.',
       'AgentStandingApprovalPolicy and evaluateStandingApprovalForAutomation now provide a narrow shared policy surface for L2 limited autonomous action, checking active status, expiry, task scope, lane, runtime, risk ceiling, daily run limit, visible reason, and existing automation readiness before any future scheduler trigger can use it.',
       'buildStandingApprovalConfirmationDraft now creates a confirmation-only L2 authorization draft with policy, evaluation, scope summary, and explicit schedulerTriggerAllowed=false / workspaceWriteAllowed=false boundaries; it only tolerates the known scheduled/event entrypoint blocker and blocks other automation readiness gaps.',
-      'TasksPage Task Dynamics now exposes the Standing Approval draft for scheduled/event/routine tasks as a disabled operator card, making the L2 authorization shape visible while keeping scheduler triggers and workspace writes unavailable.',
+      'TasksPage Task Dynamics now exposes the Standing Approval draft for scheduled/event/routine tasks as an operator card, making the L2 authorization shape visible while keeping scheduler triggers and workspace writes unavailable.',
+      'TasksPage can now confirm the Standing Approval draft into a panel.standing_approval_confirmed Task Dynamics event through the existing TaskService timeline mutation guard, while still leaving schedulerTriggerAllowed=false and workspaceWriteAllowed=false.',
     ],
     gaps: [
-      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics, shared Standing Approval evaluation, confirmation-only drafts, and a disabled Task Dynamics card; scheduled/event tasks still need a persisted approval record, enabled confirmation action, and dedicated trigger service before L2 automatic native runtime starts.',
+      'Routine/event-triggered Agent CLI task execution remains unimplemented beyond L1 proposal diagnostics, shared Standing Approval evaluation, confirmation-only drafts, and confirmed Task Dynamics authorization records; scheduled/event tasks still need a dedicated trigger service before L2 automatic native runtime starts.',
     ],
     nextActions: [
-      'Persist confirmed Standing Approval records and add an enabled confirmation action before wiring the deferred scheduled/event contract to any scheduler trigger.',
+      'Add the dedicated scheduled/event trigger service that consumes confirmed Standing Approval records without bypassing context readiness, task-memory, subtask_start, and post-step gates.',
     ],
   },
   {

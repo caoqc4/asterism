@@ -990,6 +990,24 @@ function buildStandingApprovalDraftForTask(
   });
 }
 
+function hasConfirmedStandingApproval(
+  detail: TaskDetail,
+  draftId: string,
+): boolean {
+  return detail.timeline.some((event) => {
+    if (event.type !== 'panel.standing_approval_confirmed') return false;
+    if (!event.payload) return false;
+    try {
+      const payload = JSON.parse(event.payload) as {
+        policy?: { id?: unknown };
+      };
+      return payload.policy?.id === draftId;
+    } catch {
+      return false;
+    }
+  });
+}
+
 function lensForTaskType(task: Task, allTasks: Task[]): Lens {
   const displayType = effectiveTaskType(task, allTasks);
   if (displayType !== task.type) return displayType;
@@ -1126,6 +1144,8 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const [applyingWritebackApprovalId, setApplyingWritebackApprovalId] = useState<string | null>(null);
   const [appliedWritebackApprovalIds, setAppliedWritebackApprovalIds] = useState<Record<string, boolean>>({});
   const [writebackApprovalMessages, setWritebackApprovalMessages] = useState<Record<string, string>>({});
+  const [confirmingStandingApprovalId, setConfirmingStandingApprovalId] = useState<string | null>(null);
+  const [standingApprovalMessages, setStandingApprovalMessages] = useState<Record<string, string>>({});
   const [workHabits, setWorkHabits] = useState<WorkHabitRecord[]>([]);
 
   const [showCapture, setShowCapture] = useState(false);
@@ -1424,6 +1444,52 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       }));
     } finally {
       setApplyingWritebackApprovalId(null);
+    }
+  }
+
+  async function confirmStandingApprovalDraft(draft: AgentStandingApprovalConfirmationDraft) {
+    if (!selectedTask || confirmingStandingApprovalId) return;
+    if (draft.status !== 'ready') {
+      setStandingApprovalMessages((current) => ({
+        ...current,
+        [draft.id]: '当前授权草案仍有 readiness 缺口，不能确认。',
+      }));
+      return;
+    }
+    if (!window.api?.recordTaskTimelineEvent) {
+      setStandingApprovalMessages((current) => ({
+        ...current,
+        [draft.id]: '当前环境缺少任务动态写入入口。',
+      }));
+      return;
+    }
+
+    setConfirmingStandingApprovalId(draft.id);
+    setStandingApprovalMessages((current) => ({
+      ...current,
+      [draft.id]: '正在确认 Standing Approval...',
+    }));
+    try {
+      await recordPanelTimelineEvent(selectedTask.id, 'panel.standing_approval_confirmed', {
+        confirmedAt: new Date().toISOString(),
+        evaluation: draft.evaluation,
+        policy: draft.policy,
+        schedulerTriggerAllowed: false,
+        summary: draft.summary,
+        workspaceWriteAllowed: false,
+      });
+      setStandingApprovalMessages((current) => ({
+        ...current,
+        [draft.id]: 'Standing Approval 已确认；当前不会启动 scheduler，也不会写入工作区。',
+      }));
+      reloadTaskDetailForTask(selectedTask.id);
+    } catch (error) {
+      setStandingApprovalMessages((current) => ({
+        ...current,
+        [draft.id]: `确认失败：${error instanceof Error ? error.message : '未知错误'}`,
+      }));
+    } finally {
+      setConfirmingStandingApprovalId(null);
     }
   }
 
@@ -1816,6 +1882,9 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const standingApprovalDraft = selectedTask && selectedTaskDetail && aiConfigStatus && isAutonomousTaskClass(selectedTask)
     ? buildStandingApprovalDraftForTask(selectedTask, selectedTaskDetail, aiConfigStatus)
     : null;
+  const standingApprovalConfirmed = standingApprovalDraft && selectedTaskDetail
+    ? hasConfirmedStandingApproval(selectedTaskDetail, standingApprovalDraft.id)
+    : false;
   const runtimeEvents = selectedTask
     ? projectRuntimeEvents({
         taskId: selectedTask.id,
@@ -3206,8 +3275,12 @@ function resetCaptureDraft() {
               runCount={selectedRuns.length}
               writebackApprovals={writebackApprovalItems}
               standingApprovalDraft={standingApprovalDraft}
+              standingApprovalConfirmed={standingApprovalConfirmed}
+              confirmingStandingApprovalId={confirmingStandingApprovalId}
+              standingApprovalMessages={standingApprovalMessages}
               applyingWritebackApprovalId={applyingWritebackApprovalId}
               writebackApprovalMessages={writebackApprovalMessages}
+              onConfirmStandingApproval={confirmStandingApprovalDraft}
               onConfirmWriteback={confirmWritebackApproval}
               onSelectParent={selectTask}
             />
@@ -3923,8 +3996,12 @@ function TaskTimelineView({
   runCount,
   writebackApprovals,
   standingApprovalDraft,
+  standingApprovalConfirmed,
+  confirmingStandingApprovalId,
+  standingApprovalMessages,
   applyingWritebackApprovalId,
   writebackApprovalMessages,
+  onConfirmStandingApproval,
   onConfirmWriteback,
   onSelectParent,
 }: {
@@ -3935,8 +4012,12 @@ function TaskTimelineView({
   runCount: number;
   writebackApprovals: TaskplaneWritebackApprovalItem[];
   standingApprovalDraft: AgentStandingApprovalConfirmationDraft | null;
+  standingApprovalConfirmed: boolean;
+  confirmingStandingApprovalId: string | null;
+  standingApprovalMessages: Record<string, string>;
   applyingWritebackApprovalId: string | null;
   writebackApprovalMessages: Record<string, string>;
+  onConfirmStandingApproval: (draft: AgentStandingApprovalConfirmationDraft) => void;
   onConfirmWriteback: (item: TaskplaneWritebackApprovalItem) => void;
   onSelectParent: (taskId: string) => void;
 }) {
@@ -3978,16 +4059,33 @@ function TaskTimelineView({
               <div className="task-writeback-approval-main">
                 <div className="task-writeback-approval-title">
                   <strong>{standingApprovalDraft.title}</strong>
-                  <span>{standingApprovalDraft.status === 'ready' ? 'L2 授权草案' : '授权未就绪'}</span>
+                  <span>{standingApprovalConfirmed ? '已确认' : standingApprovalDraft.status === 'ready' ? 'L2 授权草案' : '授权未就绪'}</span>
                 </div>
-                <p>{standingApprovalDraft.evaluation.accepted ? '可确认有限自主行动策略；当前不会启动 scheduler，也不会写入工作区。' : '当前任务仍有授权前缺口；请先补齐 readiness。'}</p>
+                <p>{standingApprovalConfirmed
+                  ? 'Standing Approval 已记录到任务动态；当前仍不会启动 scheduler，也不会写入工作区。'
+                  : standingApprovalDraft.evaluation.accepted
+                    ? '可确认有限自主行动策略；当前不会启动 scheduler，也不会写入工作区。'
+                    : '当前任务仍有授权前缺口；请先补齐 readiness。'}</p>
                 <small>{standingApprovalDraft.detail}</small>
                 {!standingApprovalDraft.evaluation.accepted && (
                   <em>{standingApprovalDraft.evaluation.blockedReasons.join('；')}</em>
                 )}
+                {standingApprovalMessages[standingApprovalDraft.id] && (
+                  <em>{standingApprovalMessages[standingApprovalDraft.id]}</em>
+                )}
               </div>
-              <button className="btn sm disabled" disabled>
-                待接入确认
+              <button
+                className={`btn sm${standingApprovalDraft.status !== 'ready' || standingApprovalConfirmed || confirmingStandingApprovalId ? ' disabled' : ''}`}
+                disabled={standingApprovalDraft.status !== 'ready' || standingApprovalConfirmed || Boolean(confirmingStandingApprovalId)}
+                onClick={() => onConfirmStandingApproval(standingApprovalDraft)}
+              >
+                {standingApprovalConfirmed
+                  ? '已确认'
+                  : confirmingStandingApprovalId === standingApprovalDraft.id
+                    ? '确认中...'
+                    : standingApprovalDraft.status === 'ready'
+                      ? '确认授权'
+                      : '暂不可确认'}
               </button>
             </div>
           </div>

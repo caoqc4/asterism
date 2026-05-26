@@ -5061,7 +5061,22 @@ describe('App redesign v1', () => {
     expect(within(approvalDraft).getByText('L2 授权草案')).toBeTruthy();
     expect(within(approvalDraft).getByText(/schedulerTriggerAllowed=false/)).toBeTruthy();
     expect(within(approvalDraft).getByText(/workspaceWriteAllowed=false/)).toBeTruthy();
-    expect(within(approvalDraft).getByRole('button', { name: '待接入确认' }).hasAttribute('disabled')).toBe(true);
+    await user.click(within(approvalDraft).getByRole('button', { name: '确认授权' }));
+    await waitFor(() => {
+      expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_routine_auto',
+        type: 'panel.standing_approval_confirmed',
+        payload: expect.objectContaining({
+          schedulerTriggerAllowed: false,
+          workspaceWriteAllowed: false,
+          policy: expect.objectContaining({
+            allowedAutonomyLevel: 'L2_limited_authorized_action',
+            taskId: 'task_routine_auto',
+          }),
+        }),
+      }));
+    });
+    expect(await within(approvalDraft).findByText(/Standing Approval 已确认/)).toBeTruthy();
     expect(harness.api.applyTaskplaneWriteback).not.toHaveBeenCalled();
   });
 
