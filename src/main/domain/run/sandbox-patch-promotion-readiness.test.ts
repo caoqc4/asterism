@@ -41,11 +41,28 @@ describe('evaluateSandboxPatchPromotionReadiness', () => {
       checkpointId: 'run_checkpoint_1',
       decisionId: 'decision_1',
       expectedFiles: [],
+      missingRequirements: [
+        'expected_files',
+        'patch_digest',
+      ],
       patchDigest: null,
+      satisfiedRequirements: expect.arrayContaining([
+        'checkpoint_open',
+        'patch_promotion_checkpoint',
+        'payload_valid',
+        'payload_kind',
+        'descriptor',
+        'policy_snapshot',
+        'artifact_id',
+        'source_id',
+        'decision_id',
+        'safe_expected_files',
+      ]),
       sourceId: 'sandbox_session_1',
       status: 'missing_apply_metadata',
     });
     expect(readiness.summary).toContain('Sandbox patch promotion readiness: missing_apply_metadata');
+    expect(readiness.summary).toContain('requirements=10/12');
   });
 
   it('reports ready when required apply metadata is present and safe', () => {
@@ -70,12 +87,27 @@ describe('evaluateSandboxPatchPromotionReadiness', () => {
     expect(readiness).toMatchObject({
       blockedReasons: [],
       expectedFiles: ['src/app.ts', 'docs/notes.md'],
+      missingRequirements: [],
       patchDigest: 'sha256:abc123',
+      satisfiedRequirements: [
+        'checkpoint_open',
+        'patch_promotion_checkpoint',
+        'payload_valid',
+        'payload_kind',
+        'descriptor',
+        'policy_snapshot',
+        'artifact_id',
+        'source_id',
+        'decision_id',
+        'expected_files',
+        'patch_digest',
+        'safe_expected_files',
+      ],
       sourceId: 'sandbox_source_1',
       status: 'ready',
     });
     expect(readiness.summary).toBe(
-      'Sandbox patch promotion readiness: ready / files=src/app.ts, docs/notes.md / workspace apply still requires the promotion service',
+      'Sandbox patch promotion readiness: ready / requirements=12/12 / files=src/app.ts, docs/notes.md / workspace apply still requires the promotion service',
     );
   });
 
@@ -98,8 +130,10 @@ describe('evaluateSandboxPatchPromotionReadiness', () => {
 
     expect(readiness).toMatchObject({
       blockedReasons: ['Patch promotion expected files are unsafe: ../secrets.txt'],
+      missingRequirements: ['safe_expected_files'],
       status: 'blocked',
     });
+    expect(readiness.summary).toContain('requirements=11/12');
   });
 
   it('blocks invalid checkpoint shape and descriptor mismatches', () => {
@@ -120,6 +154,11 @@ describe('evaluateSandboxPatchPromotionReadiness', () => {
     }));
 
     expect(readiness.status).toBe('blocked');
+    expect(readiness.missingRequirements).toEqual([
+      'payload_kind',
+      'descriptor',
+      'policy_snapshot',
+    ]);
     expect(readiness.blockedReasons).toEqual([
       'Patch promotion payload kind is not patch_promotion.',
       'Patch promotion descriptor must be workspace.staged_patch.',
@@ -134,8 +173,9 @@ describe('evaluateSandboxPatchPromotionReadiness', () => {
 
     expect(readiness).toMatchObject({
       blockedReasons: ['Patch promotion checkpoint is not open.'],
+      missingRequirements: ['checkpoint_open'],
       status: 'already_resolved',
-      summary: 'Sandbox patch promotion readiness: already_resolved / checkpoint is no longer open',
+      summary: 'Sandbox patch promotion readiness: already_resolved / requirements=11/12 / checkpoint is no longer open',
     });
   });
 });

@@ -13,11 +13,42 @@ export type SandboxPatchPromotionReadiness = {
   checkpointId: string;
   decisionId: string | null;
   expectedFiles: string[];
+  missingRequirements: SandboxPatchPromotionReadinessRequirement[];
   patchDigest: string | null;
+  satisfiedRequirements: SandboxPatchPromotionReadinessRequirement[];
   sourceId: string | null;
   status: SandboxPatchPromotionReadinessStatus;
   summary: string;
 };
+
+export type SandboxPatchPromotionReadinessRequirement =
+  | 'checkpoint_open'
+  | 'patch_promotion_checkpoint'
+  | 'payload_valid'
+  | 'payload_kind'
+  | 'descriptor'
+  | 'policy_snapshot'
+  | 'artifact_id'
+  | 'source_id'
+  | 'decision_id'
+  | 'expected_files'
+  | 'patch_digest'
+  | 'safe_expected_files';
+
+const SANDBOX_PATCH_PROMOTION_READINESS_REQUIREMENTS: SandboxPatchPromotionReadinessRequirement[] = [
+  'checkpoint_open',
+  'patch_promotion_checkpoint',
+  'payload_valid',
+  'payload_kind',
+  'descriptor',
+  'policy_snapshot',
+  'artifact_id',
+  'source_id',
+  'decision_id',
+  'expected_files',
+  'patch_digest',
+  'safe_expected_files',
+];
 
 export function evaluateSandboxPatchPromotionReadiness(
   checkpoint: RunCheckpointRecord,
@@ -27,6 +58,7 @@ export function evaluateSandboxPatchPromotionReadiness(
       checkpoint,
       status: 'already_resolved',
       blockedReasons: ['Patch promotion checkpoint is not open.'],
+      missingRequirements: ['checkpoint_open'],
     });
   }
 
@@ -35,6 +67,7 @@ export function evaluateSandboxPatchPromotionReadiness(
       checkpoint,
       status: 'blocked',
       blockedReasons: ['Checkpoint is not a patch-promotion checkpoint.'],
+      missingRequirements: ['patch_promotion_checkpoint'],
     });
   }
 
@@ -45,6 +78,7 @@ export function evaluateSandboxPatchPromotionReadiness(
       checkpoint,
       status: 'blocked',
       blockedReasons: ['Patch promotion checkpoint payload is missing or invalid.'],
+      missingRequirements: ['payload_valid'],
     });
   }
 
@@ -58,41 +92,51 @@ export function evaluateSandboxPatchPromotionReadiness(
   const patchDigest = readString(payload.patchDigest);
   const blockedReasons: string[] = [];
   const missingApplyMetadata: string[] = [];
+  const missingRequirements: SandboxPatchPromotionReadinessRequirement[] = [];
 
   if (payload.kind !== 'patch_promotion') {
+    missingRequirements.push('payload_kind');
     blockedReasons.push('Patch promotion payload kind is not patch_promotion.');
   }
 
   if (descriptorId !== 'workspace.staged_patch') {
+    missingRequirements.push('descriptor');
     blockedReasons.push('Patch promotion descriptor must be workspace.staged_patch.');
   }
 
   if (policyDescriptorId !== 'workspace.staged_patch') {
+    missingRequirements.push('policy_snapshot');
     blockedReasons.push('Patch promotion policy snapshot must target workspace.staged_patch.');
   }
 
   if (!artifactId) {
+    missingRequirements.push('artifact_id');
     missingApplyMetadata.push('artifactId');
   }
 
   if (!sourceId) {
+    missingRequirements.push('source_id');
     missingApplyMetadata.push('sourceId/sessionId');
   }
 
   if (!decisionId) {
+    missingRequirements.push('decision_id');
     missingApplyMetadata.push('decisionId');
   }
 
   if (!expectedFiles.length) {
+    missingRequirements.push('expected_files');
     missingApplyMetadata.push('expectedFiles');
   }
 
   if (!patchDigest) {
+    missingRequirements.push('patch_digest');
     missingApplyMetadata.push('patchDigest');
   }
 
   const unsafeExpectedFiles = expectedFiles.filter((file) => !isSafeWorkspaceRelativePath(file));
   if (unsafeExpectedFiles.length) {
+    missingRequirements.push('safe_expected_files');
     blockedReasons.push(`Patch promotion expected files are unsafe: ${unsafeExpectedFiles.join(', ')}`);
   }
 
@@ -103,6 +147,7 @@ export function evaluateSandboxPatchPromotionReadiness(
       checkpoint,
       decisionId,
       expectedFiles,
+      missingRequirements,
       patchDigest,
       sourceId,
       status: 'blocked',
@@ -116,6 +161,7 @@ export function evaluateSandboxPatchPromotionReadiness(
       checkpoint,
       decisionId,
       expectedFiles,
+      missingRequirements,
       patchDigest,
       sourceId,
       status: 'missing_apply_metadata',
@@ -128,6 +174,7 @@ export function evaluateSandboxPatchPromotionReadiness(
     checkpoint,
     decisionId,
     expectedFiles,
+    missingRequirements: [],
     patchDigest,
     sourceId,
     status: 'ready',
@@ -140,23 +187,30 @@ function buildReadiness(params: {
   checkpoint: RunCheckpointRecord;
   decisionId?: string | null;
   expectedFiles?: string[];
+  missingRequirements: SandboxPatchPromotionReadinessRequirement[];
   patchDigest?: string | null;
   sourceId?: string | null;
   status: SandboxPatchPromotionReadinessStatus;
 }): SandboxPatchPromotionReadiness {
   const expectedFiles = params.expectedFiles ?? [];
+  const missingRequirementSet = new Set(params.missingRequirements);
+  const satisfiedRequirements = SANDBOX_PATCH_PROMOTION_READINESS_REQUIREMENTS.filter((requirement) =>
+    !missingRequirementSet.has(requirement));
   return {
     artifactId: params.artifactId ?? null,
     blockedReasons: params.blockedReasons,
     checkpointId: params.checkpoint.id,
     decisionId: params.decisionId ?? null,
     expectedFiles,
+    missingRequirements: params.missingRequirements,
     patchDigest: params.patchDigest ?? null,
+    satisfiedRequirements,
     sourceId: params.sourceId ?? null,
     status: params.status,
     summary: formatSandboxPatchPromotionReadinessSummary({
       blockedReasons: params.blockedReasons,
       expectedFiles,
+      satisfiedRequirementCount: satisfiedRequirements.length,
       status: params.status,
     }),
   };
@@ -165,22 +219,26 @@ function buildReadiness(params: {
 function formatSandboxPatchPromotionReadinessSummary(params: {
   blockedReasons: string[];
   expectedFiles: string[];
+  satisfiedRequirementCount: number;
   status: SandboxPatchPromotionReadinessStatus;
 }): string {
+  const requirements = `requirements=${params.satisfiedRequirementCount}/${SANDBOX_PATCH_PROMOTION_READINESS_REQUIREMENTS.length}`;
   if (params.status === 'ready') {
     return [
       'Sandbox patch promotion readiness: ready',
+      requirements,
       `files=${params.expectedFiles.join(', ')}`,
       'workspace apply still requires the promotion service',
     ].join(' / ');
   }
 
   if (params.status === 'already_resolved') {
-    return 'Sandbox patch promotion readiness: already_resolved / checkpoint is no longer open';
+    return `Sandbox patch promotion readiness: already_resolved / ${requirements} / checkpoint is no longer open`;
   }
 
   return [
     `Sandbox patch promotion readiness: ${params.status}`,
+    requirements,
     params.blockedReasons.join(' '),
   ].filter(Boolean).join(' / ');
 }
