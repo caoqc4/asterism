@@ -494,6 +494,10 @@ describe('SchedulerService', () => {
         runId: 'run_scheduled_cron_1',
         runtimeStartAllowed: true,
         triggeredAt: '2026-05-26T11:00:00.000Z',
+        runLimit: {
+          maxRunsPerDay: 3,
+          runsStartedToday: 0,
+        },
       }),
     });
     expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
@@ -1088,6 +1092,10 @@ describe('SchedulerService', () => {
         schedulerTriggerServiceConnected: true,
         runtimeStartAllowed: true,
         triggeredAt: '2026-05-26T11:00:00.000Z',
+        runLimit: {
+          maxRunsPerDay: 3,
+          runsStartedToday: 1,
+        },
         triggerRunEvidenceRequired: expect.arrayContaining([
           'context_readiness',
           'target_task_identity',
