@@ -236,6 +236,45 @@ describe('evaluateRuntimeContextReadiness', () => {
     });
   });
 
+  it('falls back to updated source timestamps when capturedAt is invalid', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      now: '2026-05-26T00:00:00.000Z',
+      prompt: '确认当前模型价格。',
+      task: buildReadinessTask({
+        nextStep: '确认当前模型价格。',
+        sourceContexts: [{
+          archivedAt: null,
+          batchId: null,
+          capturedAt: 'not-a-date',
+          containsSensitiveData: false,
+          content: 'Recent pricing summary.',
+          createdAt: '2026-05-20T00:00:00.000Z',
+          credibility: 'verified',
+          id: 'source_recent_pricing_updated',
+          isDuplicate: false,
+          isKey: true,
+          kind: 'note',
+          note: null,
+          sourceRole: 'digest',
+          status: 'active',
+          taskId: 'task_1',
+          title: 'Recent pricing summary',
+          updatedAt: '2026-05-24T00:00:00.000Z',
+          uri: null,
+        }],
+        summary: '需要整理模型价格。',
+        title: '确认当前模型价格',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      decision: 'ready',
+      movement: 'execute',
+      recommendedMode: 'read_only_execute',
+      shouldSelfResearch: false,
+    });
+  });
+
   it('does not trust future-dated source context as fresh evidence', () => {
     const evaluation = evaluateRuntimeContextReadiness({
       now: '2026-05-26T00:00:00.000Z',

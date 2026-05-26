@@ -207,10 +207,19 @@ function isUsableSourceContext(source: SourceContextRecord): boolean {
 }
 
 function isFreshSourceContext(source: SourceContextRecord, nowMs: number): boolean {
-  const capturedAt = Date.parse(source.capturedAt ?? source.updatedAt ?? source.createdAt);
+  const capturedAt = firstParsedTime(source.capturedAt, source.updatedAt, source.createdAt);
   return Number.isFinite(capturedAt)
     && capturedAt <= nowMs + SOURCE_CLOCK_SKEW_MS
     && nowMs - capturedAt <= FRESH_SOURCE_MAX_AGE_MS;
+}
+
+function firstParsedTime(...values: Array<string | null | undefined>): number {
+  for (const value of values) {
+    if (!value) continue;
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return NaN;
 }
 
 function resolveNowMs(now: Date | string | undefined): number {
