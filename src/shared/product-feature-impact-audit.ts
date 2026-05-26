@@ -551,8 +551,16 @@ export function findProductFeatureImpactAuditIssues(
       issues.push({ featureId: item.id, issue: 'P0 feature audit item must not miss CLI-only closure.' });
     }
 
+    if (item.status !== 'covered' && item.gaps.length === 0) {
+      issues.push({ featureId: item.id, issue: 'Uncovered feature audit item must declare current gaps.' });
+    }
+
     if (item.priority === 'p0' && item.nextActions.length === 0) {
       issues.push({ featureId: item.id, issue: 'P0 feature audit item must declare next actions.' });
+    }
+
+    if (item.status !== 'covered' && item.priority !== 'p0' && item.nextActions.length === 0) {
+      issues.push({ featureId: item.id, issue: 'Uncovered feature audit item must declare next actions.' });
     }
 
     if (

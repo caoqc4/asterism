@@ -77,6 +77,42 @@ describe('product feature impact audit', () => {
     }
   });
 
+  it('requires every unfinished feature family to keep an actionable gap and next step', () => {
+    const partialItem = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    expect(partialItem).toBeDefined();
+
+    expect(findProductFeatureImpactAuditIssues([
+      {
+        ...partialItem!,
+        gaps: [],
+        nextActions: [],
+      },
+    ])).toEqual([
+      {
+        featureId: 'right_panel_agent_run',
+        issue: 'Uncovered feature audit item must declare current gaps.',
+      },
+      {
+        featureId: 'right_panel_agent_run',
+        issue: 'P0 feature audit item must declare next actions.',
+      },
+    ]);
+
+    expect(findProductFeatureImpactAuditIssues([
+      {
+        ...partialItem!,
+        priority: 'p1',
+        gaps: ['Current gap remains open.'],
+        nextActions: [],
+      },
+    ])).toEqual([
+      {
+        featureId: 'right_panel_agent_run',
+        issue: 'Uncovered feature audit item must declare next actions.',
+      },
+    ]);
+  });
+
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');
