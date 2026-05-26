@@ -70,6 +70,7 @@
     "smoke:context-refresh:mac": "node scripts/smoke-context-refresh-mac.mjs",
     "smoke:context-learning:mac": "node scripts/smoke-context-learning-mac.mjs",
     "smoke:code-agent-ui:mac": "node scripts/smoke-code-agent-ui-mac.mjs",
+    "smoke:agent-cli-web-research": "node scripts/agent-cli-web-research-bridge-smoke.mjs",
     "smoke:agent-cli-task:mac": "node scripts/smoke-agent-cli-task-run-mac.mjs",
     "smoke:run-decision-recovery:mac": "node scripts/smoke-run-decision-recovery-mac.mjs",
     "smoke:settings-config:mac": "node scripts/smoke-settings-config-mac.mjs",

@@ -413,6 +413,12 @@ The capability mode is stored in `featureFlags.agentCliCapabilityMode`:
 Set `TASKPLANE_AGENT_CLI_CAPABILITY_MODE=native|audit_enhanced|restricted` to
 override the saved mode for local testing.
 
+For local non-live acceptance of the Taskplane web-research bridge, run
+`npm run smoke:agent-cli-web-research`. It uses mocked provider output to cover
+fresh/current trigger detection, Source Context persistence, the
+`Agent CLI 联网调研准备` Run step, and renderer progress mapping. Live source
+capture still requires the OpenAI bridge configuration above.
+
 ## Agent CLI Real Smoke
 
 Agent CLI smoke tests are opt-in and call the user's locally installed official

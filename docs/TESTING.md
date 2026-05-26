@@ -174,6 +174,15 @@ runtime status, so it does not require a real account by default:
 npm run smoke:agent-cli-task:mac
 ```
 
+The local web-research bridge smoke is also non-live by default. It stubs the
+OpenAI web-search bridge and validates fresh/current research triggering, Source
+Context persistence, the `Agent CLI 联网调研准备` Run step, and right-panel
+progress projection without contacting external networks:
+
+```bash
+npm run smoke:agent-cli-web-research
+```
+
 That smoke covers the first-version Agent CLI product loop inside the packaged
 app: task-bound run creation, accepted and terminal run evidence, cancellation
 evidence, read-only workspace protection, task dynamics replay, Run Goal
