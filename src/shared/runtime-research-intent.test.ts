@@ -35,6 +35,8 @@ describe('evaluateRuntimeResearchIntent', () => {
     expect(evaluateRuntimeResearchIntent('Check the latest model pricing before drafting the plan.').shouldUseExternalResearch).toBe(true);
     expect(evaluateRuntimeResearchIntent('Review current API status and recent release changes.').shouldUseExternalResearch).toBe(true);
     expect(evaluateRuntimeResearchIntent('比较 2026 年最新模型定价。').shouldUseExternalResearch).toBe(true);
+    expect(evaluateRuntimeResearchIntent('确认目前 API 价格和限制。').shouldUseExternalResearch).toBe(true);
+    expect(evaluateRuntimeResearchIntent('查看现在的官方文档状态。').shouldUseExternalResearch).toBe(true);
   });
 
   it('does not treat current task wording as fresh external research', () => {
