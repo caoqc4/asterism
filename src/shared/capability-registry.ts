@@ -1,5 +1,6 @@
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
-import type { AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
+import type { AgentCliRuntimeId, AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
+import type { AgentRuntimeNativeCapabilityAvailability } from './agent-runtime-goal.js';
 import {
   RUNTIME_ENTRYPOINT_COVERAGE,
   requiredRuntimeEntrypointGatesForKind,
@@ -87,6 +88,7 @@ export type CapabilityProductSurfaceStatus = {
     errorCount?: number;
     manualRunCount?: number;
     nativeWebSearchRuntimeDependentCount?: number;
+    selectedNativeWebSearchAvailability?: AgentRuntimeNativeCapabilityAvailability;
     nativeWebSearchUnverifiedCount?: number;
     readyManualRunCount?: number;
   } | null;
@@ -268,8 +270,12 @@ export function capabilityRegistryAllowsWorkspaceVerification(
 
 export function agentCliStatusForCapability(
   status: AgentCliRuntimeStatus,
+  selectedRuntimeId: AgentCliRuntimeId | null = null,
 ): NonNullable<CapabilityProductSurfaceStatus['agentCli']> {
   const installedRuntimes = status.runtimes.filter((runtime) => runtime.installed);
+  const selectedRuntime = selectedRuntimeId
+    ? installedRuntimes.find((runtime) => runtime.id === selectedRuntimeId) ?? null
+    : null;
   const nativeWebSearchRuntimeDependentCount = installedRuntimes.filter((runtime) => (
     runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'runtime_dependent'
     || runtime.capabilities?.nativeCapabilities?.webSearch.availability === 'available'
@@ -284,6 +290,7 @@ export function agentCliStatusForCapability(
     errorCount: status.errorCount,
     manualRunCount: status.manualRunCount,
     nativeWebSearchRuntimeDependentCount,
+    selectedNativeWebSearchAvailability: selectedRuntime?.capabilities?.nativeCapabilities?.webSearch.availability,
     nativeWebSearchUnverifiedCount,
     readyCount: status.readyCount,
     readyManualRunCount: status.readyManualRunCount,
@@ -489,6 +496,9 @@ function agentCliCapability(
         ? `nativeWebSearchUnverified=${status.nativeWebSearchUnverifiedCount}`
         : null,
       selected ? `selected=${selected}` : null,
+      selected && status.selectedNativeWebSearchAvailability
+        ? `selectedNativeWebSearch=${status.selectedNativeWebSearchAvailability}`
+        : null,
       typeof status.catalogueCount === 'number' ? `catalogue=${status.catalogueCount}` : null,
     ].filter(Boolean).join(' / '),
   };

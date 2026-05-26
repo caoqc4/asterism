@@ -108,6 +108,7 @@ function detectCodeAgentWorkspaceChecks(
 async function buildCapabilityProductSurfaceStatus(
   externalAccessStatus: ExternalAccessStatus | undefined,
   agentCliRuntimeStatus: AgentCliRuntimeStatus | undefined,
+  configRuntimeMode: AiConfigStatus['runtimeMode'],
   productSurfaceStatusProvider: CapabilityProductSurfaceStatusProvider,
 ): Promise<CapabilityProductSurfaceStatus> {
   const [skills, mcp] = await Promise.all([
@@ -117,10 +118,16 @@ async function buildCapabilityProductSurfaceStatus(
 
   return {
     externalAccess: externalAccessStatusForCapability(externalAccessStatus ?? emptyExternalAccessStatus()),
-    agentCli: agentCliRuntimeStatus ? agentCliStatusForCapability(agentCliRuntimeStatus) : null,
+    agentCli: agentCliRuntimeStatus
+      ? agentCliStatusForCapability(agentCliRuntimeStatus, selectedAgentCliRuntimeId(configRuntimeMode))
+      : null,
     skills,
     mcp,
   };
+}
+
+function selectedAgentCliRuntimeId(runtimeMode: AiConfigStatus['runtimeMode']) {
+  return runtimeMode === 'codex' || runtimeMode === 'claude' ? runtimeMode : null;
 }
 
 export class AiConfigService {
@@ -331,7 +338,7 @@ async function withCapabilityRegistry(
     ...status,
     capabilityRegistry: buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: status }),
-      productSurfaces: await buildCapabilityProductSurfaceStatus(status.externalAccessStatus, status.agentCliRuntimeStatus, productSurfaceStatusProvider),
+      productSurfaces: await buildCapabilityProductSurfaceStatus(status.externalAccessStatus, status.agentCliRuntimeStatus, status.runtimeMode, productSurfaceStatusProvider),
     }),
   };
   return {

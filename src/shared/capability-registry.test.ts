@@ -245,12 +245,12 @@ describe('capability registry', () => {
             version: '2.1.144',
             workload: 'idle',
           },
-        ])),
+        ]), 'codex'),
       },
     });
 
     expect(registry.find((entry) => entry.id === 'agent_cli.runtimes')).toMatchObject({
-      summary: 'detected=2 / ready=2 / manualRun=2 / readyManualRun=2 / running=0 / errors=0 / nativeWebSearch=runtime_dependent:1 / nativeWebSearchUnverified=1 / selected=Codex CLI / catalogue=2',
+      summary: 'detected=2 / ready=2 / manualRun=2 / readyManualRun=2 / running=0 / errors=0 / nativeWebSearch=runtime_dependent:1 / nativeWebSearchUnverified=1 / selected=Codex CLI / selectedNativeWebSearch=runtime_dependent / catalogue=2',
     });
   });
 

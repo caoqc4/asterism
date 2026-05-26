@@ -264,6 +264,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('provider help output');
     expect(capabilities?.evidence.join(' ')).toContain('compact/clear context affordances');
     expect(capabilities?.evidence.join(' ')).toContain('adapter capability support');
+    expect(capabilities?.evidence.join(' ')).toContain('selected Agent CLI native web/search readiness');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
     expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness summary and missing evidence');
