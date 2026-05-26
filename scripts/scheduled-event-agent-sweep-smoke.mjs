@@ -128,6 +128,7 @@ try {
     'triggerRunEvidence=passed',
     'runLimitEvidence=passed',
     'timelineEvidence=recorded',
+    'runStatusEvidence=recorded',
     'workspace=unchanged',
     'provider=not-called',
     'docker=not-started',

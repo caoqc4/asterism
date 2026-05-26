@@ -326,6 +326,7 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('daily run limit reached: 3/3');
     expect(script).toContain('panel.scheduled_event_agent_triggered');
     expect(script).toContain('timelineEvidence=recorded');
+    expect(script).toContain('runStatusEvidence=recorded');
     expect(script).toContain('workspace=unchanged');
     expect(script).toContain('provider=not-called');
     expect(script).toContain('docker=not-started');

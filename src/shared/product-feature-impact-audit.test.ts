@@ -265,6 +265,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('targetTaskId timeline evidence');
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
     expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, and a local sweep smoke');
     expect(workHabits?.gaps.join(' ')).toContain('broader runtime coverage and live soak evidence');
