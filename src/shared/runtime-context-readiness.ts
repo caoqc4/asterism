@@ -202,6 +202,7 @@ function isUsableSourceContext(source: SourceContextRecord): boolean {
   return source.status === 'active'
     && !source.isDuplicate
     && !source.containsSensitiveData
+    && source.credibility !== 'low'
     && Boolean(source.isKey || source.content?.trim() || source.uri?.trim());
 }
 

@@ -118,6 +118,45 @@ describe('evaluateRuntimeContextReadiness', () => {
     });
   });
 
+  it('does not treat low-credibility source context as sufficient evidence', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      prompt: '做一个 Codex 的基础教程网站，参考官方文档和案例。',
+      task: buildReadinessTask({
+        nextStep: '明确网站目标和范围。',
+        sourceContexts: [{
+          archivedAt: null,
+          batchId: null,
+          capturedAt: '2026-05-24T00:00:00.000Z',
+          containsSensitiveData: false,
+          content: 'Unverified scraped summary.',
+          createdAt: '2026-05-24T00:00:00.000Z',
+          credibility: 'low',
+          id: 'source_low_cred',
+          isDuplicate: false,
+          isKey: true,
+          kind: 'note',
+          note: null,
+          sourceRole: 'digest',
+          status: 'active',
+          taskId: 'task_1',
+          title: 'Low credibility summary',
+          updatedAt: '2026-05-24T00:00:00.000Z',
+          uri: null,
+        }],
+        summary: 'Codex 基础教程网站，面向 Agent 初学者。',
+        title: '明确网站目标与范围',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      decision: 'self_research',
+      movement: 'research',
+      recommendedMode: 'native_research',
+      shouldSelfResearch: true,
+    });
+    expect(evaluation.missing).toContain('source_evidence');
+  });
+
   it('refreshes stale source context for fresh external requests', () => {
     const evaluation = evaluateRuntimeContextReadiness({
       now: '2026-05-26T00:00:00.000Z',
