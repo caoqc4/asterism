@@ -823,7 +823,7 @@ function runtimeCapabilityChips(capabilities: AgentRuntimeAdapterCapabilities): 
   return [
     nativeCapabilityChip(native?.structuredProgressEvents, '事件流', 'ready'),
     nativeCapabilityChip(native?.workspaceRead, '只读工作区', 'ready'),
-    nativeCapabilityChip(native?.webSearch, '原生搜索', 'gated'),
+    nativeCapabilityChip(native?.webSearch, nativeSearchCapabilityChipLabel(native?.webSearch), 'gated'),
     nativeCapabilityChip(native?.hooks, 'Hooks', 'gated'),
     nativeCapabilityChip(native?.subagents, 'Subagents', 'gated'),
     capabilities.supportsNativeGoalMode
@@ -842,6 +842,18 @@ function runtimeCapabilityChips(capabilities: AgentRuntimeAdapterCapabilities): 
     nativeCapabilityChip(native?.clear, '上下文清理', 'gated'),
     nativeCapabilityChip(native?.workspaceWrite, '写入需提案', 'blocked'),
   ].filter((chip): chip is { label: string; reason: string; tone: 'ready' | 'gated' | 'blocked' } => chip !== null);
+}
+
+function nativeSearchCapabilityChipLabel(
+  capability: AgentRuntimeNativeCapabilityDeclaration | undefined,
+): string {
+  if (!capability) return '原生搜索未知';
+  if (capability.availability === 'available') return '原生搜索可用';
+  if (capability.availability === 'runtime_dependent') return '原生搜索随运行时';
+  if (capability.availability === 'unverified') return '原生搜索待验证';
+  if (capability.availability === 'unsupported') return '原生搜索不可用';
+  if (capability.availability === 'product_controlled') return '搜索由产品控制';
+  return '原生搜索未知';
 }
 
 function nativeCapabilityChip(
