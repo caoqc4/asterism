@@ -738,6 +738,8 @@ describe('local smoke script default boundaries', () => {
     expect(runtimeDeepeningPlan).toContain('native forwarding should remain deferred');
     expect(matrix).toContain('Updated: 2026-05-26');
     expect(matrix).toContain('Agent API execution preflight');
+    expect(matrix).toContain('Scheduled/event Agent sweep');
+    expect(matrix).toContain('accept:scheduled-event-agent-sweep-smoke');
     expect(matrix).toContain('Packaged Codex live task run');
     expect(matrix).toContain('Manual only; passed locally on 2026-05-20; default skipped');
   });

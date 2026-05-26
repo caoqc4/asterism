@@ -341,6 +341,7 @@ runtime boundary, but they are not the first-run Agent CLI validation path:
 npm run manual:agent-api-execution-preflight-smoke
 TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE=true npm run manual:agent-api-execution-preflight-smoke
 npm run accept:agent-local
+npm run accept:scheduled-event-agent-sweep-smoke
 npm run accept:sandbox-coding
 npm run accept:sandbox-coding:code-agent-ui
 npm run accept:sandbox-coding:model-producer-preflight
@@ -349,6 +350,13 @@ npm run accept:sandbox-coding:model-producer-preflight
 The default preflight and smoke paths do not call external providers, start
 Docker checks, or mutate a selected workspace unless their explicit environment
 gates are enabled.
+
+The scheduled/event Agent sweep smoke is local and non-live. It runs against
+built main-process modules and proves the scheduler sweep can load one
+Standing Approval candidate, reuse persisted run-limit accounting, start one
+bounded Code Agent run through the injected trigger port, record
+`panel.scheduled_event_agent_triggered`, and keep `workspace=unchanged`,
+`provider=not-called`, and `docker=not-started`.
 
 The Agent API execution preflight is deliberately narrower than a full task
 run: default output must include `status=skip`, `provider=not-called`,
