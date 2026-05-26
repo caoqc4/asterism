@@ -1,6 +1,11 @@
 import cron, { type ScheduledTask } from 'node-cron';
 
 import type { SchedulerStatus } from '../../shared/types/scheduler.js';
+import {
+  planScheduledEventAgentTrigger,
+  type AgentScheduledEventTriggerPlan,
+} from '../../shared/agent-orchestration.js';
+import type { TaskDetail } from '../../shared/types/task.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repository.js';
 import { BriefProcessTemplateSelector } from '../domain/brief/process-template-selector.js';
@@ -78,6 +83,37 @@ export class SchedulerService {
       lastBriefAt: this.lastBriefAt,
       lastRunSweepAt: this.lastRunSweepAt,
     };
+  }
+
+  async diagnoseScheduledEventAgentTriggers(
+    tasks: Pick<
+      TaskDetail,
+      | 'activeBlocker'
+      | 'activeDependency'
+      | 'activeWaitingItem'
+      | 'completionCriteria'
+      | 'id'
+      | 'nextStep'
+      | 'processTemplates'
+      | 'riskLevel'
+      | 'sourceContexts'
+      | 'state'
+      | 'summary'
+      | 'taskFacets'
+      | 'taskType'
+      | 'timeline'
+      | 'waitingReason'
+    >[],
+    now: Date = new Date(),
+  ): Promise<AgentScheduledEventTriggerPlan[]> {
+    const getStatus = (this.aiConfigService as { getStatus?: AiConfigService['getStatus'] }).getStatus;
+    const aiStatus = typeof getStatus === 'function' ? await getStatus.call(this.aiConfigService).catch(() => null) : null;
+
+    return tasks.map((task) => planScheduledEventAgentTrigger({
+      aiStatus,
+      now,
+      task,
+    }));
   }
 
   private async runStartupRecovery(): Promise<void> {

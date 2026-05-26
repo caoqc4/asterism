@@ -210,10 +210,15 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('planScheduledEventAgentTrigger');
     expect(workHabits?.evidence.join(' ')).toContain('dry-run scheduled/event trigger planner');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false');
+    expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
+    expect(workHabits?.evidence.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
+    expect(workHabits?.evidence.join(' ')).toContain('does not resolve runtime config');
     expect(workHabits?.gaps.join(' ')).toContain('L1 proposal diagnostics');
     expect(workHabits?.gaps.join(' ')).toContain('confirmed Task Dynamics authorization records');
     expect(workHabits?.gaps.join(' ')).toContain('dry-run trigger planner');
-    expect(workHabits?.nextActions.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
+    expect(workHabits?.gaps.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
+    expect(workHabits?.nextActions.join(' ')).toContain('controlled native runtime start');
+    expect(workHabits?.nextActions.join(' ')).toContain('scheduler run-limit accounting');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
     expect(rightPanel?.writeIntents).toContain('subtask.propose');

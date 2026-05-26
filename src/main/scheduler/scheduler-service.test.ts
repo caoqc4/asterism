@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HomeBriefData } from '../../shared/types/brief.js';
 import type { BriefProcessTemplateCandidate } from '../../shared/types/brief.js';
 import type { RunRecord } from '../../shared/types/run.js';
+import type { TaskDetail } from '../../shared/types/task.js';
 
 const scheduledJobs: Array<{
   expression: string;
@@ -88,6 +89,97 @@ function buildRunRecord(): RunRecord {
     failureReason: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildAutomationTaskDetail(partial: Partial<TaskDetail> = {}): TaskDetail {
+  return {
+    activeBlocker: null,
+    activeDependency: null,
+    activeWaitingItem: null,
+    artifacts: [],
+    availableProcessTemplates: [],
+    childTaskIds: [],
+    completionCriteria: [{
+      id: 'criterion_1',
+      taskId: 'task_auto',
+      text: 'Review the generated update.',
+      verificationResponsibility: null,
+      verificationResponsibilityLabel: null,
+      status: 'open',
+      createdAt: '2026-05-26T00:00:00.000Z',
+      updatedAt: '2026-05-26T00:00:00.000Z',
+      satisfiedAt: null,
+    }],
+    createdAt: '2026-05-26T00:00:00.000Z',
+    decisions: [],
+    id: 'task_auto',
+    nextStep: 'Prepare the weekly update.',
+    parentTaskId: null,
+    processTemplates: [{
+      id: 'process_1',
+      bindingId: 'binding_1',
+      taskId: 'task_auto',
+      title: 'Weekly update SOP',
+      summary: null,
+      content: 'Prepare a bounded update for review.',
+      kind: 'sop',
+      tags: [],
+      status: 'active',
+      bindingStatus: 'active',
+      bindingNote: null,
+      boundAt: '2026-05-26T00:00:00.000Z',
+      bindingUpdatedAt: '2026-05-26T00:00:00.000Z',
+      createdAt: '2026-05-26T00:00:00.000Z',
+      updatedAt: '2026-05-26T00:00:00.000Z',
+      archivedAt: null,
+      removedAt: null,
+    }],
+    resumeCard: {
+      summary: 'Routine task.',
+      currentState: 'planned',
+      latestChange: {
+        summary: 'Ready.',
+        action: { label: null, targetType: null, targetId: null },
+      },
+      completionStatus: {
+        total: 1,
+        satisfied: 0,
+        open: 1,
+        summary: '1 open criterion',
+      },
+      currentBlocker: {
+        blockerId: null,
+        title: 'No blocker',
+        detail: null,
+      },
+      keySource: {
+        sourceContextId: null,
+        title: 'Task summary',
+        detail: 'Use task summary.',
+        priorityReason: null,
+      },
+      currentMethod: {
+        templateId: 'process_1',
+        title: 'Weekly update SOP',
+        detail: null,
+        selectionReason: null,
+      },
+      nextSuggestedMove: 'Prepare the weekly update.',
+    },
+    riskLevel: 'low',
+    riskNote: null,
+    sourceContexts: [],
+    state: 'planned',
+    summary: 'Known weekly update task.',
+    taskFacets: ['scheduled'],
+    taskFiles: [],
+    taskType: 'routine',
+    timeline: [],
+    title: 'Weekly update',
+    updatedAt: '2026-05-26T00:00:00.000Z',
+    waitingReason: null,
+    ...partial,
   };
 }
 
@@ -369,6 +461,122 @@ describe('SchedulerService', () => {
       'fallback',
       '当前选择的是 Claude Code，Scheduled Brief API adapter 不会切换到 Agent API Runtime。',
     );
+  });
+
+  it('diagnoses scheduled/event agent triggers without starting native runtimes', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail();
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({
+        featureFlags: {
+          enableScheduler: true,
+          enableSandboxCodingAgent: true,
+        },
+        sandboxBackendStatus: {
+          readiness: {
+            blockedReasons: [],
+            ready: true,
+            summary: 'Sandbox ready.',
+          },
+          producerBackendReadiness: {
+            blockedReasons: [],
+            ready: true,
+            summary: 'Producer ready.',
+          },
+          probe: {
+            backendId: 'local-container',
+            environmentPolicy: 'empty',
+            isolation: 'container',
+            kind: 'local_container',
+            networkMode: 'disabled',
+            status: 'available',
+            supportsOutputLimits: true,
+            supportsPatchArtifacts: true,
+            supportsStagedWrites: true,
+            supportsStructuredCommands: true,
+            supportsTargetedCommands: true,
+            supportsWorkspaceMount: true,
+          },
+          summary: 'Sandbox ready.',
+        },
+        toolScaffoldSummaries: [],
+        workspaceRoot: '/tmp/workspace',
+      }),
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const policy = {
+      id: 'standing_approval:task_auto:coding:local_sandbox',
+      allowedAutonomyLevel: 'L2_limited_authorized_action',
+      allowedLanes: ['coding'],
+      allowedRuntimeIds: ['local_sandbox'],
+      createdAt: '2026-05-26T10:00:00.000Z',
+      expiresAt: '2026-05-27T10:00:00.000Z',
+      maxRunsPerDay: 3,
+      reason: 'Allow bounded weekly update preparation.',
+      riskCeiling: 'low',
+      status: 'active',
+      taskFacets: ['scheduled'],
+      taskId: 'task_auto',
+      taskTypes: ['routine'],
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+    );
+
+    const diagnostics = await service.diagnoseScheduledEventAgentTriggers([
+      {
+        ...task,
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: task.id,
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:05:00.000Z',
+        }],
+      },
+    ], now);
+
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({
+      status: 'ready',
+      triggerPlanReady: true,
+      runtimeStartAllowed: false,
+      schedulerTriggerServiceConnected: false,
+      policy: {
+        id: 'standing_approval:task_auto:coding:local_sandbox',
+      },
+    });
+    expect(aiConfigService.getStatus).toHaveBeenCalledTimes(1);
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(scheduledJobs).toHaveLength(0);
   });
 
   it('falls back to plain brief generation when brief template selection fails', async () => {

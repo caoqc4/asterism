@@ -786,8 +786,13 @@ Current implementation:
   consumes confirmed Standing Approval Task Dynamics records, re-checks runtime
   readiness, task readiness, policy expiry/scope/risk, and scheduled/event task
   class, then returns a ready/blocked plan with `runtimeStartAllowed=false`.
-  Wiring it to scheduler diagnostics must happen before any native runtime start
-  path consumes the plan.
+- `SchedulerService.diagnoseScheduledEventAgentTriggers` wires the planner to a
+  scheduler diagnostic entrypoint. It reads selected-runtime readiness from AI
+  config status and returns ready/blocked plans, but it does not resolve runtime
+  config, schedule a trigger job, or start a native runtime. A native runtime
+  start path may consume these plans only after separate scheduler run-limit,
+  context readiness, task-memory, subtask-start, run evidence, and post-step
+  gates are connected.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and
