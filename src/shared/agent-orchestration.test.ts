@@ -803,6 +803,63 @@ describe('agent orchestration snapshot', () => {
     });
     expect(plan.summary).toContain('runtimeStartAllowed=false');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
+    expect(plan.summary).toContain('runLimit=not_counted/3');
+  });
+
+  it('blocks scheduled/event trigger planning when daily run limit is reached', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+
+    const plan = planScheduledEventAgentTrigger({
+      aiStatus: readyAutomationAiStatus(),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      runLimit: {
+        runsStartedToday: 3,
+      },
+      task: {
+        ...task,
+        id: 'task_1',
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: 'task_1',
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy: draft.policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:01:00.000Z',
+        }],
+      },
+    });
+
+    expect(plan).toMatchObject({
+      status: 'blocked',
+      triggerPlanReady: false,
+      runLimit: {
+        maxRunsPerDay: 3,
+        runsStartedToday: 3,
+      },
+      blockedReasons: expect.arrayContaining([
+        'Scheduled/event trigger daily run limit reached: 3/3.',
+      ]),
+    });
   });
 
   it('blocks scheduled/event trigger planning without confirmed standing approval or task automation class', () => {

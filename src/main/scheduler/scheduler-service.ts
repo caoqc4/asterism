@@ -105,6 +105,7 @@ export class SchedulerService {
       | 'waitingReason'
     >[],
     now: Date = new Date(),
+    runCountsStartedTodayByTaskId: Record<string, number> = {},
   ): Promise<AgentScheduledEventTriggerPlan[]> {
     const getStatus = (this.aiConfigService as { getStatus?: AiConfigService['getStatus'] }).getStatus;
     const aiStatus = typeof getStatus === 'function' ? await getStatus.call(this.aiConfigService).catch(() => null) : null;
@@ -112,6 +113,9 @@ export class SchedulerService {
     return tasks.map((task) => planScheduledEventAgentTrigger({
       aiStatus,
       now,
+      runLimit: runCountsStartedTodayByTaskId[task.id] === undefined
+        ? null
+        : { runsStartedToday: runCountsStartedTodayByTaskId[task.id] },
       task,
     }));
   }

@@ -791,7 +791,9 @@ Current implementation:
 - `planScheduledEventAgentTrigger` is the shared no-start trigger planner. It
   consumes confirmed Standing Approval Task Dynamics records, re-checks runtime
   readiness, task readiness, policy expiry/scope/risk, and scheduled/event task
-  class, then returns a ready/blocked plan with `runtimeStartAllowed=false`.
+  class, accepts explicit daily run-limit accounting input, blocks plans when
+  `maxRunsPerDay` is reached, then returns a ready/blocked plan with
+  `runtimeStartAllowed=false`.
 - `SchedulerService.diagnoseScheduledEventAgentTriggers` wires the planner to a
   scheduler diagnostic entrypoint. It reads selected-runtime readiness from AI
   config status and returns ready/blocked plans, but it does not resolve runtime

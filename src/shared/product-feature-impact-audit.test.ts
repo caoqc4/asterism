@@ -213,12 +213,14 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
     expect(workHabits?.evidence.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
     expect(workHabits?.evidence.join(' ')).toContain('does not resolve runtime config');
+    expect(workHabits?.evidence.join(' ')).toContain('daily run-limit accounting input');
+    expect(workHabits?.evidence.join(' ')).toContain('maxRunsPerDay has been reached');
     expect(workHabits?.gaps.join(' ')).toContain('L1 proposal diagnostics');
     expect(workHabits?.gaps.join(' ')).toContain('confirmed Task Dynamics authorization records');
     expect(workHabits?.gaps.join(' ')).toContain('dry-run trigger planner');
-    expect(workHabits?.gaps.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
+    expect(workHabits?.gaps.join(' ')).toContain('no-start scheduler diagnostics');
     expect(workHabits?.nextActions.join(' ')).toContain('controlled native runtime start');
-    expect(workHabits?.nextActions.join(' ')).toContain('scheduler run-limit accounting');
+    expect(workHabits?.nextActions.join(' ')).toContain('durable run-limit counting');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
     expect(rightPanel?.writeIntents).toContain('subtask.propose');

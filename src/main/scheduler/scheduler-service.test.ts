@@ -562,7 +562,7 @@ describe('SchedulerService', () => {
           createdAt: '2026-05-26T10:05:00.000Z',
         }],
       },
-    ], now);
+    ], now, { task_auto: 1 });
 
     expect(diagnostics).toHaveLength(1);
     expect(diagnostics[0]).toMatchObject({
@@ -573,7 +573,12 @@ describe('SchedulerService', () => {
       policy: {
         id: 'standing_approval:task_auto:coding:local_sandbox',
       },
+      runLimit: {
+        maxRunsPerDay: 3,
+        runsStartedToday: 1,
+      },
     });
+    expect(diagnostics[0]?.summary).toContain('runLimit=1/3');
     expect(aiConfigService.getStatus).toHaveBeenCalledTimes(1);
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
     expect(scheduledJobs).toHaveLength(0);

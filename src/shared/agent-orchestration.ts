@@ -141,6 +141,10 @@ export type AgentScheduledEventTriggerPlan = {
   runtimeStartAllowed: false;
   schedulerTriggerServiceConnected: false;
   policy: AgentStandingApprovalPolicy | null;
+  runLimit: {
+    maxRunsPerDay: number | null;
+    runsStartedToday: number | null;
+  };
   readiness: AgentAutomationReadinessEvaluation;
   standingApproval: AgentStandingApprovalEvaluation;
   blockedReasons: string[];
@@ -899,6 +903,9 @@ export function planScheduledEventAgentTrigger(params: {
   > | null;
   lane?: AgentExecutionOrchestrationLane;
   now: Date;
+  runLimit?: {
+    runsStartedToday: number;
+  } | null;
   runtimeId?: string;
   task: Pick<
     TaskDetail,
@@ -951,6 +958,19 @@ export function planScheduledEventAgentTrigger(params: {
     evidence.push('taskAutomationClass=scheduled_event_or_routine');
   }
 
+  const runsStartedToday = params.runLimit?.runsStartedToday;
+  if (policy && runsStartedToday !== undefined) {
+    if (!Number.isInteger(runsStartedToday) || runsStartedToday < 0) {
+      blockedReasons.push('Scheduled/event trigger run-limit accounting requires a non-negative integer run count.');
+    } else if (runsStartedToday >= policy.maxRunsPerDay) {
+      blockedReasons.push(`Scheduled/event trigger daily run limit reached: ${runsStartedToday}/${policy.maxRunsPerDay}.`);
+    } else {
+      evidence.push(`runLimit=${runsStartedToday}/${policy.maxRunsPerDay}`);
+    }
+  } else if (policy) {
+    evidence.push(`runLimit=not_counted/${policy.maxRunsPerDay}`);
+  }
+
   const status = blockedReasons.length === 0 ? 'ready' : 'blocked';
 
   return {
@@ -959,6 +979,12 @@ export function planScheduledEventAgentTrigger(params: {
     runtimeStartAllowed: false,
     schedulerTriggerServiceConnected: false,
     policy,
+    runLimit: {
+      maxRunsPerDay: policy?.maxRunsPerDay ?? null,
+      runsStartedToday: Number.isInteger(runsStartedToday) && runsStartedToday !== undefined
+        ? runsStartedToday
+        : null,
+    },
     readiness,
     standingApproval,
     blockedReasons,
