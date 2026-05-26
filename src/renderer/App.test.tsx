@@ -1284,6 +1284,8 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText('事件流').length).toBeGreaterThan(0);
     expect(screen.getAllByText('只读工作区').length).toBeGreaterThan(0);
     expect(screen.getAllByText('原生搜索待验证').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Hooks待验证').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Subagents待验证').length).toBeGreaterThan(0);
     expect(screen.getAllByText('记忆由产品写入').length).toBeGreaterThan(0);
     expect(screen.getAllByText('上下文压缩').length).toBeGreaterThan(0);
     expect(screen.getAllByText('上下文清理').length).toBeGreaterThan(0);
