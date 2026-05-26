@@ -10,6 +10,7 @@ export type RuntimeResearchIntent = {
   declined: boolean;
   externalResearchLikely: boolean;
   explicitExternalResearch: boolean;
+  freshExternalSignal: boolean;
   localWorkspaceOnly: boolean;
   localWorkspaceSignal: boolean;
   shouldUseExternalResearch: boolean;
@@ -31,6 +32,7 @@ export function evaluateRuntimeResearchIntent(text: string): RuntimeResearchInte
     declined,
     externalResearchLikely,
     explicitExternalResearch,
+    freshExternalSignal,
     localWorkspaceOnly,
     localWorkspaceSignal,
     shouldUseExternalResearch: externalResearchLikely && !localWorkspaceOnly && !declined,

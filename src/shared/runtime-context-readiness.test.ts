@@ -118,6 +118,85 @@ describe('evaluateRuntimeContextReadiness', () => {
     });
   });
 
+  it('refreshes stale source context for fresh external requests', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      now: '2026-05-26T00:00:00.000Z',
+      prompt: '确认当前模型价格。',
+      task: buildReadinessTask({
+        nextStep: '确认当前模型价格。',
+        sourceContexts: [{
+          archivedAt: null,
+          batchId: null,
+          capturedAt: '2026-03-01T00:00:00.000Z',
+          containsSensitiveData: false,
+          content: 'Old pricing summary.',
+          createdAt: '2026-03-01T00:00:00.000Z',
+          credibility: 'verified',
+          id: 'source_old_pricing',
+          isDuplicate: false,
+          isKey: true,
+          kind: 'note',
+          note: null,
+          sourceRole: 'digest',
+          status: 'active',
+          taskId: 'task_1',
+          title: 'Old pricing summary',
+          updatedAt: '2026-03-01T00:00:00.000Z',
+          uri: null,
+        }],
+        summary: '需要整理模型价格。',
+        title: '确认当前模型价格',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      decision: 'self_research',
+      movement: 'research',
+      recommendedMode: 'native_research',
+      shouldSelfResearch: true,
+    });
+    expect(evaluation.missing).toContain('fresh_source_evidence');
+  });
+
+  it('uses recent source context for fresh external requests', () => {
+    const evaluation = evaluateRuntimeContextReadiness({
+      now: '2026-05-26T00:00:00.000Z',
+      prompt: '确认当前模型价格。',
+      task: buildReadinessTask({
+        nextStep: '确认当前模型价格。',
+        sourceContexts: [{
+          archivedAt: null,
+          batchId: null,
+          capturedAt: '2026-05-24T00:00:00.000Z',
+          containsSensitiveData: false,
+          content: 'Recent pricing summary.',
+          createdAt: '2026-05-24T00:00:00.000Z',
+          credibility: 'verified',
+          id: 'source_recent_pricing',
+          isDuplicate: false,
+          isKey: true,
+          kind: 'note',
+          note: null,
+          sourceRole: 'digest',
+          status: 'active',
+          taskId: 'task_1',
+          title: 'Recent pricing summary',
+          updatedAt: '2026-05-24T00:00:00.000Z',
+          uri: null,
+        }],
+        summary: '需要整理模型价格。',
+        title: '确认当前模型价格',
+      }),
+    });
+
+    expect(evaluation).toMatchObject({
+      decision: 'ready',
+      movement: 'execute',
+      recommendedMode: 'read_only_execute',
+      shouldSelfResearch: false,
+    });
+  });
+
   it('uses plan-first for code or repository changes that need verification planning', () => {
     const evaluation = evaluateRuntimeContextReadiness({
       prompt: '实现前后端 API 接入并跑测试。',

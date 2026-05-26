@@ -3,6 +3,7 @@ import {
   buildRuntimeResearchIntentText,
   evaluateRuntimeResearchIntent,
 } from './runtime-research-intent.js';
+import type { SourceContextRecord } from './types/source-context.js';
 import type { TaskDetail } from './types/task.js';
 
 export type RuntimeContextReadinessDecision =
@@ -57,9 +58,11 @@ const CONCRETE_DELIVERABLE_PATTERN = /网站|教程|文档|页面|产品|功能|
 const CODE_OR_REPO_ACTION_PATTERN = /代码|仓库|实现|修复|重构|接入|接口|API|测试|lint|build|commit|push|deploy|refactor|bug|repo/i;
 const USER_DECISION_PATTERN = /拍板|批准|审批|是否允许|要不要|选哪个|是否.*(上线|发布|部署)|直接.*(上线|发布|部署)|(上线|发布|部署).*生产环境|删除|付费|收费|凭证|密钥|API\s*key|生产环境|force\s*push|push\s+main/i;
 const WEAK_START_PATTERN = /^(开始|继续|推进|执行|go|start|continue|run)$/i;
+const FRESH_SOURCE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function evaluateRuntimeContextReadiness(params: {
   contextAssembly?: RuntimeContextAssemblyPolicy | null;
+  now?: Date | string;
   prompt: string;
   task: RuntimeContextReadinessTask;
 }): RuntimeContextReadinessEvaluation {
@@ -114,17 +117,19 @@ export function evaluateRuntimeContextReadiness(params: {
     });
   }
 
-  const sourceCount = params.task.sourceContexts.filter((source) => (
-    source.status === 'active'
-    && !source.isDuplicate
-    && !source.containsSensitiveData
-    && (source.isKey || source.content?.trim() || source.uri?.trim())
-  )).length;
+  const usableSources = params.task.sourceContexts.filter(isUsableSourceContext);
   const researchIntent = evaluateRuntimeResearchIntent(taskText);
-  if (researchIntent.shouldUseExternalResearch && sourceCount === 0) {
+  const hasFreshSource = usableSources.some((source) => isFreshSourceContext(source, resolveNowMs(params.now)));
+  const missingResearchEvidence = usableSources.length === 0
+    ? 'source_evidence'
+    : 'fresh_source_evidence';
+  if (
+    researchIntent.shouldUseExternalResearch &&
+    (usableSources.length === 0 || (researchIntent.freshExternalSignal && !hasFreshSource))
+  ) {
     return buildReadiness({
       decision: 'self_research',
-      missing: ['source_evidence'],
+      missing: [missingResearchEvidence],
       movement: 'research',
       reasons: ['The next step depends on public, current, official, or example-based information that can be researched before asking the user.'],
       recommendedMode: 'native_research',
@@ -190,4 +195,25 @@ function buildReadiness(params: {
 
 function normalizeText(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
+}
+
+function isUsableSourceContext(source: SourceContextRecord): boolean {
+  return source.status === 'active'
+    && !source.isDuplicate
+    && !source.containsSensitiveData
+    && Boolean(source.isKey || source.content?.trim() || source.uri?.trim());
+}
+
+function isFreshSourceContext(source: SourceContextRecord, nowMs: number): boolean {
+  const capturedAt = Date.parse(source.capturedAt ?? source.updatedAt ?? source.createdAt);
+  return Number.isFinite(capturedAt) && nowMs - capturedAt <= FRESH_SOURCE_MAX_AGE_MS;
+}
+
+function resolveNowMs(now: Date | string | undefined): number {
+  if (now instanceof Date) return now.getTime();
+  if (typeof now === 'string') {
+    const parsed = Date.parse(now);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return Date.now();
 }

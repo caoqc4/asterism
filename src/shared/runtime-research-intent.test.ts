@@ -10,6 +10,7 @@ describe('evaluateRuntimeResearchIntent', () => {
     const intent = evaluateRuntimeResearchIntent('做一个 Codex 基础教程网站，参考官方文档和案例。');
 
     expect(intent.shouldUseExternalResearch).toBe(true);
+    expect(intent.freshExternalSignal).toBe(false);
     expect(intent.localWorkspaceOnly).toBe(false);
   });
 
@@ -32,7 +33,9 @@ describe('evaluateRuntimeResearchIntent', () => {
   });
 
   it('treats latest current and pricing requests as fresh external research', () => {
-    expect(evaluateRuntimeResearchIntent('Check the latest model pricing before drafting the plan.').shouldUseExternalResearch).toBe(true);
+    const latestPricing = evaluateRuntimeResearchIntent('Check the latest model pricing before drafting the plan.');
+    expect(latestPricing.shouldUseExternalResearch).toBe(true);
+    expect(latestPricing.freshExternalSignal).toBe(true);
     expect(evaluateRuntimeResearchIntent('Review current API status and recent release changes.').shouldUseExternalResearch).toBe(true);
     expect(evaluateRuntimeResearchIntent('比较 2026 年最新模型定价。').shouldUseExternalResearch).toBe(true);
     expect(evaluateRuntimeResearchIntent('确认目前 API 价格和限制。').shouldUseExternalResearch).toBe(true);
