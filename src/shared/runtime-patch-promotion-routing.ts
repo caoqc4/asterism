@@ -1,6 +1,7 @@
 export type RuntimePatchPromotionRoutingReadiness = {
   ready: boolean;
   missingRequirements: Array<
+    | 'selected_runtime_contract'
     | 'patch_artifact'
     | 'promotion_decision'
     | 'promotion_preflight'
@@ -18,9 +19,11 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   promotionDecisionReady?: boolean;
   promotionPreflightReady?: boolean;
   sameRunEvidenceChainReady?: boolean;
+  selectedRuntimeContractReady?: boolean;
 }): RuntimePatchPromotionRoutingReadiness {
   const missingRequirements: RuntimePatchPromotionRoutingReadiness['missingRequirements'] = [];
 
+  if (!params.selectedRuntimeContractReady) missingRequirements.push('selected_runtime_contract');
   if (!params.patchArtifactReady) missingRequirements.push('patch_artifact');
   if (!params.promotionDecisionReady) missingRequirements.push('promotion_decision');
   if (!params.promotionPreflightReady) missingRequirements.push('promotion_preflight');
@@ -36,6 +39,7 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
     summary: [
       'Runtime patch promotion routing readiness',
       `ready=${ready ? 'yes' : 'no'}`,
+      `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `patchArtifact=${params.patchArtifactReady ? 'ready' : 'missing'}`,
       `promotionDecision=${params.promotionDecisionReady ? 'ready' : 'missing'}`,
       `promotionPreflight=${params.promotionPreflightReady ? 'ready' : 'missing'}`,
