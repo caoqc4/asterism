@@ -137,8 +137,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('while the native process is still running');
     expect(rightPanel?.evidence.join(' ')).toContain('local command or workspace activity');
     expect(rightPanel?.evidence.join(' ')).toContain('reviewable write candidates');
+    expect(rightPanel?.evidence.join(' ')).toContain('no-direct-write reviewable write candidates');
     expect(rightPanel?.evidence.join(' ')).toContain('reviewed patch, task-file proposal, or promotion evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('workspace_write steps are prioritized as reviewable write candidates');
+    expect(rightPanel?.evidence.join(' ')).toContain('workspace_write steps are prioritized as no-direct-write reviewable write candidates');
     expect(rightPanel?.evidence.join(' ')).toContain('even when web activity is also present');
     expect(rightPanel?.evidence.join(' ')).toContain('child-task advancement messages');
     expect(rightPanel?.evidence.join(' ')).toContain('context.readiness.evaluate');

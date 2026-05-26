@@ -3228,6 +3228,7 @@ describe('App redesign v1', () => {
     harness.emit('run.changed', 'run_agent_cli_created');
 
     expect(await screen.findByText(/原生 CLI 工作区写入候选：.*apply_patch/)).toBeTruthy();
+    expect(screen.getByText(/不会直接写入工作区/)).toBeTruthy();
     expect(screen.getByText(/reviewed patch、任务文件提案或 promotion evidence 审查/)).toBeTruthy();
     expect(screen.queryByText(/原生 CLI 本地动作：.*工作区写入候选/)).toBeNull();
   });
@@ -3280,6 +3281,7 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText(/联网调研：已保存 2 个来源到来源上下文/)).toBeTruthy();
     expect(screen.getByText(/原生 CLI 工作区写入候选：.*apply_patch/)).toBeTruthy();
+    expect(screen.getByText(/不会直接写入工作区/)).toBeTruthy();
     expect(screen.getByText(/reviewed patch、任务文件提案或 promotion evidence 审查/)).toBeTruthy();
     expect(screen.queryByText(/原生 CLI 联网动作/)).toBeNull();
   });

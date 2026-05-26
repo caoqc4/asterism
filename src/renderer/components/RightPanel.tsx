@@ -881,7 +881,7 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
       .replace(/^原生事件[:：]\s*/i, '')
       .trim();
     const detail = compactStepDetailForChat(nativeWorkspaceWriteStep.output);
-    lines.push(`原生 CLI 工作区写入候选：${truncateAgentCliChatLine(title || detail || '已记录', 56)}；需要 reviewed patch、任务文件提案或 promotion evidence 审查。`);
+    lines.push(`原生 CLI 工作区写入候选：${truncateAgentCliChatLine(title || detail || '已记录', 56)}；不会直接写入工作区，需要 reviewed patch、任务文件提案或 promotion evidence 审查。`);
   }
 
   const nativeWebStep = orderedSteps.find((step) => (

@@ -181,6 +181,7 @@ describe('deriveAgentCliProgress', () => {
 
     expect(progress.state).toBe('verifying');
     expect(progress.label).toContain('工作区写入候选');
+    expect(progress.label).toContain('不会直接写入工作区');
     expect(progress.label).toContain('promotion evidence');
     expect(progress.detail).toBe('apply_patch changed src/app.ts');
   });
