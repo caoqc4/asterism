@@ -348,7 +348,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('missingPorts=run_port,timeline_port,task_source_port');
     expect(workHabits?.evidence.join(' ')).toContain('increments the in-sweep run-limit count');
     expect(workHabits?.evidence.join(' ')).toContain('duplicate candidates in one sweep cannot exceed the Standing Approval daily cap');
-    expect(workHabits?.evidence.join(' ')).toContain('skipReason, checkedTaskIds, startedRunIds, blockedReasons, blockedTaskSummaries, runFailureReasons, runtimeStartMissingRequirements, terminalRunEvidenceMissingRunIds, triggerRunEvidenceRequired, and triggerRunEvidenceStatus at the top level');
+    expect(workHabits?.evidence.join(' ')).toContain('skipReason, checkedTaskIds, startedRunIds, blockedReasons, blockedTaskSummaries, runFailureReasons, automationMissingRequirements, automationSatisfiedRequirements, runtimeStartMissingRequirements, terminalRunEvidenceMissingRunIds, triggerRunEvidenceRequired, and triggerRunEvidenceStatus at the top level');
+    expect(workHabits?.evidence.join(' ')).toContain('which automation-readiness requirements are satisfied or missing');
     expect(workHabits?.evidence.join(' ')).toContain('Brief now surfaces schedulerStatus.lastScheduledEventAgentSweepAt');
     expect(workHabits?.evidence.join(' ')).toContain('lastScheduledEventAgentSweepSummary');
     expect(workHabits?.evidence.join(' ')).toContain('scheduledEventAgentSweepJobConnected as automatic-sweep status chips');
@@ -376,6 +377,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('blockedReasons evidence');
     expect(workHabits?.evidence.join(' ')).toContain('blockedTaskSummaryEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runFailureReasons evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('automationMissingRequirements evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('automationSatisfiedRequirements evidence');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements evidence');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceRequired evidence');
@@ -400,6 +403,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepRecoveryEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakRunLimitEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('cronSoakAutomationReadinessEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakNoSecondTriggerEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('completedSweepTimeEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('skippedSweepTimeEvidence=recorded');
@@ -418,6 +422,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('cronTriggerKind=cron');
     expect(workHabits?.evidence.join(' ')).toContain('startupSweepJobConnected=yes');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('sweepAutomationReadinessEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('terminalTriggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronTriggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunFailureReasonEvidence=passed');

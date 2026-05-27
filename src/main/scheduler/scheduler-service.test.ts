@@ -518,6 +518,13 @@ describe('SchedulerService', () => {
       blockedTaskCount: 0,
       startedRunIds: ['run_scheduled_cron_1'],
       blockedReasons: [],
+      automationMissingRequirements: [],
+      automationSatisfiedRequirements: expect.arrayContaining([
+        'procedure',
+        'inputs',
+        'runtime',
+        'scheduled_event_entrypoint',
+      ]),
       runtimeStartMissingRequirements: [],
       terminalRunEvidenceMissingRunIds: ['run_scheduled_cron_1'],
       triggerRunEvidenceRequired: [
@@ -533,6 +540,9 @@ describe('SchedulerService', () => {
     });
     expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
     expect(sweepResult.summary).toContain('blockedReasons=none');
+    expect(sweepResult.summary).toContain('automationMissingRequirements=none');
+    expect(sweepResult.summary).toContain('automationSatisfiedRequirements=');
+    expect(sweepResult.summary).toContain('scheduled_event_entrypoint');
     expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=none');
     expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
     expect(sweepResult.summary).toContain('triggerRunEvidenceRequired=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
@@ -825,6 +835,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('started=0');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blocked=1');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 1/1.');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('automationMissingRequirements=none');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=not_started');
   });
 

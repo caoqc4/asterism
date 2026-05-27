@@ -35,6 +35,8 @@ export type ScheduledEventAgentSweepResult = {
   blockedReasons: string[];
   blockedTaskSummaries: string[];
   runFailureReasons: string[];
+  automationMissingRequirements: AgentScheduledEventTriggerPlan['readiness']['missingRequirements'];
+  automationSatisfiedRequirements: AgentScheduledEventTriggerPlan['readiness']['satisfiedRequirements'];
   runtimeStartMissingRequirements: Array<AgentScheduledEventTriggerPlan['runtimeStartMissingRequirements'][number]>;
   terminalRunEvidenceMissingRunIds: string[];
   triggerRunEvidenceRequired: AgentScheduledEventTriggerPlan['triggerRunEvidenceRequired'];
@@ -302,6 +304,8 @@ export class SchedulerService {
         blockedReasons: ['ports_not_connected'],
         blockedTaskSummaries: [],
         runFailureReasons: [],
+        automationMissingRequirements: [],
+        automationSatisfiedRequirements: [],
         runtimeStartMissingRequirements: ['scheduler_trigger_service'],
         terminalRunEvidenceMissingRunIds: [],
         triggerRunEvidenceRequired: [],
@@ -326,6 +330,8 @@ export class SchedulerService {
         blockedReasons: ['in_flight'],
         blockedTaskSummaries: [],
         runFailureReasons: [],
+        automationMissingRequirements: [],
+        automationSatisfiedRequirements: [],
         runtimeStartMissingRequirements: [],
         terminalRunEvidenceMissingRunIds: [],
         triggerRunEvidenceRequired: [],
@@ -368,6 +374,12 @@ export class SchedulerService {
       const runtimeStartMissingRequirements = Array.from(new Set(
         results.flatMap((result) => result.plan.runtimeStartMissingRequirements),
       ));
+      const automationMissingRequirements = Array.from(new Set(
+        results.flatMap((result) => result.plan.readiness.missingRequirements),
+      ));
+      const automationSatisfiedRequirements = Array.from(new Set(
+        results.flatMap((result) => result.plan.readiness.satisfiedRequirements),
+      ));
       const terminalRunEvidenceMissingRunIds = results.flatMap((result) =>
         result.status === 'started' && result.run && !isTerminalScheduledEventRunStatus(result.run.status)
           ? [result.run.id]
@@ -392,6 +404,8 @@ export class SchedulerService {
         `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
         `blockedTaskSummaries=${blockedTaskSummaries.length ? blockedTaskSummaries.join('; ') : 'none'}`,
         `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
+        `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
+        `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
         `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
         `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
         `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
@@ -410,6 +424,8 @@ export class SchedulerService {
         blockedReasons,
         blockedTaskSummaries,
         runFailureReasons,
+        automationMissingRequirements,
+        automationSatisfiedRequirements,
         runtimeStartMissingRequirements,
         terminalRunEvidenceMissingRunIds,
         triggerRunEvidenceRequired,
@@ -429,6 +445,8 @@ export class SchedulerService {
       const terminalRunEvidenceMissingRunIds = failedRun && !isTerminalScheduledEventRunStatus(failedRun.status)
         ? [failedRun.id]
         : [];
+      const automationMissingRequirements = failedPlan?.readiness.missingRequirements ?? [];
+      const automationSatisfiedRequirements = failedPlan?.readiness.satisfiedRequirements ?? [];
       const triggerRunEvidenceRequired = failedPlan?.triggerRunEvidenceRequired ?? [];
       const blockedTaskIds = startedRunIds.length > 0 ? [] : checkedTaskIds;
       const summary = [
@@ -439,6 +457,8 @@ export class SchedulerService {
         `checkedTaskIds=${checkedTaskIds.length ? checkedTaskIds.join(',') : 'none'}`,
         `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
         `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
+        `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
+        `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
         `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
         `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
         `error=${errorMessage}`,
@@ -457,6 +477,8 @@ export class SchedulerService {
         blockedReasons: [`sweep_failed: ${errorMessage}`],
         blockedTaskSummaries: blockedTaskIds.map((taskId) => `${taskId}: sweep_failed: ${errorMessage}`),
         runFailureReasons,
+        automationMissingRequirements,
+        automationSatisfiedRequirements,
         runtimeStartMissingRequirements: ['trigger_plan_ready'],
         terminalRunEvidenceMissingRunIds,
         triggerRunEvidenceRequired,

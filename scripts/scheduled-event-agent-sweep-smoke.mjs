@@ -101,10 +101,15 @@ try {
   assert(result.blockedReasons.includes('Scheduled/event trigger daily run limit reached: 3/3.'), 'sweep did not expose blocked reasons in top-level evidence');
   assert(result.blockedTaskSummaries.includes('task_scheduled_event_sweep_smoke: Scheduled/event trigger daily run limit reached: 3/3.'), 'sweep did not expose blocked task summaries in top-level evidence');
   assert(result.runtimeStartMissingRequirements.includes('trigger_plan_ready'), 'sweep did not expose runtime-start missing requirements in top-level evidence');
+  assert(result.automationMissingRequirements.length === 0, 'sweep should expose no automation-readiness missing requirements for ready candidates');
+  assert(result.automationSatisfiedRequirements.includes('scheduled_event_entrypoint'), 'sweep did not expose satisfied scheduled/event entrypoint readiness');
   assert(result.terminalRunEvidenceMissingRunIds.includes(run.id), 'sweep did not expose missing terminal Run evidence in top-level evidence');
   assert(result.triggerRunEvidenceRequired.includes('context_readiness'), 'sweep did not expose trigger Run evidence requirements in top-level evidence');
   assert(result.triggerRunEvidenceStatus === 'pending_terminal_run_evidence', 'sweep did not expose pending trigger Run evidence status in top-level evidence');
   assert(result.summaries.join('\n').includes('daily run limit reached: 3/3'), 'sweep did not enforce the in-sweep daily run limit');
+  assert(result.summary.includes('automationMissingRequirements=none'), 'sweep summary did not expose automation missing requirements');
+  assert(result.summary.includes('automationSatisfiedRequirements='), 'sweep summary did not expose automation satisfied requirements');
+  assert(result.summary.includes('scheduled_event_entrypoint'), 'sweep summary did not expose satisfied scheduled/event entrypoint readiness');
   assert(service.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T11:00:00.000Z', 'completed sweep did not preserve the trigger time in scheduler status');
   assert(service.getStatus().lastScheduledEventAgentSweepSummary === result.summary, 'sweep did not persist the manual sweep summary into scheduler status');
   assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
@@ -783,6 +788,8 @@ try {
   assert(cronSoakSecondResult.startedRunCount === 0, 'cron soak second sweep should not start after daily cap is reached');
   assert(cronSoakSecondResult.blockedTaskCount === 1, 'cron soak second sweep did not block the capped task');
   assert(cronSoakSecondResult.blockedReasons.includes('Scheduled/event trigger daily run limit reached: 1/1.'), 'cron soak second sweep did not expose persisted daily cap evidence');
+  assert(cronSoakSecondResult.automationMissingRequirements.length === 0, 'cron soak second sweep should keep automation readiness satisfied while run-limit blocks');
+  assert(cronSoakSecondResult.summary.includes('automationMissingRequirements=none'), 'cron soak second sweep summary did not preserve automation-readiness status');
   assert(cronSoakSecondResult.triggerRunEvidenceStatus === 'not_started', 'cron soak second sweep should not start trigger evidence');
   assert(cronSoakTriggerCalls.length === 1, 'cron soak should only call the trigger port once across two sweeps');
   assert(cronSoakTimelineEvents.length === 1, 'cron soak should only record timeline evidence for the first started run');
@@ -897,6 +904,8 @@ try {
     `blockedReasons=${result.blockedReasons.join(';')}`,
     `blockedTaskSummaries=${result.blockedTaskSummaries.join(';') || 'none'}`,
     `runFailureReasons=${result.runFailureReasons.join(';') || 'none'}`,
+    `automationMissingRequirements=${result.automationMissingRequirements.join(',') || 'none'}`,
+    `automationSatisfiedRequirements=${result.automationSatisfiedRequirements.join(',') || 'none'}`,
     `runtimeStartMissingRequirements=${result.runtimeStartMissingRequirements.join(',')}`,
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
@@ -961,6 +970,7 @@ try {
     `cronSoakSecondStatus=${cronSoakSecondResult.status}`,
     `cronSoakSecondStarted=${cronSoakSecondResult.startedRunCount}`,
     `cronSoakSecondBlocked=${cronSoakSecondResult.blockedTaskCount}`,
+    `cronSoakSecondAutomationMissingRequirements=${cronSoakSecondResult.automationMissingRequirements.join(',') || 'none'}`,
     `cronSoakSecondTriggerRunEvidenceStatus=${cronSoakSecondResult.triggerRunEvidenceStatus}`,
     `cronSoakTriggerCalls=${cronSoakTriggerCalls.length}`,
     `cronSoakTimelineEvents=${cronSoakTimelineEvents.length}`,
@@ -969,6 +979,7 @@ try {
     'checkedTaskIdsEvidence=passed',
     'blockedTaskSummaryEvidence=passed',
     'triggerRunEvidence=passed',
+    'sweepAutomationReadinessEvidence=passed',
     'terminalTriggerRunEvidence=passed',
     'cronTriggerRunEvidence=passed',
     'cronRunFailureReasonEvidence=passed',
@@ -994,6 +1005,7 @@ try {
     'sourceFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepRecoveryEvidence=passed',
     'cronSoakRunLimitEvidence=passed',
+    'cronSoakAutomationReadinessEvidence=passed',
     'cronSoakNoSecondTriggerEvidence=passed',
     'skippedSweepTimeEvidence=recorded',
     'runStatusEvidence=recorded',

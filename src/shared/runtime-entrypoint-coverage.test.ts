@@ -311,6 +311,8 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('blockedReasons');
     expect(entry?.notes).toContain('blockedTaskSummaries');
     expect(entry?.notes).toContain('runFailureReasons');
+    expect(entry?.notes).toContain('automationMissingRequirements');
+    expect(entry?.notes).toContain('automationSatisfiedRequirements');
     expect(entry?.notes).toContain('terminalRunEvidenceMissingRunIds');
     expect(entry?.notes).toContain('triggerRunEvidenceRequired');
     expect(entry?.notes).toContain('ports_not_connected');

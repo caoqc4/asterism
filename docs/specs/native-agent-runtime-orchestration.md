@@ -868,9 +868,10 @@ Current implementation:
   `triggerRunEvidenceStatus` for the operator message. Sweep
   results expose `skipReason`, `checkedTaskIds`, `startedRunIds`,
   `blockedReasons`, `blockedTaskSummaries`, `runFailureReasons`,
-  `runtimeStartMissingRequirements`, and
-  `terminalRunEvidenceMissingRunIds`, plus `triggerRunEvidenceRequired` and
-  `triggerRunEvidenceStatus`, at the top level for operator-facing run
+  `automationMissingRequirements`, `automationSatisfiedRequirements`,
+  `runtimeStartMissingRequirements`, and `terminalRunEvidenceMissingRunIds`,
+  plus `triggerRunEvidenceRequired` and `triggerRunEvidenceStatus`, at the top
+  level for operator-facing run
   evidence. `SchedulerStatus.lastScheduledEventAgentSweepSummary` preserves the
   latest completed, `ports_not_connected`, `in_flight`, or `sweep_failed` sweep
   outcome, including sanitized task-source/trigger-port failure evidence with
