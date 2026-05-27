@@ -420,6 +420,7 @@ describe('agent orchestration snapshot', () => {
     expect(readiness.summary).toContain('autonomy=L1_proposal');
     expect(readiness.summary).toContain('next=L2_limited_authorized_action');
     expect(readiness.summary).toContain('missingRequirements=none');
+    expect(readiness.summary).toContain('automationMissingRequirements=none');
     expect(readiness.summary).toContain('autoStart=no');
     expect(readiness.summary).toContain('standingApproval=required_for_auto_action');
   });
@@ -490,6 +491,7 @@ describe('agent orchestration snapshot', () => {
     });
     expect(readiness.summary).toContain('requirements=3/9');
     expect(readiness.summary).toContain('missingRequirements=');
+    expect(readiness.summary).toContain('automationMissingRequirements=');
     expect(readiness.summary).toContain('procedure');
     expect(readiness.summary).toContain('runtime');
   });
@@ -532,6 +534,7 @@ describe('agent orchestration snapshot', () => {
     });
     expect(readiness.summary).toContain('requirements=8/9');
     expect(readiness.summary).toContain('missingRequirements=scheduled_event_entrypoint');
+    expect(readiness.summary).toContain('automationMissingRequirements=scheduled_event_entrypoint');
     expect(readiness.summary).toContain('autonomy=L1_proposal');
     expect(readiness.summary).toContain('standingApproval=required_for_auto_action');
     expect(readiness.summary).toContain('autoStart=no');
@@ -611,6 +614,7 @@ describe('agent orchestration snapshot', () => {
     expect(approval.summary).toContain('accepted=yes');
     expect(approval.summary).toContain('requirements=13/13');
     expect(approval.summary).toContain('missingRequirements=none');
+    expect(approval.summary).toContain('standingApprovalMissingRequirements=none');
     expect(approval.summary).toContain('authorized=L2_limited_authorized_action');
   });
 
@@ -693,6 +697,7 @@ describe('agent orchestration snapshot', () => {
     expect(approval.summary).toContain('accepted=no');
     expect(approval.summary).toContain('requirements=3/13');
     expect(approval.summary).toContain('missingRequirements=');
+    expect(approval.summary).toContain('standingApprovalMissingRequirements=');
     expect(approval.summary).toContain('policy_active');
     expect(approval.summary).toContain('automation_readiness');
   });

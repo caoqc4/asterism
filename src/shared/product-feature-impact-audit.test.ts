@@ -232,6 +232,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
     expect(workHabits?.evidence.join(' ')).toContain('requirements=x/9');
     expect(workHabits?.evidence.join(' ')).toContain('missingRequirements=...');
+    expect(workHabits?.evidence.join(' ')).toContain('automationMissingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled_event_entrypoint remains missing');
     expect(workHabits?.evidence.join(' ')).toContain('autonomy ladder level');
     expect(workHabits?.evidence.join(' ')).toContain('L1 proposal capability');
@@ -241,6 +242,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('daily run limit');
     expect(workHabits?.evidence.join(' ')).toContain('requirements=x/13');
     expect(workHabits?.evidence.join(' ')).toContain('missingRequirements=...');
+    expect(workHabits?.evidence.join(' ')).toContain('standingApprovalMissingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('buildStandingApprovalConfirmationDraft');
     expect(workHabits?.evidence.join(' ')).toContain('confirmation-only L2 authorization draft');
     expect(workHabits?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false / workspaceWriteAllowed=false');

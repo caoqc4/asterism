@@ -760,6 +760,7 @@ export function evaluateSkillInformedAutomationReadiness(params: {
       nextAutonomyLevel ? `next=${nextAutonomyLevel}` : null,
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+      `automationMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
       'autoStart=no',
       `standingApproval=${standingApprovalRequired ? 'required_for_auto_action' : 'not_ready'}`,
@@ -935,6 +936,7 @@ export function evaluateStandingApprovalForAutomation(params: {
       `authorized=${accepted ? 'L2_limited_authorized_action' : 'none'}`,
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+      `standingApprovalMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
     ].join(' / '),
   };

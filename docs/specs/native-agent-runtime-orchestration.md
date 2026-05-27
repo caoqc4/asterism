@@ -789,7 +789,7 @@ Current implementation:
   are present, but it still returns `automaticStartAllowed: false` and blocks
   native runtime auto-start until a separate scheduled/event execution entrypoint
   exists. Its summary includes `requirements=x/9` and
-  `missingRequirements=...` evidence.
+  `missingRequirements=...` / `automationMissingRequirements=...` evidence.
 - Read-only orchestration diagnostics expose the automatic-start boundary, so
   manual/operator-started readiness is distinct from scheduled/event tasks that
   require a separate execution entrypoint.
@@ -798,7 +798,9 @@ Current implementation:
   task id, allows the requested lane and runtime, stays within the risk ceiling
   and daily run limit, carries a visible reason, and automation readiness is not
   blocked. The evaluator returns satisfied and missing requirement lists plus
-  `requirements=x/13` and `missingRequirements=...` evidence. This evaluates authorization only; it does not create a scheduler
+  `requirements=x/13`, `missingRequirements=...`, and
+  `standingApprovalMissingRequirements=...` evidence. This evaluates
+  authorization only; it does not create a scheduler
   trigger, IPC entrypoint, or workspace write path by itself.
 - `buildStandingApprovalConfirmationDraft` creates the operator-facing L2
   authorization draft from the same readiness and policy evaluator. The draft is
