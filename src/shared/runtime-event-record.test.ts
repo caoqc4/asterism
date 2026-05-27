@@ -184,6 +184,7 @@ describe('runtime event record projection', () => {
           taskId: 'task-1',
           type: 'panel.scheduled_event_agent_triggered',
           payload: JSON.stringify({
+            planSummary: 'Scheduled report refresh ready',
             runId: 'run-scheduled-1',
             runLimit: {
               maxRunsPerDay: 3,
@@ -232,7 +233,7 @@ describe('runtime event record projection', () => {
     });
     expect(events.find((event) => event.sourceId === 'timeline-scheduled-trigger')).toMatchObject({
       title: 'Scheduled Agent 已启动',
-      detail: 'Run：run-scheduled-1 / 任务：task-1 / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 启动门：已满足 / 触发：cron / 授权：standing_approval:task-1:coding:local_sandbox / 限额：1/3 / 写入：提案模式',
+      detail: 'Run：run-scheduled-1 / 任务：task-1 / 计划：Scheduled report refresh ready / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 启动门：已满足 / 触发：cron / 授权：standing_approval:task-1:coding:local_sandbox / 限额：1/3 / 写入：提案模式',
     });
   });
 

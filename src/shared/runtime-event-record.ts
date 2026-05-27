@@ -610,6 +610,9 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
   const targetTaskId = typeof parsed.targetTaskId === 'string' && parsed.targetTaskId.trim()
     ? `任务：${parsed.targetTaskId.trim()}`
     : null;
+  const planSummary = typeof parsed.planSummary === 'string' && parsed.planSummary.trim()
+    ? `计划：${parsed.planSummary.trim()}`
+    : null;
   const terminalRunEvidence = parsed.terminalRunEvidenceStatus === 'present'
     ? '终态证据：已记录'
     : parsed.terminalRunEvidenceStatus === 'pending'
@@ -642,6 +645,7 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
   return [
     runId,
     targetTaskId,
+    planSummary,
     runStatus,
     terminalRunEvidence,
     triggerRunEvidence,
