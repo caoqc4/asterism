@@ -257,6 +257,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('operator card');
     expect(workHabits?.evidence.join(' ')).toContain('panel.standing_approval_confirmed');
     expect(workHabits?.evidence.join(' ')).toContain('TaskService timeline mutation guard');
+    expect(workHabits?.evidence.join(' ')).toContain('Work Habits now explain the boundary between learned execution context and L2 autonomous authorization');
+    expect(workHabits?.evidence.join(' ')).toContain('Work Habits do not directly start scheduler jobs or write the workspace');
     expect(workHabits?.evidence.join(' ')).toContain('planScheduledEventAgentTrigger');
     expect(workHabits?.evidence.join(' ')).toContain('shared scheduled/event trigger planner');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false');

@@ -7458,6 +7458,9 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/停用、删除和覆盖已有规则都由你主动操作/)).toBeTruthy();
     expect(screen.getByText(/只在 Step\/Run\/Task 完成、你编辑 AI 产物、或会话压缩前提取学习信号/)).toBeTruthy();
     expect(screen.getByText(/不做持续行为监控/)).toBeTruthy();
+    expect(screen.getByText(/已确认工作习惯会进入适用任务的执行上下文/)).toBeTruthy();
+    expect(screen.getByText(/L2 有限自主行动授权在 Tasks 的 Standing Approval 卡片中确认/)).toBeTruthy();
+    expect(screen.getByText(/Work Habits 不直接启动 scheduler 或写入工作区/)).toBeTruthy();
     expect(screen.getByText('来源分布')).toBeTruthy();
     expect(screen.getByText('提议确认 1')).toBeTruthy();
     expect(screen.getByText('用户创建 1')).toBeTruthy();
