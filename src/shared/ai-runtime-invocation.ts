@@ -314,6 +314,8 @@ export function buildDeferredAgentApiExecutionRunInvocation(params: {
 } = {}): ExecutionRunInvocationResult {
   const deferredReason = params.deferredReason
     ?? 'Agent API Runtime task execution remains deferred: no provider-visible execution_run starts until the runtime satisfies Taskplane context-readiness, run evidence, verification, and writeback harness gates.';
+  const promotionRequirements = [...agentApiExecutionPromotionRequirements()];
+  const requiredGates = [...agentApiExecutionRequiredGates()];
   return {
     phase: 'execution_run',
     layer: 'api_runtime',
@@ -322,10 +324,15 @@ export function buildDeferredAgentApiExecutionRunInvocation(params: {
       label: params.runtimeLabel ?? 'Agent API Runtime 执行',
     },
     status: 'skipped',
-    summary: params.summary ?? deferredReason,
+    summary: params.summary ?? [
+      deferredReason,
+      'promotionReady=no',
+      `promotionRequirements=0/${promotionRequirements.length}`,
+      `requiredGates=0/${requiredGates.length}`,
+    ].join(' / '),
     deferredReason,
-    promotionRequirements: [...agentApiExecutionPromotionRequirements()],
-    requiredGates: [...agentApiExecutionRequiredGates()],
+    promotionRequirements,
+    requiredGates,
   };
 }
 

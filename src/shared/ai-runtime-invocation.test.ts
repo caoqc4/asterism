@@ -251,6 +251,9 @@ describe('ai runtime invocation contract', () => {
     expect(invocation.summary).toContain('no provider-visible execution_run starts');
     expect(invocation.summary).toContain('context-readiness');
     expect(invocation.summary).toContain('writeback harness gates');
+    expect(invocation.summary).toContain('promotionReady=no');
+    expect(invocation.summary).toContain('promotionRequirements=0/11');
+    expect(invocation.summary).toContain('requiredGates=0/9');
     expect(invocation.deferredReason).toContain('Agent API Runtime task execution remains deferred');
     expect(invocation.promotionRequirements).toEqual([
       'selected_runtime_contract',

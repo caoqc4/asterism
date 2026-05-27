@@ -151,6 +151,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate');
     expect(rightPanel?.evidence.join(' ')).toContain('deferred Agent API task execution');
     expect(rightPanel?.evidence.join(' ')).toContain('skipped execution_run shape');
+    expect(rightPanel?.evidence.join(' ')).toContain('promotionReady=no');
+    expect(rightPanel?.evidence.join(' ')).toContain('promotionRequirements=0/11');
+    expect(rightPanel?.evidence.join(' ')).toContain('requiredGates=0/9');
     expect(rightPanel?.evidence.join(' ')).toContain('execution_run as deferred');
     expect(rightPanel?.evidence.join(' ')).toContain('future provider-visible execution required gates');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step');
