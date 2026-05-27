@@ -1532,10 +1532,11 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     }));
     try {
       const result = await window.api.triggerScheduledEventAgentRun({ taskId: selectedTask.id });
+      const runFailureReason = result.run?.failureReason?.trim();
       setStandingApprovalMessages((current) => ({
         ...current,
         [draft.id]: result.status === 'started'
-          ? `已启动受控 Agent run：${result.run?.id ?? 'unknown'}（终态证据：${result.terminalRunEvidenceStatus === 'present' ? '已记录' : '等待中'}，触发证据：${result.triggerRunEvidenceStatus === 'ready_for_terminal_review' ? '可复核' : '等待终态'}）`
+          ? `已启动受控 Agent run：${result.run?.id ?? 'unknown'}（终态证据：${result.terminalRunEvidenceStatus === 'present' ? '已记录' : '等待中'}，触发证据：${result.triggerRunEvidenceStatus === 'ready_for_terminal_review' ? '可复核' : '等待终态'}${runFailureReason ? `，失败原因：${runFailureReason}` : ''}）`
           : `未启动：${result.summary}`,
       }));
       reloadTaskDetailForTask(selectedTask.id);

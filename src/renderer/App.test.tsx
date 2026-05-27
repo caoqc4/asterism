@@ -5335,6 +5335,48 @@ describe('App redesign v1', () => {
     const approvalDraft = await screen.findByLabelText('Standing Approval 授权草案');
     expect(within(approvalDraft).getAllByText('已确认').length).toBeGreaterThan(0);
     expect(within(within(approvalDraft).getByLabelText('Standing Approval readiness evidence')).getByText('standingApprovalReady=yes')).toBeTruthy();
+    vi.mocked(harness.api.triggerScheduledEventAgentRun!).mockImplementationOnce(async (input) => {
+      const run = buildRun({
+        failureReason: '模型执行失败，等待人工复核。',
+        id: 'run_scheduled_event_agent_failed',
+        output: null,
+        outputSource: 'system',
+        status: 'failed',
+        taskId: input.taskId,
+        type: 'agent',
+      });
+      harness.runs.push(run);
+      return {
+        status: 'started',
+        plan: {
+          status: 'ready',
+          triggerPlanReady: true,
+          runtimeStartAllowed: true,
+          runtimeStartMissingRequirements: [],
+          runtimeStartSatisfiedRequirements: [
+            'trigger_plan_ready',
+            'scheduler_trigger_service',
+            'run_limit_count',
+          ],
+          schedulerTriggerServiceConnected: true,
+          triggerRunEvidenceRequired: ['context_readiness'],
+          policy: null,
+          runLimit: {
+            maxRunsPerDay: 3,
+            runsStartedToday: 0,
+          },
+          readiness: {},
+          standingApproval: {},
+          blockedReasons: [],
+          evidence: [],
+          summary: 'Scheduled/event trigger plan / status=ready',
+        },
+        run,
+        terminalRunEvidenceStatus: 'present',
+        triggerRunEvidenceStatus: 'ready_for_terminal_review',
+        summary: 'Scheduled/event trigger plan / trigger=started / runId=run_scheduled_event_agent_failed',
+      } as unknown as Awaited<ReturnType<NonNullable<ElectronApi['triggerScheduledEventAgentRun']>>>;
+    });
     await user.click(within(approvalDraft).getByRole('button', { name: '启动一次' }));
 
     await waitFor(() => {
@@ -5342,8 +5384,9 @@ describe('App redesign v1', () => {
         taskId: 'task_routine_auto',
       });
     });
-    expect(await within(approvalDraft).findByText(/已启动受控 Agent run：run_scheduled_event_agent/)).toBeTruthy();
-    expect(within(approvalDraft).getByText(/触发证据：等待终态/)).toBeTruthy();
+    expect(await within(approvalDraft).findByText(/已启动受控 Agent run：run_scheduled_event_agent_failed/)).toBeTruthy();
+    expect(within(approvalDraft).getByText(/触发证据：可复核/)).toBeTruthy();
+    expect(within(approvalDraft).getByText(/失败原因：模型执行失败，等待人工复核。/)).toBeTruthy();
   });
 
   it('lets task dynamics approve Run writeback proposals without opening the right panel', async () => {

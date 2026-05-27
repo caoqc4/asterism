@@ -306,6 +306,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerKind=manual|cron');
     expect(workHabits?.evidence.join(' ')).toContain('operator-started runs from background scheduler starts');
+    expect(workHabits?.evidence.join(' ')).toContain('operator action feedback now surfaces run.failureReason');
+    expect(workHabits?.evidence.join(' ')).toContain('failed terminal state');
     expect(workHabits?.evidence.join(' ')).toContain('RuntimeEventRecord now formats panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('readable Task Dynamics detail with run id');
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
