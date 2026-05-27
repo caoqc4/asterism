@@ -127,6 +127,7 @@ try {
   assert(timelineEvents[0].payload.standingApprovalPolicyId === 'standing_approval:task_scheduled_event_sweep_smoke:coding:local_sandbox', 'timeline evidence did not preserve the Standing Approval policy id');
   assert(timelineEvents[0].payload.triggerKind === 'manual', 'timeline evidence did not preserve manual trigger kind');
   assert(timelineEvents[0].payload.runtimeStartAllowed === true, 'timeline evidence did not preserve runtimeStartAllowed=true');
+  assert(timelineEvents[0].payload.workspaceWriteAllowed === false, 'timeline evidence did not preserve workspaceWriteAllowed=false');
   assert(Array.isArray(timelineEvents[0].payload.runtimeStartMissingRequirements), 'timeline evidence did not preserve runtime-start missing requirements');
   assert(timelineEvents[0].payload.runtimeStartMissingRequirements.length === 0, 'timeline evidence did not preserve empty runtime-start missing requirements');
   assert(Array.isArray(timelineEvents[0].payload.runtimeStartSatisfiedRequirements), 'timeline evidence did not preserve runtime-start satisfied requirements');
@@ -220,6 +221,7 @@ try {
   assert(terminalTimelineEvents[0].payload.terminalRunEvidenceStatus === 'present', 'terminal timeline evidence did not mark terminal Run evidence present');
   assert(terminalTimelineEvents[0].payload.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'terminal timeline evidence did not mark trigger evidence ready for review');
   assert(terminalTimelineEvents[0].payload.triggerKind === 'manual', 'terminal timeline evidence did not preserve manual trigger kind');
+  assert(terminalTimelineEvents[0].payload.workspaceWriteAllowed === false, 'terminal timeline evidence did not preserve workspaceWriteAllowed=false');
   assert(beforeWorkspace === terminalAfterWorkspace, 'scheduled/event Agent terminal sweep smoke mutated the workspace fixture');
 
   const cronRun = {
@@ -301,6 +303,7 @@ try {
   assert(cronTimelineEvents[0].payload.triggeredAt === '2026-05-26T12:15:00.000Z', 'cron timeline evidence did not preserve the cron trigger time');
   assert(cronTimelineEvents[0].payload.terminalRunEvidenceStatus === 'present', 'cron timeline evidence did not mark terminal Run evidence present');
   assert(cronTimelineEvents[0].payload.triggerKind === 'cron', 'cron timeline evidence did not preserve cron trigger kind');
+  assert(cronTimelineEvents[0].payload.workspaceWriteAllowed === false, 'cron timeline evidence did not preserve workspaceWriteAllowed=false');
   assert(beforeWorkspace === cronAfterWorkspace, 'scheduled/event Agent cron sweep smoke mutated the workspace fixture');
 
   console.log([
@@ -343,6 +346,9 @@ try {
     'timelineEvidence=recorded',
     'terminalTimelineEvidence=recorded',
     'cronTimelineEvidence=recorded',
+    'timelineWorkspaceBoundary=recorded',
+    'terminalTimelineWorkspaceBoundary=recorded',
+    'cronTimelineWorkspaceBoundary=recorded',
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
     'cronRunStatusEvidence=recorded',

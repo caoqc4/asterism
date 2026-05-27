@@ -547,6 +547,7 @@ describe('SchedulerService', () => {
         runtimeStartAllowed: true,
         triggerKind: 'cron',
         triggeredAt: '2026-05-26T11:00:00.000Z',
+        workspaceWriteAllowed: false,
         runLimit: {
           maxRunsPerDay: 3,
           runsStartedToday: 0,
@@ -1266,6 +1267,7 @@ describe('SchedulerService', () => {
         schedulerTriggerServiceConnected: true,
         runtimeStartAllowed: true,
         triggeredAt: '2026-05-26T11:00:00.000Z',
+        workspaceWriteAllowed: false,
         runLimit: {
           maxRunsPerDay: 3,
           runsStartedToday: 1,

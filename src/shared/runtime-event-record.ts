@@ -623,7 +623,16 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
   const policyId = typeof parsed.standingApprovalPolicyId === 'string' && parsed.standingApprovalPolicyId.trim()
     ? `授权：${parsed.standingApprovalPolicyId.trim()}`
     : null;
-  return [runId, runStatus, terminalRunEvidence, triggerRunEvidence, triggerKind, policyId].filter(Boolean).join(' / ') || null;
+  const workspaceWriteBoundary = parsed.workspaceWriteAllowed === false ? '写入：提案模式' : null;
+  return [
+    runId,
+    runStatus,
+    terminalRunEvidence,
+    triggerRunEvidence,
+    triggerKind,
+    policyId,
+    workspaceWriteBoundary,
+  ].filter(Boolean).join(' / ') || null;
 }
 
 function timelinePayloadTitle(payload: string | null, fallback: string, field: string): string {

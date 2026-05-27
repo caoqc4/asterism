@@ -375,7 +375,8 @@ guidance in the bounded run request, keep the `workspaceWriteAllowed=false`
 proposal-only boundary visible to the run, preserve Standing Approval scope
 evidence, block the duplicate through in-sweep daily-limit counting, record
 `panel.scheduled_event_agent_triggered` with target task, runtime-start
-requirement, and run-status evidence, expose top-level `startedRunIds` and
+requirement, run-status evidence, and `workspaceWriteAllowed=false` timeline
+boundary, expose top-level `startedRunIds` and
 `blockedReasons`, report `skipReason=none` for completed sweeps, prove
 `triggerKind` evidence for both manual and cron starts, and keep
 `workspace=unchanged`, `provider=not-called`, and `docker=not-started`.

@@ -470,6 +470,7 @@ export class SchedulerService {
         runtimeStartAllowed: plan.runtimeStartAllowed,
         triggerKind,
         triggeredAt: now.toISOString(),
+        workspaceWriteAllowed: false,
       },
     });
 

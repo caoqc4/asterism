@@ -354,6 +354,9 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('cronTriggerRunEvidence=passed');
     expect(script).toContain('panel.scheduled_event_agent_triggered');
     expect(script).toContain('timelineEvidence=recorded');
+    expect(script).toContain('timelineWorkspaceBoundary=recorded');
+    expect(script).toContain('terminalTimelineWorkspaceBoundary=recorded');
+    expect(script).toContain('cronTimelineWorkspaceBoundary=recorded');
     expect(script).toContain('runStatusEvidence=recorded');
     expect(script).toContain('runtimeStartRequirements=passed');
     expect(script).toContain('workspace=unchanged');

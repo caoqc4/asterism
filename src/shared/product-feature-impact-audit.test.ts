@@ -298,12 +298,14 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start satisfied/missing requirements');
+    expect(workHabits?.evidence.join(' ')).toContain('workspaceWriteAllowed=false');
     expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerKind=manual|cron');
     expect(workHabits?.evidence.join(' ')).toContain('operator-started runs from background scheduler starts');
     expect(workHabits?.evidence.join(' ')).toContain('RuntimeEventRecord now formats panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('readable Task Dynamics detail with run id');
     expect(workHabits?.evidence.join(' ')).toContain('trigger kind');
+    expect(workHabits?.evidence.join(' ')).toContain('workspace proposal-mode write boundary');
     expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
     expect(workHabits?.evidence.join(' ')).toContain('15-minute background scheduler job');
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');
@@ -353,6 +355,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalTimelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('cronTimelineEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('timelineWorkspaceBoundary=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('terminalTimelineWorkspaceBoundary=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('cronTimelineWorkspaceBoundary=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunStatusEvidence=recorded');
@@ -367,6 +372,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunPostStepEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunWorkspaceBoundaryEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunStandingApprovalScopeEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('timelineWorkspaceBoundary=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('terminalTimelineWorkspaceBoundary=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('cronTimelineWorkspaceBoundary=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds=none');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
     expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, and a local sweep smoke');

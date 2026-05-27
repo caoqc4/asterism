@@ -190,6 +190,7 @@ describe('runtime event record projection', () => {
             terminalRunEvidenceStatus: 'present',
             triggerKind: 'cron',
             triggerRunEvidenceStatus: 'ready_for_terminal_review',
+            workspaceWriteAllowed: false,
           }),
           createdAt: '2026-05-14T08:04:00.000Z',
         },
@@ -225,7 +226,7 @@ describe('runtime event record projection', () => {
     });
     expect(events.find((event) => event.sourceId === 'timeline-scheduled-trigger')).toMatchObject({
       title: 'Scheduled Agent 已启动',
-      detail: 'Run：run-scheduled-1 / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 触发：cron / 授权：standing_approval:task-1:coding:local_sandbox',
+      detail: 'Run：run-scheduled-1 / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 触发：cron / 授权：standing_approval:task-1:coding:local_sandbox / 写入：提案模式',
     });
   });
 
