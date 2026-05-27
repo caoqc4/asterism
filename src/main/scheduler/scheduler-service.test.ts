@@ -534,6 +534,7 @@ describe('SchedulerService', () => {
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Trigger kind: cron.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Task memory guidance: process=Weekly update SOP; openCriteria=1; firstCriterion=Review the generated update.; sourceContexts=1; firstSource=Weekly metrics source');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Post-step evidence: return terminal run output for Taskplane review.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Workspace write boundary: workspaceWriteAllowed=false; proposals only.');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
       taskId: 'task_auto',
       type: 'panel.scheduled_event_agent_triggered',
@@ -1220,6 +1221,7 @@ describe('SchedulerService', () => {
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Run limit: 1/3.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Post-step evidence: return terminal run output for Taskplane review.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Workspace write boundary: workspaceWriteAllowed=false; proposals only.');
     expect(result).toMatchObject({
       status: 'started',
       run: {

@@ -371,7 +371,8 @@ Standing Approval candidates, reuse persisted run-limit accounting, start one
 bounded Code Agent run with the trigger Run evidence contract and run-limit
 evidence, preserve the target task id, task-memory guidance, first open
 completion criterion, first source title, and post-step terminal-evidence
-guidance in the bounded run request, block the duplicate through in-sweep
+guidance in the bounded run request, keep the `workspaceWriteAllowed=false`
+proposal-only boundary visible to the run, block the duplicate through in-sweep
 daily-limit counting, record
 `panel.scheduled_event_agent_triggered` with target task, runtime-start
 requirement, and run-status evidence, expose top-level `startedRunIds` and
