@@ -566,6 +566,7 @@ describe('SchedulerService', () => {
       blockedTaskCount: 0,
     });
     expect(sweepResult.summary).toContain('reason=ports_not_connected');
+    expect(sweepResult.summary).toContain('missingPorts=timeline_port');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
   });
 

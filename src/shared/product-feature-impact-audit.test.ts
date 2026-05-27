@@ -273,6 +273,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('15-minute background scheduler job');
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event task-source port');
+    expect(workHabits?.evidence.join(' ')).toContain('missingPorts=run_port,timeline_port,task_source_port');
     expect(workHabits?.evidence.join(' ')).toContain('increments the in-sweep run-limit count');
     expect(workHabits?.evidence.join(' ')).toContain('duplicate candidates in one sweep cannot exceed the Standing Approval daily cap');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');

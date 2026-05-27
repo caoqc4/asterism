@@ -103,6 +103,18 @@ function buildScheduledEventCodeAgentRunInput(
   };
 }
 
+function formatMissingScheduledEventAgentSweepPorts(params: {
+  runPortConnected: boolean;
+  taskSourcePortConnected: boolean;
+  timelinePortConnected: boolean;
+}): string {
+  const missingPorts = [];
+  if (!params.runPortConnected) missingPorts.push('run_port');
+  if (!params.timelinePortConnected) missingPorts.push('timeline_port');
+  if (!params.taskSourcePortConnected) missingPorts.push('task_source_port');
+  return missingPorts.join(',');
+}
+
 export class SchedulerService {
   private jobs: ScheduledTask[] = [];
   private started = false;
@@ -188,14 +200,22 @@ export class SchedulerService {
     kind: 'cron' | 'manual' = 'manual',
     now: Date = new Date(),
   ): Promise<ScheduledEventAgentSweepResult> {
-    if (!this.scheduledEventAgentRunPort || !this.scheduledEventAgentTimelinePort || !this.scheduledEventAgentTaskSourcePort) {
+    const runPort = this.scheduledEventAgentRunPort;
+    const taskSourcePort = this.scheduledEventAgentTaskSourcePort;
+    const timelinePort = this.scheduledEventAgentTimelinePort;
+    const missingPorts = formatMissingScheduledEventAgentSweepPorts({
+      runPortConnected: Boolean(runPort),
+      taskSourcePortConnected: Boolean(taskSourcePort),
+      timelinePortConnected: Boolean(timelinePort),
+    });
+    if (!runPort || !timelinePort || !taskSourcePort) {
       return {
         status: 'skipped',
         checkedTaskCount: 0,
         startedRunCount: 0,
         blockedTaskCount: 0,
         summaries: [],
-        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected`,
+        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts}`,
       };
     }
 
@@ -212,7 +232,7 @@ export class SchedulerService {
 
     this.scheduledEventAgentSweepInFlight = true;
     try {
-      const tasks = await this.scheduledEventAgentTaskSourcePort.listScheduledEventAgentTriggerCandidates();
+      const tasks = await taskSourcePort.listScheduledEventAgentTriggerCandidates();
       const runCounts = await this.countRunsStartedToday(tasks.map((task) => task.id), now);
       const results: ScheduledEventAgentTriggerResult[] = [];
 
