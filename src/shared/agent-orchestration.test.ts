@@ -897,6 +897,7 @@ describe('agent orchestration snapshot', () => {
       },
     });
     expect(plan.summary).toContain('runtimeStartAllowed=false');
+    expect(plan.summary).toContain('runtimeStartReady=no');
     expect(plan.summary).toContain('runtimeStartRequirements=1/3');
     expect(plan.summary).toContain('runtimeStartMissingRequirements=scheduler_trigger_service,run_limit_count');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
@@ -962,6 +963,7 @@ describe('agent orchestration snapshot', () => {
       ],
     });
     expect(plan.summary).toContain('runtimeStartAllowed=true');
+    expect(plan.summary).toContain('runtimeStartReady=yes');
     expect(plan.summary).toContain('runtimeStartRequirements=3/3');
     expect(plan.summary).toContain('runtimeStartMissingRequirements=none');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=true');

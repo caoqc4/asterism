@@ -170,6 +170,14 @@ export type AgentScheduledEventRuntimeStartRequirement =
   | 'scheduler_trigger_service'
   | 'run_limit_count';
 
+export function scheduledEventRuntimeStartRequirements(): AgentScheduledEventRuntimeStartRequirement[] {
+  return [
+    'trigger_plan_ready',
+    'scheduler_trigger_service',
+    'run_limit_count',
+  ];
+}
+
 export type AgentScheduledEventTriggerPlan = {
   status: 'ready' | 'blocked';
   triggerPlanReady: boolean;
@@ -1108,11 +1116,7 @@ export function planScheduledEventAgentTrigger(params: {
 
   const status = blockedReasons.length === 0 ? 'ready' : 'blocked';
   const runtimeStartAllowed = status === 'ready' && schedulerTriggerServiceConnected;
-  const runtimeStartRequirements: AgentScheduledEventRuntimeStartRequirement[] = [
-    'trigger_plan_ready',
-    'scheduler_trigger_service',
-    'run_limit_count',
-  ];
+  const runtimeStartRequirements = scheduledEventRuntimeStartRequirements();
   const runtimeStartMissingRequirements: AgentScheduledEventRuntimeStartRequirement[] = [];
   if (status !== 'ready') runtimeStartMissingRequirements.push('trigger_plan_ready');
   if (!schedulerTriggerServiceConnected) runtimeStartMissingRequirements.push('scheduler_trigger_service');
@@ -1153,6 +1157,7 @@ export function planScheduledEventAgentTrigger(params: {
       `status=${status}`,
       `triggerPlanReady=${status === 'ready' ? 'yes' : 'no'}`,
       `runtimeStartAllowed=${runtimeStartAllowed ? 'true' : 'false'}`,
+      `runtimeStartReady=${runtimeStartAllowed ? 'yes' : 'no'}`,
       `runtimeStartRequirements=${runtimeStartSatisfiedRequirements.length}/${runtimeStartRequirements.length}`,
       `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
       `schedulerTriggerServiceConnected=${schedulerTriggerServiceConnected ? 'true' : 'false'}`,

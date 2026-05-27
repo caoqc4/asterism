@@ -260,6 +260,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=true only when a dedicated trigger service is connected and daily run-limit count evidence is present');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartReady');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=x/3');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
