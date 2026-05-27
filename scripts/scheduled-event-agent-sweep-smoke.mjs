@@ -130,6 +130,7 @@ try {
   console.log([
     'Scheduled/event Agent sweep smoke: ready',
     `status=${result.status}`,
+    `skipReason=${result.skipReason}`,
     `checked=${result.checkedTaskCount}`,
     `started=${result.startedRunCount}`,
     `blocked=${result.blockedTaskCount}`,

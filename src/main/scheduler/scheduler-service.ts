@@ -24,6 +24,7 @@ export type ScheduledEventAgentTriggerResult = {
 
 export type ScheduledEventAgentSweepResult = {
   status: 'completed' | 'skipped';
+  skipReason: 'none' | 'ports_not_connected' | 'in_flight';
   checkedTaskCount: number;
   startedRunCount: number;
   blockedTaskCount: number;
@@ -213,6 +214,7 @@ export class SchedulerService {
     if (!runPort || !timelinePort || !taskSourcePort) {
       return {
         status: 'skipped',
+        skipReason: 'ports_not_connected',
         checkedTaskCount: 0,
         startedRunCount: 0,
         blockedTaskCount: 0,
@@ -226,6 +228,7 @@ export class SchedulerService {
     if (this.scheduledEventAgentSweepInFlight) {
       return {
         status: 'skipped',
+        skipReason: 'in_flight',
         checkedTaskCount: 0,
         startedRunCount: 0,
         blockedTaskCount: 0,
@@ -258,6 +261,7 @@ export class SchedulerService {
 
       return {
         status: 'completed',
+        skipReason: 'none',
         checkedTaskCount: tasks.length,
         startedRunCount,
         blockedTaskCount,

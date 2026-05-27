@@ -471,6 +471,7 @@ describe('SchedulerService', () => {
 
     expect(sweepResult).toMatchObject({
       status: 'completed',
+      skipReason: 'none',
       checkedTaskCount: 1,
       startedRunCount: 1,
       blockedTaskCount: 0,
@@ -565,6 +566,7 @@ describe('SchedulerService', () => {
 
     expect(sweepResult).toMatchObject({
       status: 'skipped',
+      skipReason: 'ports_not_connected',
       checkedTaskCount: 0,
       startedRunCount: 0,
       blockedTaskCount: 0,
@@ -634,6 +636,7 @@ describe('SchedulerService', () => {
 
     expect(sweepResult).toMatchObject({
       status: 'completed',
+      skipReason: 'none',
       checkedTaskCount: 2,
       startedRunCount: 1,
       blockedTaskCount: 1,
