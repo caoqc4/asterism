@@ -417,6 +417,7 @@ describe('agent orchestration snapshot', () => {
       state: 'eligible',
     });
     expect(readiness.summary).toContain('requirements=9/9');
+    expect(readiness.summary).toContain('automationReady=yes');
     expect(readiness.summary).toContain('autonomy=L1_proposal');
     expect(readiness.summary).toContain('next=L2_limited_authorized_action');
     expect(readiness.summary).toContain('missingRequirements=none');
@@ -490,6 +491,7 @@ describe('agent orchestration snapshot', () => {
       state: 'blocked',
     });
     expect(readiness.summary).toContain('requirements=3/9');
+    expect(readiness.summary).toContain('automationReady=no');
     expect(readiness.summary).toContain('missingRequirements=');
     expect(readiness.summary).toContain('automationMissingRequirements=');
     expect(readiness.summary).toContain('procedure');
@@ -533,6 +535,7 @@ describe('agent orchestration snapshot', () => {
       state: 'diagnostic_only',
     });
     expect(readiness.summary).toContain('requirements=8/9');
+    expect(readiness.summary).toContain('automationReady=no');
     expect(readiness.summary).toContain('missingRequirements=scheduled_event_entrypoint');
     expect(readiness.summary).toContain('automationMissingRequirements=scheduled_event_entrypoint');
     expect(readiness.summary).toContain('autonomy=L1_proposal');

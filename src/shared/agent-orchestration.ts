@@ -94,6 +94,20 @@ export type AgentAutomationReadinessRequirement =
   | 'open_completion_criterion'
   | 'scheduled_event_entrypoint';
 
+export function agentAutomationReadinessRequirements(): AgentAutomationReadinessRequirement[] {
+  return [
+    'procedure',
+    'inputs',
+    'runtime',
+    'risk',
+    'waiting_clear',
+    'blocker_clear',
+    'dependency_clear',
+    'open_completion_criterion',
+    'scheduled_event_entrypoint',
+  ];
+}
+
 export type AgentAutomationReadinessEvaluation = {
   state: AgentAutomationReadinessState;
   autonomyLevel: AgentAutonomyLevel;
@@ -642,17 +656,7 @@ export function evaluateSkillInformedAutomationReadiness(params: {
   >;
   snapshot: AgentExecutionOrchestrationSnapshot;
 }): AgentAutomationReadinessEvaluation {
-  const requiredRequirements: AgentAutomationReadinessRequirement[] = [
-    'procedure',
-    'inputs',
-    'runtime',
-    'risk',
-    'waiting_clear',
-    'blocker_clear',
-    'dependency_clear',
-    'open_completion_criterion',
-    'scheduled_event_entrypoint',
-  ];
+  const requiredRequirements = agentAutomationReadinessRequirements();
   const blockedReasons: string[] = [];
   const evidence: string[] = [];
   const missingRequirements: AgentAutomationReadinessRequirement[] = [];
@@ -763,6 +767,7 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     summary: [
       'Automation readiness',
       `state=${state}`,
+      `automationReady=${state === 'eligible' ? 'yes' : 'no'}`,
       `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `autonomy=${autonomyLevel}`,
       nextAutonomyLevel ? `next=${nextAutonomyLevel}` : null,

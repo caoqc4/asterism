@@ -233,6 +233,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event/routine Agent execution as a separate gated provider-visible execution contract');
     expect(workHabits?.evidence.join(' ')).toContain('explicit operator IPC before any background scheduler trigger can exist');
     expect(workHabits?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
+    expect(workHabits?.evidence.join(' ')).toContain('automationReady');
     expect(workHabits?.evidence.join(' ')).toContain('requirements=x/9');
     expect(workHabits?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('automationMissingRequirements=...');
