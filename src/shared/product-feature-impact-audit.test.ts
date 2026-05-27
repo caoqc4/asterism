@@ -212,7 +212,9 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('writebackDispatchAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
+    expect(decisions?.evidence.join(' ')).toContain('proposalReady');
     expect(decisions?.evidence.join(' ')).toContain('requirements=x/3');
+    expect(decisions?.evidence.join(' ')).toContain('proposalRequirements=x/3');
     expect(decisions?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('proposalMissingRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');

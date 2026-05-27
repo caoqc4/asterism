@@ -27,6 +27,8 @@ describe('scheduler decision proposal contract', () => {
       ],
     });
     expect(plan.summary).toContain('requirements=0/3');
+    expect(plan.summary).toContain('proposalReady=no');
+    expect(plan.summary).toContain('proposalRequirements=0/3');
     expect(plan.summary).toContain('approvalItemAllowed=false');
     expect(plan.summary).toContain('decisionPersistenceAllowed=false');
     expect(plan.summary).toContain('writebackDispatchAllowed=false');
@@ -60,6 +62,8 @@ describe('scheduler decision proposal contract', () => {
       blockedReasons: [],
     });
     expect(plan.summary).toContain('requirements=3/3');
+    expect(plan.summary).toContain('proposalReady=yes');
+    expect(plan.summary).toContain('proposalRequirements=3/3');
     expect(plan.summary).toContain('authorization=operator_confirmation');
     expect(plan.summary).toContain('targetTask=task_decision_1');
     expect(plan.summary).toContain('missingRequirements=none');

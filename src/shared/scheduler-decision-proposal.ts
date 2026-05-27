@@ -21,6 +21,14 @@ export type SchedulerDecisionProposalRequirement =
   | 'target_task_identity'
   | 'authorization';
 
+export function schedulerDecisionProposalRequirements(): SchedulerDecisionProposalRequirement[] {
+  return [
+    'approval_queue',
+    'target_task_identity',
+    'authorization',
+  ];
+}
+
 export function planSchedulerDecisionProposal(params: {
   approvalQueueConnected?: boolean;
   operatorConfirmed?: boolean;
@@ -31,11 +39,7 @@ export function planSchedulerDecisionProposal(params: {
     params.operatorConfirmed ? 'operator_confirmation' : null,
     params.standingApprovalActive ? 'standing_approval' : null,
   ].filter((value): value is SchedulerDecisionProposalAuthorization => value !== null);
-  const requiredRequirements: SchedulerDecisionProposalRequirement[] = [
-    'approval_queue',
-    'target_task_identity',
-    'authorization',
-  ];
+  const requiredRequirements = schedulerDecisionProposalRequirements();
   const blockedReasons = [];
   const missingRequirements: SchedulerDecisionProposalRequirement[] = [];
 
@@ -74,7 +78,9 @@ export function planSchedulerDecisionProposal(params: {
     summary: [
       'Scheduler Decision proposal contract',
       `status=${status}`,
+      `proposalReady=${approvalItemAllowed ? 'yes' : 'no'}`,
       `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `proposalRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `approvalItemAllowed=${approvalItemAllowed ? 'true' : 'false'}`,
       `targetTask=${targetTaskId ?? 'missing'}`,
       'decisionPersistenceAllowed=false',
