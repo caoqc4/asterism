@@ -122,6 +122,20 @@ type VirtualTaskFile = {
   artifactId?: string;
   artifactKind?: ArtifactRecord['kind'];
 };
+
+function scalarSummaryValue(summary: string | null | undefined, key: string): string | null {
+  const text = summary ?? '';
+  const part = text.split(' / ').find((item) => item.trim().startsWith(`${key}=`));
+  return part?.slice(`${key}=`.length).trim() ?? null;
+}
+
+function standingApprovalEvidenceChips(draft: AgentStandingApprovalConfirmationDraft): string[] {
+  return [
+    `standingApprovalReady=${scalarSummaryValue(draft.evaluation.summary, 'standingApprovalReady') ?? (draft.evaluation.accepted ? 'yes' : 'no')}`,
+    `schedulerTriggerAllowed=${draft.schedulerTriggerAllowed ? 'true' : 'false'}`,
+    `workspaceWriteAllowed=${draft.workspaceWriteAllowed ? 'true' : 'false'}`,
+  ];
+}
 type RelatedFileCategory = 'task' | 'record' | 'ai_output' | 'artifact' | 'source' | 'file';
 type RelatedTaskFileItem = {
   file: VirtualTaskFile;
@@ -4115,6 +4129,11 @@ function TaskTimelineView({
                     ? '可确认有限自主行动策略；当前不会启动 scheduler，也不会写入工作区。'
                     : '当前任务仍有授权前缺口；请先补齐 readiness。'}</p>
                 <small>{standingApprovalDraft.detail}</small>
+                <div className="task-writeback-evidence-chips" aria-label="Standing Approval readiness evidence">
+                  {standingApprovalEvidenceChips(standingApprovalDraft).map((chip) => (
+                    <span key={chip}>{chip}</span>
+                  ))}
+                </div>
                 {!standingApprovalDraft.evaluation.accepted && (
                   <em>{standingApprovalDraft.evaluation.blockedReasons.join('；')}</em>
                 )}

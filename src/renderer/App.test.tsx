@@ -5124,8 +5124,12 @@ describe('App redesign v1', () => {
     const approvalDraft = await screen.findByLabelText('Standing Approval 授权草案');
     expect(within(approvalDraft).getByText(/Standing Approval 草案：允许 L2 有限自主行动/)).toBeTruthy();
     expect(within(approvalDraft).getByText('L2 授权草案')).toBeTruthy();
-    expect(within(approvalDraft).getByText(/schedulerTriggerAllowed=false/)).toBeTruthy();
-    expect(within(approvalDraft).getByText(/workspaceWriteAllowed=false/)).toBeTruthy();
+    expect(within(approvalDraft).getAllByText(/schedulerTriggerAllowed=false/).length).toBeGreaterThan(0);
+    expect(within(approvalDraft).getAllByText(/workspaceWriteAllowed=false/).length).toBeGreaterThan(0);
+    const evidenceChips = within(approvalDraft).getByLabelText('Standing Approval readiness evidence');
+    expect(within(evidenceChips).getByText('standingApprovalReady=yes')).toBeTruthy();
+    expect(within(evidenceChips).getByText('schedulerTriggerAllowed=false')).toBeTruthy();
+    expect(within(evidenceChips).getByText('workspaceWriteAllowed=false')).toBeTruthy();
     await user.click(within(approvalDraft).getByRole('button', { name: '确认授权' }));
     await waitFor(() => {
       expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
@@ -5263,6 +5267,7 @@ describe('App redesign v1', () => {
 
     const approvalDraft = await screen.findByLabelText('Standing Approval 授权草案');
     expect(within(approvalDraft).getAllByText('已确认').length).toBeGreaterThan(0);
+    expect(within(within(approvalDraft).getByLabelText('Standing Approval readiness evidence')).getByText('standingApprovalReady=yes')).toBeTruthy();
     await user.click(within(approvalDraft).getByRole('button', { name: '启动一次' }));
 
     await waitFor(() => {

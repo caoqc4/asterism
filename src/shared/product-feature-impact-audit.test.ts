@@ -251,6 +251,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('buildStandingApprovalConfirmationDraft');
     expect(workHabits?.evidence.join(' ')).toContain('confirmation-only L2 authorization draft');
     expect(workHabits?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false / workspaceWriteAllowed=false');
+    expect(workHabits?.evidence.join(' ')).toContain('readiness evidence chips');
     expect(workHabits?.evidence.join(' ')).toContain('blocks other automation readiness gaps');
     expect(workHabits?.evidence.join(' ')).toContain('TasksPage Task Dynamics');
     expect(workHabits?.evidence.join(' ')).toContain('operator card');
