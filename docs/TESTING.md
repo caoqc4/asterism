@@ -395,7 +395,9 @@ run, prove trigger-port and task-source failures persist `sweep_failed` summary
 evidence and release the in-flight guard so a later sweep can recover, prove a
 timeline-recording failure after a run starts still preserves `startedRunIds`,
 pending terminal Run evidence, and `triggerRunEvidenceStatus=pending_terminal_run_evidence`, prove
-skipped sweeps still update `lastScheduledEventAgentSweepAt`, and
+skipped sweeps still update `lastScheduledEventAgentSweepAt`, prove durable
+run-limit counts are loaded from the UTC day start before Standing Approval
+limits are applied, and
 keep `workspace=unchanged`, `provider=not-called`, and
 `docker=not-started`.
 

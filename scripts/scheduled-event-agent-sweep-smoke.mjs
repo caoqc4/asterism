@@ -32,8 +32,12 @@ try {
   const triggerCalls = [];
   const timelineEvents = [];
   const sweepListenerEvents = [];
+  const runLimitCountCalls = [];
   const runRepository = {
-    countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 2 }),
+    countCreatedSinceByTask: async (taskIds, sinceIso) => {
+      runLimitCountCalls.push({ sinceIso, taskIds });
+      return { task_scheduled_event_sweep_smoke: 2 };
+    },
     listIncompleteOlderThan: async () => [],
     updateResult: async () => null,
   };
@@ -118,6 +122,9 @@ try {
   assert(service.getStatus().lastScheduledEventAgentSweepSummary === result.summary, 'sweep did not persist the manual sweep summary into scheduler status');
   assert(sweepListenerEvents.length === 1, 'sweep listener did not record completed manual sweep');
   assert(sweepListenerEvents[0].summary === result.summary, 'sweep listener did not preserve completed manual sweep summary');
+  assert(runLimitCountCalls.length === 1, 'sweep did not load durable run-limit counts exactly once');
+  assert(runLimitCountCalls[0].sinceIso === '2026-05-26T00:00:00.000Z', 'sweep did not load durable run-limit counts from the UTC day start');
+  assert(runLimitCountCalls[0].taskIds.join(',') === 'task_scheduled_event_sweep_smoke,task_scheduled_event_sweep_smoke', 'sweep did not load durable run-limit counts for checked task ids');
   assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
   assert(triggerCalls[0].useModelProducer === true, 'sweep did not route through the model-producer Code Agent path');
@@ -991,6 +998,8 @@ try {
     `triggerRunEvidenceStatus=${result.triggerRunEvidenceStatus}`,
     `sweepListenerEvents=${sweepListenerEvents.length}`,
     `sweepListenerSummaryEvidence=${sweepListenerEvents[0]?.summary === result.summary ? 'passed' : 'failed'}`,
+    `runLimitCountSince=${runLimitCountCalls[0]?.sinceIso ?? 'none'}`,
+    `runLimitCountTaskIds=${runLimitCountCalls[0]?.taskIds.join(',') ?? 'none'}`,
     `missingTimelineStatus=${missingTimelineResult.status}`,
     `missingTimelineTriggerRunEvidenceStatus=${missingTimelineResult.triggerRunEvidenceStatus}`,
     `missingTimelineTriggerCalls=${missingTimelineTriggerCalls.length}`,
@@ -1072,6 +1081,7 @@ try {
     'cronTriggerRunEvidence=passed',
     'cronRunFailureReasonEvidence=passed',
     'runLimitEvidence=passed',
+    'durableRunLimitCountEvidence=passed',
     'runtimeStartRequirements=passed',
     'timelineEvidence=recorded',
     'sweepListenerEvidence=passed',
