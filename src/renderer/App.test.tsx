@@ -1257,21 +1257,22 @@ describe('App redesign v1', () => {
 
   it('shows scheduled/event sweep status in Brief when scheduler is enabled', async () => {
     const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    const sweepSummary = 'scheduledEventAgentSweep=cron / status=completed / checked=2 / started=1 / blocked=1 / blockedTaskSummaries=task_routine_auto: Scheduled/event trigger daily run limit reached: 3/3.';
     homeBrief.schedulerStatus = {
       enabled: true,
       running: true,
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: '2026-05-27T06:15:00.000Z',
-      lastScheduledEventAgentSweepSummary: 'scheduledEventAgentSweep=cron / status=completed',
+      lastScheduledEventAgentSweepSummary: sweepSummary,
       scheduledEventAgentSweepJobConnected: true,
     };
     vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
 
     render(<App />);
 
-    expect(await screen.findByText('自动巡检: 已运行')).toBeTruthy();
-    expect(screen.getByTitle('scheduledEventAgentSweep=cron / status=completed')).toBeTruthy();
+    expect(await screen.findByText('自动巡检: 已运行 · 启动 1 · 阻塞 1')).toBeTruthy();
+    expect(screen.getByTitle(sweepSummary)).toBeTruthy();
   });
 
   it('shows scheduled/event sweep wiring in Brief before the first background run', async () => {

@@ -339,6 +339,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('waiting_for_first_tick stays 已接线');
     expect(workHabits?.evidence.join(' ')).toContain('ports_not_connected shows 未接线');
     expect(workHabits?.evidence.join(' ')).toContain('in_flight shows 运行中');
+    expect(workHabits?.evidence.join(' ')).toContain('completed automatic-sweep chips now include started and blocked counts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-sweep status chip');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');

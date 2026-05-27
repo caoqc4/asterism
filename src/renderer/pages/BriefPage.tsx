@@ -93,7 +93,9 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   const status = data?.schedulerStatus;
   if (!status?.enabled) return null;
   const summary = status.lastScheduledEventAgentSweepSummary ?? '';
-  if (summary.includes('status=completed')) return '自动巡检: 已运行';
+  if (summary.includes('status=completed')) return ['自动巡检: 已运行', schedulerSweepCountLabel(summary)]
+    .filter(Boolean)
+    .join(' · ');
   if (summary.includes('reason=waiting_for_first_tick')) return '自动巡检: 已接线';
   if (summary.includes('reason=ports_not_connected')) return '自动巡检: 未接线';
   if (summary.includes('reason=in_flight')) return '自动巡检: 运行中';
@@ -103,6 +105,15 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   if (status.running && !status.scheduledEventAgentSweepJobConnected) return '自动巡检: 未接线';
   if (status.running) return '自动巡检: 等待首次运行';
   return '自动巡检: 已启用';
+}
+
+function schedulerSweepCountLabel(summary: string): string | null {
+  const started = summary.match(/(?:^| \/ )started=(\d+)(?: \/|$)/)?.[1];
+  const blocked = summary.match(/(?:^| \/ )blocked=(\d+)(?: \/|$)/)?.[1];
+  return [
+    started !== undefined ? `启动 ${started}` : null,
+    blocked !== undefined ? `阻塞 ${blocked}` : null,
+  ].filter(Boolean).join(' · ') || null;
 }
 
 function focusAttentionLabel(task: FocusTask): string {
