@@ -78,6 +78,10 @@ export function getScheduledEventAgentBackgroundLivePreflight() {
 
   if (!workspaceRoot) {
     issues.push('TASKPLANE_WORKSPACE_ROOT is empty; set it to the workspace used by the scheduled/event task.');
+  } else if (!fs.existsSync(workspaceRoot)) {
+    issues.push(`TASKPLANE_WORKSPACE_ROOT does not exist: ${workspaceRoot}.`);
+  } else if (!fs.statSync(workspaceRoot).isDirectory()) {
+    issues.push(`TASKPLANE_WORKSPACE_ROOT is not a directory: ${workspaceRoot}.`);
   }
 
   return {

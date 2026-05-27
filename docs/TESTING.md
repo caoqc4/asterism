@@ -432,7 +432,10 @@ does not call a provider; it only checks the live-run configuration gates and
 lists the required background evidence for scheduler connection, Standing
 Approval, context readiness, task memory guidance, subtask start, task-source
 port, Code Agent trigger port, timeline evidence, durable run-limit counting,
-terminal Run evidence, and post-step gates.
+terminal Run evidence, and post-step gates. When the scheduler, sandbox Code
+Agent, model producer, provider config, API key, and workspace root are present,
+the preflight reports `status=ready` and `backgroundLiveRun=ready_to_attempt`
+without calling the provider.
 
 Provider-spending checks are intentionally opt-in:
 

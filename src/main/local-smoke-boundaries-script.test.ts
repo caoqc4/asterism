@@ -815,6 +815,30 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('workspace=unchanged');
   });
 
+  it('marks scheduled/event background live preflight ready without calling a provider when gates are configured', () => {
+    const result = runScript('scripts/scheduled-event-agent-background-live-preflight.mjs', '', {
+      TASKPLANE_AI_API_KEY: 'test-key',
+      TASKPLANE_AI_MODEL: 'google/gemini-2.5-flash',
+      TASKPLANE_AI_PROVIDER: 'fal-openrouter',
+      TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER: 'true',
+      TASKPLANE_ENABLE_SANDBOX_CODING_AGENT: 'true',
+      TASKPLANE_ENABLE_SCHEDULER: 'true',
+      TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_PREFLIGHT: 'true',
+      TASKPLANE_WORKSPACE_ROOT: process.cwd(),
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Scheduled/event Agent background live preflight');
+    expect(result.output).toContain('scheduler=true');
+    expect(result.output).toContain('sandboxCodingAgent=true');
+    expect(result.output).toContain('modelProducer=true');
+    expect(result.output).toContain('status=ready');
+    expect(result.output).toContain('backgroundLiveRun=ready_to_attempt');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('docker=not-started');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
   it('keeps Codex native web/search smoke using top-level search before exec', () => {
     const script = fs.readFileSync(path.join(process.cwd(), 'scripts/agent-cli-native-web-search-smoke.mjs'), 'utf8');
 
