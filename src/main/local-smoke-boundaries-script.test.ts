@@ -353,6 +353,16 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('inFlightSweepAt=');
     expect(script).toContain('inFlightSweepSummary=');
     expect(script).toContain('inFlightSweepSummaryEvidence=recorded');
+    expect(script).toContain('failedStatus=');
+    expect(script).toContain('failedSkipReason=');
+    expect(script).toContain('failedTriggerRunEvidenceStatus=');
+    expect(script).toContain('failedSweepAt=');
+    expect(script).toContain('failedSweepSummary=');
+    expect(script).toContain('failedRecoveryStatus=');
+    expect(script).toContain('failedRecoveryRunId=');
+    expect(script).toContain('failedSweepSummaryEvidence=recorded');
+    expect(script).toContain('failedSweepRecoveryEvidence=passed');
+    expect(script).toContain('sweep_failed: Trigger port failed - safely');
     expect(script).toContain('skippedSweepTimeEvidence=recorded');
     expect(script).toContain('boundedRunTargetTask=passed');
     expect(script).toContain('boundedRunTargetTaskEvidence=passed');
