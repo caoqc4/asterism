@@ -966,6 +966,7 @@ describe('SchedulerService', () => {
         return [task];
       }),
     };
+    const sweepListener = vi.fn();
     const { SchedulerService } = await import('./scheduler-service.js');
     const service = new SchedulerService(
       {
@@ -992,6 +993,7 @@ describe('SchedulerService', () => {
       triggerPort,
       timelinePort,
       taskSourcePort,
+      sweepListener,
     );
 
     const firstSweep = service.runScheduledEventAgentTriggerSweep('cron');
@@ -1012,6 +1014,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('reason=in_flight');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(sweepListener).toHaveBeenCalledWith(overlappingSweep);
 
     releaseCandidates?.();
     const completedFirstSweep = await firstSweep;
