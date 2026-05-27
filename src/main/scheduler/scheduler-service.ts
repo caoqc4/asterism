@@ -153,7 +153,7 @@ export class SchedulerService {
       }),
     );
 
-    if (this.scheduledEventAgentRunPort && this.scheduledEventAgentTaskSourcePort) {
+    if (this.scheduledEventAgentRunPort && this.scheduledEventAgentTimelinePort && this.scheduledEventAgentTaskSourcePort) {
       this.jobs.push(
         cron.schedule('*/15 * * * *', () => {
           void this.runScheduledEventAgentTriggerSweep('cron');
@@ -188,7 +188,7 @@ export class SchedulerService {
     kind: 'cron' | 'manual' = 'manual',
     now: Date = new Date(),
   ): Promise<ScheduledEventAgentSweepResult> {
-    if (!this.scheduledEventAgentRunPort || !this.scheduledEventAgentTaskSourcePort) {
+    if (!this.scheduledEventAgentRunPort || !this.scheduledEventAgentTimelinePort || !this.scheduledEventAgentTaskSourcePort) {
       return {
         status: 'skipped',
         checkedTaskCount: 0,

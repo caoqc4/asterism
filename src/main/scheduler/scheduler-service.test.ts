@@ -403,7 +403,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().running).toBe(false);
   });
 
-  it('wires a background scheduled/event Agent sweep only when trigger and task-source ports are connected', async () => {
+  it('wires a background scheduled/event Agent sweep only when trigger, timeline, and task-source ports are connected', async () => {
     const task = buildAutomationTaskDetail({
       timeline: [buildStandingApprovalTimeline()],
     });
@@ -506,7 +506,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
   });
 
-  it('counts runs started earlier in the same scheduled/event sweep against the daily limit', async () => {
+  it('blocks the background scheduled/event sweep when timeline evidence cannot be recorded', async () => {
     const task = buildAutomationTaskDetail({
       timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2 })],
     });
@@ -560,12 +560,79 @@ describe('SchedulerService', () => {
     );
 
     expect(sweepResult).toMatchObject({
+      status: 'skipped',
+      checkedTaskCount: 0,
+      startedRunCount: 0,
+      blockedTaskCount: 0,
+    });
+    expect(sweepResult.summary).toContain('reason=ports_not_connected');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+  });
+
+  it('counts runs started earlier in the same scheduled/event sweep against the daily limit', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2 })],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_scheduled_cron_1',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task, task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
       status: 'completed',
       checkedTaskCount: 2,
       startedRunCount: 1,
       blockedTaskCount: 1,
     });
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
     expect(sweepResult.summaries.join(' ')).toContain('daily run limit reached: 2/2');
   });
 

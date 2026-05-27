@@ -294,7 +294,9 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('explicit operator IPC scheduler:triggerScheduledEventAgentRun');
     expect(entry?.notes).toContain('15-minute scheduler sweep');
     expect(entry?.notes).toContain('dedicated task-source port');
-    expect(entry?.notes).toContain('readiness diagnostics do not start Agent CLI/API runtimes');
+    expect(entry?.notes).toContain('requires the Task Dynamics timeline port');
+    expect(entry?.notes).toContain('before any automatic start can run');
+    expect(entry?.notes).toContain('Readiness diagnostics do not start Agent CLI/API runtimes');
     expect(entry?.notes).toContain('trigger timeline evidence preserves targetTaskId');
     expect(entry?.notes).toContain('standing approval');
     expect(entry?.notes).toContain('trigger timeline evidence');

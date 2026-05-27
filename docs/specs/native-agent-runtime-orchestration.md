@@ -830,8 +830,10 @@ Current implementation:
   IPC `scheduler:triggerScheduledEventAgentRun` and through a 15-minute
   scheduler sweep that only loads scheduled/event/routine candidates from a
   dedicated task-source port: both paths require an injected Code Agent trigger
-  port, reuse the same Standing Approval and same-day run-limit checks, set
-  `schedulerTriggerServiceConnected=true`, and only start a Code Agent run when
+  port, and the background sweep also requires the Task Dynamics timeline port
+  before any automatic start can run. The service reuses the same Standing
+  Approval and same-day run-limit checks, sets
+  `schedulerTriggerServiceConnected=true`, and only starts a Code Agent run when
   the plan is ready. The generated run request keeps `operatorConfirmed=true`
   because the confirmed Standing Approval is the operator confirmation boundary
   for the bounded automatic action, uses the model-producer path, and instructs
