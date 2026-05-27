@@ -131,6 +131,89 @@ try {
   assert(timelineEvents[0].payload.runLimit?.maxRunsPerDay === 3, 'timeline evidence did not preserve the Standing Approval run limit');
   assert(beforeWorkspace === afterWorkspace, 'scheduled/event Agent sweep smoke mutated the workspace fixture');
 
+  const terminalRun = {
+    ...run,
+    failureReason: null,
+    id: 'run_scheduled_event_sweep_terminal_smoke',
+    output: 'Scheduled/event terminal sweep smoke completed.',
+    outputSource: 'system',
+    status: 'completed',
+  };
+  const terminalTriggerCalls = [];
+  const terminalTimelineEvents = [];
+  const terminalService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent terminal sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 1 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent terminal sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent terminal sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        terminalTriggerCalls.push(input);
+        return terminalRun;
+      },
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        terminalTimelineEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
+    },
+  );
+
+  const terminalResult = await terminalService.runScheduledEventAgentTriggerSweep(
+    'manual',
+    new Date('2026-05-26T12:00:00.000Z'),
+  );
+  const terminalAfterWorkspace = await fs.readFile(workspaceFile, 'utf8');
+
+  assert(terminalResult.status === 'completed', 'terminal sweep did not complete');
+  assert(terminalResult.checkedTaskCount === 1, 'terminal sweep did not check exactly one scheduled task');
+  assert(terminalResult.startedRunCount === 1, 'terminal sweep did not start exactly one bounded run');
+  assert(terminalResult.blockedTaskCount === 0, 'terminal sweep unexpectedly blocked the ready task');
+  assert(terminalResult.startedRunIds.includes(terminalRun.id), 'terminal sweep did not expose the terminal run id');
+  assert(terminalResult.terminalRunEvidenceMissingRunIds.length === 0, 'terminal sweep reported missing terminal Run evidence for a completed run');
+  assert(terminalResult.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'terminal sweep did not expose ready trigger Run evidence status');
+  assert(terminalTriggerCalls.length === 1, 'terminal sweep did not call the Code Agent trigger port exactly once');
+  assert(terminalTimelineEvents.length === 1, 'terminal sweep did not record terminal trigger timeline evidence');
+  assert(terminalTimelineEvents[0].payload.runId === terminalRun.id, 'terminal timeline evidence did not preserve the terminal run id');
+  assert(terminalTimelineEvents[0].payload.runStatus === 'completed', 'terminal timeline evidence did not preserve completed run status');
+  assert(terminalTimelineEvents[0].payload.runOutputSource === 'system', 'terminal timeline evidence did not preserve completed run output source');
+  assert(terminalTimelineEvents[0].payload.terminalRunEvidenceStatus === 'present', 'terminal timeline evidence did not mark terminal Run evidence present');
+  assert(terminalTimelineEvents[0].payload.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'terminal timeline evidence did not mark trigger evidence ready for review');
+  assert(beforeWorkspace === terminalAfterWorkspace, 'scheduled/event Agent terminal sweep smoke mutated the workspace fixture');
+
   console.log([
     'Scheduled/event Agent sweep smoke: ready',
     `status=${result.status}`,
@@ -145,12 +228,19 @@ try {
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
     `triggerRunEvidenceStatus=${result.triggerRunEvidenceStatus}`,
+    `terminalStatus=${terminalResult.status}`,
+    `terminalRunId=${terminalRun.id}`,
+    `terminalTriggerRunEvidenceStatus=${terminalResult.triggerRunEvidenceStatus}`,
+    `terminalRunEvidenceMissingRunIds=${terminalResult.terminalRunEvidenceMissingRunIds.join(',') || 'none'}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
+    'terminalTriggerRunEvidence=passed',
     'runLimitEvidence=passed',
     'runtimeStartRequirements=passed',
     'timelineEvidence=recorded',
+    'terminalTimelineEvidence=recorded',
     'runStatusEvidence=recorded',
+    'terminalRunStatusEvidence=recorded',
     'workspace=unchanged',
     'provider=not-called',
     'docker=not-started',
