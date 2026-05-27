@@ -228,10 +228,14 @@ Taskplane currently has a working native CLI execution backend:
   until Taskplane context-readiness, run evidence, verification, and writeback
   gates are satisfied.
 - Deferred Agent API `execution_run` invocations also carry structured promotion
-  requirements: selected-runtime contract, target-task identity, runtime
-  context manifest, context-readiness step, task-memory guidance, Run Goal
-  Contract, Write Intent extraction, reviewed-patch apply boundary, post-step
-  verification, and Run evidence persistence.
+  requirements: selected-runtime contract, target-task identity,
+  provider-visible preflight, runtime context manifest, context-readiness step,
+  task-memory guidance, Run Goal Contract, Write Intent extraction,
+  reviewed-patch apply boundary, post-step verification, and Run evidence
+  persistence. Agent API capability summaries expose both
+  `executionRunPromotionRequirements=0/11` and
+  `executionRunMissingRequirements=...` so the deferred execution boundary is
+  visible before any provider-visible run can start.
 - The current Pilot operation mode is either `product_control_layer` or
   `bounded_decision_backend`. `persistent_ai_pilot_reserved` is a future
   explicit watch/autopilot capability, not the default runtime shape.
