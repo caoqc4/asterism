@@ -343,7 +343,7 @@ export class SchedulerService {
         : terminalRunEvidenceMissingRunIds.length > 0
           ? 'pending_terminal_run_evidence'
           : 'ready_for_terminal_review';
-      this.lastScheduledEventAgentSweepAt = new Date().toISOString();
+      this.lastScheduledEventAgentSweepAt = now.toISOString();
       const summary = [
         `scheduledEventAgentSweep=${kind}`,
         'status=completed',

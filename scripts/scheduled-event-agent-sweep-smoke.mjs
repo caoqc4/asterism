@@ -104,6 +104,7 @@ try {
   assert(result.triggerRunEvidenceRequired.includes('context_readiness'), 'sweep did not expose trigger Run evidence requirements in top-level evidence');
   assert(result.triggerRunEvidenceStatus === 'pending_terminal_run_evidence', 'sweep did not expose pending trigger Run evidence status in top-level evidence');
   assert(result.summaries.join('\n').includes('daily run limit reached: 3/3'), 'sweep did not enforce the in-sweep daily run limit');
+  assert(service.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T11:00:00.000Z', 'completed sweep did not preserve the trigger time in scheduler status');
   assert(service.getStatus().lastScheduledEventAgentSweepSummary === result.summary, 'sweep did not persist the manual sweep summary into scheduler status');
   assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
@@ -557,6 +558,7 @@ try {
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
     `triggerRunEvidenceStatus=${result.triggerRunEvidenceStatus}`,
     `manualSweepSummary=${service.getStatus().lastScheduledEventAgentSweepSummary}`,
+    `manualSweepAt=${service.getStatus().lastScheduledEventAgentSweepAt}`,
     'boundedRunTargetTask=passed',
     'boundedRunTaskMemoryGuidance=passed',
     'boundedRunFirstCriterion=passed',
@@ -604,6 +606,7 @@ try {
     'cronTimelineWorkspaceBoundary=recorded',
     'startupSweepJobEvidence=recorded',
     'sweepSummaryEvidence=recorded',
+    'completedSweepTimeEvidence=recorded',
     'disconnectedSweepSummaryEvidence=recorded',
     'inFlightSweepSummaryEvidence=recorded',
     'skippedSweepTimeEvidence=recorded',

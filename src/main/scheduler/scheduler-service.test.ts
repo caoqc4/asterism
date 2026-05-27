@@ -573,7 +573,7 @@ describe('SchedulerService', () => {
         },
       }),
     });
-    expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
