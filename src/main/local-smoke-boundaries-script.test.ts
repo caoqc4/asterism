@@ -14,6 +14,7 @@ const envKeys = [
   'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER',
   'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS',
   'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
+  'TASKPLANE_ENABLE_SCHEDULER',
   'TASKPLANE_ENV_FILE',
   'TASKPLANE_AGENT_CLI_SMOKE_RUNTIME',
   'TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON',
@@ -27,6 +28,7 @@ const envKeys = [
   'TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE',
   'TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE',
+  'TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_PREFLIGHT',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE',
   'TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS',
   'TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE',
@@ -771,6 +773,46 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('TASKPLANE_AI_PROVIDER is empty.');
     expect(result.output).toContain('TASKPLANE_AI_MODEL is empty.');
     expect(result.output).toContain('TASKPLANE_AI_API_KEY is empty.');
+  });
+
+  it('keeps scheduled/event background live preflight skipped without provider spend by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/scheduled-event-agent-background-live-preflight.mjs');
+
+    expect(scripts['manual:scheduled-event-agent-background-live-preflight']).toBe(
+      'node scripts/scheduled-event-agent-background-live-preflight.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Scheduled/event Agent background live preflight');
+    expect(result.output).toContain('mode=opt-in live preflight');
+    expect(result.output).toContain('runtime=code_agent_model_producer');
+    expect(result.output).toContain('backgroundLiveRun=deferred');
+    expect(result.output).toContain('requiredEvidence=scheduler_job_connected,standing_approval,context_readiness');
+    expect(result.output).toContain('evidenceRequirements=0/11');
+    expect(result.output).toContain('missingEvidence=scheduler_job_connected,standing_approval,context_readiness');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=opt_in_required');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('docker=not-started');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('validates scheduled/event background live preflight config before provider calls', () => {
+    const result = runScript('scripts/scheduled-event-agent-background-live-preflight.mjs', '', {
+      TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_PREFLIGHT: 'true',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Scheduled/event Agent background live preflight');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=config_missing');
+    expect(result.output).toContain('TASKPLANE_ENABLE_SCHEDULER must be true');
+    expect(result.output).toContain('TASKPLANE_ENABLE_SANDBOX_CODING_AGENT must be true');
+    expect(result.output).toContain('TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER must be true');
+    expect(result.output).toContain('TASKPLANE_AI_PROVIDER is empty');
+    expect(result.output).toContain('TASKPLANE_WORKSPACE_ROOT is empty');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('workspace=unchanged');
   });
 
   it('keeps Codex native web/search smoke using top-level search before exec', () => {

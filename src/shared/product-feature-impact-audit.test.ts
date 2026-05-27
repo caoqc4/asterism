@@ -480,6 +480,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('cronRunFailureReasonEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('durableRunLimitCountEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runLimitCountSince=2026-05-26T00:00:00.000Z');
+    expect(workHabits?.evidence.join(' ')).toContain('manual scheduled/event Agent background live preflight');
+    expect(workHabits?.evidence.join(' ')).toContain('backgroundLiveRun=deferred');
+    expect(workHabits?.evidence.join(' ')).toContain('requiredEvidence=scheduler_job_connected,standing_approval,context_readiness,task_memory_guidance,subtask_start,task_source_port,code_agent_trigger_port,timeline_evidence,durable_run_limit_counting,terminal_run_evidence,post_step_gates');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakRunLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakNoSecondTriggerEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('npm run accept:scheduled-event-agent-sweep-smoke');

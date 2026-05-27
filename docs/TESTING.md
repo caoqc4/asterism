@@ -417,6 +417,23 @@ On 2026-05-26, local `fal-openrouter / google/gemini-2.5-flash` passed this
 opt-in preflight with `provider=called`, `phrase=matched`,
 `workspace=unchanged`, and `status=passed`.
 
+The scheduled/event Agent background live preflight is also manual and
+provider-safe by default:
+
+```bash
+npm run manual:scheduled-event-agent-background-live-preflight
+```
+
+Default output must include `status=skip`, `skipReason=opt_in_required`,
+`backgroundLiveRun=deferred`, `provider=not-called`, `docker=not-started`,
+and `workspace=unchanged`. With
+`TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_PREFLIGHT=true`, it still
+does not call a provider; it only checks the live-run configuration gates and
+lists the required background evidence for scheduler connection, Standing
+Approval, context readiness, task memory guidance, subtask start, task-source
+port, Code Agent trigger port, timeline evidence, durable run-limit counting,
+terminal Run evidence, and post-step gates.
+
 Provider-spending checks are intentionally opt-in:
 
 ```bash
