@@ -69,6 +69,17 @@ function agentApiExecutionReadiness(summary?: string | null): {
   };
 }
 
+function agentApiDecompositionReadiness(summary?: string | null): {
+  missingRequirementCount: number;
+  promotionCount: string | null;
+} {
+  const text = summary ?? '';
+  return {
+    missingRequirementCount: listValueCount(text, 'decompositionMissingRequirements'),
+    promotionCount: scalarValue(text, 'decompositionPromotionRequirements'),
+  };
+}
+
 function scalarValue(summary: string, key: string): string | null {
   const part = summary.split(' / ').find((item) => item.trim().startsWith(`${key}=`));
   return part?.slice(`${key}=`.length).trim() ?? null;
@@ -575,6 +586,7 @@ function AgentCliRuntimeSection({
   const catalogueCount = status?.catalogueCount ?? 2;
   const hasReadyRuntime = readyCount > 0;
   const apiExecutionReadiness = agentApiExecutionReadiness(apiCapability?.summary ?? apiSafety?.reason);
+  const apiDecompositionReadiness = agentApiDecompositionReadiness(apiCapability?.summary ?? apiSafety?.reason);
 
   return (
     <section className="agent-cli-section">
@@ -707,6 +719,13 @@ function AgentCliRuntimeSection({
               )}
               <span>{`missingRequirements=${apiExecutionReadiness.missingRequirementCount}`}</span>
               <span>{`missingGates=${apiExecutionReadiness.missingGateCount}`}</span>
+            </div>
+            <div className="agent-api-execution-readiness" aria-label="Agent API decomposition readiness">
+              <span>decomposition promotion deferred</span>
+              {apiDecompositionReadiness.promotionCount && (
+                <span>{`promotion=${apiDecompositionReadiness.promotionCount}`}</span>
+              )}
+              <span>{`missingRequirements=${apiDecompositionReadiness.missingRequirementCount}`}</span>
             </div>
           </>
         )}

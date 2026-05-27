@@ -1380,7 +1380,7 @@ describe('App redesign v1', () => {
         access: 'mutating',
         requiresApproval: true,
         requiredGate: 'runtime_pre_step',
-        summary: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunMissingRequirements=selected_runtime_contract,target_task_identity,provider_visible_preflight / executionRunMissingGates=runtime_context_assembly,context_readiness / selected=true / provider=configured',
+        summary: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunMissingRequirements=selected_runtime_contract,target_task_identity,provider_visible_preflight / executionRunMissingGates=runtime_context_assembly,context_readiness / decompositionPromotionRequirements=0/7 / decompositionMissingRequirements=selected_runtime_contract,parent_task_identity,reversible_proposal_card / selected=true / provider=configured',
       }],
       configurationSafetyReport: {
         secretExposureSafe: true,
@@ -1389,7 +1389,7 @@ describe('App redesign v1', () => {
         surfaces: [{
           id: 'agent_api.runtime',
           state: 'approval_required',
-          reason: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunMissingRequirements=selected_runtime_contract,target_task_identity,provider_visible_preflight / executionRunMissingGates=runtime_context_assembly,context_readiness / selected=true / provider=configured',
+          reason: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunMissingRequirements=selected_runtime_contract,target_task_identity,provider_visible_preflight / executionRunMissingGates=runtime_context_assembly,context_readiness / decompositionPromotionRequirements=0/7 / decompositionMissingRequirements=selected_runtime_contract,parent_task_identity,reversible_proposal_card / selected=true / provider=configured',
           diagnosticSummary: 'Provider configured; execution_run remains deferred.',
           requiresApproval: true,
           startupProbePolicy: 'never',
@@ -1406,11 +1406,15 @@ describe('App redesign v1', () => {
     expect(screen.getByText('不自动')).toBeTruthy();
     expect(screen.getByText(/executionRun=deferred/)).toBeTruthy();
     expect(screen.getByText(/Provider configured; execution_run remains deferred/)).toBeTruthy();
-    expect(screen.getByLabelText('Agent API execution_run readiness')).toBeTruthy();
-    expect(screen.getByText('execution_run deferred')).toBeTruthy();
-    expect(screen.getByText('promotion=0/11')).toBeTruthy();
-    expect(screen.getByText('missingRequirements=3')).toBeTruthy();
-    expect(screen.getByText('missingGates=2')).toBeTruthy();
+    const executionReadiness = screen.getByLabelText('Agent API execution_run readiness');
+    expect(within(executionReadiness).getByText('execution_run deferred')).toBeTruthy();
+    expect(within(executionReadiness).getByText('promotion=0/11')).toBeTruthy();
+    expect(within(executionReadiness).getByText('missingRequirements=3')).toBeTruthy();
+    expect(within(executionReadiness).getByText('missingGates=2')).toBeTruthy();
+    const decompositionReadiness = screen.getByLabelText('Agent API decomposition readiness');
+    expect(within(decompositionReadiness).getByText('decomposition promotion deferred')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('promotion=0/7')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('missingRequirements=3')).toBeTruthy();
     expect(screen.getAllByText('可用').length).toBeGreaterThan(0);
   });
 

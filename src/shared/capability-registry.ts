@@ -1,7 +1,10 @@
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AgentCliRuntimeId, AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
 import type { AgentRuntimeNativeCapabilityAvailability } from './agent-runtime-goal.js';
-import { agentApiExecutionPromotionRequirements } from './ai-runtime-invocation.js';
+import {
+  agentApiDecompositionPromotionRequirements,
+  agentApiExecutionPromotionRequirements,
+} from './ai-runtime-invocation.js';
 import {
   RUNTIME_ENTRYPOINT_COVERAGE,
   requiredRuntimeEntrypointGatesForKind,
@@ -538,6 +541,7 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       'executionRun=deferred',
       agentApiExecutionRunPromotionSummary(),
       agentApiExecutionRunGateSummary(),
+      agentApiDecompositionPromotionSummary(),
       'providerToolReadiness=not_declared',
       'startupProbe=never',
       selected ? 'selected=true' : null,
@@ -564,6 +568,14 @@ function agentApiExecutionRunGateSummary(): string {
   return [
     `executionRunKeyGates=${keyGates.join(',')}`,
     `executionRunMissingGates=${keyGates.join(',')}`,
+  ].join(' / ');
+}
+
+function agentApiDecompositionPromotionSummary(): string {
+  const promotionRequirements = agentApiDecompositionPromotionRequirements();
+  return [
+    `decompositionPromotionRequirements=0/${promotionRequirements.length}`,
+    `decompositionMissingRequirements=${promotionRequirements.join(',')}`,
   ].join(' / ');
 }
 

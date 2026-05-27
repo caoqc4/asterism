@@ -85,6 +85,18 @@ export type AgentApiDecompositionPromotionRequirement =
   | 'operator_confirmation_boundary'
   | 'draft_only_timeline_evidence';
 
+export function agentApiDecompositionPromotionRequirements(): AgentApiDecompositionPromotionRequirement[] {
+  return [
+    'selected_runtime_contract',
+    'parent_task_identity',
+    'reversible_proposal_card',
+    'subtask_create_many_apply_plan',
+    'agent_api_decomposition_source',
+    'operator_confirmation_boundary',
+    'draft_only_timeline_evidence',
+  ];
+}
+
 export type DecisionDraftInvocationResult = RuntimeInvocationBase & {
   phase: 'decision_draft';
   layer: 'api_runtime' | 'product_harness';
@@ -184,15 +196,7 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   reversibleProposalCardReady?: boolean;
   selectedRuntimeContractReady?: boolean;
 }): AgentApiDecompositionPromotionReadiness {
-  const requiredRequirements: AgentApiDecompositionPromotionRequirement[] = [
-    'selected_runtime_contract',
-    'parent_task_identity',
-    'reversible_proposal_card',
-    'subtask_create_many_apply_plan',
-    'agent_api_decomposition_source',
-    'operator_confirmation_boundary',
-    'draft_only_timeline_evidence',
-  ];
+  const requiredRequirements = agentApiDecompositionPromotionRequirements();
   const missingRequirements: AgentApiDecompositionPromotionRequirement[] = [];
   const applyPlan = params.applyPlan ?? null;
 
