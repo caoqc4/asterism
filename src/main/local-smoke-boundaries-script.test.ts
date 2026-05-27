@@ -784,6 +784,22 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('promotionInProduct=deferred');
   });
 
+  it('keeps runtime patch promotion routing readiness smoke read-only and build-gated by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/runtime-patch-promotion-routing-readiness-smoke.mjs', '', {}, []);
+
+    expect(scripts['manual:runtime-patch-promotion-routing-readiness-smoke']).toBe(
+      'npm run build:main && node scripts/runtime-patch-promotion-routing-readiness-smoke.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Runtime patch promotion routing readiness smoke');
+    expect(result.output).toContain('mode=read-only');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+    expect(result.output).toContain('workspaceApply=not-attempted');
+    expect(result.output).toContain('promotionInProduct=explicit_apply_only');
+  });
+
   it('validates Agent API execution preflight config before calling a provider', () => {
     const result = runScript('scripts/agent-api-execution-preflight-smoke.mjs', '', {
       TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE: 'true',

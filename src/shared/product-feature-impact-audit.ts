@@ -398,12 +398,13 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Terminal Run verification now carries same-run artifacts and checkpoints into post-step self-checks when repository evidence is available, so run-backed patch artifacts and patch-promotion checkpoints can satisfy workspace_write promotion evidence instead of being invisible to terminal verification.',
       'evaluateRuntimePatchPromotionRoutingReadiness now keeps future API/runtime-generated patch promotion blocked unless the path includes a selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence.',
       'Runtime patch promotion readiness now returns satisfied and missing requirement lists plus promotionReady, requirements=x/8, promotionRequirements=x/8, missingRequirements=..., and promotionMissingRequirements=... summary evidence, matching the Agent API promotion readiness style without opening direct workspace writes.',
+      'The runtime patch promotion routing readiness smoke now runs evaluateRuntimePatchPromotionRoutingReadiness as a read-only build-gated harness, proving blocked=2/8 requirements, same-run-blocked=7/8 requirements with same_run_evidence_chain missing, and synthetic-ready=8/8 requirements without provider calls, workspace apply, or workspace writes.',
     ],
     gaps: [
       'Future API/runtime-generated patch promotion still needs to prove the selected-runtime contract, target-task identity, and reuse the reviewed-patch apply workflow and same-run evidence chain; direct workspace-write runtime modes remain intentionally separate from the common run path.',
     ],
     nextActions: [
-      'Keep explicit apply as the product-controlled mutation path and require evaluateRuntimePatchPromotionRoutingReadiness before routing future runtime writes into selected-runtime, target-task, same-run patch artifacts, promotion Decisions, promotion preflight, explicit apply, and post-apply Run evidence.',
+      'Keep explicit apply as the product-controlled mutation path and require the read-only runtime patch promotion routing smoke plus evaluateRuntimePatchPromotionRoutingReadiness before routing future runtime writes into selected-runtime, target-task, same-run patch artifacts, promotion Decisions, promotion preflight, explicit apply, and post-apply Run evidence.',
     ],
   },
   {

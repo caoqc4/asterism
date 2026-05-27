@@ -636,8 +636,13 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionMissingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('runtime patch promotion routing readiness smoke');
+    expect(taskFiles?.evidence.join(' ')).toContain('blocked=2/8 requirements');
+    expect(taskFiles?.evidence.join(' ')).toContain('same-run-blocked=7/8 requirements');
+    expect(taskFiles?.evidence.join(' ')).toContain('synthetic-ready=8/8 requirements');
     expect(taskFiles?.cliOnlyClosure).toBe('supported');
     expect(taskFiles?.gaps.join(' ')).toContain('Future API/runtime-generated patch promotion');
+    expect(taskFiles?.nextActions.join(' ')).toContain('read-only runtime patch promotion routing smoke');
     expect(taskFiles?.gaps.join(' ')).toContain('selected-runtime contract');
     expect(taskFiles?.gaps.join(' ')).toContain('target-task identity');
     expect(taskFiles?.gaps.join(' ')).toContain('reviewed-patch apply workflow');
