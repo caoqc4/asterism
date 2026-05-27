@@ -253,6 +253,27 @@ function buildStandingApprovalTimeline(partial: { maxRunsPerDay?: number } = {})
   };
 }
 
+function buildSourceContext(partial: Partial<TaskDetail['sourceContexts'][number]> = {}): TaskDetail['sourceContexts'][number] {
+  return {
+    archivedAt: null,
+    capturedAt: '2026-05-26T00:00:00.000Z',
+    content: 'Use the weekly metrics source.',
+    createdAt: '2026-05-26T00:00:00.000Z',
+    credibility: 'verified',
+    id: 'source_context_1',
+    isKey: true,
+    kind: 'doc',
+    note: null,
+    sourceRole: 'stable_reference',
+    status: 'active',
+    taskId: 'task_auto',
+    title: 'Weekly metrics source',
+    updatedAt: '2026-05-26T00:00:00.000Z',
+    uri: null,
+    ...partial,
+  };
+}
+
 describe('SchedulerService', () => {
   beforeEach(() => {
     scheduledJobs.length = 0;
@@ -405,6 +426,7 @@ describe('SchedulerService', () => {
 
   it('wires a background scheduled/event Agent sweep only when trigger, timeline, and task-source ports are connected', async () => {
     const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
       timeline: [buildStandingApprovalTimeline()],
     });
     const runRepository = {
@@ -510,7 +532,7 @@ describe('SchedulerService', () => {
     });
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Target task: task_auto.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Trigger kind: cron.');
-    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Task memory guidance: process=Weekly update SOP; openCriteria=1; firstCriterion=Review the generated update.; sourceContexts=0');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Task memory guidance: process=Weekly update SOP; openCriteria=1; firstCriterion=Review the generated update.; sourceContexts=1; firstSource=Weekly metrics source');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
       taskId: 'task_auto',
       type: 'panel.scheduled_event_agent_triggered',
@@ -1191,7 +1213,7 @@ describe('SchedulerService', () => {
     });
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Next step: Prepare the weekly update.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Target task: task_auto.');
-    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Task memory guidance: process=Weekly update SOP; openCriteria=1; firstCriterion=Review the generated update.; sourceContexts=0');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Task memory guidance: process=Weekly update SOP; openCriteria=1; firstCriterion=Review the generated update.; sourceContexts=0; firstSource=none');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Standing Approval policy: standing_approval:task_auto:coding:local_sandbox.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Runtime start requirements: trigger_plan_ready,scheduler_trigger_service,run_limit_count.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');

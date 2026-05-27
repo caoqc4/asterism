@@ -120,11 +120,13 @@ function formatScheduledEventTaskMemoryGuidance(task: ScheduledEventAgentTaskInp
   const activeProcess = task.processTemplates.find((template) => template.status === 'active');
   const openCriteria = task.completionCriteria.filter((criterion) => criterion.status === 'open');
   const firstCriterion = openCriteria[0]?.text.trim();
+  const firstSource = task.sourceContexts.find((source) => source.status === 'active')?.title.trim();
   return [
     `process=${activeProcess?.title?.trim() || 'none'}`,
     `openCriteria=${openCriteria.length}`,
     `firstCriterion=${firstCriterion || 'none'}`,
     `sourceContexts=${task.sourceContexts.length}`,
+    `firstSource=${firstSource || 'none'}`,
   ].join('; ');
 }
 

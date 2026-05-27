@@ -369,9 +369,9 @@ The scheduled/event Agent sweep smoke is local and non-live. It runs against
 built main-process modules and proves the scheduler sweep can load duplicate
 Standing Approval candidates, reuse persisted run-limit accounting, start one
 bounded Code Agent run with the trigger Run evidence contract and run-limit
-evidence, preserve the target task id, task-memory guidance, and first open
-completion criterion in the bounded run request, block the duplicate through
-in-sweep daily-limit counting, record
+evidence, preserve the target task id, task-memory guidance, first open
+completion criterion, and first source title in the bounded run request, block
+the duplicate through in-sweep daily-limit counting, record
 `panel.scheduled_event_agent_triggered` with target task, runtime-start
 requirement, and run-status evidence, expose top-level `startedRunIds` and
 `blockedReasons`, report `skipReason=none` for completed sweeps, prove
