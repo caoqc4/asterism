@@ -884,6 +884,9 @@ describe('local smoke script default boundaries', () => {
     expect(matrix).toContain('persisted sweep summaries');
     expect(matrix).toContain('disconnected-port skip evidence');
     expect(matrix).toContain('in-flight skip evidence');
+    expect(matrix).toContain('trigger-port and task-source `sweep_failed` recovery evidence');
+    expect(matrix).toContain('trigger-port failure, and task-source failure outcomes');
+    expect(matrix).toContain('proves `sweep_failed` recovery for both failure paths');
     expect(matrix).toContain('lastScheduledEventAgentSweepSummary');
     expect(matrix).toContain('Packaged Codex live task run');
     expect(matrix).toContain('Manual only; passed locally on 2026-05-20; default skipped');
