@@ -851,7 +851,9 @@ Current implementation:
   status/outputSource/failureReason returned by the trigger port, standing
   approval policy id, run-limit state, and required trigger evidence so Task
   Dynamics can distinguish this operator-triggered autonomous action from
-  ordinary run creation.
+  ordinary run creation. Sweep results expose `skipReason`, `startedRunIds`,
+  `blockedReasons`, and `runtimeStartMissingRequirements` at the top level for
+  operator-facing run evidence.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

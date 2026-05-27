@@ -30,6 +30,7 @@ export type ScheduledEventAgentSweepResult = {
   blockedTaskCount: number;
   startedRunIds: string[];
   blockedReasons: string[];
+  runtimeStartMissingRequirements: Array<AgentScheduledEventTriggerPlan['runtimeStartMissingRequirements'][number]>;
   summaries: string[];
   summary: string;
 };
@@ -220,6 +221,7 @@ export class SchedulerService {
         blockedTaskCount: 0,
         startedRunIds: [],
         blockedReasons: ['ports_not_connected'],
+        runtimeStartMissingRequirements: ['scheduler_trigger_service'],
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts}`,
       };
@@ -234,6 +236,7 @@ export class SchedulerService {
         blockedTaskCount: 0,
         startedRunIds: [],
         blockedReasons: ['in_flight'],
+        runtimeStartMissingRequirements: [],
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight`,
       };
@@ -257,6 +260,9 @@ export class SchedulerService {
       const blockedTaskCount = results.length - startedRunCount;
       const startedRunIds = results.flatMap((result) => result.status === 'started' && result.run ? [result.run.id] : []);
       const blockedReasons = results.flatMap((result) => result.status === 'blocked' ? result.plan.blockedReasons : []);
+      const runtimeStartMissingRequirements = Array.from(new Set(
+        results.flatMap((result) => result.plan.runtimeStartMissingRequirements),
+      ));
       this.lastScheduledEventAgentSweepAt = new Date().toISOString();
 
       return {
@@ -267,6 +273,7 @@ export class SchedulerService {
         blockedTaskCount,
         startedRunIds,
         blockedReasons,
+        runtimeStartMissingRequirements,
         summaries: results.map((result) => result.summary),
         summary: [
           `scheduledEventAgentSweep=${kind}`,
@@ -276,6 +283,7 @@ export class SchedulerService {
           `blocked=${blockedTaskCount}`,
           `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
           `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
+          `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
         ].join(' / '),
       };
     } finally {
