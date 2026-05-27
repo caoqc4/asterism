@@ -196,6 +196,15 @@ describe('runtime event record projection', () => {
             targetTaskId: 'task-1',
             terminalRunEvidenceStatus: 'present',
             triggerKind: 'cron',
+            triggerRunEvidenceRequired: [
+              'context_readiness',
+              'target_task_identity',
+              'task_memory_coverage',
+              'task_memory_guidance',
+              'subtask_start',
+              'run_limit_count',
+              'post_step',
+            ],
             triggerRunEvidenceStatus: 'ready_for_terminal_review',
             workspaceWriteAllowed: false,
           }),
@@ -233,7 +242,7 @@ describe('runtime event record projection', () => {
     });
     expect(events.find((event) => event.sourceId === 'timeline-scheduled-trigger')).toMatchObject({
       title: '定时/事件 Agent 已启动',
-      detail: 'Run：run-scheduled-1 / 任务：task-1 / 计划：Scheduled report refresh ready / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 启动门：已满足 / 触发：自动巡检 / 授权：standing_approval:task-1:coding:local_sandbox / 限额：1/3 / 写入：提案模式',
+      detail: 'Run：run-scheduled-1 / 任务：task-1 / 计划：Scheduled report refresh ready / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 触发证据项：context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step / 启动门：已满足 / 触发：自动巡检 / 授权：standing_approval:task-1:coding:local_sandbox / 限额：1/3 / 写入：提案模式',
     });
   });
 

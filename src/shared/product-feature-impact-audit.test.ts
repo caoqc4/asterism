@@ -314,6 +314,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('trigger plan summary');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start gate status');
     expect(workHabits?.evidence.join(' ')).toContain('failure reason when present');
+    expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence items');
     expect(workHabits?.evidence.join(' ')).toContain('localized trigger kind labels for 自动巡检 and 手动启动');
     expect(workHabits?.evidence.join(' ')).toContain('run-limit usage');
     expect(workHabits?.evidence.join(' ')).toContain('workspace proposal-mode write boundary');

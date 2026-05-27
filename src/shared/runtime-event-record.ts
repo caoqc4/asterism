@@ -626,6 +626,10 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
     : parsed.triggerRunEvidenceStatus === 'pending_terminal_run_evidence'
       ? '触发证据：等待终态'
       : null;
+  const triggerRunEvidenceRequired = Array.isArray(parsed.triggerRunEvidenceRequired)
+    && parsed.triggerRunEvidenceRequired.length > 0
+    ? `触发证据项：${parsed.triggerRunEvidenceRequired.join(',')}`
+    : null;
   const runtimeStartGate = Array.isArray(parsed.runtimeStartMissingRequirements)
     ? parsed.runtimeStartMissingRequirements.length === 0
       ? '启动门：已满足'
@@ -659,6 +663,7 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
     runFailureReason,
     terminalRunEvidence,
     triggerRunEvidence,
+    triggerRunEvidenceRequired,
     runtimeStartGate,
     triggerKind,
     policyId,
