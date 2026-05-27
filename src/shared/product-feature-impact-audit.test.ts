@@ -222,6 +222,10 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('proposalRequirements=x/3');
     expect(decisions?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('proposalMissingRequirements=...');
+    expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');
+    expect(decisions?.evidence.join(' ')).toContain('blocked=0/3 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=3/3 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('standing-approval=3/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
     expect(decisions?.evidence.join(' ')).toContain('selected Agent CLI modes stay product_harness/skipped');
     expect(decisions?.evidence.join(' ')).toContain('Approved checkpoint Decision resume is limited to open tool_permission');
@@ -230,6 +234,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.cliOnlyClosure).toBe('supported');
     expect(decisions?.gaps.join(' ')).toContain('deferred proposal-only contract');
     expect(decisions?.nextActions.join(' ')).toContain('planSchedulerDecisionProposal');
+    expect(decisions?.nextActions.join(' ')).toContain('read-only scheduler Decision proposal readiness smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose Write Intent can now carry kind=patch');
     expect(rightPanel?.evidence.join(' ')).toContain('imported_patch_artifact sandbox draft sources');
     expect(taskFiles?.evidence.join(' ')).toContain('patch-promotion checkpoint and Decision status');
