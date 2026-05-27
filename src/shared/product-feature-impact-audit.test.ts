@@ -255,6 +255,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('injected Code Agent trigger port');
     expect(workHabits?.evidence.join(' ')).toContain('schedulerTriggerServiceConnected=true');
     expect(workHabits?.evidence.join(' ')).toContain('operatorConfirmed=true');
+    expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
+    expect(workHabits?.evidence.join(' ')).toContain('runtime-start requirement evidence');
     expect(workHabits?.evidence.join(' ')).toContain('run-limit evidence');
     expect(workHabits?.evidence.join(' ')).toContain('scheduler:triggerScheduledEventAgentRun');
     expect(workHabits?.evidence.join(' ')).toContain('启动一次');

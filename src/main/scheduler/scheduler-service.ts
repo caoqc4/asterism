@@ -91,6 +91,8 @@ function buildScheduledEventCodeAgentRunInput(
     patchIntent: [
       'Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.',
       `Next step: ${nextStep}`,
+      `Standing Approval policy: ${plan.policy?.id ?? 'unknown'}.`,
+      `Runtime start requirements: ${plan.runtimeStartSatisfiedRequirements.join(',')}.`,
       `Trigger evidence: ${plan.triggerRunEvidenceRequired.join(',')}.`,
       `Run limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
       'Do not apply workspace changes directly; produce reviewable patch artifacts or proposals through Taskplane gates.',
