@@ -309,6 +309,56 @@ try {
   assert(cronTimelineEvents[0].payload.workspaceWriteAllowed === false, 'cron timeline evidence did not preserve workspaceWriteAllowed=false');
   assert(beforeWorkspace === cronAfterWorkspace, 'scheduled/event Agent cron sweep smoke mutated the workspace fixture');
 
+  const disconnectedService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent disconnected sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => {
+        throw new Error('Scheduled/event Agent disconnected sweep smoke should not count runs.');
+      },
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent disconnected sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent disconnected sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+  );
+  const disconnectedResult = await disconnectedService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:20:00.000Z'),
+  );
+  assert(disconnectedResult.status === 'skipped', 'disconnected sweep should skip');
+  assert(disconnectedResult.skipReason === 'ports_not_connected', 'disconnected sweep did not report ports_not_connected');
+  assert(disconnectedResult.triggerRunEvidenceStatus === 'not_started', 'disconnected sweep should not start trigger Run evidence');
+  assert(disconnectedResult.blockedReasons.includes('ports_not_connected'), 'disconnected sweep did not expose ports_not_connected as a blocked reason');
+  assert(disconnectedResult.runtimeStartMissingRequirements.includes('scheduler_trigger_service'), 'disconnected sweep did not expose scheduler trigger service as a missing runtime-start requirement');
+  assert(disconnectedResult.summary.includes('missingPorts=run_port,timeline_port,task_source_port'), 'disconnected sweep did not expose missing ports');
+  assert(disconnectedService.getStatus().lastScheduledEventAgentSweepSummary === disconnectedResult.summary, 'disconnected sweep did not persist the skipped sweep summary into scheduler status');
+
   const startupService = new SchedulerService(
     {
       read: () => ({
@@ -439,6 +489,10 @@ try {
     `cronTriggerRunEvidenceStatus=${cronResult.triggerRunEvidenceStatus}`,
     `cronTriggerKind=${cronTimelineEvents[0].payload.triggerKind}`,
     `cronSweepSummary=${cronService.getStatus().lastScheduledEventAgentSweepSummary}`,
+    `disconnectedStatus=${disconnectedResult.status}`,
+    `disconnectedSkipReason=${disconnectedResult.skipReason}`,
+    `disconnectedTriggerRunEvidenceStatus=${disconnectedResult.triggerRunEvidenceStatus}`,
+    `disconnectedSweepSummary=${disconnectedService.getStatus().lastScheduledEventAgentSweepSummary}`,
     `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
@@ -454,6 +508,7 @@ try {
     'cronTimelineWorkspaceBoundary=recorded',
     'startupSweepJobEvidence=recorded',
     'sweepSummaryEvidence=recorded',
+    'disconnectedSweepSummaryEvidence=recorded',
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
     'cronRunStatusEvidence=recorded',

@@ -381,8 +381,9 @@ boundary, expose top-level `startedRunIds` and
 `triggerKind` evidence for both manual and cron starts, prove startup
 `scheduledEventAgentSweepJobConnected` evidence before the first cron tick,
 prove manual, terminal, and cron sweep summaries are persisted into
-`lastScheduledEventAgentSweepSummary`, and keep `workspace=unchanged`,
-`provider=not-called`, and `docker=not-started`.
+`lastScheduledEventAgentSweepSummary`, prove a disconnected scheduler trigger
+service skips with `ports_not_connected` and `triggerRunEvidenceStatus=not_started`,
+and keep `workspace=unchanged`, `provider=not-called`, and `docker=not-started`.
 
 The Agent API execution preflight is deliberately narrower than a full task
 run: default output must include `status=skip`, `skipReason=opt_in_required`,

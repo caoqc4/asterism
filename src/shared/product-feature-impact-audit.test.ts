@@ -341,6 +341,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('manualSweepSummary evidence');
     expect(workHabits?.evidence.join(' ')).toContain('terminalSweepSummary evidence');
     expect(workHabits?.evidence.join(' ')).toContain('cronSweepSummary evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('disconnectedSkipReason=ports_not_connected');
+    expect(workHabits?.evidence.join(' ')).toContain('disconnectedTriggerRunEvidenceStatus=not_started');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTask=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryGuidance=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunFirstCriterion=passed');
@@ -376,6 +378,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('cronTimelineWorkspaceBoundary=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('startupSweepJobEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sweepSummaryEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('disconnectedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunStatusEvidence=recorded');
