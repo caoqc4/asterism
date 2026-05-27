@@ -106,7 +106,11 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
     .filter(Boolean)
     .join(' · ');
   if (summary.includes('reason=in_flight')) return '自动巡检: 运行中';
-  if (summary.includes('reason=sweep_failed')) return ['自动巡检: 异常', schedulerSweepCountLabel(summary)]
+  if (summary.includes('reason=sweep_failed')) return [
+    '自动巡检: 异常',
+    schedulerSweepCountLabel(summary),
+    schedulerSweepEvidenceLabel(summary),
+  ]
     .filter(Boolean)
     .join(' · ');
   if (summary.includes('status=skipped')) return '自动巡检: 已跳过';
@@ -120,10 +124,14 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
 function schedulerSweepCountLabel(summary: string): string | null {
   const checked = summary.match(/(?:^| \/ )checked=(\d+)(?: \/|$)/)?.[1];
   const started = summary.match(/(?:^| \/ )started=(\d+)(?: \/|$)/)?.[1];
+  const startedRunIds = summary.match(/(?:^| \/ )startedRunIds=([^/]+?)(?: \/|$)/)?.[1]?.trim();
+  const startedFromRunIds = startedRunIds && startedRunIds !== 'none'
+    ? String(startedRunIds.split(',').filter((runId) => runId.trim().length > 0).length)
+    : undefined;
   const blocked = summary.match(/(?:^| \/ )blocked=(\d+)(?: \/|$)/)?.[1];
   return [
     checked !== undefined ? `检查 ${checked}` : null,
-    started !== undefined ? `启动 ${started}` : null,
+    started !== undefined ? `启动 ${started}` : startedFromRunIds !== undefined ? `启动 ${startedFromRunIds}` : null,
     blocked !== undefined ? `阻塞 ${blocked}` : null,
   ].filter(Boolean).join(' · ') || null;
 }

@@ -356,6 +356,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('completed automatic-sweep chips now include checked, started, blocked, run-failure count, and trigger Run evidence labels');
     expect(workHabits?.evidence.join(' ')).toContain('whether terminal runs failed');
     expect(workHabits?.evidence.join(' ')).toContain('waiting for terminal Run evidence or ready for review');
+    expect(workHabits?.evidence.join(' ')).toContain('failed automatic-sweep chips now parse startedRunIds and triggerRunEvidenceStatus');
+    expect(workHabits?.evidence.join(' ')).toContain('show 启动 N and 证据待终态 instead of only 异常 and checked count');
     expect(workHabits?.evidence.join(' ')).toContain('records completed sweep time from the triggering now value');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-sweep status chip');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');

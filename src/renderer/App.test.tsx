@@ -1357,6 +1357,27 @@ describe('App redesign v1', () => {
     expect(screen.getByTitle(sweepSummary)).toBeTruthy();
   });
 
+  it('shows started-run evidence for failed scheduled/event sweeps in Brief', async () => {
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    const sweepSummary = 'scheduledEventAgentSweep=cron / status=skipped / reason=sweep_failed / checked=1 / checkedTaskIds=task_routine_auto / startedRunIds=run_timeline_failure / terminalRunEvidenceMissingRunIds=run_timeline_failure / triggerRunEvidenceRequired=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step / error=Timeline evidence failed: Timeline write failed safely / triggerRunEvidenceStatus=pending_terminal_run_evidence';
+    homeBrief.schedulerStatus = {
+      enabled: true,
+      running: true,
+      lastBriefAt: null,
+      lastRunSweepAt: null,
+      lastScheduledEventAgentSweepAt: '2026-05-27T06:35:00.000Z',
+      lastScheduledEventAgentSweepSummary: sweepSummary,
+      scheduledEventAgentSweepJobConnected: true,
+    };
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+
+    render(<App />);
+
+    expect(await screen.findByText('自动巡检: 异常 · 检查 1 · 启动 1 · 证据待终态')).toBeTruthy();
+    expect(screen.queryByText('自动巡检: 已运行')).toBeFalsy();
+    expect(screen.getByTitle(sweepSummary)).toBeTruthy();
+  });
+
   it('clarifies AI Runtime separates Agent CLI login from API model configuration', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
