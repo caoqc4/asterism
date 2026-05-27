@@ -96,6 +96,8 @@ try {
   assert(result.checkedTaskCount === 2, 'sweep did not check the duplicate scheduled task candidates');
   assert(result.startedRunCount === 1, 'sweep did not start exactly one bounded run');
   assert(result.blockedTaskCount === 1, 'sweep did not block the duplicate task after the daily limit was reached');
+  assert(result.startedRunIds.includes(run.id), 'sweep did not expose started run ids in top-level evidence');
+  assert(result.blockedReasons.includes('Scheduled/event trigger daily run limit reached: 3/3.'), 'sweep did not expose blocked reasons in top-level evidence');
   assert(result.summaries.join('\n').includes('daily run limit reached: 3/3'), 'sweep did not enforce the in-sweep daily run limit');
   assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
@@ -132,6 +134,8 @@ try {
     `started=${result.startedRunCount}`,
     `blocked=${result.blockedTaskCount}`,
     `runId=${run.id}`,
+    `startedRunIds=${result.startedRunIds.join(',')}`,
+    `blockedReasons=${result.blockedReasons.join(';')}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
     'runLimitEvidence=passed',

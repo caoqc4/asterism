@@ -474,7 +474,11 @@ describe('SchedulerService', () => {
       checkedTaskCount: 1,
       startedRunCount: 1,
       blockedTaskCount: 0,
+      startedRunIds: ['run_scheduled_cron_1'],
+      blockedReasons: [],
     });
+    expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
+    expect(sweepResult.summary).toContain('blockedReasons=none');
     expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(1);
     expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
       ['task_auto'],
@@ -564,6 +568,8 @@ describe('SchedulerService', () => {
       checkedTaskCount: 0,
       startedRunCount: 0,
       blockedTaskCount: 0,
+      startedRunIds: [],
+      blockedReasons: ['ports_not_connected'],
     });
     expect(sweepResult.summary).toContain('reason=ports_not_connected');
     expect(sweepResult.summary).toContain('missingPorts=timeline_port');
@@ -631,7 +637,11 @@ describe('SchedulerService', () => {
       checkedTaskCount: 2,
       startedRunCount: 1,
       blockedTaskCount: 1,
+      startedRunIds: ['run_scheduled_cron_1'],
     });
+    expect(sweepResult.blockedReasons).toContain('Scheduled/event trigger daily run limit reached: 2/2.');
+    expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
+    expect(sweepResult.summary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 2/2.');
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
     expect(sweepResult.summaries.join(' ')).toContain('daily run limit reached: 2/2');

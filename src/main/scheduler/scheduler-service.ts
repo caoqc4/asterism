@@ -27,6 +27,8 @@ export type ScheduledEventAgentSweepResult = {
   checkedTaskCount: number;
   startedRunCount: number;
   blockedTaskCount: number;
+  startedRunIds: string[];
+  blockedReasons: string[];
   summaries: string[];
   summary: string;
 };
@@ -214,6 +216,8 @@ export class SchedulerService {
         checkedTaskCount: 0,
         startedRunCount: 0,
         blockedTaskCount: 0,
+        startedRunIds: [],
+        blockedReasons: ['ports_not_connected'],
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts}`,
       };
@@ -225,6 +229,8 @@ export class SchedulerService {
         checkedTaskCount: 0,
         startedRunCount: 0,
         blockedTaskCount: 0,
+        startedRunIds: [],
+        blockedReasons: ['in_flight'],
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight`,
       };
@@ -246,6 +252,8 @@ export class SchedulerService {
 
       const startedRunCount = results.filter((result) => result.status === 'started').length;
       const blockedTaskCount = results.length - startedRunCount;
+      const startedRunIds = results.flatMap((result) => result.status === 'started' && result.run ? [result.run.id] : []);
+      const blockedReasons = results.flatMap((result) => result.status === 'blocked' ? result.plan.blockedReasons : []);
       this.lastScheduledEventAgentSweepAt = new Date().toISOString();
 
       return {
@@ -253,6 +261,8 @@ export class SchedulerService {
         checkedTaskCount: tasks.length,
         startedRunCount,
         blockedTaskCount,
+        startedRunIds,
+        blockedReasons,
         summaries: results.map((result) => result.summary),
         summary: [
           `scheduledEventAgentSweep=${kind}`,
@@ -260,6 +270,8 @@ export class SchedulerService {
           `checked=${tasks.length}`,
           `started=${startedRunCount}`,
           `blocked=${blockedTaskCount}`,
+          `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
+          `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
         ].join(' / '),
       };
     } finally {

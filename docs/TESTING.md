@@ -370,7 +370,8 @@ Standing Approval candidates, reuse persisted run-limit accounting, start one
 bounded Code Agent run with the trigger Run evidence contract and run-limit
 evidence, block the duplicate through in-sweep daily-limit counting, record
 `panel.scheduled_event_agent_triggered` with target task, runtime-start
-requirement, and run-status evidence, and keep `workspace=unchanged`, `provider=not-called`, and
+requirement, and run-status evidence, expose top-level `startedRunIds` and
+`blockedReasons`, and keep `workspace=unchanged`, `provider=not-called`, and
 `docker=not-started`.
 
 The Agent API execution preflight is deliberately narrower than a full task
