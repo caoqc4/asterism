@@ -232,8 +232,34 @@ describe('runtime event record projection', () => {
       detail: '目标：已清除 / 原目标：完成运行时验收 / 来源：/goal clear',
     });
     expect(events.find((event) => event.sourceId === 'timeline-scheduled-trigger')).toMatchObject({
-      title: 'Scheduled Agent 已启动',
-      detail: 'Run：run-scheduled-1 / 任务：task-1 / 计划：Scheduled report refresh ready / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 启动门：已满足 / 触发：cron / 授权：standing_approval:task-1:coding:local_sandbox / 限额：1/3 / 写入：提案模式',
+      title: '定时/事件 Agent 已启动',
+      detail: 'Run：run-scheduled-1 / 任务：task-1 / 计划：Scheduled report refresh ready / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 启动门：已满足 / 触发：自动巡检 / 授权：standing_approval:task-1:coding:local_sandbox / 限额：1/3 / 写入：提案模式',
+    });
+  });
+
+  it('labels manual scheduled/event Agent trigger evidence for operators', () => {
+    const events = projectRuntimeEvents({
+      timeline: [{
+        id: 'timeline-scheduled-trigger-manual',
+        taskId: 'task-1',
+        type: 'panel.scheduled_event_agent_triggered',
+        payload: JSON.stringify({
+          runId: 'run-scheduled-manual-1',
+          runStatus: 'running',
+          runtimeStartMissingRequirements: [],
+          targetTaskId: 'task-1',
+          terminalRunEvidenceStatus: 'pending',
+          triggerKind: 'manual',
+          triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+          workspaceWriteAllowed: false,
+        }),
+        createdAt: '2026-05-14T08:05:00.000Z',
+      }],
+    });
+
+    expect(events.find((event) => event.sourceId === 'timeline-scheduled-trigger-manual')).toMatchObject({
+      title: '定时/事件 Agent 已启动',
+      detail: 'Run：run-scheduled-manual-1 / 任务：task-1 / 状态：running / 终态证据：等待中 / 触发证据：等待终态 / 启动门：已满足 / 触发：手动启动 / 写入：提案模式',
     });
   });
 

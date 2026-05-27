@@ -628,8 +628,14 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
       ? '启动门：已满足'
       : `启动门缺口：${parsed.runtimeStartMissingRequirements.join(',')}`
     : null;
-  const triggerKind = typeof parsed.triggerKind === 'string' && parsed.triggerKind.trim()
-    ? `触发：${parsed.triggerKind.trim()}`
+  const triggerKindValue = typeof parsed.triggerKind === 'string' ? parsed.triggerKind.trim() : '';
+  const triggerKindLabel = triggerKindValue === 'cron'
+    ? '自动巡检'
+    : triggerKindValue === 'manual'
+      ? '手动启动'
+      : triggerKindValue;
+  const triggerKind = triggerKindLabel
+    ? `触发：${triggerKindLabel}`
     : null;
   const policyId = typeof parsed.standingApprovalPolicyId === 'string' && parsed.standingApprovalPolicyId.trim()
     ? `授权：${parsed.standingApprovalPolicyId.trim()}`

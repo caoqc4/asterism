@@ -311,7 +311,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('trigger plan summary');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start gate status');
-    expect(workHabits?.evidence.join(' ')).toContain('trigger kind');
+    expect(workHabits?.evidence.join(' ')).toContain('localized trigger kind labels for 自动巡检 and 手动启动');
     expect(workHabits?.evidence.join(' ')).toContain('run-limit usage');
     expect(workHabits?.evidence.join(' ')).toContain('workspace proposal-mode write boundary');
     expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
