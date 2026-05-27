@@ -29,6 +29,7 @@ const envKeys = [
   'TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE',
   'TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_PREFLIGHT',
+  'TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_SMOKE',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE',
   'TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS',
   'TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE',
@@ -836,6 +837,38 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('backgroundLiveRun=ready_to_attempt');
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('docker=not-started');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('keeps scheduled/event background live smoke skipped without provider spend by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/scheduled-event-agent-background-live-smoke.mjs');
+
+    expect(scripts['manual:scheduled-event-agent-background-live-smoke']).toBe(
+      'npm run build:main && node scripts/scheduled-event-agent-background-live-smoke.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Scheduled/event Agent background live smoke');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=opt_in_required');
+    expect(result.output).toContain('backgroundLiveRun=not-started');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('docker=not-started');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('validates scheduled/event background live smoke config before provider calls', () => {
+    const result = runScript('scripts/scheduled-event-agent-background-live-smoke.mjs', '', {
+      TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_SMOKE: 'true',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Scheduled/event Agent background live smoke');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=config_missing');
+    expect(result.output).toContain('backgroundLiveRun=not-started');
+    expect(result.output).toContain('TASKPLANE_ENABLE_SCHEDULER must be true');
+    expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('workspace=unchanged');
   });
 

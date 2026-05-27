@@ -485,6 +485,10 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('status=ready');
     expect(workHabits?.evidence.join(' ')).toContain('backgroundLiveRun=ready_to_attempt');
     expect(workHabits?.evidence.join(' ')).toContain('requiredEvidence=scheduler_job_connected,standing_approval,context_readiness,task_memory_guidance,subtask_start,task_source_port,code_agent_trigger_port,timeline_evidence,durable_run_limit_counting,terminal_run_evidence,post_step_gates');
+    expect(workHabits?.evidence.join(' ')).toContain('manual scheduled/event Agent background live smoke');
+    expect(workHabits?.evidence.join(' ')).toContain('TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_SMOKE=true');
+    expect(workHabits?.evidence.join(' ')).toContain('backgroundLiveRun=not-started');
+    expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.runScheduledEventAgentTriggerSweep("cron")');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakRunLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakNoSecondTriggerEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('npm run accept:scheduled-event-agent-sweep-smoke');

@@ -422,6 +422,7 @@ provider-safe by default:
 
 ```bash
 npm run manual:scheduled-event-agent-background-live-preflight
+npm run manual:scheduled-event-agent-background-live-smoke
 ```
 
 Default output must include `status=skip`, `skipReason=opt_in_required`,
@@ -436,6 +437,14 @@ terminal Run evidence, and post-step gates. When the scheduler, sandbox Code
 Agent, model producer, provider config, API key, and workspace root are present,
 the preflight reports `status=ready` and `backgroundLiveRun=ready_to_attempt`
 without calling the provider.
+
+The paired background live smoke is also skipped by default. With
+`TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_SMOKE=true` and the same
+preflight gates ready, it builds main-process modules, runs one SchedulerService
+`cron` sweep against a temporary scheduled/routine task fixture, calls the
+configured model producer once through the sweep trigger port, records timeline
+evidence, and returns `workspace=unchanged`. Use it only when one deliberate
+provider-backed background run is acceptable.
 
 Provider-spending checks are intentionally opt-in:
 
