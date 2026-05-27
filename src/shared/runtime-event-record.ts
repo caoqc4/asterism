@@ -623,6 +623,13 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
   const policyId = typeof parsed.standingApprovalPolicyId === 'string' && parsed.standingApprovalPolicyId.trim()
     ? `授权：${parsed.standingApprovalPolicyId.trim()}`
     : null;
+  const runLimitValue = typeof parsed.runLimit === 'object' && parsed.runLimit !== null
+    ? parsed.runLimit as Record<string, unknown>
+    : null;
+  const runLimit = typeof runLimitValue?.runsStartedToday === 'number'
+    && typeof runLimitValue.maxRunsPerDay === 'number'
+    ? `限额：${runLimitValue.runsStartedToday}/${runLimitValue.maxRunsPerDay}`
+    : null;
   const workspaceWriteBoundary = parsed.workspaceWriteAllowed === false ? '写入：提案模式' : null;
   return [
     runId,
@@ -631,6 +638,7 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
     triggerRunEvidence,
     triggerKind,
     policyId,
+    runLimit,
     workspaceWriteBoundary,
   ].filter(Boolean).join(' / ') || null;
 }

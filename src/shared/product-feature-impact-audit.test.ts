@@ -305,6 +305,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('RuntimeEventRecord now formats panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('readable Task Dynamics detail with run id');
     expect(workHabits?.evidence.join(' ')).toContain('trigger kind');
+    expect(workHabits?.evidence.join(' ')).toContain('run-limit usage');
     expect(workHabits?.evidence.join(' ')).toContain('workspace proposal-mode write boundary');
     expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
     expect(workHabits?.evidence.join(' ')).toContain('15-minute background scheduler job');
