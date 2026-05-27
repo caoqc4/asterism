@@ -190,7 +190,7 @@ describe('capability registry', () => {
       visibility: 'hidden',
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
-      summary: expect.stringContaining('executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / providerToolReadiness=not_declared / startupProbe=never / selected=true / provider=configured'),
+      summary: expect.stringContaining('executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunMissingRequirements=selected_runtime_contract,target_task_identity,provider_visible_preflight,runtime_context_manifest,context_readiness_step,task_memory_guidance,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / providerToolReadiness=not_declared / startupProbe=never / selected=true / provider=configured'),
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
@@ -292,7 +292,7 @@ describe('capability registry', () => {
       status: 'available',
       configured: true,
       missingReason: null,
-      summary: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / providerToolReadiness=not_declared / startupProbe=never / selected=true / provider=configured',
+      summary: 'executionKind=api / status=partial / supportedPhases=chat,decomposition,decision,scheduled_brief / executionRun=deferred / executionRunPromotionRequirements=0/11 / executionRunMissingRequirements=selected_runtime_contract,target_task_identity,provider_visible_preflight,runtime_context_manifest,context_readiness_step,task_memory_guidance,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence / executionRunKeyGates=runtime_context_assembly,context_readiness,task_memory_coverage,task_memory_guidance,pre_step,subtask_start,post_step / providerToolReadiness=not_declared / startupProbe=never / selected=true / provider=configured',
     });
     expect(RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'run.triggerAgentApi.future')?.requiredGates)
       .toEqual(expect.arrayContaining(['runtime_context_assembly', 'context_readiness', 'task_memory_coverage', 'task_memory_guidance', 'pre_step', 'subtask_start', 'post_step']));

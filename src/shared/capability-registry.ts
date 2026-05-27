@@ -547,7 +547,11 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
 }
 
 function agentApiExecutionRunPromotionSummary(): string {
-  return `executionRunPromotionRequirements=0/${agentApiExecutionPromotionRequirements().length}`;
+  const promotionRequirements = agentApiExecutionPromotionRequirements();
+  return [
+    `executionRunPromotionRequirements=0/${promotionRequirements.length}`,
+    `executionRunMissingRequirements=${promotionRequirements.join(',')}`,
+  ].join(' / ');
 }
 
 function agentApiExecutionRunGateSummary(): string {
