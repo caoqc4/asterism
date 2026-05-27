@@ -617,10 +617,13 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
     : parsed.triggerRunEvidenceStatus === 'pending_terminal_run_evidence'
       ? '触发证据：等待终态'
       : null;
+  const triggerKind = typeof parsed.triggerKind === 'string' && parsed.triggerKind.trim()
+    ? `触发：${parsed.triggerKind.trim()}`
+    : null;
   const policyId = typeof parsed.standingApprovalPolicyId === 'string' && parsed.standingApprovalPolicyId.trim()
     ? `授权：${parsed.standingApprovalPolicyId.trim()}`
     : null;
-  return [runId, runStatus, terminalRunEvidence, triggerRunEvidence, policyId].filter(Boolean).join(' / ') || null;
+  return [runId, runStatus, terminalRunEvidence, triggerRunEvidence, triggerKind, policyId].filter(Boolean).join(' / ') || null;
 }
 
 function timelinePayloadTitle(payload: string | null, fallback: string, field: string): string {

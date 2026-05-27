@@ -90,6 +90,7 @@ function startOfUtcDay(date: Date): string {
 function buildScheduledEventCodeAgentRunInput(
   task: ScheduledEventAgentTaskInput,
   plan: AgentScheduledEventTriggerPlan,
+  triggerKind: 'cron' | 'manual',
 ): CreateCodeAgentRunInput {
   const nextStep = task.nextStep?.trim()
     || task.summary?.trim()
@@ -99,6 +100,7 @@ function buildScheduledEventCodeAgentRunInput(
     taskId: task.id,
     patchIntent: [
       'Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.',
+      `Trigger kind: ${triggerKind}.`,
       `Next step: ${nextStep}`,
       `Standing Approval policy: ${plan.policy?.id ?? 'unknown'}.`,
       `Runtime start requirements: ${plan.runtimeStartSatisfiedRequirements.join(',')}.`,
@@ -260,7 +262,7 @@ export class SchedulerService {
       const results: ScheduledEventAgentTriggerResult[] = [];
 
       for (const task of tasks) {
-        const result = await this.triggerScheduledEventAgentRun(task, now, runCounts);
+        const result = await this.triggerScheduledEventAgentRun(task, now, runCounts, kind);
         results.push(result);
         if (result.status === 'started') {
           runCounts[task.id] = (runCounts[task.id] ?? 0) + 1;
@@ -344,6 +346,7 @@ export class SchedulerService {
     task: ScheduledEventAgentTaskInput,
     now: Date = new Date(),
     runCountsStartedTodayByTaskId: Record<string, number> | null = null,
+    triggerKind: 'cron' | 'manual' = 'manual',
   ): Promise<ScheduledEventAgentTriggerResult> {
     if (!this.scheduledEventAgentRunPort) {
       const [plan] = await this.diagnoseScheduledEventAgentTriggers(
@@ -387,9 +390,9 @@ export class SchedulerService {
     }
 
     const run = await this.scheduledEventAgentRunPort.triggerCodeAgentRun(
-      buildScheduledEventCodeAgentRunInput(task, plan),
+      buildScheduledEventCodeAgentRunInput(task, plan, triggerKind),
     );
-    const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now);
+    const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now, triggerKind);
     const terminalRunEvidenceStatus = isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending';
     const triggerRunEvidenceStatus = terminalRunEvidenceStatus === 'present'
       ? 'ready_for_terminal_review'
@@ -410,6 +413,7 @@ export class SchedulerService {
     plan: AgentScheduledEventTriggerPlan,
     run: RunRecord,
     now: Date,
+    triggerKind: 'cron' | 'manual',
   ): Promise<'recorded' | 'not_connected'> {
     if (!this.scheduledEventAgentTimelinePort) return 'not_connected';
 
@@ -434,6 +438,7 @@ export class SchedulerService {
         runLimit: plan.runLimit,
         schedulerTriggerServiceConnected: plan.schedulerTriggerServiceConnected,
         runtimeStartAllowed: plan.runtimeStartAllowed,
+        triggerKind,
         triggeredAt: now.toISOString(),
       },
     });

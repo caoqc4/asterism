@@ -508,6 +508,7 @@ describe('SchedulerService', () => {
       operatorConfirmed: true,
       useModelProducer: true,
     });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Trigger kind: cron.');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
       taskId: 'task_auto',
       type: 'panel.scheduled_event_agent_triggered',
@@ -517,6 +518,7 @@ describe('SchedulerService', () => {
         runOutputSource: null,
         runStatus: 'running',
         runtimeStartAllowed: true,
+        triggerKind: 'cron',
         triggeredAt: '2026-05-26T11:00:00.000Z',
         runLimit: {
           maxRunsPerDay: 3,
