@@ -102,6 +102,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('timeline recording fails after a');
     expect(content).toContain('startedRunIds');
     expect(content).toContain('pending_terminal_run_evidence');
+    expect(content).toContain('does not count');
+    expect(content).toContain('blocked task');
     expect(content).toContain('Failed sweeps');
     expect(content).toContain('release the in-flight');
     expect(content).toContain('in-flight');

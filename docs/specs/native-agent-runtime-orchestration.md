@@ -869,10 +869,10 @@ Current implementation:
   `triggerRunEvidenceStatus=not_started`. If timeline recording fails after a
   run starts, the failed sweep still preserves `startedRunIds`,
   `terminalRunEvidenceMissingRunIds`, required trigger evidence, and
-  `triggerRunEvidenceStatus=pending_terminal_run_evidence`. Failed sweeps
-  release the in-flight guard, so the operator can see background automation
-  health even when the sweep correctly starts no run or recovers after a failed
-  sweep.
+  `triggerRunEvidenceStatus=pending_terminal_run_evidence`, but does not count
+  the started run as a blocked task. Failed sweeps release the in-flight guard,
+  so the operator can see background automation health even when the sweep
+  correctly starts no run or recovers after a failed sweep.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

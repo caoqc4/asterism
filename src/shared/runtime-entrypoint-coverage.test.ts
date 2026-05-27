@@ -316,6 +316,7 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('completed/skipped/failed sweep time evidence');
     expect(entry?.notes).toContain('Timeline-recording failures after a run starts preserve startedRunIds');
     expect(entry?.notes).toContain('pending_terminal_run_evidence instead of hiding the started run');
+    expect(entry?.notes).toContain('counting it as blocked');
     expect(entry?.notes).toContain('release the in-flight guard');
     expect(entry?.notes).toContain('keep automatic action health visible even when no run starts');
     expect(entry?.notes).toContain('standing approval');
