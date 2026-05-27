@@ -80,6 +80,10 @@ function agentApiDecompositionReadiness(summary?: string | null): {
   };
 }
 
+function agentApiProviderToolReadiness(summary?: string | null): string | null {
+  return scalarValue(summary ?? '', 'providerToolReadiness');
+}
+
 function scalarValue(summary: string, key: string): string | null {
   const part = summary.split(' / ').find((item) => item.trim().startsWith(`${key}=`));
   return part?.slice(`${key}=`.length).trim() ?? null;
@@ -587,6 +591,7 @@ function AgentCliRuntimeSection({
   const hasReadyRuntime = readyCount > 0;
   const apiExecutionReadiness = agentApiExecutionReadiness(apiCapability?.summary ?? apiSafety?.reason);
   const apiDecompositionReadiness = agentApiDecompositionReadiness(apiCapability?.summary ?? apiSafety?.reason);
+  const apiProviderToolReadiness = agentApiProviderToolReadiness(apiCapability?.summary ?? apiSafety?.reason);
 
   return (
     <section className="agent-cli-section">
@@ -727,6 +732,12 @@ function AgentCliRuntimeSection({
               )}
               <span>{`missingRequirements=${apiDecompositionReadiness.missingRequirementCount}`}</span>
             </div>
+            {apiProviderToolReadiness && (
+              <div className="agent-api-execution-readiness" aria-label="Agent API provider tool readiness">
+                <span>{`providerToolReadiness=${apiProviderToolReadiness}`}</span>
+                <span>provider tools not implied</span>
+              </div>
+            )}
           </>
         )}
         {apiConfigPanel}
