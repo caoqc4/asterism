@@ -862,7 +862,10 @@ Current implementation:
   `blockedReasons`, `runtimeStartMissingRequirements`, and
   `terminalRunEvidenceMissingRunIds`, plus `triggerRunEvidenceRequired` and
   `triggerRunEvidenceStatus`, at the top level for operator-facing run
-  evidence.
+  evidence. `SchedulerStatus.lastScheduledEventAgentSweepSummary` preserves the
+  latest completed, `ports_not_connected`, or `in_flight` sweep outcome, so the
+  operator can see background automation health even when the sweep correctly
+  starts no run.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

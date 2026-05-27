@@ -849,6 +849,10 @@ describe('local smoke script default boundaries', () => {
     expect(matrix).toContain('Scheduled/event Agent sweep');
     expect(matrix).toContain('Runtime-native web/search');
     expect(matrix).toContain('accept:scheduled-event-agent-sweep-smoke');
+    expect(matrix).toContain('persisted sweep summaries');
+    expect(matrix).toContain('disconnected-port skip evidence');
+    expect(matrix).toContain('in-flight skip evidence');
+    expect(matrix).toContain('lastScheduledEventAgentSweepSummary');
     expect(matrix).toContain('Packaged Codex live task run');
     expect(matrix).toContain('Manual only; passed locally on 2026-05-20; default skipped');
   });

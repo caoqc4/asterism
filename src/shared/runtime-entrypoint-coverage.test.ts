@@ -300,8 +300,13 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('trigger timeline evidence preserves targetTaskId');
     expect(entry?.notes).toContain('terminalRunEvidenceStatus');
     expect(entry?.notes).toContain('triggerRunEvidenceStatus');
+    expect(entry?.notes).toContain('lastScheduledEventAgentSweepSummary');
+    expect(entry?.notes).toContain('ports_not_connected');
+    expect(entry?.notes).toContain('in_flight');
+    expect(entry?.notes).toContain('automatic action health remains visible even when no run starts');
     expect(entry?.notes).toContain('standing approval');
     expect(entry?.notes).toContain('trigger timeline evidence');
+    expect(entry?.notes).toContain('sweep summary evidence');
     expect(entry?.notes).toContain('before widening runtime coverage');
   });
 
