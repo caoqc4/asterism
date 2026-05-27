@@ -615,6 +615,7 @@ describe('SchedulerService', () => {
         type: 'agent',
       } satisfies RunRecord),
     };
+    const sweepListener = vi.fn();
     const { SchedulerService } = await import('./scheduler-service.js');
     const service = new SchedulerService(
       {
@@ -643,6 +644,7 @@ describe('SchedulerService', () => {
       {
         listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task, task]),
       },
+      sweepListener,
     );
 
     const sweepResult = await service.runScheduledEventAgentTriggerSweep(
@@ -669,6 +671,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('reason=ports_not_connected');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(sweepListener).toHaveBeenCalledWith(sweepResult);
   });
 
   it('runs the scheduled/event Agent sweep through the registered cron callback', async () => {
@@ -1036,6 +1039,7 @@ describe('SchedulerService', () => {
     const taskSourcePort = {
       listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
     };
+    const sweepListener = vi.fn();
     const { SchedulerService } = await import('./scheduler-service.js');
     const service = new SchedulerService(
       {
@@ -1062,6 +1066,7 @@ describe('SchedulerService', () => {
       triggerPort,
       timelinePort,
       taskSourcePort,
+      sweepListener,
     );
 
     const failedSweep = await service.runScheduledEventAgentTriggerSweep(
@@ -1091,6 +1096,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
     expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+    expect(sweepListener).toHaveBeenCalledWith(failedSweep);
 
     triggerPort.triggerCodeAgentRun.mockResolvedValueOnce({
       ...buildRunRecord(),
