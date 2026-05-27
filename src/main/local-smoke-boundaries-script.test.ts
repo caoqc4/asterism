@@ -331,6 +331,7 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('runtimeStartMissingRequirements=');
     expect(script).toContain('terminalRunEvidenceMissingRunIds=');
     expect(script).toContain('triggerRunEvidenceRequired=');
+    expect(script).toContain('triggerRunEvidenceStatus=');
     expect(script).toContain('panel.scheduled_event_agent_triggered');
     expect(script).toContain('timelineEvidence=recorded');
     expect(script).toContain('runStatusEvidence=recorded');

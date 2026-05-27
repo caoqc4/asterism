@@ -206,6 +206,7 @@ export type TriggerScheduledEventAgentRunResult = {
   plan: AgentScheduledEventTriggerPlan;
   run: RunRecord | null;
   terminalRunEvidenceStatus: 'not_started' | 'pending' | 'present';
+  triggerRunEvidenceStatus: 'not_started' | 'pending_terminal_run_evidence' | 'ready_for_terminal_review';
   summary: string;
 };
 

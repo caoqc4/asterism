@@ -853,14 +853,16 @@ Current implementation:
   workspace writes. After a run starts, the service records
   `panel.scheduled_event_agent_triggered` with the run id, run
   status/outputSource/failureReason returned by the trigger port,
-  `terminalRunEvidenceStatus`, standing approval policy id, run-limit state,
-  and required trigger evidence so Task Dynamics can distinguish this
+  `terminalRunEvidenceStatus`, `triggerRunEvidenceStatus`, standing approval
+  policy id, run-limit state, and required trigger evidence so Task Dynamics can distinguish this
   operator-triggered autonomous action from ordinary run creation. The single-run
-  result also returns `terminalRunEvidenceStatus` for the operator message. Sweep
+  result also returns `terminalRunEvidenceStatus` and
+  `triggerRunEvidenceStatus` for the operator message. Sweep
   results expose `skipReason`, `startedRunIds`,
   `blockedReasons`, `runtimeStartMissingRequirements`, and
-  `terminalRunEvidenceMissingRunIds`, plus `triggerRunEvidenceRequired`, at the
-  top level for operator-facing run evidence.
+  `terminalRunEvidenceMissingRunIds`, plus `triggerRunEvidenceRequired` and
+  `triggerRunEvidenceStatus`, at the top level for operator-facing run
+  evidence.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

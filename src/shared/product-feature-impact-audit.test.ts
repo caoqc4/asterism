@@ -279,9 +279,10 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('scheduler:triggerScheduledEventAgentRun');
     expect(workHabits?.evidence.join(' ')).toContain('启动一次');
     expect(workHabits?.evidence.join(' ')).toContain('without enabling a background scheduler job');
-    expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus for the single-run operator action');
+    expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus and triggerRunEvidenceStatus for the single-run operator action');
     expect(workHabits?.evidence.join(' ')).toContain('panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus');
+    expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceStatus');
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start satisfied/missing requirements');
@@ -293,7 +294,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('missingPorts=run_port,timeline_port,task_source_port');
     expect(workHabits?.evidence.join(' ')).toContain('increments the in-sweep run-limit count');
     expect(workHabits?.evidence.join(' ')).toContain('duplicate candidates in one sweep cannot exceed the Standing Approval daily cap');
-    expect(workHabits?.evidence.join(' ')).toContain('skipReason, startedRunIds, blockedReasons, runtimeStartMissingRequirements, terminalRunEvidenceMissingRunIds, and triggerRunEvidenceRequired at the top level');
+    expect(workHabits?.evidence.join(' ')).toContain('skipReason, startedRunIds, blockedReasons, runtimeStartMissingRequirements, terminalRunEvidenceMissingRunIds, triggerRunEvidenceRequired, and triggerRunEvidenceStatus at the top level');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
     expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by in-sweep run-limit counting');
@@ -303,6 +304,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements evidence');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceRequired evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=passed');

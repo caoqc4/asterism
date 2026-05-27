@@ -488,12 +488,14 @@ describe('SchedulerService', () => {
         'run_limit_count',
         'post_step',
       ],
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
     });
     expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
     expect(sweepResult.summary).toContain('blockedReasons=none');
     expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=none');
     expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
     expect(sweepResult.summary).toContain('triggerRunEvidenceRequired=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
+    expect(sweepResult.summary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
     expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(1);
     expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
       ['task_auto'],
@@ -589,6 +591,7 @@ describe('SchedulerService', () => {
       runtimeStartMissingRequirements: ['scheduler_trigger_service'],
       terminalRunEvidenceMissingRunIds: [],
       triggerRunEvidenceRequired: [],
+      triggerRunEvidenceStatus: 'not_started',
     });
     expect(sweepResult.summary).toContain('reason=ports_not_connected');
     expect(sweepResult.summary).toContain('missingPorts=timeline_port');
@@ -669,6 +672,7 @@ describe('SchedulerService', () => {
         'run_limit_count',
         'post_step',
       ],
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
     });
     expect(sweepResult.blockedReasons).toContain('Scheduled/event trigger daily run limit reached: 2/2.');
     expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
@@ -1102,6 +1106,7 @@ describe('SchedulerService', () => {
     expect(result.status).toBe('blocked');
     expect(result.run).toBeNull();
     expect(result.terminalRunEvidenceStatus).toBe('not_started');
+    expect(result.triggerRunEvidenceStatus).toBe('not_started');
     expect(result.plan).toMatchObject({
       status: 'ready',
       triggerPlanReady: true,
@@ -1202,6 +1207,7 @@ describe('SchedulerService', () => {
     expect(result.summary).toContain('trigger=started');
     expect(result.summary).toContain('runId=run_scheduled_1');
     expect(result.summary).toContain('terminalRunEvidence=present');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=ready_for_terminal_review');
     expect(result.summary).toContain('timelineEvidence=recorded');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
       taskId: 'task_auto',
@@ -1212,6 +1218,7 @@ describe('SchedulerService', () => {
         runOutputSource: 'system',
         runStatus: 'completed',
         terminalRunEvidenceStatus: 'present',
+        triggerRunEvidenceStatus: 'ready_for_terminal_review',
         targetTaskId: 'task_auto',
         standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
         runtimeStartMissingRequirements: [],

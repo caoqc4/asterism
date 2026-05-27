@@ -101,6 +101,7 @@ try {
   assert(result.runtimeStartMissingRequirements.includes('trigger_plan_ready'), 'sweep did not expose runtime-start missing requirements in top-level evidence');
   assert(result.terminalRunEvidenceMissingRunIds.includes(run.id), 'sweep did not expose missing terminal Run evidence in top-level evidence');
   assert(result.triggerRunEvidenceRequired.includes('context_readiness'), 'sweep did not expose trigger Run evidence requirements in top-level evidence');
+  assert(result.triggerRunEvidenceStatus === 'pending_terminal_run_evidence', 'sweep did not expose pending trigger Run evidence status in top-level evidence');
   assert(result.summaries.join('\n').includes('daily run limit reached: 3/3'), 'sweep did not enforce the in-sweep daily run limit');
   assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
@@ -143,6 +144,7 @@ try {
     `runtimeStartMissingRequirements=${result.runtimeStartMissingRequirements.join(',')}`,
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
+    `triggerRunEvidenceStatus=${result.triggerRunEvidenceStatus}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
     'runLimitEvidence=passed',

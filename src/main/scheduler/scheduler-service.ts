@@ -20,6 +20,7 @@ export type ScheduledEventAgentTriggerResult = {
   plan: AgentScheduledEventTriggerPlan;
   run: RunRecord | null;
   terminalRunEvidenceStatus: 'not_started' | 'pending' | 'present';
+  triggerRunEvidenceStatus: 'not_started' | 'pending_terminal_run_evidence' | 'ready_for_terminal_review';
   summary: string;
 };
 
@@ -34,6 +35,7 @@ export type ScheduledEventAgentSweepResult = {
   runtimeStartMissingRequirements: Array<AgentScheduledEventTriggerPlan['runtimeStartMissingRequirements'][number]>;
   terminalRunEvidenceMissingRunIds: string[];
   triggerRunEvidenceRequired: AgentScheduledEventTriggerPlan['triggerRunEvidenceRequired'];
+  triggerRunEvidenceStatus: 'not_started' | 'pending_terminal_run_evidence' | 'ready_for_terminal_review';
   summaries: string[];
   summary: string;
 };
@@ -227,6 +229,7 @@ export class SchedulerService {
         runtimeStartMissingRequirements: ['scheduler_trigger_service'],
         terminalRunEvidenceMissingRunIds: [],
         triggerRunEvidenceRequired: [],
+        triggerRunEvidenceStatus: 'not_started',
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts}`,
       };
@@ -244,6 +247,7 @@ export class SchedulerService {
         runtimeStartMissingRequirements: [],
         terminalRunEvidenceMissingRunIds: [],
         triggerRunEvidenceRequired: [],
+        triggerRunEvidenceStatus: 'not_started',
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight`,
       };
@@ -277,6 +281,11 @@ export class SchedulerService {
       const triggerRunEvidenceRequired = Array.from(new Set(
         results.flatMap((result) => result.plan.triggerRunEvidenceRequired),
       ));
+      const triggerRunEvidenceStatus = startedRunCount === 0
+        ? 'not_started'
+        : terminalRunEvidenceMissingRunIds.length > 0
+          ? 'pending_terminal_run_evidence'
+          : 'ready_for_terminal_review';
       this.lastScheduledEventAgentSweepAt = new Date().toISOString();
 
       return {
@@ -290,6 +299,7 @@ export class SchedulerService {
         runtimeStartMissingRequirements,
         terminalRunEvidenceMissingRunIds,
         triggerRunEvidenceRequired,
+        triggerRunEvidenceStatus,
         summaries: results.map((result) => result.summary),
         summary: [
           `scheduledEventAgentSweep=${kind}`,
@@ -302,6 +312,7 @@ export class SchedulerService {
           `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
           `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
           `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
+          `triggerRunEvidenceStatus=${triggerRunEvidenceStatus}`,
         ].join(' / '),
       };
     } finally {
@@ -345,6 +356,7 @@ export class SchedulerService {
         plan,
         run: null,
         terminalRunEvidenceStatus: 'not_started',
+        triggerRunEvidenceStatus: 'not_started',
         summary: `${plan.summary} / trigger=blocked / reason=Scheduled event Agent trigger service is not connected.`,
       };
     }
@@ -369,6 +381,7 @@ export class SchedulerService {
         plan,
         run: null,
         terminalRunEvidenceStatus: 'not_started',
+        triggerRunEvidenceStatus: 'not_started',
         summary: `${plan.summary} / trigger=blocked`,
       };
     }
@@ -378,13 +391,17 @@ export class SchedulerService {
     );
     const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now);
     const terminalRunEvidenceStatus = isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending';
+    const triggerRunEvidenceStatus = terminalRunEvidenceStatus === 'present'
+      ? 'ready_for_terminal_review'
+      : 'pending_terminal_run_evidence';
 
     return {
       status: 'started',
       plan,
       run,
       terminalRunEvidenceStatus,
-      summary: `${plan.summary} / trigger=started / runId=${run.id} / terminalRunEvidence=${terminalRunEvidenceStatus} / timelineEvidence=${timelineEvidence}`,
+      triggerRunEvidenceStatus,
+      summary: `${plan.summary} / trigger=started / runId=${run.id} / terminalRunEvidence=${terminalRunEvidenceStatus} / triggerRunEvidenceStatus=${triggerRunEvidenceStatus} / timelineEvidence=${timelineEvidence}`,
     };
   }
 
@@ -405,6 +422,9 @@ export class SchedulerService {
         runOutputSource: run.outputSource,
         runStatus: run.status,
         terminalRunEvidenceStatus: isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending',
+        triggerRunEvidenceStatus: isTerminalScheduledEventRunStatus(run.status)
+          ? 'ready_for_terminal_review'
+          : 'pending_terminal_run_evidence',
         targetTaskId: task.id,
         planSummary: plan.summary,
         standingApprovalPolicyId: plan.policy?.id ?? null,

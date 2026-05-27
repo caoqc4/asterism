@@ -1019,6 +1019,7 @@ function createMockApi() {
         },
         run,
         terminalRunEvidenceStatus: 'pending',
+        triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
         summary: 'Scheduled/event trigger plan / trigger=started / runId=run_scheduled_event_agent',
       };
     }),
@@ -5241,6 +5242,7 @@ describe('App redesign v1', () => {
       });
     });
     expect(await within(approvalDraft).findByText(/已启动受控 Agent run：run_scheduled_event_agent/)).toBeTruthy();
+    expect(within(approvalDraft).getByText(/触发证据：等待终态/)).toBeTruthy();
   });
 
   it('lets task dynamics approve Run writeback proposals without opening the right panel', async () => {
