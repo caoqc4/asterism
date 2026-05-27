@@ -56,6 +56,30 @@ function normalizeAgentCliCapabilityMode(mode: FeatureFlags['agentCliCapabilityM
   return 'native';
 }
 
+function agentApiExecutionReadiness(summary?: string | null): {
+  missingGateCount: number;
+  missingRequirementCount: number;
+  promotionCount: string | null;
+} {
+  const text = summary ?? '';
+  return {
+    missingGateCount: listValueCount(text, 'executionRunMissingGates'),
+    missingRequirementCount: listValueCount(text, 'executionRunMissingRequirements'),
+    promotionCount: scalarValue(text, 'executionRunPromotionRequirements'),
+  };
+}
+
+function scalarValue(summary: string, key: string): string | null {
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(`${key}=`));
+  return part?.slice(`${key}=`.length).trim() ?? null;
+}
+
+function listValueCount(summary: string, key: string): number {
+  const value = scalarValue(summary, key);
+  if (!value || value === 'none') return 0;
+  return value.split(',').map((item) => item.trim()).filter(Boolean).length;
+}
+
 function buildNextFeatureFlags(
   featureFlags: FeatureFlags | undefined,
   agentCliCapabilityMode: AgentCliCapabilityMode,
@@ -550,6 +574,7 @@ function AgentCliRuntimeSection({
   const detectedCount = status?.detectedCount ?? runtimes.filter((runtime) => runtime.installed).length;
   const catalogueCount = status?.catalogueCount ?? 2;
   const hasReadyRuntime = readyCount > 0;
+  const apiExecutionReadiness = agentApiExecutionReadiness(apiCapability?.summary ?? apiSafety?.reason);
 
   return (
     <section className="agent-cli-section">
@@ -665,15 +690,25 @@ function AgentCliRuntimeSection({
           </div>
         </div>
         {(apiCapability || apiSafety) && (
-          <CapabilitySafetyStrip
-            boundaryLabel="执行边界"
-            boundaryValue="Provider 阶段可用；execution_run deferred"
-            capability={apiCapability}
-            emptyReason="Agent API Runtime 状态尚未进入共享能力注册表；不会作为 Agent CLI 的隐式兜底。"
-            safety={apiSafety}
-            statusLabel="API Runtime 状态"
-            unconfiguredLabel="需配置 Provider"
-          />
+          <>
+            <CapabilitySafetyStrip
+              boundaryLabel="执行边界"
+              boundaryValue="Provider 阶段可用；execution_run deferred"
+              capability={apiCapability}
+              emptyReason="Agent API Runtime 状态尚未进入共享能力注册表；不会作为 Agent CLI 的隐式兜底。"
+              safety={apiSafety}
+              statusLabel="API Runtime 状态"
+              unconfiguredLabel="需配置 Provider"
+            />
+            <div className="agent-api-execution-readiness" aria-label="Agent API execution_run readiness">
+              <span>execution_run deferred</span>
+              {apiExecutionReadiness.promotionCount && (
+                <span>{`promotion=${apiExecutionReadiness.promotionCount}`}</span>
+              )}
+              <span>{`missingRequirements=${apiExecutionReadiness.missingRequirementCount}`}</span>
+              <span>{`missingGates=${apiExecutionReadiness.missingGateCount}`}</span>
+            </div>
+          </>
         )}
         {apiConfigPanel}
       </div>
