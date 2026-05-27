@@ -381,6 +381,8 @@ boundary, expose top-level `checkedTaskIds`, `startedRunIds`,
 `skipReason=none` for completed sweeps, prove
 `triggerKind` evidence for both manual and cron starts, prove startup
 `scheduledEventAgentSweepJobConnected` evidence before the first cron tick,
+prove a two-tick cron soak blocks the second sweep through persisted daily
+run-limit evidence without a second trigger-port call or timeline event,
 prove manual, terminal, and cron sweep summaries are persisted into
 `lastScheduledEventAgentSweepSummary`, prove a disconnected scheduler trigger
 service skips with `ports_not_connected` and `triggerRunEvidenceStatus=not_started`,

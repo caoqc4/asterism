@@ -708,6 +708,86 @@ try {
   assert(sourceFailedRecoveryResult.status === 'completed', 'source-failed sweep recovery did not complete after the in-flight guard was released');
   assert(sourceFailedRecoveryResult.startedRunIds.includes(sourceRecoveryRun.id), 'source-failed sweep recovery did not start a bounded run after source recovery');
 
+  let persistedCronSoakRunCount = 0;
+  const cronSoakRun = {
+    ...terminalRun,
+    id: 'run_scheduled_event_cron_soak_smoke',
+    output: null,
+    outputSource: null,
+    status: 'running',
+  };
+  const cronSoakTriggerCalls = [];
+  const cronSoakTimelineEvents = [];
+  const cronSoakService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent cron soak smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: persistedCronSoakRunCount }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent cron soak smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent cron soak smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        cronSoakTriggerCalls.push(input);
+        persistedCronSoakRunCount = 1;
+        return cronSoakRun;
+      },
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        cronSoakTimelineEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask({ maxRunsPerDay: 1 })],
+    },
+  );
+  const cronSoakFirstResult = await cronSoakService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:31:00.000Z'),
+  );
+  const cronSoakSecondResult = await cronSoakService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:46:00.000Z'),
+  );
+  assert(cronSoakFirstResult.status === 'completed', 'cron soak first sweep did not complete');
+  assert(cronSoakFirstResult.startedRunCount === 1, 'cron soak first sweep did not start exactly one run');
+  assert(cronSoakSecondResult.status === 'completed', 'cron soak second sweep did not complete');
+  assert(cronSoakSecondResult.startedRunCount === 0, 'cron soak second sweep should not start after daily cap is reached');
+  assert(cronSoakSecondResult.blockedTaskCount === 1, 'cron soak second sweep did not block the capped task');
+  assert(cronSoakSecondResult.blockedReasons.includes('Scheduled/event trigger daily run limit reached: 1/1.'), 'cron soak second sweep did not expose persisted daily cap evidence');
+  assert(cronSoakSecondResult.triggerRunEvidenceStatus === 'not_started', 'cron soak second sweep should not start trigger evidence');
+  assert(cronSoakTriggerCalls.length === 1, 'cron soak should only call the trigger port once across two sweeps');
+  assert(cronSoakTimelineEvents.length === 1, 'cron soak should only record timeline evidence for the first started run');
+  assert(cronSoakService.getStatus().lastScheduledEventAgentSweepSummary === cronSoakSecondResult.summary, 'cron soak did not persist the second sweep summary');
+
   const startupService = new SchedulerService(
     {
       read: () => ({
@@ -876,6 +956,14 @@ try {
     `sourceFailedSweepSummary=${sourceFailedResult.summary}`,
     `sourceFailedRecoveryStatus=${sourceFailedRecoveryResult.status}`,
     `sourceFailedRecoveryRunId=${sourceRecoveryRun.id}`,
+    `cronSoakFirstStatus=${cronSoakFirstResult.status}`,
+    `cronSoakFirstStarted=${cronSoakFirstResult.startedRunCount}`,
+    `cronSoakSecondStatus=${cronSoakSecondResult.status}`,
+    `cronSoakSecondStarted=${cronSoakSecondResult.startedRunCount}`,
+    `cronSoakSecondBlocked=${cronSoakSecondResult.blockedTaskCount}`,
+    `cronSoakSecondTriggerRunEvidenceStatus=${cronSoakSecondResult.triggerRunEvidenceStatus}`,
+    `cronSoakTriggerCalls=${cronSoakTriggerCalls.length}`,
+    `cronSoakTimelineEvents=${cronSoakTimelineEvents.length}`,
     `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
     'duplicateRunLimit=blocked',
     'checkedTaskIdsEvidence=passed',
@@ -905,6 +993,8 @@ try {
     'timelineFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepRecoveryEvidence=passed',
+    'cronSoakRunLimitEvidence=passed',
+    'cronSoakNoSecondTriggerEvidence=passed',
     'skippedSweepTimeEvidence=recorded',
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
@@ -926,8 +1016,9 @@ try {
   await fs.rm(tempRoot, { force: true, recursive: true });
 }
 
-function buildReadyScheduledTask() {
+function buildReadyScheduledTask(options = {}) {
   const taskId = 'task_scheduled_event_sweep_smoke';
+  const maxRunsPerDay = options.maxRunsPerDay ?? 3;
 
   return {
     activeBlocker: null,
@@ -998,7 +1089,7 @@ function buildReadyScheduledTask() {
           createdAt: '2026-05-26T10:00:00.000Z',
           expiresAt: '2026-05-27T10:00:00.000Z',
           id: `standing_approval:${taskId}:coding:local_sandbox`,
-          maxRunsPerDay: 3,
+          maxRunsPerDay,
           reason: 'Allow bounded scheduled/event Agent sweep smoke execution.',
           riskCeiling: 'low',
           status: 'active',

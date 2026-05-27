@@ -382,6 +382,12 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('sourceFailedRecoveryRunId=');
     expect(script).toContain('sourceFailedSweepSummaryEvidence=recorded');
     expect(script).toContain('sourceFailedSweepRecoveryEvidence=passed');
+    expect(script).toContain('cronSoakFirstStatus=');
+    expect(script).toContain('cronSoakSecondStarted=');
+    expect(script).toContain('cronSoakSecondBlocked=');
+    expect(script).toContain('cronSoakSecondTriggerRunEvidenceStatus=');
+    expect(script).toContain('cronSoakRunLimitEvidence=passed');
+    expect(script).toContain('cronSoakNoSecondTriggerEvidence=passed');
     expect(script).toContain('Task source failed - safely');
     expect(script).toContain('skippedSweepTimeEvidence=recorded');
     expect(script).toContain('boundedRunTargetTask=passed');

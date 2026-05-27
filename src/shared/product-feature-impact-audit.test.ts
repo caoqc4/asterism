@@ -399,6 +399,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedTriggerRunEvidenceStatus=not_started');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepRecoveryEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('cronSoakRunLimitEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('cronSoakNoSecondTriggerEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('completedSweepTimeEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('skippedSweepTimeEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTask=passed');
@@ -452,6 +454,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('cronRunStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('Local scheduled/event Agent sweep acceptance on 2026-05-27 passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunFailureReasonEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('cronSoakRunLimitEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('cronSoakNoSecondTriggerEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('npm run accept:scheduled-event-agent-sweep-smoke');
     expect(workHabits?.evidence.join(' ')).toContain('status=completed, checked=2, started=1, blocked=1');
     expect(workHabits?.evidence.join(' ')).toContain('triggerKindEvidence=passed');
