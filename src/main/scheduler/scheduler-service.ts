@@ -105,6 +105,7 @@ function buildScheduledEventCodeAgentRunInput(
       `Next step: ${nextStep}`,
       `Task memory guidance: ${formatScheduledEventTaskMemoryGuidance(task)}`,
       `Standing Approval policy: ${plan.policy?.id ?? 'unknown'}.`,
+      `Standing Approval scope: ${formatScheduledEventStandingApprovalScope(plan)}`,
       `Runtime start requirements: ${plan.runtimeStartSatisfiedRequirements.join(',')}.`,
       `Trigger evidence: ${plan.triggerRunEvidenceRequired.join(',')}.`,
       `Run limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
@@ -116,6 +117,17 @@ function buildScheduledEventCodeAgentRunInput(
     operatorConfirmed: true,
     useModelProducer: true,
   };
+}
+
+function formatScheduledEventStandingApprovalScope(plan: AgentScheduledEventTriggerPlan): string {
+  const policy = plan.policy;
+  if (!policy) return 'none';
+  return [
+    `autonomy=${policy.allowedAutonomyLevel}`,
+    `riskCeiling=${policy.riskCeiling}`,
+    `maxRunsPerDay=${policy.maxRunsPerDay}`,
+    `reason=${policy.reason.trim() || 'none'}`,
+  ].join('; ');
 }
 
 function formatScheduledEventTaskMemoryGuidance(task: ScheduledEventAgentTaskInput): string {
