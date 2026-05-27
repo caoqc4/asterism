@@ -534,6 +534,7 @@ function timelineDetail(type: string, payload: string | null): string | null {
   if (type === 'panel.task_goal_paused') return formatTaskGoalControlDetail(payload, '已暂停');
   if (type === 'panel.task_goal_resumed') return formatTaskGoalControlDetail(payload, '已恢复');
   if (type === 'panel.runtime_native_goal_requested') return formatRuntimeNativeGoalRequestedDetail(payload);
+  if (type === 'panel.scheduled_event_agent_triggered') return formatScheduledEventAgentTriggeredDetail(payload);
   if (type.startsWith('completion_criteria.')) return formatCompletionCriteriaDetail(payload);
   if (type.startsWith('task_dependency.')) return formatTaskDependencyDetail(payload);
   if (type.startsWith('blocker.')) return formatBlockerDetail(payload);
@@ -595,6 +596,31 @@ function formatRuntimeNativeGoalRequestedDetail(payload: string): string | null 
     ? `原因：${parsed.reason.trim()}`
     : null;
   return [runtime, objective, forwarded, reason].filter(Boolean).join(' / ') || null;
+}
+
+function formatScheduledEventAgentTriggeredDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const runId = typeof parsed.runId === 'string' && parsed.runId.trim()
+    ? `Run：${parsed.runId.trim()}`
+    : null;
+  const runStatus = typeof parsed.runStatus === 'string' && parsed.runStatus.trim()
+    ? `状态：${parsed.runStatus.trim()}`
+    : null;
+  const terminalRunEvidence = parsed.terminalRunEvidenceStatus === 'present'
+    ? '终态证据：已记录'
+    : parsed.terminalRunEvidenceStatus === 'pending'
+      ? '终态证据：等待中'
+      : null;
+  const triggerRunEvidence = parsed.triggerRunEvidenceStatus === 'ready_for_terminal_review'
+    ? '触发证据：可复核'
+    : parsed.triggerRunEvidenceStatus === 'pending_terminal_run_evidence'
+      ? '触发证据：等待终态'
+      : null;
+  const policyId = typeof parsed.standingApprovalPolicyId === 'string' && parsed.standingApprovalPolicyId.trim()
+    ? `授权：${parsed.standingApprovalPolicyId.trim()}`
+    : null;
+  return [runId, runStatus, terminalRunEvidence, triggerRunEvidence, policyId].filter(Boolean).join(' / ') || null;
 }
 
 function timelinePayloadTitle(payload: string | null, fallback: string, field: string): string {

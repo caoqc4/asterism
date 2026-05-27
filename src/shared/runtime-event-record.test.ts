@@ -179,6 +179,19 @@ describe('runtime event record projection', () => {
           payload: JSON.stringify({ objective: '完成运行时验收', source: '/goal resume' }),
           createdAt: '2026-05-14T08:02:45.000Z',
         },
+        {
+          id: 'timeline-scheduled-trigger',
+          taskId: 'task-1',
+          type: 'panel.scheduled_event_agent_triggered',
+          payload: JSON.stringify({
+            runId: 'run-scheduled-1',
+            runStatus: 'completed',
+            standingApprovalPolicyId: 'standing_approval:task-1:coding:local_sandbox',
+            terminalRunEvidenceStatus: 'present',
+            triggerRunEvidenceStatus: 'ready_for_terminal_review',
+          }),
+          createdAt: '2026-05-14T08:04:00.000Z',
+        },
       ],
     });
 
@@ -208,6 +221,10 @@ describe('runtime event record projection', () => {
     expect(events.find((event) => event.sourceId === 'timeline-goal-clear')).toMatchObject({
       title: 'Task Goal 已更新',
       detail: '目标：已清除 / 原目标：完成运行时验收 / 来源：/goal clear',
+    });
+    expect(events.find((event) => event.sourceId === 'timeline-scheduled-trigger')).toMatchObject({
+      title: 'Scheduled Agent 已启动',
+      detail: 'Run：run-scheduled-1 / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 授权：standing_approval:task-1:coding:local_sandbox',
     });
   });
 

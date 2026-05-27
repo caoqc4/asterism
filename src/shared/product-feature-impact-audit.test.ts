@@ -287,6 +287,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start satisfied/missing requirements');
     expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('RuntimeEventRecord now formats panel.scheduled_event_agent_triggered');
+    expect(workHabits?.evidence.join(' ')).toContain('readable Task Dynamics detail with run id');
     expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
     expect(workHabits?.evidence.join(' ')).toContain('15-minute background scheduler job');
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');
