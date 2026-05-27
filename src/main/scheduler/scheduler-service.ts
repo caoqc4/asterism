@@ -119,9 +119,11 @@ function buildScheduledEventCodeAgentRunInput(
 function formatScheduledEventTaskMemoryGuidance(task: ScheduledEventAgentTaskInput): string {
   const activeProcess = task.processTemplates.find((template) => template.status === 'active');
   const openCriteria = task.completionCriteria.filter((criterion) => criterion.status === 'open');
+  const firstCriterion = openCriteria[0]?.text.trim();
   return [
     `process=${activeProcess?.title?.trim() || 'none'}`,
     `openCriteria=${openCriteria.length}`,
+    `firstCriterion=${firstCriterion || 'none'}`,
     `sourceContexts=${task.sourceContexts.length}`,
   ].join('; ');
 }
