@@ -386,6 +386,8 @@ run-limit evidence without a second trigger-port call or timeline event,
 prove manual, terminal, and cron sweep summaries are persisted into
 `lastScheduledEventAgentSweepSummary`, prove a disconnected scheduler trigger
 service skips with `ports_not_connected` and `triggerRunEvidenceStatus=not_started`,
+prove an operator-confirmed trigger with a Code Agent trigger port but no Task
+Dynamics timeline evidence port is blocked with no trigger-port call,
 prove overlapping sweeps skip with `in_flight` instead of starting a second
 run, prove trigger-port and task-source failures persist `sweep_failed` summary
 evidence and release the in-flight guard so a later sweep can recover, prove a

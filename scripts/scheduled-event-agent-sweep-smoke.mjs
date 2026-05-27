@@ -156,6 +156,59 @@ try {
   assert(timelineEvents[0].payload.runLimit?.maxRunsPerDay === 3, 'timeline evidence did not preserve the Standing Approval run limit');
   assert(beforeWorkspace === afterWorkspace, 'scheduled/event Agent sweep smoke mutated the workspace fixture');
 
+  const missingTimelineTriggerCalls = [];
+  const missingTimelineService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent missing-timeline smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent missing-timeline smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent missing-timeline smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        missingTimelineTriggerCalls.push(input);
+        return run;
+      },
+    },
+    null,
+  );
+  const missingTimelineResult = await missingTimelineService.triggerScheduledEventAgentRun(
+    buildReadyScheduledTask(),
+    new Date('2026-05-26T11:05:00.000Z'),
+  );
+  assert(missingTimelineResult.status === 'blocked', 'missing timeline evidence port did not block operator trigger');
+  assert(missingTimelineResult.triggerRunEvidenceStatus === 'not_started', 'missing timeline evidence port should not start trigger evidence');
+  assert(missingTimelineResult.summary.includes('timeline evidence service is not connected'), 'missing timeline evidence port did not expose a blocked summary');
+  assert(missingTimelineTriggerCalls.length === 0, 'missing timeline evidence port still called the Code Agent trigger port');
+
   const terminalRun = {
     ...run,
     failureReason: null,
@@ -910,6 +963,9 @@ try {
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
     `triggerRunEvidenceStatus=${result.triggerRunEvidenceStatus}`,
+    `missingTimelineStatus=${missingTimelineResult.status}`,
+    `missingTimelineTriggerRunEvidenceStatus=${missingTimelineResult.triggerRunEvidenceStatus}`,
+    `missingTimelineTriggerCalls=${missingTimelineTriggerCalls.length}`,
     `manualSweepSummary=${service.getStatus().lastScheduledEventAgentSweepSummary}`,
     `manualSweepAt=${service.getStatus().lastScheduledEventAgentSweepAt}`,
     'boundedRunTargetTask=passed',
@@ -980,6 +1036,7 @@ try {
     'blockedTaskSummaryEvidence=passed',
     'triggerRunEvidence=passed',
     'sweepAutomationReadinessEvidence=passed',
+    'missingTimelineEvidenceGate=blocked',
     'terminalTriggerRunEvidence=passed',
     'cronTriggerRunEvidence=passed',
     'cronRunFailureReasonEvidence=passed',

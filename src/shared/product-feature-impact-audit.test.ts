@@ -447,6 +447,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=passed');
     expect(workHabits?.evidence.join(' ')).toContain('targetTaskId timeline evidence');
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('missingTimelineEvidenceGate=blocked');
+    expect(workHabits?.evidence.join(' ')).toContain('missingTimelineTriggerCalls=0');
     expect(workHabits?.evidence.join(' ')).toContain('terminalTimelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('cronTimelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('timelineWorkspaceBoundary=recorded');
