@@ -306,6 +306,101 @@ try {
   assert(cronTimelineEvents[0].payload.workspaceWriteAllowed === false, 'cron timeline evidence did not preserve workspaceWriteAllowed=false');
   assert(beforeWorkspace === cronAfterWorkspace, 'scheduled/event Agent cron sweep smoke mutated the workspace fixture');
 
+  const startupService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => ({
+        activeTaskCount: 0,
+        at: '2026-05-26T12:30:00.000Z',
+        blockedTaskCount: 0,
+        briefAttention: null,
+        briefFocusTasks: [],
+        capturedTaskCount: 0,
+        completedTaskCount: 0,
+        decisions: [],
+        dependencies: [],
+        externalSignals: [],
+        focusTasks: [],
+        highRiskTaskCount: 0,
+        highRiskTasks: [],
+        missingNextStepTaskCount: 0,
+        pendingDecisionCount: 0,
+        pendingDecisions: [],
+        processTemplateCandidates: [],
+        priorityHeadline: 'Scheduled/event startup wiring smoke.',
+        priorityLede: 'No work should start before the cron tick.',
+        recentActivity: [],
+        recentArtifacts: [],
+        recentBriefSnapshots: [],
+        recentRunCount: 0,
+        recentSourceContexts: [],
+        recentTaskResumes: [],
+        recentTasks: [],
+        risks: [],
+        schedulerStatus: {
+          enabled: true,
+          lastBriefAt: null,
+          lastRunSweepAt: null,
+          lastScheduledEventAgentSweepAt: null,
+          running: false,
+          scheduledEventAgentSweepJobConnected: false,
+        },
+        waitingTasks: [],
+        waitingItems: [],
+        waitingTaskCount: 0,
+      }),
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({}),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent startup wiring smoke should not require API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent startup wiring smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async () => {
+        throw new Error('Scheduled/event Agent startup wiring smoke should not start a run before the cron tick.');
+      },
+    },
+    {
+      recordTimelineEvent: async () => {
+        throw new Error('Scheduled/event Agent startup wiring smoke should not record trigger timeline before the cron tick.');
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => {
+        throw new Error('Scheduled/event Agent startup wiring smoke should not list candidates before the cron tick.');
+      },
+    },
+  );
+  await startupService.start();
+  const startupStatus = startupService.getStatus();
+  assert(startupStatus.running === true, 'startup wiring smoke did not mark scheduler running');
+  assert(startupStatus.scheduledEventAgentSweepJobConnected === true, 'startup wiring smoke did not expose scheduled/event sweep job connection');
+  assert(startupStatus.lastScheduledEventAgentSweepAt === null, 'startup wiring smoke should not claim a sweep ran before the cron tick');
+  startupService.stop();
+
   console.log([
     'Scheduled/event Agent sweep smoke: ready',
     `status=${result.status}`,
@@ -337,6 +432,7 @@ try {
     `cronRunId=${cronRun.id}`,
     `cronTriggerRunEvidenceStatus=${cronResult.triggerRunEvidenceStatus}`,
     `cronTriggerKind=${cronTimelineEvents[0].payload.triggerKind}`,
+    `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
     'terminalTriggerRunEvidence=passed',
@@ -349,6 +445,7 @@ try {
     'timelineWorkspaceBoundary=recorded',
     'terminalTimelineWorkspaceBoundary=recorded',
     'cronTimelineWorkspaceBoundary=recorded',
+    'startupSweepJobEvidence=recorded',
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
     'cronRunStatusEvidence=recorded',

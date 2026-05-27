@@ -350,6 +350,8 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('manualTriggerKind=${timelineEvents[0].payload.triggerKind}');
     expect(script).toContain('terminalTriggerKind=${terminalTimelineEvents[0].payload.triggerKind}');
     expect(script).toContain('cronTriggerKind=${cronTimelineEvents[0].payload.triggerKind}');
+    expect(script).toContain('startupSweepJobConnected=');
+    expect(script).toContain('startupSweepJobEvidence=recorded');
     expect(script).toContain('triggerKindEvidence=passed');
     expect(script).toContain('cronTriggerRunEvidence=passed');
     expect(script).toContain('panel.scheduled_event_agent_triggered');
