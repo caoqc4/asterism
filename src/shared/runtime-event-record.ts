@@ -607,6 +607,9 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
   const runStatus = typeof parsed.runStatus === 'string' && parsed.runStatus.trim()
     ? `状态：${parsed.runStatus.trim()}`
     : null;
+  const runFailureReason = typeof parsed.runFailureReason === 'string' && parsed.runFailureReason.trim()
+    ? `失败原因：${parsed.runFailureReason.trim()}`
+    : null;
   const targetTaskId = typeof parsed.targetTaskId === 'string' && parsed.targetTaskId.trim()
     ? `任务：${parsed.targetTaskId.trim()}`
     : null;
@@ -653,6 +656,7 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
     targetTaskId,
     planSummary,
     runStatus,
+    runFailureReason,
     terminalRunEvidence,
     triggerRunEvidence,
     runtimeStartGate,

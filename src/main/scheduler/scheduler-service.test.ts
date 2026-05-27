@@ -241,7 +241,7 @@ function buildReadyAutomationAiConfigService() {
   };
 }
 
-function buildStandingApprovalTimeline(partial: { maxRunsPerDay?: number } = {}) {
+function buildStandingApprovalTimeline(partial: { maxRunsPerDay?: number; expiresAt?: string } = {}) {
   return {
     id: 'timeline_approval',
     taskId: 'task_auto',
@@ -253,7 +253,7 @@ function buildStandingApprovalTimeline(partial: { maxRunsPerDay?: number } = {})
         allowedLanes: ['coding'],
         allowedRuntimeIds: ['local_sandbox'],
         createdAt: '2026-05-26T10:00:00.000Z',
-        expiresAt: '2026-05-27T10:00:00.000Z',
+        expiresAt: partial.expiresAt ?? '2026-12-31T10:00:00.000Z',
         maxRunsPerDay: partial.maxRunsPerDay ?? 3,
         reason: 'Allow bounded weekly update preparation.',
         riskCeiling: 'low',

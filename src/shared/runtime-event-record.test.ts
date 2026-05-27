@@ -263,6 +263,33 @@ describe('runtime event record projection', () => {
     });
   });
 
+  it('keeps scheduled/event Agent failure reasons visible in Task Dynamics detail', () => {
+    const events = projectRuntimeEvents({
+      timeline: [{
+        id: 'timeline-scheduled-trigger-failed',
+        taskId: 'task-1',
+        type: 'panel.scheduled_event_agent_triggered',
+        payload: JSON.stringify({
+          runFailureReason: '模型执行失败，等待人工复核。',
+          runId: 'run-scheduled-failed-1',
+          runStatus: 'failed',
+          runtimeStartMissingRequirements: [],
+          targetTaskId: 'task-1',
+          terminalRunEvidenceStatus: 'present',
+          triggerKind: 'cron',
+          triggerRunEvidenceStatus: 'ready_for_terminal_review',
+          workspaceWriteAllowed: false,
+        }),
+        createdAt: '2026-05-14T08:06:00.000Z',
+      }],
+    });
+
+    expect(events.find((event) => event.sourceId === 'timeline-scheduled-trigger-failed')).toMatchObject({
+      title: '定时/事件 Agent 已启动',
+      detail: 'Run：run-scheduled-failed-1 / 任务：task-1 / 状态：failed / 失败原因：模型执行失败，等待人工复核。 / 终态证据：已记录 / 触发证据：可复核 / 启动门：已满足 / 触发：自动巡检 / 写入：提案模式',
+    });
+  });
+
   it('shows changed durable task fields in task update events', () => {
     const events = projectRuntimeEvents({
       timeline: [{
