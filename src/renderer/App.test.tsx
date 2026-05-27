@@ -1261,7 +1261,7 @@ describe('App redesign v1', () => {
 
   it('shows scheduled/event sweep status in Brief when scheduler is enabled', async () => {
     const homeBrief = buildBriefData(harness.tasks, harness.decisions);
-    const sweepSummary = 'scheduledEventAgentSweep=cron / status=completed / checked=2 / started=1 / blocked=1 / blockedReasons=Scheduled/event trigger daily run limit reached: 3/3. / blockedTaskSummaries=task_routine_auto: Scheduled/event trigger daily run limit reached: 3/3. / runFailureReasons=run_scheduled_callback_1: Model failed safely. / triggerRunEvidenceStatus=pending_terminal_run_evidence';
+    const sweepSummary = 'scheduledEventAgentSweep=cron / status=completed / checked=2 / started=1 / blocked=1 / blockedReasons=Scheduled/event trigger daily run limit reached: 3/3. / blockedTaskSummaries=task_routine_auto: Scheduled/event trigger daily run limit reached: 3/3. / runFailureReasons=run_scheduled_callback_1: Model failed safely. / terminalRunEvidenceMissingRunIds=run_scheduled_callback_1 / triggerRunEvidenceStatus=pending_terminal_run_evidence';
     homeBrief.schedulerStatus = {
       enabled: true,
       running: true,
@@ -1275,7 +1275,7 @@ describe('App redesign v1', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('自动巡检: 已运行 · 检查 2 · 启动 1 · 阻塞 1 · 限额 · 失败 1 · 证据待终态')).toBeTruthy();
+    expect(await screen.findByText('自动巡检: 已运行 · 检查 2 · 启动 1 · 阻塞 1 · 限额 · 失败 1 · 终态缺 1 · 证据待终态')).toBeTruthy();
     expect(screen.getByTitle(sweepSummary)).toBeTruthy();
   });
 
@@ -1377,7 +1377,7 @@ describe('App redesign v1', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('自动巡检: 异常 · 检查 1 · 启动 1 · 证据待终态')).toBeTruthy();
+    expect(await screen.findByText('自动巡检: 异常 · 检查 1 · 启动 1 · 终态缺 1 · 证据待终态')).toBeTruthy();
     expect(screen.queryByText('自动巡检: 已运行')).toBeFalsy();
     expect(screen.getByTitle(sweepSummary)).toBeTruthy();
   });

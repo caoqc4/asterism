@@ -365,6 +365,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('show 准备缺 N only when automation readiness is missing');
     expect(workHabits?.evidence.join(' ')).toContain('Brief completed automatic-sweep chips now show 限额');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event daily run limit');
+    expect(workHabits?.evidence.join(' ')).toContain('parse terminalRunEvidenceMissingRunIds and show 终态缺 N');
+    expect(workHabits?.evidence.join(' ')).toContain('pending post-step review is visible without opening the tooltip');
     expect(workHabits?.evidence.join(' ')).toContain('completed automatic-sweep chips now include checked, started, blocked, run-failure count, and trigger Run evidence labels');
     expect(workHabits?.evidence.join(' ')).toContain('whether terminal runs failed');
     expect(workHabits?.evidence.join(' ')).toContain('waiting for terminal Run evidence or ready for review');

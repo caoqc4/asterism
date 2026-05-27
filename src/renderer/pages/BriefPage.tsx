@@ -99,6 +99,7 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
     schedulerSweepBlockReasonLabel(summary),
     schedulerSweepFailureLabel(summary),
     schedulerSweepAutomationReadinessLabel(summary),
+    schedulerSweepTerminalEvidenceGapLabel(summary),
     schedulerSweepEvidenceLabel(summary),
   ]
     .filter(Boolean)
@@ -113,6 +114,7 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
     schedulerSweepCountLabel(summary),
     schedulerSweepBlockReasonLabel(summary),
     schedulerSweepAutomationReadinessLabel(summary),
+    schedulerSweepTerminalEvidenceGapLabel(summary),
     schedulerSweepEvidenceLabel(summary),
   ]
     .filter(Boolean)
@@ -145,6 +147,13 @@ function schedulerSweepEvidenceLabel(summary: string): string | null {
   if (triggerRunEvidenceStatus === 'ready_for_terminal_review') return '证据可复核';
   if (triggerRunEvidenceStatus === 'pending_terminal_run_evidence') return '证据待终态';
   return null;
+}
+
+function schedulerSweepTerminalEvidenceGapLabel(summary: string): string | null {
+  const missingRunIds = summary.match(/(?:^| \/ )terminalRunEvidenceMissingRunIds=([^/]+?)(?: \/|$)/)?.[1]?.trim();
+  if (!missingRunIds || missingRunIds === 'none') return null;
+  const count = missingRunIds.split(',').filter((runId) => runId.trim().length > 0).length;
+  return count > 0 ? `终态缺 ${count}` : null;
 }
 
 function schedulerSweepBlockReasonLabel(summary: string): string | null {
