@@ -81,6 +81,7 @@ export function planSchedulerDecisionProposal(params: {
       'writebackDispatchAllowed=false',
       'schedulerTriggerAllowed=false',
       `authorization=${authorizations.length ? authorizations.join(',') : 'missing'}`,
+      `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
     ].join(' / '),
   };
