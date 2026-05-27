@@ -938,6 +938,21 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('workspace=unchanged');
   });
 
+  it('keeps scheduled/event trigger readiness smoke read-only and build-gated by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/scheduled-event-trigger-readiness-smoke.mjs');
+
+    expect(scripts['manual:scheduled-event-trigger-readiness-smoke']).toBe(
+      'npm run build:main && node scripts/scheduled-event-trigger-readiness-smoke.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Scheduled/event trigger readiness smoke');
+    expect(result.output).toContain('mode=read-only');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('docker=not-started');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
   it('validates scheduled/event background live smoke config before provider calls', () => {
     const result = runScript('scripts/scheduled-event-agent-background-live-smoke.mjs', '', {
       TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_SMOKE: 'true',

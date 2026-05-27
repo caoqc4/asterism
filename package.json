@@ -60,6 +60,7 @@
     "manual:scheduled-event-agent-background-live-preflight": "node scripts/scheduled-event-agent-background-live-preflight.mjs",
     "manual:scheduled-event-agent-background-live-smoke": "npm run build:main && node scripts/scheduled-event-agent-background-live-smoke.mjs",
     "manual:scheduled-event-agent-packaged-background-soak:mac": "node scripts/scheduled-event-agent-packaged-background-soak-mac.mjs",
+    "manual:scheduled-event-trigger-readiness-smoke": "npm run build:main && node scripts/scheduled-event-trigger-readiness-smoke.mjs",
     "diagnostics:canonical-data": "npm run build:main && node scripts/canonical-data-diagnostics.mjs",
     "diagnostics:canonical-data:optional": "npm run build:main && node scripts/canonical-data-diagnostics.mjs --allow-missing",
     "audit:product-progress": "node scripts/product-feature-impact-audit-summary.mjs",

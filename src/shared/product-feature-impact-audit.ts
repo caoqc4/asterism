@@ -521,6 +521,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Settings confirmation threshold now clarifies that lower-confirmation behavior does not bypass Standing Approval, workspace writes, external connectors, paid actions, or release/deploy hard confirmations; it only adjusts interruption frequency for low-risk conversation and suggestions.',
       'planScheduledEventAgentTrigger now acts as the shared scheduled/event trigger planner: it consumes confirmed Standing Approval Task Dynamics records, re-checks runtime readiness, task readiness, policy expiry/scope/risk, task automation class, and returns runtimeStartAllowed=true only when a dedicated trigger service is connected and daily run-limit count evidence is present.',
       'Scheduled/event trigger plans now expose runtimeStartSatisfiedRequirements and runtimeStartMissingRequirements plus runtimeStartReady, runtimeStartRequirements=x/3, and runtimeStartMissingRequirements=... summary evidence for trigger_plan_ready, scheduler_trigger_service, and run_limit_count.',
+      'The scheduled/event trigger readiness smoke now runs planScheduledEventAgentTrigger as a read-only build-gated harness, proving no-service plans stay runtimeStartAllowed=false with runtimeStartRequirements=1/3, connected trigger service without run-limit counting stays blocked, daily-cap-reached plans stay blocked by run-limit evidence, and only trigger-plan-ready + scheduler-trigger-service + run-limit-count evidence reaches runtimeStartRequirements=3/3 without provider calls, Docker, or workspace writes.',
       'SchedulerService.diagnoseScheduledEventAgentTriggers now wires that planner to a no-start scheduler diagnostic entrypoint: it reads selected-runtime readiness through AI config status, returns ready/blocked scheduled-event plans, and does not resolve runtime config, schedule a trigger job, or start native runtimes.',
       'Scheduled/event trigger planning now accepts explicit daily run-limit accounting input and blocks ready plans when Standing Approval maxRunsPerDay has been reached, while still keeping runtimeStartAllowed=false.',
       'RunRepository.countCreatedSinceByTask now gives SchedulerService a real no-start daily run-count source for scheduled/event diagnostics, so run-limit blocking can be based on persisted same-day Run records instead of caller-supplied test data.',
@@ -570,7 +571,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future API-provider scheduled/event execution and broader habit automation remain partial; the CLI-first packaged scheduled/event Agent path is now supported with persistent-app soak evidence.',
     ],
     nextActions: [
-      'Keep scheduled/event execution on the supported CLI-first packaged path; promote any future API-backed scheduled execution only after it proves the same selected-runtime, standing-approval, run-limit, terminal-evidence, and workspace-boundary gates.',
+      'Keep scheduled/event execution on the supported CLI-first packaged path; promote any future API-backed scheduled execution only after the read-only scheduled/event trigger readiness smoke, selected-runtime evidence, standing-approval, run-limit, terminal-evidence, and workspace-boundary gates all pass.',
     ],
   },
   {
