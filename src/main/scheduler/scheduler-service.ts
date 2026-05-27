@@ -231,7 +231,7 @@ export class SchedulerService {
         triggerRunEvidenceRequired: [],
         triggerRunEvidenceStatus: 'not_started',
         summaries: [],
-        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts}`,
+        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts} / triggerRunEvidenceStatus=not_started`,
       };
     }
 
@@ -249,7 +249,7 @@ export class SchedulerService {
         triggerRunEvidenceRequired: [],
         triggerRunEvidenceStatus: 'not_started',
         summaries: [],
-        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight`,
+        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight / triggerRunEvidenceStatus=not_started`,
       };
     }
 
@@ -357,7 +357,7 @@ export class SchedulerService {
         run: null,
         terminalRunEvidenceStatus: 'not_started',
         triggerRunEvidenceStatus: 'not_started',
-        summary: `${plan.summary} / trigger=blocked / reason=Scheduled event Agent trigger service is not connected.`,
+        summary: `${plan.summary} / trigger=blocked / triggerRunEvidenceStatus=not_started / reason=Scheduled event Agent trigger service is not connected.`,
       };
     }
 
@@ -382,7 +382,7 @@ export class SchedulerService {
         run: null,
         terminalRunEvidenceStatus: 'not_started',
         triggerRunEvidenceStatus: 'not_started',
-        summary: `${plan.summary} / trigger=blocked`,
+        summary: `${plan.summary} / trigger=blocked / triggerRunEvidenceStatus=not_started`,
       };
     }
 

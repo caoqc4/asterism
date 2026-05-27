@@ -595,6 +595,7 @@ describe('SchedulerService', () => {
     });
     expect(sweepResult.summary).toContain('reason=ports_not_connected');
     expect(sweepResult.summary).toContain('missingPorts=timeline_port');
+    expect(sweepResult.summary).toContain('triggerRunEvidenceStatus=not_started');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
   });
 
@@ -1114,6 +1115,7 @@ describe('SchedulerService', () => {
       schedulerTriggerServiceConnected: false,
     });
     expect(result.summary).toContain('Scheduled event Agent trigger service is not connected');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=not_started');
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
   });
 
