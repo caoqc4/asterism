@@ -107,6 +107,7 @@ try {
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
   assert(triggerCalls[0].useModelProducer === true, 'sweep did not route through the model-producer Code Agent path');
   assert(triggerCalls[0].patchIntent.includes('reviewable patch artifacts or proposals'), 'sweep did not preserve no-direct-write guidance');
+  assert(triggerCalls[0].patchIntent.includes('Trigger kind: manual.'), 'sweep did not pass manual trigger kind into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Standing Approval policy: standing_approval:task_scheduled_event_sweep_smoke:coding:local_sandbox.'), 'sweep did not pass Standing Approval policy evidence into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Runtime start requirements: trigger_plan_ready,scheduler_trigger_service,run_limit_count.'), 'sweep did not pass runtime-start requirements into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Trigger evidence: context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step.'), 'sweep did not pass the trigger Run evidence contract into the bounded run');
@@ -119,6 +120,7 @@ try {
   assert(timelineEvents[0].payload.runFailureReason === null, 'timeline evidence did not preserve the run failure reason returned by the trigger port');
   assert(timelineEvents[0].payload.targetTaskId === 'task_scheduled_event_sweep_smoke', 'timeline evidence did not preserve the target task id');
   assert(timelineEvents[0].payload.standingApprovalPolicyId === 'standing_approval:task_scheduled_event_sweep_smoke:coding:local_sandbox', 'timeline evidence did not preserve the Standing Approval policy id');
+  assert(timelineEvents[0].payload.triggerKind === 'manual', 'timeline evidence did not preserve manual trigger kind');
   assert(timelineEvents[0].payload.runtimeStartAllowed === true, 'timeline evidence did not preserve runtimeStartAllowed=true');
   assert(Array.isArray(timelineEvents[0].payload.runtimeStartMissingRequirements), 'timeline evidence did not preserve runtime-start missing requirements');
   assert(timelineEvents[0].payload.runtimeStartMissingRequirements.length === 0, 'timeline evidence did not preserve empty runtime-start missing requirements');
@@ -212,12 +214,14 @@ try {
   assert(terminalTimelineEvents[0].payload.runOutputSource === 'system', 'terminal timeline evidence did not preserve completed run output source');
   assert(terminalTimelineEvents[0].payload.terminalRunEvidenceStatus === 'present', 'terminal timeline evidence did not mark terminal Run evidence present');
   assert(terminalTimelineEvents[0].payload.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'terminal timeline evidence did not mark trigger evidence ready for review');
+  assert(terminalTimelineEvents[0].payload.triggerKind === 'manual', 'terminal timeline evidence did not preserve manual trigger kind');
   assert(beforeWorkspace === terminalAfterWorkspace, 'scheduled/event Agent terminal sweep smoke mutated the workspace fixture');
 
   const cronRun = {
     ...terminalRun,
     id: 'run_scheduled_event_sweep_cron_smoke',
   };
+  const cronTriggerCalls = [];
   const cronTimelineEvents = [];
   const cronService = new SchedulerService(
     {
@@ -255,7 +259,10 @@ try {
       select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
     },
     {
-      triggerCodeAgentRun: async () => cronRun,
+      triggerCodeAgentRun: async (input) => {
+        cronTriggerCalls.push(input);
+        return cronRun;
+      },
     },
     {
       recordTimelineEvent: async (input) => {
@@ -277,10 +284,13 @@ try {
   assert(cronResult.summary.includes('scheduledEventAgentSweep=cron'), 'cron sweep summary did not preserve cron kind');
   assert(cronResult.startedRunIds.includes(cronRun.id), 'cron sweep did not expose the cron run id');
   assert(cronResult.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'cron sweep did not expose ready trigger Run evidence status');
+  assert(cronTriggerCalls.length === 1, 'cron sweep did not call the Code Agent trigger port exactly once');
+  assert(cronTriggerCalls[0].patchIntent.includes('Trigger kind: cron.'), 'cron sweep did not pass cron trigger kind into the bounded run');
   assert(cronTimelineEvents.length === 1, 'cron sweep did not record trigger timeline evidence');
   assert(cronTimelineEvents[0].payload.runId === cronRun.id, 'cron timeline evidence did not preserve the cron run id');
   assert(cronTimelineEvents[0].payload.triggeredAt === '2026-05-26T12:15:00.000Z', 'cron timeline evidence did not preserve the cron trigger time');
   assert(cronTimelineEvents[0].payload.terminalRunEvidenceStatus === 'present', 'cron timeline evidence did not mark terminal Run evidence present');
+  assert(cronTimelineEvents[0].payload.triggerKind === 'cron', 'cron timeline evidence did not preserve cron trigger kind');
   assert(beforeWorkspace === cronAfterWorkspace, 'scheduled/event Agent cron sweep smoke mutated the workspace fixture');
 
   console.log([
@@ -297,13 +307,16 @@ try {
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
     `triggerRunEvidenceStatus=${result.triggerRunEvidenceStatus}`,
+    `manualTriggerKind=${timelineEvents[0].payload.triggerKind}`,
     `terminalStatus=${terminalResult.status}`,
     `terminalRunId=${terminalRun.id}`,
     `terminalTriggerRunEvidenceStatus=${terminalResult.triggerRunEvidenceStatus}`,
+    `terminalTriggerKind=${terminalTimelineEvents[0].payload.triggerKind}`,
     `terminalRunEvidenceMissingRunIds=${terminalResult.terminalRunEvidenceMissingRunIds.join(',') || 'none'}`,
     `cronStatus=${cronResult.status}`,
     `cronRunId=${cronRun.id}`,
     `cronTriggerRunEvidenceStatus=${cronResult.triggerRunEvidenceStatus}`,
+    `cronTriggerKind=${cronTimelineEvents[0].payload.triggerKind}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
     'terminalTriggerRunEvidence=passed',
@@ -316,6 +329,7 @@ try {
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
     'cronRunStatusEvidence=recorded',
+    'triggerKindEvidence=passed',
     'workspace=unchanged',
     'provider=not-called',
     'docker=not-started',
