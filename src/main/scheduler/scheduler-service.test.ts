@@ -1724,6 +1724,64 @@ describe('SchedulerService', () => {
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
   });
 
+  it('blocks scheduled/event agent trigger starts when timeline evidence service is not connected', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      null,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.status).toBe('blocked');
+    expect(result.run).toBeNull();
+    expect(result.terminalRunEvidenceStatus).toBe('not_started');
+    expect(result.triggerRunEvidenceStatus).toBe('not_started');
+    expect(result.plan).toMatchObject({
+      status: 'ready',
+      triggerPlanReady: true,
+      runtimeStartAllowed: true,
+      schedulerTriggerServiceConnected: true,
+    });
+    expect(result.summary).toContain('Scheduled event Agent timeline evidence service is not connected');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+  });
+
   it('starts a bounded Code Agent run when scheduled/event trigger gates and standing approval pass', async () => {
     const now = new Date('2026-05-26T11:00:00.000Z');
     const task = buildAutomationTaskDetail({

@@ -547,6 +547,17 @@ export class SchedulerService {
       task,
     });
 
+    if (!this.scheduledEventAgentTimelinePort) {
+      return {
+        status: 'blocked',
+        plan,
+        run: null,
+        terminalRunEvidenceStatus: 'not_started',
+        triggerRunEvidenceStatus: 'not_started',
+        summary: `${plan.summary} / trigger=blocked / triggerRunEvidenceStatus=not_started / reason=Scheduled event Agent timeline evidence service is not connected.`,
+      };
+    }
+
     if (!plan.runtimeStartAllowed) {
       return {
         status: 'blocked',
