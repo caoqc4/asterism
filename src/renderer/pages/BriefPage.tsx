@@ -93,7 +93,11 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   const status = data?.schedulerStatus;
   if (!status?.enabled) return null;
   const summary = status.lastScheduledEventAgentSweepSummary ?? '';
-  if (summary.includes('status=completed')) return ['自动巡检: 已运行', schedulerSweepCountLabel(summary)]
+  if (summary.includes('status=completed')) return [
+    '自动巡检: 已运行',
+    schedulerSweepCountLabel(summary),
+    schedulerSweepEvidenceLabel(summary),
+  ]
     .filter(Boolean)
     .join(' · ');
   if (summary.includes('reason=waiting_for_first_tick')) return '自动巡检: 已接线';
@@ -116,6 +120,13 @@ function schedulerSweepCountLabel(summary: string): string | null {
     started !== undefined ? `启动 ${started}` : null,
     blocked !== undefined ? `阻塞 ${blocked}` : null,
   ].filter(Boolean).join(' · ') || null;
+}
+
+function schedulerSweepEvidenceLabel(summary: string): string | null {
+  const triggerRunEvidenceStatus = summary.match(/(?:^| \/ )triggerRunEvidenceStatus=([^ /]+)(?: \/|$)/)?.[1];
+  if (triggerRunEvidenceStatus === 'ready_for_terminal_review') return '证据可复核';
+  if (triggerRunEvidenceStatus === 'pending_terminal_run_evidence') return '证据待终态';
+  return null;
 }
 
 function focusAttentionLabel(task: FocusTask): string {
