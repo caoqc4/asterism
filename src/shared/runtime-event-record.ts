@@ -630,6 +630,11 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
     && parsed.triggerRunEvidenceRequired.length > 0
     ? `触发证据项：${parsed.triggerRunEvidenceRequired.join(',')}`
     : null;
+  const automationGate = Array.isArray(parsed.automationMissingRequirements)
+    ? parsed.automationMissingRequirements.length === 0
+      ? '自动化准备：已满足'
+      : `自动化准备缺口：${parsed.automationMissingRequirements.join(',')}`
+    : null;
   const runtimeStartGate = Array.isArray(parsed.runtimeStartMissingRequirements)
     ? parsed.runtimeStartMissingRequirements.length === 0
       ? '启动门：已满足'
@@ -664,6 +669,7 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
     terminalRunEvidence,
     triggerRunEvidence,
     triggerRunEvidenceRequired,
+    automationGate,
     runtimeStartGate,
     triggerKind,
     policyId,

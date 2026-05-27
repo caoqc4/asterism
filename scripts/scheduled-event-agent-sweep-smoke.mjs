@@ -114,6 +114,8 @@ try {
   assert(triggerCalls[0].patchIntent.includes('Target task: task_scheduled_event_sweep_smoke.'), 'sweep did not pass target task identity into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Trigger kind: manual.'), 'sweep did not pass manual trigger kind into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Task memory guidance: process=Scheduled/event sweep smoke SOP; openCriteria=1; firstCriterion=Review the scheduled/event Agent sweep smoke result.; sourceContexts=1; firstSource=Scheduled/event source digest'), 'sweep did not pass task-memory guidance into the bounded run');
+  assert(triggerCalls[0].patchIntent.includes('Automation readiness: Automation readiness / state=eligible / automationReady=yes / requirements=9/9'), 'sweep did not pass automation readiness evidence into the bounded run');
+  assert(triggerCalls[0].patchIntent.includes('scheduledEventEntrypoint=available'), 'sweep did not pass connected scheduled/event entrypoint evidence into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Standing Approval policy: standing_approval:task_scheduled_event_sweep_smoke:coding:local_sandbox.'), 'sweep did not pass Standing Approval policy evidence into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Standing Approval scope: autonomy=L2_limited_authorized_action; riskCeiling=low; maxRunsPerDay=3; reason=Allow bounded scheduled/event Agent sweep smoke execution.'), 'sweep did not pass Standing Approval scope evidence into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Runtime start requirements: trigger_plan_ready,scheduler_trigger_service,run_limit_count.'), 'sweep did not pass runtime-start requirements into the bounded run');
@@ -135,6 +137,12 @@ try {
   assert(Array.isArray(timelineEvents[0].payload.runtimeStartMissingRequirements), 'timeline evidence did not preserve runtime-start missing requirements');
   assert(timelineEvents[0].payload.runtimeStartMissingRequirements.length === 0, 'timeline evidence did not preserve empty runtime-start missing requirements');
   assert(Array.isArray(timelineEvents[0].payload.runtimeStartSatisfiedRequirements), 'timeline evidence did not preserve runtime-start satisfied requirements');
+  assert(timelineEvents[0].payload.automationReadinessSummary.includes('automationReady=yes'), 'timeline evidence did not preserve automation readiness summary');
+  assert(timelineEvents[0].payload.automationReadinessSummary.includes('scheduledEventEntrypoint=available'), 'timeline evidence did not preserve connected entrypoint readiness');
+  assert(Array.isArray(timelineEvents[0].payload.automationSatisfiedRequirements), 'timeline evidence did not preserve automation satisfied requirements');
+  assert(timelineEvents[0].payload.automationSatisfiedRequirements.includes('scheduled_event_entrypoint'), 'timeline evidence did not preserve satisfied scheduled/event entrypoint requirement');
+  assert(Array.isArray(timelineEvents[0].payload.automationMissingRequirements), 'timeline evidence did not preserve automation missing requirements');
+  assert(timelineEvents[0].payload.automationMissingRequirements.length === 0, 'timeline evidence should not expose automation missing requirements for a connected ready trigger');
   assert(timelineEvents[0].payload.runtimeStartSatisfiedRequirements.includes('trigger_plan_ready'), 'timeline evidence did not preserve trigger-plan runtime-start requirement');
   assert(timelineEvents[0].payload.runtimeStartSatisfiedRequirements.includes('scheduler_trigger_service'), 'timeline evidence did not preserve scheduler-service runtime-start requirement');
   assert(timelineEvents[0].payload.runtimeStartSatisfiedRequirements.includes('run_limit_count'), 'timeline evidence did not preserve run-limit runtime-start requirement');
@@ -817,6 +825,7 @@ try {
     `manualSweepAt=${service.getStatus().lastScheduledEventAgentSweepAt}`,
     'boundedRunTargetTask=passed',
     'boundedRunTaskMemoryGuidance=passed',
+    'boundedRunAutomationReadiness=passed',
     'boundedRunFirstCriterion=passed',
     'boundedRunFirstSource=passed',
     'boundedRunPostStepGuidance=passed',
@@ -903,6 +912,7 @@ try {
     'triggerKindEvidence=passed',
     'boundedRunTargetTaskEvidence=passed',
     'boundedRunTaskMemoryEvidence=passed',
+    'boundedRunAutomationReadinessEvidence=passed',
     'boundedRunFirstCriterionEvidence=passed',
     'boundedRunFirstSourceEvidence=passed',
     'boundedRunPostStepEvidence=passed',

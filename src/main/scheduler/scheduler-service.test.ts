@@ -552,6 +552,8 @@ describe('SchedulerService', () => {
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Target task: task_auto.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Trigger kind: cron.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Task memory guidance: process=Weekly update SOP; openCriteria=1; firstCriterion=Review the generated update.; sourceContexts=1; firstSource=Weekly metrics source');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Automation readiness: Automation readiness / state=eligible / automationReady=yes / requirements=9/9');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('scheduledEventEntrypoint=available');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Standing Approval scope: autonomy=L2_limited_authorized_action; riskCeiling=low; maxRunsPerDay=3; reason=Allow bounded weekly update preparation.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Post-step evidence: return terminal run output for Taskplane review.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Workspace write boundary: workspaceWriteAllowed=false; proposals only.');
@@ -567,6 +569,9 @@ describe('SchedulerService', () => {
         triggerKind: 'cron',
         triggeredAt: '2026-05-26T11:00:00.000Z',
         workspaceWriteAllowed: false,
+        automationReadinessSummary: expect.stringContaining('automationReady=yes'),
+        automationSatisfiedRequirements: expect.arrayContaining(['scheduled_event_entrypoint']),
+        automationMissingRequirements: [],
         runLimit: {
           maxRunsPerDay: 3,
           runsStartedToday: 0,

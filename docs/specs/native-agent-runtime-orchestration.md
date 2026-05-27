@@ -858,9 +858,13 @@ Current implementation:
   `panel.scheduled_event_agent_triggered` with the run id, run
   status/outputSource/failureReason returned by the trigger port,
   `terminalRunEvidenceStatus`, `triggerRunEvidenceStatus`, standing approval
-  policy id, `triggerKind`, run-limit state, and required trigger evidence so Task Dynamics can distinguish this
-  operator-triggered autonomous action from ordinary run creation. The single-run
-  result also returns `terminalRunEvidenceStatus` and
+  policy id, automation readiness summary plus satisfied/missing requirements,
+  `triggerKind`, run-limit state, runtime-start gate state, and required trigger
+  evidence so Task Dynamics can distinguish this operator-triggered autonomous
+  action from ordinary run creation. The generated run request carries the same
+  automation readiness summary, including `scheduledEventEntrypoint=available`
+  when the trigger service is connected. The single-run result also returns
+  `terminalRunEvidenceStatus` and
   `triggerRunEvidenceStatus` for the operator message. Sweep
   results expose `skipReason`, `checkedTaskIds`, `startedRunIds`,
   `blockedReasons`, `blockedTaskSummaries`, `runFailureReasons`,

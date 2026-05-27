@@ -288,6 +288,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('task-memory guidance');
     expect(workHabits?.evidence.join(' ')).toContain('first open completion criterion');
     expect(workHabits?.evidence.join(' ')).toContain('first source title');
+    expect(workHabits?.evidence.join(' ')).toContain('automation readiness evidence including scheduledEventEntrypoint=available');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id and scope');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start requirement evidence');
     expect(workHabits?.evidence.join(' ')).toContain('run-limit evidence');
@@ -304,6 +305,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceStatus');
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
+    expect(workHabits?.evidence.join(' ')).toContain('automation readiness summary plus satisfied/missing requirements');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start satisfied/missing requirements');
     expect(workHabits?.evidence.join(' ')).toContain('workspaceWriteAllowed=false');
     expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence');
@@ -316,6 +318,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('trigger plan summary');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start gate status');
+    expect(workHabits?.evidence.join(' ')).toContain('automation-readiness gate status');
     expect(workHabits?.evidence.join(' ')).toContain('failure reason when present');
     expect(workHabits?.evidence.join(' ')).toContain('required trigger evidence items');
     expect(workHabits?.evidence.join(' ')).toContain('localized trigger kind labels for 自动巡检 and 手动启动');
@@ -400,6 +403,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('skippedSweepTimeEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTask=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryGuidance=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('boundedRunAutomationReadiness=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunFirstCriterion=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunFirstSource=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunPostStepGuidance=passed');
@@ -418,6 +422,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('triggerKindEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTaskEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('boundedRunAutomationReadinessEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunFirstCriterionEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunFirstSourceEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunPostStepEvidence=passed');
@@ -452,6 +457,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('triggerKindEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTaskEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('boundedRunAutomationReadinessEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunFirstCriterionEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunFirstSourceEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunPostStepEvidence=passed');

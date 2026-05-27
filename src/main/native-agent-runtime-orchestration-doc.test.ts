@@ -96,6 +96,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('Task Dynamics timeline port');
     expect(content).toContain('before any automatic start can run');
     expect(content).toContain('operatorConfirmed=true');
+    expect(content).toContain('automation readiness summary plus satisfied/missing requirements');
+    expect(content).toContain('scheduledEventEntrypoint=available');
     expect(content).toContain('lastScheduledEventAgentSweepSummary');
     expect(content).toContain('ports_not_connected');
     expect(content).toContain('in_flight');
