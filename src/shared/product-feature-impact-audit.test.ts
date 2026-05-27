@@ -441,7 +441,10 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness summary and missing evidence');
     expect(capabilities?.evidence.join(' ')).toContain('requires the selected adapter to declare native goal capability');
     expect(capabilities?.evidence.join(' ')).toContain('taskplaneGoalLoop=available');
+    expect(capabilities?.evidence.join(' ')).toContain('skipReason=opt_in_required');
     expect(capabilities?.evidence.join(' ')).toContain('continueWith=taskplane_goal_loop');
+    expect(capabilities?.evidence.join(' ')).toContain('Provider-native and Gmail connector preflights now report skipReason=config_missing');
+    expect(capabilities?.evidence.join(' ')).toContain('before any provider, Gmail, task-memory, or workspace effect is allowed');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.evidence.join(' ')).toContain('fallback copy now uses the selected runtime native web/search readiness');

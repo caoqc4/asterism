@@ -64,6 +64,7 @@ export function runAgentCliNativeGoalDiscovery() {
 
   if (!ENABLED) {
     console.log('status=skip');
+    console.log('skipReason=opt_in_required');
     console.log('note=default discovery only probes version/help. Set TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY=true to run one explicit disposable candidate command.');
     console.log('continueWith=taskplane_goal_loop');
     console.log('required=TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON');

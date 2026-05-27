@@ -152,7 +152,8 @@ npm run accept:external-access:gmail-preflight
 The preflight reports whether the token, account label, query, and result limit
 are configured. It prints `<set>` for tokens and OAuth client secrets, accepts
 either the static access-token path or the OAuth client-id path, and does not
-call Gmail, inspect keychain refresh tokens, or write task memory.
+call Gmail, inspect keychain refresh tokens, or write task memory. Missing or
+unsafe configuration reports `status=skip` and `skipReason=config_missing`.
 
 The planned production OAuth path is documented in
 `docs/plans/2026-05-17-gmail-oauth-design.md`. The intended direction is a
@@ -490,9 +491,10 @@ versions as needing an update, and still keeps runtime-native goal passthrough
 closed until the Taskplane evidence gate proves command shape, progress,
 cancellation, memory, and source-of-truth boundaries. The default native-goal
 discovery output reports `taskplaneGoalLoop=available`,
-`nativeGoalForwarding=audit-only`, `passthrough=closed`, and
-`continueWith=taskplane_goal_loop`, so a closed native-goal passthrough should
-not be interpreted as Taskplane task advancement being blocked.
+`nativeGoalForwarding=audit-only`, `passthrough=closed`, `status=skip`,
+`skipReason=opt_in_required`, and `continueWith=taskplane_goal_loop`, so a
+closed native-goal passthrough should not be interpreted as Taskplane task
+advancement being blocked.
 
 For a manual packaged-app live pass against the real local Codex account, build
 the unpacked app first and then run the opt-in task smoke:
@@ -571,6 +573,9 @@ Use this preflight before spending provider credit on a live local validation:
 ```bash
 npm run accept:provider-native-live:preflight
 ```
+
+When configuration is incomplete, the preflight reports `status=skip` and
+`skipReason=config_missing` before any provider request is made.
 
 When the preflight reports `status=ready`, run the live validation. It sends one
 small provider request that forces the safe-read `task.inspect_context` tool

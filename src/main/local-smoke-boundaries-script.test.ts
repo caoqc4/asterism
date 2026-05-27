@@ -12,6 +12,7 @@ const envKeys = [
   'TASKPLANE_AI_API_KEY',
   'TASKPLANE_CODE_AGENT_CONTEXT_FILES',
   'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER',
+  'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS',
   'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
   'TASKPLANE_ENV_FILE',
   'TASKPLANE_AGENT_CLI_SMOKE_RUNTIME',
@@ -748,6 +749,7 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('nativeGoalForwarding=audit-only');
     expect(result.output).toContain('passthrough=closed');
     expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=opt_in_required');
     expect(result.output).toContain('continueWith=taskplane_goal_loop');
     expect(result.output).toContain('default discovery only probes version/help');
     expect(result.output).toContain('candidateExample=');
@@ -802,6 +804,18 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('runtime=invalid');
     expect(result.output).toContain('TASKPLANE_AGENT_CLI_NATIVE_GOAL_RUNTIME must be codex or claude');
     expect(result.output).not.toContain('candidateCommand=');
+  });
+
+  it('keeps provider-native live preflight non-spending when config is incomplete', () => {
+    const result = runScript('scripts/provider-native-live-preflight.mjs');
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Provider-native live preflight');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=config_missing');
+    expect(result.output).toContain('TASKPLANE_AI_PROVIDER is empty.');
+    expect(result.output).toContain('TASKPLANE_AI_MODEL is empty.');
+    expect(result.output).toContain('TASKPLANE_AI_API_KEY is empty.');
   });
 
   it('keeps Code Agent model producer preview smoke skipped without provider spend by default', () => {

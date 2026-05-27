@@ -287,7 +287,8 @@ first-version product gate. By default it only probes local CLI version/help
 output, so it can be used to inspect command shape without starting a goal. The
 default output reports `taskplaneGoalLoop=available`,
 `nativeGoalForwarding=audit-only`, `passthrough=closed`, and
-`continueWith=taskplane_goal_loop` to make clear that Taskplane-owned task
+`continueWith=taskplane_goal_loop`, plus `status=skip` and
+`skipReason=opt_in_required`, to make clear that Taskplane-owned task
 advancement can continue even when runtime-native goal forwarding is closed:
 
 ```bash
@@ -394,7 +395,9 @@ npm run accept:provider-native-live
 npm run accept:provider-native-live:run
 ```
 
-Use these only when a deliberate live provider request is acceptable.
+Use these only when a deliberate live provider request is acceptable. Incomplete
+preflight configuration must report `status=skip` and
+`skipReason=config_missing` before any provider call.
 
 ## What to Test
 

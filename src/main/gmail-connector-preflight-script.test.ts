@@ -86,6 +86,7 @@ describe('gmail connector preflight script', () => {
 
       expect(result.status).toBe(0);
       expect(output).toContain('status=skip');
+      expect(output).toContain('skipReason=config_missing');
       expect(output).toContain('Configure either TASKPLANE_EXTERNAL_ACCESS_GMAIL_ACCESS_TOKEN or TASKPLANE_EXTERNAL_ACCESS_GMAIL_OAUTH_CLIENT_ID.');
       expect(output).toContain('TASKPLANE_EXTERNAL_ACCESS_GMAIL_MAX_RESULTS must be between 1 and 25.');
       expect(output).toContain('No Gmail request or task memory write was performed.');
