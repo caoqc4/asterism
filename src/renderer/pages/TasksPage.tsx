@@ -1521,7 +1521,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       setStandingApprovalMessages((current) => ({
         ...current,
         [draft.id]: result.status === 'started'
-          ? `已启动受控 Agent run：${result.run?.id ?? 'unknown'}`
+          ? `已启动受控 Agent run：${result.run?.id ?? 'unknown'}（终态证据：${result.terminalRunEvidenceStatus === 'present' ? '已记录' : '等待中'}）`
           : `未启动：${result.summary}`,
       }));
       reloadTaskDetailForTask(selectedTask.id);

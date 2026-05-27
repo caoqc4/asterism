@@ -19,6 +19,7 @@ export type ScheduledEventAgentTriggerResult = {
   status: 'started' | 'blocked';
   plan: AgentScheduledEventTriggerPlan;
   run: RunRecord | null;
+  terminalRunEvidenceStatus: 'not_started' | 'pending' | 'present';
   summary: string;
 };
 
@@ -335,6 +336,7 @@ export class SchedulerService {
         status: 'blocked',
         plan,
         run: null,
+        terminalRunEvidenceStatus: 'not_started',
         summary: `${plan.summary} / trigger=blocked / reason=Scheduled event Agent trigger service is not connected.`,
       };
     }
@@ -358,6 +360,7 @@ export class SchedulerService {
         status: 'blocked',
         plan,
         run: null,
+        terminalRunEvidenceStatus: 'not_started',
         summary: `${plan.summary} / trigger=blocked`,
       };
     }
@@ -366,12 +369,14 @@ export class SchedulerService {
       buildScheduledEventCodeAgentRunInput(task, plan),
     );
     const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now);
+    const terminalRunEvidenceStatus = isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending';
 
     return {
       status: 'started',
       plan,
       run,
-      summary: `${plan.summary} / trigger=started / runId=${run.id} / timelineEvidence=${timelineEvidence}`,
+      terminalRunEvidenceStatus,
+      summary: `${plan.summary} / trigger=started / runId=${run.id} / terminalRunEvidence=${terminalRunEvidenceStatus} / timelineEvidence=${timelineEvidence}`,
     };
   }
 
@@ -391,6 +396,7 @@ export class SchedulerService {
         runFailureReason: run.failureReason,
         runOutputSource: run.outputSource,
         runStatus: run.status,
+        terminalRunEvidenceStatus: isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending',
         targetTaskId: task.id,
         planSummary: plan.summary,
         standingApprovalPolicyId: plan.policy?.id ?? null,

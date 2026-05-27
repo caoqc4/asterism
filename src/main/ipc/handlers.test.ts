@@ -1948,6 +1948,7 @@ describe('registerIpcHandlers', () => {
         evidence: [],
         summary: 'Scheduled/event trigger plan / status=ready',
       },
+      terminalRunEvidenceStatus: 'pending',
       summary: 'Scheduled/event trigger plan / trigger=started / runId=run_scheduled_1',
     });
 

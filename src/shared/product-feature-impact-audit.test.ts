@@ -279,7 +279,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('scheduler:triggerScheduledEventAgentRun');
     expect(workHabits?.evidence.join(' ')).toContain('启动一次');
     expect(workHabits?.evidence.join(' ')).toContain('without enabling a background scheduler job');
+    expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus for the single-run operator action');
     expect(workHabits?.evidence.join(' ')).toContain('panel.scheduled_event_agent_triggered');
+    expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus');
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start satisfied/missing requirements');

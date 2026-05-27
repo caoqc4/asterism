@@ -1018,6 +1018,7 @@ function createMockApi() {
           summary: 'Scheduled/event trigger plan / status=ready',
         },
         run,
+        terminalRunEvidenceStatus: 'pending',
         summary: 'Scheduled/event trigger plan / trigger=started / runId=run_scheduled_event_agent',
       };
     }),

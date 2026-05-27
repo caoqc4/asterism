@@ -1081,6 +1081,7 @@ describe('SchedulerService', () => {
 
     expect(result.status).toBe('blocked');
     expect(result.run).toBeNull();
+    expect(result.terminalRunEvidenceStatus).toBe('not_started');
     expect(result.plan).toMatchObject({
       status: 'ready',
       triggerPlanReady: true,
@@ -1180,6 +1181,7 @@ describe('SchedulerService', () => {
     });
     expect(result.summary).toContain('trigger=started');
     expect(result.summary).toContain('runId=run_scheduled_1');
+    expect(result.summary).toContain('terminalRunEvidence=present');
     expect(result.summary).toContain('timelineEvidence=recorded');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
       taskId: 'task_auto',
@@ -1189,6 +1191,7 @@ describe('SchedulerService', () => {
         runFailureReason: null,
         runOutputSource: 'system',
         runStatus: 'completed',
+        terminalRunEvidenceStatus: 'present',
         targetTaskId: 'task_auto',
         standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
         runtimeStartMissingRequirements: [],
