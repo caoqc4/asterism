@@ -446,6 +446,15 @@ configured model producer once through the sweep trigger port, records timeline
 evidence, and returns `workspace=unchanged`. Use it only when one deliberate
 provider-backed background run is acceptable.
 
+On 2026-05-27, local `fal-openrouter / google/gemini-2.5-flash` passed this
+opt-in background live smoke with `status=passed`,
+`backgroundLiveRun=attempted`, `sweepStatus=completed`,
+`triggerRunEvidenceStatus=ready_for_terminal_review`,
+`startedRunIds=run_scheduled_event_background_live_smoke`,
+`timelineEvents=1`, `provider=called`,
+`stagedFiles=.taskplane/scheduled-event-agent-background-live-smoke.md`,
+`docker=not-started`, and `workspace=unchanged`.
+
 Provider-spending checks are intentionally opt-in:
 
 ```bash

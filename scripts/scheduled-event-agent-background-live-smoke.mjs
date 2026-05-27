@@ -173,6 +173,11 @@ export async function runScheduledEventAgentBackgroundLiveSmoke() {
     console.log('status=failed');
     console.log(`sweepStatus=${result.status}`);
     console.log(`started=${result.startedRunCount}`);
+    console.log(`blocked=${result.blockedTaskCount}`);
+    console.log(`blockedReasons=${result.blockedReasons.join(';') || 'none'}`);
+    console.log(`automationMissingRequirements=${result.automationMissingRequirements.join(',') || 'none'}`);
+    console.log(`runtimeStartMissingRequirements=${result.runtimeStartMissingRequirements.join(',') || 'none'}`);
+    console.log(`sweepSummary=${result.summary}`);
     console.log(`provider=${providerCalled ? 'called' : 'not-called'}`);
     console.log('docker=not-started');
     console.log('workspace=unchanged');
@@ -248,7 +253,25 @@ function buildLiveScheduledTask() {
     }],
     id: taskId,
     nextStep: 'Run one opt-in provider-backed scheduled/event background smoke and return reviewable evidence.',
-    processTemplates: [],
+    processTemplates: [{
+      archivedAt: null,
+      bindingId: 'binding_scheduled_event_background_live_smoke',
+      bindingNote: null,
+      bindingStatus: 'active',
+      bindingUpdatedAt: '2026-05-27T00:00:00.000Z',
+      boundAt: '2026-05-27T00:00:00.000Z',
+      content: 'Prepare one bounded scheduled/event background live smoke result and leave reviewable evidence.',
+      createdAt: '2026-05-27T00:00:00.000Z',
+      id: 'process_scheduled_event_background_live_smoke',
+      kind: 'sop',
+      removedAt: null,
+      status: 'active',
+      summary: null,
+      tags: [],
+      taskId,
+      title: 'Scheduled/event background live smoke SOP',
+      updatedAt: '2026-05-27T00:00:00.000Z',
+    }],
     riskLevel: 'low',
     sourceContexts: [{
       archivedAt: null,

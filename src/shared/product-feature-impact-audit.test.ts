@@ -489,6 +489,11 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_SMOKE=true');
     expect(workHabits?.evidence.join(' ')).toContain('backgroundLiveRun=not-started');
     expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.runScheduledEventAgentTriggerSweep("cron")');
+    expect(workHabits?.evidence.join(' ')).toContain('Opt-in scheduled/event Agent background live smoke passed locally on 2026-05-27');
+    expect(workHabits?.evidence.join(' ')).toContain('backgroundLiveRun=attempted');
+    expect(workHabits?.evidence.join(' ')).toContain('sweepStatus=completed');
+    expect(workHabits?.evidence.join(' ')).toContain('provider=called');
+    expect(workHabits?.evidence.join(' ')).toContain('stagedFiles=.taskplane/scheduled-event-agent-background-live-smoke.md');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakRunLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakNoSecondTriggerEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('npm run accept:scheduled-event-agent-sweep-smoke');
@@ -508,10 +513,12 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('startupSweepJobEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds=none');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
-    expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, and a local sweep smoke');
-    expect(workHabits?.gaps.join(' ')).toContain('broader runtime coverage and live soak evidence');
+    expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, a local sweep smoke, and one opt-in provider-backed background live smoke');
+    expect(workHabits?.gaps.join(' ')).toContain('one opt-in provider-backed background live smoke');
+    expect(workHabits?.gaps.join(' ')).toContain('packaged/persistent-app soak evidence');
     expect(workHabits?.gaps.join(' ')).not.toContain('run-evidence persistence checks across live execution');
-    expect(workHabits?.nextActions.join(' ')).toContain('live background-triggered execution');
+    expect(workHabits?.nextActions.join(' ')).toContain('one opt-in provider-backed smoke');
+    expect(workHabits?.nextActions.join(' ')).toContain('packaged/persistent-app soak evidence');
     expect(workHabits?.nextActions.join(' ')).toContain('durable run-limit counting');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');
@@ -701,7 +708,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-start boundary');
     expect(workHabits?.gaps.join(' ')).not.toContain('connected trigger service before L2 automatic native runtime starts');
-    expect(workHabits?.nextActions.join(' ')).toContain('live background-triggered execution');
+    expect(workHabits?.nextActions.join(' ')).toContain('packaged/persistent-app soak evidence');
     expect(workHabits?.nextActions.join(' ')).toContain('context readiness');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code mode');
     expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');
