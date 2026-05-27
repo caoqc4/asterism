@@ -66,6 +66,7 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
       `explicitOperatorApply=${params.explicitOperatorApply ? 'ready' : 'missing'}`,
       `sameRunEvidenceChain=${params.sameRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `postApplyRunEvidence=${params.postApplyRunEvidenceReady ? 'ready' : 'missing'}`,
+      `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),
   };

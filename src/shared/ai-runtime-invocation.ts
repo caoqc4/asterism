@@ -241,6 +241,7 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
+      `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),
   };

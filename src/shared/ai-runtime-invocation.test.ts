@@ -129,6 +129,7 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('proposalCard=ready');
     expect(ready.summary).toContain('applyPlan=subtask.create_many');
     expect(ready.summary).toContain('source=agent_api_decomposition');
+    expect(ready.summary).toContain('missingRequirements=none');
     expect(ready.summary).toContain('missing=none');
   });
 

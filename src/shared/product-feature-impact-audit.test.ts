@@ -317,6 +317,8 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('satisfied and missing requirement lists');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('missingRequirements=...');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('selected-runtime contract');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('parent-task identity');
@@ -372,6 +374,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('can satisfy workspace_write promotion evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
     expect(taskFiles?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
+    expect(taskFiles?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence');
     expect(taskFiles?.cliOnlyClosure).toBe('supported');
     expect(taskFiles?.gaps.join(' ')).toContain('Future API/runtime-generated patch promotion');
