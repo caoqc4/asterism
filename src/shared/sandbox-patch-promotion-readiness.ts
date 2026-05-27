@@ -210,6 +210,7 @@ function buildReadiness(params: {
     summary: formatSandboxPatchPromotionReadinessSummary({
       blockedReasons: params.blockedReasons,
       expectedFiles,
+      missingRequirements: params.missingRequirements,
       satisfiedRequirementCount: satisfiedRequirements.length,
       status: params.status,
     }),
@@ -219,26 +220,30 @@ function buildReadiness(params: {
 function formatSandboxPatchPromotionReadinessSummary(params: {
   blockedReasons: string[];
   expectedFiles: string[];
+  missingRequirements: SandboxPatchPromotionReadinessRequirement[];
   satisfiedRequirementCount: number;
   status: SandboxPatchPromotionReadinessStatus;
 }): string {
   const requirements = `requirements=${params.satisfiedRequirementCount}/${SANDBOX_PATCH_PROMOTION_READINESS_REQUIREMENTS.length}`;
+  const missingRequirements = `missingRequirements=${params.missingRequirements.length ? params.missingRequirements.join(',') : 'none'}`;
   if (params.status === 'ready') {
     return [
       'Sandbox patch promotion readiness: ready',
       requirements,
+      missingRequirements,
       `files=${params.expectedFiles.join(', ')}`,
       'workspace apply still requires the promotion service',
     ].join(' / ');
   }
 
   if (params.status === 'already_resolved') {
-    return `Sandbox patch promotion readiness: already_resolved / ${requirements} / checkpoint is no longer open`;
+    return `Sandbox patch promotion readiness: already_resolved / ${requirements} / ${missingRequirements} / checkpoint is no longer open`;
   }
 
   return [
     `Sandbox patch promotion readiness: ${params.status}`,
     requirements,
+    missingRequirements,
     params.blockedReasons.join(' '),
   ].filter(Boolean).join(' / ');
 }

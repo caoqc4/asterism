@@ -371,6 +371,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('only reviewed patch files passing promotion preflight');
     expect(taskFiles?.evidence.join(' ')).toContain('drift blocks apply');
     expect(taskFiles?.evidence.join(' ')).toContain('requirements=x/12');
+    expect(taskFiles?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('workspace_write capability steps now require patch artifact');
     expect(taskFiles?.evidence.join(' ')).toContain('Terminal Run verification now carries same-run artifacts and checkpoints');
     expect(taskFiles?.evidence.join(' ')).toContain('can satisfy workspace_write promotion evidence');
