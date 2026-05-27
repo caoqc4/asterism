@@ -4911,6 +4911,8 @@ describe('App redesign v1', () => {
     expect(screen.getByText('确认阈值')).toBeTruthy();
     expect(screen.getByText(/低：更少打断/)).toBeTruthy();
     expect(screen.getByText(/高：不确定结论也更常请你拍板/)).toBeTruthy();
+    expect(screen.getByText(/不绕过 Standing Approval、workspace 写入、外部连接或付费\/发布类硬确认/)).toBeTruthy();
+    expect(screen.getByText(/只调整低风险对话和建议中的打断频率/)).toBeTruthy();
     expect(screen.getByText('配置安全边界')).toBeTruthy();
     expect(screen.getByText('密钥不外显')).toBeTruthy();
     expect(screen.getByText('sandbox.patch_promotion')).toBeTruthy();
