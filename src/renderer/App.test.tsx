@@ -1007,7 +1007,11 @@ function createMockApi() {
           triggerPlanReady: true,
           runtimeStartAllowed: true,
           schedulerTriggerServiceConnected: true,
-          triggerRunEvidenceRequired: ['context_readiness'],
+          triggerRunEvidenceRequired: [
+            'context_readiness',
+            'target_task_identity',
+            'task_memory_coverage',
+          ],
           policy: null,
           runLimit: {
             maxRunsPerDay: 3,
@@ -5402,7 +5406,11 @@ describe('App redesign v1', () => {
             'run_limit_count',
           ],
           schedulerTriggerServiceConnected: true,
-          triggerRunEvidenceRequired: ['context_readiness'],
+          triggerRunEvidenceRequired: [
+            'context_readiness',
+            'target_task_identity',
+            'task_memory_coverage',
+          ],
           policy: null,
           runLimit: {
             maxRunsPerDay: 3,
@@ -5429,6 +5437,9 @@ describe('App redesign v1', () => {
     });
     expect(await within(approvalDraft).findByText(/已启动受控 Agent run：run_scheduled_event_agent_failed/)).toBeTruthy();
     expect(within(approvalDraft).getByText(/触发证据：可复核/)).toBeTruthy();
+    expect(within(approvalDraft).getByText(/触发证据项：context_readiness,target_task_identity,task_memory_coverage/)).toBeTruthy();
+    expect(within(approvalDraft).getByText(/限额：0\/3/)).toBeTruthy();
+    expect(within(approvalDraft).getByText(/写入：提案模式/)).toBeTruthy();
     expect(within(approvalDraft).getByText(/失败原因：模型执行失败，等待人工复核。/)).toBeTruthy();
   });
 

@@ -295,6 +295,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('scheduler:triggerScheduledEventAgentRun');
     expect(workHabits?.evidence.join(' ')).toContain('启动一次');
     expect(workHabits?.evidence.join(' ')).toContain('without enabling a background scheduler job');
+    expect(workHabits?.evidence.join(' ')).toContain('operator feedback now includes the required trigger evidence items, run-limit usage, and proposal-mode write boundary');
+    expect(workHabits?.evidence.join(' ')).toContain('without requiring the operator to open event detail first');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus and triggerRunEvidenceStatus for the single-run operator action');
     expect(workHabits?.evidence.join(' ')).toContain('panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus');

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { ProjectDecompositionResult } from '@shared/types/ipc';
+import type { ProjectDecompositionResult, TriggerScheduledEventAgentRunResult } from '@shared/types/ipc';
 import type { TaskDetail, TaskListItemRecord, TaskRiskLevel, TaskState, UpdateTaskInput } from '@shared/types/task';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord } from '@shared/types/artifact';
@@ -135,6 +135,18 @@ function standingApprovalEvidenceChips(draft: AgentStandingApprovalConfirmationD
     `schedulerTriggerAllowed=${draft.schedulerTriggerAllowed ? 'true' : 'false'}`,
     `workspaceWriteAllowed=${draft.workspaceWriteAllowed ? 'true' : 'false'}`,
   ];
+}
+
+function scheduledEventAgentRunStartedMessage(result: TriggerScheduledEventAgentRunResult): string {
+  const runFailureReason = result.run?.failureReason?.trim();
+  const triggerEvidenceItems = result.plan.triggerRunEvidenceRequired.length > 0
+    ? `，触发证据项：${result.plan.triggerRunEvidenceRequired.join(',')}`
+    : '';
+  const runLimit = typeof result.plan.runLimit.runsStartedToday === 'number'
+    && typeof result.plan.runLimit.maxRunsPerDay === 'number'
+    ? `，限额：${result.plan.runLimit.runsStartedToday}/${result.plan.runLimit.maxRunsPerDay}`
+    : '';
+  return `已启动受控 Agent run：${result.run?.id ?? 'unknown'}（终态证据：${result.terminalRunEvidenceStatus === 'present' ? '已记录' : '等待中'}，触发证据：${result.triggerRunEvidenceStatus === 'ready_for_terminal_review' ? '可复核' : '等待终态'}${triggerEvidenceItems}${runLimit}，写入：提案模式${runFailureReason ? `，失败原因：${runFailureReason}` : ''}）`;
 }
 type RelatedFileCategory = 'task' | 'record' | 'ai_output' | 'artifact' | 'source' | 'file';
 type RelatedTaskFileItem = {
@@ -1532,11 +1544,10 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     }));
     try {
       const result = await window.api.triggerScheduledEventAgentRun({ taskId: selectedTask.id });
-      const runFailureReason = result.run?.failureReason?.trim();
       setStandingApprovalMessages((current) => ({
         ...current,
         [draft.id]: result.status === 'started'
-          ? `已启动受控 Agent run：${result.run?.id ?? 'unknown'}（终态证据：${result.terminalRunEvidenceStatus === 'present' ? '已记录' : '等待中'}，触发证据：${result.triggerRunEvidenceStatus === 'ready_for_terminal_review' ? '可复核' : '等待终态'}${runFailureReason ? `，失败原因：${runFailureReason}` : ''}）`
+          ? scheduledEventAgentRunStartedMessage(result)
           : `未启动：${result.summary}`,
       }));
       reloadTaskDetailForTask(selectedTask.id);
