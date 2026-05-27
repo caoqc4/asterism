@@ -103,6 +103,7 @@ function buildScheduledEventCodeAgentRunInput(
       `Target task: ${task.id}.`,
       `Trigger kind: ${triggerKind}.`,
       `Next step: ${nextStep}`,
+      `Task memory guidance: ${formatScheduledEventTaskMemoryGuidance(task)}`,
       `Standing Approval policy: ${plan.policy?.id ?? 'unknown'}.`,
       `Runtime start requirements: ${plan.runtimeStartSatisfiedRequirements.join(',')}.`,
       `Trigger evidence: ${plan.triggerRunEvidenceRequired.join(',')}.`,
@@ -113,6 +114,16 @@ function buildScheduledEventCodeAgentRunInput(
     operatorConfirmed: true,
     useModelProducer: true,
   };
+}
+
+function formatScheduledEventTaskMemoryGuidance(task: ScheduledEventAgentTaskInput): string {
+  const activeProcess = task.processTemplates.find((template) => template.status === 'active');
+  const openCriteria = task.completionCriteria.filter((criterion) => criterion.status === 'open');
+  return [
+    `process=${activeProcess?.title?.trim() || 'none'}`,
+    `openCriteria=${openCriteria.length}`,
+    `sourceContexts=${task.sourceContexts.length}`,
+  ].join('; ');
 }
 
 function formatMissingScheduledEventAgentSweepPorts(params: {

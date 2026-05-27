@@ -280,6 +280,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('schedulerTriggerServiceConnected=true');
     expect(workHabits?.evidence.join(' ')).toContain('operatorConfirmed=true');
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
+    expect(workHabits?.evidence.join(' ')).toContain('task-memory guidance');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start requirement evidence');
     expect(workHabits?.evidence.join(' ')).toContain('run-limit evidence');
@@ -320,6 +321,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceRequired evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTask=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryGuidance=passed');
     expect(workHabits?.evidence.join(' ')).toContain('terminalTriggerRunEvidenceStatus=ready_for_terminal_review');
     expect(workHabits?.evidence.join(' ')).toContain('cronTriggerRunEvidenceStatus=ready_for_terminal_review');
     expect(workHabits?.evidence.join(' ')).toContain('manualTriggerKind=manual');
@@ -330,6 +332,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('cronTriggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('triggerKindEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTaskEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=passed');
     expect(workHabits?.evidence.join(' ')).toContain('targetTaskId timeline evidence');
@@ -344,6 +347,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('status=completed, checked=2, started=1, blocked=1');
     expect(workHabits?.evidence.join(' ')).toContain('triggerKindEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTaskEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds=none');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
     expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, and a local sweep smoke');
