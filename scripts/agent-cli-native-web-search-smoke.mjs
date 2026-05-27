@@ -42,6 +42,7 @@ export function runAgentCliNativeWebSearchSmoke() {
 
   if (!ENABLED) {
     console.log('status=skip');
+    console.log('skipReason=opt_in_required');
     console.log('set TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true to run one native CLI web/search request');
     console.log('set TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=codex or claude to choose the CLI');
     console.log('cli=not-called');

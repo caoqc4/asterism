@@ -474,6 +474,7 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('mocked OpenAI web_search output');
     expect(smoke?.evidence.join(' ')).toContain('without external network or provider calls');
     expect(smoke?.evidence.join(' ')).toContain('manual Agent CLI native web/search smoke');
+    expect(smoke?.evidence.join(' ')).toContain('skipReason=opt_in_required');
     expect(smoke?.evidence.join(' ')).toContain('network=not-called');
     expect(smoke?.evidence.join(' ')).toContain('Codex native web/search smoke passed locally on 2026-05-27');
     expect(smoke?.evidence.join(' ')).toContain('status=passed');

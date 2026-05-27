@@ -198,10 +198,10 @@ TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true npm run manual:agent-cli-na
 TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-native-web-search-smoke
 ```
 
-The default command must report `status=skip`, `cli=not-called`,
-`network=not-called`, and `workspace=unchanged`. A passing opt-in run is manual
-evidence for exact native web/search readiness; it is intentionally separate
-from static no-start capability probes.
+The default command must report `status=skip`, `skipReason=opt_in_required`,
+`cli=not-called`, `network=not-called`, and `workspace=unchanged`. A passing
+opt-in run is manual evidence for exact native web/search readiness; it is
+intentionally separate from static no-start capability probes.
 
 On 2026-05-27, local Codex CLI `codex-cli 0.125.0` passed this opt-in native
 web/search smoke with `auth=ready`, `workspace=unchanged`, `phrase=matched`,

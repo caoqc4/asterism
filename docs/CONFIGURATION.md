@@ -450,10 +450,11 @@ TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true npm run manual:agent-cli-na
 TASKPLANE_RUN_AGENT_CLI_NATIVE_WEB_SEARCH_SMOKE=true TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=claude npm run manual:agent-cli-native-web-search-smoke
 ```
 
-The default command reports `status=skip`, `cli=not-called`,
-`network=not-called`, and `workspace=unchanged`. Treat passing output as manual
-runtime-readiness evidence only; static status probes still rely on no-start
-help, workspace metadata, and provider-owned package metadata.
+The default command reports `status=skip`, `skipReason=opt_in_required`,
+`cli=not-called`, `network=not-called`, and `workspace=unchanged`. Treat
+passing output as manual runtime-readiness evidence only; static status probes
+still rely on no-start help, workspace metadata, and provider-owned package
+metadata.
 
 On 2026-05-27, this opt-in smoke passed locally with Codex CLI
 `codex-cli 0.125.0`, `auth=ready`, `workspace=unchanged`, `phrase=matched`,

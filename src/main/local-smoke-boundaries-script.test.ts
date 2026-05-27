@@ -594,6 +594,7 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('runtime=codex');
     expect(result.output).toContain('mode=opt-in live');
     expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=opt_in_required');
     expect(result.output).toContain('cli=not-called');
     expect(result.output).toContain('network=not-called');
     expect(result.output).toContain('workspace=unchanged');
