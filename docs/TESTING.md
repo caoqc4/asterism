@@ -379,8 +379,10 @@ requirement, run-status evidence, and `workspaceWriteAllowed=false` timeline
 boundary, expose top-level `startedRunIds` and
 `blockedReasons`, report `skipReason=none` for completed sweeps, prove
 `triggerKind` evidence for both manual and cron starts, prove startup
-`scheduledEventAgentSweepJobConnected` evidence before the first cron tick, and keep
-`workspace=unchanged`, `provider=not-called`, and `docker=not-started`.
+`scheduledEventAgentSweepJobConnected` evidence before the first cron tick,
+prove manual, terminal, and cron sweep summaries are persisted into
+`lastScheduledEventAgentSweepSummary`, and keep `workspace=unchanged`,
+`provider=not-called`, and `docker=not-started`.
 
 The Agent API execution preflight is deliberately narrower than a full task
 run: default output must include `status=skip`, `skipReason=opt_in_required`,
