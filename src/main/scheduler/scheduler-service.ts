@@ -429,6 +429,7 @@ export class SchedulerService {
         ? [failedRun.id]
         : [];
       const triggerRunEvidenceRequired = failedPlan?.triggerRunEvidenceRequired ?? [];
+      const blockedTaskIds = startedRunIds.length > 0 ? [] : checkedTaskIds;
       const summary = [
         `scheduledEventAgentSweep=${kind}`,
         'status=skipped',
@@ -450,10 +451,10 @@ export class SchedulerService {
         checkedTaskCount: checkedTaskIds.length,
         checkedTaskIds,
         startedRunCount: startedRunIds.length,
-        blockedTaskCount: checkedTaskIds.length,
+        blockedTaskCount: blockedTaskIds.length,
         startedRunIds,
         blockedReasons: [`sweep_failed: ${errorMessage}`],
-        blockedTaskSummaries: checkedTaskIds.map((taskId) => `${taskId}: sweep_failed: ${errorMessage}`),
+        blockedTaskSummaries: blockedTaskIds.map((taskId) => `${taskId}: sweep_failed: ${errorMessage}`),
         runFailureReasons,
         runtimeStartMissingRequirements: ['trigger_plan_ready'],
         terminalRunEvidenceMissingRunIds,

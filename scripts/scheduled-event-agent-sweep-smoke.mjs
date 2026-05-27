@@ -600,6 +600,8 @@ try {
   assert(timelineFailedResult.skipReason === 'sweep_failed', 'timeline-failed sweep did not report sweep_failed');
   assert(timelineFailedResult.startedRunIds.includes(timelineFailedRun.id), 'timeline-failed sweep did not preserve the started run id');
   assert(timelineFailedResult.startedRunCount === 1, 'timeline-failed sweep did not preserve started run count');
+  assert(timelineFailedResult.blockedTaskCount === 0, 'timeline-failed sweep should not mark the started run as blocked');
+  assert(timelineFailedResult.blockedTaskSummaries.length === 0, 'timeline-failed sweep should not emit blocked task summaries for a started run');
   assert(timelineFailedResult.terminalRunEvidenceMissingRunIds.includes(timelineFailedRun.id), 'timeline-failed sweep did not preserve pending terminal Run evidence');
   assert(timelineFailedResult.triggerRunEvidenceRequired.includes('context_readiness'), 'timeline-failed sweep did not preserve trigger evidence requirements');
   assert(timelineFailedResult.triggerRunEvidenceStatus === 'pending_terminal_run_evidence', 'timeline-failed sweep did not preserve pending trigger evidence status');
@@ -853,6 +855,8 @@ try {
     `timelineFailedStatus=${timelineFailedResult.status}`,
     `timelineFailedSkipReason=${timelineFailedResult.skipReason}`,
     `timelineFailedStartedRunIds=${timelineFailedResult.startedRunIds.join(',') || 'none'}`,
+    `timelineFailedBlocked=${timelineFailedResult.blockedTaskCount}`,
+    `timelineFailedBlockedTaskSummaries=${timelineFailedResult.blockedTaskSummaries.join(';') || 'none'}`,
     `timelineFailedTriggerRunEvidenceStatus=${timelineFailedResult.triggerRunEvidenceStatus}`,
     `timelineFailedTerminalRunEvidenceMissingRunIds=${timelineFailedResult.terminalRunEvidenceMissingRunIds.join(',') || 'none'}`,
     `timelineFailedSweepSummary=${timelineFailedResult.summary}`,
@@ -887,6 +891,7 @@ try {
     'failedSweepSummaryEvidence=recorded',
     'failedSweepRecoveryEvidence=passed',
     'timelineFailedStartedRunEvidence=recorded',
+    'timelineFailedNotBlockedEvidence=passed',
     'timelineFailedTriggerRunEvidence=recorded',
     'timelineFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepSummaryEvidence=recorded',
