@@ -436,6 +436,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.gaps.join(' ')).not.toContain('richer hook/subagent semantics beyond current non-empty workspace metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('provider-owned package metadata checks');
     expect(capabilities?.gaps.join(' ')).toContain('Agent API no-start provider tool/search non-declaration');
+    expect(capabilities?.gaps.join(' ')).toContain('now-recorded Codex opt-in live smoke evidence');
+    expect(capabilities?.gaps.join(' ')).not.toContain('and one Codex opt-in live smoke pass');
     expect(capabilities?.gaps.join(' ')).toContain('auth-gated no-start help-output');
     expect(capabilities?.gaps.join(' ')).toContain('no longer blocks the Codex-verified CLI-first capability path');
     expect(capabilities?.nextActions.join(' ')).toContain('opportunistically when local account support is available');

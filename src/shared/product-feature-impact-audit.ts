@@ -459,7 +459,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-27 with auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed; the smoke records that --search is a top-level Codex option before exec.',
     ],
     gaps: [
-      'Future API and optional non-Codex provider compatibility still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, Agent API no-start provider tool/search non-declaration, and one Codex opt-in live smoke pass; this no longer blocks the Codex-verified CLI-first capability path.',
+      'Future API and optional non-Codex provider compatibility still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, Agent API no-start provider tool/search non-declaration, and the now-recorded Codex opt-in live smoke evidence; this no longer blocks the Codex-verified CLI-first capability path.',
     ],
     nextActions: [
       'Keep adding static readiness probes only when providers expose stable non-executing metadata; record non-Codex provider live smoke opportunistically when local account support is available, not as a CLI-first blocker.',
