@@ -56,6 +56,7 @@
     "manual:agent-cli-task-live:mac": "node scripts/manual-agent-cli-task-live-mac.mjs",
     "manual:claude-agent-cli-task-live:mac": "cross-env TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude node scripts/manual-agent-cli-task-live-mac.mjs",
     "manual:agent-cli-native-goal-discovery": "node scripts/agent-cli-native-goal-discovery.mjs",
+    "manual:native-goal-forwarding-readiness-smoke": "npm run build:main && node scripts/native-goal-forwarding-readiness-smoke.mjs",
     "manual:scheduled-event-agent-background-live-preflight": "node scripts/scheduled-event-agent-background-live-preflight.mjs",
     "manual:scheduled-event-agent-background-live-smoke": "npm run build:main && node scripts/scheduled-event-agent-background-live-smoke.mjs",
     "manual:scheduled-event-agent-packaged-background-soak:mac": "node scripts/scheduled-event-agent-packaged-background-soak-mac.mjs",

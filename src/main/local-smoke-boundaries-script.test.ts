@@ -1087,6 +1087,23 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).not.toContain('candidateCommand=');
   });
 
+  it('keeps native goal forwarding readiness smoke read-only and build-gated by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/native-goal-forwarding-readiness-smoke.mjs');
+
+    expect(scripts['manual:native-goal-forwarding-readiness-smoke']).toBe(
+      'npm run build:main && node scripts/native-goal-forwarding-readiness-smoke.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Native goal forwarding readiness smoke');
+    expect(result.output).toContain('mode=read-only');
+    expect(result.output).toContain('cli=not-called');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+    expect(result.output).toContain('taskplaneGoalLoop=available');
+    expect(result.output).toContain('passthrough=closed');
+  });
+
   it('documents native goal and verifier shadow readiness as local contract tests', () => {
     const testingDoc = fs.readFileSync(path.join(process.cwd(), 'docs/TESTING.md'), 'utf8');
 

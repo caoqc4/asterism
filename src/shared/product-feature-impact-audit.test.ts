@@ -715,6 +715,9 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('taskplaneGoalLoop=available');
     expect(capabilities?.evidence.join(' ')).toContain('skipReason=opt_in_required');
     expect(capabilities?.evidence.join(' ')).toContain('continueWith=taskplane_goal_loop');
+    expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness smoke');
+    expect(capabilities?.evidence.join(' ')).toContain('adapter capability missing');
+    expect(capabilities?.evidence.join(' ')).toContain('ready_to_open_passthrough');
     expect(capabilities?.evidence.join(' ')).toContain('Provider-native and Gmail connector preflights now report skipReason=config_missing');
     expect(capabilities?.evidence.join(' ')).toContain('before any provider, Gmail, task-memory, or workspace effect is allowed');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
@@ -740,6 +743,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.nextActions.join(' ')).toContain('not as a CLI-first blocker');
     expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
     expect(capabilities?.nextActions.join(' ')).toContain('read-only Agent API provider tool readiness smoke');
+    expect(capabilities?.nextActions.join(' ')).toContain('read-only native goal forwarding readiness smoke');
     expect(capabilities?.cliOnlyClosure).toBe('supported');
     expect(capabilities?.futureApiClosure).toBe('partial');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');

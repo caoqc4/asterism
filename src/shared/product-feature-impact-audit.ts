@@ -460,6 +460,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Native goal forwarding readiness now requires the selected adapter to declare native goal capability before any future explicit passthrough candidate can be ready.',
       'Right-panel runtime-native goal requests now show the native goal forwarding readiness summary and missing evidence in the operator response and panel timeline payload.',
       'Native-goal discovery default output now reports taskplaneGoalLoop=available, nativeGoalForwarding=audit-only, passthrough=closed, status=skip, skipReason=opt_in_required, and continueWith=taskplane_goal_loop, so a closed runtime-native goal path is not confused with blocked Taskplane task advancement.',
+      'The native goal forwarding readiness smoke now runs the shared readiness gate as a read-only build-gated harness, proving unsupported adapter evidence stays audit_only with adapter capability missing, reported native-goal capability still stays audit_only with command shape, progress evidence, control boundary, and packaged smoke missing, and only synthetic complete evidence becomes ready_to_open_passthrough without CLI calls, provider calls, or workspace writes.',
       'Provider-native and Gmail connector preflights now report skipReason=config_missing when configuration is incomplete, before any provider, Gmail, task-memory, or workspace effect is allowed.',
       'Native CLI provider events are projected into runtime-neutral capability progress states for web search, workspace reads/writes, command execution, MCP, and hooks.',
       'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
@@ -473,7 +474,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     ],
     nextActions: [
       'Keep adding static readiness probes only when providers expose stable non-executing metadata; use the read-only Agent API provider tool readiness smoke to prevent provider configuration from implying native tool/search support, and record non-Codex provider live smoke opportunistically when local account support is available, not as a CLI-first blocker.',
-      'Keep native goal passthrough closed until command shape, progress/control evidence, and packaged smoke move from audit output into verified adapter evidence.',
+      'Keep native goal passthrough closed until the read-only native goal forwarding readiness smoke and adapter evidence both prove command shape, progress/control evidence, and packaged smoke.',
     ],
   },
   {
