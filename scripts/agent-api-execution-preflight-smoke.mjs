@@ -111,6 +111,7 @@ export async function runAgentApiExecutionPreflightSmoke() {
 
   if (!ENABLED) {
     console.log('status=skip');
+    console.log('skipReason=opt_in_required');
     console.log('provider=not-called');
     console.log('workspace=unchanged');
     console.log('set TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE=true to send one provider request');
@@ -119,6 +120,7 @@ export async function runAgentApiExecutionPreflightSmoke() {
 
   if (!preflight.ready) {
     console.log('status=skip');
+    console.log('skipReason=config_missing');
     console.log('provider=not-called');
     console.log('workspace=unchanged');
     for (const issue of preflight.issues) {

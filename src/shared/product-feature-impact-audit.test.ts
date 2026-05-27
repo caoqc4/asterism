@@ -169,6 +169,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API execution preflight smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible text-call readiness');
+    expect(rightPanel?.evidence.join(' ')).toContain('skipReason=opt_in_required');
+    expect(rightPanel?.evidence.join(' ')).toContain('skipReason=config_missing');
     expect(rightPanel?.evidence.join(' ')).toContain('provider=not-called, executionRun=deferred, promotionReady=no, promotionRequirements=0/11, requiredGates=0/9, and workspace=unchanged');
     expect(rightPanel?.evidence.join(' ')).toContain('fal-openrouter / google/gemini-2.5-flash');
     expect(rightPanel?.evidence.join(' ')).toContain('provider=called, phrase=matched, workspace=unchanged, and status=passed');

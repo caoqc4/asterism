@@ -38,6 +38,7 @@ export function runAgentCliReadonlySmoke() {
 
   if (!ENABLED) {
     console.log('status=skip');
+    console.log('skipReason=opt_in_required');
     console.log('set TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true to run one Agent CLI read-only request');
     console.log('set TASKPLANE_AGENT_CLI_SMOKE_RUNTIME=codex or claude to choose the CLI');
     console.log('cli=not-called');

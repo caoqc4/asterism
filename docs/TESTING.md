@@ -245,9 +245,9 @@ npm run smoke:agent-cli-task:mac
 npm run manual:agent-cli-readonly-smoke
 ```
 
-The default manual read-only smoke must report `status=skip`, `cli=not-called`,
-and `workspace=unchanged` unless `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true`
-is explicitly set.
+The default manual read-only smoke must report `status=skip`,
+`skipReason=opt_in_required`, `cli=not-called`, and `workspace=unchanged`
+unless `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true` is explicitly set.
 
 Manual live evidence is intentionally recorded as historical validation, not as
 a default CI requirement. On 2026-05-20, local Codex CLI `codex-cli 0.125.0`
@@ -366,9 +366,10 @@ requirement, and run-status evidence, and keep `workspace=unchanged`, `provider=
 `docker=not-started`.
 
 The Agent API execution preflight is deliberately narrower than a full task
-run: default output must include `status=skip`, `provider=not-called`,
-`executionRun=deferred`, `promotionReady=no`, `promotionRequirements=0/11`,
-`requiredGates=0/9`, and `workspace=unchanged`. A passing opt-in run proves that the configured
+run: default output must include `status=skip`, `skipReason=opt_in_required`,
+`provider=not-called`, `executionRun=deferred`, `promotionReady=no`,
+`promotionRequirements=0/11`, `requiredGates=0/9`, and `workspace=unchanged`.
+A passing opt-in run proves that the configured
 provider can answer one Taskplane Agent API Runtime text request, while full
 provider-visible task `execution_run` remains deferred behind the shared
 context-readiness, Run Goal Contract, Write Intent, verification, and
