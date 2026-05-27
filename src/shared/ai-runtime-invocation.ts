@@ -332,6 +332,7 @@ export function buildDeferredAgentApiExecutionRunInvocation(params: {
       `promotionRequirements=0/${promotionRequirements.length}`,
       `requiredGates=0/${requiredGates.length}`,
       `promotionMissingRequirements=${promotionRequirements.join(',')}`,
+      `executionRunMissingRequirements=${promotionRequirements.join(',')}`,
       `missingGates=${requiredGates.join(',')}`,
     ].join(' / '),
     deferredReason,

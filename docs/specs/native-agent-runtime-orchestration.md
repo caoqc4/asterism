@@ -235,7 +235,10 @@ Taskplane currently has a working native CLI execution backend:
   persistence. Agent API capability summaries expose both
   `executionRunPromotionRequirements=0/11` and
   `executionRunMissingRequirements=...` so the deferred execution boundary is
-  visible before any provider-visible run can start.
+  visible before any provider-visible run can start. The opt-in Agent API
+  execution preflight smoke prints the same `executionRunMissingRequirements`
+  field alongside `promotionMissingRequirements`, while still defaulting to
+  provider-not-called.
 - The current Pilot operation mode is either `product_control_layer` or
   `bounded_decision_backend`. `persistent_ai_pilot_reserved` is a future
   explicit watch/autopilot capability, not the default runtime shape.

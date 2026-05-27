@@ -102,6 +102,7 @@ export function printAgentApiExecutionPreflight(preflight) {
   console.log(`promotionRequirements=0/${EXECUTION_RUN_PROMOTION_REQUIREMENTS.length}`);
   console.log(`requiredGates=0/${EXECUTION_RUN_REQUIRED_GATES.length}`);
   console.log(`promotionMissingRequirements=${EXECUTION_RUN_PROMOTION_REQUIREMENTS.join(',')}`);
+  console.log(`executionRunMissingRequirements=${EXECUTION_RUN_PROMOTION_REQUIREMENTS.join(',')}`);
   console.log(`missingGates=${EXECUTION_RUN_REQUIRED_GATES.join(',')}`);
   console.log(`promotionRequirementList=${EXECUTION_RUN_PROMOTION_REQUIREMENTS.join(',')}`);
   console.log(`requiredGateList=${EXECUTION_RUN_REQUIRED_GATES.join(',')}`);
