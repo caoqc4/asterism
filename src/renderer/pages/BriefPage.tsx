@@ -108,9 +108,11 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
 }
 
 function schedulerSweepCountLabel(summary: string): string | null {
+  const checked = summary.match(/(?:^| \/ )checked=(\d+)(?: \/|$)/)?.[1];
   const started = summary.match(/(?:^| \/ )started=(\d+)(?: \/|$)/)?.[1];
   const blocked = summary.match(/(?:^| \/ )blocked=(\d+)(?: \/|$)/)?.[1];
   return [
+    checked !== undefined ? `检查 ${checked}` : null,
     started !== undefined ? `启动 ${started}` : null,
     blocked !== undefined ? `阻塞 ${blocked}` : null,
   ].filter(Boolean).join(' · ') || null;

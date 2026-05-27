@@ -1271,7 +1271,7 @@ describe('App redesign v1', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('自动巡检: 已运行 · 启动 1 · 阻塞 1')).toBeTruthy();
+    expect(await screen.findByText('自动巡检: 已运行 · 检查 2 · 启动 1 · 阻塞 1')).toBeTruthy();
     expect(screen.getByTitle(sweepSummary)).toBeTruthy();
   });
 
