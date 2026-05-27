@@ -101,7 +101,9 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
     .filter(Boolean)
     .join(' · ');
   if (summary.includes('reason=waiting_for_first_tick')) return '自动巡检: 已接线';
-  if (summary.includes('reason=ports_not_connected')) return '自动巡检: 未接线';
+  if (summary.includes('reason=ports_not_connected')) return ['自动巡检: 未接线', schedulerSweepMissingPortsLabel(summary)]
+    .filter(Boolean)
+    .join(' · ');
   if (summary.includes('reason=in_flight')) return '自动巡检: 运行中';
   if (summary.includes('status=skipped')) return '自动巡检: 已跳过';
   if (status.lastScheduledEventAgentSweepAt) return '自动巡检: 已运行';
@@ -127,6 +129,13 @@ function schedulerSweepEvidenceLabel(summary: string): string | null {
   if (triggerRunEvidenceStatus === 'ready_for_terminal_review') return '证据可复核';
   if (triggerRunEvidenceStatus === 'pending_terminal_run_evidence') return '证据待终态';
   return null;
+}
+
+function schedulerSweepMissingPortsLabel(summary: string): string | null {
+  const missingPorts = summary.match(/(?:^| \/ )missingPorts=([^ /]+)(?: \/|$)/)?.[1];
+  if (!missingPorts || missingPorts === 'none') return null;
+  const count = missingPorts.split(',').filter(Boolean).length;
+  return count > 0 ? `缺 ${count} 口` : null;
 }
 
 function focusAttentionLabel(task: FocusTask): string {

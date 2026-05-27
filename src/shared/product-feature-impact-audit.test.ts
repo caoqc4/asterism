@@ -339,6 +339,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('waiting_for_first_tick stays 已接线');
     expect(workHabits?.evidence.join(' ')).toContain('ports_not_connected shows 未接线');
     expect(workHabits?.evidence.join(' ')).toContain('in_flight shows 运行中');
+    expect(workHabits?.evidence.join(' ')).toContain('ports_not_connected automatic-sweep chips now include a missing port count');
+    expect(workHabits?.evidence.join(' ')).toContain('operators can see the recovery scope without opening the tooltip');
     expect(workHabits?.evidence.join(' ')).toContain('completed automatic-sweep chips now include checked, started, blocked, and trigger Run evidence labels');
     expect(workHabits?.evidence.join(' ')).toContain('waiting for terminal Run evidence or ready for review');
     expect(workHabits?.evidence.join(' ')).toContain('records completed sweep time from the triggering now value');

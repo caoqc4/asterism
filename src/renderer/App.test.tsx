@@ -1310,7 +1310,7 @@ describe('App redesign v1', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('自动巡检: 未接线')).toBeTruthy();
+    expect(await screen.findByText('自动巡检: 未接线 · 缺 3 口')).toBeTruthy();
     expect(screen.queryByText('自动巡检: 已运行')).toBeFalsy();
     expect(screen.getByTitle(sweepSummary)).toBeTruthy();
   });
