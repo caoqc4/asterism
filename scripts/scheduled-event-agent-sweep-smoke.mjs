@@ -31,6 +31,7 @@ try {
   };
   const triggerCalls = [];
   const timelineEvents = [];
+  const sweepListenerEvents = [];
   const runRepository = {
     countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 2 }),
     listIncompleteOlderThan: async () => [],
@@ -84,6 +85,9 @@ try {
         return [task, task];
       },
     },
+    (event) => {
+      sweepListenerEvents.push(event);
+    },
   );
 
   const result = await service.runScheduledEventAgentTriggerSweep(
@@ -112,6 +116,8 @@ try {
   assert(result.summary.includes('scheduled_event_entrypoint'), 'sweep summary did not expose satisfied scheduled/event entrypoint readiness');
   assert(service.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T11:00:00.000Z', 'completed sweep did not preserve the trigger time in scheduler status');
   assert(service.getStatus().lastScheduledEventAgentSweepSummary === result.summary, 'sweep did not persist the manual sweep summary into scheduler status');
+  assert(sweepListenerEvents.length === 1, 'sweep listener did not record completed manual sweep');
+  assert(sweepListenerEvents[0].summary === result.summary, 'sweep listener did not preserve completed manual sweep summary');
   assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
   assert(triggerCalls[0].useModelProducer === true, 'sweep did not route through the model-producer Code Agent path');
@@ -385,6 +391,7 @@ try {
   assert(cronTimelineEvents[0].payload.workspaceWriteAllowed === false, 'cron timeline evidence did not preserve workspaceWriteAllowed=false');
   assert(beforeWorkspace === cronAfterWorkspace, 'scheduled/event Agent cron sweep smoke mutated the workspace fixture');
 
+  const disconnectedSweepListenerEvents = [];
   const disconnectedService = new SchedulerService(
     {
       read: () => ({
@@ -422,6 +429,12 @@ try {
     {
       select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
     },
+    undefined,
+    undefined,
+    undefined,
+    (event) => {
+      disconnectedSweepListenerEvents.push(event);
+    },
   );
   const disconnectedResult = await disconnectedService.runScheduledEventAgentTriggerSweep(
     'cron',
@@ -435,12 +448,15 @@ try {
   assert(disconnectedResult.summary.includes('missingPorts=run_port,timeline_port,task_source_port'), 'disconnected sweep did not expose missing ports');
   assert(disconnectedService.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T12:20:00.000Z', 'disconnected sweep did not preserve skipped sweep time in scheduler status');
   assert(disconnectedService.getStatus().lastScheduledEventAgentSweepSummary === disconnectedResult.summary, 'disconnected sweep did not persist the skipped sweep summary into scheduler status');
+  assert(disconnectedSweepListenerEvents.length === 1, 'sweep listener did not record disconnected skipped sweep');
+  assert(disconnectedSweepListenerEvents[0].summary === disconnectedResult.summary, 'sweep listener did not preserve disconnected skipped sweep summary');
 
   let releaseInFlightCandidates;
   const inFlightCandidatePromise = new Promise((resolve) => {
     releaseInFlightCandidates = () => resolve([]);
   });
   const inFlightTriggerCalls = [];
+  const inFlightSweepListenerEvents = [];
   const inFlightService = new SchedulerService(
     {
       read: () => ({
@@ -490,6 +506,9 @@ try {
     {
       listScheduledEventAgentTriggerCandidates: async () => inFlightCandidatePromise,
     },
+    (event) => {
+      inFlightSweepListenerEvents.push(event);
+    },
   );
   const firstInFlightSweep = inFlightService.runScheduledEventAgentTriggerSweep(
     'cron',
@@ -505,15 +524,18 @@ try {
   assert(inFlightResult.blockedReasons.includes('in_flight'), 'in-flight sweep did not expose in_flight as a blocked reason');
   assert(inFlightService.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T12:25:01.000Z', 'in-flight sweep did not preserve skipped sweep time in scheduler status');
   assert(inFlightService.getStatus().lastScheduledEventAgentSweepSummary === inFlightResult.summary, 'in-flight sweep did not persist the skipped sweep summary into scheduler status');
+  assert(inFlightSweepListenerEvents.some((event) => event.summary === inFlightResult.summary), 'sweep listener did not record in-flight skipped sweep');
   const inFlightSkippedAt = inFlightService.getStatus().lastScheduledEventAgentSweepAt;
   releaseInFlightCandidates();
   const completedInFlightSweep = await firstInFlightSweep;
   assert(completedInFlightSweep.status === 'completed', 'first in-flight sweep did not finish after the guard was released');
   assert(completedInFlightSweep.startedRunCount === 0, 'first in-flight sweep unexpectedly started a run');
+  assert(inFlightSweepListenerEvents.some((event) => event.summary === completedInFlightSweep.summary), 'sweep listener did not record completed in-flight owner sweep');
   assert(inFlightTriggerCalls.length === 0, 'in-flight guard smoke unexpectedly started a Code Agent run');
 
   const failedTriggerCalls = [];
   const failedTimelineEvents = [];
+  const failedSweepListenerEvents = [];
   let failedTriggerShouldThrow = true;
   const recoveryRun = {
     ...run,
@@ -572,6 +594,9 @@ try {
     {
       listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
     },
+    (event) => {
+      failedSweepListenerEvents.push(event);
+    },
   );
   const failedResult = await failedService.runScheduledEventAgentTriggerSweep(
     'cron',
@@ -587,6 +612,7 @@ try {
   assert(failedResult.summary.includes('error=Trigger port failed - safely'), 'failed sweep summary did not preserve sanitized error evidence');
   assert(failedService.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T12:27:00.000Z', 'failed sweep did not preserve skipped sweep time in scheduler status');
   assert(failedService.getStatus().lastScheduledEventAgentSweepSummary === failedResult.summary, 'failed sweep did not persist the failed sweep summary into scheduler status');
+  assert(failedSweepListenerEvents.some((event) => event.summary === failedResult.summary), 'sweep listener did not record failed sweep summary');
   assert(failedTriggerCalls.length === 1, 'failed sweep did not reach the Code Agent trigger port exactly once');
   assert(failedTimelineEvents.length === 0, 'failed sweep should not record timeline evidence after trigger failure');
   const failedSweepAt = failedService.getStatus().lastScheduledEventAgentSweepAt;
@@ -963,6 +989,8 @@ try {
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
     `triggerRunEvidenceStatus=${result.triggerRunEvidenceStatus}`,
+    `sweepListenerEvents=${sweepListenerEvents.length}`,
+    `sweepListenerSummaryEvidence=${sweepListenerEvents[0]?.summary === result.summary ? 'passed' : 'failed'}`,
     `missingTimelineStatus=${missingTimelineResult.status}`,
     `missingTimelineTriggerRunEvidenceStatus=${missingTimelineResult.triggerRunEvidenceStatus}`,
     `missingTimelineTriggerCalls=${missingTimelineTriggerCalls.length}`,
@@ -994,16 +1022,19 @@ try {
     `disconnectedTriggerRunEvidenceStatus=${disconnectedResult.triggerRunEvidenceStatus}`,
     `disconnectedSweepAt=${disconnectedService.getStatus().lastScheduledEventAgentSweepAt}`,
     `disconnectedSweepSummary=${disconnectedService.getStatus().lastScheduledEventAgentSweepSummary}`,
+    `disconnectedSweepListenerEvents=${disconnectedSweepListenerEvents.length}`,
     `inFlightStatus=${inFlightResult.status}`,
     `inFlightSkipReason=${inFlightResult.skipReason}`,
     `inFlightTriggerRunEvidenceStatus=${inFlightResult.triggerRunEvidenceStatus}`,
     `inFlightSweepAt=${inFlightSkippedAt}`,
     `inFlightSweepSummary=${inFlightResult.summary}`,
+    `inFlightSweepListenerEvents=${inFlightSweepListenerEvents.length}`,
     `failedStatus=${failedResult.status}`,
     `failedSkipReason=${failedResult.skipReason}`,
     `failedTriggerRunEvidenceStatus=${failedResult.triggerRunEvidenceStatus}`,
     `failedSweepAt=${failedSweepAt}`,
     `failedSweepSummary=${failedResult.summary}`,
+    `failedSweepListenerEvents=${failedSweepListenerEvents.length}`,
     `failedRecoveryStatus=${failedRecoveryResult.status}`,
     `failedRecoveryRunId=${recoveryRun.id}`,
     `timelineFailedStatus=${timelineFailedResult.status}`,
@@ -1043,6 +1074,7 @@ try {
     'runLimitEvidence=passed',
     'runtimeStartRequirements=passed',
     'timelineEvidence=recorded',
+    'sweepListenerEvidence=passed',
     'terminalTimelineEvidence=recorded',
     'cronTimelineEvidence=recorded',
     'timelineWorkspaceBoundary=recorded',
@@ -1052,8 +1084,11 @@ try {
     'sweepSummaryEvidence=recorded',
     'completedSweepTimeEvidence=recorded',
     'disconnectedSweepSummaryEvidence=recorded',
+    'disconnectedSweepListenerEvidence=passed',
     'inFlightSweepSummaryEvidence=recorded',
+    'inFlightSweepListenerEvidence=passed',
     'failedSweepSummaryEvidence=recorded',
+    'failedSweepListenerEvidence=passed',
     'failedSweepRecoveryEvidence=passed',
     'timelineFailedStartedRunEvidence=recorded',
     'timelineFailedNotBlockedEvidence=passed',

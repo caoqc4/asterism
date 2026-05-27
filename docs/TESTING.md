@@ -384,8 +384,10 @@ boundary, expose top-level `checkedTaskIds`, `startedRunIds`,
 prove a two-tick cron soak blocks the second sweep through persisted daily
 run-limit evidence without a second trigger-port call or timeline event,
 prove manual, terminal, and cron sweep summaries are persisted into
-`lastScheduledEventAgentSweepSummary`, prove a disconnected scheduler trigger
-service skips with `ports_not_connected` and `triggerRunEvidenceStatus=not_started`,
+`lastScheduledEventAgentSweepSummary`, prove the sweep listener receives
+completed, `ports_not_connected`, `in_flight`, and `sweep_failed` results for
+Brief refresh evidence, prove a disconnected scheduler trigger service skips
+with `ports_not_connected` and `triggerRunEvidenceStatus=not_started`,
 prove an operator-confirmed trigger with a Code Agent trigger port but no Task
 Dynamics timeline evidence port is blocked with no trigger-port call,
 prove overlapping sweeps skip with `in_flight` instead of starting a second
