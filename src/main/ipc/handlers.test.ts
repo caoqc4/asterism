@@ -1963,7 +1963,9 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.taskService.getDetail).toHaveBeenCalledWith('task_auto');
     expect(servicesMock.schedulerService.triggerScheduledEventAgentRun).toHaveBeenCalledWith(task);
     expect(result.status).toBe('started');
-    expect(emitAppEventMock).not.toHaveBeenCalledWith('run.changed', 'run_scheduled_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_scheduled_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_auto');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
   });
 
   it('blocks scheduled event Agent trigger IPC when the task is missing', async () => {

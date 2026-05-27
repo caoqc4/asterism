@@ -856,7 +856,13 @@ export function registerIpcHandlers(): void {
     if (!task) {
       throw new Error(`Task not found: ${input.taskId}`);
     }
-    return services.schedulerService.triggerScheduledEventAgentRun(task);
+    const result = await services.schedulerService.triggerScheduledEventAgentRun(task);
+    if (result.status === 'started' && result.run) {
+      emitAppEvent('run.changed', result.run.id);
+      emitAppEvent('task.changed', result.run.taskId);
+      emitAppEvent('brief.changed');
+    }
+    return result;
   });
 
   ipcMain.handle('run:continuePaused', async (_event, runId: string) => {
