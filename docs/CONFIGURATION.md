@@ -412,7 +412,9 @@ TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE=true npm run manual:agent-api-
 
 The default command reports `status=skip`, `skipReason=opt_in_required`,
 `provider=not-called`, `executionRun=deferred`, `promotionReady=no`,
-`promotionRequirements=0/11`, `requiredGates=0/9`, and `workspace=unchanged`.
+`promotionRequirements=0/11`, `requiredGates=0/9`,
+`promotionMissingRequirements=...`, `missingGates=...`, and
+`workspace=unchanged`.
 When explicitly enabled and provider config is complete, it sends one minimal
 text request through the same provider mapping used by the API text path and
 checks that a disposable

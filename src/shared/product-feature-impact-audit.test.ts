@@ -157,6 +157,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('promotionReady=no');
     expect(rightPanel?.evidence.join(' ')).toContain('promotionRequirements=0/11');
     expect(rightPanel?.evidence.join(' ')).toContain('requiredGates=0/9');
+    expect(rightPanel?.evidence.join(' ')).toContain('promotionMissingRequirements=...');
+    expect(rightPanel?.evidence.join(' ')).toContain('missingGates=...');
     expect(rightPanel?.evidence.join(' ')).toContain('execution_run as deferred');
     expect(rightPanel?.evidence.join(' ')).toContain('future provider-visible execution required gates');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step');
@@ -174,7 +176,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible text-call readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('skipReason=opt_in_required');
     expect(rightPanel?.evidence.join(' ')).toContain('skipReason=config_missing');
-    expect(rightPanel?.evidence.join(' ')).toContain('provider=not-called, executionRun=deferred, promotionReady=no, promotionRequirements=0/11, requiredGates=0/9, and workspace=unchanged');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider=not-called, executionRun=deferred, promotionReady=no, promotionRequirements=0/11, requiredGates=0/9, promotionMissingRequirements=..., missingGates=..., and workspace=unchanged');
     expect(rightPanel?.evidence.join(' ')).toContain('fal-openrouter / google/gemini-2.5-flash');
     expect(rightPanel?.evidence.join(' ')).toContain('provider=called, phrase=matched, workspace=unchanged, and status=passed');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');

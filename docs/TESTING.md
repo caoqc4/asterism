@@ -377,7 +377,9 @@ requirement, and run-status evidence, expose top-level `startedRunIds` and
 The Agent API execution preflight is deliberately narrower than a full task
 run: default output must include `status=skip`, `skipReason=opt_in_required`,
 `provider=not-called`, `executionRun=deferred`, `promotionReady=no`,
-`promotionRequirements=0/11`, `requiredGates=0/9`, and `workspace=unchanged`.
+`promotionRequirements=0/11`, `requiredGates=0/9`,
+`promotionMissingRequirements=...`, `missingGates=...`, and
+`workspace=unchanged`.
 A passing opt-in run proves that the configured
 provider can answer one Taskplane Agent API Runtime text request, while full
 provider-visible task `execution_run` remains deferred behind the shared
