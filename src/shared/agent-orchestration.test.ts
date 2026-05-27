@@ -615,6 +615,7 @@ describe('agent orchestration snapshot', () => {
       ]),
     });
     expect(approval.summary).toContain('accepted=yes');
+    expect(approval.summary).toContain('standingApprovalReady=yes');
     expect(approval.summary).toContain('requirements=13/13');
     expect(approval.summary).toContain('missingRequirements=none');
     expect(approval.summary).toContain('standingApprovalMissingRequirements=none');
@@ -698,6 +699,7 @@ describe('agent orchestration snapshot', () => {
       ]),
     });
     expect(approval.summary).toContain('accepted=no');
+    expect(approval.summary).toContain('standingApprovalReady=no');
     expect(approval.summary).toContain('requirements=3/13');
     expect(approval.summary).toContain('missingRequirements=');
     expect(approval.summary).toContain('standingApprovalMissingRequirements=');

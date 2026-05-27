@@ -244,6 +244,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('AgentStandingApprovalPolicy');
     expect(workHabits?.evidence.join(' ')).toContain('evaluateStandingApprovalForAutomation');
     expect(workHabits?.evidence.join(' ')).toContain('daily run limit');
+    expect(workHabits?.evidence.join(' ')).toContain('standingApprovalReady');
     expect(workHabits?.evidence.join(' ')).toContain('requirements=x/13');
     expect(workHabits?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('standingApprovalMissingRequirements=...');

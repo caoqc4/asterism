@@ -140,6 +140,24 @@ export type AgentStandingApprovalRequirement =
   | 'run_limit_policy'
   | 'automation_readiness';
 
+export function agentStandingApprovalRequirements(): AgentStandingApprovalRequirement[] {
+  return [
+    'policy_present',
+    'policy_active',
+    'visible_reason',
+    'valid_unexpired_window',
+    'l2_authorization',
+    'lane_allowed',
+    'runtime_allowed',
+    'task_scope',
+    'task_type_scope',
+    'task_facet_scope',
+    'risk_ceiling',
+    'run_limit_policy',
+    'automation_readiness',
+  ];
+}
+
 export type AgentStandingApprovalPolicy = {
   id: string;
   status: AgentStandingApprovalStatus;
@@ -916,21 +934,7 @@ export function evaluateStandingApprovalForAutomation(params: {
     evidence.push(`readiness=${params.readiness.state}`);
   }
 
-  const standingApprovalRequirements: AgentStandingApprovalRequirement[] = [
-    'policy_present',
-    'policy_active',
-    'visible_reason',
-    'valid_unexpired_window',
-    'l2_authorization',
-    'lane_allowed',
-    'runtime_allowed',
-    'task_scope',
-    'task_type_scope',
-    'task_facet_scope',
-    'risk_ceiling',
-    'run_limit_policy',
-    'automation_readiness',
-  ];
+  const standingApprovalRequirements = agentStandingApprovalRequirements();
   const missingRequirementSet = new Set(missingRequirements);
   const satisfiedRequirements = standingApprovalRequirements.filter((requirement) =>
     !missingRequirementSet.has(requirement));
@@ -945,6 +949,7 @@ export function evaluateStandingApprovalForAutomation(params: {
     summary: [
       'Standing Approval',
       `accepted=${accepted ? 'yes' : 'no'}`,
+      `standingApprovalReady=${accepted ? 'yes' : 'no'}`,
       `requirements=${satisfiedRequirements.length}/${standingApprovalRequirements.length}`,
       `authorized=${accepted ? 'L2_limited_authorized_action' : 'none'}`,
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
