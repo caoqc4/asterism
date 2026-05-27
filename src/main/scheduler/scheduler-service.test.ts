@@ -816,6 +816,89 @@ describe('SchedulerService', () => {
     expect(sweepResult.summaries.join(' ')).toContain('daily run limit reached: 2/2');
   });
 
+  it('skips overlapping scheduled/event sweeps while one sweep is in flight', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    let releaseCandidates: (() => void) | null = null;
+    const candidatesReady = new Promise<void>((resolve) => {
+      releaseCandidates = resolve;
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_scheduled_in_flight_1',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockImplementation(async () => {
+        await candidatesReady;
+        return [task];
+      }),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const firstSweep = service.runScheduledEventAgentTriggerSweep('cron');
+    await waitForAsyncSideEffect(() => {
+      expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(1);
+    });
+
+    const overlappingSweep = await service.runScheduledEventAgentTriggerSweep('cron');
+    expect(overlappingSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'in_flight',
+      checkedTaskCount: 0,
+      startedRunCount: 0,
+      blockedReasons: ['in_flight'],
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(overlappingSweep.summary).toContain('reason=in_flight');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+
+    releaseCandidates?.();
+    const completedFirstSweep = await firstSweep;
+    expect(completedFirstSweep.status).toBe('completed');
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+  });
+
   it('does not mark runs failed when repository stale recovery returns no eligible runs', async () => {
     const runRepository = {
       listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
