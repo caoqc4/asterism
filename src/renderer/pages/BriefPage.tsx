@@ -92,6 +92,12 @@ function briefDisplaySummary(data: HomeBriefData | null, visibleCount: number): 
 function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   const status = data?.schedulerStatus;
   if (!status?.enabled) return null;
+  const summary = status.lastScheduledEventAgentSweepSummary ?? '';
+  if (summary.includes('status=completed')) return '自动巡检: 已运行';
+  if (summary.includes('reason=waiting_for_first_tick')) return '自动巡检: 已接线';
+  if (summary.includes('reason=ports_not_connected')) return '自动巡检: 未接线';
+  if (summary.includes('reason=in_flight')) return '自动巡检: 运行中';
+  if (summary.includes('status=skipped')) return '自动巡检: 已跳过';
   if (status.lastScheduledEventAgentSweepAt) return '自动巡检: 已运行';
   if (status.running && status.scheduledEventAgentSweepJobConnected) return '自动巡检: 已接线';
   if (status.running && !status.scheduledEventAgentSweepJobConnected) return '自动巡检: 未接线';

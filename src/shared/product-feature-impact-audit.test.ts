@@ -328,6 +328,10 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('lastScheduledEventAgentSweepSummary');
     expect(workHabits?.evidence.join(' ')).toContain('scheduledEventAgentSweepJobConnected as automatic-sweep status chips');
     expect(workHabits?.evidence.join(' ')).toContain('skipped ports_not_connected and in_flight sweeps also update lastScheduledEventAgentSweepAt');
+    expect(workHabits?.evidence.join(' ')).toContain('Brief automatic-sweep chips now derive the visible label from lastScheduledEventAgentSweepSummary');
+    expect(workHabits?.evidence.join(' ')).toContain('waiting_for_first_tick stays 已接线');
+    expect(workHabits?.evidence.join(' ')).toContain('ports_not_connected shows 未接线');
+    expect(workHabits?.evidence.join(' ')).toContain('in_flight shows 运行中');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-sweep status chip');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
