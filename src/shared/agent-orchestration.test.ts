@@ -893,6 +893,7 @@ describe('agent orchestration snapshot', () => {
     });
     expect(plan.summary).toContain('runtimeStartAllowed=false');
     expect(plan.summary).toContain('runtimeStartRequirements=1/3');
+    expect(plan.summary).toContain('runtimeStartMissingRequirements=scheduler_trigger_service,run_limit_count');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
     expect(plan.summary).toContain('triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
     expect(plan.evidence).toContain('targetTask=task_1');
@@ -957,6 +958,7 @@ describe('agent orchestration snapshot', () => {
     });
     expect(plan.summary).toContain('runtimeStartAllowed=true');
     expect(plan.summary).toContain('runtimeStartRequirements=3/3');
+    expect(plan.summary).toContain('runtimeStartMissingRequirements=none');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=true');
   });
 
@@ -1018,6 +1020,7 @@ describe('agent orchestration snapshot', () => {
       ]),
     });
     expect(plan.summary).toContain('runtimeStartRequirements=1/3');
+    expect(plan.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count');
   });
 
   it('blocks scheduled/event trigger planning when daily run limit is reached', () => {
@@ -1081,6 +1084,7 @@ describe('agent orchestration snapshot', () => {
         'Scheduled/event trigger daily run limit reached: 3/3.',
       ]),
     });
+    expect(plan.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready,scheduler_trigger_service');
   });
 
   it('blocks scheduled/event trigger planning without confirmed standing approval or task automation class', () => {
@@ -1115,6 +1119,7 @@ describe('agent orchestration snapshot', () => {
         'Scheduled/event trigger planner only handles scheduled, event, or routine tasks.',
       ]),
     });
+    expect(plan.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready,scheduler_trigger_service,run_limit_count');
   });
 });
 

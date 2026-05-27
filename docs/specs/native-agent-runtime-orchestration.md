@@ -784,7 +784,8 @@ Current implementation:
   routine tasks when procedure, inputs, runtime, risk, and completion criteria
   are present, but it still returns `automaticStartAllowed: false` and blocks
   native runtime auto-start until a separate scheduled/event execution entrypoint
-  exists.
+  exists. Its summary includes `requirements=x/9` and
+  `missingRequirements=...` evidence.
 - Read-only orchestration diagnostics expose the automatic-start boundary, so
   manual/operator-started readiness is distinct from scheduled/event tasks that
   require a separate execution entrypoint.
@@ -793,7 +794,7 @@ Current implementation:
   task id, allows the requested lane and runtime, stays within the risk ceiling
   and daily run limit, carries a visible reason, and automation readiness is not
   blocked. The evaluator returns satisfied and missing requirement lists plus
-  `requirements=x/13` evidence. This evaluates authorization only; it does not create a scheduler
+  `requirements=x/13` and `missingRequirements=...` evidence. This evaluates authorization only; it does not create a scheduler
   trigger, IPC entrypoint, or workspace write path by itself.
 - `buildStandingApprovalConfirmationDraft` creates the operator-facing L2
   authorization draft from the same readiness and policy evaluator. The draft is
@@ -814,8 +815,9 @@ Current implementation:
   trigger service is explicitly connected and daily run-limit count evidence is
   present, a ready plan may return `runtimeStartAllowed=true`. The plan exposes
   runtime-start satisfied and missing requirement lists plus
-  `runtimeStartRequirements=x/3` evidence for trigger-plan readiness, scheduler
-  trigger service connection, and run-limit count. The plan also carries the
+  `runtimeStartRequirements=x/3` and
+  `runtimeStartMissingRequirements=...` evidence for trigger-plan readiness,
+  scheduler trigger service connection, and run-limit count. The plan also carries the
   trigger Run evidence contract: context readiness, target-task identity,
   task-memory coverage, task-memory guidance, subtask-start, run-limit count,
   and post-step evidence.

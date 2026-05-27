@@ -50,6 +50,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('scheduled, event-triggered, and');
     expect(content).toContain('automaticStartAllowed: false');
     expect(content).toContain('automatic-start boundary');
+    expect(content).toContain('missingRequirements=...');
+    expect(content).toContain('runtimeStartMissingRequirements=...');
     expect(content).toContain('AgentStandingApprovalPolicy');
     expect(content).toContain('shared L2 authorization surface');
     expect(content).toContain('daily run limit');

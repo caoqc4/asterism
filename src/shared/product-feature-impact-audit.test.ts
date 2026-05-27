@@ -248,6 +248,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=x/3');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
     expect(workHabits?.evidence.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
     expect(workHabits?.evidence.join(' ')).toContain('does not resolve runtime config');
