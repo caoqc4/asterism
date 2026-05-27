@@ -323,6 +323,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('lastScheduledEventAgentSweepSummary');
     expect(workHabits?.evidence.join(' ')).toContain('registered */15 scheduled/event Agent cron callback');
     expect(workHabits?.evidence.join(' ')).toContain('triggerKind=cron, operatorConfirmed=true');
+    expect(workHabits?.evidence.join(' ')).toContain('consecutive */15 scheduled/event Agent cron ticks');
+    expect(workHabits?.evidence.join(' ')).toContain('persisted same-day run counts');
+    expect(workHabits?.evidence.join(' ')).toContain('no second Code Agent trigger when the Standing Approval daily cap is reached');
     expect(workHabits?.evidence.join(' ')).toContain('skipReason=in_flight');
     expect(workHabits?.evidence.join(' ')).toContain('do not start a second Code Agent run');
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');

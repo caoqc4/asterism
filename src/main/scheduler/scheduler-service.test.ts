@@ -742,6 +742,87 @@ describe('SchedulerService', () => {
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
+  it('blocks a second cron sweep when persisted same-day run count reaches the standing approval limit', async () => {
+    let persistedRunCount = 0;
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 1 })],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockImplementation(async () => ({ task_auto: persistedRunCount })),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockImplementation(async () => {
+        persistedRunCount = 1;
+        return {
+          ...buildRunRecord(),
+          id: 'run_scheduled_callback_1',
+          taskId: 'task_auto',
+          type: 'agent',
+        } satisfies RunRecord;
+      }),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    await service.start();
+    const cronSweepJob = scheduledJobs.find((job) => job.expression === '*/15 * * * *');
+    expect(cronSweepJob).toBeTruthy();
+
+    cronSweepJob?.callback();
+    await waitForAsyncSideEffect(() => {
+      expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+      expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    });
+
+    cronSweepJob?.callback();
+    await waitForAsyncSideEffect(() => {
+      expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(2);
+      expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledTimes(2);
+    });
+
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('status=completed');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('started=0');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blocked=1');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 1/1.');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=not_started');
+  });
+
   it('counts runs started earlier in the same scheduled/event sweep against the daily limit', async () => {
     const task = buildAutomationTaskDetail({
       timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2 })],
