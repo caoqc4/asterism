@@ -53,11 +53,13 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('packaged task-files');
     expect(content).toContain('scheduled, event-triggered, and');
     expect(content).toContain('automaticStartAllowed: false');
+    expect(content).toContain('automationReady');
     expect(content).toContain('automatic-start boundary');
     expect(content).toContain('missingRequirements=...');
     expect(content).toContain('runtimeStartMissingRequirements=...');
     expect(content).toContain('AgentStandingApprovalPolicy');
     expect(content).toContain('shared L2 authorization surface');
+    expect(content).toContain('standingApprovalReady');
     expect(content).toContain('daily run limit');
     expect(content).toContain('does not create a scheduler');
     expect(content).toContain('buildStandingApprovalConfirmationDraft');
@@ -77,6 +79,7 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('trigger service is explicitly connected');
     expect(content).toContain('trigger Run');
     expect(content).toContain('run-limit count');
+    expect(content).toContain('runtimeStartReady');
     expect(content).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
     expect(content).toContain('scheduler diagnostic entrypoint');
     expect(content).toContain('RunRepository.countCreatedSinceByTask');
