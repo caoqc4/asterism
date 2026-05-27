@@ -536,6 +536,9 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('cliOnlyClosure ');
     expect(result.output).toContain('futureApiClosure ');
     expect(result.output).toContain(
+      'summary mainlineCliP0=ready p0CliPartial=<none> p0FutureApiDeferred=right_panel_agent_run,task_creation_and_project_decomposition,decisions_checkpoints_completion,task_files_artifacts_local_writes,capabilities_external_skills_mcp',
+    );
+    expect(result.output).toContain(
       'focus p0CliPartial=<none>',
     );
     expect(result.output).toContain(

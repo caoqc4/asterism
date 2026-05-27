@@ -37,6 +37,20 @@ function isOptionalCompatibilityEvidence(item) {
   return /optional|secondary compatibility|not (?:a )?mainline blocker|not as a mainline blocker/i.test(text);
 }
 
+function p0CliPartialIds(items) {
+  return idsFor(
+    items,
+    (item) => item.priority === 'p0' && item.cliOnlyClosure === 'partial',
+  );
+}
+
+function p0FutureApiPartialIds(items) {
+  return idsFor(
+    items,
+    (item) => item.priority === 'p0' && item.futureApiClosure === 'partial',
+  );
+}
+
 try {
   await build({
     bundle: true,
@@ -58,14 +72,11 @@ try {
   console.log(`status ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'status'))}`);
   console.log(`cliOnlyClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'cliOnlyClosure'))}`);
   console.log(`futureApiClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'futureApiClosure'))}`);
-  console.log(`focus p0CliPartial=${idsFor(
-    PRODUCT_FEATURE_IMPACT_AUDIT,
-    (item) => item.priority === 'p0' && item.cliOnlyClosure === 'partial',
-  )}`);
-  console.log(`focus p0FutureApiPartial=${idsFor(
-    PRODUCT_FEATURE_IMPACT_AUDIT,
-    (item) => item.priority === 'p0' && item.futureApiClosure === 'partial',
-  )}`);
+  const p0CliPartial = p0CliPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
+  const p0FutureApiPartial = p0FutureApiPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
+  console.log(`summary mainlineCliP0=${p0CliPartial === '<none>' ? 'ready' : 'blocked'} p0CliPartial=${p0CliPartial} p0FutureApiDeferred=${p0FutureApiPartial}`);
+  console.log(`focus p0CliPartial=${p0CliPartial}`);
+  console.log(`focus p0FutureApiPartial=${p0FutureApiPartial}`);
   console.log(`focus p1CliPartial=${idsFor(
     PRODUCT_FEATURE_IMPACT_AUDIT,
     (item) => item.priority === 'p1' && item.cliOnlyClosure === 'partial',
