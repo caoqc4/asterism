@@ -33,6 +33,7 @@ export type ScheduledEventAgentSweepResult = {
   blockedReasons: string[];
   runtimeStartMissingRequirements: Array<AgentScheduledEventTriggerPlan['runtimeStartMissingRequirements'][number]>;
   terminalRunEvidenceMissingRunIds: string[];
+  triggerRunEvidenceRequired: AgentScheduledEventTriggerPlan['triggerRunEvidenceRequired'];
   summaries: string[];
   summary: string;
 };
@@ -225,6 +226,7 @@ export class SchedulerService {
         blockedReasons: ['ports_not_connected'],
         runtimeStartMissingRequirements: ['scheduler_trigger_service'],
         terminalRunEvidenceMissingRunIds: [],
+        triggerRunEvidenceRequired: [],
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts}`,
       };
@@ -241,6 +243,7 @@ export class SchedulerService {
         blockedReasons: ['in_flight'],
         runtimeStartMissingRequirements: [],
         terminalRunEvidenceMissingRunIds: [],
+        triggerRunEvidenceRequired: [],
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight`,
       };
@@ -271,6 +274,9 @@ export class SchedulerService {
         result.status === 'started' && result.run && !isTerminalScheduledEventRunStatus(result.run.status)
           ? [result.run.id]
           : []);
+      const triggerRunEvidenceRequired = Array.from(new Set(
+        results.flatMap((result) => result.plan.triggerRunEvidenceRequired),
+      ));
       this.lastScheduledEventAgentSweepAt = new Date().toISOString();
 
       return {
@@ -283,6 +289,7 @@ export class SchedulerService {
         blockedReasons,
         runtimeStartMissingRequirements,
         terminalRunEvidenceMissingRunIds,
+        triggerRunEvidenceRequired,
         summaries: results.map((result) => result.summary),
         summary: [
           `scheduledEventAgentSweep=${kind}`,
@@ -294,6 +301,7 @@ export class SchedulerService {
           `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
           `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
           `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
+          `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
         ].join(' / '),
       };
     } finally {

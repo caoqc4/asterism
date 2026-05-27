@@ -859,8 +859,8 @@ Current implementation:
   result also returns `terminalRunEvidenceStatus` for the operator message. Sweep
   results expose `skipReason`, `startedRunIds`,
   `blockedReasons`, `runtimeStartMissingRequirements`, and
-  `terminalRunEvidenceMissingRunIds` at the top level for operator-facing run
-  evidence.
+  `terminalRunEvidenceMissingRunIds`, plus `triggerRunEvidenceRequired`, at the
+  top level for operator-facing run evidence.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and

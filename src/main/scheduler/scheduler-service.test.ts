@@ -479,11 +479,21 @@ describe('SchedulerService', () => {
       blockedReasons: [],
       runtimeStartMissingRequirements: [],
       terminalRunEvidenceMissingRunIds: ['run_scheduled_cron_1'],
+      triggerRunEvidenceRequired: [
+        'context_readiness',
+        'target_task_identity',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'run_limit_count',
+        'post_step',
+      ],
     });
     expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
     expect(sweepResult.summary).toContain('blockedReasons=none');
     expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=none');
     expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
+    expect(sweepResult.summary).toContain('triggerRunEvidenceRequired=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
     expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(1);
     expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
       ['task_auto'],
@@ -578,6 +588,7 @@ describe('SchedulerService', () => {
       blockedReasons: ['ports_not_connected'],
       runtimeStartMissingRequirements: ['scheduler_trigger_service'],
       terminalRunEvidenceMissingRunIds: [],
+      triggerRunEvidenceRequired: [],
     });
     expect(sweepResult.summary).toContain('reason=ports_not_connected');
     expect(sweepResult.summary).toContain('missingPorts=timeline_port');
@@ -649,6 +660,15 @@ describe('SchedulerService', () => {
       startedRunIds: ['run_scheduled_cron_1'],
       runtimeStartMissingRequirements: ['trigger_plan_ready'],
       terminalRunEvidenceMissingRunIds: ['run_scheduled_cron_1'],
+      triggerRunEvidenceRequired: [
+        'context_readiness',
+        'target_task_identity',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'run_limit_count',
+        'post_step',
+      ],
     });
     expect(sweepResult.blockedReasons).toContain('Scheduled/event trigger daily run limit reached: 2/2.');
     expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
