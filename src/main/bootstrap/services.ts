@@ -250,6 +250,9 @@ schedulerService = new SchedulerService(
       return details.filter((detail) => detail !== null);
     },
   },
+  () => {
+    emitAppEvent('brief.changed');
+  },
 );
 const patchArtifactSandboxReviewRunService = new PatchArtifactSandboxReviewRunService(
   artifactRepository,

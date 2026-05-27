@@ -61,6 +61,8 @@ export type ScheduledEventAgentTimelinePort = {
   }) => Promise<void>;
 };
 
+export type ScheduledEventAgentSweepListener = (result: ScheduledEventAgentSweepResult) => void;
+
 export type ScheduledEventAgentTaskInput = Pick<
   TaskDetail,
   | 'activeBlocker'
@@ -213,6 +215,7 @@ export class SchedulerService {
     private readonly scheduledEventAgentRunPort: ScheduledEventAgentRunPort | null = null,
     private readonly scheduledEventAgentTimelinePort: ScheduledEventAgentTimelinePort | null = null,
     private readonly scheduledEventAgentTaskSourcePort: ScheduledEventAgentTaskSourcePort | null = null,
+    private readonly scheduledEventAgentSweepListener: ScheduledEventAgentSweepListener | null = null,
   ) {}
 
   async start(): Promise<void> {
@@ -293,7 +296,7 @@ export class SchedulerService {
       const summary = `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts} / triggerRunEvidenceStatus=not_started`;
       this.lastScheduledEventAgentSweepAt = now.toISOString();
       this.lastScheduledEventAgentSweepSummary = summary;
-      return {
+      return this.publishScheduledEventAgentSweepResult({
         status: 'skipped',
         skipReason: 'ports_not_connected',
         checkedTaskCount: 0,
@@ -312,14 +315,14 @@ export class SchedulerService {
         triggerRunEvidenceStatus: 'not_started',
         summaries: [],
         summary,
-      };
+      });
     }
 
     if (this.scheduledEventAgentSweepInFlight) {
       const summary = `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight / triggerRunEvidenceStatus=not_started`;
       this.lastScheduledEventAgentSweepAt = now.toISOString();
       this.lastScheduledEventAgentSweepSummary = summary;
-      return {
+      return this.publishScheduledEventAgentSweepResult({
         status: 'skipped',
         skipReason: 'in_flight',
         checkedTaskCount: 0,
@@ -338,7 +341,7 @@ export class SchedulerService {
         triggerRunEvidenceStatus: 'not_started',
         summaries: [],
         summary,
-      };
+      });
     }
 
     this.scheduledEventAgentSweepInFlight = true;
@@ -413,7 +416,7 @@ export class SchedulerService {
       ].join(' / ');
       this.lastScheduledEventAgentSweepSummary = summary;
 
-      return {
+      return this.publishScheduledEventAgentSweepResult({
         status: 'completed',
         skipReason: 'none',
         checkedTaskCount: tasks.length,
@@ -432,7 +435,7 @@ export class SchedulerService {
         triggerRunEvidenceStatus,
         summaries: results.map((result) => result.summary),
         summary,
-      };
+      });
     } catch (error) {
       const errorMessage = formatScheduledEventAgentSweepError(error);
       const failureEvidence = getScheduledEventAgentSweepFailureEvidence(error);
@@ -466,7 +469,7 @@ export class SchedulerService {
       ].join(' / ');
       this.lastScheduledEventAgentSweepAt = now.toISOString();
       this.lastScheduledEventAgentSweepSummary = summary;
-      return {
+      return this.publishScheduledEventAgentSweepResult({
         status: 'skipped',
         skipReason: 'sweep_failed',
         checkedTaskCount: checkedTaskIds.length,
@@ -485,10 +488,21 @@ export class SchedulerService {
         triggerRunEvidenceStatus: startedRunIds.length ? 'pending_terminal_run_evidence' : 'not_started',
         summaries: [],
         summary,
-      };
+      });
     } finally {
       this.scheduledEventAgentSweepInFlight = false;
     }
+  }
+
+  private publishScheduledEventAgentSweepResult(
+    result: ScheduledEventAgentSweepResult,
+  ): ScheduledEventAgentSweepResult {
+    try {
+      this.scheduledEventAgentSweepListener?.(result);
+    } catch {
+      // Sweep evidence should remain durable even if UI refresh notification fails.
+    }
+    return result;
   }
 
   async diagnoseScheduledEventAgentTriggers(

@@ -468,6 +468,7 @@ describe('SchedulerService', () => {
     const taskSourcePort = {
       listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
     };
+    const sweepListener = vi.fn();
     const { SchedulerService } = await import('./scheduler-service.js');
     const service = new SchedulerService(
       {
@@ -494,6 +495,7 @@ describe('SchedulerService', () => {
       triggerPort,
       timelinePort,
       taskSourcePort,
+      sweepListener,
     );
 
     await service.start();
@@ -592,6 +594,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
+    expect(sweepListener).toHaveBeenCalledWith(sweepResult);
   });
 
   it('blocks the background scheduled/event sweep when timeline evidence cannot be recorded', async () => {
