@@ -385,9 +385,9 @@ prove manual, terminal, and cron sweep summaries are persisted into
 `lastScheduledEventAgentSweepSummary`, prove a disconnected scheduler trigger
 service skips with `ports_not_connected` and `triggerRunEvidenceStatus=not_started`,
 prove overlapping sweeps skip with `in_flight` instead of starting a second
-run, prove trigger-port failures persist `sweep_failed` summary evidence and
-release the in-flight guard so a later sweep can recover, prove skipped sweeps
-still update `lastScheduledEventAgentSweepAt`, and
+run, prove trigger-port and task-source failures persist `sweep_failed` summary
+evidence and release the in-flight guard so a later sweep can recover, prove
+skipped sweeps still update `lastScheduledEventAgentSweepAt`, and
 keep `workspace=unchanged`, `provider=not-called`, and
 `docker=not-started`.
 

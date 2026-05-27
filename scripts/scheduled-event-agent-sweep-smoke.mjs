@@ -533,6 +533,94 @@ try {
   assert(failedRecoveryResult.status === 'completed', 'failed sweep recovery did not complete after the in-flight guard was released');
   assert(failedRecoveryResult.startedRunIds.includes(recoveryRun.id), 'failed sweep recovery did not start a bounded run after failure');
 
+  const sourceFailedTriggerCalls = [];
+  const sourceFailedTimelineEvents = [];
+  let sourceFailedShouldThrow = true;
+  const sourceRecoveryRun = {
+    ...run,
+    id: 'run_scheduled_event_source_failed_recovery_smoke',
+    taskId: 'task_scheduled_event_sweep_smoke',
+  };
+  const sourceFailedService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent source-failed sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent source-failed sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent source-failed sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        sourceFailedTriggerCalls.push(input);
+        return sourceRecoveryRun;
+      },
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        sourceFailedTimelineEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => {
+        if (sourceFailedShouldThrow) {
+          throw new Error('Task source failed / safely');
+        }
+        return [buildReadyScheduledTask()];
+      },
+    },
+  );
+  const sourceFailedResult = await sourceFailedService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:29:00.000Z'),
+  );
+  assert(sourceFailedResult.status === 'skipped', 'source-failed sweep should skip');
+  assert(sourceFailedResult.skipReason === 'sweep_failed', 'source-failed sweep did not report sweep_failed');
+  assert(sourceFailedResult.checkedTaskCount === 0, 'source-failed sweep should not check task candidates after source failure');
+  assert(sourceFailedResult.summary.includes('checked=0'), 'source-failed sweep summary did not preserve checked=0 evidence');
+  assert(sourceFailedResult.summary.includes('checkedTaskIds=none'), 'source-failed sweep summary did not preserve checkedTaskIds=none evidence');
+  assert(sourceFailedResult.summary.includes('error=Task source failed - safely'), 'source-failed sweep summary did not preserve sanitized source error evidence');
+  assert(sourceFailedResult.triggerRunEvidenceStatus === 'not_started', 'source-failed sweep should not start trigger Run evidence');
+  assert(sourceFailedService.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T12:29:00.000Z', 'source-failed sweep did not preserve skipped sweep time in scheduler status');
+  assert(sourceFailedService.getStatus().lastScheduledEventAgentSweepSummary === sourceFailedResult.summary, 'source-failed sweep did not persist the failed sweep summary into scheduler status');
+  assert(sourceFailedTriggerCalls.length === 0, 'source-failed sweep unexpectedly reached the Code Agent trigger port');
+  assert(sourceFailedTimelineEvents.length === 0, 'source-failed sweep unexpectedly recorded timeline evidence');
+  const sourceFailedSweepAt = sourceFailedService.getStatus().lastScheduledEventAgentSweepAt;
+
+  sourceFailedShouldThrow = false;
+  const sourceFailedRecoveryResult = await sourceFailedService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:30:00.000Z'),
+  );
+  assert(sourceFailedRecoveryResult.status === 'completed', 'source-failed sweep recovery did not complete after the in-flight guard was released');
+  assert(sourceFailedRecoveryResult.startedRunIds.includes(sourceRecoveryRun.id), 'source-failed sweep recovery did not start a bounded run after source recovery');
+
   const startupService = new SchedulerService(
     {
       read: () => ({
@@ -685,6 +773,13 @@ try {
     `failedSweepSummary=${failedResult.summary}`,
     `failedRecoveryStatus=${failedRecoveryResult.status}`,
     `failedRecoveryRunId=${recoveryRun.id}`,
+    `sourceFailedStatus=${sourceFailedResult.status}`,
+    `sourceFailedSkipReason=${sourceFailedResult.skipReason}`,
+    `sourceFailedTriggerRunEvidenceStatus=${sourceFailedResult.triggerRunEvidenceStatus}`,
+    `sourceFailedSweepAt=${sourceFailedSweepAt}`,
+    `sourceFailedSweepSummary=${sourceFailedResult.summary}`,
+    `sourceFailedRecoveryStatus=${sourceFailedRecoveryResult.status}`,
+    `sourceFailedRecoveryRunId=${sourceRecoveryRun.id}`,
     `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
     'duplicateRunLimit=blocked',
     'checkedTaskIdsEvidence=passed',
@@ -708,6 +803,8 @@ try {
     'inFlightSweepSummaryEvidence=recorded',
     'failedSweepSummaryEvidence=recorded',
     'failedSweepRecoveryEvidence=passed',
+    'sourceFailedSweepSummaryEvidence=recorded',
+    'sourceFailedSweepRecoveryEvidence=passed',
     'skippedSweepTimeEvidence=recorded',
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
