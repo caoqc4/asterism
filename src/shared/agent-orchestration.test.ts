@@ -419,6 +419,7 @@ describe('agent orchestration snapshot', () => {
     expect(readiness.summary).toContain('requirements=9/9');
     expect(readiness.summary).toContain('autonomy=L1_proposal');
     expect(readiness.summary).toContain('next=L2_limited_authorized_action');
+    expect(readiness.summary).toContain('missingRequirements=none');
     expect(readiness.summary).toContain('autoStart=no');
     expect(readiness.summary).toContain('standingApproval=required_for_auto_action');
   });
@@ -488,6 +489,9 @@ describe('agent orchestration snapshot', () => {
       state: 'blocked',
     });
     expect(readiness.summary).toContain('requirements=3/9');
+    expect(readiness.summary).toContain('missingRequirements=');
+    expect(readiness.summary).toContain('procedure');
+    expect(readiness.summary).toContain('runtime');
   });
 
   it('keeps scheduled event and routine tasks at proposal autonomy until a standing approval exists', () => {
@@ -527,6 +531,7 @@ describe('agent orchestration snapshot', () => {
       state: 'diagnostic_only',
     });
     expect(readiness.summary).toContain('requirements=8/9');
+    expect(readiness.summary).toContain('missingRequirements=scheduled_event_entrypoint');
     expect(readiness.summary).toContain('autonomy=L1_proposal');
     expect(readiness.summary).toContain('standingApproval=required_for_auto_action');
     expect(readiness.summary).toContain('autoStart=no');
@@ -605,6 +610,7 @@ describe('agent orchestration snapshot', () => {
     });
     expect(approval.summary).toContain('accepted=yes');
     expect(approval.summary).toContain('requirements=13/13');
+    expect(approval.summary).toContain('missingRequirements=none');
     expect(approval.summary).toContain('authorized=L2_limited_authorized_action');
   });
 
@@ -686,6 +692,9 @@ describe('agent orchestration snapshot', () => {
     });
     expect(approval.summary).toContain('accepted=no');
     expect(approval.summary).toContain('requirements=3/13');
+    expect(approval.summary).toContain('missingRequirements=');
+    expect(approval.summary).toContain('policy_active');
+    expect(approval.summary).toContain('automation_readiness');
   });
 
   it('blocks standing approval when timestamp evidence is invalid', () => {
