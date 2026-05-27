@@ -58,6 +58,7 @@ function buildHomeData(): HomeBriefData {
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: null,
+      scheduledEventAgentSweepJobConnected: false,
     },
   };
 }
@@ -317,6 +318,7 @@ describe('SchedulerService', () => {
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: null,
+      scheduledEventAgentSweepJobConnected: false,
     });
     expect(scheduledJobs).toHaveLength(0);
   });
@@ -485,6 +487,7 @@ describe('SchedulerService', () => {
       '*/5 * * * *',
       '*/15 * * * *',
     ]);
+    expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
 
     const sweepResult = await service.runScheduledEventAgentTriggerSweep(
       'cron',
@@ -555,6 +558,7 @@ describe('SchedulerService', () => {
       }),
     });
     expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
+    expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
   it('blocks the background scheduled/event sweep when timeline evidence cannot be recorded', async () => {

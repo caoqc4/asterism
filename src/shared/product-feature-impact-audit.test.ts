@@ -312,6 +312,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('workspace proposal-mode write boundary');
     expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
     expect(workHabits?.evidence.join(' ')).toContain('15-minute background scheduler job');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduledEventAgentSweepJobConnected');
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event task-source port');
     expect(workHabits?.evidence.join(' ')).toContain('missingPorts=run_port,timeline_port,task_source_port');
@@ -319,6 +320,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('duplicate candidates in one sweep cannot exceed the Standing Approval daily cap');
     expect(workHabits?.evidence.join(' ')).toContain('skipReason, startedRunIds, blockedReasons, runtimeStartMissingRequirements, terminalRunEvidenceMissingRunIds, triggerRunEvidenceRequired, and triggerRunEvidenceStatus at the top level');
     expect(workHabits?.evidence.join(' ')).toContain('Brief now surfaces schedulerStatus.lastScheduledEventAgentSweepAt');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduledEventAgentSweepJobConnected as automatic-sweep status chips');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-sweep status chip');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');

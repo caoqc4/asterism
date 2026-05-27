@@ -206,7 +206,7 @@ export class SchedulerService {
       }),
     );
 
-    if (this.scheduledEventAgentRunPort && this.scheduledEventAgentTimelinePort && this.scheduledEventAgentTaskSourcePort) {
+    if (this.hasScheduledEventAgentSweepPorts()) {
       this.jobs.push(
         cron.schedule('*/15 * * * *', () => {
           void this.runScheduledEventAgentTriggerSweep('cron');
@@ -234,6 +234,7 @@ export class SchedulerService {
       lastBriefAt: this.lastBriefAt,
       lastRunSweepAt: this.lastRunSweepAt,
       lastScheduledEventAgentSweepAt: this.lastScheduledEventAgentSweepAt,
+      scheduledEventAgentSweepJobConnected: this.started && this.hasScheduledEventAgentSweepPorts(),
     };
   }
 
@@ -483,6 +484,14 @@ export class SchedulerService {
     }).countCreatedSinceByTask;
     if (typeof countCreatedSinceByTask !== 'function') return {};
     return countCreatedSinceByTask.call(this.runRepository, taskIds, startOfUtcDay(now)).catch(() => ({}));
+  }
+
+  private hasScheduledEventAgentSweepPorts(): boolean {
+    return Boolean(
+      this.scheduledEventAgentRunPort
+      && this.scheduledEventAgentTimelinePort
+      && this.scheduledEventAgentTaskSourcePort,
+    );
   }
 
   private async runStartupRecovery(): Promise<void> {

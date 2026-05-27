@@ -93,6 +93,8 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   const status = data?.schedulerStatus;
   if (!status?.enabled) return null;
   if (status.lastScheduledEventAgentSweepAt) return '自动巡检: 已运行';
+  if (status.running && status.scheduledEventAgentSweepJobConnected) return '自动巡检: 已接线';
+  if (status.running && !status.scheduledEventAgentSweepJobConnected) return '自动巡检: 未接线';
   if (status.running) return '自动巡检: 等待首次运行';
   return '自动巡检: 已启用';
 }
@@ -275,7 +277,11 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
           </div>
         )}
         {scheduledSweepLabel && (
-          <div className="stat-chip" title={briefData?.schedulerStatus.lastScheduledEventAgentSweepAt ?? undefined}>
+          <div
+            className="stat-chip"
+            title={briefData?.schedulerStatus.lastScheduledEventAgentSweepAt
+              ?? (briefData?.schedulerStatus.scheduledEventAgentSweepJobConnected ? 'scheduled/event Agent sweep job connected' : undefined)}
+          >
             <span className={briefData?.schedulerStatus.running ? 'dot running' : 'dot'} />
             {scheduledSweepLabel}
           </div>

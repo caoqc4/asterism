@@ -39,6 +39,7 @@ function buildHomeData(): HomeBriefData {
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: null,
+      scheduledEventAgentSweepJobConnected: false,
     },
     processTemplateCandidates: [],
   };

@@ -78,6 +78,7 @@ function buildHomeBriefData(): HomeBriefData {
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: null,
+      scheduledEventAgentSweepJobConnected: false,
     },
     processTemplateCandidates: [],
     briefFocusTasks: [],
