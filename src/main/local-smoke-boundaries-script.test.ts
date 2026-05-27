@@ -725,7 +725,11 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('Agent CLI native-goal discovery');
     expect(result.output).toContain('runtime=codex');
     expect(result.output).toContain('enabled=false');
+    expect(result.output).toContain('taskplaneGoalLoop=available');
+    expect(result.output).toContain('nativeGoalForwarding=audit-only');
+    expect(result.output).toContain('passthrough=closed');
     expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('continueWith=taskplane_goal_loop');
     expect(result.output).toContain('default discovery only probes version/help');
     expect(result.output).toContain('candidateExample=');
     expect(result.output).not.toContain('probe=codex goal --help');

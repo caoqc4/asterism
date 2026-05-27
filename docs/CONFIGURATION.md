@@ -482,7 +482,11 @@ Codex native Goal Mode is tracked separately from Taskplane Task Goal. The
 adapter treats Codex CLI `0.133.0+` as native-goal capable, shows older Codex
 versions as needing an update, and still keeps runtime-native goal passthrough
 closed until the Taskplane evidence gate proves command shape, progress,
-cancellation, memory, and source-of-truth boundaries.
+cancellation, memory, and source-of-truth boundaries. The default native-goal
+discovery output reports `taskplaneGoalLoop=available`,
+`nativeGoalForwarding=audit-only`, `passthrough=closed`, and
+`continueWith=taskplane_goal_loop`, so a closed native-goal passthrough should
+not be interpreted as Taskplane task advancement being blocked.
 
 For a manual packaged-app live pass against the real local Codex account, build
 the unpacked app first and then run the opt-in task smoke:

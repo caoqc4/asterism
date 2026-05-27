@@ -277,7 +277,11 @@ Codex CLI adapter smoke path.
 
 Runtime-native goal discovery is an optional compatibility track, not a
 first-version product gate. By default it only probes local CLI version/help
-output, so it can be used to inspect command shape without starting a goal:
+output, so it can be used to inspect command shape without starting a goal. The
+default output reports `taskplaneGoalLoop=available`,
+`nativeGoalForwarding=audit-only`, `passthrough=closed`, and
+`continueWith=taskplane_goal_loop` to make clear that Taskplane-owned task
+advancement can continue even when runtime-native goal forwarding is closed:
 
 ```bash
 npm run manual:agent-cli-native-goal-discovery

@@ -419,6 +419,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
     expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness summary and missing evidence');
     expect(capabilities?.evidence.join(' ')).toContain('requires the selected adapter to declare native goal capability');
+    expect(capabilities?.evidence.join(' ')).toContain('taskplaneGoalLoop=available');
+    expect(capabilities?.evidence.join(' ')).toContain('continueWith=taskplane_goal_loop');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.evidence.join(' ')).toContain('fallback copy now uses the selected runtime native web/search readiness');

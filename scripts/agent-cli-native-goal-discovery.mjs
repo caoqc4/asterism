@@ -53,6 +53,9 @@ export function runAgentCliNativeGoalDiscovery() {
   const adapter = RUNTIME_ADAPTERS[RUNTIME];
   console.log(`label=${adapter.label}`);
   console.log(`minimumNativeGoalVersion=${adapter.minimumNativeGoalVersion}`);
+  console.log('taskplaneGoalLoop=available');
+  console.log('nativeGoalForwarding=audit-only');
+  console.log('passthrough=closed');
 
   for (const args of adapter.helpProbes) {
     const result = runCommand(adapter.command, args, { timeout: 10_000 });
@@ -62,6 +65,7 @@ export function runAgentCliNativeGoalDiscovery() {
   if (!ENABLED) {
     console.log('status=skip');
     console.log('note=default discovery only probes version/help. Set TASKPLANE_RUN_AGENT_CLI_NATIVE_GOAL_DISCOVERY=true to run one explicit disposable candidate command.');
+    console.log('continueWith=taskplane_goal_loop');
     console.log('required=TASKPLANE_AGENT_CLI_NATIVE_GOAL_ARGS_JSON');
     console.log('required=TASKPLANE_AGENT_CLI_NATIVE_GOAL_OBJECTIVE');
     for (const example of adapter.candidateExamples) {
