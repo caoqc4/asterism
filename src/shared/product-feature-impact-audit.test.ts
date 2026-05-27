@@ -329,6 +329,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('persisted sweep_failed summary');
     expect(workHabits?.evidence.join(' ')).toContain('released in-flight guard');
     expect(workHabits?.evidence.join(' ')).toContain('operator-visible and recoverable instead of becoming unhandled scheduler promises');
+    expect(workHabits?.evidence.join(' ')).toContain('timeline-recording failures after a run starts also preserve startedRunIds');
+    expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence instead of hiding the started run');
     expect(workHabits?.evidence.join(' ')).toContain('task-source failures before candidate loading persist sweep_failed');
     expect(workHabits?.evidence.join(' ')).toContain('checked=0, checkedTaskIds=none');
     expect(workHabits?.evidence.join(' ')).toContain('no Code Agent trigger, no timeline evidence');
@@ -380,6 +382,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('failedTriggerRunEvidenceStatus=not_started');
     expect(workHabits?.evidence.join(' ')).toContain('failedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('failedSweepRecoveryEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('timelineFailedStartedRunEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('timelineFailedTriggerRunEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('timelineFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSkipReason=sweep_failed');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedTriggerRunEvidenceStatus=not_started');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepSummaryEvidence=recorded');
@@ -425,6 +430,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('disconnectedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('inFlightSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('failedSweepSummaryEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('timelineFailedStartedRunEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('timelineFailedTriggerRunEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('timelineFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunStatusEvidence=recorded');

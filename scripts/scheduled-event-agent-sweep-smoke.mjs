@@ -533,6 +533,83 @@ try {
   assert(failedRecoveryResult.status === 'completed', 'failed sweep recovery did not complete after the in-flight guard was released');
   assert(failedRecoveryResult.startedRunIds.includes(recoveryRun.id), 'failed sweep recovery did not start a bounded run after failure');
 
+  const timelineFailedTriggerCalls = [];
+  const timelineFailedEvents = [];
+  const timelineFailedRun = {
+    ...run,
+    id: 'run_scheduled_event_timeline_failed_smoke',
+    taskId: 'task_scheduled_event_sweep_smoke',
+    status: 'running',
+  };
+  const timelineFailedService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent timeline-failed sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent timeline-failed sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent timeline-failed sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        timelineFailedTriggerCalls.push(input);
+        return timelineFailedRun;
+      },
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        timelineFailedEvents.push(input);
+        throw new Error('Timeline write failed / safely');
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
+    },
+  );
+  const timelineFailedResult = await timelineFailedService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:28:30.000Z'),
+  );
+  assert(timelineFailedResult.status === 'skipped', 'timeline-failed sweep should skip');
+  assert(timelineFailedResult.skipReason === 'sweep_failed', 'timeline-failed sweep did not report sweep_failed');
+  assert(timelineFailedResult.startedRunIds.includes(timelineFailedRun.id), 'timeline-failed sweep did not preserve the started run id');
+  assert(timelineFailedResult.startedRunCount === 1, 'timeline-failed sweep did not preserve started run count');
+  assert(timelineFailedResult.terminalRunEvidenceMissingRunIds.includes(timelineFailedRun.id), 'timeline-failed sweep did not preserve pending terminal Run evidence');
+  assert(timelineFailedResult.triggerRunEvidenceRequired.includes('context_readiness'), 'timeline-failed sweep did not preserve trigger evidence requirements');
+  assert(timelineFailedResult.triggerRunEvidenceStatus === 'pending_terminal_run_evidence', 'timeline-failed sweep did not preserve pending trigger evidence status');
+  assert(timelineFailedResult.summary.includes(`startedRunIds=${timelineFailedRun.id}`), 'timeline-failed sweep summary did not preserve started run id evidence');
+  assert(timelineFailedResult.summary.includes(`terminalRunEvidenceMissingRunIds=${timelineFailedRun.id}`), 'timeline-failed sweep summary did not preserve terminal evidence status');
+  assert(timelineFailedResult.summary.includes('error=Timeline evidence failed: Timeline write failed - safely'), 'timeline-failed sweep summary did not preserve sanitized timeline error evidence');
+  assert(timelineFailedService.getStatus().lastScheduledEventAgentSweepSummary === timelineFailedResult.summary, 'timeline-failed sweep did not persist the failed sweep summary into scheduler status');
+  assert(timelineFailedTriggerCalls.length === 1, 'timeline-failed sweep did not start exactly one bounded run before timeline failure');
+  assert(timelineFailedEvents.length === 1, 'timeline-failed sweep did not attempt to record timeline evidence exactly once');
+
   const sourceFailedTriggerCalls = [];
   const sourceFailedTimelineEvents = [];
   let sourceFailedShouldThrow = true;
@@ -773,6 +850,12 @@ try {
     `failedSweepSummary=${failedResult.summary}`,
     `failedRecoveryStatus=${failedRecoveryResult.status}`,
     `failedRecoveryRunId=${recoveryRun.id}`,
+    `timelineFailedStatus=${timelineFailedResult.status}`,
+    `timelineFailedSkipReason=${timelineFailedResult.skipReason}`,
+    `timelineFailedStartedRunIds=${timelineFailedResult.startedRunIds.join(',') || 'none'}`,
+    `timelineFailedTriggerRunEvidenceStatus=${timelineFailedResult.triggerRunEvidenceStatus}`,
+    `timelineFailedTerminalRunEvidenceMissingRunIds=${timelineFailedResult.terminalRunEvidenceMissingRunIds.join(',') || 'none'}`,
+    `timelineFailedSweepSummary=${timelineFailedResult.summary}`,
     `sourceFailedStatus=${sourceFailedResult.status}`,
     `sourceFailedSkipReason=${sourceFailedResult.skipReason}`,
     `sourceFailedTriggerRunEvidenceStatus=${sourceFailedResult.triggerRunEvidenceStatus}`,
@@ -803,6 +886,9 @@ try {
     'inFlightSweepSummaryEvidence=recorded',
     'failedSweepSummaryEvidence=recorded',
     'failedSweepRecoveryEvidence=passed',
+    'timelineFailedStartedRunEvidence=recorded',
+    'timelineFailedTriggerRunEvidence=recorded',
+    'timelineFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepRecoveryEvidence=passed',
     'skippedSweepTimeEvidence=recorded',

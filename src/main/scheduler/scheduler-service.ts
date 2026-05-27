@@ -164,6 +164,32 @@ function formatScheduledEventAgentSweepError(error: unknown): string {
   return (raw.trim() || 'unknown').replace(/\s+/g, ' ').replace(/\//g, '-');
 }
 
+type ScheduledEventAgentSweepFailureEvidence = {
+  plan: AgentScheduledEventTriggerPlan;
+  run: RunRecord;
+};
+
+type ScheduledEventAgentSweepError = Error & {
+  scheduledEventAgentSweepFailureEvidence?: ScheduledEventAgentSweepFailureEvidence;
+};
+
+function buildScheduledEventAgentSweepError(
+  message: string,
+  evidence: ScheduledEventAgentSweepFailureEvidence,
+): ScheduledEventAgentSweepError {
+  const error = new Error(message) as ScheduledEventAgentSweepError;
+  error.scheduledEventAgentSweepFailureEvidence = evidence;
+  return error;
+}
+
+function getScheduledEventAgentSweepFailureEvidence(
+  error: unknown,
+): ScheduledEventAgentSweepFailureEvidence | null {
+  if (!error || typeof error !== 'object') return null;
+  const evidence = (error as ScheduledEventAgentSweepError).scheduledEventAgentSweepFailureEvidence;
+  return evidence ?? null;
+}
+
 export class SchedulerService {
   private jobs: ScheduledTask[] = [];
   private started = false;
@@ -392,14 +418,29 @@ export class SchedulerService {
       };
     } catch (error) {
       const errorMessage = formatScheduledEventAgentSweepError(error);
+      const failureEvidence = getScheduledEventAgentSweepFailureEvidence(error);
+      const failedRun = failureEvidence?.run ?? null;
+      const failedPlan = failureEvidence?.plan ?? null;
+      const startedRunIds = failedRun ? [failedRun.id] : [];
+      const runFailureReasons = failedRun?.failureReason?.trim()
+        ? [`${failedRun.id}: ${failedRun.failureReason.trim()}`]
+        : [];
+      const terminalRunEvidenceMissingRunIds = failedRun && !isTerminalScheduledEventRunStatus(failedRun.status)
+        ? [failedRun.id]
+        : [];
+      const triggerRunEvidenceRequired = failedPlan?.triggerRunEvidenceRequired ?? [];
       const summary = [
         `scheduledEventAgentSweep=${kind}`,
         'status=skipped',
         'reason=sweep_failed',
         `checked=${checkedTaskIds.length}`,
         `checkedTaskIds=${checkedTaskIds.length ? checkedTaskIds.join(',') : 'none'}`,
+        `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
+        `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
+        `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
+        `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
         `error=${errorMessage}`,
-        'triggerRunEvidenceStatus=not_started',
+        `triggerRunEvidenceStatus=${startedRunIds.length ? 'pending_terminal_run_evidence' : 'not_started'}`,
       ].join(' / ');
       this.lastScheduledEventAgentSweepAt = now.toISOString();
       this.lastScheduledEventAgentSweepSummary = summary;
@@ -408,16 +449,16 @@ export class SchedulerService {
         skipReason: 'sweep_failed',
         checkedTaskCount: checkedTaskIds.length,
         checkedTaskIds,
-        startedRunCount: 0,
+        startedRunCount: startedRunIds.length,
         blockedTaskCount: checkedTaskIds.length,
-        startedRunIds: [],
+        startedRunIds,
         blockedReasons: [`sweep_failed: ${errorMessage}`],
         blockedTaskSummaries: checkedTaskIds.map((taskId) => `${taskId}: sweep_failed: ${errorMessage}`),
-        runFailureReasons: [],
+        runFailureReasons,
         runtimeStartMissingRequirements: ['trigger_plan_ready'],
-        terminalRunEvidenceMissingRunIds: [],
-        triggerRunEvidenceRequired: [],
-        triggerRunEvidenceStatus: 'not_started',
+        terminalRunEvidenceMissingRunIds,
+        triggerRunEvidenceRequired,
+        triggerRunEvidenceStatus: startedRunIds.length ? 'pending_terminal_run_evidence' : 'not_started',
         summaries: [],
         summary,
       };
@@ -496,7 +537,13 @@ export class SchedulerService {
     const run = await this.scheduledEventAgentRunPort.triggerCodeAgentRun(
       buildScheduledEventCodeAgentRunInput(task, plan, triggerKind),
     );
-    const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now, triggerKind);
+    const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now, triggerKind)
+      .catch((error: unknown) => {
+        throw buildScheduledEventAgentSweepError(
+          `Timeline evidence failed: ${formatScheduledEventAgentSweepError(error)}`,
+          { plan, run },
+        );
+      });
     const terminalRunEvidenceStatus = isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending';
     const triggerRunEvidenceStatus = terminalRunEvidenceStatus === 'present'
       ? 'ready_for_terminal_review'

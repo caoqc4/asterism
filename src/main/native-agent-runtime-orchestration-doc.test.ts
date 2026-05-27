@@ -99,10 +99,15 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('in_flight');
     expect(content).toContain('sweep_failed');
     expect(content).toContain('sanitized task-source/trigger-port failure evidence');
-    expect(content).toContain('Failed sweeps release');
+    expect(content).toContain('timeline recording fails after a');
+    expect(content).toContain('startedRunIds');
+    expect(content).toContain('pending_terminal_run_evidence');
+    expect(content).toContain('Failed sweeps');
+    expect(content).toContain('release the in-flight');
     expect(content).toContain('in-flight');
     expect(content).toContain('guard');
-    expect(content).toContain('background automation health');
+    expect(content).toContain('background automation');
+    expect(content).toContain('health');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');
     expect(content).toContain('compact/clear context');

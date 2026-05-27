@@ -386,7 +386,9 @@ prove manual, terminal, and cron sweep summaries are persisted into
 service skips with `ports_not_connected` and `triggerRunEvidenceStatus=not_started`,
 prove overlapping sweeps skip with `in_flight` instead of starting a second
 run, prove trigger-port and task-source failures persist `sweep_failed` summary
-evidence and release the in-flight guard so a later sweep can recover, prove
+evidence and release the in-flight guard so a later sweep can recover, prove a
+timeline-recording failure after a run starts still preserves `startedRunIds`,
+pending terminal Run evidence, and `triggerRunEvidenceStatus=pending_terminal_run_evidence`, prove
 skipped sweeps still update `lastScheduledEventAgentSweepAt`, and
 keep `workspace=unchanged`, `provider=not-called`, and
 `docker=not-started`.

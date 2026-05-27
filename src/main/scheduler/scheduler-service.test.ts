@@ -1089,6 +1089,95 @@ describe('SchedulerService', () => {
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(2);
   });
 
+  it('preserves started run evidence when timeline recording fails during a scheduled/event sweep', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_timeline_failure_sweep',
+        taskId: 'task_auto',
+        type: 'agent',
+        status: 'running',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockRejectedValueOnce(new Error('Timeline write failed / safely')),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T12:00:00.000Z'),
+    );
+
+    expect(failedSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'sweep_failed',
+      checkedTaskCount: 1,
+      checkedTaskIds: ['task_auto'],
+      startedRunCount: 1,
+      blockedTaskCount: 1,
+      startedRunIds: ['run_timeline_failure_sweep'],
+      runFailureReasons: [],
+      terminalRunEvidenceMissingRunIds: ['run_timeline_failure_sweep'],
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(failedSweep.triggerRunEvidenceRequired).toEqual([
+      'context_readiness',
+      'target_task_identity',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'subtask_start',
+      'run_limit_count',
+      'post_step',
+    ]);
+    expect(failedSweep.summary).toContain('reason=sweep_failed');
+    expect(failedSweep.summary).toContain('startedRunIds=run_timeline_failure_sweep');
+    expect(failedSweep.summary).toContain('terminalRunEvidenceMissingRunIds=run_timeline_failure_sweep');
+    expect(failedSweep.summary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
+    expect(failedSweep.summary).toContain('error=Timeline evidence failed: Timeline write failed - safely');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+  });
+
   it('records a failed scheduled/event sweep when the task source fails before any run starts', async () => {
     const task = buildAutomationTaskDetail({
       timeline: [buildStandingApprovalTimeline()],
