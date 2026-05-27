@@ -703,6 +703,10 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('missing gate count visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API decomposition readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness chips');
+    expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness smoke');
+    expect(capabilities?.evidence.join(' ')).toContain('runtimeExecutable=no');
+    expect(capabilities?.evidence.join(' ')).toContain('provider=not-called');
+    expect(capabilities?.evidence.join(' ')).toContain('network=not-called');
     expect(capabilities?.evidence.join(' ')).toContain('per-runtime capability chips');
     expect(capabilities?.evidence.join(' ')).toContain('visible native search, hook, and subagent readiness labels');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
@@ -735,6 +739,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.nextActions.join(' ')).toContain('opportunistically when local account support is available');
     expect(capabilities?.nextActions.join(' ')).toContain('not as a CLI-first blocker');
     expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
+    expect(capabilities?.nextActions.join(' ')).toContain('read-only Agent API provider tool readiness smoke');
     expect(capabilities?.cliOnlyClosure).toBe('supported');
     expect(capabilities?.futureApiClosure).toBe('partial');
     expect(workHabits?.evidence.join(' ')).toContain('diagnostic-only for automatic starts');

@@ -452,6 +452,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'AI Runtime settings now render Agent API execution_run readiness chips from the shared capability summary, making promotion count, missing requirement count, and missing gate count visible without parsing the diagnostic text.',
       'AI Runtime settings now render Agent API decomposition readiness chips from the shared capability summary, making promotion count and missing requirement count visible without parsing the diagnostic text.',
       'AI Runtime settings now render Agent API provider tool readiness chips from the shared capability summary, so providerToolReadiness=not_declared is visible without implying provider-native web/search/tool support.',
+      'The Agent API provider tool readiness smoke now reads the shared Agent API Runtime capability row as a read-only build-gated harness, proving providerToolReadiness=not_declared, startupProbe=never, executionRun=deferred, runtimeExecutable=no, provider=not-called, network=not-called, and workspace=unchanged even when API Runtime is selected and provider configuration is present.',
       'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution, including visible native search, hook, and subagent readiness labels plus memory, compact, clear, and write boundaries.',
       'Probed native compact/clear signals are promoted into adapter capability support while context reset still requires Taskplane preservation gates and persistent-session ownership before a runtime-native reset strategy can be selected.',
       'Run Goal Contract and Agent CLI context bridge pass selected-runtime capability declarations into native CLI prompts.',
@@ -471,7 +472,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future API and optional non-Codex provider compatibility still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, Agent API no-start provider tool/search non-declaration, and the now-recorded Codex opt-in live smoke evidence; this no longer blocks the Codex-verified CLI-first capability path.',
     ],
     nextActions: [
-      'Keep adding static readiness probes only when providers expose stable non-executing metadata; record non-Codex provider live smoke opportunistically when local account support is available, not as a CLI-first blocker.',
+      'Keep adding static readiness probes only when providers expose stable non-executing metadata; use the read-only Agent API provider tool readiness smoke to prevent provider configuration from implying native tool/search support, and record non-Codex provider live smoke opportunistically when local account support is available, not as a CLI-first blocker.',
       'Keep native goal passthrough closed until command shape, progress/control evidence, and packaged smoke move from audit output into verified adapter evidence.',
     ],
   },

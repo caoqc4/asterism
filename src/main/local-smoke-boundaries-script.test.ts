@@ -784,6 +784,22 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('promotionInProduct=deferred');
   });
 
+  it('keeps Agent API provider tool readiness smoke read-only and build-gated by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/agent-api-provider-tool-readiness-smoke.mjs', '', {}, []);
+
+    expect(scripts['manual:agent-api-provider-tool-readiness-smoke']).toBe(
+      'npm run build:main && node scripts/agent-api-provider-tool-readiness-smoke.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Agent API provider tool readiness smoke');
+    expect(result.output).toContain('mode=read-only');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('network=not-called');
+    expect(result.output).toContain('startupProbe=not-attempted');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
   it('keeps runtime patch promotion routing readiness smoke read-only and build-gated by default', () => {
     const scripts = readPackageScripts();
     const result = runScript('scripts/runtime-patch-promotion-routing-readiness-smoke.mjs', '', {}, []);

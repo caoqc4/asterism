@@ -50,6 +50,7 @@
     "manual:agent-api-execution-preflight-smoke": "node scripts/agent-api-execution-preflight-smoke.mjs",
     "manual:agent-api-promotion-readiness-smoke": "npm run build:main && node scripts/agent-api-promotion-readiness-smoke.mjs",
     "manual:agent-api-decomposition-promotion-readiness-smoke": "npm run build:main && node scripts/agent-api-decomposition-promotion-readiness-smoke.mjs",
+    "manual:agent-api-provider-tool-readiness-smoke": "npm run build:main && node scripts/agent-api-provider-tool-readiness-smoke.mjs",
     "manual:runtime-patch-promotion-routing-readiness-smoke": "npm run build:main && node scripts/runtime-patch-promotion-routing-readiness-smoke.mjs",
     "manual:scheduler-decision-proposal-readiness-smoke": "npm run build:main && node scripts/scheduler-decision-proposal-readiness-smoke.mjs",
     "manual:agent-cli-task-live:mac": "node scripts/manual-agent-cli-task-live-mac.mjs",
