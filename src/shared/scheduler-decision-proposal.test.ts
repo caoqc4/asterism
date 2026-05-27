@@ -33,6 +33,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('schedulerTriggerAllowed=false');
     expect(plan.summary).toContain('targetTask=missing');
     expect(plan.summary).toContain('missingRequirements=approval_queue,target_task_identity,authorization');
+    expect(plan.summary).toContain('proposalMissingRequirements=approval_queue,target_task_identity,authorization');
   });
 
   it('allows only a proposal approval item after operator confirmation', () => {
@@ -62,6 +63,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('authorization=operator_confirmation');
     expect(plan.summary).toContain('targetTask=task_decision_1');
     expect(plan.summary).toContain('missingRequirements=none');
+    expect(plan.summary).toContain('proposalMissingRequirements=none');
     expect(plan.summary).toContain('blocked=none');
   });
 
