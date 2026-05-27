@@ -508,6 +508,7 @@ describe('SchedulerService', () => {
       operatorConfirmed: true,
       useModelProducer: true,
     });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Target task: task_auto.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Trigger kind: cron.');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
       taskId: 'task_auto',
@@ -1188,6 +1189,7 @@ describe('SchedulerService', () => {
       useModelProducer: true,
     });
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Next step: Prepare the weekly update.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Target task: task_auto.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Standing Approval policy: standing_approval:task_auto:coding:local_sandbox.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Runtime start requirements: trigger_plan_ready,scheduler_trigger_service,run_limit_count.');
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');

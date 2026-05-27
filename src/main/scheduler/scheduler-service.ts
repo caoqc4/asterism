@@ -100,6 +100,7 @@ function buildScheduledEventCodeAgentRunInput(
     taskId: task.id,
     patchIntent: [
       'Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.',
+      `Target task: ${task.id}.`,
       `Trigger kind: ${triggerKind}.`,
       `Next step: ${nextStep}`,
       `Standing Approval policy: ${plan.policy?.id ?? 'unknown'}.`,

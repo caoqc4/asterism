@@ -107,6 +107,7 @@ try {
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
   assert(triggerCalls[0].useModelProducer === true, 'sweep did not route through the model-producer Code Agent path');
   assert(triggerCalls[0].patchIntent.includes('reviewable patch artifacts or proposals'), 'sweep did not preserve no-direct-write guidance');
+  assert(triggerCalls[0].patchIntent.includes('Target task: task_scheduled_event_sweep_smoke.'), 'sweep did not pass target task identity into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Trigger kind: manual.'), 'sweep did not pass manual trigger kind into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Standing Approval policy: standing_approval:task_scheduled_event_sweep_smoke:coding:local_sandbox.'), 'sweep did not pass Standing Approval policy evidence into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Runtime start requirements: trigger_plan_ready,scheduler_trigger_service,run_limit_count.'), 'sweep did not pass runtime-start requirements into the bounded run');
@@ -285,6 +286,7 @@ try {
   assert(cronResult.startedRunIds.includes(cronRun.id), 'cron sweep did not expose the cron run id');
   assert(cronResult.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'cron sweep did not expose ready trigger Run evidence status');
   assert(cronTriggerCalls.length === 1, 'cron sweep did not call the Code Agent trigger port exactly once');
+  assert(cronTriggerCalls[0].patchIntent.includes('Target task: task_scheduled_event_sweep_smoke.'), 'cron sweep did not pass target task identity into the bounded run');
   assert(cronTriggerCalls[0].patchIntent.includes('Trigger kind: cron.'), 'cron sweep did not pass cron trigger kind into the bounded run');
   assert(cronTimelineEvents.length === 1, 'cron sweep did not record trigger timeline evidence');
   assert(cronTimelineEvents[0].payload.runId === cronRun.id, 'cron timeline evidence did not preserve the cron run id');
@@ -307,6 +309,7 @@ try {
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
     `triggerRunEvidenceStatus=${result.triggerRunEvidenceStatus}`,
+    'boundedRunTargetTask=passed',
     `manualTriggerKind=${timelineEvents[0].payload.triggerKind}`,
     `terminalStatus=${terminalResult.status}`,
     `terminalRunId=${terminalRun.id}`,
@@ -330,6 +333,7 @@ try {
     'terminalRunStatusEvidence=recorded',
     'cronRunStatusEvidence=recorded',
     'triggerKindEvidence=passed',
+    'boundedRunTargetTaskEvidence=passed',
     'workspace=unchanged',
     'provider=not-called',
     'docker=not-started',
