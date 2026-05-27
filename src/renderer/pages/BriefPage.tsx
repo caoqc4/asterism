@@ -96,6 +96,7 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   if (summary.includes('status=completed')) return [
     '自动巡检: 已运行',
     schedulerSweepCountLabel(summary),
+    schedulerSweepFailureLabel(summary),
     schedulerSweepEvidenceLabel(summary),
   ]
     .filter(Boolean)
@@ -129,6 +130,13 @@ function schedulerSweepEvidenceLabel(summary: string): string | null {
   if (triggerRunEvidenceStatus === 'ready_for_terminal_review') return '证据可复核';
   if (triggerRunEvidenceStatus === 'pending_terminal_run_evidence') return '证据待终态';
   return null;
+}
+
+function schedulerSweepFailureLabel(summary: string): string | null {
+  const runFailureReasons = summary.match(/(?:^| \/ )runFailureReasons=([^/]+?)(?: \/|$)/)?.[1]?.trim();
+  if (!runFailureReasons || runFailureReasons === 'none') return null;
+  const count = runFailureReasons.split(';').filter((reason) => reason.trim().length > 0).length;
+  return count > 0 ? `失败 ${count}` : null;
 }
 
 function schedulerSweepMissingPortsLabel(summary: string): string | null {
