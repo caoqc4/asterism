@@ -234,7 +234,8 @@ Taskplane currently has a working native CLI execution backend:
   reviewed-patch apply boundary, post-step verification, and Run evidence
   persistence. Agent API capability summaries expose both
   `executionRunPromotionRequirements=0/11` and
-  `executionRunMissingRequirements=...` so the deferred execution boundary is
+  `executionRunMissingRequirements=...`, plus
+  `executionRunMissingGates=...`, so the deferred execution boundary is
   visible before any provider-visible run can start. The opt-in Agent API
   execution preflight smoke prints the same `executionRunMissingRequirements`
   field alongside `promotionMissingRequirements`, while still defaulting to

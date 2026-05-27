@@ -446,6 +446,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('deferred execution_run boundary');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionRequirements=0/11');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunMissingRequirements=...');
+    expect(capabilities?.evidence.join(' ')).toContain('executionRunMissingGates=...');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('startupProbe=never');
     expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');

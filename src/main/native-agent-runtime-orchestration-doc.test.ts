@@ -29,6 +29,7 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('provider-visible preflight');
     expect(content).toContain('executionRunPromotionRequirements=0/11');
     expect(content).toContain('executionRunMissingRequirements=...');
+    expect(content).toContain('executionRunMissingGates=...');
     expect(content).toContain('`product_control_layer` or');
     expect(content).toContain('`persistent_ai_pilot_reserved` is a future');
     expect(content).toContain('future `wanman_matrix` executor');

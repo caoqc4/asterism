@@ -561,7 +561,10 @@ function agentApiExecutionRunGateSummary(): string {
     ?? requiredRuntimeEntrypointGatesForKind('provider_visible_execution');
   const excludedSummaryGates = new Set<RuntimeEntrypointGate>(['simplicity_check', 'runtime_action']);
   const keyGates = requiredGates.filter((gate) => !excludedSummaryGates.has(gate));
-  return `executionRunKeyGates=${keyGates.join(',')}`;
+  return [
+    `executionRunKeyGates=${keyGates.join(',')}`,
+    `executionRunMissingGates=${keyGates.join(',')}`,
+  ].join(' / ');
 }
 
 function browserCapability(
