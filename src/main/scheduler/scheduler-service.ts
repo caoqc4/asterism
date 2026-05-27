@@ -28,6 +28,7 @@ export type ScheduledEventAgentSweepResult = {
   status: 'completed' | 'skipped';
   skipReason: 'none' | 'ports_not_connected' | 'in_flight';
   checkedTaskCount: number;
+  checkedTaskIds: string[];
   startedRunCount: number;
   blockedTaskCount: number;
   startedRunIds: string[];
@@ -262,6 +263,7 @@ export class SchedulerService {
         status: 'skipped',
         skipReason: 'ports_not_connected',
         checkedTaskCount: 0,
+        checkedTaskIds: [],
         startedRunCount: 0,
         blockedTaskCount: 0,
         startedRunIds: [],
@@ -285,6 +287,7 @@ export class SchedulerService {
         status: 'skipped',
         skipReason: 'in_flight',
         checkedTaskCount: 0,
+        checkedTaskIds: [],
         startedRunCount: 0,
         blockedTaskCount: 0,
         startedRunIds: [],
@@ -303,7 +306,8 @@ export class SchedulerService {
     this.scheduledEventAgentSweepInFlight = true;
     try {
       const tasks = await taskSourcePort.listScheduledEventAgentTriggerCandidates();
-      const runCounts = await this.countRunsStartedToday(tasks.map((task) => task.id), now);
+      const checkedTaskIds = tasks.map((task) => task.id);
+      const runCounts = await this.countRunsStartedToday(checkedTaskIds, now);
       const results: ScheduledEventAgentTriggerResult[] = [];
 
       for (const task of tasks) {
@@ -348,6 +352,7 @@ export class SchedulerService {
         `scheduledEventAgentSweep=${kind}`,
         'status=completed',
         `checked=${tasks.length}`,
+        `checkedTaskIds=${checkedTaskIds.length ? checkedTaskIds.join(',') : 'none'}`,
         `started=${startedRunCount}`,
         `blocked=${blockedTaskCount}`,
         `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
@@ -365,6 +370,7 @@ export class SchedulerService {
         status: 'completed',
         skipReason: 'none',
         checkedTaskCount: tasks.length,
+        checkedTaskIds,
         startedRunCount,
         blockedTaskCount,
         startedRunIds,

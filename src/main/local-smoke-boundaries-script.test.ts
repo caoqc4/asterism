@@ -326,6 +326,7 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('duplicateRunLimit=blocked');
     expect(script).toContain('skipReason=${result.skipReason}');
     expect(script).toContain('daily run limit reached: 3/3');
+    expect(script).toContain('checkedTaskIds=');
     expect(script).toContain('startedRunIds=');
     expect(script).toContain('blockedReasons=');
     expect(script).toContain('blockedTaskSummaries=');
@@ -378,6 +379,7 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('cronTriggerRunEvidence=passed');
     expect(script).toContain('cronRunFailureReasonEvidence=passed');
     expect(script).toContain('blockedTaskSummaryEvidence=passed');
+    expect(script).toContain('checkedTaskIdsEvidence=passed');
     expect(script).toContain('panel.scheduled_event_agent_triggered');
     expect(script).toContain('timelineEvidence=recorded');
     expect(script).toContain('timelineWorkspaceBoundary=recorded');

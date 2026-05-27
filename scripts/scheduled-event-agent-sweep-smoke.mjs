@@ -94,6 +94,7 @@ try {
 
   assert(result.status === 'completed', 'sweep did not complete');
   assert(result.checkedTaskCount === 2, 'sweep did not check the duplicate scheduled task candidates');
+  assert(result.checkedTaskIds.join(',') === 'task_scheduled_event_sweep_smoke,task_scheduled_event_sweep_smoke', 'sweep did not expose checked task ids in top-level evidence');
   assert(result.startedRunCount === 1, 'sweep did not start exactly one bounded run');
   assert(result.blockedTaskCount === 1, 'sweep did not block the duplicate task after the daily limit was reached');
   assert(result.startedRunIds.includes(run.id), 'sweep did not expose started run ids in top-level evidence');
@@ -546,6 +547,7 @@ try {
     `status=${result.status}`,
     `skipReason=${result.skipReason}`,
     `checked=${result.checkedTaskCount}`,
+    `checkedTaskIds=${result.checkedTaskIds.join(',')}`,
     `started=${result.startedRunCount}`,
     `blocked=${result.blockedTaskCount}`,
     `runId=${run.id}`,
@@ -591,6 +593,7 @@ try {
     `inFlightSweepSummary=${inFlightResult.summary}`,
     `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
     'duplicateRunLimit=blocked',
+    'checkedTaskIdsEvidence=passed',
     'blockedTaskSummaryEvidence=passed',
     'triggerRunEvidence=passed',
     'terminalTriggerRunEvidence=passed',

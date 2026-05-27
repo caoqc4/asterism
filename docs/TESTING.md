@@ -376,8 +376,8 @@ proposal-only boundary visible to the run, preserve Standing Approval scope
 evidence, block the duplicate through in-sweep daily-limit counting, record
 `panel.scheduled_event_agent_triggered` with target task, runtime-start
 requirement, run-status evidence, and `workspaceWriteAllowed=false` timeline
-boundary, expose top-level `startedRunIds`, `blockedReasons`, and
-`blockedTaskSummaries`, preserve terminal `runFailureReasons`, report
+boundary, expose top-level `checkedTaskIds`, `startedRunIds`,
+`blockedReasons`, and `blockedTaskSummaries`, preserve terminal `runFailureReasons`, report
 `skipReason=none` for completed sweeps, prove
 `triggerKind` evidence for both manual and cron starts, prove startup
 `scheduledEventAgentSweepJobConnected` evidence before the first cron tick,

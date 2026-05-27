@@ -858,7 +858,7 @@ Current implementation:
   operator-triggered autonomous action from ordinary run creation. The single-run
   result also returns `terminalRunEvidenceStatus` and
   `triggerRunEvidenceStatus` for the operator message. Sweep
-  results expose `skipReason`, `startedRunIds`,
+  results expose `skipReason`, `checkedTaskIds`, `startedRunIds`,
   `blockedReasons`, `blockedTaskSummaries`, `runFailureReasons`,
   `runtimeStartMissingRequirements`, and
   `terminalRunEvidenceMissingRunIds`, plus `triggerRunEvidenceRequired` and

@@ -802,6 +802,7 @@ describe('SchedulerService', () => {
       status: 'completed',
       skipReason: 'none',
       checkedTaskCount: 2,
+      checkedTaskIds: ['task_auto', 'task_auto'],
       startedRunCount: 1,
       blockedTaskCount: 1,
       startedRunIds: ['run_scheduled_cron_1'],
@@ -819,6 +820,7 @@ describe('SchedulerService', () => {
       ],
       triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
     });
+    expect(sweepResult.summary).toContain('checkedTaskIds=task_auto,task_auto');
     expect(sweepResult.blockedReasons).toContain('Scheduled/event trigger daily run limit reached: 2/2.');
     expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
     expect(sweepResult.summary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 2/2.');
