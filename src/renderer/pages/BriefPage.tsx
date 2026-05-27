@@ -96,6 +96,7 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   if (summary.includes('status=completed')) return [
     '自动巡检: 已运行',
     schedulerSweepCountLabel(summary),
+    schedulerSweepBlockReasonLabel(summary),
     schedulerSweepFailureLabel(summary),
     schedulerSweepAutomationReadinessLabel(summary),
     schedulerSweepEvidenceLabel(summary),
@@ -110,6 +111,7 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   if (summary.includes('reason=sweep_failed')) return [
     '自动巡检: 异常',
     schedulerSweepCountLabel(summary),
+    schedulerSweepBlockReasonLabel(summary),
     schedulerSweepAutomationReadinessLabel(summary),
     schedulerSweepEvidenceLabel(summary),
   ]
@@ -143,6 +145,10 @@ function schedulerSweepEvidenceLabel(summary: string): string | null {
   if (triggerRunEvidenceStatus === 'ready_for_terminal_review') return '证据可复核';
   if (triggerRunEvidenceStatus === 'pending_terminal_run_evidence') return '证据待终态';
   return null;
+}
+
+function schedulerSweepBlockReasonLabel(summary: string): string | null {
+  return /daily run limit reached/i.test(summary) ? '限额' : null;
 }
 
 function schedulerSweepAutomationReadinessLabel(summary: string): string | null {
