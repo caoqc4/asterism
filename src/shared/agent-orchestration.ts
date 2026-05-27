@@ -656,6 +656,7 @@ export function projectAgentRunLifecycle(params: {
 }
 
 export function evaluateSkillInformedAutomationReadiness(params: {
+  scheduledEventEntrypointAvailable?: boolean;
   task: Pick<
     TaskDetail,
     | 'activeBlocker'
@@ -694,6 +695,7 @@ export function evaluateSkillInformedAutomationReadiness(params: {
   const scheduledOrEventTriggered = taskKinds.has('scheduled')
     || taskKinds.has('event')
     || taskKinds.has('routine');
+  const scheduledEventEntrypointAvailable = params.scheduledEventEntrypointAvailable === true;
 
   if (!hasProcedure) {
     missingRequirements.push('procedure');
@@ -745,10 +747,13 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     evidence.push('openCompletionCriterion=present');
   }
 
-  if (scheduledOrEventTriggered) {
+  if (scheduledOrEventTriggered && !scheduledEventEntrypointAvailable) {
     missingRequirements.push('scheduled_event_entrypoint');
     blockedReasons.push('Scheduled, event-triggered, and routine tasks need a policy-gated scheduled/event execution entrypoint before automatic native runtime start.');
     evidence.push(`taskAutomationClass=${Array.from(taskKinds).join(',')}`);
+  } else if (scheduledOrEventTriggered) {
+    evidence.push(`taskAutomationClass=${Array.from(taskKinds).join(',')}`);
+    evidence.push('scheduledEventEntrypoint=available');
   }
 
   const state: AgentAutomationReadinessState = blockedReasons.length === 0
@@ -756,7 +761,7 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     : evidence.length > 0
       ? 'diagnostic_only'
       : 'blocked';
-  const automaticStartBoundary: AgentAutomationStartBoundary = scheduledOrEventTriggered
+  const automaticStartBoundary: AgentAutomationStartBoundary = scheduledOrEventTriggered && !scheduledEventEntrypointAvailable
     ? 'separate_scheduled_event_entrypoint_required'
     : state === 'blocked'
       ? 'blocked_until_ready'
@@ -1075,6 +1080,7 @@ export function planScheduledEventAgentTrigger(params: {
   const snapshot = buildAgentExecutionOrchestrationSnapshot(params.aiStatus);
   const runtimeId = params.runtimeId ?? snapshot.runtime.id;
   const readiness = evaluateSkillInformedAutomationReadiness({
+    scheduledEventEntrypointAvailable: schedulerTriggerServiceConnected,
     snapshot,
     task: params.task,
   });

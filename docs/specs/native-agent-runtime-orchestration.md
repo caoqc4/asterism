@@ -791,9 +791,13 @@ Current implementation:
 - `AgentAutomationReadiness` can diagnose scheduled, event-triggered, and
   routine tasks when procedure, inputs, runtime, risk, and completion criteria
   are present, but it still returns `automaticStartAllowed: false` and blocks
-  native runtime auto-start until a separate scheduled/event execution entrypoint
-  exists. Its summary includes `automationReady`, `requirements=x/9`, and
-  `missingRequirements=...` / `automationMissingRequirements=...` evidence.
+  default read-only native runtime auto-start until a separate scheduled/event
+  execution entrypoint is available. Its summary includes `automationReady`,
+  `requirements=x/9`, and `missingRequirements=...` /
+  `automationMissingRequirements=...` evidence. The dedicated scheduled/event
+  trigger planner may mark `scheduledEventEntrypoint=available` only when the
+  scheduler trigger service is connected; final runtime start still depends on
+  Standing Approval, run-limit evidence, and post-step gates.
 - Read-only orchestration diagnostics expose the automatic-start boundary, so
   manual/operator-started readiness is distinct from scheduled/event tasks that
   require a separate execution entrypoint.

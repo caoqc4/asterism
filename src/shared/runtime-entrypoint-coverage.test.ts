@@ -265,7 +265,9 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('current autonomy ladder level');
     expect(entry?.notes).toContain('L1 proposal eligibility');
     expect(entry?.notes).toContain('separate_scheduled_event_entrypoint_required');
-    expect(entry?.notes).toContain('standing approval policy');
+    expect(entry?.notes).toContain('dedicated trigger planner');
+    expect(entry?.notes).toContain('scheduledEventEntrypoint=available');
+    expect(entry?.notes).toContain('scheduler trigger service is connected');
     expect(entry?.notes).toContain('cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint');
   });
 

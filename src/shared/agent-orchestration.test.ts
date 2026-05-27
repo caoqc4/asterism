@@ -960,6 +960,21 @@ describe('agent orchestration snapshot', () => {
       triggerPlanReady: true,
       runtimeStartAllowed: true,
       schedulerTriggerServiceConnected: true,
+      readiness: {
+        state: 'eligible',
+        missingRequirements: [],
+        satisfiedRequirements: [
+          'procedure',
+          'inputs',
+          'runtime',
+          'risk',
+          'waiting_clear',
+          'blocker_clear',
+          'dependency_clear',
+          'open_completion_criterion',
+          'scheduled_event_entrypoint',
+        ],
+      },
       runtimeStartMissingRequirements: [],
       runtimeStartSatisfiedRequirements: [
         'trigger_plan_ready',
@@ -967,6 +982,9 @@ describe('agent orchestration snapshot', () => {
         'run_limit_count',
       ],
     });
+    expect(plan.readiness.evidence).toContain('scheduledEventEntrypoint=available');
+    expect(plan.readiness.summary).toContain('requirements=9/9');
+    expect(plan.readiness.summary).toContain('missingRequirements=none');
     expect(plan.summary).toContain('runtimeStartAllowed=true');
     expect(plan.summary).toContain('runtimeStartReady=yes');
     expect(plan.summary).toContain('runtimeStartRequirements=3/3');

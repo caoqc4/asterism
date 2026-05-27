@@ -54,6 +54,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('scheduled, event-triggered, and');
     expect(content).toContain('automaticStartAllowed: false');
     expect(content).toContain('automationReady');
+    expect(content).toContain('default read-only');
+    expect(content).toContain('scheduledEventEntrypoint=available');
     expect(content).toContain('automatic-start boundary');
     expect(content).toContain('missingRequirements=...');
     expect(content).toContain('runtimeStartMissingRequirements=...');

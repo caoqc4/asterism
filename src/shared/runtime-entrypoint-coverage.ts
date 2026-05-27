@@ -297,7 +297,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'runtime_context_assembly',
     ],
-    notes: 'This diagnostic scores procedure, inputs, selected-runtime readiness, risk, blockers, dependencies, completion criteria, and the current autonomy ladder level. It may identify L1 proposal eligibility, but automaticStartAllowed remains false. Scheduled, event-triggered, and routine tasks are labeled separate_scheduled_event_entrypoint_required and cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint until a standing approval policy is present.',
+    notes: 'This diagnostic scores procedure, inputs, selected-runtime readiness, risk, blockers, dependencies, completion criteria, and the current autonomy ladder level. It may identify L1 proposal eligibility, but automaticStartAllowed remains false. Default scheduled, event-triggered, and routine diagnostics are labeled separate_scheduled_event_entrypoint_required and cannot use this diagnostic as a hidden Agent CLI/API execution entrypoint; the dedicated trigger planner may mark scheduledEventEntrypoint=available only when the scheduler trigger service is connected and runtime-start gates still pass.',
   },
   {
     id: 'automation.scheduledEventAgentRun.future',

@@ -237,7 +237,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('requirements=x/9');
     expect(workHabits?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('automationMissingRequirements=...');
-    expect(workHabits?.evidence.join(' ')).toContain('scheduled_event_entrypoint remains missing');
+    expect(workHabits?.evidence.join(' ')).toContain('default scheduled/event diagnostics show scheduled_event_entrypoint missing');
+    expect(workHabits?.evidence.join(' ')).toContain('connected trigger-service plans can satisfy it');
     expect(workHabits?.evidence.join(' ')).toContain('autonomy ladder level');
     expect(workHabits?.evidence.join(' ')).toContain('L1 proposal capability');
     expect(workHabits?.evidence.join(' ')).toContain('standing_approval as an explicit deferred gate');
