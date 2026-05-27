@@ -607,6 +607,9 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
   const runStatus = typeof parsed.runStatus === 'string' && parsed.runStatus.trim()
     ? `状态：${parsed.runStatus.trim()}`
     : null;
+  const targetTaskId = typeof parsed.targetTaskId === 'string' && parsed.targetTaskId.trim()
+    ? `任务：${parsed.targetTaskId.trim()}`
+    : null;
   const terminalRunEvidence = parsed.terminalRunEvidenceStatus === 'present'
     ? '终态证据：已记录'
     : parsed.terminalRunEvidenceStatus === 'pending'
@@ -633,6 +636,7 @@ function formatScheduledEventAgentTriggeredDetail(payload: string): string | nul
   const workspaceWriteBoundary = parsed.workspaceWriteAllowed === false ? '写入：提案模式' : null;
   return [
     runId,
+    targetTaskId,
     runStatus,
     terminalRunEvidence,
     triggerRunEvidence,
