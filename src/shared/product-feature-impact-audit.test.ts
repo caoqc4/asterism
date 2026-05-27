@@ -177,7 +177,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible text-call readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('skipReason=opt_in_required');
     expect(rightPanel?.evidence.join(' ')).toContain('skipReason=config_missing');
-    expect(rightPanel?.evidence.join(' ')).toContain('provider=not-called, executionRun=deferred, promotionReady=no, promotionRequirements=0/11, requiredGates=0/9, promotionMissingRequirements=..., executionRunMissingRequirements=..., missingGates=..., and workspace=unchanged');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider=not-called, executionRun=deferred, promotionReady=no, promotionRequirements=0/11, requiredGates=0/9, promotionMissingRequirements=..., executionRunMissingRequirements=..., executionRunMissingGates=..., missingGates=..., and workspace=unchanged');
     expect(rightPanel?.evidence.join(' ')).toContain('fal-openrouter / google/gemini-2.5-flash');
     expect(rightPanel?.evidence.join(' ')).toContain('provider=called, phrase=matched, workspace=unchanged, and status=passed');
     expect(rightPanel?.evidence.join(' ')).toContain('selected-runtime capability declarations');
