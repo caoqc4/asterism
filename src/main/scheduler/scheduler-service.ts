@@ -1,12 +1,14 @@
 import cron, { type ScheduledTask } from 'node-cron';
 
 import type { SchedulerStatus } from '../../shared/types/scheduler.js';
+import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import {
   planScheduledEventAgentTrigger,
   type AgentScheduledEventTriggerPlan,
 } from '../../shared/agent-orchestration.js';
 import type { TaskDetail } from '../../shared/types/task.js';
 import type { CreateCodeAgentRunInput, RunRecord } from '../../shared/types/run.js';
+import type { AiConfigStatus } from '../../shared/types/settings.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repository.js';
 import { BriefProcessTemplateSelector } from '../domain/brief/process-template-selector.js';
@@ -14,6 +16,7 @@ import { RunRepository } from '../db/repositories/run-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { BriefExecutor, buildFallbackBrief } from '../executors/brief-executor.js';
 import { AiConfigService } from '../keychain/ai-config-service.js';
+import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
 
 export type ScheduledEventAgentTriggerResult = {
   status: 'started' | 'blocked';
@@ -121,7 +124,7 @@ function buildScheduledEventCodeAgentRunInput(
       'Workspace write boundary: workspaceWriteAllowed=false; proposals only.',
       'Do not apply workspace changes directly; produce reviewable patch artifacts or proposals through Taskplane gates.',
     ].join('\n'),
-    requestedChecks: [],
+    requestedChecks: ['test', 'lint'],
     operatorConfirmed: true,
     useModelProducer: true,
   };
@@ -510,8 +513,7 @@ export class SchedulerService {
     now: Date = new Date(),
     runCountsStartedTodayByTaskId: Record<string, number> | null = null,
   ): Promise<AgentScheduledEventTriggerPlan[]> {
-    const getStatus = (this.aiConfigService as { getStatus?: AiConfigService['getStatus'] }).getStatus;
-    const aiStatus = typeof getStatus === 'function' ? await getStatus.call(this.aiConfigService).catch(() => null) : null;
+    const aiStatus = await this.getScheduledEventAgentTriggerAiStatus();
     const runCounts = runCountsStartedTodayByTaskId
       ?? await this.countRunsStartedToday(tasks.map((task) => task.id), now);
 
@@ -547,8 +549,7 @@ export class SchedulerService {
       };
     }
 
-    const getStatus = (this.aiConfigService as { getStatus?: AiConfigService['getStatus'] }).getStatus;
-    const aiStatus = typeof getStatus === 'function' ? await getStatus.call(this.aiConfigService).catch(() => null) : null;
+    const aiStatus = await this.getScheduledEventAgentTriggerAiStatus();
     const runCounts = runCountsStartedTodayByTaskId
       ?? await this.countRunsStartedToday([task.id], now);
     const plan = planScheduledEventAgentTrigger({
@@ -656,6 +657,31 @@ export class SchedulerService {
     }).countCreatedSinceByTask;
     if (typeof countCreatedSinceByTask !== 'function') return {};
     return countCreatedSinceByTask.call(this.runRepository, taskIds, startOfUtcDay(now)).catch(() => ({}));
+  }
+
+  private async getScheduledEventAgentTriggerAiStatus(): Promise<AiConfigStatus | null> {
+    const getStatus = (this.aiConfigService as { getStatus?: AiConfigService['getStatus'] }).getStatus;
+    const aiStatus = typeof getStatus === 'function'
+      ? await getStatus.call(this.aiConfigService).catch(() => null)
+      : null;
+
+    if (!aiStatus || aiStatus.sandboxBackendStatus?.probe) {
+      return aiStatus;
+    }
+
+    if (aiStatus.featureFlags.enableSandboxCodingAgent !== true) {
+      return aiStatus;
+    }
+
+    const probe = await probeLocalContainerSandboxBackend().catch(() => null);
+    if (!probe) {
+      return aiStatus;
+    }
+
+    return {
+      ...aiStatus,
+      sandboxBackendStatus: buildAgentSandboxBackendStatus(probe),
+    };
   }
 
   private hasScheduledEventAgentSweepPorts(): boolean {

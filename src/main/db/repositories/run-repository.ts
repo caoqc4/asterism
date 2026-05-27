@@ -148,9 +148,11 @@ export class RunRepository {
         ),
       );
 
+    const initialCounts = Object.fromEntries(uniqueTaskIds.map((taskId) => [taskId, 0]));
+
     return rows.reduce<Record<string, number>>((counts, row) => {
       counts[row.taskId] = (counts[row.taskId] ?? 0) + 1;
       return counts;
-    }, {});
+    }, initialCounts);
   }
 }

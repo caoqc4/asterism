@@ -202,5 +202,13 @@ describe('RunRepository integration', () => {
       [task.id]: 2,
       [otherTask.id]: 1,
     });
+
+    await expect(runRepository.countCreatedSinceByTask(
+      [task.id, 'task_without_runs'],
+      '2026-05-27T00:00:00.000Z',
+    )).resolves.toEqual({
+      [task.id]: 0,
+      task_without_runs: 0,
+    });
   });
 });

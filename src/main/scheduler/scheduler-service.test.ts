@@ -557,7 +557,7 @@ describe('SchedulerService', () => {
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledWith({
       taskId: 'task_auto',
       patchIntent: expect.stringContaining('Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.'),
-      requestedChecks: [],
+      requestedChecks: ['test', 'lint'],
       operatorConfirmed: true,
       useModelProducer: true,
     });
@@ -1856,7 +1856,7 @@ describe('SchedulerService', () => {
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledWith({
       taskId: 'task_auto',
       patchIntent: expect.stringContaining('Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.'),
-      requestedChecks: [],
+      requestedChecks: ['test', 'lint'],
       operatorConfirmed: true,
       useModelProducer: true,
     });
