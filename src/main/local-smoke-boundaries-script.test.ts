@@ -768,6 +768,22 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('promotionInProduct=deferred');
   });
 
+  it('keeps Agent API decomposition promotion readiness smoke read-only and build-gated by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/agent-api-decomposition-promotion-readiness-smoke.mjs', '', {}, []);
+
+    expect(scripts['manual:agent-api-decomposition-promotion-readiness-smoke']).toBe(
+      'npm run build:main && node scripts/agent-api-decomposition-promotion-readiness-smoke.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Agent API decomposition promotion readiness smoke');
+    expect(result.output).toContain('mode=read-only');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('subtasks=not-created');
+    expect(result.output).toContain('workspace=unchanged');
+    expect(result.output).toContain('promotionInProduct=deferred');
+  });
+
   it('validates Agent API execution preflight config before calling a provider', () => {
     const result = runScript('scripts/agent-api-execution-preflight-smoke.mjs', '', {
       TASKPLANE_RUN_AGENT_API_EXECUTION_PREFLIGHT_SMOKE: 'true',
