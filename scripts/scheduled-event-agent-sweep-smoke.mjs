@@ -214,6 +214,75 @@ try {
   assert(terminalTimelineEvents[0].payload.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'terminal timeline evidence did not mark trigger evidence ready for review');
   assert(beforeWorkspace === terminalAfterWorkspace, 'scheduled/event Agent terminal sweep smoke mutated the workspace fixture');
 
+  const cronRun = {
+    ...terminalRun,
+    id: 'run_scheduled_event_sweep_cron_smoke',
+  };
+  const cronTimelineEvents = [];
+  const cronService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent cron sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent cron sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent cron sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async () => cronRun,
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        cronTimelineEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
+    },
+  );
+
+  const cronResult = await cronService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:15:00.000Z'),
+  );
+  const cronAfterWorkspace = await fs.readFile(workspaceFile, 'utf8');
+
+  assert(cronResult.status === 'completed', 'cron sweep did not complete');
+  assert(cronResult.summary.includes('scheduledEventAgentSweep=cron'), 'cron sweep summary did not preserve cron kind');
+  assert(cronResult.startedRunIds.includes(cronRun.id), 'cron sweep did not expose the cron run id');
+  assert(cronResult.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'cron sweep did not expose ready trigger Run evidence status');
+  assert(cronTimelineEvents.length === 1, 'cron sweep did not record trigger timeline evidence');
+  assert(cronTimelineEvents[0].payload.runId === cronRun.id, 'cron timeline evidence did not preserve the cron run id');
+  assert(cronTimelineEvents[0].payload.triggeredAt === '2026-05-26T12:15:00.000Z', 'cron timeline evidence did not preserve the cron trigger time');
+  assert(cronTimelineEvents[0].payload.terminalRunEvidenceStatus === 'present', 'cron timeline evidence did not mark terminal Run evidence present');
+  assert(beforeWorkspace === cronAfterWorkspace, 'scheduled/event Agent cron sweep smoke mutated the workspace fixture');
+
   console.log([
     'Scheduled/event Agent sweep smoke: ready',
     `status=${result.status}`,
@@ -232,15 +301,21 @@ try {
     `terminalRunId=${terminalRun.id}`,
     `terminalTriggerRunEvidenceStatus=${terminalResult.triggerRunEvidenceStatus}`,
     `terminalRunEvidenceMissingRunIds=${terminalResult.terminalRunEvidenceMissingRunIds.join(',') || 'none'}`,
+    `cronStatus=${cronResult.status}`,
+    `cronRunId=${cronRun.id}`,
+    `cronTriggerRunEvidenceStatus=${cronResult.triggerRunEvidenceStatus}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
     'terminalTriggerRunEvidence=passed',
+    'cronTriggerRunEvidence=passed',
     'runLimitEvidence=passed',
     'runtimeStartRequirements=passed',
     'timelineEvidence=recorded',
     'terminalTimelineEvidence=recorded',
+    'cronTimelineEvidence=recorded',
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
+    'cronRunStatusEvidence=recorded',
     'workspace=unchanged',
     'provider=not-called',
     'docker=not-started',
