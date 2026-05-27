@@ -235,7 +235,9 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
     summary: [
       'Agent API decomposition promotion readiness',
       `ready=${ready ? 'yes' : 'no'}`,
+      `promotionReady=${ready ? 'yes' : 'no'}`,
       `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `promotionRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `parentTask=${applyPlan?.input.parentTaskId?.trim() || 'missing'}`,
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,

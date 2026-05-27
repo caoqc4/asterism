@@ -92,7 +92,9 @@ describe('ai runtime invocation contract', () => {
       ],
     });
     expect(blocked.summary).toContain('ready=no');
+    expect(blocked.summary).toContain('promotionReady=no');
     expect(blocked.summary).toContain('requirements=0/7');
+    expect(blocked.summary).toContain('promotionRequirements=0/7');
     expect(blocked.summary).toContain('promotionMissingRequirements=selected_runtime_contract,parent_task_identity,reversible_proposal_card');
 
     const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
@@ -125,7 +127,9 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: [],
     });
     expect(ready.summary).toContain('selectedRuntimeContract=ready');
+    expect(ready.summary).toContain('promotionReady=yes');
     expect(ready.summary).toContain('requirements=7/7');
+    expect(ready.summary).toContain('promotionRequirements=7/7');
     expect(ready.summary).toContain('parentTask=task_project');
     expect(ready.summary).toContain('proposalCard=ready');
     expect(ready.summary).toContain('applyPlan=subtask.create_many');
