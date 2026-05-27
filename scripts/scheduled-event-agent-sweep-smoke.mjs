@@ -98,6 +98,7 @@ try {
   assert(result.blockedTaskCount === 1, 'sweep did not block the duplicate task after the daily limit was reached');
   assert(result.startedRunIds.includes(run.id), 'sweep did not expose started run ids in top-level evidence');
   assert(result.blockedReasons.includes('Scheduled/event trigger daily run limit reached: 3/3.'), 'sweep did not expose blocked reasons in top-level evidence');
+  assert(result.blockedTaskSummaries.includes('task_scheduled_event_sweep_smoke: Scheduled/event trigger daily run limit reached: 3/3.'), 'sweep did not expose blocked task summaries in top-level evidence');
   assert(result.runtimeStartMissingRequirements.includes('trigger_plan_ready'), 'sweep did not expose runtime-start missing requirements in top-level evidence');
   assert(result.terminalRunEvidenceMissingRunIds.includes(run.id), 'sweep did not expose missing terminal Run evidence in top-level evidence');
   assert(result.triggerRunEvidenceRequired.includes('context_readiness'), 'sweep did not expose trigger Run evidence requirements in top-level evidence');
@@ -549,6 +550,7 @@ try {
     `runId=${run.id}`,
     `startedRunIds=${result.startedRunIds.join(',')}`,
     `blockedReasons=${result.blockedReasons.join(';')}`,
+    `blockedTaskSummaries=${result.blockedTaskSummaries.join(';') || 'none'}`,
     `runFailureReasons=${result.runFailureReasons.join(';') || 'none'}`,
     `runtimeStartMissingRequirements=${result.runtimeStartMissingRequirements.join(',')}`,
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
@@ -587,6 +589,7 @@ try {
     `inFlightSweepSummary=${inFlightResult.summary}`,
     `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
     'duplicateRunLimit=blocked',
+    'blockedTaskSummaryEvidence=passed',
     'triggerRunEvidence=passed',
     'terminalTriggerRunEvidence=passed',
     'cronTriggerRunEvidence=passed',

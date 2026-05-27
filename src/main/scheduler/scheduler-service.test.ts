@@ -805,6 +805,7 @@ describe('SchedulerService', () => {
       startedRunCount: 1,
       blockedTaskCount: 1,
       startedRunIds: ['run_scheduled_cron_1'],
+      blockedTaskSummaries: ['task_auto: Scheduled/event trigger daily run limit reached: 2/2.'],
       runtimeStartMissingRequirements: ['trigger_plan_ready'],
       terminalRunEvidenceMissingRunIds: ['run_scheduled_cron_1'],
       triggerRunEvidenceRequired: [
@@ -821,6 +822,7 @@ describe('SchedulerService', () => {
     expect(sweepResult.blockedReasons).toContain('Scheduled/event trigger daily run limit reached: 2/2.');
     expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
     expect(sweepResult.summary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 2/2.');
+    expect(sweepResult.summary).toContain('blockedTaskSummaries=task_auto: Scheduled/event trigger daily run limit reached: 2/2.');
     expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready');
     expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
