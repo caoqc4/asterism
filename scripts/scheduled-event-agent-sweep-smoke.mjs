@@ -359,6 +359,80 @@ try {
   assert(disconnectedResult.summary.includes('missingPorts=run_port,timeline_port,task_source_port'), 'disconnected sweep did not expose missing ports');
   assert(disconnectedService.getStatus().lastScheduledEventAgentSweepSummary === disconnectedResult.summary, 'disconnected sweep did not persist the skipped sweep summary into scheduler status');
 
+  let releaseInFlightCandidates;
+  const inFlightCandidatePromise = new Promise((resolve) => {
+    releaseInFlightCandidates = () => resolve([]);
+  });
+  const inFlightTriggerCalls = [];
+  const inFlightService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent in-flight sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({}),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent in-flight sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent in-flight sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        inFlightTriggerCalls.push(input);
+        return run;
+      },
+    },
+    {
+      recordTimelineEvent: async () => {
+        throw new Error('Scheduled/event Agent in-flight skip smoke should not record a second timeline event.');
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => inFlightCandidatePromise,
+    },
+  );
+  const firstInFlightSweep = inFlightService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:25:00.000Z'),
+  );
+  const inFlightResult = await inFlightService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:25:01.000Z'),
+  );
+  assert(inFlightResult.status === 'skipped', 'in-flight sweep should skip');
+  assert(inFlightResult.skipReason === 'in_flight', 'in-flight sweep did not report in_flight');
+  assert(inFlightResult.triggerRunEvidenceStatus === 'not_started', 'in-flight sweep should not start trigger Run evidence');
+  assert(inFlightResult.blockedReasons.includes('in_flight'), 'in-flight sweep did not expose in_flight as a blocked reason');
+  assert(inFlightService.getStatus().lastScheduledEventAgentSweepSummary === inFlightResult.summary, 'in-flight sweep did not persist the skipped sweep summary into scheduler status');
+  releaseInFlightCandidates();
+  const completedInFlightSweep = await firstInFlightSweep;
+  assert(completedInFlightSweep.status === 'completed', 'first in-flight sweep did not finish after the guard was released');
+  assert(completedInFlightSweep.startedRunCount === 0, 'first in-flight sweep unexpectedly started a run');
+  assert(inFlightTriggerCalls.length === 0, 'in-flight guard smoke unexpectedly started a Code Agent run');
+
   const startupService = new SchedulerService(
     {
       read: () => ({
@@ -493,6 +567,10 @@ try {
     `disconnectedSkipReason=${disconnectedResult.skipReason}`,
     `disconnectedTriggerRunEvidenceStatus=${disconnectedResult.triggerRunEvidenceStatus}`,
     `disconnectedSweepSummary=${disconnectedService.getStatus().lastScheduledEventAgentSweepSummary}`,
+    `inFlightStatus=${inFlightResult.status}`,
+    `inFlightSkipReason=${inFlightResult.skipReason}`,
+    `inFlightTriggerRunEvidenceStatus=${inFlightResult.triggerRunEvidenceStatus}`,
+    `inFlightSweepSummary=${inFlightResult.summary}`,
     `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
     'duplicateRunLimit=blocked',
     'triggerRunEvidence=passed',
@@ -509,6 +587,7 @@ try {
     'startupSweepJobEvidence=recorded',
     'sweepSummaryEvidence=recorded',
     'disconnectedSweepSummaryEvidence=recorded',
+    'inFlightSweepSummaryEvidence=recorded',
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
     'cronRunStatusEvidence=recorded',
