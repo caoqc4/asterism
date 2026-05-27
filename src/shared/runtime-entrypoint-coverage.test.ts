@@ -308,10 +308,14 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('runFailureReasons');
     expect(entry?.notes).toContain('terminalRunEvidenceMissingRunIds');
     expect(entry?.notes).toContain('triggerRunEvidenceRequired');
-    expect(entry?.notes).toContain('completed/skipped sweep time evidence');
     expect(entry?.notes).toContain('ports_not_connected');
     expect(entry?.notes).toContain('in_flight');
-    expect(entry?.notes).toContain('automatic action health remains visible even when no run starts');
+    expect(entry?.notes).toContain('sweep_failed');
+    expect(entry?.notes).toContain('sanitized error evidence');
+    expect(entry?.notes).toContain('task-source/trigger-port failures');
+    expect(entry?.notes).toContain('completed/skipped/failed sweep time evidence');
+    expect(entry?.notes).toContain('release the in-flight guard');
+    expect(entry?.notes).toContain('keep automatic action health visible even when no run starts');
     expect(entry?.notes).toContain('standing approval');
     expect(entry?.notes).toContain('trigger timeline evidence');
     expect(entry?.notes).toContain('sweep summary evidence');
