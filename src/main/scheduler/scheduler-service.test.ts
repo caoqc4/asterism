@@ -1089,6 +1089,101 @@ describe('SchedulerService', () => {
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(2);
   });
 
+  it('records a failed scheduled/event sweep when the task source fails before any run starts', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    let taskSourceShouldThrow = true;
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_after_task_source_failure',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockImplementation(async () => {
+        if (taskSourceShouldThrow) {
+          throw new Error('Task source failed / safely');
+        }
+        return [task];
+      }),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:30:00.000Z'),
+    );
+
+    expect(failedSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'sweep_failed',
+      checkedTaskCount: 0,
+      checkedTaskIds: [],
+      startedRunCount: 0,
+      blockedTaskCount: 0,
+      startedRunIds: [],
+      blockedReasons: ['sweep_failed: Task source failed - safely'],
+      blockedTaskSummaries: [],
+      runtimeStartMissingRequirements: ['trigger_plan_ready'],
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(failedSweep.summary).toContain('checked=0');
+    expect(failedSweep.summary).toContain('checkedTaskIds=none');
+    expect(failedSweep.summary).toContain('error=Task source failed - safely');
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:30:00.000Z');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+
+    taskSourceShouldThrow = false;
+    const recoveredSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:45:00.000Z'),
+    );
+
+    expect(recoveredSweep.status).toBe('completed');
+    expect(recoveredSweep.startedRunIds).toEqual(['run_after_task_source_failure']);
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+  });
+
   it('does not mark runs failed when repository stale recovery returns no eligible runs', async () => {
     const runRepository = {
       listIncompleteOlderThan: vi.fn().mockResolvedValue([]),

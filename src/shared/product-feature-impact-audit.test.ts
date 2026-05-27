@@ -329,6 +329,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('persisted sweep_failed summary');
     expect(workHabits?.evidence.join(' ')).toContain('released in-flight guard');
     expect(workHabits?.evidence.join(' ')).toContain('operator-visible and recoverable instead of becoming unhandled scheduler promises');
+    expect(workHabits?.evidence.join(' ')).toContain('task-source failures before candidate loading persist sweep_failed');
+    expect(workHabits?.evidence.join(' ')).toContain('checked=0, checkedTaskIds=none');
+    expect(workHabits?.evidence.join(' ')).toContain('no Code Agent trigger, no timeline evidence');
     expect(workHabits?.evidence.join(' ')).toContain('skipReason=in_flight');
     expect(workHabits?.evidence.join(' ')).toContain('do not start a second Code Agent run');
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');
