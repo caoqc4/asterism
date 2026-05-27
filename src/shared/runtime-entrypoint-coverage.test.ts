@@ -298,6 +298,8 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('before any automatic start can run');
     expect(entry?.notes).toContain('Readiness diagnostics do not start Agent CLI/API runtimes');
     expect(entry?.notes).toContain('trigger timeline evidence preserves targetTaskId');
+    expect(entry?.notes).toContain('terminalRunEvidenceStatus');
+    expect(entry?.notes).toContain('triggerRunEvidenceStatus');
     expect(entry?.notes).toContain('standing approval');
     expect(entry?.notes).toContain('trigger timeline evidence');
     expect(entry?.notes).toContain('before widening runtime coverage');
