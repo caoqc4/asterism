@@ -30,6 +30,7 @@ const envKeys = [
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE',
   'TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_PREFLIGHT',
   'TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_SMOKE',
+  'TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_PACKAGED_BACKGROUND_SOAK',
   'TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE',
   'TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS',
   'TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE',
@@ -868,6 +869,39 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('skipReason=config_missing');
     expect(result.output).toContain('backgroundLiveRun=not-started');
     expect(result.output).toContain('TASKPLANE_ENABLE_SCHEDULER must be true');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('keeps scheduled/event packaged background soak skipped without launching the app by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/scheduled-event-agent-packaged-background-soak-mac.mjs');
+
+    expect(scripts['manual:scheduled-event-agent-packaged-background-soak:mac']).toBe(
+      'node scripts/scheduled-event-agent-packaged-background-soak-mac.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Scheduled/event Agent packaged background soak');
+    expect(result.output).toContain('mode=opt-in packaged soak');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=opt_in_required');
+    expect(result.output).toContain('packagedApp=not-launched');
+    expect(result.output).toContain('backgroundLiveRun=not-started');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('validates scheduled/event packaged background soak gates before launching the app', () => {
+    const result = runScript('scripts/scheduled-event-agent-packaged-background-soak-mac.mjs', '', {
+      TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_PACKAGED_BACKGROUND_SOAK: 'true',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Scheduled/event Agent packaged background soak');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=config_missing');
+    expect(result.output).toContain('TASKPLANE_ENABLE_SCHEDULER must be true');
+    expect(result.output).toContain('packagedApp=not-launched');
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('workspace=unchanged');
   });

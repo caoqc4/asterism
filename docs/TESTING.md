@@ -423,6 +423,7 @@ provider-safe by default:
 ```bash
 npm run manual:scheduled-event-agent-background-live-preflight
 npm run manual:scheduled-event-agent-background-live-smoke
+npm run manual:scheduled-event-agent-packaged-background-soak:mac
 ```
 
 Default output must include `status=skip`, `skipReason=opt_in_required`,
@@ -454,6 +455,13 @@ opt-in background live smoke with `status=passed`,
 `timelineEvents=1`, `provider=called`,
 `stagedFiles=.taskplane/scheduled-event-agent-background-live-smoke.md`,
 `docker=not-started`, and `workspace=unchanged`.
+
+The packaged background soak command is also skipped by default. With
+`TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_PACKAGED_BACKGROUND_SOAK=true`, it first
+checks macOS, the packaged app executable, and the same provider/workspace
+gates before any app launch or provider call. A later passing packaged soak
+must launch the packaged app, keep `workspace=unchanged`, and prove the same
+scheduled/event background evidence from inside the persistent app boundary.
 
 Provider-spending checks are intentionally opt-in:
 
