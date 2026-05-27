@@ -173,6 +173,10 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries');
+    expect(rightPanel?.evidence.join(' ')).toContain('Agent API promotion readiness smoke');
+    expect(rightPanel?.evidence.join(' ')).toContain('deferred=0/11 requirements and 0/9 gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('partial=5/11 requirements and 3/9 gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('synthetic-ready=11/11 requirements and 9/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API execution preflight smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible text-call readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('skipReason=opt_in_required');
@@ -193,7 +197,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.gaps.join(' ')).not.toContain('broader recovery copy is still needed');
     expect(rightPanel?.cliOnlyClosure).toBe('supported');
     expect(rightPanel?.gaps.join(' ')).toContain('Future Agent API execution remains deferred');
-    expect(rightPanel?.nextActions.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness reports ready');
+    expect(rightPanel?.nextActions.join(' ')).toContain('read-only promotion readiness smoke');
+    expect(rightPanel?.nextActions.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness both report ready');
     expect(rightPanel?.gaps.join(' ')).toContain('selected-runtime contract and reviewed-patch apply already own the operator-facing workspace mutation boundary');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');

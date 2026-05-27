@@ -148,6 +148,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'evaluateAgentApiExecutionPromotionReadiness now keeps Agent API execution promotion closed until every structured requirement and future provider-visible execution gate has matching service evidence.',
       'evaluateAgentApiExecutionPromotionReadinessForInvocation now derives the same closed promotion readiness directly from deferred Agent API execution_run invocation evidence.',
       'Agent API capability registry diagnostics now derive deferred execution_run key gates from the future provider-visible execution contract, so settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries without parsing invocation text.',
+      'The Agent API promotion readiness smoke now runs the shared deferred execution_run invocation and evaluateAgentApiExecutionPromotionReadiness path as a read-only build-gated harness, proving deferred=0/11 requirements and 0/9 gates, partial=5/11 requirements and 3/9 gates, and synthetic-ready=11/11 requirements and 9/9 gates without provider calls or workspace writes.',
       'The opt-in Agent API execution preflight smoke verifies provider-visible text-call readiness through the shared provider mapping while defaulting to skipReason=opt_in_required, provider=not-called, executionRun=deferred, promotionReady=no, promotionRequirements=0/11, requiredGates=0/9, promotionMissingRequirements=..., executionRunMissingRequirements=..., executionRunMissingGates=..., missingGates=..., and workspace=unchanged; enabled runs with incomplete provider config report skipReason=config_missing without calling the provider.',
       'Local Agent API execution preflight evidence on 2026-05-26 passed with fal-openrouter / google/gemini-2.5-flash, provider=called, phrase=matched, workspace=unchanged, and status=passed.',
       'Run Goal Contract and Agent CLI context bridge now carry selected-runtime capability declarations into the native CLI prompt before execution.',
@@ -164,7 +165,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future Agent API execution remains deferred; native CLI workspace-write mode stays separate from the common run path because selected-runtime contract and reviewed-patch apply already own the operator-facing workspace mutation boundary.',
     ],
     nextActions: [
-      'Promote future Agent API execution only by replacing the deferred invocation after evaluateAgentApiExecutionPromotionReadiness reports ready with matching service evidence for every requirement and gate.',
+      'Promote future Agent API execution only by replacing the deferred invocation after the read-only promotion readiness smoke and evaluateAgentApiExecutionPromotionReadiness both report ready from real service evidence for every requirement and gate.',
     ],
   },
   {
