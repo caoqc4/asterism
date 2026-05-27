@@ -864,9 +864,11 @@ Current implementation:
   `terminalRunEvidenceMissingRunIds`, plus `triggerRunEvidenceRequired` and
   `triggerRunEvidenceStatus`, at the top level for operator-facing run
   evidence. `SchedulerStatus.lastScheduledEventAgentSweepSummary` preserves the
-  latest completed, `ports_not_connected`, or `in_flight` sweep outcome, so the
-  operator can see background automation health even when the sweep correctly
-  starts no run.
+  latest completed, `ports_not_connected`, `in_flight`, or `sweep_failed` sweep
+  outcome, including sanitized task-source/trigger-port failure evidence with
+  `triggerRunEvidenceStatus=not_started`. Failed sweeps release the in-flight
+  guard, so the operator can see background automation health even when the
+  sweep correctly starts no run or recovers after a failed sweep.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and
