@@ -12,6 +12,20 @@ const scheduledJobs: Array<{
   destroy: ReturnType<typeof vi.fn>;
 }> = [];
 
+async function waitForAsyncSideEffect(assertion: () => void): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      assertion();
+      return;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+  if (lastError) throw lastError;
+}
+
 vi.mock('node-cron', () => ({
   default: {
     schedule: vi.fn((expression: string, callback: () => void) => {
@@ -631,6 +645,89 @@ describe('SchedulerService', () => {
     expect(sweepResult.summary).toContain('missingPorts=timeline_port');
     expect(sweepResult.summary).toContain('triggerRunEvidenceStatus=not_started');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+  });
+
+  it('runs the scheduled/event Agent sweep through the registered cron callback', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_scheduled_callback_1',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    await service.start();
+    const cronSweepJob = scheduledJobs.find((job) => job.expression === '*/15 * * * *');
+    expect(cronSweepJob).toBeTruthy();
+
+    cronSweepJob?.callback();
+
+    await waitForAsyncSideEffect(() => {
+      expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+      expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0]).toMatchObject({
+      operatorConfirmed: true,
+      taskId: 'task_auto',
+      useModelProducer: true,
+    });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Trigger kind: cron.');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_callback_1',
+        targetTaskId: 'task_auto',
+        triggerKind: 'cron',
+        workspaceWriteAllowed: false,
+      }),
+    }));
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
+    expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
   it('counts runs started earlier in the same scheduled/event sweep against the daily limit', async () => {

@@ -313,6 +313,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runScheduledEventAgentTriggerSweep');
     expect(workHabits?.evidence.join(' ')).toContain('15-minute background scheduler job');
     expect(workHabits?.evidence.join(' ')).toContain('scheduledEventAgentSweepJobConnected');
+    expect(workHabits?.evidence.join(' ')).toContain('registered */15 scheduled/event Agent cron callback');
+    expect(workHabits?.evidence.join(' ')).toContain('triggerKind=cron, operatorConfirmed=true');
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event task-source port');
     expect(workHabits?.evidence.join(' ')).toContain('missingPorts=run_port,timeline_port,task_source_port');
