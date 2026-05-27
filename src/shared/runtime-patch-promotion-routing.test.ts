@@ -25,7 +25,9 @@ describe('runtime patch promotion routing readiness', () => {
       ],
     });
     expect(readiness.summary).toContain('ready=no');
+    expect(readiness.summary).toContain('promotionReady=no');
     expect(readiness.summary).toContain('requirements=2/8');
+    expect(readiness.summary).toContain('promotionRequirements=2/8');
     expect(readiness.summary).toContain('selectedRuntimeContract=missing');
     expect(readiness.summary).toContain('targetTaskIdentity=missing');
     expect(readiness.summary).toContain('patchArtifact=ready');
@@ -62,7 +64,9 @@ describe('runtime patch promotion routing readiness', () => {
       missingRequirements: [],
     });
     expect(readiness.summary).toContain('ready=yes');
+    expect(readiness.summary).toContain('promotionReady=yes');
     expect(readiness.summary).toContain('requirements=8/8');
+    expect(readiness.summary).toContain('promotionRequirements=8/8');
     expect(readiness.summary).toContain('selectedRuntimeContract=ready');
     expect(readiness.summary).toContain('targetTaskIdentity=ready');
     expect(readiness.summary).toContain('explicitOperatorApply=ready');

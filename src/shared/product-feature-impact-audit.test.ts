@@ -424,6 +424,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('can satisfy workspace_write promotion evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
     expect(taskFiles?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
+    expect(taskFiles?.evidence.join(' ')).toContain('promotionReady');
+    expect(taskFiles?.evidence.join(' ')).toContain('promotionRequirements=x/8');
     expect(taskFiles?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionMissingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence');

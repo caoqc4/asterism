@@ -15,6 +15,19 @@ export type RuntimePatchPromotionRoutingRequirement =
   | 'same_run_evidence_chain'
   | 'post_apply_run_evidence';
 
+export function runtimePatchPromotionRoutingRequirements(): RuntimePatchPromotionRoutingRequirement[] {
+  return [
+    'selected_runtime_contract',
+    'target_task_identity',
+    'patch_artifact',
+    'promotion_decision',
+    'promotion_preflight',
+    'explicit_operator_apply',
+    'same_run_evidence_chain',
+    'post_apply_run_evidence',
+  ];
+}
+
 export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   explicitOperatorApply?: boolean;
   patchArtifactReady?: boolean;
@@ -25,16 +38,7 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   selectedRuntimeContractReady?: boolean;
   targetTaskIdentityReady?: boolean;
 }): RuntimePatchPromotionRoutingReadiness {
-  const requiredRequirements: RuntimePatchPromotionRoutingRequirement[] = [
-    'selected_runtime_contract',
-    'target_task_identity',
-    'patch_artifact',
-    'promotion_decision',
-    'promotion_preflight',
-    'explicit_operator_apply',
-    'same_run_evidence_chain',
-    'post_apply_run_evidence',
-  ];
+  const requiredRequirements = runtimePatchPromotionRoutingRequirements();
   const missingRequirements: RuntimePatchPromotionRoutingRequirement[] = [];
 
   if (!params.selectedRuntimeContractReady) missingRequirements.push('selected_runtime_contract');
@@ -57,7 +61,9 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
     summary: [
       'Runtime patch promotion routing readiness',
       `ready=${ready ? 'yes' : 'no'}`,
+      `promotionReady=${ready ? 'yes' : 'no'}`,
       `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `promotionRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `targetTaskIdentity=${params.targetTaskIdentityReady ? 'ready' : 'missing'}`,
       `patchArtifact=${params.patchArtifactReady ? 'ready' : 'missing'}`,
