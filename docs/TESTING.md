@@ -384,7 +384,8 @@ prove manual, terminal, and cron sweep summaries are persisted into
 `lastScheduledEventAgentSweepSummary`, prove a disconnected scheduler trigger
 service skips with `ports_not_connected` and `triggerRunEvidenceStatus=not_started`,
 prove overlapping sweeps skip with `in_flight` instead of starting a second
-run, and keep `workspace=unchanged`, `provider=not-called`, and
+run, prove skipped sweeps still update `lastScheduledEventAgentSweepAt`, and
+keep `workspace=unchanged`, `provider=not-called`, and
 `docker=not-started`.
 
 The Agent API execution preflight is deliberately narrower than a full task

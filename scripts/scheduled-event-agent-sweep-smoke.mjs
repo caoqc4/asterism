@@ -357,6 +357,7 @@ try {
   assert(disconnectedResult.blockedReasons.includes('ports_not_connected'), 'disconnected sweep did not expose ports_not_connected as a blocked reason');
   assert(disconnectedResult.runtimeStartMissingRequirements.includes('scheduler_trigger_service'), 'disconnected sweep did not expose scheduler trigger service as a missing runtime-start requirement');
   assert(disconnectedResult.summary.includes('missingPorts=run_port,timeline_port,task_source_port'), 'disconnected sweep did not expose missing ports');
+  assert(disconnectedService.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T12:20:00.000Z', 'disconnected sweep did not preserve skipped sweep time in scheduler status');
   assert(disconnectedService.getStatus().lastScheduledEventAgentSweepSummary === disconnectedResult.summary, 'disconnected sweep did not persist the skipped sweep summary into scheduler status');
 
   let releaseInFlightCandidates;
@@ -426,7 +427,9 @@ try {
   assert(inFlightResult.skipReason === 'in_flight', 'in-flight sweep did not report in_flight');
   assert(inFlightResult.triggerRunEvidenceStatus === 'not_started', 'in-flight sweep should not start trigger Run evidence');
   assert(inFlightResult.blockedReasons.includes('in_flight'), 'in-flight sweep did not expose in_flight as a blocked reason');
+  assert(inFlightService.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T12:25:01.000Z', 'in-flight sweep did not preserve skipped sweep time in scheduler status');
   assert(inFlightService.getStatus().lastScheduledEventAgentSweepSummary === inFlightResult.summary, 'in-flight sweep did not persist the skipped sweep summary into scheduler status');
+  const inFlightSkippedAt = inFlightService.getStatus().lastScheduledEventAgentSweepAt;
   releaseInFlightCandidates();
   const completedInFlightSweep = await firstInFlightSweep;
   assert(completedInFlightSweep.status === 'completed', 'first in-flight sweep did not finish after the guard was released');
@@ -566,10 +569,12 @@ try {
     `disconnectedStatus=${disconnectedResult.status}`,
     `disconnectedSkipReason=${disconnectedResult.skipReason}`,
     `disconnectedTriggerRunEvidenceStatus=${disconnectedResult.triggerRunEvidenceStatus}`,
+    `disconnectedSweepAt=${disconnectedService.getStatus().lastScheduledEventAgentSweepAt}`,
     `disconnectedSweepSummary=${disconnectedService.getStatus().lastScheduledEventAgentSweepSummary}`,
     `inFlightStatus=${inFlightResult.status}`,
     `inFlightSkipReason=${inFlightResult.skipReason}`,
     `inFlightTriggerRunEvidenceStatus=${inFlightResult.triggerRunEvidenceStatus}`,
+    `inFlightSweepAt=${inFlightSkippedAt}`,
     `inFlightSweepSummary=${inFlightResult.summary}`,
     `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
     'duplicateRunLimit=blocked',
@@ -588,6 +593,7 @@ try {
     'sweepSummaryEvidence=recorded',
     'disconnectedSweepSummaryEvidence=recorded',
     'inFlightSweepSummaryEvidence=recorded',
+    'skippedSweepTimeEvidence=recorded',
     'runStatusEvidence=recorded',
     'terminalRunStatusEvidence=recorded',
     'cronRunStatusEvidence=recorded',

@@ -254,6 +254,7 @@ export class SchedulerService {
     });
     if (!runPort || !timelinePort || !taskSourcePort) {
       const summary = `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts} / triggerRunEvidenceStatus=not_started`;
+      this.lastScheduledEventAgentSweepAt = now.toISOString();
       this.lastScheduledEventAgentSweepSummary = summary;
       return {
         status: 'skipped',
@@ -274,6 +275,7 @@ export class SchedulerService {
 
     if (this.scheduledEventAgentSweepInFlight) {
       const summary = `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight / triggerRunEvidenceStatus=not_started`;
+      this.lastScheduledEventAgentSweepAt = now.toISOString();
       this.lastScheduledEventAgentSweepSummary = summary;
       return {
         status: 'skipped',

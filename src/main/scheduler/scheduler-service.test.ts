@@ -648,6 +648,8 @@ describe('SchedulerService', () => {
     expect(sweepResult.summary).toContain('reason=ports_not_connected');
     expect(sweepResult.summary).toContain('missingPorts=timeline_port');
     expect(sweepResult.summary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('reason=ports_not_connected');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
   });
 
@@ -895,6 +897,7 @@ describe('SchedulerService', () => {
       triggerRunEvidenceStatus: 'not_started',
     });
     expect(overlappingSweep.summary).toContain('reason=in_flight');
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('reason=in_flight');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
 

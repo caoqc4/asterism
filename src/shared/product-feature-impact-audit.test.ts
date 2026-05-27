@@ -327,6 +327,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('Brief now surfaces schedulerStatus.lastScheduledEventAgentSweepAt');
     expect(workHabits?.evidence.join(' ')).toContain('lastScheduledEventAgentSweepSummary');
     expect(workHabits?.evidence.join(' ')).toContain('scheduledEventAgentSweepJobConnected as automatic-sweep status chips');
+    expect(workHabits?.evidence.join(' ')).toContain('skipped ports_not_connected and in_flight sweeps also update lastScheduledEventAgentSweepAt');
     expect(workHabits?.evidence.join(' ')).toContain('automatic-sweep status chip');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
@@ -345,6 +346,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('disconnectedTriggerRunEvidenceStatus=not_started');
     expect(workHabits?.evidence.join(' ')).toContain('inFlightSkipReason=in_flight');
     expect(workHabits?.evidence.join(' ')).toContain('inFlightTriggerRunEvidenceStatus=not_started');
+    expect(workHabits?.evidence.join(' ')).toContain('skippedSweepTimeEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTask=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryGuidance=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunFirstCriterion=passed');
