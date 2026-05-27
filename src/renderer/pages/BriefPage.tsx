@@ -97,6 +97,7 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
     '自动巡检: 已运行',
     schedulerSweepCountLabel(summary),
     schedulerSweepFailureLabel(summary),
+    schedulerSweepAutomationReadinessLabel(summary),
     schedulerSweepEvidenceLabel(summary),
   ]
     .filter(Boolean)
@@ -109,6 +110,7 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   if (summary.includes('reason=sweep_failed')) return [
     '自动巡检: 异常',
     schedulerSweepCountLabel(summary),
+    schedulerSweepAutomationReadinessLabel(summary),
     schedulerSweepEvidenceLabel(summary),
   ]
     .filter(Boolean)
@@ -141,6 +143,13 @@ function schedulerSweepEvidenceLabel(summary: string): string | null {
   if (triggerRunEvidenceStatus === 'ready_for_terminal_review') return '证据可复核';
   if (triggerRunEvidenceStatus === 'pending_terminal_run_evidence') return '证据待终态';
   return null;
+}
+
+function schedulerSweepAutomationReadinessLabel(summary: string): string | null {
+  const missing = summary.match(/(?:^| \/ )automationMissingRequirements=([^/]+?)(?: \/|$)/)?.[1]?.trim();
+  if (!missing || missing === 'none') return null;
+  const count = missing.split(',').filter((requirement) => requirement.trim().length > 0).length;
+  return count > 0 ? `准备缺 ${count}` : null;
 }
 
 function schedulerSweepFailureLabel(summary: string): string | null {

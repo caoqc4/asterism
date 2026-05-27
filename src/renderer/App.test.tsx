@@ -1342,7 +1342,7 @@ describe('App redesign v1', () => {
 
   it('shows failed scheduled/event sweep status in Brief', async () => {
     const homeBrief = buildBriefData(harness.tasks, harness.decisions);
-    const sweepSummary = 'scheduledEventAgentSweep=cron / status=skipped / reason=sweep_failed / checked=1 / checkedTaskIds=task_routine_auto / error=Trigger port failed safely / triggerRunEvidenceStatus=not_started';
+    const sweepSummary = 'scheduledEventAgentSweep=cron / status=skipped / reason=sweep_failed / checked=1 / checkedTaskIds=task_routine_auto / automationMissingRequirements=task_memory_guidance,post_step / error=Trigger port failed safely / triggerRunEvidenceStatus=not_started';
     homeBrief.schedulerStatus = {
       enabled: true,
       running: true,
@@ -1356,7 +1356,7 @@ describe('App redesign v1', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('自动巡检: 异常 · 检查 1')).toBeTruthy();
+    expect(await screen.findByText('自动巡检: 异常 · 检查 1 · 准备缺 2')).toBeTruthy();
     expect(screen.queryByText('自动巡检: 已运行')).toBeFalsy();
     expect(screen.getByTitle(sweepSummary)).toBeTruthy();
   });
