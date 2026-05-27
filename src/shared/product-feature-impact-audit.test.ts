@@ -311,6 +311,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('targetTaskId timeline evidence');
     expect(workHabits?.evidence.join(' ')).toContain('timelineEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('Local scheduled/event Agent sweep acceptance on 2026-05-27 passed');
+    expect(workHabits?.evidence.join(' ')).toContain('npm run accept:scheduled-event-agent-sweep-smoke');
+    expect(workHabits?.evidence.join(' ')).toContain('status=completed, checked=2, started=1, blocked=1');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
     expect(workHabits?.gaps.join(' ')).toContain('narrow trigger-service connection, explicit operator IPC, Task Dynamics launch action, trigger timeline evidence, background scheduler job wiring, and a local sweep smoke');
     expect(workHabits?.gaps.join(' ')).toContain('broader runtime coverage and live soak evidence');
