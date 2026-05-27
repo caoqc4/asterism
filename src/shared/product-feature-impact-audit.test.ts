@@ -149,6 +149,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API chat invocations preserve');
     expect(rightPanel?.evidence.join(' ')).toContain('RunService runs now record context.readiness.evaluate');
     expect(rightPanel?.evidence.join(' ')).toContain('Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate');
+    expect(rightPanel?.evidence.join(' ')).toContain('Code Agent model-producer live and preview smokes default to skipReason=opt_in_required');
+    expect(rightPanel?.evidence.join(' ')).toContain('explicitly enabled runs with incomplete provider config report skipReason=config_missing');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider=not-called, docker=not-started, and workspace=unchanged');
     expect(rightPanel?.evidence.join(' ')).toContain('deferred Agent API task execution');
     expect(rightPanel?.evidence.join(' ')).toContain('skipped execution_run shape');
     expect(rightPanel?.evidence.join(' ')).toContain('promotionReady=no');

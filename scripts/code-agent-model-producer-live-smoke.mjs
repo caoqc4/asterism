@@ -17,6 +17,7 @@ export async function runCodeAgentModelProducerLiveSmoke() {
   if (!ENABLED) {
     console.log('Code Agent model producer live smoke');
     console.log('status=skip');
+    console.log('skipReason=opt_in_required');
     console.log('set TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true to send one provider request');
     console.log('provider=not-called');
     console.log('docker=not-started');
@@ -27,7 +28,10 @@ export async function runCodeAgentModelProducerLiveSmoke() {
   if (!preflight.ready) {
     console.log('Code Agent model producer live smoke');
     console.log('status=skip');
+    console.log('skipReason=config_missing');
     console.log('provider=not-called');
+    console.log('docker=not-started');
+    console.log('workspace=unchanged');
     return 0;
   }
 

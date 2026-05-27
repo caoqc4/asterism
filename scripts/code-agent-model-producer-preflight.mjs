@@ -107,6 +107,7 @@ export function printCodeAgentModelProducerPreflight(result) {
 
   if (!result.ready) {
     console.log('status=skip');
+    console.log('skipReason=config_missing');
     for (const issue of result.issues) {
       console.log(`- ${issue}`);
     }

@@ -568,6 +568,21 @@ describe('local smoke script default boundaries', () => {
     expect(result.status).toBe(0);
     expect(result.output).toContain('Code Agent model producer live smoke');
     expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=opt_in_required');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('docker=not-started');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('validates Code Agent model producer live smoke config before provider calls', () => {
+    const result = runScript('scripts/code-agent-model-producer-live-smoke.mjs', '', {
+      TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE: 'true',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Code Agent model producer live smoke');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=config_missing');
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('docker=not-started');
     expect(result.output).toContain('workspace=unchanged');
@@ -795,6 +810,21 @@ describe('local smoke script default boundaries', () => {
     expect(result.status).toBe(0);
     expect(result.output).toContain('Code Agent model producer preview smoke');
     expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=opt_in_required');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('docker=not-started');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
+  it('validates Code Agent model producer preview smoke config before provider calls', () => {
+    const result = runScript('scripts/code-agent-model-producer-preview-smoke.mjs', '', {
+      TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE: 'true',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Code Agent model producer preview smoke');
+    expect(result.output).toContain('status=skip');
+    expect(result.output).toContain('skipReason=config_missing');
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('docker=not-started');
     expect(result.output).toContain('workspace=unchanged');

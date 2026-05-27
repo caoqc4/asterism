@@ -249,6 +249,13 @@ The default manual read-only smoke must report `status=skip`,
 `skipReason=opt_in_required`, `cli=not-called`, and `workspace=unchanged`
 unless `TASKPLANE_RUN_AGENT_CLI_READONLY_SMOKE=true` is explicitly set.
 
+The Code Agent model-producer live and preview smokes follow the same explicit
+evidence convention: default output must include `status=skip`,
+`skipReason=opt_in_required`, `provider=not-called`, `docker=not-started`, and
+`workspace=unchanged`. Enabled runs with incomplete provider configuration must
+switch to `skipReason=config_missing` without calling the provider, starting
+Docker, or mutating the workspace.
+
 Manual live evidence is intentionally recorded as historical validation, not as
 a default CI requirement. On 2026-05-20, local Codex CLI `codex-cli 0.125.0`
 passed the opt-in smoke with `auth=ready`, `workspace=unchanged`,
