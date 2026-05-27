@@ -816,6 +816,21 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('promotionInProduct=explicit_apply_only');
   });
 
+  it('keeps sandbox patch promotion readiness smoke read-only and build-gated by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/sandbox-patch-promotion-readiness-smoke.mjs', '', {}, []);
+
+    expect(scripts['manual:sandbox-patch-promotion-readiness-smoke']).toBe(
+      'npm run build:main && node scripts/sandbox-patch-promotion-readiness-smoke.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Sandbox patch promotion readiness smoke');
+    expect(result.output).toContain('mode=read-only');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+    expect(result.output).toContain('workspaceApply=not-attempted');
+  });
+
   it('keeps scheduler Decision proposal readiness smoke read-only and build-gated by default', () => {
     const scripts = readPackageScripts();
     const result = runScript('scripts/scheduler-decision-proposal-readiness-smoke.mjs', '', {}, []);

@@ -395,6 +395,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Applied promotion notices now point operators back to Run evidence to review touched files and post-apply verification results.',
       'Tasks file workspace apply guidance now states that only reviewed patch files passing promotion preflight are written, drift blocks apply, and Run evidence must be reviewed after completion.',
       'Sandbox patch promotion readiness now returns satisfied and missing requirement lists plus requirements=x/12 and missingRequirements=... summary evidence before any workspace apply service can run.',
+      'The sandbox patch promotion readiness smoke now runs evaluateSandboxPatchPromotionReadiness as a read-only build-gated harness, proving review-only checkpoints stay missing_apply_metadata at 10/12 requirements, complete safe apply metadata reaches ready at 12/12 requirements with deduplicated expected files, unsafe expected files stay blocked, and resolved checkpoints stay already_resolved without provider calls, workspace apply, or workspace writes.',
       'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
       'Terminal Run verification now carries same-run artifacts and checkpoints into post-step self-checks when repository evidence is available, so run-backed patch artifacts and patch-promotion checkpoints can satisfy workspace_write promotion evidence instead of being invisible to terminal verification.',
       'evaluateRuntimePatchPromotionRoutingReadiness now keeps future API/runtime-generated patch promotion blocked unless the path includes a selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence.',
@@ -405,7 +406,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future API/runtime-generated patch promotion still needs to prove the selected-runtime contract, target-task identity, and reuse the reviewed-patch apply workflow and same-run evidence chain; direct workspace-write runtime modes remain intentionally separate from the common run path.',
     ],
     nextActions: [
-      'Keep explicit apply as the product-controlled mutation path and require the read-only runtime patch promotion routing smoke plus evaluateRuntimePatchPromotionRoutingReadiness before routing future runtime writes into selected-runtime, target-task, same-run patch artifacts, promotion Decisions, promotion preflight, explicit apply, and post-apply Run evidence.',
+      'Keep explicit apply as the product-controlled mutation path and require the read-only sandbox patch promotion readiness smoke, the read-only runtime patch promotion routing smoke, and evaluateRuntimePatchPromotionRoutingReadiness before routing future runtime writes into selected-runtime, target-task, same-run patch artifacts, promotion Decisions, promotion preflight, explicit apply, and post-apply Run evidence.',
     ],
   },
   {
