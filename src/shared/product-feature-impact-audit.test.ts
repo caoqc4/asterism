@@ -291,7 +291,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('missingPorts=run_port,timeline_port,task_source_port');
     expect(workHabits?.evidence.join(' ')).toContain('increments the in-sweep run-limit count');
     expect(workHabits?.evidence.join(' ')).toContain('duplicate candidates in one sweep cannot exceed the Standing Approval daily cap');
-    expect(workHabits?.evidence.join(' ')).toContain('skipReason, startedRunIds, blockedReasons, and runtimeStartMissingRequirements at the top level');
+    expect(workHabits?.evidence.join(' ')).toContain('skipReason, startedRunIds, blockedReasons, runtimeStartMissingRequirements, and terminalRunEvidenceMissingRunIds at the top level');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
     expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by in-sweep run-limit counting');
@@ -299,6 +299,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('startedRunIds evidence');
     expect(workHabits?.evidence.join(' ')).toContain('blockedReasons evidence');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=passed');

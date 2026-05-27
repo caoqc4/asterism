@@ -31,6 +31,7 @@ export type ScheduledEventAgentSweepResult = {
   startedRunIds: string[];
   blockedReasons: string[];
   runtimeStartMissingRequirements: Array<AgentScheduledEventTriggerPlan['runtimeStartMissingRequirements'][number]>;
+  terminalRunEvidenceMissingRunIds: string[];
   summaries: string[];
   summary: string;
 };
@@ -222,6 +223,7 @@ export class SchedulerService {
         startedRunIds: [],
         blockedReasons: ['ports_not_connected'],
         runtimeStartMissingRequirements: ['scheduler_trigger_service'],
+        terminalRunEvidenceMissingRunIds: [],
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts}`,
       };
@@ -237,6 +239,7 @@ export class SchedulerService {
         startedRunIds: [],
         blockedReasons: ['in_flight'],
         runtimeStartMissingRequirements: [],
+        terminalRunEvidenceMissingRunIds: [],
         summaries: [],
         summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight`,
       };
@@ -263,6 +266,10 @@ export class SchedulerService {
       const runtimeStartMissingRequirements = Array.from(new Set(
         results.flatMap((result) => result.plan.runtimeStartMissingRequirements),
       ));
+      const terminalRunEvidenceMissingRunIds = results.flatMap((result) =>
+        result.status === 'started' && result.run && !isTerminalScheduledEventRunStatus(result.run.status)
+          ? [result.run.id]
+          : []);
       this.lastScheduledEventAgentSweepAt = new Date().toISOString();
 
       return {
@@ -274,6 +281,7 @@ export class SchedulerService {
         startedRunIds,
         blockedReasons,
         runtimeStartMissingRequirements,
+        terminalRunEvidenceMissingRunIds,
         summaries: results.map((result) => result.summary),
         summary: [
           `scheduledEventAgentSweep=${kind}`,
@@ -284,6 +292,7 @@ export class SchedulerService {
           `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
           `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
           `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
+          `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
         ].join(' / '),
       };
     } finally {
@@ -472,4 +481,8 @@ export class SchedulerService {
 
     this.lastRunSweepAt = new Date().toISOString();
   }
+}
+
+function isTerminalScheduledEventRunStatus(status: RunRecord['status']): boolean {
+  return status === 'completed' || status === 'failed';
 }
