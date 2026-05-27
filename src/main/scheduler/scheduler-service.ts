@@ -108,6 +108,7 @@ function buildScheduledEventCodeAgentRunInput(
       `Runtime start requirements: ${plan.runtimeStartSatisfiedRequirements.join(',')}.`,
       `Trigger evidence: ${plan.triggerRunEvidenceRequired.join(',')}.`,
       `Run limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
+      'Post-step evidence: return terminal run output for Taskplane review.',
       'Do not apply workspace changes directly; produce reviewable patch artifacts or proposals through Taskplane gates.',
     ].join('\n'),
     requestedChecks: [],

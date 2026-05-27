@@ -114,6 +114,7 @@ try {
   assert(triggerCalls[0].patchIntent.includes('Runtime start requirements: trigger_plan_ready,scheduler_trigger_service,run_limit_count.'), 'sweep did not pass runtime-start requirements into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Trigger evidence: context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step.'), 'sweep did not pass the trigger Run evidence contract into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Run limit: 2/3.'), 'sweep did not pass persisted run-limit state into the bounded run');
+  assert(triggerCalls[0].patchIntent.includes('Post-step evidence: return terminal run output for Taskplane review.'), 'sweep did not pass post-step terminal evidence guidance into the bounded run');
   assert(timelineEvents.length === 1, 'sweep did not record trigger timeline evidence');
   assert(timelineEvents[0].type === 'panel.scheduled_event_agent_triggered', 'sweep recorded the wrong timeline event type');
   assert(timelineEvents[0].payload.runId === run.id, 'timeline evidence did not preserve the run id');
@@ -290,6 +291,7 @@ try {
   assert(cronTriggerCalls[0].patchIntent.includes('Target task: task_scheduled_event_sweep_smoke.'), 'cron sweep did not pass target task identity into the bounded run');
   assert(cronTriggerCalls[0].patchIntent.includes('Trigger kind: cron.'), 'cron sweep did not pass cron trigger kind into the bounded run');
   assert(cronTriggerCalls[0].patchIntent.includes('Task memory guidance: process=Scheduled/event sweep smoke SOP; openCriteria=1; firstCriterion=Review the scheduled/event Agent sweep smoke result.; sourceContexts=1; firstSource=Scheduled/event source digest'), 'cron sweep did not pass task-memory guidance into the bounded run');
+  assert(cronTriggerCalls[0].patchIntent.includes('Post-step evidence: return terminal run output for Taskplane review.'), 'cron sweep did not pass post-step terminal evidence guidance into the bounded run');
   assert(cronTimelineEvents.length === 1, 'cron sweep did not record trigger timeline evidence');
   assert(cronTimelineEvents[0].payload.runId === cronRun.id, 'cron timeline evidence did not preserve the cron run id');
   assert(cronTimelineEvents[0].payload.triggeredAt === '2026-05-26T12:15:00.000Z', 'cron timeline evidence did not preserve the cron trigger time');
@@ -315,6 +317,7 @@ try {
     'boundedRunTaskMemoryGuidance=passed',
     'boundedRunFirstCriterion=passed',
     'boundedRunFirstSource=passed',
+    'boundedRunPostStepGuidance=passed',
     `manualTriggerKind=${timelineEvents[0].payload.triggerKind}`,
     `terminalStatus=${terminalResult.status}`,
     `terminalRunId=${terminalRun.id}`,
@@ -342,6 +345,7 @@ try {
     'boundedRunTaskMemoryEvidence=passed',
     'boundedRunFirstCriterionEvidence=passed',
     'boundedRunFirstSourceEvidence=passed',
+    'boundedRunPostStepEvidence=passed',
     'workspace=unchanged',
     'provider=not-called',
     'docker=not-started',
