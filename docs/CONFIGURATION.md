@@ -455,7 +455,7 @@ The default command reports `status=skip`, `cli=not-called`,
 runtime-readiness evidence only; static status probes still rely on no-start
 help, workspace metadata, and provider-owned package metadata.
 
-On 2026-05-26, this opt-in smoke passed locally with Codex CLI
+On 2026-05-27, this opt-in smoke passed locally with Codex CLI
 `codex-cli 0.125.0`, `auth=ready`, `workspace=unchanged`, `phrase=matched`,
 `network=called`, and `status=passed`. The working invocation shape for this
 version is `codex --search exec ...`; `--search` is a top-level Codex option,

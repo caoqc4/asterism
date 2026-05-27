@@ -425,7 +425,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('unverified native search');
     expect(capabilities?.evidence.join(' ')).toContain('manual Agent CLI native web/search smoke');
     expect(capabilities?.evidence.join(' ')).toContain('cli=not-called, network=not-called, and workspace=unchanged');
-    expect(capabilities?.evidence.join(' ')).toContain('Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-26');
+    expect(capabilities?.evidence.join(' ')).toContain('Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-27');
     expect(capabilities?.evidence.join(' ')).toContain('--search is a top-level Codex option before exec');
     expect(capabilities?.gaps.join(' ')).not.toContain('first web/search mapping');
     expect(capabilities?.gaps.join(' ')).not.toContain('provider-owned declarations');
@@ -455,7 +455,7 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('without external network or provider calls');
     expect(smoke?.evidence.join(' ')).toContain('manual Agent CLI native web/search smoke');
     expect(smoke?.evidence.join(' ')).toContain('network=not-called');
-    expect(smoke?.evidence.join(' ')).toContain('Codex native web/search smoke passed locally on 2026-05-26');
+    expect(smoke?.evidence.join(' ')).toContain('Codex native web/search smoke passed locally on 2026-05-27');
     expect(smoke?.evidence.join(' ')).toContain('status=passed');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code 2.1.144 stream-json execution now uses --verbose');
     expect(smoke?.evidence.join(' ')).toContain('optional secondary adapter compatibility evidence');
