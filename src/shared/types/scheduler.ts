@@ -4,5 +4,6 @@ export type SchedulerStatus = {
   lastBriefAt: string | null;
   lastRunSweepAt: string | null;
   lastScheduledEventAgentSweepAt: string | null;
+  lastScheduledEventAgentSweepSummary: string | null;
   scheduledEventAgentSweepJobConnected: boolean;
 };

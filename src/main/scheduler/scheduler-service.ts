@@ -162,6 +162,7 @@ export class SchedulerService {
   private lastBriefAt: string | null = null;
   private lastRunSweepAt: string | null = null;
   private lastScheduledEventAgentSweepAt: string | null = null;
+  private lastScheduledEventAgentSweepSummary: string | null = null;
   private scheduledEventAgentSweepInFlight = false;
 
   constructor(
@@ -234,6 +235,7 @@ export class SchedulerService {
       lastBriefAt: this.lastBriefAt,
       lastRunSweepAt: this.lastRunSweepAt,
       lastScheduledEventAgentSweepAt: this.lastScheduledEventAgentSweepAt,
+      lastScheduledEventAgentSweepSummary: this.lastScheduledEventAgentSweepSummary,
       scheduledEventAgentSweepJobConnected: this.started && this.hasScheduledEventAgentSweepPorts(),
     };
   }
@@ -251,6 +253,8 @@ export class SchedulerService {
       timelinePortConnected: Boolean(timelinePort),
     });
     if (!runPort || !timelinePort || !taskSourcePort) {
+      const summary = `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts} / triggerRunEvidenceStatus=not_started`;
+      this.lastScheduledEventAgentSweepSummary = summary;
       return {
         status: 'skipped',
         skipReason: 'ports_not_connected',
@@ -264,11 +268,13 @@ export class SchedulerService {
         triggerRunEvidenceRequired: [],
         triggerRunEvidenceStatus: 'not_started',
         summaries: [],
-        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts} / triggerRunEvidenceStatus=not_started`,
+        summary,
       };
     }
 
     if (this.scheduledEventAgentSweepInFlight) {
+      const summary = `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight / triggerRunEvidenceStatus=not_started`;
+      this.lastScheduledEventAgentSweepSummary = summary;
       return {
         status: 'skipped',
         skipReason: 'in_flight',
@@ -282,7 +288,7 @@ export class SchedulerService {
         triggerRunEvidenceRequired: [],
         triggerRunEvidenceStatus: 'not_started',
         summaries: [],
-        summary: `scheduledEventAgentSweep=${kind} / status=skipped / reason=in_flight / triggerRunEvidenceStatus=not_started`,
+        summary,
       };
     }
 
@@ -320,6 +326,20 @@ export class SchedulerService {
           ? 'pending_terminal_run_evidence'
           : 'ready_for_terminal_review';
       this.lastScheduledEventAgentSweepAt = new Date().toISOString();
+      const summary = [
+        `scheduledEventAgentSweep=${kind}`,
+        'status=completed',
+        `checked=${tasks.length}`,
+        `started=${startedRunCount}`,
+        `blocked=${blockedTaskCount}`,
+        `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
+        `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
+        `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
+        `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
+        `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
+        `triggerRunEvidenceStatus=${triggerRunEvidenceStatus}`,
+      ].join(' / ');
+      this.lastScheduledEventAgentSweepSummary = summary;
 
       return {
         status: 'completed',
@@ -334,19 +354,7 @@ export class SchedulerService {
         triggerRunEvidenceRequired,
         triggerRunEvidenceStatus,
         summaries: results.map((result) => result.summary),
-        summary: [
-          `scheduledEventAgentSweep=${kind}`,
-          'status=completed',
-          `checked=${tasks.length}`,
-          `started=${startedRunCount}`,
-          `blocked=${blockedTaskCount}`,
-          `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
-          `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
-          `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
-          `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
-          `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
-          `triggerRunEvidenceStatus=${triggerRunEvidenceStatus}`,
-        ].join(' / '),
+        summary,
       };
     } finally {
       this.scheduledEventAgentSweepInFlight = false;

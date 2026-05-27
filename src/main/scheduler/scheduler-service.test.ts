@@ -72,6 +72,7 @@ function buildHomeData(): HomeBriefData {
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: null,
+      lastScheduledEventAgentSweepSummary: null,
       scheduledEventAgentSweepJobConnected: false,
     },
   };
@@ -332,6 +333,7 @@ describe('SchedulerService', () => {
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: null,
+      lastScheduledEventAgentSweepSummary: null,
       scheduledEventAgentSweepJobConnected: false,
     });
     expect(scheduledJobs).toHaveLength(0);
@@ -572,6 +574,8 @@ describe('SchedulerService', () => {
       }),
     });
     expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
@@ -727,6 +731,7 @@ describe('SchedulerService', () => {
       }),
     }));
     expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
@@ -890,6 +895,7 @@ describe('SchedulerService', () => {
       triggerRunEvidenceStatus: 'not_started',
     });
     expect(overlappingSweep.summary).toContain('reason=in_flight');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('reason=in_flight');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
 
     releaseCandidates?.();

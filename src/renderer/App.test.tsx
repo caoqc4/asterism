@@ -389,6 +389,7 @@ function buildBriefData(tasks: TaskListItemRecord[], decisions: DecisionRecord[]
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: null,
+      lastScheduledEventAgentSweepSummary: null,
       scheduledEventAgentSweepJobConnected: false,
     },
     priorityLane: 'continue_or_review',
@@ -1262,6 +1263,7 @@ describe('App redesign v1', () => {
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: '2026-05-27T06:15:00.000Z',
+      lastScheduledEventAgentSweepSummary: 'scheduledEventAgentSweep=cron / status=completed',
       scheduledEventAgentSweepJobConnected: true,
     };
     vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
@@ -1269,7 +1271,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     expect(await screen.findByText('自动巡检: 已运行')).toBeTruthy();
-    expect(screen.getByTitle('2026-05-27T06:15:00.000Z')).toBeTruthy();
+    expect(screen.getByTitle('scheduledEventAgentSweep=cron / status=completed')).toBeTruthy();
   });
 
   it('shows scheduled/event sweep wiring in Brief before the first background run', async () => {
@@ -1280,6 +1282,7 @@ describe('App redesign v1', () => {
       lastBriefAt: null,
       lastRunSweepAt: null,
       lastScheduledEventAgentSweepAt: null,
+      lastScheduledEventAgentSweepSummary: 'scheduledEventAgentSweep=cron / status=skipped / reason=waiting_for_first_tick',
       scheduledEventAgentSweepJobConnected: true,
     };
     vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
@@ -1287,7 +1290,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     expect(await screen.findByText('自动巡检: 已接线')).toBeTruthy();
-    expect(screen.getByTitle('scheduled/event Agent sweep job connected')).toBeTruthy();
+    expect(screen.getByTitle('scheduledEventAgentSweep=cron / status=skipped / reason=waiting_for_first_tick')).toBeTruthy();
   });
 
   it('clarifies AI Runtime separates Agent CLI login from API model configuration', async () => {

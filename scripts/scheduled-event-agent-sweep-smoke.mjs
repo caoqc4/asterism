@@ -348,6 +348,7 @@ try {
           lastBriefAt: null,
           lastRunSweepAt: null,
           lastScheduledEventAgentSweepAt: null,
+          lastScheduledEventAgentSweepSummary: null,
           running: false,
           scheduledEventAgentSweepJobConnected: false,
         },

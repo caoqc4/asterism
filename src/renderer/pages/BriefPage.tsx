@@ -279,7 +279,8 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
         {scheduledSweepLabel && (
           <div
             className="stat-chip"
-            title={briefData?.schedulerStatus.lastScheduledEventAgentSweepAt
+            title={briefData?.schedulerStatus.lastScheduledEventAgentSweepSummary
+              ?? briefData?.schedulerStatus.lastScheduledEventAgentSweepAt
               ?? (briefData?.schedulerStatus.scheduledEventAgentSweepJobConnected ? 'scheduled/event Agent sweep job connected' : undefined)}
           >
             <span className={briefData?.schedulerStatus.running ? 'dot running' : 'dot'} />
