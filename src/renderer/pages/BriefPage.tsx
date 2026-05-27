@@ -89,6 +89,14 @@ function briefDisplaySummary(data: HomeBriefData | null, visibleCount: number): 
   return `${prefix}；与 Tasks 共用同一排序，Brief 只做今日注意力摘要。`;
 }
 
+function schedulerSweepLabel(data: HomeBriefData | null): string | null {
+  const status = data?.schedulerStatus;
+  if (!status?.enabled) return null;
+  if (status.lastScheduledEventAgentSweepAt) return '自动巡检: 已运行';
+  if (status.running) return '自动巡检: 等待首次运行';
+  return '自动巡检: 已启用';
+}
+
 function focusAttentionLabel(task: FocusTask): string {
   if (task.attentionLane === 'unblock_or_decide') return '需要先解除阻塞、拍板或确认依赖。';
   if (task.attentionLane === 'review_evidence') return '有新的来源或产出可能影响下一步。';
@@ -221,6 +229,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
   const runningCount = tasks.filter((t) => t.status === 'running').length;
   const waitingCount = tasks.filter((t) => t.status === 'waiting').length;
   const recentBriefSnapshots = briefData?.recentBriefSnapshots ?? [];
+  const scheduledSweepLabel = schedulerSweepLabel(briefData);
 
   return (
     <div className="brief-page">
@@ -263,6 +272,12 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
           <div className="stat-chip">
             <span className="dot" />
             进行中: {briefData?.activeTaskCount}
+          </div>
+        )}
+        {scheduledSweepLabel && (
+          <div className="stat-chip" title={briefData?.schedulerStatus.lastScheduledEventAgentSweepAt ?? undefined}>
+            <span className={briefData?.schedulerStatus.running ? 'dot running' : 'dot'} />
+            {scheduledSweepLabel}
           </div>
         )}
       </div>

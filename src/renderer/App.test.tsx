@@ -1253,6 +1253,23 @@ describe('App redesign v1', () => {
     expect(harness.api.getHomeBrief).toHaveBeenCalled();
   });
 
+  it('shows scheduled/event sweep status in Brief when scheduler is enabled', async () => {
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    homeBrief.schedulerStatus = {
+      enabled: true,
+      running: true,
+      lastBriefAt: null,
+      lastRunSweepAt: null,
+      lastScheduledEventAgentSweepAt: '2026-05-27T06:15:00.000Z',
+    };
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+
+    render(<App />);
+
+    expect(await screen.findByText('自动巡检: 已运行')).toBeTruthy();
+    expect(screen.getByTitle('2026-05-27T06:15:00.000Z')).toBeTruthy();
+  });
+
   it('clarifies AI Runtime separates Agent CLI login from API model configuration', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
