@@ -1336,6 +1336,27 @@ describe('App redesign v1', () => {
     expect(screen.getByTitle(sweepSummary)).toBeTruthy();
   });
 
+  it('shows failed scheduled/event sweep status in Brief', async () => {
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    const sweepSummary = 'scheduledEventAgentSweep=cron / status=skipped / reason=sweep_failed / checked=1 / checkedTaskIds=task_routine_auto / error=Trigger port failed safely / triggerRunEvidenceStatus=not_started';
+    homeBrief.schedulerStatus = {
+      enabled: true,
+      running: true,
+      lastBriefAt: null,
+      lastRunSweepAt: null,
+      lastScheduledEventAgentSweepAt: '2026-05-27T06:30:00.000Z',
+      lastScheduledEventAgentSweepSummary: sweepSummary,
+      scheduledEventAgentSweepJobConnected: true,
+    };
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+
+    render(<App />);
+
+    expect(await screen.findByText('自动巡检: 异常 · 检查 1')).toBeTruthy();
+    expect(screen.queryByText('自动巡检: 已运行')).toBeFalsy();
+    expect(screen.getByTitle(sweepSummary)).toBeTruthy();
+  });
+
   it('clarifies AI Runtime separates Agent CLI login from API model configuration', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({

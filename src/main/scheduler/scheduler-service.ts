@@ -26,7 +26,7 @@ export type ScheduledEventAgentTriggerResult = {
 
 export type ScheduledEventAgentSweepResult = {
   status: 'completed' | 'skipped';
-  skipReason: 'none' | 'ports_not_connected' | 'in_flight';
+  skipReason: 'none' | 'ports_not_connected' | 'in_flight' | 'sweep_failed';
   checkedTaskCount: number;
   checkedTaskIds: string[];
   startedRunCount: number;
@@ -157,6 +157,11 @@ function formatMissingScheduledEventAgentSweepPorts(params: {
   if (!params.timelinePortConnected) missingPorts.push('timeline_port');
   if (!params.taskSourcePortConnected) missingPorts.push('task_source_port');
   return missingPorts.join(',');
+}
+
+function formatScheduledEventAgentSweepError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  return (raw.trim() || 'unknown').replace(/\s+/g, ' ').replace(/\//g, '-');
 }
 
 export class SchedulerService {
@@ -304,9 +309,10 @@ export class SchedulerService {
     }
 
     this.scheduledEventAgentSweepInFlight = true;
+    let checkedTaskIds: string[] = [];
     try {
       const tasks = await taskSourcePort.listScheduledEventAgentTriggerCandidates();
-      const checkedTaskIds = tasks.map((task) => task.id);
+      checkedTaskIds = tasks.map((task) => task.id);
       const runCounts = await this.countRunsStartedToday(checkedTaskIds, now);
       const results: ScheduledEventAgentTriggerResult[] = [];
 
@@ -382,6 +388,37 @@ export class SchedulerService {
         triggerRunEvidenceRequired,
         triggerRunEvidenceStatus,
         summaries: results.map((result) => result.summary),
+        summary,
+      };
+    } catch (error) {
+      const errorMessage = formatScheduledEventAgentSweepError(error);
+      const summary = [
+        `scheduledEventAgentSweep=${kind}`,
+        'status=skipped',
+        'reason=sweep_failed',
+        `checked=${checkedTaskIds.length}`,
+        `checkedTaskIds=${checkedTaskIds.length ? checkedTaskIds.join(',') : 'none'}`,
+        `error=${errorMessage}`,
+        'triggerRunEvidenceStatus=not_started',
+      ].join(' / ');
+      this.lastScheduledEventAgentSweepAt = now.toISOString();
+      this.lastScheduledEventAgentSweepSummary = summary;
+      return {
+        status: 'skipped',
+        skipReason: 'sweep_failed',
+        checkedTaskCount: checkedTaskIds.length,
+        checkedTaskIds,
+        startedRunCount: 0,
+        blockedTaskCount: checkedTaskIds.length,
+        startedRunIds: [],
+        blockedReasons: [`sweep_failed: ${errorMessage}`],
+        blockedTaskSummaries: checkedTaskIds.map((taskId) => `${taskId}: sweep_failed: ${errorMessage}`),
+        runFailureReasons: [],
+        runtimeStartMissingRequirements: ['trigger_plan_ready'],
+        terminalRunEvidenceMissingRunIds: [],
+        triggerRunEvidenceRequired: [],
+        triggerRunEvidenceStatus: 'not_started',
+        summaries: [],
         summary,
       };
     } finally {

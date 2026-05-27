@@ -106,6 +106,9 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
     .filter(Boolean)
     .join(' · ');
   if (summary.includes('reason=in_flight')) return '自动巡检: 运行中';
+  if (summary.includes('reason=sweep_failed')) return ['自动巡检: 异常', schedulerSweepCountLabel(summary)]
+    .filter(Boolean)
+    .join(' · ');
   if (summary.includes('status=skipped')) return '自动巡检: 已跳过';
   if (status.lastScheduledEventAgentSweepAt) return '自动巡检: 已运行';
   if (status.running && status.scheduledEventAgentSweepJobConnected) return '自动巡检: 已接线';

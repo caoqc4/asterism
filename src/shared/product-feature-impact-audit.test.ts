@@ -326,6 +326,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('consecutive */15 scheduled/event Agent cron ticks');
     expect(workHabits?.evidence.join(' ')).toContain('persisted same-day run counts');
     expect(workHabits?.evidence.join(' ')).toContain('no second Code Agent trigger when the Standing Approval daily cap is reached');
+    expect(workHabits?.evidence.join(' ')).toContain('persisted sweep_failed summary');
+    expect(workHabits?.evidence.join(' ')).toContain('released in-flight guard');
+    expect(workHabits?.evidence.join(' ')).toContain('operator-visible and recoverable instead of becoming unhandled scheduler promises');
     expect(workHabits?.evidence.join(' ')).toContain('skipReason=in_flight');
     expect(workHabits?.evidence.join(' ')).toContain('do not start a second Code Agent run');
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');
@@ -342,6 +345,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('waiting_for_first_tick stays 已接线');
     expect(workHabits?.evidence.join(' ')).toContain('ports_not_connected shows 未接线');
     expect(workHabits?.evidence.join(' ')).toContain('in_flight shows 运行中');
+    expect(workHabits?.evidence.join(' ')).toContain('sweep_failed shows 异常');
     expect(workHabits?.evidence.join(' ')).toContain('ports_not_connected automatic-sweep chips now include a missing port count');
     expect(workHabits?.evidence.join(' ')).toContain('operators can see the recovery scope without opening the tooltip');
     expect(workHabits?.evidence.join(' ')).toContain('completed automatic-sweep chips now include checked, started, blocked, run-failure count, and trigger Run evidence labels');
