@@ -75,6 +75,7 @@ try {
   const p0CliPartial = p0CliPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   const p0FutureApiPartial = p0FutureApiPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   console.log(`summary mainlineCliP0=${p0CliPartial === '<none>' ? 'ready' : 'blocked'} p0CliPartial=${p0CliPartial} p0FutureApiDeferred=${p0FutureApiPartial}`);
+  console.log(`currentCompletion p0Cli=${p0CliPartial === '<none>' ? 'ready' : 'blocked'} p0CurrentBlockers=${p0CliPartial} futureApiDeferred=${p0FutureApiPartial}`);
   console.log(`focus p0CliPartial=${p0CliPartial}`);
   console.log(`focus p0FutureApiPartial=${p0FutureApiPartial}`);
   console.log(`focus p1CliPartial=${idsFor(

@@ -63,9 +63,10 @@ skips successfully when no local database exists, which keeps fresh local alpha
 environments reproducible.
 `npm run audit:product-progress` reads the source product feature audit only,
 prints status / CLI / future API closure counts, and fails if audit structure
-checks find a regression. The `focus` line lists P0 feature families whose
-CLI-only closure is still partial. Add `-- --next` to print the first open gap
-and next action for every unfinished feature family.
+checks find a regression. The `currentCompletion` line separates current P0 CLI
+blockers from future API deferred work, and the `focus` line lists P0 feature
+families whose CLI-only closure is still partial. Add `-- --next` to print the
+first open gap and next action for every unfinished feature family.
 
 For a single Vitest file:
 
