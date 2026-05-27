@@ -202,6 +202,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Subtask draft confirmation is represented as a subtask.create_many writeback apply plan and dispatched through the main-side task service adapter.',
       'Subtask create-many writeback timeline evidence now records that decomposition output was draft-only before operator confirmation.',
       'The retained Agent API decomposition confirmation path now builds an agent_api_decomposition subtask.create_many apply plan instead of writing child tasks directly from the renderer.',
+      'The subtask create-many apply plan readiness smoke now runs buildSubtaskCreateManyWritebackApplyPlan as a read-only build-gated harness, proving both agent_cli_decomposition and agent_api_decomposition sources produce subtask.create_many plans with parentTaskId, subtaskCount, panel.project_decomposed timeline evidence, confirmationBoundary=operator_confirmed_subtask_create_many, and draftOnlyBeforeConfirmation=true without provider calls, writeback dispatch, subtask creation, or workspace writes.',
       'evaluateAgentApiDecompositionPromotionReadiness now keeps future Agent API decomposition promotion closed unless the draft has a selected-runtime contract, parent-task identity, a reversible proposal card, an agent_api_decomposition subtask.create_many apply plan, an operator-confirmed create-many boundary, and draft-only timeline evidence.',
       'Agent API decomposition promotion readiness now returns satisfied and missing requirement lists plus promotionReady, requirements=x/7, promotionRequirements=x/7, missingRequirements=..., and promotionMissingRequirements=... summary evidence, matching the execution promotion readiness style without opening the deferred path.',
       'The Agent API decomposition promotion readiness smoke now runs evaluateAgentApiDecompositionPromotionReadiness as a read-only build-gated harness, proving blocked=0/7 requirements, partial=6/7 requirements with agent_api_decomposition_source missing, and synthetic-ready=7/7 requirements without provider calls, subtask creation, or workspace writes.',
@@ -212,7 +213,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future Agent API decomposition generation is still not the primary task-bound runtime path; if promoted, it should prove the selected-runtime contract and parent-task identity, then surface the same reversible proposal card before confirmation.',
     ],
     nextActions: [
-      'When Agent API decomposition is promoted, require the read-only decomposition promotion readiness smoke and evaluateAgentApiDecompositionPromotionReadiness to pass from real reversible proposal and apply-plan evidence before feeding confirmation through TaskplaneWritebackApplyPlan.',
+      'When Agent API decomposition is promoted, require the read-only subtask create-many apply plan readiness smoke, the read-only decomposition promotion readiness smoke, and evaluateAgentApiDecompositionPromotionReadiness to pass from real reversible proposal and apply-plan evidence before feeding confirmation through TaskplaneWritebackApplyPlan.',
     ],
   },
   {

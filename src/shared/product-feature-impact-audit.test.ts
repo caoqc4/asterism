@@ -565,6 +565,12 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('agent_api_decomposition subtask.create_many apply plan');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('subtask create-many apply plan readiness smoke');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('draftOnlyBeforeConfirmation=true');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('evaluateAgentApiDecompositionPromotionReadiness');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('satisfied and missing requirement lists');
@@ -594,6 +600,8 @@ describe('product feature impact audit', () => {
       .toContain('prove the selected-runtime contract');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.gaps.join(' '))
       .toContain('parent-task identity');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.nextActions.join(' '))
+      .toContain('read-only subtask create-many apply plan readiness smoke');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.nextActions.join(' '))
       .toContain('read-only decomposition promotion readiness smoke');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))

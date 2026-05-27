@@ -784,6 +784,22 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('promotionInProduct=deferred');
   });
 
+  it('keeps decomposition create-many apply plan readiness smoke read-only and build-gated by default', () => {
+    const scripts = readPackageScripts();
+    const result = runScript('scripts/decomposition-create-many-apply-plan-readiness-smoke.mjs', '', {}, []);
+
+    expect(scripts['manual:decomposition-create-many-apply-plan-readiness-smoke']).toBe(
+      'npm run build:main && node scripts/decomposition-create-many-apply-plan-readiness-smoke.mjs',
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('Subtask create-many apply plan readiness smoke');
+    expect(result.output).toContain('mode=read-only');
+    expect(result.output).toContain('provider=not-called');
+    expect(result.output).toContain('subtasks=not-created');
+    expect(result.output).toContain('dispatch=not-called');
+    expect(result.output).toContain('workspace=unchanged');
+  });
+
   it('keeps Agent API provider tool readiness smoke read-only and build-gated by default', () => {
     const scripts = readPackageScripts();
     const result = runScript('scripts/agent-api-provider-tool-readiness-smoke.mjs', '', {}, []);

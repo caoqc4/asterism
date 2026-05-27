@@ -50,6 +50,7 @@
     "manual:agent-api-execution-preflight-smoke": "node scripts/agent-api-execution-preflight-smoke.mjs",
     "manual:agent-api-promotion-readiness-smoke": "npm run build:main && node scripts/agent-api-promotion-readiness-smoke.mjs",
     "manual:agent-api-decomposition-promotion-readiness-smoke": "npm run build:main && node scripts/agent-api-decomposition-promotion-readiness-smoke.mjs",
+    "manual:decomposition-create-many-apply-plan-readiness-smoke": "npm run build:main && node scripts/decomposition-create-many-apply-plan-readiness-smoke.mjs",
     "manual:agent-api-provider-tool-readiness-smoke": "npm run build:main && node scripts/agent-api-provider-tool-readiness-smoke.mjs",
     "manual:runtime-patch-promotion-routing-readiness-smoke": "npm run build:main && node scripts/runtime-patch-promotion-routing-readiness-smoke.mjs",
     "manual:sandbox-patch-promotion-readiness-smoke": "npm run build:main && node scripts/sandbox-patch-promotion-readiness-smoke.mjs",
