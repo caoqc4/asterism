@@ -859,7 +859,7 @@ Current implementation:
   result also returns `terminalRunEvidenceStatus` and
   `triggerRunEvidenceStatus` for the operator message. Sweep
   results expose `skipReason`, `startedRunIds`,
-  `blockedReasons`, `runtimeStartMissingRequirements`, and
+  `blockedReasons`, `runFailureReasons`, `runtimeStartMissingRequirements`, and
   `terminalRunEvidenceMissingRunIds`, plus `triggerRunEvidenceRequired` and
   `triggerRunEvidenceStatus`, at the top level for operator-facing run
   evidence. `SchedulerStatus.lastScheduledEventAgentSweepSummary` preserves the

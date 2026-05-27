@@ -32,6 +32,7 @@ export type ScheduledEventAgentSweepResult = {
   blockedTaskCount: number;
   startedRunIds: string[];
   blockedReasons: string[];
+  runFailureReasons: string[];
   runtimeStartMissingRequirements: Array<AgentScheduledEventTriggerPlan['runtimeStartMissingRequirements'][number]>;
   terminalRunEvidenceMissingRunIds: string[];
   triggerRunEvidenceRequired: AgentScheduledEventTriggerPlan['triggerRunEvidenceRequired'];
@@ -264,6 +265,7 @@ export class SchedulerService {
         blockedTaskCount: 0,
         startedRunIds: [],
         blockedReasons: ['ports_not_connected'],
+        runFailureReasons: [],
         runtimeStartMissingRequirements: ['scheduler_trigger_service'],
         terminalRunEvidenceMissingRunIds: [],
         triggerRunEvidenceRequired: [],
@@ -285,6 +287,7 @@ export class SchedulerService {
         blockedTaskCount: 0,
         startedRunIds: [],
         blockedReasons: ['in_flight'],
+        runFailureReasons: [],
         runtimeStartMissingRequirements: [],
         terminalRunEvidenceMissingRunIds: [],
         triggerRunEvidenceRequired: [],
@@ -312,6 +315,10 @@ export class SchedulerService {
       const blockedTaskCount = results.length - startedRunCount;
       const startedRunIds = results.flatMap((result) => result.status === 'started' && result.run ? [result.run.id] : []);
       const blockedReasons = results.flatMap((result) => result.status === 'blocked' ? result.plan.blockedReasons : []);
+      const runFailureReasons = results.flatMap((result) =>
+        result.status === 'started' && result.run?.failureReason?.trim()
+          ? [`${result.run.id}: ${result.run.failureReason.trim()}`]
+          : []);
       const runtimeStartMissingRequirements = Array.from(new Set(
         results.flatMap((result) => result.plan.runtimeStartMissingRequirements),
       ));
@@ -336,6 +343,7 @@ export class SchedulerService {
         `blocked=${blockedTaskCount}`,
         `startedRunIds=${startedRunIds.length ? startedRunIds.join(',') : 'none'}`,
         `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
+        `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
         `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
         `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
         `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
@@ -351,6 +359,7 @@ export class SchedulerService {
         blockedTaskCount,
         startedRunIds,
         blockedReasons,
+        runFailureReasons,
         runtimeStartMissingRequirements,
         terminalRunEvidenceMissingRunIds,
         triggerRunEvidenceRequired,

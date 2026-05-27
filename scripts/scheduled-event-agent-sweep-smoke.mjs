@@ -228,7 +228,10 @@ try {
 
   const cronRun = {
     ...terminalRun,
+    failureReason: 'Scheduled/event cron smoke reached a terminal failure for operator review.',
     id: 'run_scheduled_event_sweep_cron_smoke',
+    output: 'Scheduled/event cron sweep smoke failed in a controlled terminal state.',
+    status: 'failed',
   };
   const cronTriggerCalls = [];
   const cronTimelineEvents = [];
@@ -292,6 +295,8 @@ try {
   assert(cronResult.status === 'completed', 'cron sweep did not complete');
   assert(cronResult.summary.includes('scheduledEventAgentSweep=cron'), 'cron sweep summary did not preserve cron kind');
   assert(cronResult.startedRunIds.includes(cronRun.id), 'cron sweep did not expose the cron run id');
+  assert(cronResult.runFailureReasons.includes(`${cronRun.id}: ${cronRun.failureReason}`), 'cron sweep did not expose terminal failure reason evidence');
+  assert(cronResult.summary.includes(`runFailureReasons=${cronRun.id}: ${cronRun.failureReason}`), 'cron sweep summary did not preserve terminal failure reason evidence');
   assert(cronResult.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'cron sweep did not expose ready trigger Run evidence status');
   assert(cronService.getStatus().lastScheduledEventAgentSweepSummary === cronResult.summary, 'cron sweep did not persist the sweep summary into scheduler status');
   assert(cronTriggerCalls.length === 1, 'cron sweep did not call the Code Agent trigger port exactly once');
@@ -303,6 +308,8 @@ try {
   assert(cronTriggerCalls[0].patchIntent.includes('Workspace write boundary: workspaceWriteAllowed=false; proposals only.'), 'cron sweep did not pass workspace-write boundary into the bounded run');
   assert(cronTimelineEvents.length === 1, 'cron sweep did not record trigger timeline evidence');
   assert(cronTimelineEvents[0].payload.runId === cronRun.id, 'cron timeline evidence did not preserve the cron run id');
+  assert(cronTimelineEvents[0].payload.runFailureReason === cronRun.failureReason, 'cron timeline evidence did not preserve the terminal failure reason');
+  assert(cronTimelineEvents[0].payload.runStatus === 'failed', 'cron timeline evidence did not preserve failed run status');
   assert(cronTimelineEvents[0].payload.triggeredAt === '2026-05-26T12:15:00.000Z', 'cron timeline evidence did not preserve the cron trigger time');
   assert(cronTimelineEvents[0].payload.terminalRunEvidenceStatus === 'present', 'cron timeline evidence did not mark terminal Run evidence present');
   assert(cronTimelineEvents[0].payload.triggerKind === 'cron', 'cron timeline evidence did not preserve cron trigger kind');
@@ -542,6 +549,7 @@ try {
     `runId=${run.id}`,
     `startedRunIds=${result.startedRunIds.join(',')}`,
     `blockedReasons=${result.blockedReasons.join(';')}`,
+    `runFailureReasons=${result.runFailureReasons.join(';') || 'none'}`,
     `runtimeStartMissingRequirements=${result.runtimeStartMissingRequirements.join(',')}`,
     `terminalRunEvidenceMissingRunIds=${result.terminalRunEvidenceMissingRunIds.join(',')}`,
     `triggerRunEvidenceRequired=${result.triggerRunEvidenceRequired.join(',')}`,
@@ -565,6 +573,7 @@ try {
     `cronRunId=${cronRun.id}`,
     `cronTriggerRunEvidenceStatus=${cronResult.triggerRunEvidenceStatus}`,
     `cronTriggerKind=${cronTimelineEvents[0].payload.triggerKind}`,
+    `cronRunFailureReasons=${cronResult.runFailureReasons.join(';') || 'none'}`,
     `cronSweepSummary=${cronService.getStatus().lastScheduledEventAgentSweepSummary}`,
     `disconnectedStatus=${disconnectedResult.status}`,
     `disconnectedSkipReason=${disconnectedResult.skipReason}`,
@@ -581,6 +590,7 @@ try {
     'triggerRunEvidence=passed',
     'terminalTriggerRunEvidence=passed',
     'cronTriggerRunEvidence=passed',
+    'cronRunFailureReasonEvidence=passed',
     'runLimitEvidence=passed',
     'runtimeStartRequirements=passed',
     'timelineEvidence=recorded',

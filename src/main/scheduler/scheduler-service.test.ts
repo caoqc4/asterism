@@ -667,7 +667,9 @@ describe('SchedulerService', () => {
     const triggerPort = {
       triggerCodeAgentRun: vi.fn().mockResolvedValue({
         ...buildRunRecord(),
+        failureReason: 'Model failed safely.',
         id: 'run_scheduled_callback_1',
+        status: 'failed',
         taskId: 'task_auto',
         type: 'agent',
       } satisfies RunRecord),
@@ -727,6 +729,8 @@ describe('SchedulerService', () => {
       type: 'panel.scheduled_event_agent_triggered',
       payload: expect.objectContaining({
         runId: 'run_scheduled_callback_1',
+        runFailureReason: 'Model failed safely.',
+        runStatus: 'failed',
         targetTaskId: 'task_auto',
         triggerKind: 'cron',
         workspaceWriteAllowed: false,
@@ -734,6 +738,7 @@ describe('SchedulerService', () => {
     }));
     expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runFailureReasons=run_scheduled_callback_1: Model failed safely.');
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
