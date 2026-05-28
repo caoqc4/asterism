@@ -115,6 +115,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceParentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'parentTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceSubtaskCount=${scalarValue(serviceEvidencePartial.summary, 'subtaskCount') ?? 'missing'}`);
   console.log(`serviceEvidenceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'evidenceRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceTimelineEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'timelineEvidenceRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceSourceEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'sourceEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceEvidenceRunIdChain=${scalarValue(serviceEvidencePartial.summary, 'evidenceRunIdChain') ?? 'missing'}`);
   console.log(`serviceEvidenceConfirmationBoundary=${scalarValue(serviceEvidencePartial.summary, 'confirmationBoundary') ?? 'missing'}`);
   console.log(`serviceEvidenceDraftOnlyBeforeConfirmation=${scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
@@ -145,6 +148,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'parentTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'subtaskCount') !== '1'
     || scalarValue(serviceEvidencePartial.summary, 'evidenceRunId') !== 'run_cli_decomposition_smoke'
+    || scalarValue(serviceEvidencePartial.summary, 'timelineEvidenceRunId') !== 'run_cli_decomposition_smoke'
+    || scalarValue(serviceEvidencePartial.summary, 'sourceEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'evidenceRunIdChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'confirmationBoundary') !== 'operator_confirmed_subtask_create_many'
     || scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') !== 'true'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'

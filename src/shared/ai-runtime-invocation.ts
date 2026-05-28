@@ -269,6 +269,14 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   const applyPlan = params.applyPlan ?? null;
   const evidenceParentTaskId = params.parentTaskId?.trim() || '';
   const applyPlanParentTaskId = applyPlan?.input.parentTaskId?.trim() || '';
+  const applyPlanEvidenceRunId = applyPlan?.input.evidenceRunId?.trim() || '';
+  const timelineEvidenceRunId = typeof applyPlan?.timeline.payload.evidenceRunId === 'string'
+    ? applyPlan.timeline.payload.evidenceRunId.trim()
+    : '';
+  const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
+  const evidenceRunIdChainReady = applyPlanEvidenceRunId || timelineEvidenceRunId
+    ? Boolean(applyPlanEvidenceRunId) && applyPlanEvidenceRunId === timelineEvidenceRunId
+    : true;
   const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
 
@@ -288,7 +296,7 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
     missingRequirements.push('subtask_create_many_apply_plan');
   }
 
-  if (applyPlan?.input.source !== 'agent_api_decomposition') {
+  if (applyPlan?.input.source !== 'agent_api_decomposition' || !sourceEvidenceChainReady) {
     missingRequirements.push('agent_api_decomposition_source');
   }
 
@@ -296,7 +304,7 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
     missingRequirements.push('operator_confirmation_boundary');
   }
 
-  if (applyPlan?.timeline.payload.draftOnlyBeforeConfirmation !== true) {
+  if (applyPlan?.timeline.payload.draftOnlyBeforeConfirmation !== true || !evidenceRunIdChainReady) {
     missingRequirements.push('draft_only_timeline_evidence');
   }
 
@@ -325,9 +333,13 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
+      `timelineSource=${typeof applyPlan?.timeline.payload.source === 'string' ? applyPlan.timeline.payload.source : 'missing'}`,
+      `sourceEvidenceChain=${sourceEvidenceChainReady ? 'ready' : 'missing'}`,
       'proposalId=missing',
       `subtaskCount=${applyPlan?.input.subtasks.length ?? 0}`,
-      `evidenceRunId=${applyPlan?.input.evidenceRunId?.trim() || 'missing'}`,
+      `evidenceRunId=${applyPlanEvidenceRunId || 'missing'}`,
+      `timelineEvidenceRunId=${timelineEvidenceRunId || 'missing'}`,
+      `evidenceRunIdChain=${evidenceRunIdChainReady ? 'ready' : 'missing'}`,
       `confirmationBoundary=${confirmationBoundary}`,
       `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,
       'runtimeMode=missing',
@@ -348,6 +360,14 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const selectedRuntime = evidence.selectedRuntimeContract;
   const evidenceParentTaskId = evidence.parentTaskId?.trim() || '';
   const applyPlanParentTaskId = applyPlan?.input.parentTaskId?.trim() || '';
+  const applyPlanEvidenceRunId = applyPlan?.input.evidenceRunId?.trim() || '';
+  const timelineEvidenceRunId = typeof applyPlan?.timeline.payload.evidenceRunId === 'string'
+    ? applyPlan.timeline.payload.evidenceRunId.trim()
+    : '';
+  const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
+  const evidenceRunIdChainReady = applyPlanEvidenceRunId || timelineEvidenceRunId
+    ? Boolean(applyPlanEvidenceRunId) && applyPlanEvidenceRunId === timelineEvidenceRunId
+    : true;
   const parentTaskId = evidenceParentTaskId || applyPlanParentTaskId;
   const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
@@ -412,7 +432,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('subtask_create_many_apply_plan');
   }
 
-  if (applyPlan?.input.source === 'agent_api_decomposition') {
+  if (applyPlan?.input.source === 'agent_api_decomposition' && sourceEvidenceChainReady) {
     satisfiedRequirements.push('agent_api_decomposition_source');
   }
 
@@ -420,7 +440,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('operator_confirmation_boundary');
   }
 
-  if (applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true) {
+  if (applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true && evidenceRunIdChainReady) {
     satisfiedRequirements.push('draft_only_timeline_evidence');
   }
 
@@ -445,6 +465,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `proposalCard=${reversibleProposalReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
+      `timelineSource=${typeof applyPlan?.timeline.payload.source === 'string' ? applyPlan.timeline.payload.source : 'missing'}`,
+      `sourceEvidenceChain=${sourceEvidenceChainReady ? 'ready' : 'missing'}`,
       `proposalId=${proposalId || 'missing'}`,
       `expectedProposalId=${expectedProposalId || 'missing'}`,
       `proposalIdEvidenceChain=${proposalIdEvidenceChainReady ? 'ready' : 'missing'}`,
@@ -458,7 +480,9 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `proposalSubtaskUniqueChain=${proposalSubtaskUniqueChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskIdentityChain=${proposalSubtaskIdentityChainReady ? 'ready' : 'missing'}`,
       `subtaskCount=${applyPlanSubtaskCount}`,
-      `evidenceRunId=${applyPlan?.input.evidenceRunId?.trim() || 'missing'}`,
+      `evidenceRunId=${applyPlanEvidenceRunId || 'missing'}`,
+      `timelineEvidenceRunId=${timelineEvidenceRunId || 'missing'}`,
+      `evidenceRunIdChain=${evidenceRunIdChainReady ? 'ready' : 'missing'}`,
       `confirmationBoundary=${confirmationBoundary}`,
       `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,

@@ -139,9 +139,13 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('proposalCard=ready');
     expect(ready.summary).toContain('applyPlan=subtask.create_many');
     expect(ready.summary).toContain('source=agent_api_decomposition');
+    expect(ready.summary).toContain('timelineSource=agent_api_decomposition');
+    expect(ready.summary).toContain('sourceEvidenceChain=ready');
     expect(ready.summary).toContain('proposalId=missing');
     expect(ready.summary).toContain('subtaskCount=1');
     expect(ready.summary).toContain('evidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('timelineEvidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('evidenceRunIdChain=ready');
     expect(ready.summary).toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
     expect(ready.summary).toContain('draftOnlyBeforeConfirmation=true');
     expect(ready.summary).toContain('runtimeMode=missing');
@@ -200,6 +204,9 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('proposalSubtaskIdentityChain=ready');
     expect(partial.summary).toContain('subtaskCount=1');
     expect(partial.summary).toContain('evidenceRunId=run_cli_decomposition');
+    expect(partial.summary).toContain('timelineEvidenceRunId=run_cli_decomposition');
+    expect(partial.summary).toContain('sourceEvidenceChain=ready');
+    expect(partial.summary).toContain('evidenceRunIdChain=ready');
     expect(partial.summary).toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
     expect(partial.summary).toContain('draftOnlyBeforeConfirmation=true');
     expect(partial.summary).toContain('runtimeMode=api');
@@ -250,11 +257,56 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('applyPlanParentTask=task_project');
     expect(ready.summary).toContain('parentTaskEvidenceChain=ready');
     expect(ready.summary).toContain('evidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('timelineEvidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('sourceEvidenceChain=ready');
+    expect(ready.summary).toContain('evidenceRunIdChain=ready');
     expect(ready.summary).toContain('subtaskCount=1');
     expect(ready.summary).toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
     expect(ready.summary).toContain('draftOnlyBeforeConfirmation=true');
     expect(ready.summary).toContain('runtimeMode=api');
     expect(ready.summary).toContain('invocationLayer=api_runtime');
+  });
+
+  it('blocks Agent API decomposition promotion when apply-plan source and timeline evidence are stitched', () => {
+    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+    applyPlan.timeline.payload.source = 'agent_cli_decomposition';
+    applyPlan.timeline.payload.evidenceRunId = 'run_other';
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'agent_api_decomposition_source',
+        'draft_only_timeline_evidence',
+      ],
+    });
+    expect(mismatch.summary).toContain('source=agent_api_decomposition');
+    expect(mismatch.summary).toContain('timelineSource=agent_cli_decomposition');
+    expect(mismatch.summary).toContain('sourceEvidenceChain=missing');
+    expect(mismatch.summary).toContain('evidenceRunId=run_api_decomposition');
+    expect(mismatch.summary).toContain('timelineEvidenceRunId=run_other');
+    expect(mismatch.summary).toContain('evidenceRunIdChain=missing');
   });
 
   it('blocks Agent API decomposition promotion when parent-task evidence is stitched from another task', () => {
