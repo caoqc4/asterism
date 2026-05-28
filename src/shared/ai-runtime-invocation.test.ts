@@ -815,7 +815,10 @@ describe('ai runtime invocation contract', () => {
 
     expect(mismatch).toMatchObject({
       ready: false,
-      missingRequirements: ['reversible_proposal_card'],
+      missingRequirements: [
+        'reversible_proposal_card',
+        'subtask_create_many_apply_plan',
+      ],
     });
     expect(mismatch.summary).toContain('proposalSubtaskCount=2');
     expect(mismatch.summary).toContain('applyPlanSubtaskCount=2');
@@ -827,6 +830,70 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('proposalSubtaskUniqueChain=missing');
     expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
     expect(mismatch.summary).toContain('proposalCard=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when the apply plan has no concrete subtasks', () => {
+    const emptyApplyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [],
+    });
+
+    const generic = evaluateAgentApiDecompositionPromotionReadiness({
+      applyPlan: emptyApplyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCardReady: true,
+      selectedRuntimeContractReady: true,
+    });
+
+    expect(generic).toMatchObject({
+      ready: false,
+      missingRequirements: ['subtask_create_many_apply_plan'],
+    });
+    expect(generic.summary).toContain('subtaskCount=0');
+    expect(generic.summary).toContain('applyPlanSubtaskTitles=missing');
+    expect(generic.summary).toContain('applyPlanSubtaskTitleEvidenceChain=ready');
+
+    const blankTitleApplyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [{
+        ...buildSubtaskDraft(),
+        title: '   ',
+      }],
+    });
+
+    const serviceEvidence = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan: blankTitleApplyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(serviceEvidence).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'reversible_proposal_card',
+        'subtask_create_many_apply_plan',
+      ],
+    });
+    expect(serviceEvidence.summary).toContain('applyPlanSubtaskCount=1');
+    expect(serviceEvidence.summary).toContain('applyPlanSubtaskTitles=missing');
+    expect(serviceEvidence.summary).toContain('applyPlanSubtaskTitleEvidenceChain=missing');
   });
 
   it('wraps decision drafts with API-runtime provenance', () => {

@@ -286,6 +286,12 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   const evidenceParentTaskId = params.parentTaskId?.trim() || '';
   const applyPlanParentTaskId = applyPlan?.input.parentTaskId?.trim() || '';
   const applyPlanEvidenceRunId = applyPlan?.input.evidenceRunId?.trim() || '';
+  const applyPlanSubtaskCount = applyPlan?.input.subtasks.length ?? 0;
+  const applyPlanSubtaskTitles = normalizedSubtaskTitles(applyPlan?.input.subtasks.map((subtask) => subtask.title) ?? []);
+  const applyPlanSubtaskTitleEvidenceChainReady = applyPlanSubtaskTitles.length === applyPlanSubtaskCount;
+  const applyPlanReady = applyPlan?.action === 'subtask.create_many'
+    && applyPlanSubtaskCount > 0
+    && applyPlanSubtaskTitleEvidenceChainReady;
   const timelineEvidenceRunId = typeof applyPlan?.timeline.payload.evidenceRunId === 'string'
     ? applyPlan.timeline.payload.evidenceRunId.trim()
     : '';
@@ -308,7 +314,7 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
     missingRequirements.push('reversible_proposal_card');
   }
 
-  if (applyPlan?.action !== 'subtask.create_many') {
+  if (!applyPlanReady) {
     missingRequirements.push('subtask_create_many_apply_plan');
   }
 
@@ -352,7 +358,9 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
       `timelineSource=${typeof applyPlan?.timeline.payload.source === 'string' ? applyPlan.timeline.payload.source : 'missing'}`,
       `sourceEvidenceChain=${sourceEvidenceChainReady ? 'ready' : 'missing'}`,
       'proposalId=missing',
-      `subtaskCount=${applyPlan?.input.subtasks.length ?? 0}`,
+      `subtaskCount=${applyPlanSubtaskCount}`,
+      `applyPlanSubtaskTitles=${applyPlanSubtaskTitles.length ? applyPlanSubtaskTitles.join('|') : 'missing'}`,
+      `applyPlanSubtaskTitleEvidenceChain=${applyPlanSubtaskTitleEvidenceChainReady ? 'ready' : 'missing'}`,
       `evidenceRunId=${applyPlanEvidenceRunId || 'missing'}`,
       `timelineEvidenceRunId=${timelineEvidenceRunId || 'missing'}`,
       `evidenceRunIdChain=${evidenceRunIdChainReady ? 'ready' : 'missing'}`,
@@ -472,7 +480,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('reversible_proposal_card');
   }
 
-  if (applyPlan?.action === 'subtask.create_many') {
+  if (applyPlan?.action === 'subtask.create_many' && applyPlanSubtaskCount > 0 && applyPlanSubtaskTitleEvidenceChainReady) {
     satisfiedRequirements.push('subtask_create_many_apply_plan');
   }
 
