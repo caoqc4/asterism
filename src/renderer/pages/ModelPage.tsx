@@ -88,6 +88,19 @@ function agentApiProviderToolStatus(summary?: string | null): string | null {
   return scalarValue(summary ?? '', 'providerToolStatus');
 }
 
+function agentApiProviderToolEvidence(summary?: string | null): {
+  declaredToolCount: string | null;
+  explicitToolDeclarationSource: string | null;
+  providerMetadataOwner: string | null;
+} {
+  const text = summary ?? '';
+  return {
+    declaredToolCount: scalarValue(text, 'declaredToolCount'),
+    explicitToolDeclarationSource: scalarValue(text, 'explicitToolDeclarationSource'),
+    providerMetadataOwner: scalarValue(text, 'providerMetadataOwner'),
+  };
+}
+
 function scalarValue(summary: string, key: string): string | null {
   const part = summary.split(' / ').find((item) => item.trim().startsWith(`${key}=`));
   return part?.slice(`${key}=`.length).trim() ?? null;
@@ -597,6 +610,7 @@ function AgentCliRuntimeSection({
   const apiDecompositionReadiness = agentApiDecompositionReadiness(apiCapability?.summary ?? apiSafety?.reason);
   const apiProviderToolReadiness = agentApiProviderToolReadiness(apiCapability?.summary ?? apiSafety?.reason);
   const apiProviderToolStatus = agentApiProviderToolStatus(apiCapability?.summary ?? apiSafety?.reason);
+  const apiProviderToolEvidence = agentApiProviderToolEvidence(apiCapability?.summary ?? apiSafety?.reason);
 
   return (
     <section className="agent-cli-section">
@@ -742,6 +756,15 @@ function AgentCliRuntimeSection({
                 <span>{`providerToolReadiness=${apiProviderToolReadiness}`}</span>
                 {apiProviderToolStatus && (
                   <span>{`providerToolStatus=${apiProviderToolStatus}`}</span>
+                )}
+                {apiProviderToolEvidence.providerMetadataOwner && (
+                  <span>{`providerMetadataOwner=${apiProviderToolEvidence.providerMetadataOwner}`}</span>
+                )}
+                {apiProviderToolEvidence.explicitToolDeclarationSource && (
+                  <span>{`explicitToolDeclarationSource=${apiProviderToolEvidence.explicitToolDeclarationSource}`}</span>
+                )}
+                {apiProviderToolEvidence.declaredToolCount && (
+                  <span>{`declaredToolCount=${apiProviderToolEvidence.declaredToolCount}`}</span>
                 )}
                 <span>provider tools not implied</span>
               </div>
