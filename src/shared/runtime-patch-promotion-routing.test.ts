@@ -31,6 +31,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('promotionReady=no');
     expect(readiness.summary).toContain('requirements=2/8');
     expect(readiness.summary).toContain('promotionRequirements=2/8');
+    expect(readiness.summary).toContain('promotionSatisfiedRequirements=patch_artifact,promotion_decision');
     expect(readiness.summary).toContain('selectedRuntimeContract=missing');
     expect(readiness.summary).toContain('targetTaskIdentity=missing');
     expect(readiness.summary).toContain('patchArtifact=ready');
@@ -70,6 +71,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('promotionReady=yes');
     expect(readiness.summary).toContain('requirements=8/8');
     expect(readiness.summary).toContain('promotionRequirements=8/8');
+    expect(readiness.summary).toContain('promotionSatisfiedRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
     expect(readiness.summary).toContain('selectedRuntimeContract=ready');
     expect(readiness.summary).toContain('targetTaskIdentity=ready');
     expect(readiness.summary).toContain('explicitOperatorApply=ready');
@@ -106,6 +108,7 @@ describe('runtime patch promotion routing readiness', () => {
       missingRequirements: ['same_run_evidence_chain'],
     });
     expect(readiness.summary).toContain('requirements=7/8');
+    expect(readiness.summary).toContain('promotionSatisfiedRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,post_apply_run_evidence');
     expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
   });
 
@@ -152,6 +155,7 @@ describe('runtime patch promotion routing readiness', () => {
       ],
     });
     expect(partial.summary).toContain('requirements=5/8');
+    expect(partial.summary).toContain('promotionSatisfiedRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight');
     expect(partial.summary).toContain('sameRunEvidenceChain=missing');
     expect(partial.summary).toContain('runtimeMode=api');
     expect(partial.summary).toContain('invocationLayer=api_runtime');
@@ -209,6 +213,7 @@ describe('runtime patch promotion routing readiness', () => {
       missingRequirements: [],
     });
     expect(ready.summary).toContain('requirements=8/8');
+    expect(ready.summary).toContain('promotionSatisfiedRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
     expect(ready.summary).toContain('sameRunEvidenceChain=ready');
     expect(ready.summary).toContain('operatorId=operator_1');
     expect(ready.summary).toContain('patchRunId=run_patch_1');

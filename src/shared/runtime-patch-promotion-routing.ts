@@ -99,6 +99,7 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
       `promotionReady=${ready ? 'yes' : 'no'}`,
       `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `promotionRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `promotionSatisfiedRequirements=${satisfiedRequirements.length ? satisfiedRequirements.join(',') : 'none'}`,
       `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `targetTaskIdentity=${params.targetTaskIdentityReady ? 'ready' : 'missing'}`,
       `patchArtifact=${params.patchArtifactReady ? 'ready' : 'missing'}`,
