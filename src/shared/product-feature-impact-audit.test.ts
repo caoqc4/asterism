@@ -349,6 +349,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.gaps.join(' ')).toContain('deduplicated sweep-failure trigger review policy');
     expect(decisions?.gaps.join(' ')).toContain('no-target task-source failure policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated timeline-failure review policy');
+    expect(decisions?.gaps.join(' ')).toContain('deduplicated run-identity review policy');
     expect(decisions?.gaps.join(' ')).toContain('terminal-evidence review policy');
     expect(decisions?.gaps.join(' ')).toContain('duplicate-candidate review policy');
     expect(decisions?.gaps.join(' ')).toContain('broader scheduler review policies');

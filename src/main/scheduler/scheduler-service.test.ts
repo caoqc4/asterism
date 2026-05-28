@@ -3126,6 +3126,76 @@ describe('SchedulerService', () => {
     }));
   });
 
+  it('does not duplicate same-day run-identity Decision proposals', async () => {
+    const now = new Date('2026-05-26T11:45:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_run_identity_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent Run 目标任务不一致后的下一步',
+          }),
+          createdAt: '2026-05-26T10:30:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_wrong_target_repeat',
+      output: null,
+      outputSource: null,
+      status: 'running',
+      taskId: 'task_other',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.summary).toContain('runIdentityDecisionProposal=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
   it('falls back to plain brief generation when brief template selection fails', async () => {
     const homeData = {
       ...buildHomeData(),
