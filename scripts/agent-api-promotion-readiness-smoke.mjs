@@ -92,6 +92,12 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceGates=${serviceEvidencePartial.satisfiedGates.length}/${deferredInvocation.requiredGates.length}`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',')}`);
   console.log(`serviceEvidenceMissingGates=${serviceEvidencePartial.missingGates.join(',')}`);
+  console.log(`serviceEvidenceTargetTask=${scalarValue(serviceEvidencePartial.summary, 'targetTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'runId') ?? 'missing'}`);
+  console.log(`serviceEvidenceContextStep=${scalarValue(serviceEvidencePartial.summary, 'contextStep') ?? 'missing'}`);
+  console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
+  console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -101,6 +107,12 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || serviceEvidencePartial.ready
     || serviceEvidencePartial.satisfiedRequirements.length !== 5
     || serviceEvidencePartial.satisfiedGates.length !== 3
+    || scalarValue(serviceEvidencePartial.summary, 'targetTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'runId') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'contextStep') !== 'step_context_ready'
+    || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
+    || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'
   ) {
     console.log('status=failed');
     return 1;
@@ -108,6 +120,12 @@ export async function runAgentApiPromotionReadinessSmoke() {
 
   console.log('status=passed');
   return 0;
+}
+
+function scalarValue(summary, key) {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() ?? null;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

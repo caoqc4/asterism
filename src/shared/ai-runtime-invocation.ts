@@ -564,6 +564,15 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
 ): AgentApiExecutionPromotionReadiness {
   const satisfiedRequirements: AgentApiExecutionPromotionRequirement[] = [];
   const selectedRuntime = evidence.selectedRuntimeContract;
+  const targetTaskId = evidence.targetTaskId?.trim() || '';
+  const contextManifest = evidence.contextManifestSummary?.trim() || '';
+  const contextStepId = evidence.contextReadinessStep?.stepId?.trim() || '';
+  const runGoalObjective = evidence.runGoalContract?.objective?.trim() || '';
+  const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
+    .map((action) => action.trim())
+    .filter(Boolean) ?? [];
+  const verifier = evidence.postStepVerification?.verifier?.trim() || '';
+  const runEvidenceId = evidence.runEvidencePersistence?.runId?.trim() || '';
 
   if (
     selectedRuntime?.runtimeMode === 'api'
@@ -573,7 +582,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('selected_runtime_contract');
   }
 
-  if (evidence.targetTaskId?.trim()) {
+  if (targetTaskId) {
     satisfiedRequirements.push('target_task_identity');
   }
 
@@ -585,11 +594,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('provider_visible_preflight');
   }
 
-  if (evidence.contextManifestSummary?.trim()) {
+  if (contextManifest) {
     satisfiedRequirements.push('runtime_context_manifest');
   }
 
-  if (evidence.contextReadinessStep?.status === 'ready' && evidence.contextReadinessStep.stepId?.trim()) {
+  if (evidence.contextReadinessStep?.status === 'ready' && contextStepId) {
     satisfiedRequirements.push('context_readiness_step');
   }
 
@@ -597,13 +606,13 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('task_memory_guidance');
   }
 
-  if ((evidence.runGoalContract?.objective?.trim()) && evidence.runGoalContract.completionConditionCount > 0) {
+  if (runGoalObjective && evidence.runGoalContract?.completionConditionCount && evidence.runGoalContract.completionConditionCount > 0) {
     satisfiedRequirements.push('run_goal_contract');
   }
 
   if (
     evidence.writeIntentExtraction?.status === 'ready'
-    && evidence.writeIntentExtraction.supportedActions.includes('artifact.propose')
+    && supportedWriteActions.includes('artifact.propose')
   ) {
     satisfiedRequirements.push('write_intent_extraction');
   }
@@ -615,13 +624,13 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('reviewed_patch_apply_boundary');
   }
 
-  if (evidence.postStepVerification?.status === 'ready' && evidence.postStepVerification.verifier?.trim()) {
+  if (evidence.postStepVerification?.status === 'ready' && verifier) {
     satisfiedRequirements.push('post_step_verification');
   }
 
   if (
-    evidence.runEvidencePersistence?.runId?.trim()
-    && evidence.runEvidencePersistence.terminalEvidenceStatus === 'present'
+    runEvidenceId
+    && evidence.runEvidencePersistence?.terminalEvidenceStatus === 'present'
   ) {
     satisfiedRequirements.push('run_evidence_persistence');
   }
@@ -629,10 +638,29 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const requiredGates = agentApiExecutionRequiredGates();
   const satisfiedGates = requiredGates.filter((gate) => evidence.gates?.[gate] === true);
 
-  return evaluateAgentApiExecutionPromotionReadiness({
+  const readiness = evaluateAgentApiExecutionPromotionReadiness({
     satisfiedGates,
     satisfiedRequirements,
   });
+  return {
+    ...readiness,
+    summary: [
+      readiness.summary,
+      `targetTask=${targetTaskId || 'missing'}`,
+      `runId=${runEvidenceId || 'missing'}`,
+      `contextStep=${contextStepId || 'missing'}`,
+      `contextManifest=${contextManifest || 'missing'}`,
+      `taskMemoryGuidance=${evidence.taskMemoryGuidance?.status ?? 'missing'}`,
+      `taskMemoryGuidanceCount=${evidence.taskMemoryGuidance?.guidanceCount ?? 0}`,
+      `runGoalConditions=${evidence.runGoalContract?.completionConditionCount ?? 0}`,
+      `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
+      `reviewedPatchApplyBoundary=${evidence.reviewedPatchApplyBoundary?.promotionPreflightReady === true ? 'ready' : 'missing'}`,
+      `postStepVerifier=${verifier || 'missing'}`,
+      `terminalEvidence=${evidence.runEvidencePersistence?.terminalEvidenceStatus ?? 'missing'}`,
+      `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
+      `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
+    ].join(' / '),
+  };
 }
 
 export function evaluateAgentApiExecutionPromotionReadinessForInvocation(

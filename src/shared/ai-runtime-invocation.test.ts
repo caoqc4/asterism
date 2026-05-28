@@ -567,6 +567,13 @@ describe('ai runtime invocation contract', () => {
     });
     expect(partial.summary).toContain('requirements=5/11');
     expect(partial.summary).toContain('gates=3/9');
+    expect(partial.summary).toContain('targetTask=task_1');
+    expect(partial.summary).toContain('runId=missing');
+    expect(partial.summary).toContain('contextStep=step_context_ready');
+    expect(partial.summary).toContain('contextManifest=task=task_1 / files=2');
+    expect(partial.summary).toContain('writeIntentActions=none');
+    expect(partial.summary).toContain('runtimeMode=api');
+    expect(partial.summary).toContain('invocationLayer=api_runtime');
 
     const ready = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
@@ -579,6 +586,15 @@ describe('ai runtime invocation contract', () => {
     });
     expect(ready.summary).toContain('requirements=11/11');
     expect(ready.summary).toContain('gates=9/9');
+    expect(ready.summary).toContain('targetTask=task_1');
+    expect(ready.summary).toContain('runId=run_api_execution');
+    expect(ready.summary).toContain('taskMemoryGuidance=ready');
+    expect(ready.summary).toContain('taskMemoryGuidanceCount=1');
+    expect(ready.summary).toContain('runGoalConditions=1');
+    expect(ready.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
+    expect(ready.summary).toContain('reviewedPatchApplyBoundary=ready');
+    expect(ready.summary).toContain('postStepVerifier=taskplane.verifier.lightweight');
+    expect(ready.summary).toContain('terminalEvidence=present');
   });
 
   it('wraps product-harness verification and memory proposal phases', () => {

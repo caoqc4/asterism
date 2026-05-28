@@ -173,6 +173,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadinessForInvocation');
     expect(rightPanel?.evidence.join(' ')).toContain('structured service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('Run evidence persistence, and runtime gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runId, contextStep, contextManifest');
+    expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, postStepVerifier, terminalEvidence, runtimeMode, and invocationLayer identity chips');
     expect(rightPanel?.evidence.join(' ')).toContain('hand-filled requirement arrays');
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('Retained API Runtime / Agent API-like RunService runs now persist an Agent API execution promotion readiness Run step');
