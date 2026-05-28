@@ -205,7 +205,9 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     taskId?: string | null;
   } | null;
   postStepVerification?: {
+    runId?: string | null;
     status: 'missing' | 'ready';
+    taskId?: string | null;
     verifier?: string | null;
   } | null;
 };
@@ -667,6 +669,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const patchPromotionTaskId = evidence.reviewedPatchApplyBoundary?.taskId?.trim() || '';
   const writeIntentRunId = evidence.writeIntentExtraction?.runId?.trim() || '';
   const writeIntentTaskId = evidence.writeIntentExtraction?.taskId?.trim() || '';
+  const postStepRunId = evidence.postStepVerification?.runId?.trim() || '';
+  const postStepTaskId = evidence.postStepVerification?.taskId?.trim() || '';
   const runEvidenceTaskEvidenceChainReady = Boolean(runEvidenceId)
     && Boolean(runEvidenceTaskId)
     && Boolean(targetTaskId)
@@ -689,6 +693,12 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const patchPromotionTaskEvidenceChainReady = Boolean(patchPromotionTaskId)
     && Boolean(targetTaskId)
     && patchPromotionTaskId === targetTaskId;
+  const postStepRunEvidenceChainReady = Boolean(postStepRunId)
+    && Boolean(runEvidenceId)
+    && postStepRunId === runEvidenceId;
+  const postStepTaskEvidenceChainReady = Boolean(postStepTaskId)
+    && Boolean(targetTaskId)
+    && postStepTaskId === targetTaskId;
   const reviewedPatchApplyBoundaryReady = (
     evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
     && evidence.reviewedPatchApplyBoundary.promotionPreflightReady === true
@@ -750,7 +760,12 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('reviewed_patch_apply_boundary');
   }
 
-  if (evidence.postStepVerification?.status === 'ready' && verifier) {
+  if (
+    evidence.postStepVerification?.status === 'ready'
+    && verifier
+    && postStepRunEvidenceChainReady
+    && postStepTaskEvidenceChainReady
+  ) {
     satisfiedRequirements.push('post_step_verification');
   }
 
@@ -801,6 +816,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `patchPromotionRunEvidenceChain=${patchPromotionRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `patchPromotionTask=${patchPromotionTaskId || 'missing'}`,
       `patchPromotionTaskEvidenceChain=${patchPromotionTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `postStepRun=${postStepRunId || 'missing'}`,
+      `postStepRunEvidenceChain=${postStepRunEvidenceChainReady ? 'ready' : 'missing'}`,
+      `postStepTask=${postStepTaskId || 'missing'}`,
+      `postStepTaskEvidenceChain=${postStepTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `postStepVerifier=${verifier || 'missing'}`,
       `terminalEvidence=${evidence.runEvidencePersistence?.terminalEvidenceStatus ?? 'missing'}`,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,

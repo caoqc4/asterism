@@ -926,6 +926,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('patchPromotionRunEvidenceChain=ready');
     expect(ready.summary).toContain('patchPromotionTask=task_1');
     expect(ready.summary).toContain('patchPromotionTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('postStepRun=run_api_execution');
+    expect(ready.summary).toContain('postStepRunEvidenceChain=ready');
+    expect(ready.summary).toContain('postStepTask=task_1');
+    expect(ready.summary).toContain('postStepTaskEvidenceChain=ready');
     expect(ready.summary).toContain('postStepVerifier=taskplane.verifier.lightweight');
     expect(ready.summary).toContain('terminalEvidence=present');
 
@@ -1125,6 +1129,44 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('patchPromotionTaskEvidenceChain=missing');
   });
 
+  it('requires post-step verification to belong to the same run and target task', () => {
+    const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      postStepVerification: {
+        runId: 'run_other',
+        status: 'ready',
+        taskId: 'task_1',
+        verifier: 'taskplane.verifier.lightweight',
+      },
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['post_step_verification'],
+    });
+    expect(wrongRun.summary).toContain('postStepRun=run_other');
+    expect(wrongRun.summary).toContain('postStepRunEvidenceChain=missing');
+    expect(wrongRun.summary).toContain('postStepTaskEvidenceChain=ready');
+
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      postStepVerification: {
+        runId: 'run_api_execution',
+        status: 'ready',
+        taskId: 'task_2',
+        verifier: 'taskplane.verifier.lightweight',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['post_step_verification'],
+    });
+    expect(wrongTask.summary).toContain('postStepRunEvidenceChain=ready');
+    expect(wrongTask.summary).toContain('postStepTask=task_2');
+    expect(wrongTask.summary).toContain('postStepTaskEvidenceChain=missing');
+  });
+
   it('wraps product-harness verification and memory proposal phases', () => {
     const verification = buildProductHarnessVerificationAssistInvocation({
       verification: {
@@ -1195,7 +1237,9 @@ function completeAgentApiExecutionPromotionEvidence() {
       post_step: true,
     },
     postStepVerification: {
+      runId: 'run_api_execution',
       status: 'ready' as const,
+      taskId: 'task_1',
       verifier: 'taskplane.verifier.lightweight',
     },
     providerVisiblePreflight: {

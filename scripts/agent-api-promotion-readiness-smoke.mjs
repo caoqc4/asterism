@@ -94,7 +94,9 @@ export async function runAgentApiPromotionReadinessSmoke() {
       post_step: true,
     },
     postStepVerification: {
+      runId: 'run_api_execution',
       status: 'ready',
+      taskId: 'task_1',
       verifier: 'taskplane.verifier.lightweight',
     },
     providerVisiblePreflight: {
@@ -182,6 +184,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`artifactOnlyWriteIntentActions=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') ?? 'missing'}`);
   console.log(`artifactOnlyWriteIntentRunEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyWriteIntentTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`artifactOnlyPostStepRunEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepRunEvidenceChain') ?? 'missing'}`);
+  console.log(`artifactOnlyPostStepTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepTaskEvidenceChain') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -215,6 +219,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') !== 'artifact.propose'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentRunEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepTaskEvidenceChain') !== 'ready'
   ) {
     console.log('status=failed');
     return 1;

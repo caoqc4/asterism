@@ -438,7 +438,9 @@ export class RunService {
         : null,
       postStepVerification: phase === 'post_run'
         ? {
+            runId,
             status: 'ready',
+            taskId: params.task.id,
             verifier: 'lightweight_rule_engine',
           }
         : null,

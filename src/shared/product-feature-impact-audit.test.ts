@@ -178,10 +178,12 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status plus same-run and target-task identity evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, contextStep, contextManifest');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, patchPromotionStatus, patchPromotionRun');
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionRunEvidenceChain, patchPromotionTask, patchPromotionTaskEvidenceChain');
-    expect(rightPanel?.evidence.join(' ')).toContain('postStepVerifier, terminalEvidence, runtimeMode, and invocationLayer identity chips');
+    expect(rightPanel?.evidence.join(' ')).toContain('postStepRun, postStepRunEvidenceChain, postStepTask, postStepTaskEvidenceChain, postStepVerifier');
+    expect(rightPanel?.evidence.join(' ')).toContain('terminalEvidence, runtimeMode, and invocationLayer identity chips');
     expect(rightPanel?.evidence.join(' ')).toContain('hand-filled requirement arrays');
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('Retained API Runtime / Agent API-like RunService runs now persist an Agent API execution promotion readiness Run step');
