@@ -959,6 +959,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('contextManifestTask=task_1');
     expect(ready.summary).toContain('contextManifestEvidenceChain=ready');
     expect(ready.summary).toContain('taskMemoryGuidanceCount=1');
+    expect(ready.summary).toContain('taskMemoryGuidanceTask=task_1');
+    expect(ready.summary).toContain('taskMemoryGuidanceTaskEvidenceChain=ready');
     expect(ready.summary).toContain('runGoalConditions=1');
     expect(ready.summary).toContain('runGoalRun=run_api_execution');
     expect(ready.summary).toContain('runGoalRunEvidenceChain=ready');
@@ -1063,6 +1065,26 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('runGoalRunEvidenceChain=ready');
     expect(wrongTask.summary).toContain('runGoalTask=task_2');
     expect(wrongTask.summary).toContain('runGoalTaskEvidenceChain=missing');
+  });
+
+  it('requires task memory guidance evidence to belong to the target task', () => {
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      taskMemoryGuidance: {
+        guidanceCount: 1,
+        status: 'ready',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['task_memory_guidance'],
+    });
+    expect(wrongTask.summary).toContain('taskMemoryGuidance=ready');
+    expect(wrongTask.summary).toContain('taskMemoryGuidanceCount=1');
+    expect(wrongTask.summary).toContain('taskMemoryGuidanceTask=task_2');
+    expect(wrongTask.summary).toContain('taskMemoryGuidanceTaskEvidenceChain=missing');
   });
 
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
@@ -1390,6 +1412,7 @@ function completeAgentApiExecutionPromotionEvidence() {
     taskMemoryGuidance: {
       guidanceCount: 1,
       status: 'ready' as const,
+      taskId: 'task_1',
     },
     writeIntentExtraction: {
       runId: 'run_api_execution',

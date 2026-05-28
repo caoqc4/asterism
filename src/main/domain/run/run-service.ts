@@ -469,6 +469,7 @@ export class RunService {
       taskMemoryGuidance: {
         guidanceCount: params.taskMemoryGuidance.targets.length,
         status: params.taskMemoryGuidance.outcome === 'satisfied' ? 'ready' : 'missing',
+        taskId: params.task.id,
       },
       writeIntentExtraction: supportedWriteActions.length
         ? {

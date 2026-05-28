@@ -200,6 +200,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   taskMemoryGuidance?: {
     guidanceCount: number;
     status: 'missing' | 'ready';
+    taskId?: string | null;
   } | null;
   writeIntentExtraction?: {
     runId?: string | null;
@@ -702,6 +703,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const runGoalObjective = evidence.runGoalContract?.objective?.trim() || '';
   const runGoalRunId = evidence.runGoalContract?.runId?.trim() || '';
   const runGoalTaskId = evidence.runGoalContract?.taskId?.trim() || '';
+  const taskMemoryGuidanceTaskId = evidence.taskMemoryGuidance?.taskId?.trim() || '';
   const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
@@ -733,6 +735,9 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const runGoalTaskEvidenceChainReady = Boolean(runGoalTaskId)
     && Boolean(targetTaskId)
     && runGoalTaskId === targetTaskId;
+  const taskMemoryGuidanceTaskEvidenceChainReady = Boolean(taskMemoryGuidanceTaskId)
+    && Boolean(targetTaskId)
+    && taskMemoryGuidanceTaskId === targetTaskId;
   const providerPreflightRunEvidenceChainReady = Boolean(providerPreflightRunId)
     && (!runEvidenceId || providerPreflightRunId === runEvidenceId);
   const providerPreflightTaskEvidenceChainReady = Boolean(providerPreflightTaskId)
@@ -793,7 +798,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('context_readiness_step');
   }
 
-  if ((evidence.taskMemoryGuidance?.status === 'ready') && evidence.taskMemoryGuidance.guidanceCount > 0) {
+  if (
+    (evidence.taskMemoryGuidance?.status === 'ready')
+    && evidence.taskMemoryGuidance.guidanceCount > 0
+    && taskMemoryGuidanceTaskEvidenceChainReady
+  ) {
     satisfiedRequirements.push('task_memory_guidance');
   }
 
@@ -871,6 +880,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `contextManifestEvidenceChain=${contextManifestEvidenceChainReady ? 'ready' : 'missing'}`,
       `taskMemoryGuidance=${evidence.taskMemoryGuidance?.status ?? 'missing'}`,
       `taskMemoryGuidanceCount=${evidence.taskMemoryGuidance?.guidanceCount ?? 0}`,
+      `taskMemoryGuidanceTask=${taskMemoryGuidanceTaskId || 'missing'}`,
+      `taskMemoryGuidanceTaskEvidenceChain=${taskMemoryGuidanceTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `runGoalConditions=${evidence.runGoalContract?.completionConditionCount ?? 0}`,
       `runGoalRun=${runGoalRunId || 'missing'}`,
       `runGoalRunEvidenceChain=${runGoalRunEvidenceChainReady ? 'ready' : 'missing'}`,
