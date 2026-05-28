@@ -1301,7 +1301,15 @@ describe('SchedulerService', () => {
       runFailureReasons: [],
       runtimeStartMissingRequirements: ['trigger_plan_ready'],
       terminalRunEvidenceMissingRunIds: [],
-      triggerRunEvidenceRequired: [],
+      triggerRunEvidenceRequired: [
+        'context_readiness',
+        'target_task_identity',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'run_limit_count',
+        'post_step',
+      ],
       triggerRunEvidenceStatus: 'not_started',
     });
     expect(failedSweep.blockedReasons).toEqual(['sweep_failed: Trigger port failed - safely']);
@@ -1309,9 +1317,22 @@ describe('SchedulerService', () => {
     expect(failedSweep.summary).toContain('reason=sweep_failed');
     expect(failedSweep.summary).toContain('checkedTaskIds=task_auto');
     expect(failedSweep.summary).toContain('error=Trigger port failed - safely');
+    expect(failedSweep.summary).toContain('sweepFailureDecisionProposals=proposed');
     expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
-    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动触发并人工复核调度器',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent sweep 异常后的下一步',
+      }),
+    }));
     expect(sweepListener).toHaveBeenCalledWith(failedSweep);
 
     triggerPort.triggerCodeAgentRun.mockResolvedValueOnce({
@@ -1328,6 +1349,72 @@ describe('SchedulerService', () => {
     expect(recoveredSweep.status).toBe('completed');
     expect(recoveredSweep.startedRunIds).toEqual(['run_after_failed_sweep']);
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not duplicate same-day scheduled/event sweep failure Decision proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_sweep_failure_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent sweep 异常后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockRejectedValueOnce(new Error('Trigger port failed / safely')),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(failedSweep.summary).toContain('sweepFailureDecisionProposals=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
   });
 
   it('preserves started run evidence when timeline recording fails during a scheduled/event sweep', async () => {

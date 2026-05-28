@@ -628,11 +628,16 @@ try {
   assert(failedResult.triggerRunEvidenceStatus === 'not_started', 'failed sweep should not start trigger Run evidence');
   assert(failedResult.summary.includes('reason=sweep_failed'), 'failed sweep summary did not preserve failed reason');
   assert(failedResult.summary.includes('error=Trigger port failed - safely'), 'failed sweep summary did not preserve sanitized error evidence');
+  assert(failedResult.summary.includes('sweepFailureDecisionProposals=proposed'), 'failed sweep summary did not expose sweep-failure Decision proposal evidence');
   assert(failedService.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T12:27:00.000Z', 'failed sweep did not preserve skipped sweep time in scheduler status');
   assert(failedService.getStatus().lastScheduledEventAgentSweepSummary === failedResult.summary, 'failed sweep did not persist the failed sweep summary into scheduler status');
   assert(failedSweepListenerEvents.some((event) => event.summary === failedResult.summary), 'sweep listener did not record failed sweep summary');
   assert(failedTriggerCalls.length === 1, 'failed sweep did not reach the Code Agent trigger port exactly once');
-  assert(failedTimelineEvents.length === 0, 'failed sweep should not record timeline evidence after trigger failure');
+  assert(failedTimelineEvents.length === 1, 'failed sweep did not record sweep-failure Decision proposal evidence');
+  assert(failedTimelineEvents[0].type === 'panel.scheduler_decision_proposed', 'failed sweep did not record scheduler Decision proposal evidence');
+  assert(failedTimelineEvents[0].payload.targetTaskId === 'task_scheduled_event_sweep_smoke', 'failed sweep Decision proposal did not preserve target task identity');
+  assert(failedTimelineEvents[0].payload.title === '确认定时/事件 Agent sweep 异常后的下一步', 'failed sweep Decision proposal did not preserve review title');
+  assert(failedTimelineEvents[0].payload.proposedOutcome === '暂停自动触发并人工复核调度器', 'failed sweep Decision proposal did not preserve proposed outcome');
   const failedSweepAt = failedService.getStatus().lastScheduledEventAgentSweepAt;
 
   failedTriggerShouldThrow = false;
@@ -1057,6 +1062,7 @@ try {
     `failedSweepAt=${failedSweepAt}`,
     `failedSweepSummary=${failedResult.summary}`,
     `failedSweepListenerEvents=${failedSweepListenerEvents.length}`,
+    `failedSweepDecisionProposalEvents=${failedTimelineEvents.length}`,
     `failedRecoveryStatus=${failedRecoveryResult.status}`,
     `failedRecoveryRunId=${recoveryRun.id}`,
     `timelineFailedStatus=${timelineFailedResult.status}`,
@@ -1112,6 +1118,7 @@ try {
     'inFlightSweepListenerEvidence=passed',
     'failedSweepSummaryEvidence=recorded',
     'failedSweepListenerEvidence=passed',
+    'failedSweepDecisionProposalEvidence=recorded',
     'failedSweepRecoveryEvidence=passed',
     'timelineFailedStartedRunEvidence=recorded',
     'timelineFailedNotBlockedEvidence=passed',

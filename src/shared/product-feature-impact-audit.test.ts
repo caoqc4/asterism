@@ -282,6 +282,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('failureDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('daily run-limit blocks now route a deduplicated run-limit review policy');
     expect(decisions?.evidence.join(' ')).toContain('runLimitDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toContain('trigger-port sweep failures now route a deduplicated sweep-failure review policy');
+    expect(decisions?.evidence.join(' ')).toContain('sweepFailureDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
     expect(decisions?.evidence.join(' ')).toContain('selected Agent CLI modes stay product_harness/skipped');
     expect(decisions?.evidence.join(' ')).toContain('Approved checkpoint Decision resume is limited to open tool_permission');
@@ -290,6 +292,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.cliOnlyClosure).toBe('supported');
     expect(decisions?.gaps.join(' ')).toContain('concrete failed-run recovery policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated daily run-limit review policy');
+    expect(decisions?.gaps.join(' ')).toContain('deduplicated sweep-failure trigger review policy');
     expect(decisions?.gaps.join(' ')).toContain('broader scheduler review policies');
     expect(decisions?.nextActions.join(' ')).toContain('remaining scheduled/event review policies');
     expect(decisions?.nextActions.join(' ')).toContain('deduplicated');

@@ -221,7 +221,8 @@ function planScheduledEventAgentTriggerFromServiceEvidence(params: {
 
 type ScheduledEventAgentSweepFailureEvidence = {
   plan: AgentScheduledEventTriggerPlan;
-  run: RunRecord;
+  run?: RunRecord | null;
+  task?: ScheduledEventAgentTaskInput | null;
 };
 
 type ScheduledEventAgentSweepError = Error & {
@@ -419,6 +420,7 @@ export class SchedulerService {
 
     this.scheduledEventAgentSweepInFlight = true;
     let checkedTaskIds: string[] = [];
+    let activeSweepTask: ScheduledEventAgentTaskInput | null = null;
     try {
       const tasks = await taskSourcePort.listScheduledEventAgentTriggerCandidates();
       checkedTaskIds = tasks.map((task) => task.id);
@@ -427,7 +429,9 @@ export class SchedulerService {
       const runLimitDecisionProposalStatuses: string[] = [];
 
       for (const task of tasks) {
+        activeSweepTask = task;
         const result = await this.triggerScheduledEventAgentRun(task, now, runCounts, kind);
+        activeSweepTask = null;
         results.push(result);
         if (result.status === 'started') {
           runCounts[task.id] = (runCounts[task.id] ?? 0) + 1;
@@ -528,6 +532,7 @@ export class SchedulerService {
       const failureEvidence = getScheduledEventAgentSweepFailureEvidence(error);
       const failedRun = failureEvidence?.run ?? null;
       const failedPlan = failureEvidence?.plan ?? null;
+      const failedTask = failureEvidence?.task ?? activeSweepTask;
       const startedRunIds = failedRun ? [failedRun.id] : [];
       const runFailureReasons = failedRun?.failureReason?.trim()
         ? [`${failedRun.id}: ${failedRun.failureReason.trim()}`]
@@ -539,6 +544,13 @@ export class SchedulerService {
       const automationSatisfiedRequirements = failedPlan?.readiness.satisfiedRequirements ?? [];
       const triggerRunEvidenceRequired = failedPlan?.triggerRunEvidenceRequired ?? [];
       const blockedTaskIds = startedRunIds.length > 0 ? [] : checkedTaskIds;
+      const sweepFailureDecisionProposal = failedTask && failedPlan && !failedRun
+        ? await this.proposeScheduledEventSweepFailureDecision(failedTask, failedPlan, errorMessage, now)
+          .catch((proposalError: unknown) => ({
+            status: 'failed' as const,
+            summary: `sweepFailureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(proposalError)}`,
+          }))
+        : null;
       const summary = [
         `scheduledEventAgentSweep=${kind}`,
         'status=skipped',
@@ -552,6 +564,9 @@ export class SchedulerService {
         `terminalRunEvidenceMissingRunIds=${terminalRunEvidenceMissingRunIds.length ? terminalRunEvidenceMissingRunIds.join(',') : 'none'}`,
         `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
         `error=${errorMessage}`,
+        sweepFailureDecisionProposal
+          ? `sweepFailureDecisionProposals=${sweepFailureDecisionProposal.status}`
+          : 'sweepFailureDecisionProposals=not_required',
         `triggerRunEvidenceStatus=${startedRunIds.length ? 'pending_terminal_run_evidence' : 'not_started'}`,
       ].join(' / ');
       this.lastScheduledEventAgentSweepAt = now.toISOString();
@@ -736,12 +751,17 @@ export class SchedulerService {
 
     const run = await this.scheduledEventAgentRunPort.triggerCodeAgentRun(
       buildScheduledEventCodeAgentRunInput(task, plan, triggerKind),
-    );
+    ).catch((error: unknown) => {
+      throw buildScheduledEventAgentSweepError(
+        formatScheduledEventAgentSweepError(error),
+        { plan, run: null, task },
+      );
+    });
     const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now, triggerKind)
       .catch((error: unknown) => {
         throw buildScheduledEventAgentSweepError(
           `Timeline evidence failed: ${formatScheduledEventAgentSweepError(error)}`,
-          { plan, run },
+          { plan, run, task },
         );
       });
     const terminalRunEvidenceStatus = isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending';
@@ -819,6 +839,40 @@ export class SchedulerService {
         `Scheduled/event Agent daily run limit reached for task ${task.id}.`,
         `Current limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
         'Taskplane should confirm whether to wait, adjust the Standing Approval limit, or pause automation.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
+    });
+  }
+
+  private async proposeScheduledEventSweepFailureDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    errorMessage: string,
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent sweep 异常后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'sweepFailureDecisionProposal=skipped_existing',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      options: [
+        '暂停自动触发并人工复核调度器',
+        '修复触发服务后重试下一次 sweep',
+        '保留自动触发但降低运行频率',
+      ],
+      proposedOutcome: '暂停自动触发并人工复核调度器',
+      rationale: [
+        `Scheduled/event Agent sweep failed before a Run record was returned for task ${task.id}.`,
+        `Sweep error: ${errorMessage}.`,
+        'Taskplane should confirm whether to pause automation or repair the scheduler trigger path before more background work continues.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
       standingApprovalPolicyId: plan.policy?.id ?? null,
