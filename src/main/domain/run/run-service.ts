@@ -406,6 +406,7 @@ export class RunService {
       contextReadinessStep: {
         status: params.contextReadiness.decision === 'ready' ? 'ready' : 'blocked',
         stepId: 'context.readiness.evaluate',
+        taskId: params.task.id,
       },
       gates: {
         simplicity_check: true,

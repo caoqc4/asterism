@@ -55,6 +55,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     contextReadinessStep: {
       status: 'ready',
       stepId: 'step_context_ready',
+      taskId: 'task_1',
     },
     gates: {
       simplicity_check: true,
@@ -81,6 +82,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     contextReadinessStep: {
       status: 'ready',
       stepId: 'step_context_ready',
+      taskId: 'task_1',
     },
     gates: {
       simplicity_check: true,
@@ -179,6 +181,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceWriteIntentTask=${scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStep=${scalarValue(serviceEvidencePartial.summary, 'contextStep') ?? 'missing'}`);
+  console.log(`serviceEvidenceContextStepTask=${scalarValue(serviceEvidencePartial.summary, 'contextStepTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceContextStepTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'contextStepTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceContextManifestTask=${scalarValue(serviceEvidencePartial.summary, 'contextManifestTask') ?? 'missing'}`);
   console.log(`serviceEvidenceContextManifestEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'contextManifestEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
@@ -218,6 +222,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentTaskEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'contextStep') !== 'step_context_ready'
+    || scalarValue(serviceEvidencePartial.summary, 'contextStepTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'contextStepTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'contextManifestTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'contextManifestEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'

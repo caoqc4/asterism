@@ -857,6 +857,7 @@ describe('ai runtime invocation contract', () => {
       contextReadinessStep: {
         status: 'ready',
         stepId: 'step_context_ready',
+        taskId: 'task_1',
       },
       gates: {
         simplicity_check: true,
@@ -921,6 +922,8 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('writeIntentTask=missing');
     expect(partial.summary).toContain('writeIntentTaskEvidenceChain=missing');
     expect(partial.summary).toContain('contextStep=step_context_ready');
+    expect(partial.summary).toContain('contextStepTask=task_1');
+    expect(partial.summary).toContain('contextStepTaskEvidenceChain=ready');
     expect(partial.summary).toContain('contextManifest=task=task_1 / files=2');
     expect(partial.summary).toContain('contextManifestTask=task_1');
     expect(partial.summary).toContain('contextManifestEvidenceChain=ready');
@@ -955,6 +958,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('writeIntentRunEvidenceChain=ready');
     expect(ready.summary).toContain('writeIntentTask=task_1');
     expect(ready.summary).toContain('writeIntentTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('contextStepTask=task_1');
+    expect(ready.summary).toContain('contextStepTaskEvidenceChain=ready');
     expect(ready.summary).toContain('taskMemoryGuidance=ready');
     expect(ready.summary).toContain('contextManifestTask=task_1');
     expect(ready.summary).toContain('contextManifestEvidenceChain=ready');
@@ -1027,6 +1032,25 @@ describe('ai runtime invocation contract', () => {
     expect(serviceTaskEvidence.summary).toContain('contextManifest=executionKind=api / status=partial');
     expect(serviceTaskEvidence.summary).toContain('contextManifestTask=task_1');
     expect(serviceTaskEvidence.summary).toContain('contextManifestEvidenceChain=ready');
+  });
+
+  it('requires context readiness step evidence to belong to the target task', () => {
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      contextReadinessStep: {
+        status: 'ready',
+        stepId: 'step_context_ready',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['context_readiness_step'],
+    });
+    expect(wrongTask.summary).toContain('contextStep=step_context_ready');
+    expect(wrongTask.summary).toContain('contextStepTask=task_2');
+    expect(wrongTask.summary).toContain('contextStepTaskEvidenceChain=missing');
   });
 
   it('requires Run Goal Contract evidence to belong to the same run and target task', () => {
@@ -1359,6 +1383,7 @@ function completeAgentApiExecutionPromotionEvidence() {
     contextReadinessStep: {
       status: 'ready' as const,
       stepId: 'step_context_ready',
+      taskId: 'task_1',
     },
     gates: {
       simplicity_check: true,

@@ -163,6 +163,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   contextReadinessStep?: {
     status: 'blocked' | 'ready';
     stepId?: string | null;
+    taskId?: string | null;
   } | null;
   gates?: Partial<Record<RuntimeEntrypointGate, boolean>>;
   providerVisiblePreflight?: {
@@ -700,6 +701,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     || scalarSummaryValue(contextManifest, 'task')
     || '';
   const contextStepId = evidence.contextReadinessStep?.stepId?.trim() || '';
+  const contextStepTaskId = evidence.contextReadinessStep?.taskId?.trim() || '';
   const runGoalObjective = evidence.runGoalContract?.objective?.trim() || '';
   const runGoalRunId = evidence.runGoalContract?.runId?.trim() || '';
   const runGoalTaskId = evidence.runGoalContract?.taskId?.trim() || '';
@@ -759,6 +761,9 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && Boolean(contextManifestTaskId)
     && Boolean(targetTaskId)
     && contextManifestTaskId === targetTaskId;
+  const contextStepTaskEvidenceChainReady = Boolean(contextStepTaskId)
+    && Boolean(targetTaskId)
+    && contextStepTaskId === targetTaskId;
   const reviewedPatchApplyBoundaryReady = (
     evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
     && evidence.reviewedPatchApplyBoundary.promotionPreflightReady === true
@@ -794,7 +799,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('runtime_context_manifest');
   }
 
-  if (evidence.contextReadinessStep?.status === 'ready' && contextStepId) {
+  if (
+    evidence.contextReadinessStep?.status === 'ready'
+    && contextStepId
+    && contextStepTaskEvidenceChainReady
+  ) {
     satisfiedRequirements.push('context_readiness_step');
   }
 
@@ -875,6 +884,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `writeIntentTask=${writeIntentTaskId || 'missing'}`,
       `writeIntentTaskEvidenceChain=${writeIntentTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `contextStep=${contextStepId || 'missing'}`,
+      `contextStepTask=${contextStepTaskId || 'missing'}`,
+      `contextStepTaskEvidenceChain=${contextStepTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `contextManifest=${contextManifest || 'missing'}`,
       `contextManifestTask=${contextManifestTaskId || 'missing'}`,
       `contextManifestEvidenceChain=${contextManifestEvidenceChainReady ? 'ready' : 'missing'}`,
