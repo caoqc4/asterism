@@ -1043,6 +1043,69 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('postApplyRunEvidence=missing');
   });
 
+  it('rejects current-directory path aliases as unsafe workspace evidence', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/./app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/./app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'patch_artifact',
+        'same_run_evidence_chain',
+        'post_apply_run_evidence',
+      ],
+    });
+    expect(readiness.summary).toContain('expectedFiles=src/./app.ts');
+    expect(readiness.summary).toContain('touchedFiles=src/./app.ts');
+    expect(readiness.summary).toContain('filePathSafetyChain=missing');
+    expect(readiness.summary).toContain('expectedFileEvidenceChain=missing');
+    expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
+  });
+
   it('rejects Windows drive absolute paths as unsafe workspace evidence', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {

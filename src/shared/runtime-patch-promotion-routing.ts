@@ -353,6 +353,7 @@ function isSafeWorkspaceRelativePath(value: string): boolean {
   const segments = normalized.split('/');
   return segments.every((segment) =>
     Boolean(segment)
+    && segment !== '.'
     && segment !== '.git'
     && segment !== 'node_modules'
     && !segment.startsWith('.env'),
