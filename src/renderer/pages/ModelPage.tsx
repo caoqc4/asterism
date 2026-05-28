@@ -121,6 +121,8 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   declaredWebSearchToolCount: string | null;
   declaredWebSearchTools: string | null;
   explicitToolDeclarationSource: string | null;
+  configuredProvider: string | null;
+  providerMetadataMatchesSelected: string | null;
   explicitToolDeclaration: string | null;
   providerMetadataPackage: string | null;
   providerMetadataOwner: string | null;
@@ -136,6 +138,8 @@ function agentApiProviderToolEvidence(summary?: string | null): {
     declaredToolCount: scalarValue(text, 'declaredToolCount'),
     declaredWebSearchToolCount: scalarValue(text, 'declaredWebSearchToolCount'),
     declaredWebSearchTools: scalarValue(text, 'declaredWebSearchTools'),
+    configuredProvider: scalarValue(text, 'configuredProvider'),
+    providerMetadataMatchesSelected: scalarValue(text, 'providerMetadataMatchesSelected'),
     explicitToolDeclaration: scalarValue(text, 'explicitToolDeclaration'),
     explicitToolDeclarationSource: scalarValue(text, 'explicitToolDeclarationSource'),
     providerMetadataPackage: scalarValue(text, 'providerMetadataPackage'),
@@ -857,11 +861,17 @@ function AgentCliRuntimeSection({
                 {apiProviderToolEvidence.providerConfigured && (
                   <span>{`providerConfigured=${apiProviderToolEvidence.providerConfigured}`}</span>
                 )}
+                {apiProviderToolEvidence.configuredProvider && (
+                  <span>{`configuredProvider=${apiProviderToolEvidence.configuredProvider}`}</span>
+                )}
                 {apiProviderToolEvidence.startupProbe && (
                   <span>{`startupProbe=${apiProviderToolEvidence.startupProbe}`}</span>
                 )}
                 {apiProviderToolEvidence.providerOwnedMetadata && (
                   <span>{`providerOwnedMetadata=${apiProviderToolEvidence.providerOwnedMetadata}`}</span>
+                )}
+                {apiProviderToolEvidence.providerMetadataMatchesSelected && (
+                  <span>{`providerMetadataMatchesSelected=${apiProviderToolEvidence.providerMetadataMatchesSelected}`}</span>
                 )}
                 {apiProviderToolEvidence.providerMetadataOwner && (
                   <span>{`providerMetadataOwner=${apiProviderToolEvidence.providerMetadataOwner}`}</span>

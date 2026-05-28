@@ -885,9 +885,12 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=blocked|not_declared|declared');
     expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime');
     expect(capabilities?.evidence.join(' ')).toContain('providerConfigured');
+    expect(capabilities?.evidence.join(' ')).toContain('configuredProvider');
     expect(capabilities?.evidence.join(' ')).toContain('providerOwnedMetadata');
+    expect(capabilities?.evidence.join(' ')).toContain('providerMetadataMatchesSelected');
     expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclaration');
     expect(capabilities?.evidence.join(' ')).toContain('startupProbe=never');
+    expect(capabilities?.evidence.join(' ')).toContain('mismatched provider metadata');
     expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API execution_run readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('promotion ready state');
@@ -907,11 +910,11 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');
-    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, startupProbe, providerOwnedMetadata, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, declaredToolCount, declaredWebSearchToolCount, and declaredWebSearchTools chips');
+    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, configuredProvider, startupProbe, providerOwnedMetadata, providerMetadataMatchesSelected, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, declaredToolCount, declaredWebSearchToolCount, and declaredWebSearchTools chips');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
-    expect(capabilities?.evidence.join(' ')).toContain('provider configuration alone and unrelated provider-owned function tools stay providerToolReadiness=not_declared');
+    expect(capabilities?.evidence.join(' ')).toContain('provider configuration alone, mismatched provider metadata, and unrelated provider-owned function tools stay providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now derives Agent API Runtime providerToolReadiness');
     expect(capabilities?.evidence.join(' ')).toContain('no-start local provider package metadata for @ai-sdk/openai and @ai-sdk/anthropic');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
@@ -919,7 +922,9 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements');
     expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime');
     expect(capabilities?.evidence.join(' ')).toContain('providerConfigured');
+    expect(capabilities?.evidence.join(' ')).toContain('configuredProvider');
     expect(capabilities?.evidence.join(' ')).toContain('providerOwnedMetadata');
+    expect(capabilities?.evidence.join(' ')).toContain('providerMetadataMatchesSelected');
     expect(capabilities?.evidence.join(' ')).toContain('providerMetadataOwner');
     expect(capabilities?.evidence.join(' ')).toContain('providerMetadataPackage');
     expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclaration');
@@ -933,6 +938,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements=4/5');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements=explicit_tool_declaration');
+    expect(capabilities?.evidence.join(' ')).toContain('configuredProvider=openai');
+    expect(capabilities?.evidence.join(' ')).toContain('providerMetadataMatchesSelected=yes');
     expect(capabilities?.evidence.join(' ')).toContain('providerMetadataPackage=@ai-sdk/openai');
     expect(capabilities?.evidence.join(' ')).toContain('declaredWebSearchToolCount=0');
     expect(capabilities?.evidence.join(' ')).toContain('declaredWebSearchTools=none');

@@ -190,7 +190,7 @@ describe('capability registry', () => {
       visibility: 'hidden',
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / providerOwnedMetadata=ready / providerMetadataOwner=provider / providerMetadataPackage=@ai-sdk/anthropic / explicitToolDeclaration=missing / explicitToolDeclarationSource=provider_owned_metadata / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / configuredProvider=anthropic / providerOwnedMetadata=ready / providerMetadataMatchesSelected=yes / providerMetadataOwner=provider / providerMetadataPackage=@ai-sdk/anthropic / explicitToolDeclaration=missing / explicitToolDeclarationSource=provider_owned_metadata / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
     });
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
@@ -292,7 +292,7 @@ describe('capability registry', () => {
       status: 'available',
       configured: true,
       missingReason: null,
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / providerOwnedMetadata=ready / providerMetadataOwner=provider / providerMetadataPackage=@ai-sdk/anthropic / explicitToolDeclaration=missing / explicitToolDeclarationSource=provider_owned_metadata / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / configuredProvider=anthropic / providerOwnedMetadata=ready / providerMetadataMatchesSelected=yes / providerMetadataOwner=provider / providerMetadataPackage=@ai-sdk/anthropic / explicitToolDeclaration=missing / explicitToolDeclarationSource=provider_owned_metadata / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
     });
     expect(RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'run.triggerAgentApi.future')?.requiredGates)
       .toEqual(expect.arrayContaining(['runtime_context_assembly', 'context_readiness', 'task_memory_coverage', 'task_memory_guidance', 'pre_step', 'subtask_start', 'post_step']));

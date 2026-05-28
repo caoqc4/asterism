@@ -21,6 +21,7 @@ export type AgentApiProviderToolReadiness = {
 const PROVIDER_WEB_SEARCH_TOOL_PATTERN = /(?:^|[._:-])(?:web[_-]?search|web[_-]?fetch|browser|browse|search)(?:$|[._:-])/i;
 
 export type AgentApiProviderToolReadinessServiceEvidence = {
+  configuredProvider?: string | null;
   explicitToolDeclarations?: {
     declaredTools: string[];
     source: 'provider_owned_metadata' | 'runtime_probe' | 'unknown';
@@ -94,6 +95,31 @@ function declaredWebSearchTools(tools: string[] | undefined): string[] {
   return normalizeDeclaredTools(tools).filter((tool) => PROVIDER_WEB_SEARCH_TOOL_PATTERN.test(tool));
 }
 
+function normalizeProvider(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? '';
+}
+
+function providerMetadataMatchesConfiguredProvider(params: {
+  configuredProvider?: string | null;
+  metadata?: AgentApiProviderToolReadinessServiceEvidence['providerOwnedMetadata'];
+}): boolean {
+  const configuredProvider = normalizeProvider(params.configuredProvider);
+  const metadata = params.metadata;
+  if (!configuredProvider) return true;
+  if (!metadata?.present || metadata.owner === 'unknown') return false;
+
+  const packageName = metadata.packageName?.trim().toLowerCase() ?? '';
+  if (configuredProvider === 'openai') {
+    return metadata.owner === 'openai'
+      || packageName.includes('openai');
+  }
+  if (configuredProvider === 'anthropic') {
+    return metadata.owner === 'anthropic'
+      || packageName.includes('anthropic');
+  }
+  return metadata.owner === 'provider' || metadata.owner === configuredProvider;
+}
+
 export function evaluateAgentApiProviderToolReadinessFromEvidence(
   evidence: AgentApiProviderToolReadinessServiceEvidence,
 ): AgentApiProviderToolReadiness {
@@ -103,6 +129,13 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const declarations = evidence.explicitToolDeclarations;
   const normalizedDeclaredTools = normalizeDeclaredTools(declarations?.declaredTools);
   const webSearchDeclaredTools = declaredWebSearchTools(declarations?.declaredTools);
+  const metadataMatchesConfiguredProvider = providerMetadataMatchesConfiguredProvider({
+    configuredProvider: evidence.configuredProvider,
+    metadata,
+  });
+  const providerOwnedMetadataReady = metadata?.present === true
+    && metadata.owner !== 'unknown'
+    && metadataMatchesConfiguredProvider;
 
   if (evidence.selectedRuntime?.runtimeKind === 'agent_api' && evidence.selectedRuntime.mode === 'api') {
     satisfiedRequirements.push('selected_api_runtime');
@@ -116,12 +149,13 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
     satisfiedRequirements.push('no_startup_probe');
   }
 
-  if (metadata?.present === true && metadata.owner !== 'unknown') {
+  if (providerOwnedMetadataReady) {
     satisfiedRequirements.push('provider_owned_metadata');
   }
 
   if (
-    declarations?.source === 'provider_owned_metadata'
+    providerOwnedMetadataReady
+    && declarations?.source === 'provider_owned_metadata'
     && webSearchDeclaredTools.length > 0
   ) {
     satisfiedRequirements.push('explicit_tool_declaration');
@@ -151,8 +185,10 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
       `providerToolRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `selectedApiRuntime=${satisfiedRequirementSet.has('selected_api_runtime') ? 'ready' : 'missing'}`,
       `providerConfigured=${satisfiedRequirementSet.has('provider_configured') ? 'ready' : 'missing'}`,
+      `configuredProvider=${normalizeProvider(evidence.configuredProvider) || 'missing'}`,
       `startupProbe=${evidence.startupProbe ?? 'missing'}`,
       `providerOwnedMetadata=${satisfiedRequirementSet.has('provider_owned_metadata') ? 'ready' : 'missing'}`,
+      `providerMetadataMatchesSelected=${metadataMatchesConfiguredProvider ? 'yes' : 'no'}`,
       `providerMetadataOwner=${metadata?.owner ?? 'missing'}`,
       `providerMetadataPackage=${metadata?.packageName?.trim() || 'missing'}`,
       `explicitToolDeclaration=${satisfiedRequirementSet.has('explicit_tool_declaration') ? 'ready' : 'missing'}`,

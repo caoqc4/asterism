@@ -8,6 +8,7 @@ import {
 describe('Agent API provider tool readiness', () => {
   it('does not infer provider tools from API runtime selection and provider config alone', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
       providerConfigured: true,
       selectedRuntime: {
         mode: 'api',
@@ -31,6 +32,8 @@ describe('Agent API provider tool readiness', () => {
     });
     expect(readiness.summary).toContain('providerToolReadiness=not_declared');
     expect(readiness.summary).toContain('requirements=3/5');
+    expect(readiness.summary).toContain('configuredProvider=openai');
+    expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
     expect(readiness.summary).toContain('startupProbe=never');
     expect(readiness.summary).toContain('providerMetadataOwner=missing');
     expect(readiness.summary).toContain('providerMetadataPackage=missing');
@@ -44,6 +47,7 @@ describe('Agent API provider tool readiness', () => {
     const metadata = deriveAgentApiProviderToolMetadata('openai');
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       ...metadata,
+      configuredProvider: 'openai',
       providerConfigured: true,
       selectedRuntime: {
         mode: 'api',
@@ -64,6 +68,8 @@ describe('Agent API provider tool readiness', () => {
       missingRequirements: ['explicit_tool_declaration'],
     });
     expect(readiness.summary).toContain('providerOwnedMetadata=ready');
+    expect(readiness.summary).toContain('configuredProvider=openai');
+    expect(readiness.summary).toContain('providerMetadataMatchesSelected=yes');
     expect(readiness.summary).toContain('providerMetadataOwner=provider');
     expect(readiness.summary).toContain('providerMetadataPackage=@ai-sdk/openai');
     expect(readiness.summary).toContain('explicitToolDeclaration=missing');
@@ -74,6 +80,7 @@ describe('Agent API provider tool readiness', () => {
 
   it('requires provider-owned metadata and explicit declarations before reporting tools declared', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
       explicitToolDeclarations: {
         declaredTools: ['web_search'],
         source: 'provider_owned_metadata',
@@ -115,6 +122,7 @@ describe('Agent API provider tool readiness', () => {
 
   it('does not treat unrelated provider-owned function tools as web/search declarations', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
       explicitToolDeclarations: {
         declaredTools: ['taskplane.create_task'],
         source: 'provider_owned_metadata',
@@ -149,8 +157,43 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('explicitToolDeclaration=missing');
   });
 
+  it('requires provider metadata to match the configured provider when provider identity is available', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
+      explicitToolDeclarations: {
+        declaredTools: ['web_search'],
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'anthropic',
+        packageName: '@ai-sdk/anthropic',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'not_declared',
+      toolReadiness: 'not_declared',
+      missingRequirements: [
+        'provider_owned_metadata',
+        'explicit_tool_declaration',
+      ],
+    });
+    expect(readiness.summary).toContain('configuredProvider=openai');
+    expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
+    expect(readiness.summary).toContain('providerOwnedMetadata=missing');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+  });
+
   it('blocks readiness when a startup probe would be needed to discover tools', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
       explicitToolDeclarations: {
         declaredTools: ['web_search'],
         source: 'runtime_probe',

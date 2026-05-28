@@ -564,6 +564,7 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
     ? deriveAgentApiProviderToolMetadata(snapshot?.model.provider)
     : { explicitToolDeclarations: null, providerOwnedMetadata: null };
   const providerToolReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+    configuredProvider: snapshot?.model.provider ?? null,
     explicitToolDeclarations: providerToolMetadata.explicitToolDeclarations,
     providerConfigured,
     providerOwnedMetadata: providerToolMetadata.providerOwnedMetadata,
@@ -604,8 +605,14 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       scalarSummaryValue(providerToolReadiness.summary, 'providerConfigured')
         ? `providerConfigured=${scalarSummaryValue(providerToolReadiness.summary, 'providerConfigured')}`
         : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'configuredProvider')
+        ? `configuredProvider=${scalarSummaryValue(providerToolReadiness.summary, 'configuredProvider')}`
+        : null,
       scalarSummaryValue(providerToolReadiness.summary, 'providerOwnedMetadata')
         ? `providerOwnedMetadata=${scalarSummaryValue(providerToolReadiness.summary, 'providerOwnedMetadata')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataMatchesSelected')
+        ? `providerMetadataMatchesSelected=${scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataMatchesSelected')}`
         : null,
       scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataOwner')
         ? `providerMetadataOwner=${scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataOwner')}`

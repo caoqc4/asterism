@@ -70,6 +70,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
 
   const providerToolMetadata = deriveAgentApiProviderToolMetadata(snapshot.model.provider);
   const serviceEvidenceReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+    configuredProvider: snapshot.model.provider,
     explicitToolDeclarations: providerToolMetadata.explicitToolDeclarations,
     providerConfigured: snapshot.model.configured,
     providerOwnedMetadata: providerToolMetadata.providerOwnedMetadata,
@@ -95,7 +96,9 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerToolMissingRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolMissingRequirements') ?? 'missing'}`);
   console.log(`selectedApiRuntime=${scalarValue(agentApiRuntime.summary, 'selectedApiRuntime') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'selectedApiRuntime') ?? 'missing'}`);
   console.log(`providerConfiguredStatus=${scalarValue(agentApiRuntime.summary, 'providerConfigured') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerConfigured') ?? 'missing'}`);
+  console.log(`configuredProvider=${scalarValue(agentApiRuntime.summary, 'configuredProvider') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'configuredProvider') ?? 'missing'}`);
   console.log(`providerOwnedMetadata=${scalarValue(agentApiRuntime.summary, 'providerOwnedMetadata') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerOwnedMetadata') ?? 'missing'}`);
+  console.log(`providerMetadataMatchesSelected=${scalarValue(agentApiRuntime.summary, 'providerMetadataMatchesSelected') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataMatchesSelected') ?? 'missing'}`);
   console.log(`providerMetadataOwner=${scalarValue(agentApiRuntime.summary, 'providerMetadataOwner') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') ?? 'missing'}`);
   console.log(`providerMetadataPackage=${scalarValue(agentApiRuntime.summary, 'providerMetadataPackage') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') ?? 'missing'}`);
   console.log(`explicitToolDeclaration=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclaration') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclaration') ?? 'missing'}`);
@@ -114,7 +117,9 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`serviceEvidenceProviderToolMissingRequirements=${serviceEvidenceReadiness.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceSelectedApiRuntime=${serviceScalarValue(serviceEvidenceReadiness.summary, 'selectedApiRuntime') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderConfigured=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerConfigured') ?? 'missing'}`);
+  console.log(`serviceEvidenceConfiguredProvider=${serviceScalarValue(serviceEvidenceReadiness.summary, 'configuredProvider') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderOwnedMetadata=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerOwnedMetadata') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderMetadataMatchesSelected=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataMatchesSelected') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderMetadataOwner=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderMetadataPackage=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') ?? 'missing'}`);
   console.log(`serviceEvidenceExplicitToolDeclaration=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclaration') ?? 'missing'}`);
@@ -136,10 +141,14 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     !agentApiRuntime.summary.includes('providerToolMissingRequirements=explicit_tool_declaration') ? 'provider_tool_missing_requirements' : null,
     !agentApiRuntime.summary.includes('selectedApiRuntime=ready') ? 'selected_api_runtime' : null,
     !agentApiRuntime.summary.includes('providerConfigured=ready') ? 'provider_configured' : null,
+    !agentApiRuntime.summary.includes('configuredProvider=openai') ? 'configured_provider' : null,
     !agentApiRuntime.summary.includes('providerOwnedMetadata=ready') ? 'provider_owned_metadata' : null,
+    !agentApiRuntime.summary.includes('providerMetadataMatchesSelected=yes') ? 'provider_metadata_matches_selected' : null,
     !agentApiRuntime.summary.includes('providerMetadataPackage=@ai-sdk/openai') ? 'provider_metadata_package' : null,
     !agentApiRuntime.summary.includes('explicitToolDeclaration=missing') ? 'explicit_tool_declaration' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') !== 'provider' ? 'service_metadata_owner' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'configuredProvider') !== 'openai' ? 'service_configured_provider' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataMatchesSelected') !== 'yes' ? 'service_metadata_matches_selected' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') !== '@ai-sdk/openai' ? 'service_metadata_package' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'provider_owned_metadata' ? 'service_tool_declaration_source' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') !== '0' ? 'service_declared_tool_count' : null,
