@@ -199,6 +199,11 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && Boolean(promotionCheckpointId)
     && Boolean(decisionArtifactId)
     && Boolean(decisionRunId)
+    && Boolean(patchRunId)
+    && decisionRunId === patchRunId
+    && Boolean(decisionTaskId)
+    && Boolean(targetTaskId)
+    && decisionTaskId === targetTaskId
     && Boolean(patchArtifactId)
     && decisionArtifactId === patchArtifactId
   );
