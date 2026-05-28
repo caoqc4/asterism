@@ -166,6 +166,64 @@ export async function runAgentApiPromotionReadinessSmoke() {
       taskId: 'task_1',
     },
   });
+  const serviceEvidencePostRunNoWriteback = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+    contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
+    contextReadinessStep: {
+      status: 'ready',
+      stepId: 'step_context_ready',
+      taskId: 'task_1',
+    },
+    gates: {
+      simplicity_check: true,
+      runtime_action: true,
+      runtime_context_assembly: true,
+      context_readiness: true,
+      task_memory_coverage: true,
+      task_memory_guidance: true,
+      pre_step: true,
+      subtask_start: true,
+      post_step: true,
+    },
+    postStepVerification: {
+      runId: 'run_api_execution',
+      status: 'ready',
+      taskId: 'task_1',
+      verifier: 'taskplane.verifier.lightweight',
+    },
+    providerVisiblePreflight: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+      runId: 'run_api_execution',
+      startupProbe: 'not_called',
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    runEvidencePersistence: {
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+      terminalEvidenceStatus: 'present',
+      terminalRunStatus: 'completed',
+    },
+    runGoalContract: {
+      completionConditionCount: 1,
+      objective: 'Produce reviewable task evidence.',
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      runId: 'run_api_execution',
+      runtimeMode: 'api',
+      taskId: 'task_1',
+    },
+    targetTaskId: 'task_1',
+    taskMemoryGuidance: {
+      guidanceCount: 1,
+      status: 'ready',
+      taskId: 'task_1',
+    },
+  });
 
   console.log(`deferredInvocationStatus=${deferredInvocation.status}`);
   console.log(`deferredPromotionReady=${deferredReadiness.ready ? 'yes' : 'no'}`);
@@ -233,6 +291,18 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`artifactOnlyPostStepTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepTaskEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyTerminalRunStatus=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatus') ?? 'missing'}`);
   console.log(`artifactOnlyTerminalRunStatusEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatusEvidenceChain') ?? 'missing'}`);
+  console.log(`postRunNoWritebackPromotionReady=${serviceEvidencePostRunNoWriteback.ready ? 'yes' : 'no'}`);
+  console.log(`postRunNoWritebackRequirements=${serviceEvidencePostRunNoWriteback.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
+  console.log(`postRunNoWritebackGates=${serviceEvidencePostRunNoWriteback.satisfiedGates.length}/${deferredInvocation.requiredGates.length}`);
+  console.log(`postRunNoWritebackMissingRequirements=${serviceEvidencePostRunNoWriteback.missingRequirements.join(',') || 'none'}`);
+  console.log(`postRunNoWritebackMissingGates=${serviceEvidencePostRunNoWriteback.missingGates.join(',') || 'none'}`);
+  console.log(`postRunNoWritebackRunId=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'runId') ?? 'missing'}`);
+  console.log(`postRunNoWritebackTerminalRunStatus=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalRunStatus') ?? 'missing'}`);
+  console.log(`postRunNoWritebackTerminalEvidence=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalEvidence') ?? 'missing'}`);
+  console.log(`postRunNoWritebackPostStepRunEvidenceChain=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepRunEvidenceChain') ?? 'missing'}`);
+  console.log(`postRunNoWritebackPostStepTaskEvidenceChain=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`postRunNoWritebackWriteIntentActions=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`postRunNoWritebackReviewedPatchApplyBoundary=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -289,6 +359,18 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatus') !== 'completed'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatusEvidenceChain') !== 'ready'
+    || serviceEvidencePostRunNoWriteback.ready
+    || serviceEvidencePostRunNoWriteback.satisfiedRequirements.length !== 9
+    || serviceEvidencePostRunNoWriteback.satisfiedGates.length !== 9
+    || !serviceEvidencePostRunNoWriteback.missingRequirements.includes('write_intent_extraction')
+    || !serviceEvidencePostRunNoWriteback.missingRequirements.includes('reviewed_patch_apply_boundary')
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'runId') !== 'run_api_execution'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalRunStatus') !== 'completed'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalEvidence') !== 'present'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'writeIntentActions') !== 'none'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchApplyBoundary') !== 'missing'
   ) {
     console.log('status=failed');
     return 1;

@@ -1415,6 +1415,43 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('writeIntentTaskEvidenceChain=missing');
   });
 
+  it('keeps post-run Agent API execution promotion blocked until writeback evidence is complete', () => {
+    const postRunNoWriteback = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: null,
+      writeIntentExtraction: null,
+    });
+
+    expect(postRunNoWriteback).toMatchObject({
+      ready: false,
+      satisfiedRequirements: [
+        'selected_runtime_contract',
+        'target_task_identity',
+        'provider_visible_preflight',
+        'runtime_context_manifest',
+        'context_readiness_step',
+        'task_memory_guidance',
+        'run_goal_contract',
+        'post_step_verification',
+        'run_evidence_persistence',
+      ],
+      missingRequirements: [
+        'write_intent_extraction',
+        'reviewed_patch_apply_boundary',
+      ],
+      missingGates: [],
+    });
+    expect(postRunNoWriteback.summary).toContain('requirements=9/11');
+    expect(postRunNoWriteback.summary).toContain('gates=9/9');
+    expect(postRunNoWriteback.summary).toContain('runId=run_api_execution');
+    expect(postRunNoWriteback.summary).toContain('terminalRunStatus=completed');
+    expect(postRunNoWriteback.summary).toContain('terminalEvidence=present');
+    expect(postRunNoWriteback.summary).toContain('postStepRunEvidenceChain=ready');
+    expect(postRunNoWriteback.summary).toContain('postStepTaskEvidenceChain=ready');
+    expect(postRunNoWriteback.summary).toContain('writeIntentActions=none');
+    expect(postRunNoWriteback.summary).toContain('reviewedPatchApplyBoundary=missing');
+  });
+
   it('requires provider-visible preflight to carry the configured provider identity', () => {
     const missingProvider = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
