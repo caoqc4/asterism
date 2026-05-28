@@ -3116,6 +3116,97 @@ describe('SchedulerService', () => {
     }));
   });
 
+  it('returns recovery evidence when operator-started scheduled/event timeline evidence fails', async () => {
+    const now = new Date('2026-05-26T11:27:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_timeline_failed_manual',
+      output: null,
+      outputSource: null,
+      status: 'running',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn()
+        .mockRejectedValueOnce(new Error('timeline database unavailable'))
+        .mockResolvedValueOnce(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: {
+        id: 'run_scheduled_timeline_failed_manual',
+        taskId: 'task_auto',
+      },
+      terminalRunEvidenceStatus: 'pending',
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('runId=run_scheduled_timeline_failed_manual');
+    expect(result.summary).toContain('reason=Timeline evidence failed: timeline database unavailable');
+    expect(result.summary).toContain('timelineFailureDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+    }));
+    expect(timelinePort.recordTimelineEvent).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_scheduled_timeline_failed_manual',
+        proposedOutcome: '暂停自动触发并修复 timeline 证据写入',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent timeline 证据写入失败后的下一步',
+      }),
+    }));
+  });
+
   it('returns recovery evidence instead of throwing when an operator-started scheduled/event run has the wrong target task', async () => {
     const now = new Date('2026-05-26T11:30:00.000Z');
     const task = buildAutomationTaskDetail({

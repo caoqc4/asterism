@@ -952,12 +952,38 @@ export class SchedulerService {
       };
     }
     const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now, triggerKind)
-      .catch((error: unknown) => {
-        throw buildScheduledEventAgentSweepError(
-          `Timeline evidence failed: ${formatScheduledEventAgentSweepError(error)}`,
-          { plan, run, task },
-        );
+      .catch(async (error: unknown) => {
+        const errorMessage = `Timeline evidence failed: ${formatScheduledEventAgentSweepError(error)}`;
+        if (runIdentityMismatchHandling === 'throw_sweep_error') {
+          throw buildScheduledEventAgentSweepError(
+            errorMessage,
+            { plan, run, task },
+          );
+        }
+
+        const terminalRunEvidenceStatus = scheduledEventRunTerminalEvidenceStatus(run);
+        const triggerRunEvidenceStatus = scheduledEventTriggerRunEvidenceStatus(terminalRunEvidenceStatus);
+        const timelineFailureDecisionProposal = await this.proposeScheduledEventTimelineFailureDecision(task, plan, run, errorMessage, now)
+          .catch((proposalError: unknown) => ({
+            status: 'failed' as const,
+            summary: `timelineFailureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(proposalError)}`,
+          }));
+
+        return {
+          status: 'blocked' as const,
+          plan,
+          run,
+          terminalRunEvidenceStatus,
+          triggerRunEvidenceStatus,
+          summary: [
+            `${plan.summary} / trigger=blocked / runId=${run.id} / terminalRunEvidence=${terminalRunEvidenceStatus} / triggerRunEvidenceStatus=${triggerRunEvidenceStatus} / reason=${errorMessage}`,
+            `timelineFailureDecisionProposal=${timelineFailureDecisionProposal.status} / timelineFailureDecisionSummary=${timelineFailureDecisionProposal.summary}`,
+          ].join(' / '),
+        };
       });
+    if (typeof timelineEvidence !== 'string') {
+      return timelineEvidence;
+    }
     const terminalRunEvidenceStatus = scheduledEventRunTerminalEvidenceStatus(run);
     const triggerRunEvidenceStatus = scheduledEventTriggerRunEvidenceStatus(terminalRunEvidenceStatus);
     const failureDecisionProposal = run.status === 'failed'
