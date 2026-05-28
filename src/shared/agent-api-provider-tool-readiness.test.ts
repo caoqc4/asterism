@@ -33,6 +33,8 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerMetadataPackage=missing');
     expect(readiness.summary).toContain('explicitToolDeclarationSource=missing');
     expect(readiness.summary).toContain('declaredToolCount=0');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=0');
+    expect(readiness.summary).toContain('declaredWebSearchTools=none');
   });
 
   it('requires provider-owned metadata and explicit declarations before reporting tools declared', () => {
@@ -72,6 +74,44 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerMetadataPackage=@openai/agents');
     expect(readiness.summary).toContain('explicitToolDeclarationSource=provider_owned_metadata');
     expect(readiness.summary).toContain('declaredToolCount=1');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+    expect(readiness.summary).toContain('declaredWebSearchTools=web_search');
+  });
+
+  it('does not treat unrelated provider-owned function tools as web/search declarations', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      explicitToolDeclarations: {
+        declaredTools: ['taskplane.create_task'],
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@openai/agents',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'not_declared',
+      toolReadiness: 'not_declared',
+      satisfiedRequirements: [
+        'selected_api_runtime',
+        'provider_configured',
+        'no_startup_probe',
+        'provider_owned_metadata',
+      ],
+      missingRequirements: ['explicit_tool_declaration'],
+    });
+    expect(readiness.summary).toContain('declaredToolCount=1');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=0');
+    expect(readiness.summary).toContain('declaredWebSearchTools=none');
+    expect(readiness.summary).toContain('explicitToolDeclaration=missing');
   });
 
   it('blocks readiness when a startup probe would be needed to discover tools', () => {
@@ -104,5 +144,6 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('startupProbe=called');
     expect(readiness.summary).toContain('explicitToolDeclarationSource=runtime_probe');
     expect(readiness.summary).toContain('declaredToolCount=1');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
   });
 });

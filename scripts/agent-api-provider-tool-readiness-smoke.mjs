@@ -97,6 +97,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`explicitToolDeclaration=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclaration') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclaration') ?? 'missing'}`);
   console.log(`explicitToolDeclarationSource=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclarationSource') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
   console.log(`declaredToolCount=${scalarValue(agentApiRuntime.summary, 'declaredToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
+  console.log(`declaredWebSearchToolCount=${scalarValue(agentApiRuntime.summary, 'declaredWebSearchToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchToolCount') ?? '0'}`);
+  console.log(`declaredWebSearchTools=${scalarValue(agentApiRuntime.summary, 'declaredWebSearchTools') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
   console.log(`startupProbe=${scalarValue(agentApiRuntime.summary, 'startupProbe') ?? 'missing'}`);
   console.log(`executionRun=${scalarValue(agentApiRuntime.summary, 'executionRun') ?? 'missing'}`);
   console.log(`executionRunPromotionRequirements=${scalarValue(agentApiRuntime.summary, 'executionRunPromotionRequirements') ?? 'missing'}`);
@@ -114,6 +116,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`serviceEvidenceExplicitToolDeclaration=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclaration') ?? 'missing'}`);
   console.log(`serviceEvidenceExplicitToolDeclarationSource=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
   console.log(`serviceEvidenceDeclaredToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
+  console.log(`serviceEvidenceDeclaredWebSearchToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchToolCount') ?? '0'}`);
+  console.log(`serviceEvidenceDeclaredWebSearchTools=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
 
   const failureReasons = [
     snapshot.executionRuntime.kind !== 'agent_api' ? 'runtime_kind' : null,
@@ -134,6 +138,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') !== 'missing' ? 'service_metadata_package' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'missing' ? 'service_tool_declaration_source' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') !== '0' ? 'service_declared_tool_count' : null,
+    (serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchToolCount') ?? '0') !== '0' ? 'service_declared_web_search_tool_count' : null,
+    (serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none') !== 'none' ? 'service_declared_web_search_tools' : null,
     !agentApiRuntime.summary.includes('startupProbe=never') ? 'startup_probe' : null,
     !agentApiRuntime.summary.includes('executionRun=deferred') ? 'execution_run' : null,
     serviceEvidenceReadiness.status !== 'not_declared' ? 'service_status' : null,

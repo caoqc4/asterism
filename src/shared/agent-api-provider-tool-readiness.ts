@@ -18,6 +18,8 @@ export type AgentApiProviderToolReadiness = {
   toolReadiness: 'declared' | 'not_declared';
 };
 
+const PROVIDER_WEB_SEARCH_TOOL_PATTERN = /(?:^|[._:-])(?:web[_-]?search|web[_-]?fetch|browser|browse|search)(?:$|[._:-])/i;
+
 export type AgentApiProviderToolReadinessServiceEvidence = {
   explicitToolDeclarations?: {
     declaredTools: string[];
@@ -46,6 +48,14 @@ export function agentApiProviderToolReadinessRequirements(): AgentApiProviderToo
   ];
 }
 
+function normalizeDeclaredTools(tools: string[] | undefined): string[] {
+  return (tools ?? []).map((tool) => tool.trim()).filter(Boolean);
+}
+
+function declaredWebSearchTools(tools: string[] | undefined): string[] {
+  return normalizeDeclaredTools(tools).filter((tool) => PROVIDER_WEB_SEARCH_TOOL_PATTERN.test(tool));
+}
+
 export function evaluateAgentApiProviderToolReadinessFromEvidence(
   evidence: AgentApiProviderToolReadinessServiceEvidence,
 ): AgentApiProviderToolReadiness {
@@ -53,6 +63,8 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const satisfiedRequirements: AgentApiProviderToolReadinessRequirement[] = [];
   const metadata = evidence.providerOwnedMetadata;
   const declarations = evidence.explicitToolDeclarations;
+  const normalizedDeclaredTools = normalizeDeclaredTools(declarations?.declaredTools);
+  const webSearchDeclaredTools = declaredWebSearchTools(declarations?.declaredTools);
 
   if (evidence.selectedRuntime?.runtimeKind === 'agent_api' && evidence.selectedRuntime.mode === 'api') {
     satisfiedRequirements.push('selected_api_runtime');
@@ -72,7 +84,7 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
 
   if (
     declarations?.source === 'provider_owned_metadata'
-    && declarations.declaredTools.some((tool) => tool.trim().length > 0)
+    && webSearchDeclaredTools.length > 0
   ) {
     satisfiedRequirements.push('explicit_tool_declaration');
   }
@@ -107,7 +119,9 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
       `providerMetadataPackage=${metadata?.packageName?.trim() || 'missing'}`,
       `explicitToolDeclaration=${satisfiedRequirementSet.has('explicit_tool_declaration') ? 'ready' : 'missing'}`,
       `explicitToolDeclarationSource=${declarations?.source ?? 'missing'}`,
-      `declaredToolCount=${declarations?.declaredTools.filter((tool) => tool.trim().length > 0).length ?? 0}`,
+      `declaredToolCount=${normalizedDeclaredTools.length}`,
+      `declaredWebSearchToolCount=${webSearchDeclaredTools.length}`,
+      `declaredWebSearchTools=${webSearchDeclaredTools.length ? webSearchDeclaredTools.join(',') : 'none'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `providerToolMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),

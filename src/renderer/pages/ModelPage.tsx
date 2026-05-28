@@ -118,6 +118,8 @@ function agentApiProviderToolStatus(summary?: string | null): string | null {
 
 function agentApiProviderToolEvidence(summary?: string | null): {
   declaredToolCount: string | null;
+  declaredWebSearchToolCount: string | null;
+  declaredWebSearchTools: string | null;
   explicitToolDeclarationSource: string | null;
   explicitToolDeclaration: string | null;
   providerMetadataPackage: string | null;
@@ -132,6 +134,8 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   const text = summary ?? '';
   return {
     declaredToolCount: scalarValue(text, 'declaredToolCount'),
+    declaredWebSearchToolCount: scalarValue(text, 'declaredWebSearchToolCount'),
+    declaredWebSearchTools: scalarValue(text, 'declaredWebSearchTools'),
     explicitToolDeclaration: scalarValue(text, 'explicitToolDeclaration'),
     explicitToolDeclarationSource: scalarValue(text, 'explicitToolDeclarationSource'),
     providerMetadataPackage: scalarValue(text, 'providerMetadataPackage'),
@@ -873,6 +877,12 @@ function AgentCliRuntimeSection({
                 )}
                 {apiProviderToolEvidence.declaredToolCount && (
                   <span>{`declaredToolCount=${apiProviderToolEvidence.declaredToolCount}`}</span>
+                )}
+                {apiProviderToolEvidence.declaredWebSearchToolCount && (
+                  <span>{`declaredWebSearchToolCount=${apiProviderToolEvidence.declaredWebSearchToolCount}`}</span>
+                )}
+                {apiProviderToolEvidence.declaredWebSearchTools && (
+                  <span>{`declaredWebSearchTools=${apiProviderToolEvidence.declaredWebSearchTools}`}</span>
                 )}
                 <span>provider tools not implied</span>
               </div>

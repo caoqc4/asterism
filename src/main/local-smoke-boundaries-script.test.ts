@@ -822,11 +822,15 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('providerOwnedMetadata=missing');
     expect(result.output).toContain('providerMetadataPackage=missing');
     expect(result.output).toContain('explicitToolDeclaration=missing');
+    expect(result.output).toContain('declaredWebSearchToolCount=0');
+    expect(result.output).toContain('declaredWebSearchTools=none');
     expect(result.output).toContain('serviceEvidenceSelectedApiRuntime=ready');
     expect(result.output).toContain('serviceEvidenceProviderConfigured=ready');
     expect(result.output).toContain('serviceEvidenceProviderOwnedMetadata=missing');
     expect(result.output).toContain('serviceEvidenceProviderMetadataPackage=missing');
     expect(result.output).toContain('serviceEvidenceExplicitToolDeclaration=missing');
+    expect(result.output).toContain('serviceEvidenceDeclaredWebSearchToolCount=0');
+    expect(result.output).toContain('serviceEvidenceDeclaredWebSearchTools=none');
     expect(result.output).toContain('workspace=unchanged');
   });
 
