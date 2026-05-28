@@ -173,8 +173,10 @@ function compactWebResearchPreparationDetail(
   if (status === 'captured') {
     const sources = readStepKeyValueRaw(output, 'sources');
     const query = readStepKeyValueRaw(output, 'query');
+    const sourceContextIds = readStepKeyValueRaw(output, 'source_context_ids');
     const queryLabel = query ? `；查询：${compactLine(query)}` : '';
-    return `已保存 ${sources && sources !== '0' ? sources : '若干'} 个来源到来源上下文${queryLabel}。`;
+    const evidenceLabel = sourceContextIds ? `；证据：${compactLine(sourceContextIds)}` : '';
+    return `已保存 ${sources && sources !== '0' ? sources : '若干'} 个来源到来源上下文${queryLabel}${evidenceLabel}。`;
   }
   if (status === 'not_needed') {
     return '当前任务没有识别到需要新鲜外部资料。';

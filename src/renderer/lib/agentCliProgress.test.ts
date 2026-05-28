@@ -103,6 +103,7 @@ describe('deriveAgentCliProgress', () => {
             'status=captured',
             'capability_mode=native',
             'sources=3',
+            'source_context_ids=source_context_1,source_context_2,source_context_3',
             'query=Codex CLI docs',
             'reason=Taskplane captured web research into Source Context before handing the task to the selected Agent CLI.',
           ].join('\n'),
@@ -112,7 +113,7 @@ describe('deriveAgentCliProgress', () => {
 
     expect(progress.state).toBe('researching');
     expect(progress.label).toContain('联网调研来源');
-    expect(progress.detail).toBe('已保存 3 个来源到来源上下文；查询：Codex CLI docs。');
+    expect(progress.detail).toBe('已保存 3 个来源到来源上下文；查询：Codex CLI docs；证据：source_context_1,source_context_2,source_context_3。');
   });
 
   it('identifies web research source persistence failures as unsaved evidence', () => {

@@ -836,6 +836,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('Native CLI capability-tagged web/search events');
     expect(capabilities?.evidence.join(' ')).toContain('fallback copy now uses the selected runtime native web/search readiness');
     expect(capabilities?.evidence.join(' ')).toContain('unverified native search');
+    expect(capabilities?.evidence.join(' ')).toContain('Source Context batch id and persisted source_context_ids');
+    expect(capabilities?.evidence.join(' ')).toContain('renderer progress surfaces those evidence ids');
     expect(capabilities?.evidence.join(' ')).toContain('manual Agent CLI native web/search smoke');
     expect(capabilities?.evidence.join(' ')).toContain('cli=not-called, network=not-called, and workspace=unchanged');
     expect(capabilities?.evidence.join(' ')).toContain('Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-27');

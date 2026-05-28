@@ -640,7 +640,10 @@ describe('AgentCliRunService', () => {
     const taskService = buildTaskService(task);
     vi.mocked(taskService.createSourceContext).mockImplementation(async (input) => {
       createdSources.push(input);
-      return input as never;
+      return {
+        ...input,
+        id: `source_context_${createdSources.length}`,
+      } as never;
     });
     vi.mocked(taskService.getDetail).mockImplementation(async () => ({
       ...task,
@@ -738,6 +741,14 @@ describe('AgentCliRunService', () => {
       status: 'completed',
       title: 'Agent CLI 联网调研准备',
       output: expect.stringContaining('status=captured'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('batch_id=web-research:task_1:'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('source_context_ids=source_context_1,source_context_2'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('Confirmed source previews:'),

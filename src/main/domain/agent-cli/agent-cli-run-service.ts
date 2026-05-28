@@ -617,9 +617,14 @@ export class AgentCliRunService {
       taskId: params.task.id,
     });
     let persistedSourceCount = 0;
+    const persistedSourceIds: string[] = [];
     for (const input of createdInputs) {
       const source = await Promise.resolve(this.taskService.createSourceContext(input)).catch(() => null);
-      if (source) persistedSourceCount += 1;
+      if (source) {
+        persistedSourceCount += 1;
+        const sourceId = readCreatedSourceContextId(source);
+        if (sourceId) persistedSourceIds.push(sourceId);
+      }
     }
 
     if (persistedSourceCount === 0) {
@@ -639,7 +644,9 @@ export class AgentCliRunService {
 
     return {
       preparation: {
+        batchId,
         capabilityMode: params.capabilityMode,
+        persistedSourceIds,
         query,
         reason: failedSourceCount > 0
           ? `Taskplane captured ${persistedSourceCount}/${createdInputs.length} web research source context item(s) before handing the task to the selected Agent CLI.`
@@ -1199,7 +1206,9 @@ type WebResearchResult = {
 };
 
 type AgentCliWebResearchPreparation = {
+  batchId?: string | null;
   capabilityMode: AgentCliCapabilityMode;
+  persistedSourceIds?: string[];
   query: string | null;
   reason: string;
   sourceCount: number;
@@ -1224,9 +1233,17 @@ function formatAgentCliWebResearchPreparation(preparation: AgentCliWebResearchPr
     `status=${preparation.status}`,
     `capability_mode=${preparation.capabilityMode}`,
     `sources=${preparation.sourceCount}`,
+    preparation.batchId ? `batch_id=${preparation.batchId}` : null,
+    preparation.persistedSourceIds?.length ? `source_context_ids=${preparation.persistedSourceIds.join(',')}` : null,
     preparation.query ? `query=${truncateAgentCliContextLine(preparation.query, 600)}` : null,
     `reason=${preparation.reason}`,
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function readCreatedSourceContextId(source: unknown): string | null {
+  if (!isRecord(source) || typeof source.id !== 'string') return null;
+  const id = source.id.trim();
+  return id || null;
 }
 
 function nativeWebSearchFallbackReason(capabilities: AgentRuntimeAdapterCapabilities): string {
