@@ -180,6 +180,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('patchArtifactId=artifact_patch_1');
     expect(partial.summary).toContain('decisionArtifactId=artifact_patch_1');
     expect(partial.summary).toContain('preflightArtifactId=artifact_patch_1');
+    expect(partial.summary).toContain('decisionArtifactEvidenceChain=ready');
     expect(partial.summary).toContain('artifactEvidenceChain=ready');
     expect(partial.summary).toContain('promotionDecisionId=decision_patch_1');
     expect(partial.summary).toContain('promotionCheckpointId=checkpoint_patch_1');
@@ -253,6 +254,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('requirements=8/8');
     expect(ready.summary).toContain('promotionSatisfiedRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
     expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('decisionArtifactEvidenceChain=ready');
     expect(ready.summary).toContain('artifactEvidenceChain=ready');
     expect(ready.summary).toContain('sameRunEvidenceChain=ready');
     expect(ready.summary).toContain('operatorId=operator_1');
@@ -512,6 +514,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness).toMatchObject({
       ready: false,
       missingRequirements: [
+        'promotion_decision',
         'promotion_preflight',
         'same_run_evidence_chain',
       ],
@@ -519,7 +522,9 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('patchArtifactId=artifact_patch_1');
     expect(readiness.summary).toContain('decisionArtifactId=artifact_other');
     expect(readiness.summary).toContain('preflightArtifactId=artifact_patch_1');
+    expect(readiness.summary).toContain('decisionArtifactEvidenceChain=missing');
     expect(readiness.summary).toContain('artifactEvidenceChain=missing');
+    expect(readiness.summary).toContain('promotionDecision=missing');
     expect(readiness.summary).toContain('promotionPreflight=missing');
   });
 

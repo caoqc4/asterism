@@ -199,7 +199,12 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && Boolean(promotionCheckpointId)
     && Boolean(decisionArtifactId)
     && Boolean(decisionRunId)
+    && Boolean(patchArtifactId)
+    && decisionArtifactId === patchArtifactId
   );
+  const decisionArtifactEvidenceChainReady = Boolean(patchArtifactId)
+    && Boolean(decisionArtifactId)
+    && patchArtifactId === decisionArtifactId;
   const artifactEvidenceChainReady = Boolean(patchArtifactId)
     && Boolean(decisionArtifactId)
     && Boolean(preflightArtifactId)
@@ -275,6 +280,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `patchArtifactId=${patchArtifactId || 'missing'}`,
       `decisionArtifactId=${decisionArtifactId || 'missing'}`,
       `preflightArtifactId=${preflightArtifactId || 'missing'}`,
+      `decisionArtifactEvidenceChain=${decisionArtifactEvidenceChainReady ? 'ready' : 'missing'}`,
       `artifactEvidenceChain=${artifactEvidenceChainReady ? 'ready' : 'missing'}`,
       `promotionDecisionId=${evidence.promotionDecision?.decisionId?.trim() || 'missing'}`,
       `promotionCheckpointId=${promotionCheckpointId || 'missing'}`,

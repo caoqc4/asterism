@@ -893,6 +893,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskId, patchArtifact.taskId, promotionDecision.taskId, promotionPreflight.taskId, and postApplyRunEvidence.taskId must all match');
     expect(taskFiles?.evidence.join(' ')).toContain('promotion Decision checkpoint and promotion preflight checkpoint as one checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('patch artifact, promotion Decision artifact, and promotion preflight artifact as one artifactEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('approved promotion Decision artifact to match the reviewed patch artifact');
+    expect(taskFiles?.evidence.join(' ')).toContain('cannot appear as a satisfied promotion Decision');
     expect(taskFiles?.evidence.join(' ')).toContain('explicit operator apply as an operatorApplyEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('same target task, same run, and same checkpoint');
     expect(taskFiles?.evidence.join(' ')).toContain('expected patch files and post-apply touched files as one touchedFileEvidenceChain');
@@ -913,6 +915,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeTask');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeTaskEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('decisionArtifactEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('artifactEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyEvidenceChain');
@@ -947,7 +950,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('promotionRequirements, promotionSatisfiedRequirements, promotionMissingRequirements, missingRequirements');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskIdentity, targetTaskEvidenceChain, checkpointEvidenceChain');
-    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, artifactEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyTask, operatorApplyRun, operatorApplyCheckpoint, operatorApplyEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionCheckpointId, preflightCheckpointId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, postApplyTask');
@@ -961,7 +964,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('service-evidence=3/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain=missing');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeTaskEvidenceChain=missing');
-    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, artifactEvidenceChain, promotionDecisionId');
+    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain, promotionDecisionId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, targetTaskEvidenceChain, checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('expectedFileCount, expectedFiles, expectedFileEvidenceChain, touchedFileCount, filePathSafetyChain, and touchedFileEvidenceChain identity evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('selected_runtime_contract, target_task_identity, explicit_operator_apply, same_run_evidence_chain, and post_apply_run_evidence missing');

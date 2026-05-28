@@ -103,6 +103,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidencePatchArtifactId=${scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionArtifactId=${scalarValue(serviceEvidencePartial.summary, 'decisionArtifactId') ?? 'missing'}`);
   console.log(`serviceEvidencePreflightArtifactId=${scalarValue(serviceEvidencePartial.summary, 'preflightArtifactId') ?? 'missing'}`);
+  console.log(`serviceEvidenceDecisionArtifactEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'decisionArtifactEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceArtifactEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'artifactEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidencePromotionDecisionId=${scalarValue(serviceEvidencePartial.summary, 'promotionDecisionId') ?? 'missing'}`);
   console.log(`serviceEvidenceTargetTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
@@ -139,6 +140,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') !== 'artifact_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'decisionArtifactId') !== 'artifact_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'preflightArtifactId') !== 'artifact_patch_1'
+    || scalarValue(serviceEvidencePartial.summary, 'decisionArtifactEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'artifactEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'promotionDecisionId') !== 'decision_patch_1'
     || (scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing') !== 'missing'
