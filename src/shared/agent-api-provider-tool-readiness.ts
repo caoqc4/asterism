@@ -110,7 +110,6 @@ function declaredWebSearchTools(tools: string[] | undefined): string[] {
     const segments = normalizedTool.split('_').filter(Boolean);
     const last = segments.at(-1);
     const previous = segments.at(-2);
-    if (last === 'browse' || last === 'browser') return true;
     return previous === 'web' && (last === 'search' || last === 'fetch');
   });
 }

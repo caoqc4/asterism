@@ -216,6 +216,8 @@ describe('Agent API provider tool readiness', () => {
           'browser',
           'browse',
           'openai:web_search',
+          'task_browser',
+          'vendor:browse',
           'file_search',
         ],
         packageName: '@openai/agents',
@@ -239,7 +241,7 @@ describe('Agent API provider tool readiness', () => {
       toolReadiness: 'declared',
       missingRequirements: [],
     });
-    expect(readiness.summary).toContain('declaredToolCount=6');
+    expect(readiness.summary).toContain('declaredToolCount=8');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=5');
     expect(readiness.summary).toContain('declaredWebSearchTools=web_search,web.fetch,browser,browse,openai:web_search');
   });
@@ -254,6 +256,8 @@ describe('Agent API provider tool readiness', () => {
           'search_web',
           'web_fetcher',
           'browser_cache',
+          'task_browser',
+          'vendor:browse',
           'openai:web_search',
         ],
         packageName: '@openai/agents',
@@ -277,7 +281,7 @@ describe('Agent API provider tool readiness', () => {
       toolReadiness: 'declared',
       missingRequirements: [],
     });
-    expect(readiness.summary).toContain('declaredToolCount=6');
+    expect(readiness.summary).toContain('declaredToolCount=8');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
     expect(readiness.summary).toContain('declaredWebSearchTools=openai:web_search');
   });
