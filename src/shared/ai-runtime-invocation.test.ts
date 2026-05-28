@@ -778,6 +778,57 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('proposalCard=missing');
   });
 
+  it('blocks Agent API decomposition promotion when blank subtask titles are filtered out of identity evidence', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [
+        buildSubtaskDraft(),
+        {
+          acceptanceCriteria: '补齐验收。',
+          dependency: null,
+          summary: '缺少标题。',
+          title: '   ',
+        },
+      ],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 2,
+        subtaskTitles: ['需求与范围确认', ''],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalSubtaskCount=2');
+    expect(mismatch.summary).toContain('applyPlanSubtaskCount=2');
+    expect(mismatch.summary).toContain('proposalSubtaskEvidenceChain=ready');
+    expect(mismatch.summary).toContain('proposalSubtaskTitles=需求与范围确认');
+    expect(mismatch.summary).toContain('applyPlanSubtaskTitles=需求与范围确认');
+    expect(mismatch.summary).toContain('proposalSubtaskTitleEvidenceChain=missing');
+    expect(mismatch.summary).toContain('applyPlanSubtaskTitleEvidenceChain=missing');
+    expect(mismatch.summary).toContain('proposalSubtaskUniqueChain=missing');
+    expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
+    expect(mismatch.summary).toContain('proposalCard=missing');
+  });
+
   it('wraps decision drafts with API-runtime provenance', () => {
     const invocation = buildApiRuntimeDecisionDraftInvocation({
       draft: {

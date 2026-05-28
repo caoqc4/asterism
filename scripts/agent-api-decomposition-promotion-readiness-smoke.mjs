@@ -114,6 +114,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceProposalSubtaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskTitles=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitles') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanSubtaskTitles=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitles') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalSubtaskTitleEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitleEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanSubtaskTitleEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitleEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskUniqueChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskUniqueChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTask=${scalarValue(serviceEvidencePartial.summary, 'parentTask') ?? 'missing'}`);
@@ -157,6 +159,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitles') !== 'Review Agent API decomposition promotion boundary'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitles') !== 'Review Agent API decomposition promotion boundary'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitleEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitleEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskUniqueChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'parentTask') !== 'task_project'
