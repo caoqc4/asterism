@@ -396,6 +396,9 @@ export class RunService {
       runId,
       task: params.task,
     });
+    const reviewedPatchApplyBoundaryReady = await this.hasReviewedPatchApplyBoundaryEvidence(
+      phase === 'post_run' ? runId : null,
+    );
     const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       contextManifestSummary: params.capabilities?.summary ?? null,
       contextReadinessStep: {
@@ -416,6 +419,12 @@ export class RunService {
             providerConfigured: true,
             startupProbe: 'not_called',
             status: 'ready',
+          }
+        : null,
+      reviewedPatchApplyBoundary: reviewedPatchApplyBoundaryReady
+        ? {
+            explicitApplyOnly: true,
+            promotionPreflightReady: true,
           }
         : null,
       postStepVerification: phase === 'post_run'
@@ -464,6 +473,16 @@ export class RunService {
       input: params.capabilities?.summary ?? null,
       output: readiness.summary,
     });
+  }
+
+  private async hasReviewedPatchApplyBoundaryEvidence(runId: string | null): Promise<boolean> {
+    if (!runId || !this.sandboxPatchPromotionRepository) return false;
+    try {
+      const promotions = await this.sandboxPatchPromotionRepository.listForRun(runId);
+      return promotions.some((promotion) => promotion.status !== 'blocked');
+    } catch {
+      return false;
+    }
   }
 
   async continuePausedRun(runId: string): Promise<RunRecord> {

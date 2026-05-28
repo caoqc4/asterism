@@ -688,6 +688,12 @@ describe('RunService', () => {
     const agentSessionRepository = {
       listForRun: vi.fn().mockResolvedValue([]),
     };
+    const sandboxPatchPromotionRepository = {
+      listForRun: vi.fn().mockResolvedValue([{
+        checkpointId: 'run_checkpoint_patch_1',
+        status: 'applied',
+      }]),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -702,6 +708,7 @@ describe('RunService', () => {
       runVerificationRepository as never,
       undefined,
       workHabitService as never,
+      sandboxPatchPromotionRepository as never,
     );
 
     const result = await service.trigger({
@@ -830,13 +837,14 @@ describe('RunService', () => {
         kind: 'plan',
         status: 'completed',
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('missingRequirements=task_memory_guidance,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary'),
+        output: expect.stringContaining('missingRequirements=task_memory_guidance,run_goal_contract,write_intent_extraction'),
       }),
     );
+    expect(sandboxPatchPromotionRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.not.stringContaining('post_step_verification,run_evidence_persistence'),
+        output: expect.not.stringContaining('reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(

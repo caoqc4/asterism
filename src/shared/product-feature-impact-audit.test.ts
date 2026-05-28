@@ -181,6 +181,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Completed retained API Runtime / Agent API-like RunService runs now persist a post-run Agent API execution promotion readiness Run step');
     expect(rightPanel?.evidence.join(' ')).toContain('adding post-step verification and terminal Run evidence persistence');
     expect(rightPanel?.evidence.join(' ')).toContain('keeping Write Intent extraction and reviewed-patch apply boundary closed');
+    expect(rightPanel?.evidence.join(' ')).toContain('Post-run Agent API execution promotion readiness now reads same-run sandbox patch promotion records');
+    expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionRepository.listForRun');
+    expect(rightPanel?.evidence.join(' ')).toContain('real non-blocked promotion evidence exists');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run promotion requirements and missing lists through evaluateAgentApiExecutionPromotionReadinessFromEvidence');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports aligned with service-evidence readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');
