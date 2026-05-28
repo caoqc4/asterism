@@ -820,6 +820,7 @@ describe('local smoke script default boundaries', () => {
     }
     expect(result.output).toContain('serviceEvidenceExpectedProposalId=project_decomposition:task_project');
     expect(result.output).toContain('serviceEvidenceProposalIdEvidenceChain=ready');
+    expect(result.output).toContain('serviceEvidenceProposalSubtaskUniqueChain=ready');
   });
 
   it('keeps decomposition create-many apply plan readiness smoke read-only and build-gated by default', () => {

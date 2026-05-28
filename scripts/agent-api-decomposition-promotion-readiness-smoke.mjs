@@ -108,6 +108,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceProposalSubtaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskTitles=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitles') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanSubtaskTitles=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitles') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalSubtaskUniqueChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskUniqueChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTask=${scalarValue(serviceEvidencePartial.summary, 'parentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanParentTask=${scalarValue(serviceEvidencePartial.summary, 'applyPlanParentTask') ?? 'missing'}`);
@@ -137,6 +138,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitles') !== 'Review Agent API decomposition promotion boundary'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitles') !== 'Review Agent API decomposition promotion boundary'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskUniqueChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'parentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanParentTask') !== 'task_project'

@@ -196,6 +196,7 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('proposalSubtaskEvidenceChain=ready');
     expect(partial.summary).toContain('proposalSubtaskTitles=需求与范围确认');
     expect(partial.summary).toContain('applyPlanSubtaskTitles=需求与范围确认');
+    expect(partial.summary).toContain('proposalSubtaskUniqueChain=ready');
     expect(partial.summary).toContain('proposalSubtaskIdentityChain=ready');
     expect(partial.summary).toContain('subtaskCount=1');
     expect(partial.summary).toContain('evidenceRunId=run_cli_decomposition');
@@ -243,6 +244,7 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('proposalSubtaskEvidenceChain=ready');
     expect(ready.summary).toContain('proposalSubtaskTitles=需求与范围确认');
     expect(ready.summary).toContain('applyPlanSubtaskTitles=需求与范围确认');
+    expect(ready.summary).toContain('proposalSubtaskUniqueChain=ready');
     expect(ready.summary).toContain('proposalSubtaskIdentityChain=ready');
     expect(ready.summary).toContain('parentTask=task_project');
     expect(ready.summary).toContain('applyPlanParentTask=task_project');
@@ -428,6 +430,47 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('proposalSubtaskEvidenceChain=ready');
     expect(mismatch.summary).toContain('proposalSubtaskTitles=Different child task');
     expect(mismatch.summary).toContain('applyPlanSubtaskTitles=需求与范围确认');
+    expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
+    expect(mismatch.summary).toContain('proposalCard=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when repeated subtask titles make identity ambiguous', () => {
+    const duplicateDraft = {
+      ...buildSubtaskDraft(),
+      title: '需求与范围确认',
+    };
+    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft(), duplicateDraft],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 2,
+        subtaskTitles: ['需求与范围确认', '需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalSubtaskEvidenceChain=ready');
+    expect(mismatch.summary).toContain('proposalSubtaskTitles=需求与范围确认|需求与范围确认');
+    expect(mismatch.summary).toContain('applyPlanSubtaskTitles=需求与范围确认|需求与范围确认');
+    expect(mismatch.summary).toContain('proposalSubtaskUniqueChain=missing');
     expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
     expect(mismatch.summary).toContain('proposalCard=missing');
   });

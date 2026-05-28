@@ -371,9 +371,15 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const proposalSubtaskEvidenceChainReady = proposalSubtaskCount !== null
     && proposalSubtaskCount > 0
     && proposalSubtaskCount === applyPlanSubtaskCount;
+  const proposalSubtaskUniqueChainReady = (
+    titlesAreUnique(proposalSubtaskTitles)
+    && titlesAreUnique(applyPlanSubtaskTitles)
+    && proposalSubtaskTitles.length === applyPlanSubtaskTitles.length
+  );
   const proposalSubtaskIdentityChainReady = applyPlanSubtaskTitles.length > 0
     && proposalSubtaskTitles.length === applyPlanSubtaskTitles.length
-    && proposalSubtaskTitles.every((title, index) => title === applyPlanSubtaskTitles[index]);
+    && proposalSubtaskTitles.every((title, index) => title === applyPlanSubtaskTitles[index])
+    && proposalSubtaskUniqueChainReady;
   const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
     ? applyPlan.timeline.payload.confirmationBoundary
     : 'missing';
@@ -449,6 +455,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `proposalSubtaskEvidenceChain=${proposalSubtaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskTitles=${proposalSubtaskTitles.length ? proposalSubtaskTitles.join('|') : 'missing'}`,
       `applyPlanSubtaskTitles=${applyPlanSubtaskTitles.length ? applyPlanSubtaskTitles.join('|') : 'missing'}`,
+      `proposalSubtaskUniqueChain=${proposalSubtaskUniqueChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskIdentityChain=${proposalSubtaskIdentityChainReady ? 'ready' : 'missing'}`,
       `subtaskCount=${applyPlanSubtaskCount}`,
       `evidenceRunId=${applyPlan?.input.evidenceRunId?.trim() || 'missing'}`,
@@ -467,6 +474,10 @@ function normalizedSubtaskTitles(titles: readonly (string | null | undefined)[])
   return titles
     .map((title) => title?.trim().replace(/\s+/g, ' ') ?? '')
     .filter(Boolean);
+}
+
+function titlesAreUnique(titles: readonly string[]): boolean {
+  return titles.length > 0 && new Set(titles).size === titles.length;
 }
 
 export function buildApiRuntimeDecisionDraftInvocation(params: {
