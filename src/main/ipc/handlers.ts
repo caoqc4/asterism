@@ -1102,6 +1102,7 @@ export function registerIpcHandlers(): void {
         proposalId: `project_decomposition:${input.taskId}`,
         status: 'ready',
         subtaskCount: decomposition.subtasks.length,
+        subtaskTitles: decomposition.subtasks.map((subtask) => subtask.title),
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',

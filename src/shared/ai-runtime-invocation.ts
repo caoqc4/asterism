@@ -105,6 +105,7 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
     proposalId?: string | null;
     status: 'missing' | 'ready';
     subtaskCount?: number | null;
+    subtaskTitles?: string[] | null;
   } | null;
   selectedRuntimeContract?: {
     invocationLayer: RuntimeInvocationLayer;
@@ -353,6 +354,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && Boolean(expectedProposalId)
     && proposalId === expectedProposalId;
   const applyPlanSubtaskCount = applyPlan?.input.subtasks.length ?? 0;
+  const applyPlanSubtaskTitles = normalizedSubtaskTitles(applyPlan?.input.subtasks.map((subtask) => subtask.title) ?? []);
+  const proposalSubtaskTitles = normalizedSubtaskTitles(evidence.reversibleProposalCard?.subtaskTitles ?? []);
   const proposalSubtaskCount = typeof evidence.reversibleProposalCard?.subtaskCount === 'number'
     && Number.isFinite(evidence.reversibleProposalCard.subtaskCount)
     ? evidence.reversibleProposalCard.subtaskCount
@@ -364,6 +367,9 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const proposalSubtaskEvidenceChainReady = proposalSubtaskCount !== null
     && proposalSubtaskCount > 0
     && proposalSubtaskCount === applyPlanSubtaskCount;
+  const proposalSubtaskIdentityChainReady = applyPlanSubtaskTitles.length > 0
+    && proposalSubtaskTitles.length === applyPlanSubtaskTitles.length
+    && proposalSubtaskTitles.every((title, index) => title === applyPlanSubtaskTitles[index]);
   const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
     ? applyPlan.timeline.payload.confirmationBoundary
     : 'missing';
@@ -373,6 +379,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && proposalIdEvidenceChainReady
     && proposalTaskEvidenceChainReady
     && proposalSubtaskEvidenceChainReady
+    && proposalSubtaskIdentityChainReady
   );
 
   if (
@@ -436,6 +443,9 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `proposalSubtaskCount=${proposalSubtaskCount ?? 'missing'}`,
       `applyPlanSubtaskCount=${applyPlanSubtaskCount}`,
       `proposalSubtaskEvidenceChain=${proposalSubtaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `proposalSubtaskTitles=${proposalSubtaskTitles.length ? proposalSubtaskTitles.join('|') : 'missing'}`,
+      `applyPlanSubtaskTitles=${applyPlanSubtaskTitles.length ? applyPlanSubtaskTitles.join('|') : 'missing'}`,
+      `proposalSubtaskIdentityChain=${proposalSubtaskIdentityChainReady ? 'ready' : 'missing'}`,
       `subtaskCount=${applyPlanSubtaskCount}`,
       `evidenceRunId=${applyPlan?.input.evidenceRunId?.trim() || 'missing'}`,
       `confirmationBoundary=${confirmationBoundary}`,
@@ -447,6 +457,12 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),
   };
+}
+
+function normalizedSubtaskTitles(titles: readonly (string | null | undefined)[]): string[] {
+  return titles
+    .map((title) => title?.trim().replace(/\s+/g, ' ') ?? '')
+    .filter(Boolean);
 }
 
 export function buildApiRuntimeDecisionDraftInvocation(params: {

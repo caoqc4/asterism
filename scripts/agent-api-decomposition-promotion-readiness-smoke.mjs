@@ -7,6 +7,10 @@ import { pathToFileURL } from 'node:url';
 const root = process.cwd();
 const invocationModulePath = path.join(root, 'dist-electron', 'shared', 'ai-runtime-invocation.js');
 const applyPlanModulePath = path.join(root, 'dist-electron', 'shared', 'taskplane-writeback-apply-plan.js');
+const sourceModulePaths = [
+  path.join(root, 'src', 'shared', 'ai-runtime-invocation.ts'),
+  path.join(root, 'src', 'shared', 'taskplane-writeback-apply-plan.ts'),
+];
 
 export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log('Agent API decomposition promotion readiness smoke');
@@ -17,7 +21,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log('promotionInProduct=deferred');
 
   const missingModules = [invocationModulePath, applyPlanModulePath].filter((modulePath) => !fs.existsSync(modulePath));
-  if (missingModules.length > 0) {
+  if (missingModules.length > 0 || sourceIsNewerThanBuild()) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -73,6 +77,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
       proposalId: 'project_decomposition:task_project',
       status: 'ready',
       subtaskCount: 1,
+      subtaskTitles: ['Review Agent API decomposition promotion boundary'],
     },
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
@@ -101,6 +106,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceProposalSubtaskCount=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskCount') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanSubtaskCount=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskCount') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalSubtaskTitles=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitles') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanSubtaskTitles=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitles') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalSubtaskIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTask=${scalarValue(serviceEvidencePartial.summary, 'parentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanParentTask=${scalarValue(serviceEvidencePartial.summary, 'applyPlanParentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'parentTaskEvidenceChain') ?? 'missing'}`);
@@ -127,6 +135,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskCount') !== '1'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskCount') !== '1'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitles') !== 'Review Agent API decomposition promotion boundary'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitles') !== 'Review Agent API decomposition promotion boundary'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'parentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanParentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'parentTaskEvidenceChain') !== 'ready'
@@ -158,6 +169,17 @@ function buildSubtaskDraft() {
     summary: 'Prepare one reversible child task draft for promotion-readiness evidence.',
     title: 'Review Agent API decomposition promotion boundary',
   };
+}
+
+function sourceIsNewerThanBuild() {
+  const buildModulePaths = [invocationModulePath, applyPlanModulePath];
+  if (buildModulePaths.some((modulePath) => !fs.existsSync(modulePath))) {
+    return false;
+  }
+  const oldestBuildTime = Math.min(...buildModulePaths.map((modulePath) => fs.statSync(modulePath).mtimeMs));
+  return sourceModulePaths
+    .filter((modulePath) => fs.existsSync(modulePath))
+    .some((modulePath) => fs.statSync(modulePath).mtimeMs > oldestBuildTime);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

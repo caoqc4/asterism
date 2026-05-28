@@ -153,6 +153,9 @@ export function projectDecompositionPromotionEvidenceChips(
     'proposalSubtaskCount',
     'applyPlanSubtaskCount',
     'proposalSubtaskEvidenceChain',
+    'proposalSubtaskTitles',
+    'applyPlanSubtaskTitles',
+    'proposalSubtaskIdentityChain',
     'parentTask',
     'applyPlanParentTask',
     'parentTaskEvidenceChain',
@@ -2963,6 +2966,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
           proposalId: `project_decomposition:${project.id}`,
           status: 'ready',
           subtaskCount: draft.subtasks.length,
+          subtaskTitles: draft.subtasks.map((subtask) => subtask.title),
         },
         selectedRuntimeContract: draft.invocation
           ? {
