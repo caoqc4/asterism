@@ -722,6 +722,7 @@ try {
 
   const timelineFailedTriggerCalls = [];
   const timelineFailedEvents = [];
+  let timelineFailedWriteAttempts = 0;
   const timelineFailedRun = {
     ...run,
     id: 'run_scheduled_event_timeline_failed_smoke',
@@ -772,7 +773,10 @@ try {
     {
       recordTimelineEvent: async (input) => {
         timelineFailedEvents.push(input);
-        throw new Error('Timeline write failed / safely');
+        timelineFailedWriteAttempts += 1;
+        if (timelineFailedWriteAttempts === 1) {
+          throw new Error('Timeline write failed / safely');
+        }
       },
     },
     {
@@ -795,9 +799,13 @@ try {
   assert(timelineFailedResult.summary.includes(`startedRunIds=${timelineFailedRun.id}`), 'timeline-failed sweep summary did not preserve started run id evidence');
   assert(timelineFailedResult.summary.includes(`terminalRunEvidenceMissingRunIds=${timelineFailedRun.id}`), 'timeline-failed sweep summary did not preserve terminal evidence status');
   assert(timelineFailedResult.summary.includes('error=Timeline evidence failed: Timeline write failed - safely'), 'timeline-failed sweep summary did not preserve sanitized timeline error evidence');
+  assert(timelineFailedResult.summary.includes('timelineFailureDecisionProposals=proposed'), 'timeline-failed sweep summary did not expose timeline-failure Decision proposal evidence');
   assert(timelineFailedService.getStatus().lastScheduledEventAgentSweepSummary === timelineFailedResult.summary, 'timeline-failed sweep did not persist the failed sweep summary into scheduler status');
   assert(timelineFailedTriggerCalls.length === 1, 'timeline-failed sweep did not start exactly one bounded run before timeline failure');
-  assert(timelineFailedEvents.length === 1, 'timeline-failed sweep did not attempt to record timeline evidence exactly once');
+  assert(timelineFailedEvents.length === 2, 'timeline-failed sweep did not record the timeline-failure Decision proposal after the failed trigger event');
+  assert(timelineFailedEvents[1].type === 'panel.scheduler_decision_proposed', 'timeline-failed sweep did not record scheduler Decision proposal evidence');
+  assert(timelineFailedEvents[1].payload.evidenceRunId === timelineFailedRun.id, 'timeline-failed Decision proposal did not preserve started run evidence id');
+  assert(timelineFailedEvents[1].payload.title === '确认定时/事件 Agent timeline 证据写入失败后的下一步', 'timeline-failed Decision proposal did not preserve review title');
 
   const sourceFailedTriggerCalls = [];
   const sourceFailedTimelineEvents = [];
@@ -1145,6 +1153,7 @@ try {
     `timelineFailedTriggerRunEvidenceStatus=${timelineFailedResult.triggerRunEvidenceStatus}`,
     `timelineFailedTerminalRunEvidenceMissingRunIds=${timelineFailedResult.terminalRunEvidenceMissingRunIds.join(',') || 'none'}`,
     `timelineFailedSweepSummary=${timelineFailedResult.summary}`,
+    `timelineFailedDecisionProposalEvents=${timelineFailedEvents.filter((event) => event.type === 'panel.scheduler_decision_proposed').length}`,
     `sourceFailedStatus=${sourceFailedResult.status}`,
     `sourceFailedSkipReason=${sourceFailedResult.skipReason}`,
     `sourceFailedTriggerRunEvidenceStatus=${sourceFailedResult.triggerRunEvidenceStatus}`,
@@ -1197,6 +1206,7 @@ try {
     'timelineFailedNotBlockedEvidence=passed',
     'timelineFailedTriggerRunEvidence=recorded',
     'timelineFailedSweepSummaryEvidence=recorded',
+    'timelineFailedDecisionProposalEvidence=recorded',
     'sourceFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepRecoveryEvidence=passed',
     'cronSoakRunLimitEvidence=passed',

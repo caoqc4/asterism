@@ -378,9 +378,12 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('timelineFailedTriggerRunEvidenceStatus=');
     expect(script).toContain('timelineFailedTerminalRunEvidenceMissingRunIds=');
     expect(script).toContain('timelineFailedSweepSummary=');
+    expect(script).toContain('timelineFailedDecisionProposalEvents=');
     expect(script).toContain('timelineFailedStartedRunEvidence=recorded');
     expect(script).toContain('timelineFailedTriggerRunEvidence=recorded');
     expect(script).toContain('timelineFailedSweepSummaryEvidence=recorded');
+    expect(script).toContain('timelineFailedDecisionProposalEvidence=recorded');
+    expect(script).toContain('timelineFailureDecisionProposals=proposed');
     expect(script).toContain('Timeline write failed - safely');
     expect(script).toContain('sourceFailedStatus=');
     expect(script).toContain('sourceFailedSkipReason=');

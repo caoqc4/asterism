@@ -551,6 +551,13 @@ export class SchedulerService {
             summary: `sweepFailureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(proposalError)}`,
           }))
         : null;
+      const timelineFailureDecisionProposal = failedTask && failedPlan && failedRun
+        ? await this.proposeScheduledEventTimelineFailureDecision(failedTask, failedPlan, failedRun, errorMessage, now)
+          .catch((proposalError: unknown) => ({
+            status: 'failed' as const,
+            summary: `timelineFailureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(proposalError)}`,
+          }))
+        : null;
       const summary = [
         `scheduledEventAgentSweep=${kind}`,
         'status=skipped',
@@ -567,6 +574,9 @@ export class SchedulerService {
         sweepFailureDecisionProposal
           ? `sweepFailureDecisionProposals=${sweepFailureDecisionProposal.status}`
           : 'sweepFailureDecisionProposals=not_required',
+        timelineFailureDecisionProposal
+          ? `timelineFailureDecisionProposals=${timelineFailureDecisionProposal.status}`
+          : 'timelineFailureDecisionProposals=not_required',
         `triggerRunEvidenceStatus=${startedRunIds.length ? 'pending_terminal_run_evidence' : 'not_started'}`,
       ].join(' / ');
       this.lastScheduledEventAgentSweepAt = now.toISOString();
@@ -882,6 +892,42 @@ export class SchedulerService {
         `Scheduled/event Agent sweep failed before a Run record was returned for task ${task.id}.`,
         `Sweep error: ${errorMessage}.`,
         'Taskplane should confirm whether to pause automation or repair the scheduler trigger path before more background work continues.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
+    });
+  }
+
+  private async proposeScheduledEventTimelineFailureDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    run: RunRecord,
+    errorMessage: string,
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent timeline 证据写入失败后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'timelineFailureDecisionProposal=skipped_existing',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      evidenceRunId: run.id,
+      options: [
+        '暂停自动触发并修复 timeline 证据写入',
+        '保留已启动 Run 并人工补录证据',
+        '等待 Run 终态后再人工复核',
+      ],
+      proposedOutcome: '暂停自动触发并修复 timeline 证据写入',
+      rationale: [
+        `Scheduled/event Agent started run ${run.id}, but timeline evidence failed for task ${task.id}.`,
+        `Timeline error: ${errorMessage}.`,
+        'Taskplane should confirm how to preserve recovery evidence before more background work continues.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
       standingApprovalPolicyId: plan.policy?.id ?? null,

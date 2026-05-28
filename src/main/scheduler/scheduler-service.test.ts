@@ -1587,8 +1587,95 @@ describe('SchedulerService', () => {
     expect(failedSweep.summary).toContain('terminalRunEvidenceMissingRunIds=run_timeline_failure_sweep');
     expect(failedSweep.summary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
     expect(failedSweep.summary).toContain('error=Timeline evidence failed: Timeline write failed - safely');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=proposed');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_timeline_failure_sweep',
+        proposedOutcome: '暂停自动触发并修复 timeline 证据写入',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent timeline 证据写入失败后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate same-day scheduled/event timeline failure Decision proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_timeline_failure_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent timeline 证据写入失败后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_timeline_failure_dedupe',
+        taskId: 'task_auto',
+        type: 'agent',
+        status: 'running',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockRejectedValueOnce(new Error('Timeline write failed / safely')),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T12:00:00.000Z'),
+    );
+
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=skipped_existing');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
   });
 
