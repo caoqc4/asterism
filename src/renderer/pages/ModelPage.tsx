@@ -65,6 +65,8 @@ function agentApiExecutionReadiness(summary?: string | null): {
   missingRequirementList: string | null;
   missingRequirementCount: number;
   promotionCount: string | null;
+  promotionSatisfiedGateList: string | null;
+  promotionSatisfiedRequirementList: string | null;
   promotionMissingGateList: string | null;
   promotionMissingRequirementList: string | null;
   promotionReady: string | null;
@@ -79,6 +81,8 @@ function agentApiExecutionReadiness(summary?: string | null): {
     missingRequirementList: scalarValue(text, 'executionRunMissingRequirements'),
     missingRequirementCount: listValueCount(text, 'executionRunMissingRequirements'),
     promotionCount: scalarValue(text, 'executionRunPromotionRequirements'),
+    promotionSatisfiedGateList: scalarValue(text, 'executionRunPromotionSatisfiedGates'),
+    promotionSatisfiedRequirementList: scalarValue(text, 'executionRunPromotionSatisfiedRequirements'),
     promotionMissingGateList: scalarValue(text, 'executionRunPromotionMissingGates'),
     promotionMissingRequirementList: scalarValue(text, 'executionRunPromotionMissingRequirements'),
     promotionReady: scalarValue(text, 'executionRunPromotionReady'),
@@ -88,6 +92,7 @@ function agentApiExecutionReadiness(summary?: string | null): {
 function agentApiDecompositionReadiness(summary?: string | null): {
   missingRequirementList: string | null;
   missingRequirementCount: number;
+  promotionSatisfiedRequirementList: string | null;
   promotionMissingRequirementList: string | null;
   promotionCount: string | null;
   promotionReady: string | null;
@@ -96,6 +101,7 @@ function agentApiDecompositionReadiness(summary?: string | null): {
   return {
     missingRequirementList: scalarValue(text, 'decompositionMissingRequirements'),
     missingRequirementCount: listValueCount(text, 'decompositionMissingRequirements'),
+    promotionSatisfiedRequirementList: scalarValue(text, 'decompositionPromotionSatisfiedRequirements'),
     promotionMissingRequirementList: scalarValue(text, 'decompositionPromotionMissingRequirements'),
     promotionCount: scalarValue(text, 'decompositionPromotionRequirements'),
     promotionReady: scalarValue(text, 'decompositionPromotionReady'),
@@ -789,8 +795,14 @@ function AgentCliRuntimeSection({
               {apiExecutionReadiness.missingRequirementList && (
                 <span>{`missingRequirementList=${apiExecutionReadiness.missingRequirementList}`}</span>
               )}
+              {apiExecutionReadiness.promotionSatisfiedRequirementList && (
+                <span>{`promotionSatisfiedRequirementList=${apiExecutionReadiness.promotionSatisfiedRequirementList}`}</span>
+              )}
               {apiExecutionReadiness.promotionMissingRequirementList && (
                 <span>{`promotionMissingRequirementList=${apiExecutionReadiness.promotionMissingRequirementList}`}</span>
+              )}
+              {apiExecutionReadiness.promotionSatisfiedGateList && (
+                <span>{`promotionSatisfiedGateList=${apiExecutionReadiness.promotionSatisfiedGateList}`}</span>
               )}
               {apiExecutionReadiness.promotionMissingGateList && (
                 <span>{`promotionMissingGateList=${apiExecutionReadiness.promotionMissingGateList}`}</span>
@@ -815,6 +827,9 @@ function AgentCliRuntimeSection({
               <span>{`missingRequirements=${apiDecompositionReadiness.missingRequirementCount}`}</span>
               {apiDecompositionReadiness.missingRequirementList && (
                 <span>{`missingRequirementList=${apiDecompositionReadiness.missingRequirementList}`}</span>
+              )}
+              {apiDecompositionReadiness.promotionSatisfiedRequirementList && (
+                <span>{`promotionSatisfiedRequirementList=${apiDecompositionReadiness.promotionSatisfiedRequirementList}`}</span>
               )}
               {apiDecompositionReadiness.promotionMissingRequirementList && (
                 <span>{`promotionMissingRequirementList=${apiDecompositionReadiness.promotionMissingRequirementList}`}</span>

@@ -836,12 +836,15 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionReady=no');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionRequirements=0/11');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunGateRequirements=0/9');
+    expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionSatisfiedRequirements=none');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunMissingRequirements=...');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionMissingRequirements=...');
+    expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionSatisfiedGates=none');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionMissingGates=...');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunMissingGates=...');
     expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionReady=no');
     expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionRequirements=0/7');
+    expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionSatisfiedRequirements=none');
     expect(capabilities?.evidence.join(' ')).toContain('decompositionMissingRequirements=...');
     expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionMissingRequirements=...');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolReadiness=not_declared');
@@ -854,8 +857,10 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API execution_run readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('promotion ready state');
+    expect(capabilities?.evidence.join(' ')).toContain('promotion satisfied requirement list');
     expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list');
     expect(capabilities?.evidence.join(' ')).toContain('gate requirement count');
+    expect(capabilities?.evidence.join(' ')).toContain('promotion satisfied gate list');
     expect(capabilities?.evidence.join(' ')).toContain('promotion missing gate list');
     expect(capabilities?.evidence.join(' ')).toContain('key gate count');
     expect(capabilities?.evidence.join(' ')).toContain('key gate list');
@@ -864,6 +869,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('missing gate list');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API decomposition readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('promotion ready state');
+    expect(capabilities?.evidence.join(' ')).toContain('promotion satisfied requirement list');
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');

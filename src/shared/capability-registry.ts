@@ -629,8 +629,10 @@ function agentApiExecutionRunPromotionSummary(): string {
     `executionRunPromotionReady=${promotionReadiness.ready ? 'yes' : 'no'}`,
     `executionRunPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
     `executionRunGateRequirements=${promotionReadiness.satisfiedGates.length}/${promotionGateCount}`,
+    `executionRunPromotionSatisfiedRequirements=${promotionReadiness.satisfiedRequirements.join(',') || 'none'}`,
     `executionRunMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
     `executionRunPromotionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
+    `executionRunPromotionSatisfiedGates=${promotionReadiness.satisfiedGates.join(',') || 'none'}`,
     `executionRunPromotionMissingGates=${promotionReadiness.missingGates.join(',') || 'none'}`,
   ].join(' / ');
 }
@@ -660,6 +662,7 @@ function agentApiDecompositionPromotionSummary(): string {
   return [
     `decompositionPromotionReady=${promotionReadiness.ready ? 'yes' : 'no'}`,
     `decompositionPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
+    `decompositionPromotionSatisfiedRequirements=${promotionReadiness.satisfiedRequirements.join(',') || 'none'}`,
     `decompositionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
     `decompositionPromotionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
   ].join(' / ');
