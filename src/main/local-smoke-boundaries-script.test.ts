@@ -949,8 +949,8 @@ describe('local smoke script default boundaries', () => {
       expect(result.output).toContain('skipReason=build_required');
       return;
     }
-    expect(result.output).toContain('serviceEvidenceRequirements=3/8');
-    expect(result.output).toContain('serviceEvidenceMissingRequirements=selected_runtime_contract,target_task_identity,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
+    expect(result.output).toContain('serviceEvidenceRequirements=2/8');
+    expect(result.output).toContain('serviceEvidenceMissingRequirements=selected_runtime_contract,target_task_identity,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
     expect(result.output).toContain('serviceEvidenceSelectedRuntimeRunEvidenceChain=missing');
     expect(result.output).toContain('serviceEvidenceSelectedRuntimeTaskEvidenceChain=missing');
     expect(result.output).toContain('serviceEvidenceExpectedFileCount=1');

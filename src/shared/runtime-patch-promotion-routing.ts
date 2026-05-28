@@ -191,6 +191,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && evidence.patchArtifact.kind === 'patch'
     && Boolean(evidence.patchArtifact.artifactId?.trim())
     && Boolean(patchRunId)
+    && Boolean(patchTaskId)
+    && Boolean(targetTaskId)
+    && patchTaskId === targetTaskId
     && expectedFileEvidenceChainReady
   );
   const promotionDecisionReady = (
