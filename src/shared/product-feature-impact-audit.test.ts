@@ -713,6 +713,9 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('service-evidence=5/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('explicit_operator_apply, same_run_evidence_chain, and post_apply_run_evidence missing');
     expect(taskFiles?.evidence.join(' ')).toContain('synthetic-ready=8/8 requirements');
+    expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService now appends evaluateRuntimePatchPromotionRoutingReadinessFromEvidence output');
+    expect(taskFiles?.evidence.join(' ')).toContain('real workspace apply evidence records target-task identity');
+    expect(taskFiles?.evidence.join(' ')).toContain('remaining selected-runtime-contract gap');
     expect(taskFiles?.cliOnlyClosure).toBe('supported');
     expect(taskFiles?.gaps.join(' ')).toContain('Future API/runtime-generated patch promotion');
     expect(taskFiles?.nextActions.join(' ')).toContain('read-only sandbox patch promotion readiness smoke');

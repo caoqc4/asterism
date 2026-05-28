@@ -5,6 +5,10 @@ import type {
   ApplySandboxPatchPromotionResult,
   SandboxPatchPromotionRecord,
 } from '../../../shared/types/sandbox-patch-promotion.js';
+import {
+  evaluateRuntimePatchPromotionRoutingReadinessFromEvidence,
+  type RuntimePatchPromotionRoutingServiceEvidence,
+} from '../../../shared/runtime-patch-promotion-routing.js';
 import type { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import type {
   SandboxPatchPromotionPreflightResult,
@@ -27,7 +31,13 @@ export class SandboxPatchPromotionApplyService {
     private readonly workspaceRootResolver: () => string,
   ) {}
 
-  async apply(checkpointId: string): Promise<SandboxPatchPromotionApplyResult> {
+  async apply(
+    checkpointId: string,
+    options: {
+      operatorConfirmed?: boolean;
+      operatorId?: string | null;
+    } = {},
+  ): Promise<SandboxPatchPromotionApplyResult> {
     const preflight = await this.preflightService.preflight(checkpointId);
 
     if (preflight.status === 'blocked') {
@@ -43,11 +53,15 @@ export class SandboxPatchPromotionApplyService {
       };
     }
 
-    return this.applyReady(preflight);
+    return this.applyReady(preflight, options);
   }
 
   private async applyReady(
     preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>,
+    options: {
+      operatorConfirmed?: boolean;
+      operatorId?: string | null;
+    },
   ): Promise<SandboxPatchPromotionApplyResult> {
     const content = parseArtifactContent(preflight.artifact.content);
     if (!content) {
@@ -73,6 +87,12 @@ export class SandboxPatchPromotionApplyService {
         'Sandbox patch promotion already applied',
         `checkpoint=${preflight.promotion.checkpointId}`,
         `files=${validation.touchedFiles.join(', ')}`,
+        buildRuntimePatchPromotionRoutingReadinessSummary({
+          operatorConfirmed: options.operatorConfirmed === true,
+          operatorId: options.operatorId,
+          preflight,
+          touchedFiles: validation.touchedFiles,
+        }),
       ].join(' / ');
       const applied = await this.promotionRepository.markApplied(preflight.promotion.id, auditSummary);
       return {
@@ -92,6 +112,12 @@ export class SandboxPatchPromotionApplyService {
       'Sandbox patch promotion applied',
       `checkpoint=${preflight.promotion.checkpointId}`,
       `files=${validation.touchedFiles.join(', ')}`,
+      buildRuntimePatchPromotionRoutingReadinessSummary({
+        operatorConfirmed: options.operatorConfirmed === true,
+        operatorId: options.operatorId,
+        preflight,
+        touchedFiles: validation.touchedFiles,
+      }),
     ].join(' / ');
     const applied = await this.promotionRepository.markApplied(preflight.promotion.id, auditSummary);
 
@@ -185,6 +211,45 @@ function parseSandboxPatchDiff(diff: string): ParsedSandboxPatchFile[] {
   }
 
   return files;
+}
+
+function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
+  operatorConfirmed: boolean;
+  operatorId?: string | null;
+  preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>;
+  touchedFiles: string[];
+}): string {
+  const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
+    explicitOperatorApply: {
+      confirmed: params.operatorConfirmed,
+      operatorId: params.operatorId ?? null,
+    },
+    patchArtifact: {
+      artifactId: params.preflight.artifact.id,
+      kind: params.preflight.artifact.kind === 'patch' ? 'patch' : 'unknown',
+      runId: params.preflight.artifact.sourceId,
+      status: params.preflight.artifact.kind === 'patch' ? 'ready' : 'missing',
+    },
+    postApplyRunEvidence: {
+      runId: params.preflight.promotion.runId,
+      status: params.touchedFiles.length ? 'present' : 'missing',
+      touchedFiles: params.touchedFiles,
+    },
+    promotionDecision: {
+      checkpointId: params.preflight.checkpoint.id,
+      decisionId: params.preflight.promotion.decisionId,
+      runId: params.preflight.checkpoint.runId,
+      status: 'approved',
+    },
+    promotionPreflight: {
+      checkpointId: params.preflight.checkpoint.id,
+      runId: params.preflight.checkpoint.runId,
+      status: 'ready',
+    },
+    targetTaskId: params.preflight.promotion.taskId,
+  };
+  const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
+  return `futureRuntimeRouting=${readiness.summary}`;
 }
 
 async function validateSandboxPatchApplication(params: {

@@ -127,7 +127,10 @@ describe('SandboxPatchPromotionApplyService', () => {
         workspaceRoot: tempRoot,
       });
 
-      const result = await service.apply('run_checkpoint_1');
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
 
       expect(result).toMatchObject({
         status: 'applied',
@@ -136,8 +139,14 @@ describe('SandboxPatchPromotionApplyService', () => {
       expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('beta\n');
       expect(markApplied).toHaveBeenCalledWith(
         'sandbox_patch_promotion_1',
-        'Sandbox patch promotion applied / checkpoint=run_checkpoint_1 / files=notes.md',
+        expect.stringContaining('Sandbox patch promotion applied / checkpoint=run_checkpoint_1 / files=notes.md'),
       );
+      expect(markApplied.mock.calls[0]?.[1]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionRequirements=7/8');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('explicitOperatorApply=ready');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('sameRunEvidenceChain=ready');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('postApplyRunEvidence=ready');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionMissingRequirements=selected_runtime_contract');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -168,7 +177,10 @@ describe('SandboxPatchPromotionApplyService', () => {
         workspaceRoot: tempRoot,
       });
 
-      const result = await service.apply('run_checkpoint_1');
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
 
       expect(result).toMatchObject({
         blockedReasons: ['Patch promotion workspace content does not match reviewed base: second.md'],
@@ -204,7 +216,10 @@ describe('SandboxPatchPromotionApplyService', () => {
         workspaceRoot: tempRoot,
       });
 
-      const result = await service.apply('run_checkpoint_1');
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
 
       expect(result).toMatchObject({
         status: 'already_applied',
@@ -212,8 +227,10 @@ describe('SandboxPatchPromotionApplyService', () => {
       });
       expect(markApplied).toHaveBeenCalledWith(
         'sandbox_patch_promotion_1',
-        'Sandbox patch promotion already applied / checkpoint=run_checkpoint_1 / files=notes.md',
+        expect.stringContaining('Sandbox patch promotion already applied / checkpoint=run_checkpoint_1 / files=notes.md'),
       );
+      expect(markApplied.mock.calls[0]?.[1]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionRequirements=7/8');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

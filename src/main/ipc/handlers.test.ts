@@ -1613,7 +1613,13 @@ describe('registerIpcHandlers', () => {
       status: 'applied',
       touchedFiles: ['notes.md'],
     });
-    expect(servicesMock.sandboxPatchPromotionApplyService.apply).toHaveBeenCalledWith('run_checkpoint_patch_1');
+    expect(servicesMock.sandboxPatchPromotionApplyService.apply).toHaveBeenCalledWith(
+      'run_checkpoint_patch_1',
+      {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      },
+    );
     expect(servicesMock.runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       runId: 'run_review_1',
       status: 'completed',

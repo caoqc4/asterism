@@ -662,7 +662,10 @@ export function registerIpcHandlers(): void {
       throw new Error('Sandbox patch promotion apply is disabled by feature flag.');
     }
 
-    const result = await services.sandboxPatchPromotionApplyService.apply(input.checkpointId);
+    const result = await services.sandboxPatchPromotionApplyService.apply(input.checkpointId, {
+      operatorConfirmed: true,
+      operatorId: 'local_operator',
+    });
     const promotion = result.promotion;
     if (promotion) {
       const output = result.status === 'blocked'
