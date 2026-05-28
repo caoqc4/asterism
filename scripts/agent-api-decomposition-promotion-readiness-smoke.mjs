@@ -50,7 +50,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   const partialApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
     evidenceRunId: 'run_cli_decomposition_smoke',
     parentTaskId: 'task_project',
-    runtimeContract: buildAgentApiDecompositionRuntimeContract(),
+    runtimeContract: buildAgentApiDecompositionRuntimeContract('run_cli_decomposition_smoke', 'task_project'),
     source: 'agent_cli_decomposition',
     subtasks: [buildSubtaskDraft()],
   });
@@ -63,7 +63,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   const readyApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
     evidenceRunId: 'run_api_decomposition_smoke',
     parentTaskId: 'task_project',
-    runtimeContract: buildAgentApiDecompositionRuntimeContract(),
+    runtimeContract: buildAgentApiDecompositionRuntimeContract('run_api_decomposition_smoke', 'task_project'),
     source: 'agent_api_decomposition',
     subtasks: [buildSubtaskDraft()],
   });
@@ -216,9 +216,11 @@ function sourceIsNewerThanBuild() {
     .some((modulePath) => fs.statSync(modulePath).mtimeMs > oldestBuildTime);
 }
 
-function buildAgentApiDecompositionRuntimeContract() {
+function buildAgentApiDecompositionRuntimeContract(evidenceRunId, parentTaskId) {
   return {
+    evidenceRunId,
     invocationLayer: 'api_runtime',
+    parentTaskId,
     phase: 'decomposition_draft',
     runtimeMode: 'api',
   };

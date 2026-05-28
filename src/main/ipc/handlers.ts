@@ -1096,7 +1096,9 @@ export function registerIpcHandlers(): void {
       parentTaskId: input.taskId,
       review: decomposition.review,
       runtimeContract: {
+        evidenceRunId,
         invocationLayer: 'api_runtime',
+        parentTaskId: input.taskId,
         phase: invocation.phase,
         runtimeLabel: invocation.runtime.label,
         runtimeMode: 'api',

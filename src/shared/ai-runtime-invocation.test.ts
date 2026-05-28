@@ -1804,7 +1804,9 @@ function buildAgentApiDecompositionApplyPlan(
   return buildSubtaskCreateManyWritebackApplyPlan({
     ...params,
     runtimeContract: params.runtimeContract ?? {
+      evidenceRunId: params.evidenceRunId ?? null,
       invocationLayer: 'api_runtime',
+      parentTaskId: params.parentTaskId,
       phase: 'decomposition_draft',
       runtimeMode: 'api',
     },

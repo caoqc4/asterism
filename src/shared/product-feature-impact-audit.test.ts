@@ -768,7 +768,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('selectedRuntimeContract matches the apply-plan timeline runtimeContract');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('carries the same evidenceRunId plus parentTaskId as the apply plan');
+      .toContain('preserve explicit decomposition timeline runtimeContract evidence without inferring evidenceRunId or parentTaskId from apply-plan inputs');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('capability, settings, and safety-report surfaces share the same evidence-based promotion contract');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))

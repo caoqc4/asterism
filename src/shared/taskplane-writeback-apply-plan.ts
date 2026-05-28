@@ -147,9 +147,12 @@ export function buildSubtaskCreateManyWritebackApplyPlan(params: {
 }): TaskplaneSubtaskWritebackApplyPlan {
   const runtimeContract = params.runtimeContract
     ? {
-        ...params.runtimeContract,
-        evidenceRunId: params.runtimeContract.evidenceRunId ?? params.evidenceRunId ?? null,
-        parentTaskId: params.runtimeContract.parentTaskId ?? params.parentTaskId,
+        evidenceRunId: params.runtimeContract.evidenceRunId ?? null,
+        invocationLayer: params.runtimeContract.invocationLayer,
+        parentTaskId: params.runtimeContract.parentTaskId ?? null,
+        phase: params.runtimeContract.phase,
+        runtimeLabel: params.runtimeContract.runtimeLabel,
+        runtimeMode: params.runtimeContract.runtimeMode,
       }
     : null;
   return {

@@ -126,9 +126,12 @@ describe('Taskplane writeback apply plans', () => {
 
   it('keeps Agent API decomposition runtime contract in create-many timeline evidence', () => {
     const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       runtimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeLabel: 'Agent API Runtime · openai / gpt-test',
         runtimeMode: 'api',
@@ -153,7 +156,7 @@ describe('Taskplane writeback apply plans', () => {
           confirmationBoundary: 'operator_confirmed_subtask_create_many',
           draftOnlyBeforeConfirmation: true,
           runtimeContract: {
-            evidenceRunId: null,
+            evidenceRunId: 'run_api_decomposition',
             invocationLayer: 'api_runtime',
             parentTaskId: 'task_project',
             phase: 'decomposition_draft',
@@ -163,6 +166,30 @@ describe('Taskplane writeback apply plans', () => {
           source: 'agent_api_decomposition',
         },
       },
+    });
+  });
+
+  it('does not infer Agent API decomposition runtime identity from apply-plan inputs', () => {
+    const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      runtimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+      source: 'agent_api_decomposition',
+      subtasks: [{
+        acceptanceCriteria: '范围文档可验收。',
+        dependency: null,
+        summary: '确认范围。',
+        title: '确认范围',
+      }],
+    });
+
+    expect(plan.timeline.payload.runtimeContract).toMatchObject({
+      evidenceRunId: null,
+      parentTaskId: null,
     });
   });
 
