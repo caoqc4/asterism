@@ -146,6 +146,8 @@ export function projectDecompositionPromotionEvidenceChips(
   }
   const summaryKeys = [
     'proposalId',
+    'expectedProposalId',
+    'proposalIdEvidenceChain',
     'proposalParentTask',
     'proposalTaskEvidenceChain',
     'proposalSubtaskCount',

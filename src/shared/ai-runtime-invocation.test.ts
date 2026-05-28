@@ -162,7 +162,7 @@ describe('ai runtime invocation contract', () => {
       applyPlan: partialApplyPlan,
       reversibleProposalCard: {
         parentTaskId: 'task_project',
-        proposalId: 'proposal_1',
+        proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
       },
@@ -187,7 +187,9 @@ describe('ai runtime invocation contract', () => {
     });
     expect(partial.summary).toContain('requirements=6/7');
     expect(partial.summary).toContain('promotionMissingRequirements=agent_api_decomposition_source');
-    expect(partial.summary).toContain('proposalId=proposal_1');
+    expect(partial.summary).toContain('proposalId=project_decomposition:task_project');
+    expect(partial.summary).toContain('expectedProposalId=project_decomposition:task_project');
+    expect(partial.summary).toContain('proposalIdEvidenceChain=ready');
     expect(partial.summary).toContain('proposalSubtaskCount=1');
     expect(partial.summary).toContain('applyPlanSubtaskCount=1');
     expect(partial.summary).toContain('proposalSubtaskEvidenceChain=ready');
@@ -209,7 +211,7 @@ describe('ai runtime invocation contract', () => {
       parentTaskId: 'task_project',
       reversibleProposalCard: {
         parentTaskId: 'task_project',
-        proposalId: 'proposal_1',
+        proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
       },
@@ -226,7 +228,9 @@ describe('ai runtime invocation contract', () => {
     });
     expect(ready.summary).toContain('requirements=7/7');
     expect(ready.summary).toContain('source=agent_api_decomposition');
-    expect(ready.summary).toContain('proposalId=proposal_1');
+    expect(ready.summary).toContain('proposalId=project_decomposition:task_project');
+    expect(ready.summary).toContain('expectedProposalId=project_decomposition:task_project');
+    expect(ready.summary).toContain('proposalIdEvidenceChain=ready');
     expect(ready.summary).toContain('proposalParentTask=task_project');
     expect(ready.summary).toContain('proposalTaskEvidenceChain=ready');
     expect(ready.summary).toContain('proposalSubtaskCount=1');
@@ -256,7 +260,7 @@ describe('ai runtime invocation contract', () => {
       parentTaskId: 'task_project_b',
       reversibleProposalCard: {
         parentTaskId: 'task_project_b',
-        proposalId: 'proposal_1',
+        proposalId: 'project_decomposition:task_project_b',
         status: 'ready',
         subtaskCount: 1,
       },
@@ -290,7 +294,7 @@ describe('ai runtime invocation contract', () => {
       parentTaskId: 'task_project_a',
       reversibleProposalCard: {
         parentTaskId: 'task_project_b',
-        proposalId: 'proposal_1',
+        proposalId: 'project_decomposition:task_project_b',
         status: 'ready',
       },
       selectedRuntimeContract: {
@@ -323,7 +327,7 @@ describe('ai runtime invocation contract', () => {
       parentTaskId: 'task_project',
       reversibleProposalCard: {
         parentTaskId: 'task_project',
-        proposalId: 'proposal_1',
+        proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 2,
       },
@@ -344,6 +348,40 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('applyPlanSubtaskCount=1');
     expect(mismatch.summary).toContain('proposalSubtaskEvidenceChain=missing');
     expect(mismatch.summary).toContain('promotionMissingRequirements=reversible_proposal_card');
+  });
+
+  it('blocks Agent API decomposition promotion when the proposal id does not match the parent task', () => {
+    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'proposal_1',
+        status: 'ready',
+        subtaskCount: 1,
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalId=proposal_1');
+    expect(mismatch.summary).toContain('expectedProposalId=project_decomposition:task_project');
+    expect(mismatch.summary).toContain('proposalIdEvidenceChain=missing');
+    expect(mismatch.summary).toContain('proposalCard=missing');
   });
 
   it('wraps decision drafts with API-runtime provenance', () => {

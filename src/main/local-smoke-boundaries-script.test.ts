@@ -803,6 +803,12 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('subtasks=not-created');
     expect(result.output).toContain('workspace=unchanged');
     expect(result.output).toContain('promotionInProduct=deferred');
+    if (result.output.includes('status=skip')) {
+      expect(result.output).toContain('skipReason=build_required');
+      return;
+    }
+    expect(result.output).toContain('serviceEvidenceExpectedProposalId=project_decomposition:task_project');
+    expect(result.output).toContain('serviceEvidenceProposalIdEvidenceChain=ready');
   });
 
   it('keeps decomposition create-many apply plan readiness smoke read-only and build-gated by default', () => {

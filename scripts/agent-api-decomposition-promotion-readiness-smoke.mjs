@@ -70,7 +70,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     parentTaskId: 'task_project',
     reversibleProposalCard: {
       parentTaskId: 'task_project',
-      proposalId: 'proposal_agent_api_decomposition',
+      proposalId: 'project_decomposition:task_project',
       status: 'ready',
       subtaskCount: 1,
     },
@@ -94,6 +94,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/7`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceProposalId=${scalarValue(serviceEvidencePartial.summary, 'proposalId') ?? 'missing'}`);
+  console.log(`serviceEvidenceExpectedProposalId=${scalarValue(serviceEvidencePartial.summary, 'expectedProposalId') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalIdEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalIdEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalParentTask=${scalarValue(serviceEvidencePartial.summary, 'proposalParentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskCount=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskCount') ?? 'missing'}`);
@@ -117,7 +119,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || serviceEvidencePartial.ready
     || serviceEvidencePartial.satisfiedRequirements.length !== 6
     || !serviceEvidencePartial.missingRequirements.includes('agent_api_decomposition_source')
-    || scalarValue(serviceEvidencePartial.summary, 'proposalId') !== 'proposal_agent_api_decomposition'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalId') !== 'project_decomposition:task_project'
+    || scalarValue(serviceEvidencePartial.summary, 'expectedProposalId') !== 'project_decomposition:task_project'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalIdEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalParentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'proposalTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskCount') !== '1'

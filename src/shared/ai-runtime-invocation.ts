@@ -348,6 +348,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
   const proposalId = evidence.reversibleProposalCard?.proposalId?.trim() || '';
   const proposalParentTaskId = evidence.reversibleProposalCard?.parentTaskId?.trim() || '';
+  const expectedProposalId = parentTaskId ? `project_decomposition:${parentTaskId}` : '';
+  const proposalIdEvidenceChainReady = Boolean(proposalId)
+    && Boolean(expectedProposalId)
+    && proposalId === expectedProposalId;
   const applyPlanSubtaskCount = applyPlan?.input.subtasks.length ?? 0;
   const proposalSubtaskCount = typeof evidence.reversibleProposalCard?.subtaskCount === 'number'
     && Number.isFinite(evidence.reversibleProposalCard.subtaskCount)
@@ -366,7 +370,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const draftOnlyBeforeConfirmation = applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true;
   const reversibleProposalReady = (
     evidence.reversibleProposalCard?.status === 'ready'
-    && Boolean(proposalId)
+    && proposalIdEvidenceChainReady
     && proposalTaskEvidenceChainReady
     && proposalSubtaskEvidenceChainReady
   );
@@ -425,6 +429,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
       `proposalId=${proposalId || 'missing'}`,
+      `expectedProposalId=${expectedProposalId || 'missing'}`,
+      `proposalIdEvidenceChain=${proposalIdEvidenceChainReady ? 'ready' : 'missing'}`,
       `proposalParentTask=${proposalParentTaskId || 'missing'}`,
       `proposalTaskEvidenceChain=${proposalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskCount=${proposalSubtaskCount ?? 'missing'}`,
