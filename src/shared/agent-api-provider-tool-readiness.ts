@@ -157,12 +157,12 @@ function providerMetadataMatchesConfiguredProvider(params: {
 
   const packageName = metadata.packageName?.trim().toLowerCase() ?? '';
   if (configuredProvider === 'openai') {
-    return metadata.owner === 'openai'
-      || packageNameIdentifiesKnownProvider(packageName, 'openai');
+    return packageNameIdentifiesKnownProvider(packageName, 'openai')
+      || (metadata.owner === 'openai' && !packageName);
   }
   if (configuredProvider === 'anthropic') {
-    return metadata.owner === 'anthropic'
-      || packageNameIdentifiesKnownProvider(packageName, 'anthropic');
+    return packageNameIdentifiesKnownProvider(packageName, 'anthropic')
+      || (metadata.owner === 'anthropic' && !packageName);
   }
   return metadata.owner === configuredProvider
     || packageNameIdentifiesProvider(packageName, configuredProvider);

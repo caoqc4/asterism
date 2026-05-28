@@ -350,6 +350,41 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
   });
 
+  it('does not accept known-provider owner metadata when the package identity is third-party', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
+      explicitToolDeclarations: {
+        declaredTools: ['web_search'],
+        packageName: '@vendor/openai-tools',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@vendor/openai-tools',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'not_declared',
+      toolReadiness: 'not_declared',
+      missingRequirements: [
+        'provider_owned_metadata',
+        'explicit_tool_declaration',
+      ],
+    });
+    expect(readiness.summary).toContain('providerMetadataOwner=openai');
+    expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
+    expect(readiness.summary).toContain('providerMetadataPackage=@vendor/openai-tools');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
+  });
+
   it('does not accept generic provider-owned metadata for an unknown configured provider', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       configuredProvider: 'fal-openrouter',
