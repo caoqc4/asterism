@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { evaluateRuntimePatchPromotionRoutingReadiness } from './runtime-patch-promotion-routing.js';
+import {
+  evaluateRuntimePatchPromotionRoutingReadiness,
+  evaluateRuntimePatchPromotionRoutingReadinessFromEvidence,
+} from './runtime-patch-promotion-routing.js';
 
 describe('runtime patch promotion routing readiness', () => {
   it('keeps future runtime patch promotion blocked until the reviewed-patch apply workflow is complete', () => {
@@ -104,5 +107,93 @@ describe('runtime patch promotion routing readiness', () => {
     });
     expect(readiness.summary).toContain('requirements=7/8');
     expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
+  });
+
+  it('derives runtime patch promotion routing readiness from structured service evidence', () => {
+    const partial = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+      },
+      promotionDecision: {
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+      },
+      promotionPreflight: {
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_2',
+        status: 'ready',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(partial).toMatchObject({
+      ready: false,
+      satisfiedRequirements: [
+        'selected_runtime_contract',
+        'target_task_identity',
+        'patch_artifact',
+        'promotion_decision',
+        'promotion_preflight',
+      ],
+      missingRequirements: [
+        'explicit_operator_apply',
+        'same_run_evidence_chain',
+        'post_apply_run_evidence',
+      ],
+    });
+    expect(partial.summary).toContain('requirements=5/8');
+    expect(partial.summary).toContain('sameRunEvidenceChain=missing');
+
+    const ready = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        confirmed: true,
+        operatorId: 'operator_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+      },
+      promotionPreflight: {
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(ready).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+    });
+    expect(ready.summary).toContain('requirements=8/8');
+    expect(ready.summary).toContain('sameRunEvidenceChain=ready');
   });
 });

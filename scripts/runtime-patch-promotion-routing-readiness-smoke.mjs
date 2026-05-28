@@ -24,6 +24,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
 
   const {
     evaluateRuntimePatchPromotionRoutingReadiness,
+    evaluateRuntimePatchPromotionRoutingReadinessFromEvidence,
   } = await import(pathToFileURL(modulePath).href);
 
   const blocked = evaluateRuntimePatchPromotionRoutingReadiness({
@@ -50,6 +51,31 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     selectedRuntimeContractReady: true,
     targetTaskIdentityReady: true,
   });
+  const serviceEvidencePartial = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+    patchArtifact: {
+      artifactId: 'artifact_patch_1',
+      kind: 'patch',
+      runId: 'run_patch_1',
+      status: 'ready',
+    },
+    promotionDecision: {
+      checkpointId: 'checkpoint_patch_1',
+      decisionId: 'decision_patch_1',
+      runId: 'run_patch_1',
+      status: 'approved',
+    },
+    promotionPreflight: {
+      checkpointId: 'checkpoint_patch_1',
+      runId: 'run_patch_2',
+      status: 'ready',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      runtimeMode: 'api',
+    },
+    targetTaskId: 'task_1',
+  });
 
   console.log(`blockedPromotionReady=${blocked.ready ? 'yes' : 'no'}`);
   console.log(`blockedRequirements=${blocked.satisfiedRequirements.length}/8`);
@@ -60,12 +86,18 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`syntheticPromotionReady=${syntheticReady.ready ? 'yes' : 'no'}`);
   console.log(`syntheticRequirements=${syntheticReady.satisfiedRequirements.length}/8`);
   console.log(`syntheticMissingRequirements=${syntheticReady.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidencePromotionReady=${serviceEvidencePartial.ready ? 'yes' : 'no'}`);
+  console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/8`);
+  console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
 
   if (
     blocked.ready
     || sameRunBlocked.ready
     || !sameRunBlocked.missingRequirements.includes('same_run_evidence_chain')
     || !syntheticReady.ready
+    || serviceEvidencePartial.ready
+    || serviceEvidencePartial.satisfiedRequirements.length !== 5
+    || !serviceEvidencePartial.missingRequirements.includes('same_run_evidence_chain')
   ) {
     console.log('status=failed');
     return 1;

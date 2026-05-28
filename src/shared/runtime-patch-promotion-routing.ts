@@ -28,6 +28,41 @@ export function runtimePatchPromotionRoutingRequirements(): RuntimePatchPromotio
   ];
 }
 
+export type RuntimePatchPromotionRoutingServiceEvidence = {
+  explicitOperatorApply?: {
+    confirmed: boolean;
+    operatorId?: string | null;
+  } | null;
+  patchArtifact?: {
+    artifactId?: string | null;
+    kind: 'patch' | 'task_file' | 'unknown';
+    runId?: string | null;
+    status: 'missing' | 'ready';
+  } | null;
+  postApplyRunEvidence?: {
+    runId?: string | null;
+    status: 'missing' | 'present';
+    touchedFiles?: string[];
+  } | null;
+  promotionDecision?: {
+    checkpointId?: string | null;
+    decisionId?: string | null;
+    runId?: string | null;
+    status: 'approved' | 'missing' | 'pending';
+  } | null;
+  promotionPreflight?: {
+    checkpointId?: string | null;
+    runId?: string | null;
+    status: 'blocked' | 'missing' | 'ready';
+  } | null;
+  selectedRuntimeContract?: {
+    invocationLayer: 'api_runtime' | 'selected_runtime';
+    phase: 'execution_run';
+    runtimeMode: 'api' | 'codex' | 'claude';
+  } | null;
+  targetTaskId?: string | null;
+};
+
 export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
   explicitOperatorApply?: boolean;
   patchArtifactReady?: boolean;
@@ -77,4 +112,68 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),
   };
+}
+
+export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
+  evidence: RuntimePatchPromotionRoutingServiceEvidence,
+): RuntimePatchPromotionRoutingReadiness {
+  const patchRunId = evidence.patchArtifact?.runId?.trim() || '';
+  const decisionRunId = evidence.promotionDecision?.runId?.trim() || '';
+  const preflightRunId = evidence.promotionPreflight?.runId?.trim() || '';
+  const postApplyRunId = evidence.postApplyRunEvidence?.runId?.trim() || '';
+  const selectedRuntime = evidence.selectedRuntimeContract;
+
+  const selectedRuntimeContractReady = (
+    selectedRuntime?.phase === 'execution_run'
+    && (
+      (selectedRuntime.invocationLayer === 'api_runtime' && selectedRuntime.runtimeMode === 'api')
+      || (selectedRuntime.invocationLayer === 'selected_runtime' && selectedRuntime.runtimeMode !== 'api')
+    )
+  );
+  const patchArtifactReady = (
+    evidence.patchArtifact?.status === 'ready'
+    && evidence.patchArtifact.kind === 'patch'
+    && Boolean(evidence.patchArtifact.artifactId?.trim())
+    && Boolean(patchRunId)
+  );
+  const promotionDecisionReady = (
+    evidence.promotionDecision?.status === 'approved'
+    && Boolean(evidence.promotionDecision.decisionId?.trim())
+    && Boolean(evidence.promotionDecision.checkpointId?.trim())
+    && Boolean(decisionRunId)
+  );
+  const promotionPreflightReady = (
+    evidence.promotionPreflight?.status === 'ready'
+    && Boolean(evidence.promotionPreflight.checkpointId?.trim())
+    && Boolean(preflightRunId)
+  );
+  const explicitOperatorApply = (
+    evidence.explicitOperatorApply?.confirmed === true
+    && Boolean(evidence.explicitOperatorApply.operatorId?.trim())
+  );
+  const postApplyRunEvidenceReady = (
+    evidence.postApplyRunEvidence?.status === 'present'
+    && Boolean(postApplyRunId)
+    && (evidence.postApplyRunEvidence.touchedFiles?.length ?? 0) > 0
+  );
+  const sameRunEvidenceChainReady = (
+    patchArtifactReady
+    && promotionDecisionReady
+    && promotionPreflightReady
+    && postApplyRunEvidenceReady
+    && patchRunId === decisionRunId
+    && patchRunId === preflightRunId
+    && patchRunId === postApplyRunId
+  );
+
+  return evaluateRuntimePatchPromotionRoutingReadiness({
+    explicitOperatorApply,
+    patchArtifactReady,
+    postApplyRunEvidenceReady,
+    promotionDecisionReady,
+    promotionPreflightReady,
+    sameRunEvidenceChainReady,
+    selectedRuntimeContractReady,
+    targetTaskIdentityReady: Boolean(evidence.targetTaskId?.trim()),
+  });
 }

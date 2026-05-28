@@ -668,6 +668,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('Terminal Run verification now carries same-run artifacts and checkpoints');
     expect(taskFiles?.evidence.join(' ')).toContain('can satisfy workspace_write promotion evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
+    expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadinessFromEvidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('structured service evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionReady');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionRequirements=x/8');
@@ -677,6 +679,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('runtime patch promotion routing readiness smoke');
     expect(taskFiles?.evidence.join(' ')).toContain('blocked=2/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('same-run-blocked=7/8 requirements');
+    expect(taskFiles?.evidence.join(' ')).toContain('service-evidence=5/8 requirements');
+    expect(taskFiles?.evidence.join(' ')).toContain('explicit_operator_apply, same_run_evidence_chain, and post_apply_run_evidence missing');
     expect(taskFiles?.evidence.join(' ')).toContain('synthetic-ready=8/8 requirements');
     expect(taskFiles?.cliOnlyClosure).toBe('supported');
     expect(taskFiles?.gaps.join(' ')).toContain('Future API/runtime-generated patch promotion');
@@ -689,6 +693,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.gaps.join(' ')).not.toContain('post-apply verification copy');
     expect(taskFiles?.gaps.join(' ')).not.toContain('blocked preflight recovery copy');
     expect(taskFiles?.nextActions.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
+    expect(taskFiles?.nextActions.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadinessFromEvidence');
     expect(taskFiles?.gaps.join(' ')).not.toContain('packaged smoke and recovery UX');
     expect(taskFiles?.nextActions.join(' ')).toContain('product-controlled mutation path');
     expect(taskFiles?.nextActions.join(' ')).toContain('selected-runtime, target-task, same-run patch artifacts');
