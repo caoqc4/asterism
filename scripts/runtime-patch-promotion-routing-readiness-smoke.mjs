@@ -106,6 +106,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceExpectedFileCount=${scalarValue(serviceEvidencePartial.summary, 'expectedFileCount') ?? 'missing'}`);
   console.log(`serviceEvidenceExpectedFiles=${scalarValue(serviceEvidencePartial.summary, 'expectedFiles') ?? 'missing'}`);
   console.log(`serviceEvidenceTouchedFileCount=${scalarValue(serviceEvidencePartial.summary, 'touchedFileCount') ?? 'missing'}`);
+  console.log(`serviceEvidenceFilePathSafetyChain=${scalarValue(serviceEvidencePartial.summary, 'filePathSafetyChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTouchedFileEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'touchedFileEvidenceChain') ?? 'missing'}`);
 
   if (
@@ -128,6 +129,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'expectedFileCount') !== '1'
     || scalarValue(serviceEvidencePartial.summary, 'expectedFiles') !== 'src/app.ts'
     || scalarValue(serviceEvidencePartial.summary, 'touchedFileCount') !== '0'
+    || scalarValue(serviceEvidencePartial.summary, 'filePathSafetyChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'touchedFileEvidenceChain') !== 'missing'
   ) {
     console.log('status=failed');

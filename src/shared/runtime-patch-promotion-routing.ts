@@ -141,8 +141,13 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const touchedFiles = evidence.postApplyRunEvidence?.touchedFiles
     ?.map((file) => file.trim())
     .filter(Boolean) ?? [];
+  const filePathSafetyChainReady = expectedFiles.length > 0
+    && touchedFiles.length > 0
+    && expectedFiles.every(isSafeWorkspaceRelativePath)
+    && touchedFiles.every(isSafeWorkspaceRelativePath);
   const touchedFileEvidenceChainReady = expectedFiles.length > 0
     && touchedFiles.length > 0
+    && filePathSafetyChainReady
     && sameStringSet(expectedFiles, touchedFiles);
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && patchTaskId === targetTaskId
@@ -163,6 +168,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && Boolean(evidence.patchArtifact.artifactId?.trim())
     && Boolean(patchRunId)
     && expectedFiles.length > 0
+    && expectedFiles.every(isSafeWorkspaceRelativePath)
   );
   const promotionDecisionReady = (
     evidence.promotionDecision?.status === 'approved'
@@ -235,6 +241,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `expectedFiles=${expectedFiles.length ? expectedFiles.join(',') : 'none'}`,
       `touchedFileCount=${touchedFiles.length}`,
       `touchedFiles=${touchedFiles.length ? touchedFiles.join(',') : 'none'}`,
+      `filePathSafetyChain=${filePathSafetyChainReady ? 'ready' : 'missing'}`,
       `touchedFileEvidenceChain=${touchedFileEvidenceChainReady ? 'ready' : 'missing'}`,
     ].join(' / '),
   };
@@ -247,4 +254,24 @@ function sameStringSet(left: string[], right: string[]): boolean {
   if (left.length !== right.length) return false;
   const rightSet = new Set(right);
   return left.every((item) => rightSet.has(item));
+}
+
+function isSafeWorkspaceRelativePath(value: string): boolean {
+  const normalized = value.replaceAll('\\', '/').trim();
+  if (!normalized
+    || normalized.startsWith('/')
+    || normalized.startsWith('../')
+    || normalized.includes('/../')
+    || normalized === '.'
+    || normalized === '..') {
+    return false;
+  }
+
+  const segments = normalized.split('/');
+  return segments.every((segment) =>
+    Boolean(segment)
+    && segment !== '.git'
+    && segment !== 'node_modules'
+    && !segment.startsWith('.env'),
+  );
 }

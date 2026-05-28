@@ -185,6 +185,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('expectedFiles=src/app.ts');
     expect(partial.summary).toContain('touchedFileCount=0');
     expect(partial.summary).toContain('touchedFiles=none');
+    expect(partial.summary).toContain('filePathSafetyChain=missing');
     expect(partial.summary).toContain('touchedFileEvidenceChain=missing');
 
     const ready = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
@@ -246,6 +247,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('expectedFiles=src/app.ts');
     expect(ready.summary).toContain('touchedFileCount=1');
     expect(ready.summary).toContain('touchedFiles=src/app.ts');
+    expect(ready.summary).toContain('filePathSafetyChain=ready');
     expect(ready.summary).toContain('touchedFileEvidenceChain=ready');
   });
 
@@ -410,6 +412,63 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('touchedFileCount=1');
     expect(readiness.summary).toContain('touchedFiles=src/app.ts');
     expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
+    expect(readiness.summary).toContain('postApplyRunEvidence=missing');
+  });
+
+  it('requires expected and touched files to stay inside safe workspace-relative paths', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        confirmed: true,
+        operatorId: 'operator_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['../secrets.txt'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['../secrets.txt'],
+      },
+      promotionDecision: {
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'patch_artifact',
+        'same_run_evidence_chain',
+        'post_apply_run_evidence',
+      ],
+    });
+    expect(readiness.summary).toContain('expectedFiles=../secrets.txt');
+    expect(readiness.summary).toContain('touchedFiles=../secrets.txt');
+    expect(readiness.summary).toContain('filePathSafetyChain=missing');
+    expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
+    expect(readiness.summary).toContain('patchArtifact=missing');
     expect(readiness.summary).toContain('postApplyRunEvidence=missing');
   });
 
