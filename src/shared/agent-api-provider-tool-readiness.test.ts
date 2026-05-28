@@ -48,6 +48,7 @@ describe('Agent API provider tool readiness', () => {
       configuredProvider: null,
       explicitToolDeclarations: {
         declaredTools: ['web_search'],
+        packageName: '@openai/agents',
         source: 'provider_owned_metadata',
       },
       providerConfigured: true,
@@ -79,6 +80,8 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerConfigured=missing');
     expect(readiness.summary).toContain('configuredProvider=missing');
     expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackage=@openai/agents');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
   });
 
@@ -113,6 +116,8 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerMetadataPackage=@ai-sdk/openai');
     expect(readiness.summary).toContain('explicitToolDeclaration=missing');
     expect(readiness.summary).toContain('explicitToolDeclarationSource=provider_owned_metadata');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackage=@ai-sdk/openai');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
     expect(readiness.summary).toContain('declaredToolCount=0');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=0');
   });
@@ -122,6 +127,7 @@ describe('Agent API provider tool readiness', () => {
       configuredProvider: 'openai',
       explicitToolDeclarations: {
         declaredTools: ['web_search'],
+        packageName: '@openai/agents',
         source: 'provider_owned_metadata',
       },
       providerConfigured: true,
@@ -154,6 +160,8 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerMetadataOwner=openai');
     expect(readiness.summary).toContain('providerMetadataPackage=@openai/agents');
     expect(readiness.summary).toContain('explicitToolDeclarationSource=provider_owned_metadata');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackage=@openai/agents');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
     expect(readiness.summary).toContain('declaredToolCount=1');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
     expect(readiness.summary).toContain('declaredWebSearchTools=web_search');
@@ -164,6 +172,7 @@ describe('Agent API provider tool readiness', () => {
       configuredProvider: 'openai',
       explicitToolDeclarations: {
         declaredTools: ['taskplane.create_task'],
+        packageName: '@openai/agents',
         source: 'provider_owned_metadata',
       },
       providerConfigured: true,
@@ -194,6 +203,41 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredWebSearchToolCount=0');
     expect(readiness.summary).toContain('declaredWebSearchTools=none');
     expect(readiness.summary).toContain('explicitToolDeclaration=missing');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
+  });
+
+  it('requires explicit provider-owned tool declarations to match provider metadata package identity', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
+      explicitToolDeclarations: {
+        declaredTools: ['web_search'],
+        packageName: '@some/other-package',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@openai/agents',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'not_declared',
+      toolReadiness: 'not_declared',
+      missingRequirements: ['explicit_tool_declaration'],
+    });
+    expect(readiness.summary).toContain('providerOwnedMetadata=ready');
+    expect(readiness.summary).toContain('providerMetadataPackage=@openai/agents');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackage=@some/other-package');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=no');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+    expect(readiness.summary).toContain('explicitToolDeclaration=missing');
   });
 
   it('requires provider metadata to match the configured provider when provider identity is available', () => {
@@ -201,6 +245,7 @@ describe('Agent API provider tool readiness', () => {
       configuredProvider: 'openai',
       explicitToolDeclarations: {
         declaredTools: ['web_search'],
+        packageName: '@ai-sdk/anthropic',
         source: 'provider_owned_metadata',
       },
       providerConfigured: true,
@@ -227,6 +272,7 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('configuredProvider=openai');
     expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
     expect(readiness.summary).toContain('providerOwnedMetadata=missing');
+    expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
   });
 
@@ -235,6 +281,7 @@ describe('Agent API provider tool readiness', () => {
       configuredProvider: 'openai',
       explicitToolDeclarations: {
         declaredTools: ['web_search'],
+        packageName: '@openai/agents',
         source: 'runtime_probe',
       },
       providerConfigured: true,

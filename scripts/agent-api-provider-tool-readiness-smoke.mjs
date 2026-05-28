@@ -8,6 +8,11 @@ const root = process.cwd();
 const providerToolReadinessModulePath = path.join(root, 'dist-electron', 'shared', 'agent-api-provider-tool-readiness.js');
 const capabilityRegistryModulePath = path.join(root, 'dist-electron', 'shared', 'capability-registry.js');
 const runtimeSnapshotModulePath = path.join(root, 'dist-electron', 'shared', 'runtime-capability-snapshot.js');
+const sourceModulePaths = [
+  path.join(root, 'src', 'shared', 'agent-api-provider-tool-readiness.ts'),
+  path.join(root, 'src', 'shared', 'capability-registry.ts'),
+  path.join(root, 'src', 'shared', 'runtime-capability-snapshot.ts'),
+];
 
 export async function runAgentApiProviderToolReadinessSmoke() {
   console.log('Agent API provider tool readiness smoke');
@@ -21,6 +26,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     !fs.existsSync(providerToolReadinessModulePath)
     || !fs.existsSync(capabilityRegistryModulePath)
     || !fs.existsSync(runtimeSnapshotModulePath)
+    || sourceIsNewerThanBuild()
   ) {
     console.log('status=skip');
     console.log('skipReason=build_required');
@@ -103,6 +109,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerMetadataPackage=${scalarValue(agentApiRuntime.summary, 'providerMetadataPackage') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') ?? 'missing'}`);
   console.log(`explicitToolDeclaration=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclaration') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclaration') ?? 'missing'}`);
   console.log(`explicitToolDeclarationSource=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclarationSource') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
+  console.log(`explicitToolDeclarationPackage=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclarationPackage') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationPackage') ?? 'missing'}`);
+  console.log(`explicitToolDeclarationPackageMatchesMetadata=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclarationPackageMatchesMetadata') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationPackageMatchesMetadata') ?? 'missing'}`);
   console.log(`declaredToolCount=${scalarValue(agentApiRuntime.summary, 'declaredToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
   console.log(`declaredWebSearchToolCount=${scalarValue(agentApiRuntime.summary, 'declaredWebSearchToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchToolCount') ?? '0'}`);
   console.log(`declaredWebSearchTools=${scalarValue(agentApiRuntime.summary, 'declaredWebSearchTools') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
@@ -124,6 +132,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`serviceEvidenceProviderMetadataPackage=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') ?? 'missing'}`);
   console.log(`serviceEvidenceExplicitToolDeclaration=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclaration') ?? 'missing'}`);
   console.log(`serviceEvidenceExplicitToolDeclarationSource=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
+  console.log(`serviceEvidenceExplicitToolDeclarationPackage=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationPackage') ?? 'missing'}`);
+  console.log(`serviceEvidenceExplicitToolDeclarationPackageMatchesMetadata=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationPackageMatchesMetadata') ?? 'missing'}`);
   console.log(`serviceEvidenceDeclaredToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
   console.log(`serviceEvidenceDeclaredWebSearchToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchToolCount') ?? '0'}`);
   console.log(`serviceEvidenceDeclaredWebSearchTools=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
@@ -146,11 +156,15 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     !agentApiRuntime.summary.includes('providerMetadataMatchesSelected=yes') ? 'provider_metadata_matches_selected' : null,
     !agentApiRuntime.summary.includes('providerMetadataPackage=@ai-sdk/openai') ? 'provider_metadata_package' : null,
     !agentApiRuntime.summary.includes('explicitToolDeclaration=missing') ? 'explicit_tool_declaration' : null,
+    !agentApiRuntime.summary.includes('explicitToolDeclarationPackage=@ai-sdk/openai') ? 'explicit_tool_declaration_package' : null,
+    !agentApiRuntime.summary.includes('explicitToolDeclarationPackageMatchesMetadata=yes') ? 'explicit_tool_declaration_package_matches_metadata' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') !== 'provider' ? 'service_metadata_owner' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'configuredProvider') !== 'openai' ? 'service_configured_provider' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataMatchesSelected') !== 'yes' ? 'service_metadata_matches_selected' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') !== '@ai-sdk/openai' ? 'service_metadata_package' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'provider_owned_metadata' ? 'service_tool_declaration_source' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationPackage') !== '@ai-sdk/openai' ? 'service_tool_declaration_package' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationPackageMatchesMetadata') !== 'yes' ? 'service_tool_declaration_package_matches_metadata' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') !== '0' ? 'service_declared_tool_count' : null,
     (serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchToolCount') ?? '0') !== '0' ? 'service_declared_web_search_tool_count' : null,
     (serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none') !== 'none' ? 'service_declared_web_search_tools' : null,
@@ -180,6 +194,20 @@ function scalarValue(summary, key) {
 
 function serviceScalarValue(summary, key) {
   return scalarValue(summary, key);
+}
+
+function sourceIsNewerThanBuild() {
+  const buildModulePaths = [
+    providerToolReadinessModulePath,
+    capabilityRegistryModulePath,
+    runtimeSnapshotModulePath,
+  ];
+  if (buildModulePaths.some((modulePath) => !fs.existsSync(modulePath))) {
+    return false;
+  }
+  const oldestBuildTime = Math.min(...buildModulePaths.map((modulePath) => fs.statSync(modulePath).mtimeMs));
+  return sourceModulePaths.some((modulePath) =>
+    fs.existsSync(modulePath) && fs.statSync(modulePath).mtimeMs > oldestBuildTime);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

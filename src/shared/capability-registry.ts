@@ -627,6 +627,12 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationSource')
         ? `explicitToolDeclarationSource=${scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationSource')}`
         : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationPackage')
+        ? `explicitToolDeclarationPackage=${scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationPackage')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationPackageMatchesMetadata')
+        ? `explicitToolDeclarationPackageMatchesMetadata=${scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationPackageMatchesMetadata')}`
+        : null,
       scalarSummaryValue(providerToolReadiness.summary, 'declaredToolCount')
         ? `declaredToolCount=${scalarSummaryValue(providerToolReadiness.summary, 'declaredToolCount')}`
         : null,

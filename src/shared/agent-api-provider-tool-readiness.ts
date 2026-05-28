@@ -24,6 +24,7 @@ export type AgentApiProviderToolReadinessServiceEvidence = {
   configuredProvider?: string | null;
   explicitToolDeclarations?: {
     declaredTools: string[];
+    packageName?: string | null;
     source: 'provider_owned_metadata' | 'runtime_probe' | 'unknown';
   } | null;
   providerConfigured?: boolean;
@@ -47,6 +48,7 @@ export function deriveAgentApiProviderToolMetadata(
     return {
       explicitToolDeclarations: {
         declaredTools: [],
+        packageName: '@ai-sdk/openai',
         source: 'provider_owned_metadata',
       },
       providerOwnedMetadata: {
@@ -61,6 +63,7 @@ export function deriveAgentApiProviderToolMetadata(
     return {
       explicitToolDeclarations: {
         declaredTools: [],
+        packageName: '@ai-sdk/anthropic',
         source: 'provider_owned_metadata',
       },
       providerOwnedMetadata: {
@@ -127,6 +130,7 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const satisfiedRequirements: AgentApiProviderToolReadinessRequirement[] = [];
   const metadata = evidence.providerOwnedMetadata;
   const declarations = evidence.explicitToolDeclarations;
+  const declarationPackageName = declarations?.packageName?.trim().toLowerCase() ?? '';
   const normalizedDeclaredTools = normalizeDeclaredTools(declarations?.declaredTools);
   const webSearchDeclaredTools = declaredWebSearchTools(declarations?.declaredTools);
   const metadataMatchesConfiguredProvider = providerMetadataMatchesConfiguredProvider({
@@ -136,6 +140,8 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const providerOwnedMetadataReady = metadata?.present === true
     && metadata.owner !== 'unknown'
     && metadataMatchesConfiguredProvider;
+  const declarationPackageMatchesMetadata = Boolean(declarationPackageName)
+    && declarationPackageName === (metadata?.packageName?.trim().toLowerCase() ?? '');
 
   if (evidence.selectedRuntime?.runtimeKind === 'agent_api' && evidence.selectedRuntime.mode === 'api') {
     satisfiedRequirements.push('selected_api_runtime');
@@ -156,6 +162,7 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   if (
     providerOwnedMetadataReady
     && declarations?.source === 'provider_owned_metadata'
+    && declarationPackageMatchesMetadata
     && webSearchDeclaredTools.length > 0
   ) {
     satisfiedRequirements.push('explicit_tool_declaration');
@@ -193,6 +200,8 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
       `providerMetadataPackage=${metadata?.packageName?.trim() || 'missing'}`,
       `explicitToolDeclaration=${satisfiedRequirementSet.has('explicit_tool_declaration') ? 'ready' : 'missing'}`,
       `explicitToolDeclarationSource=${declarations?.source ?? 'missing'}`,
+      `explicitToolDeclarationPackage=${declarations?.packageName?.trim() || 'missing'}`,
+      `explicitToolDeclarationPackageMatchesMetadata=${declarationPackageMatchesMetadata ? 'yes' : 'no'}`,
       `declaredToolCount=${normalizedDeclaredTools.length}`,
       `declaredWebSearchToolCount=${webSearchDeclaredTools.length}`,
       `declaredWebSearchTools=${webSearchDeclaredTools.length ? webSearchDeclaredTools.join(',') : 'none'}`,
