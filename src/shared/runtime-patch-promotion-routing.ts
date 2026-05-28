@@ -152,10 +152,10 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const operatorApplyCheckpointId = evidence.explicitOperatorApply?.checkpointId?.trim() || '';
   const expectedFiles = evidence.patchArtifact?.expectedFiles
     ?.map(normalizeWorkspaceRelativePath)
-    .filter(Boolean) ?? [];
+    ?? [];
   const touchedFiles = evidence.postApplyRunEvidence?.touchedFiles
     ?.map(normalizeWorkspaceRelativePath)
-    .filter(Boolean) ?? [];
+    ?? [];
   const expectedFileEvidenceChainReady = expectedFiles.length > 0
     && expectedFiles.every(isSafeWorkspaceRelativePath)
     && new Set(expectedFiles).size === expectedFiles.length;
