@@ -51,6 +51,7 @@ export type RuntimePatchPromotionRoutingServiceEvidence = {
     touchedFiles?: string[];
   } | null;
   promotionDecision?: {
+    artifactId?: string | null;
     checkpointId?: string | null;
     decisionId?: string | null;
     runId?: string | null;
@@ -58,6 +59,7 @@ export type RuntimePatchPromotionRoutingServiceEvidence = {
     taskId?: string | null;
   } | null;
   promotionPreflight?: {
+    artifactId?: string | null;
     checkpointId?: string | null;
     runId?: string | null;
     status: 'blocked' | 'missing' | 'ready';
@@ -138,6 +140,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const postApplyTaskId = evidence.postApplyRunEvidence?.taskId?.trim() || '';
   const promotionCheckpointId = evidence.promotionDecision?.checkpointId?.trim() || '';
   const preflightCheckpointId = evidence.promotionPreflight?.checkpointId?.trim() || '';
+  const patchArtifactId = evidence.patchArtifact?.artifactId?.trim() || '';
+  const decisionArtifactId = evidence.promotionDecision?.artifactId?.trim() || '';
+  const preflightArtifactId = evidence.promotionPreflight?.artifactId?.trim() || '';
   const operatorApplyTaskId = evidence.explicitOperatorApply?.taskId?.trim() || '';
   const operatorApplyRunId = evidence.explicitOperatorApply?.runId?.trim() || '';
   const operatorApplyCheckpointId = evidence.explicitOperatorApply?.checkpointId?.trim() || '';
@@ -182,13 +187,20 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     evidence.promotionDecision?.status === 'approved'
     && Boolean(evidence.promotionDecision.decisionId?.trim())
     && Boolean(promotionCheckpointId)
+    && Boolean(decisionArtifactId)
     && Boolean(decisionRunId)
   );
+  const artifactEvidenceChainReady = Boolean(patchArtifactId)
+    && Boolean(decisionArtifactId)
+    && Boolean(preflightArtifactId)
+    && patchArtifactId === decisionArtifactId
+    && patchArtifactId === preflightArtifactId;
   const checkpointEvidenceChainReady = Boolean(promotionCheckpointId)
     && Boolean(preflightCheckpointId)
     && promotionCheckpointId === preflightCheckpointId;
   const promotionPreflightReady = (
     evidence.promotionPreflight?.status === 'ready'
+    && artifactEvidenceChainReady
     && checkpointEvidenceChainReady
     && Boolean(preflightRunId)
   );
@@ -246,7 +258,10 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `promotionPreflightTask=${preflightTaskId || 'missing'}`,
       `postApplyTask=${postApplyTaskId || 'missing'}`,
       `targetTaskEvidenceChain=${targetTaskIdentityReady ? 'ready' : 'missing'}`,
-      `patchArtifactId=${evidence.patchArtifact?.artifactId?.trim() || 'missing'}`,
+      `patchArtifactId=${patchArtifactId || 'missing'}`,
+      `decisionArtifactId=${decisionArtifactId || 'missing'}`,
+      `preflightArtifactId=${preflightArtifactId || 'missing'}`,
+      `artifactEvidenceChain=${artifactEvidenceChainReady ? 'ready' : 'missing'}`,
       `promotionDecisionId=${evidence.promotionDecision?.decisionId?.trim() || 'missing'}`,
       `promotionCheckpointId=${promotionCheckpointId || 'missing'}`,
       `preflightCheckpointId=${preflightCheckpointId || 'missing'}`,

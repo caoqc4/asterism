@@ -198,6 +198,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(p
       touchedFiles: [],
     },
     promotionDecision: {
+      artifactId: params.preflight.promotion.artifactId,
       checkpointId: params.preflight.checkpoint.id,
       decisionId: params.preflight.promotion.decisionId,
       runId: params.preflight.checkpoint.runId,
@@ -205,6 +206,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(p
       taskId: params.preflight.promotion.taskId,
     },
     promotionPreflight: {
+      artifactId: params.preflight.promotion.artifactId,
       checkpointId: params.preflight.checkpoint.id,
       runId: params.preflight.checkpoint.runId,
       status: 'ready',
@@ -310,6 +312,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
       touchedFiles: params.touchedFiles,
     },
     promotionDecision: {
+      artifactId: params.preflight.promotion.artifactId,
       checkpointId: params.preflight.checkpoint.id,
       decisionId: params.preflight.promotion.decisionId,
       runId: params.preflight.checkpoint.runId,
@@ -317,6 +320,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
       taskId: params.preflight.promotion.taskId,
     },
     promotionPreflight: {
+      artifactId: params.preflight.promotion.artifactId,
       checkpointId: params.preflight.checkpoint.id,
       runId: params.preflight.checkpoint.runId,
       status: 'ready',
@@ -356,6 +360,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
       touchedFiles: params.promotion.expectedFiles,
     },
     promotionDecision: {
+      artifactId: params.promotion.artifactId,
       checkpointId: params.promotion.checkpointId,
       decisionId: params.promotion.decisionId,
       runId: params.promotion.runId,
@@ -363,6 +368,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
       taskId: params.promotion.taskId,
     },
     promotionPreflight: {
+      artifactId: params.promotion.artifactId,
       checkpointId: params.promotion.checkpointId,
       runId: params.promotion.runId,
       status: 'ready',

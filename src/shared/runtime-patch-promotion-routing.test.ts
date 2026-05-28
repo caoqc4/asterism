@@ -123,6 +123,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_1',
       },
       promotionDecision: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         decisionId: 'decision_patch_1',
         runId: 'run_patch_1',
@@ -130,6 +131,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_1',
       },
       promotionPreflight: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         runId: 'run_patch_2',
         status: 'ready',
@@ -171,6 +173,9 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('postApplyTask=missing');
     expect(partial.summary).toContain('targetTaskEvidenceChain=missing');
     expect(partial.summary).toContain('patchArtifactId=artifact_patch_1');
+    expect(partial.summary).toContain('decisionArtifactId=artifact_patch_1');
+    expect(partial.summary).toContain('preflightArtifactId=artifact_patch_1');
+    expect(partial.summary).toContain('artifactEvidenceChain=ready');
     expect(partial.summary).toContain('promotionDecisionId=decision_patch_1');
     expect(partial.summary).toContain('promotionCheckpointId=checkpoint_patch_1');
     expect(partial.summary).toContain('preflightCheckpointId=checkpoint_patch_1');
@@ -212,6 +217,7 @@ describe('runtime patch promotion routing readiness', () => {
         touchedFiles: ['src/app.ts'],
       },
       promotionDecision: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         decisionId: 'decision_patch_1',
         runId: 'run_patch_1',
@@ -219,6 +225,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_1',
       },
       promotionPreflight: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         runId: 'run_patch_1',
         status: 'ready',
@@ -239,6 +246,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('requirements=8/8');
     expect(ready.summary).toContain('promotionSatisfiedRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
     expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('artifactEvidenceChain=ready');
     expect(ready.summary).toContain('sameRunEvidenceChain=ready');
     expect(ready.summary).toContain('operatorId=operator_1');
     expect(ready.summary).toContain('operatorApplyTask=task_1');
@@ -284,6 +292,7 @@ describe('runtime patch promotion routing readiness', () => {
         touchedFiles: ['src/app.ts'],
       },
       promotionDecision: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         decisionId: 'decision_patch_1',
         runId: 'run_patch_1',
@@ -291,6 +300,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_other',
       },
       promotionPreflight: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         runId: 'run_patch_1',
         status: 'ready',
@@ -339,6 +349,7 @@ describe('runtime patch promotion routing readiness', () => {
         touchedFiles: ['src/app.ts'],
       },
       promotionDecision: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         decisionId: 'decision_patch_1',
         runId: 'run_patch_1',
@@ -346,6 +357,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_1',
       },
       promotionPreflight: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         runId: 'run_patch_1',
         status: 'ready',
@@ -396,6 +408,7 @@ describe('runtime patch promotion routing readiness', () => {
         touchedFiles: ['src/app.ts'],
       },
       promotionDecision: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         decisionId: 'decision_patch_1',
         runId: 'run_patch_1',
@@ -403,6 +416,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_1',
       },
       promotionPreflight: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_other',
         runId: 'run_patch_1',
         status: 'ready',
@@ -434,6 +448,66 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('operatorApplyEvidenceChain=missing');
   });
 
+  it('requires promotion Decision and preflight evidence to reference the same patch artifact', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_other',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'promotion_preflight',
+        'same_run_evidence_chain',
+      ],
+    });
+    expect(readiness.summary).toContain('patchArtifactId=artifact_patch_1');
+    expect(readiness.summary).toContain('decisionArtifactId=artifact_other');
+    expect(readiness.summary).toContain('preflightArtifactId=artifact_patch_1');
+    expect(readiness.summary).toContain('artifactEvidenceChain=missing');
+    expect(readiness.summary).toContain('promotionPreflight=missing');
+  });
+
   it('requires post-apply touched files to match the reviewed patch expected file set', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
@@ -458,6 +532,7 @@ describe('runtime patch promotion routing readiness', () => {
         touchedFiles: ['src/app.ts'],
       },
       promotionDecision: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         decisionId: 'decision_patch_1',
         runId: 'run_patch_1',
@@ -465,6 +540,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_1',
       },
       promotionPreflight: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         runId: 'run_patch_1',
         status: 'ready',
@@ -517,6 +593,7 @@ describe('runtime patch promotion routing readiness', () => {
         touchedFiles: ['../secrets.txt'],
       },
       promotionDecision: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         decisionId: 'decision_patch_1',
         runId: 'run_patch_1',
@@ -524,6 +601,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_1',
       },
       promotionPreflight: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         runId: 'run_patch_1',
         status: 'ready',
@@ -578,6 +656,7 @@ describe('runtime patch promotion routing readiness', () => {
         touchedFiles: ['src/app.ts', 'src/app.ts'],
       },
       promotionDecision: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         decisionId: 'decision_patch_1',
         runId: 'run_patch_1',
@@ -585,6 +664,7 @@ describe('runtime patch promotion routing readiness', () => {
         taskId: 'task_1',
       },
       promotionPreflight: {
+        artifactId: 'artifact_patch_1',
         checkpointId: 'checkpoint_patch_1',
         runId: 'run_patch_1',
         status: 'ready',
