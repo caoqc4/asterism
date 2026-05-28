@@ -298,6 +298,24 @@ describe('capability registry', () => {
       .toEqual(expect.arrayContaining(['runtime_context_assembly', 'context_readiness', 'task_memory_coverage', 'task_memory_guidance', 'pre_step', 'subtask_start', 'post_step']));
   });
 
+  it('does not mark selected Agent API Runtime available without configured provider identity', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({
+        aiStatus: aiStatus({
+          configured: true,
+          provider: null,
+          runtimeMode: 'api',
+        }),
+      }),
+    });
+
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
+      status: 'disabled',
+      configured: false,
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=blocked / providerToolRequirements=2/5 / providerToolMissingRequirements=provider_configured,provider_owned_metadata,explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=missing / configuredProvider=missing'),
+    });
+  });
+
   it('keeps product surfaces hidden when they are not connected or ready', () => {
     const registry = buildCapabilityRegistry({
       snapshot: buildRuntimeCapabilitySnapshot({ aiStatus: aiStatus() }),

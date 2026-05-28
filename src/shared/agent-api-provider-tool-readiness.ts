@@ -105,7 +105,7 @@ function providerMetadataMatchesConfiguredProvider(params: {
 }): boolean {
   const configuredProvider = normalizeProvider(params.configuredProvider);
   const metadata = params.metadata;
-  if (!configuredProvider) return true;
+  if (!configuredProvider) return false;
   if (!metadata?.present || metadata.owner === 'unknown') return false;
 
   const packageName = metadata.packageName?.trim().toLowerCase() ?? '';
@@ -141,7 +141,7 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
     satisfiedRequirements.push('selected_api_runtime');
   }
 
-  if (evidence.providerConfigured === true) {
+  if (evidence.providerConfigured === true && normalizeProvider(evidence.configuredProvider)) {
     satisfiedRequirements.push('provider_configured');
   }
 

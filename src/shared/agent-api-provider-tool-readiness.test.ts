@@ -43,6 +43,45 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredWebSearchTools=none');
   });
 
+  it('requires configured provider identity before satisfying provider configuration', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: null,
+      explicitToolDeclarations: {
+        declaredTools: ['web_search'],
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@openai/agents',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'blocked',
+      toolReadiness: 'not_declared',
+      satisfiedRequirements: [
+        'selected_api_runtime',
+        'no_startup_probe',
+      ],
+      missingRequirements: [
+        'provider_configured',
+        'provider_owned_metadata',
+        'explicit_tool_declaration',
+      ],
+    });
+    expect(readiness.summary).toContain('providerConfigured=missing');
+    expect(readiness.summary).toContain('configuredProvider=missing');
+    expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+  });
+
   it('derives packaged provider metadata without declaring web/search tools', () => {
     const metadata = deriveAgentApiProviderToolMetadata('openai');
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({

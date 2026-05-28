@@ -558,13 +558,14 @@ function agentCliCapability(
 
 function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): CapabilityRegistryEntry {
   const selected = snapshot?.executionRuntime.kind === 'agent_api';
-  const providerConfigured = Boolean(snapshot?.model.configured);
+  const configuredProvider = snapshot?.model.provider?.trim() ?? '';
+  const providerConfigured = Boolean(snapshot?.model.configured && configuredProvider);
   const availableForSelectedProviderPhases = selected && providerConfigured;
   const providerToolMetadata = providerConfigured
     ? deriveAgentApiProviderToolMetadata(snapshot?.model.provider)
     : { explicitToolDeclarations: null, providerOwnedMetadata: null };
   const providerToolReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
-    configuredProvider: snapshot?.model.provider ?? null,
+    configuredProvider: configuredProvider || null,
     explicitToolDeclarations: providerToolMetadata.explicitToolDeclarations,
     providerConfigured,
     providerOwnedMetadata: providerToolMetadata.providerOwnedMetadata,
