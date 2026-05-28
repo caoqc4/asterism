@@ -2929,6 +2929,7 @@ describe('SchedulerService', () => {
     });
     expect(result.summary).toContain('terminalRunEvidence=pending');
     expect(result.summary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
+    expect(result.summary).toContain('terminalEvidenceDecisionProposal=proposed');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_auto',
       type: 'panel.scheduled_event_agent_triggered',
@@ -2938,6 +2939,94 @@ describe('SchedulerService', () => {
         terminalRunEvidenceStatus: 'pending',
         triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
       }),
+    }));
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_scheduled_empty_terminal',
+        proposedOutcome: '人工复核 Run 并补录终态证据',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 终态证据缺失后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate same-day terminal-evidence Decision proposals', async () => {
+    const now = new Date('2026-05-26T11:20:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_terminal_evidence_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent 终态证据缺失后的下一步',
+          }),
+          createdAt: '2026-05-26T10:45:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      failureReason: null,
+      id: 'run_scheduled_empty_terminal_repeat',
+      output: null,
+      outputSource: null,
+      status: 'completed',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.summary).toContain('terminalEvidenceDecisionProposal=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'panel.scheduled_event_agent_triggered',
     }));
   });
 

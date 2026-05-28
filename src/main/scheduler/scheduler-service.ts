@@ -505,6 +505,10 @@ export class SchedulerService {
         const match = /failureDecisionProposal=([^/\s]+)/.exec(result.summary);
         return match?.[1] && match[1] !== 'not_required' ? [match[1]] : [];
       });
+      const terminalEvidenceDecisionProposals = results.flatMap((result) => {
+        const match = /terminalEvidenceDecisionProposal=([^/\s]+)/.exec(result.summary);
+        return match?.[1] && match[1] !== 'not_required' ? [match[1]] : [];
+      });
       const runtimeStartMissingRequirements = Array.from(new Set(
         results.flatMap((result) => result.plan.runtimeStartMissingRequirements),
       ));
@@ -539,6 +543,7 @@ export class SchedulerService {
         `blockedTaskSummaries=${blockedTaskSummaries.length ? blockedTaskSummaries.join('; ') : 'none'}`,
         `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
         `failureDecisionProposals=${failureDecisionProposals.length ? failureDecisionProposals.join(',') : 'none'}`,
+        `terminalEvidenceDecisionProposals=${terminalEvidenceDecisionProposals.length ? terminalEvidenceDecisionProposals.join(',') : 'none'}`,
         `runLimitDecisionProposals=${runLimitDecisionProposalStatuses.length ? runLimitDecisionProposalStatuses.join(',') : 'none'}`,
         `runLimitAccountingDecisionProposals=${runLimitAccountingDecisionProposalStatuses.length ? runLimitAccountingDecisionProposalStatuses.join(',') : 'none'}`,
         `readinessDecisionProposals=${readinessDecisionProposalStatuses.length ? readinessDecisionProposalStatuses.join(',') : 'none'}`,
@@ -880,6 +885,12 @@ export class SchedulerService {
           summary: `failureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
         }))
       : null;
+    const terminalEvidenceDecisionProposal = shouldProposeScheduledEventTerminalEvidenceDecision(run)
+      ? await this.proposeScheduledEventTerminalEvidenceDecision(task, plan, run, now).catch((error: unknown) => ({
+          status: 'failed' as const,
+          summary: `terminalEvidenceDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+        }))
+      : null;
 
     return {
       status: 'started',
@@ -892,6 +903,9 @@ export class SchedulerService {
         failureDecisionProposal
           ? `failureDecisionProposal=${failureDecisionProposal.status} / failureDecisionSummary=${failureDecisionProposal.summary}`
           : 'failureDecisionProposal=not_required',
+        terminalEvidenceDecisionProposal
+          ? `terminalEvidenceDecisionProposal=${terminalEvidenceDecisionProposal.status} / terminalEvidenceDecisionSummary=${terminalEvidenceDecisionProposal.summary}`
+          : 'terminalEvidenceDecisionProposal=not_required',
       ].join(' / '),
     };
   }
@@ -954,6 +968,40 @@ export class SchedulerService {
         `Scheduled/event Agent daily run limit reached for task ${task.id}.`,
         `Current limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
         'Taskplane should confirm whether to wait, adjust the Standing Approval limit, or pause automation.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
+    });
+  }
+
+  private async proposeScheduledEventTerminalEvidenceDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    run: RunRecord,
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent 终态证据缺失后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'terminalEvidenceDecisionProposal=skipped_existing',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      evidenceRunId: run.id,
+      options: [
+        '人工复核 Run 并补录终态证据',
+        '重新运行一次以生成可复核输出',
+        '暂停自动巡检并修复输出采集',
+      ],
+      proposedOutcome: '人工复核 Run 并补录终态证据',
+      rationale: [
+        `Scheduled/event Agent run ${run.id} reached completed without reviewable output or failure reason.`,
+        'Taskplane should confirm whether to recover evidence, rerun, or pause automation before treating the trigger as reviewable.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
       standingApprovalPolicyId: plan.policy?.id ?? null,
@@ -1342,6 +1390,10 @@ function isTerminalScheduledEventRunStatus(status: RunRecord['status']): boolean
 function scheduledEventRunTerminalEvidenceStatus(run: RunRecord): ScheduledEventAgentTriggerResult['terminalRunEvidenceStatus'] {
   if (!isTerminalScheduledEventRunStatus(run.status)) return 'pending';
   return run.output?.trim() || run.failureReason?.trim() ? 'present' : 'pending';
+}
+
+function shouldProposeScheduledEventTerminalEvidenceDecision(run: RunRecord): boolean {
+  return run.status === 'completed' && scheduledEventRunTerminalEvidenceStatus(run) !== 'present';
 }
 
 function scheduledEventTriggerRunEvidenceStatus(

@@ -317,6 +317,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('Run target-task mismatches now block target timeline evidence');
     expect(decisions?.evidence.join(' ')).toContain('runIdentityDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('operator-started runs return blocked recovery evidence instead of throwing to IPC');
+    expect(decisions?.evidence.join(' ')).toContain('completed runs without reviewable output or failureReason');
+    expect(decisions?.evidence.join(' ')).toContain('terminalEvidenceDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('stale-run recovery now routes each recovered run');
     expect(decisions?.evidence.join(' ')).toContain('staleRunRecoveryDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
@@ -332,6 +334,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.gaps.join(' ')).toContain('deduplicated sweep-failure trigger review policy');
     expect(decisions?.gaps.join(' ')).toContain('no-target task-source failure policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated timeline-failure review policy');
+    expect(decisions?.gaps.join(' ')).toContain('terminal-evidence review policy');
     expect(decisions?.gaps.join(' ')).toContain('broader scheduler review policies');
     expect(decisions?.nextActions.join(' ')).toContain('remaining scheduled/event review policies');
     expect(decisions?.nextActions.join(' ')).toContain('deduplicated');
