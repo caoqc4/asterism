@@ -54,6 +54,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   const serviceEvidencePartial = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
     patchArtifact: {
       artifactId: 'artifact_patch_1',
+      expectedFiles: ['src/app.ts'],
       kind: 'patch',
       runId: 'run_patch_1',
       status: 'ready',
@@ -101,7 +102,10 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceDecisionRunId=${scalarValue(serviceEvidencePartial.summary, 'decisionRunId') ?? 'missing'}`);
   console.log(`serviceEvidencePreflightRunId=${scalarValue(serviceEvidencePartial.summary, 'preflightRunId') ?? 'missing'}`);
   console.log(`serviceEvidenceSameRunId=${scalarValue(serviceEvidencePartial.summary, 'sameRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceExpectedFileCount=${scalarValue(serviceEvidencePartial.summary, 'expectedFileCount') ?? 'missing'}`);
+  console.log(`serviceEvidenceExpectedFiles=${scalarValue(serviceEvidencePartial.summary, 'expectedFiles') ?? 'missing'}`);
   console.log(`serviceEvidenceTouchedFileCount=${scalarValue(serviceEvidencePartial.summary, 'touchedFileCount') ?? 'missing'}`);
+  console.log(`serviceEvidenceTouchedFileEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'touchedFileEvidenceChain') ?? 'missing'}`);
 
   if (
     blocked.ready
@@ -120,7 +124,10 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'decisionRunId') !== 'run_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'preflightRunId') !== 'run_patch_2'
     || scalarValue(serviceEvidencePartial.summary, 'sameRunId') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'expectedFileCount') !== '1'
+    || scalarValue(serviceEvidencePartial.summary, 'expectedFiles') !== 'src/app.ts'
     || scalarValue(serviceEvidencePartial.summary, 'touchedFileCount') !== '0'
+    || scalarValue(serviceEvidencePartial.summary, 'touchedFileEvidenceChain') !== 'missing'
   ) {
     console.log('status=failed');
     return 1;

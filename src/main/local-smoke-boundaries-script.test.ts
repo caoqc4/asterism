@@ -876,6 +876,13 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('workspace=unchanged');
     expect(result.output).toContain('workspaceApply=not-attempted');
     expect(result.output).toContain('promotionInProduct=explicit_apply_only');
+    if (result.output.includes('status=skip')) {
+      expect(result.output).toContain('skipReason=build_required');
+      return;
+    }
+    expect(result.output).toContain('serviceEvidenceExpectedFileCount=1');
+    expect(result.output).toContain('serviceEvidenceExpectedFiles=src/app.ts');
+    expect(result.output).toContain('serviceEvidenceTouchedFileEvidenceChain=missing');
   });
 
   it('keeps sandbox patch promotion readiness smoke read-only and build-gated by default', () => {

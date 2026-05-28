@@ -35,6 +35,7 @@ export type RuntimePatchPromotionRoutingServiceEvidence = {
   } | null;
   patchArtifact?: {
     artifactId?: string | null;
+    expectedFiles?: string[];
     kind: 'patch' | 'task_file' | 'unknown';
     runId?: string | null;
     status: 'missing' | 'ready';
@@ -134,9 +135,15 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const postApplyTaskId = evidence.postApplyRunEvidence?.taskId?.trim() || '';
   const promotionCheckpointId = evidence.promotionDecision?.checkpointId?.trim() || '';
   const preflightCheckpointId = evidence.promotionPreflight?.checkpointId?.trim() || '';
+  const expectedFiles = evidence.patchArtifact?.expectedFiles
+    ?.map((file) => file.trim())
+    .filter(Boolean) ?? [];
   const touchedFiles = evidence.postApplyRunEvidence?.touchedFiles
     ?.map((file) => file.trim())
     .filter(Boolean) ?? [];
+  const touchedFileEvidenceChainReady = expectedFiles.length > 0
+    && touchedFiles.length > 0
+    && sameStringSet(expectedFiles, touchedFiles);
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && patchTaskId === targetTaskId
     && decisionTaskId === targetTaskId
@@ -155,6 +162,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && evidence.patchArtifact.kind === 'patch'
     && Boolean(evidence.patchArtifact.artifactId?.trim())
     && Boolean(patchRunId)
+    && expectedFiles.length > 0
   );
   const promotionDecisionReady = (
     evidence.promotionDecision?.status === 'approved'
@@ -177,7 +185,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const postApplyRunEvidenceReady = (
     evidence.postApplyRunEvidence?.status === 'present'
     && Boolean(postApplyRunId)
-    && touchedFiles.length > 0
+    && touchedFileEvidenceChainReady
   );
   const sameRunEvidenceChainReady = (
     patchArtifactReady
@@ -223,8 +231,17 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `preflightRunId=${preflightRunId || 'missing'}`,
       `postApplyRunId=${postApplyRunId || 'missing'}`,
       `sameRunId=${sameRunEvidenceChainReady ? patchRunId : 'missing'}`,
+      `expectedFileCount=${expectedFiles.length}`,
+      `expectedFiles=${expectedFiles.length ? expectedFiles.join(',') : 'none'}`,
       `touchedFileCount=${touchedFiles.length}`,
       `touchedFiles=${touchedFiles.length ? touchedFiles.join(',') : 'none'}`,
+      `touchedFileEvidenceChain=${touchedFileEvidenceChainReady ? 'ready' : 'missing'}`,
     ].join(' / '),
   };
+}
+
+function sameStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false;
+  const rightSet = new Set(right);
+  return left.every((item) => rightSet.has(item));
 }

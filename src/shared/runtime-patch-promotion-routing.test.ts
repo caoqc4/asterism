@@ -116,6 +116,7 @@ describe('runtime patch promotion routing readiness', () => {
     const partial = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       patchArtifact: {
         artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
         kind: 'patch',
         runId: 'run_patch_1',
         status: 'ready',
@@ -180,8 +181,11 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('preflightRunId=run_patch_2');
     expect(partial.summary).toContain('postApplyRunId=missing');
     expect(partial.summary).toContain('sameRunId=missing');
+    expect(partial.summary).toContain('expectedFileCount=1');
+    expect(partial.summary).toContain('expectedFiles=src/app.ts');
     expect(partial.summary).toContain('touchedFileCount=0');
     expect(partial.summary).toContain('touchedFiles=none');
+    expect(partial.summary).toContain('touchedFileEvidenceChain=missing');
 
     const ready = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
@@ -190,6 +194,7 @@ describe('runtime patch promotion routing readiness', () => {
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
         kind: 'patch',
         runId: 'run_patch_1',
         status: 'ready',
@@ -237,8 +242,11 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('postApplyRunId=run_patch_1');
     expect(ready.summary).toContain('checkpointEvidenceChain=ready');
     expect(ready.summary).toContain('sameRunId=run_patch_1');
+    expect(ready.summary).toContain('expectedFileCount=1');
+    expect(ready.summary).toContain('expectedFiles=src/app.ts');
     expect(ready.summary).toContain('touchedFileCount=1');
     expect(ready.summary).toContain('touchedFiles=src/app.ts');
+    expect(ready.summary).toContain('touchedFileEvidenceChain=ready');
   });
 
   it('requires patch, decision, preflight, and post-apply evidence to match the target task', () => {
@@ -249,6 +257,7 @@ describe('runtime patch promotion routing readiness', () => {
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
         kind: 'patch',
         runId: 'run_patch_1',
         status: 'ready',
@@ -300,6 +309,7 @@ describe('runtime patch promotion routing readiness', () => {
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
         kind: 'patch',
         runId: 'run_patch_1',
         status: 'ready',
@@ -345,5 +355,61 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('promotionCheckpointId=checkpoint_patch_1');
     expect(readiness.summary).toContain('preflightCheckpointId=checkpoint_other');
     expect(readiness.summary).toContain('checkpointEvidenceChain=missing');
+  });
+
+  it('requires post-apply touched files to match the reviewed patch expected file set', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        confirmed: true,
+        operatorId: 'operator_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts', 'src/util.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'same_run_evidence_chain',
+        'post_apply_run_evidence',
+      ],
+    });
+    expect(readiness.summary).toContain('expectedFileCount=2');
+    expect(readiness.summary).toContain('expectedFiles=src/app.ts,src/util.ts');
+    expect(readiness.summary).toContain('touchedFileCount=1');
+    expect(readiness.summary).toContain('touchedFiles=src/app.ts');
+    expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
+    expect(readiness.summary).toContain('postApplyRunEvidence=missing');
   });
 });

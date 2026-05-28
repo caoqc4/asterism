@@ -287,8 +287,11 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
       'preflightRunId',
       'postApplyRunId',
       'sameRunId',
+      'expectedFileCount',
+      'expectedFiles',
       'touchedFileCount',
       'touchedFiles',
+      'touchedFileEvidenceChain',
     ]);
   }
   if (surface.id !== 'runtime.scheduler') return [];

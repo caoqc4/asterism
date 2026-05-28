@@ -182,6 +182,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(p
     },
     patchArtifact: {
       artifactId: params.preflight.artifact.id,
+      expectedFiles: params.preflight.promotion.expectedFiles,
       kind: params.preflight.artifact.kind === 'patch' ? 'patch' : 'unknown',
       runId: params.preflight.artifact.sourceId,
       status: params.preflight.artifact.kind === 'patch' ? 'ready' : 'missing',
@@ -290,6 +291,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
     },
     patchArtifact: {
       artifactId: params.preflight.artifact.id,
+      expectedFiles: params.preflight.promotion.expectedFiles,
       kind: params.preflight.artifact.kind === 'patch' ? 'patch' : 'unknown',
       runId: params.preflight.artifact.sourceId,
       status: params.preflight.artifact.kind === 'patch' ? 'ready' : 'missing',
@@ -332,6 +334,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
     },
     patchArtifact: {
       artifactId: params.promotion.artifactId,
+      expectedFiles: params.promotion.expectedFiles,
       kind: 'patch',
       runId: params.promotion.runId,
       status: 'ready',
