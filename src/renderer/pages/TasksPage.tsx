@@ -2900,6 +2900,14 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         parentSummary: draft.parentGoal,
         parentTaskId: project.id,
         review: draft.review,
+        runtimeContract: draft.invocation
+          ? {
+              invocationLayer: draft.invocation.layer,
+              phase: draft.invocation.phase,
+              runtimeLabel: draft.invocation.runtime.label,
+              runtimeMode: draft.invocation.runtime.mode,
+            }
+          : null,
         source: 'agent_api_decomposition',
         subtasks: draft.subtasks.map((subtask) => ({
           acceptanceCriteria: subtask.acceptanceCriteria,

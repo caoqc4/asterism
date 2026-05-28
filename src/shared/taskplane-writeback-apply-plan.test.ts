@@ -124,6 +124,46 @@ describe('Taskplane writeback apply plans', () => {
     });
   });
 
+  it('keeps Agent API decomposition runtime contract in create-many timeline evidence', () => {
+    const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      parentTaskId: 'task_project',
+      runtimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeLabel: 'Agent API Runtime · openai / gpt-test',
+        runtimeMode: 'api',
+      },
+      source: 'agent_api_decomposition',
+      subtasks: [{
+        acceptanceCriteria: '范围文档可验收。',
+        dependency: null,
+        summary: '确认范围。',
+        title: '确认范围',
+      }],
+    });
+
+    expect(plan).toMatchObject({
+      action: 'subtask.create_many',
+      input: {
+        parentTaskId: 'task_project',
+        source: 'agent_api_decomposition',
+      },
+      timeline: {
+        payload: {
+          confirmationBoundary: 'operator_confirmed_subtask_create_many',
+          draftOnlyBeforeConfirmation: true,
+          runtimeContract: {
+            invocationLayer: 'api_runtime',
+            phase: 'decomposition_draft',
+            runtimeLabel: 'Agent API Runtime · openai / gpt-test',
+            runtimeMode: 'api',
+          },
+          source: 'agent_api_decomposition',
+        },
+      },
+    });
+  });
+
   it('maps artifact proposals to run-backed note artifacts', () => {
     const plan = buildArtifactWritebackApplyPlan({
       proposal: {
