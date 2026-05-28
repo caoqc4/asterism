@@ -339,6 +339,123 @@ describe('SchedulerService', () => {
     expect(scheduledJobs).toHaveLength(0);
   });
 
+  it('records authorized scheduler Decision proposals as Task Dynamics timeline evidence', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      options: ['继续巡检', '暂停巡检'],
+      proposedOutcome: '继续巡检',
+      rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('proposed');
+    expect(result.summary).toContain('proposalReady=yes');
+    expect(result.summary).toContain('timelineEvent=panel.scheduler_decision_proposed');
+    expect(result.summary).toContain('durableDecisionCreation=approval_required');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        approvalQueueSurface: 'task_dynamics',
+        authorization: 'operator_confirmation',
+        operatorConfirmed: true,
+        operatorId: 'operator_1',
+        proposedOutcome: '继续巡检',
+        rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+        targetTaskId: 'task_auto',
+        title: '确认自动巡检策略',
+      }),
+    });
+  });
+
+  it('blocks scheduler Decision proposals without target-scoped authorization', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      rationale: '需要确认下一步。',
+      standingApprovalActive: true,
+      standingApprovalPolicyId: 'policy_1',
+      standingApprovalScopeTaskId: 'task_other',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('authorization=missing');
+    expect(result.summary).toContain('schedulerDecisionProposal=blocked');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
   it('runs startup recovery and schedules jobs when enabled', async () => {
     const homeData = {
       ...buildHomeData(),

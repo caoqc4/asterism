@@ -6,6 +6,7 @@ import {
   planScheduledEventAgentTriggerFromEvidence,
   type AgentScheduledEventTriggerPlan,
 } from '../../shared/agent-orchestration.js';
+import { planSchedulerDecisionProposalFromEvidence } from '../../shared/scheduler-decision-proposal.js';
 import type { TaskDetail } from '../../shared/types/task.js';
 import type { CreateCodeAgentRunInput, RunRecord } from '../../shared/types/run.js';
 import type { AiConfigStatus } from '../../shared/types/settings.js';
@@ -59,9 +60,28 @@ export type ScheduledEventAgentRunPort = {
 export type ScheduledEventAgentTimelinePort = {
   recordTimelineEvent: (input: {
     taskId: string;
-    type: 'panel.scheduled_event_agent_triggered';
+    type: 'panel.scheduled_event_agent_triggered' | 'panel.scheduler_decision_proposed';
     payload?: Record<string, unknown>;
   }) => Promise<void>;
+};
+
+export type SchedulerDecisionProposalInput = {
+  evidenceRunId?: string | null;
+  operatorConfirmed?: boolean;
+  operatorId?: string | null;
+  options?: string[];
+  proposedOutcome?: string | null;
+  rationale: string;
+  standingApprovalActive?: boolean;
+  standingApprovalPolicyId?: string | null;
+  standingApprovalScopeTaskId?: string | null;
+  targetTaskId: string;
+  title: string;
+};
+
+export type SchedulerDecisionProposalResult = {
+  status: 'proposed' | 'blocked';
+  summary: string;
 };
 
 export type ScheduledEventAgentSweepListener = (result: ScheduledEventAgentSweepResult) => void;
@@ -551,6 +571,75 @@ export class SchedulerService {
       schedulerTriggerServiceConnected: false,
       task,
     }));
+  }
+
+  async proposeSchedulerDecision(
+    input: SchedulerDecisionProposalInput,
+  ): Promise<SchedulerDecisionProposalResult> {
+    const targetTaskId = input.targetTaskId.trim();
+    const title = input.title.trim();
+    const rationale = input.rationale.trim();
+    if (!this.scheduledEventAgentTimelinePort) {
+      return {
+        status: 'blocked',
+        summary: 'Scheduler Decision proposal blocked / timelineEvidence=missing / reason=Task Dynamics timeline evidence service is not connected.',
+      };
+    }
+
+    const readiness = planSchedulerDecisionProposalFromEvidence({
+      approvalQueue: {
+        connected: true,
+        surface: 'task_dynamics',
+      },
+      operatorConfirmation: {
+        confirmed: input.operatorConfirmed === true,
+        operatorId: input.operatorId ?? null,
+      },
+      standingApproval: {
+        active: input.standingApprovalActive === true,
+        policyId: input.standingApprovalPolicyId ?? null,
+        scopeTaskId: input.standingApprovalScopeTaskId ?? null,
+      },
+      targetTaskId,
+    });
+
+    if (readiness.status !== 'ready' || !targetTaskId || !title || !rationale) {
+      return {
+        status: 'blocked',
+        summary: [
+          readiness.summary,
+          `title=${title ? 'present' : 'missing'}`,
+          `rationale=${rationale ? 'present' : 'missing'}`,
+          'schedulerDecisionProposal=blocked',
+        ].join(' / '),
+      };
+    }
+
+    await this.scheduledEventAgentTimelinePort.recordTimelineEvent({
+      taskId: targetTaskId,
+      type: 'panel.scheduler_decision_proposed',
+      payload: {
+        approvalQueueSurface: 'task_dynamics',
+        authorization: readiness.authorizations.join(','),
+        evidenceRunId: input.evidenceRunId?.trim() || null,
+        operatorConfirmed: input.operatorConfirmed === true,
+        operatorId: input.operatorId?.trim() || null,
+        options: input.options?.map((option) => option.trim()).filter(Boolean) ?? [],
+        proposedOutcome: input.proposedOutcome?.trim() || null,
+        proposalReadinessSummary: readiness.summary,
+        rationale,
+        standingApprovalActive: input.standingApprovalActive === true,
+        standingApprovalPolicyId: input.standingApprovalPolicyId?.trim() || null,
+        standingApprovalScopeTaskId: input.standingApprovalScopeTaskId?.trim() || null,
+        targetTaskId,
+        title,
+      },
+    });
+
+    return {
+      status: 'proposed',
+      summary: `${readiness.summary} / schedulerDecisionProposal=recorded / timelineEvent=panel.scheduler_decision_proposed / durableDecisionCreation=approval_required`,
+    };
   }
 
   async triggerScheduledEventAgentRun(
