@@ -836,6 +836,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('startupProbe=never');
     expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API execution_run readiness chips');
+    expect(capabilities?.evidence.join(' ')).toContain('key gate count');
+    expect(capabilities?.evidence.join(' ')).toContain('key gate list');
     expect(capabilities?.evidence.join(' ')).toContain('missing gate count');
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list');
     expect(capabilities?.evidence.join(' ')).toContain('missing gate list');

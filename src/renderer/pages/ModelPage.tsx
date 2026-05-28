@@ -57,6 +57,8 @@ function normalizeAgentCliCapabilityMode(mode: FeatureFlags['agentCliCapabilityM
 }
 
 function agentApiExecutionReadiness(summary?: string | null): {
+  keyGateList: string | null;
+  keyGateCount: number;
   missingGateList: string | null;
   missingGateCount: number;
   missingRequirementList: string | null;
@@ -65,6 +67,8 @@ function agentApiExecutionReadiness(summary?: string | null): {
 } {
   const text = summary ?? '';
   return {
+    keyGateList: scalarValue(text, 'executionRunKeyGates'),
+    keyGateCount: listValueCount(text, 'executionRunKeyGates'),
     missingGateList: scalarValue(text, 'executionRunMissingGates'),
     missingGateCount: listValueCount(text, 'executionRunMissingGates'),
     missingRequirementList: scalarValue(text, 'executionRunMissingRequirements'),
@@ -766,6 +770,10 @@ function AgentCliRuntimeSection({
               <span>{`missingRequirements=${apiExecutionReadiness.missingRequirementCount}`}</span>
               {apiExecutionReadiness.missingRequirementList && (
                 <span>{`missingRequirementList=${apiExecutionReadiness.missingRequirementList}`}</span>
+              )}
+              <span>{`keyGates=${apiExecutionReadiness.keyGateCount}`}</span>
+              {apiExecutionReadiness.keyGateList && (
+                <span>{`keyGateList=${apiExecutionReadiness.keyGateList}`}</span>
               )}
               <span>{`missingGates=${apiExecutionReadiness.missingGateCount}`}</span>
               {apiExecutionReadiness.missingGateList && (
