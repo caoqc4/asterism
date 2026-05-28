@@ -171,7 +171,7 @@ describe('Agent API provider tool readiness', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       configuredProvider: 'openai',
       explicitToolDeclarations: {
-        declaredTools: ['taskplane.create_task'],
+        declaredTools: ['taskplane.create_task', 'file_search', 'database_search'],
         packageName: '@openai/agents',
         source: 'provider_owned_metadata',
       },
@@ -199,11 +199,49 @@ describe('Agent API provider tool readiness', () => {
       ],
       missingRequirements: ['explicit_tool_declaration'],
     });
-    expect(readiness.summary).toContain('declaredToolCount=1');
+    expect(readiness.summary).toContain('declaredToolCount=3');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=0');
     expect(readiness.summary).toContain('declaredWebSearchTools=none');
     expect(readiness.summary).toContain('explicitToolDeclaration=missing');
     expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
+  });
+
+  it('accepts only explicit web/browse/browser/fetch tool declarations as provider web search readiness evidence', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
+      explicitToolDeclarations: {
+        declaredTools: [
+          'web_search',
+          'web.fetch',
+          'browser',
+          'browse',
+          'openai:web_search',
+          'file_search',
+        ],
+        packageName: '@openai/agents',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@openai/agents',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'declared',
+      toolReadiness: 'declared',
+      missingRequirements: [],
+    });
+    expect(readiness.summary).toContain('declaredToolCount=6');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=5');
+    expect(readiness.summary).toContain('declaredWebSearchTools=web_search,web.fetch,browser,browse,openai:web_search');
   });
 
   it('requires explicit provider-owned tool declarations to match provider metadata package identity', () => {

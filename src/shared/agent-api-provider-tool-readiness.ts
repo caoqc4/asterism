@@ -18,7 +18,16 @@ export type AgentApiProviderToolReadiness = {
   toolReadiness: 'declared' | 'not_declared';
 };
 
-const PROVIDER_WEB_SEARCH_TOOL_PATTERN = /(?:^|[._:-])(?:web[_-]?search|web[_-]?fetch|browser|browse|search)(?:$|[._:-])/i;
+const EXPLICIT_WEB_SEARCH_TOOL_NAMES = new Set([
+  'browse',
+  'browser',
+  'search',
+  'web_browse',
+  'web_browser',
+  'web_fetch',
+  'web_search',
+  'websearch',
+]);
 
 export type AgentApiProviderToolReadinessServiceEvidence = {
   configuredProvider?: string | null;
@@ -95,7 +104,18 @@ function normalizeDeclaredTools(tools: string[] | undefined): string[] {
 }
 
 function declaredWebSearchTools(tools: string[] | undefined): string[] {
-  return normalizeDeclaredTools(tools).filter((tool) => PROVIDER_WEB_SEARCH_TOOL_PATTERN.test(tool));
+  return normalizeDeclaredTools(tools).filter((tool) => {
+    const normalizedTool = tool.toLowerCase().replace(/[.:-]+/g, '_').replace(/_+/g, '_');
+    if (EXPLICIT_WEB_SEARCH_TOOL_NAMES.has(normalizedTool)) return true;
+
+    const segments = normalizedTool.split('_').filter(Boolean);
+    return segments.includes('web') && segments.some((segment) =>
+      segment === 'search'
+      || segment === 'fetch'
+      || segment === 'browse'
+      || segment === 'browser'
+    );
+  });
 }
 
 function normalizeProvider(value: string | null | undefined): string {
