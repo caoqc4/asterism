@@ -1120,7 +1120,9 @@ export function registerIpcHandlers(): void {
         subtaskTitles: decomposition.subtasks.map((subtask) => subtask.title),
       },
       selectedRuntimeContract: {
+        evidenceRunId,
         invocationLayer: 'api_runtime',
+        parentTaskId: input.taskId,
         phase: invocation.phase,
         runtimeMode: 'api',
       },

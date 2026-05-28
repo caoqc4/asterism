@@ -2978,7 +2978,9 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         },
         selectedRuntimeContract: draft.invocation
           ? {
+              evidenceRunId: draft.evidenceRunId ?? null,
               invocationLayer: draft.invocation.layer,
+              parentTaskId: project.id,
               phase: draft.invocation.phase,
               runtimeMode: draft.invocation.runtime.mode,
             }
