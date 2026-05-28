@@ -215,7 +215,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || partialReadiness.ready
     || !syntheticReady.ready
     || serviceEvidencePartial.ready
-    || serviceEvidencePartial.satisfiedRequirements.length !== 5
+    || serviceEvidencePartial.satisfiedRequirements.length !== 3
     || serviceEvidencePartial.satisfiedGates.length !== 3
     || scalarValue(serviceEvidencePartial.summary, 'targetTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') !== 'ready'
@@ -224,12 +224,12 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'configuredProvider') !== 'openai'
     || scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') !== 'not_called'
     || scalarValue(serviceEvidencePartial.summary, 'providerPreflightRun') !== 'run_api_execution_partial'
-    || scalarValue(serviceEvidencePartial.summary, 'providerPreflightRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'providerPreflightRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'providerPreflightTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'providerPreflightTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runId') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') !== 'run_api_execution_partial'
-    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') !== 'missing'

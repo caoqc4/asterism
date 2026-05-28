@@ -979,9 +979,7 @@ describe('ai runtime invocation contract', () => {
     expect(partial).toMatchObject({
       ready: false,
       satisfiedRequirements: [
-        'selected_runtime_contract',
         'target_task_identity',
-        'provider_visible_preflight',
         'runtime_context_manifest',
         'context_readiness_step',
       ],
@@ -999,21 +997,21 @@ describe('ai runtime invocation contract', () => {
         'run_evidence_persistence',
       ]),
     });
-    expect(partial.summary).toContain('requirements=5/11');
+    expect(partial.summary).toContain('requirements=3/11');
     expect(partial.summary).toContain('gates=3/9');
     expect(partial.summary).toContain('targetTask=task_1');
     expect(partial.summary).toContain('runEvidenceTask=missing');
     expect(partial.summary).toContain('targetTaskEvidenceChain=ready');
     expect(partial.summary).toContain('runEvidenceTaskEvidenceChain=missing');
     expect(partial.summary).toContain('selectedRuntimeRun=run_api_execution_partial');
-    expect(partial.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
+    expect(partial.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
     expect(partial.summary).toContain('selectedRuntimeTask=task_1');
     expect(partial.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
     expect(partial.summary).toContain('providerConfigured=ready');
     expect(partial.summary).toContain('configuredProvider=openai');
     expect(partial.summary).toContain('providerStartupProbe=not_called');
     expect(partial.summary).toContain('providerPreflightRun=run_api_execution_partial');
-    expect(partial.summary).toContain('providerPreflightRunEvidenceChain=ready');
+    expect(partial.summary).toContain('providerPreflightRunEvidenceChain=missing');
     expect(partial.summary).toContain('providerPreflightTask=task_1');
     expect(partial.summary).toContain('providerPreflightTaskEvidenceChain=ready');
     expect(partial.summary).toContain('runId=missing');

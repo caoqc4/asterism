@@ -220,8 +220,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API promotion readiness smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('deferred=0/11 requirements and 0/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('partial=5/11 requirements and 3/9 gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=5/11 requirements and 3/9 gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called, providerPreflightRunEvidenceChain=ready, and providerPreflightTaskEvidenceChain=ready');
+    expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=3/11 requirements and 3/9 gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called, selectedRuntimeRunEvidenceChain=missing, providerPreflightRunEvidenceChain=missing, and providerPreflightTaskEvidenceChain=ready');
+    expect(rightPanel?.evidence.join(' ')).toContain('until persisted same-run Run evidence exists');
     expect(rightPanel?.evidence.join(' ')).toContain('synthetic-ready=11/11 requirements and 9/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API execution preflight smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible text-call readiness');

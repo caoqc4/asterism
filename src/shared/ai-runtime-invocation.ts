@@ -752,7 +752,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && (!runEvidenceId || runEvidenceTaskEvidenceChainReady);
   const selectedRuntimeRunEvidenceChainReady = Boolean(selectedRuntimeRunId)
-    && (!runEvidenceId || selectedRuntimeRunId === runEvidenceId);
+    && Boolean(runEvidenceId)
+    && selectedRuntimeRunId === runEvidenceId;
   const selectedRuntimeTaskEvidenceChainReady = Boolean(selectedRuntimeTaskId)
     && Boolean(targetTaskId)
     && selectedRuntimeTaskId === targetTaskId;
@@ -770,7 +771,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && Boolean(targetTaskId)
     && taskMemoryGuidanceTaskId === targetTaskId;
   const providerPreflightRunEvidenceChainReady = Boolean(providerPreflightRunId)
-    && (!runEvidenceId || providerPreflightRunId === runEvidenceId);
+    && Boolean(runEvidenceId)
+    && providerPreflightRunId === runEvidenceId;
   const providerPreflightTaskEvidenceChainReady = Boolean(providerPreflightTaskId)
     && Boolean(targetTaskId)
     && providerPreflightTaskId === targetTaskId;
