@@ -296,6 +296,9 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('failureDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('daily run-limit blocks now route a deduplicated run-limit review policy');
     expect(decisions?.evidence.join(' ')).toContain('runLimitDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toContain('invalid run-limit accounting evidence now routes a deduplicated run-count evidence review policy');
+    expect(decisions?.evidence.join(' ')).toContain('runtimeStartMissingRequirements includes run_limit_count');
+    expect(decisions?.evidence.join(' ')).toContain('runLimitAccountingDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('automation-readiness blocks now route a deduplicated readiness-review policy');
     expect(decisions?.evidence.join(' ')).toContain('readinessDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('trigger-port sweep failures now route a deduplicated sweep-failure review policy');
@@ -317,6 +320,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.cliOnlyClosure).toBe('supported');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated failed-run recovery policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated daily run-limit review policy');
+    expect(decisions?.gaps.join(' ')).toContain('deduplicated run-limit accounting evidence review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated automation-readiness review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated sweep-failure trigger review policy');
     expect(decisions?.gaps.join(' ')).toContain('no-target task-source failure policy');
@@ -599,6 +603,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('timelineFailedDecisionProposalEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('readinessBlockedDecisionProposalEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('runLimitAccountingDecisionProposalEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('invalidRunLimitNoTriggerEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunStatusEvidence=recorded');

@@ -1034,6 +1034,70 @@ try {
   assert(readinessBlockedTimelineEvents.length === 1, 'readiness-blocked sweep did not record exactly one Decision proposal event');
   assert(readinessBlockedTimelineEvents[0]?.type === 'panel.scheduler_decision_proposed', 'readiness-blocked sweep did not record a scheduler Decision proposal event');
 
+  const invalidRunLimitTimelineEvents = [];
+  const invalidRunLimitTriggerCalls = [];
+  const invalidRunLimitService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent invalid run-limit smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: -1 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent invalid run-limit smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent invalid run-limit smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        invalidRunLimitTriggerCalls.push(input);
+        throw new Error('Scheduled/event Agent invalid run-limit smoke should not call the trigger port.');
+      },
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        invalidRunLimitTimelineEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
+    },
+  );
+  const invalidRunLimitResult = await invalidRunLimitService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:30:45.000Z'),
+  );
+  assert(invalidRunLimitResult.status === 'completed', 'invalid run-limit sweep should complete with a blocked task');
+  assert(invalidRunLimitResult.startedRunCount === 0, 'invalid run-limit sweep should not start a run');
+  assert(invalidRunLimitResult.runtimeStartMissingRequirements.includes('run_limit_count'), 'invalid run-limit sweep did not preserve missing run-limit count evidence');
+  assert(invalidRunLimitResult.summary.includes('runLimitAccountingDecisionProposals=proposed'), 'invalid run-limit sweep summary did not preserve Decision proposal evidence');
+  assert(invalidRunLimitTriggerCalls.length === 0, 'invalid run-limit sweep unexpectedly called the Code Agent trigger port');
+  assert(invalidRunLimitTimelineEvents.length === 1, 'invalid run-limit sweep did not record exactly one Decision proposal event');
+  assert(invalidRunLimitTimelineEvents[0]?.type === 'panel.scheduler_decision_proposed', 'invalid run-limit sweep did not record a scheduler Decision proposal event');
+
   let persistedCronSoakRunCount = 0;
   const cronSoakRun = {
     ...terminalRun,
@@ -1311,6 +1375,13 @@ try {
     `readinessBlockedSweepSummary=${readinessBlockedResult.summary}`,
     `readinessBlockedDecisionProposalEvents=${readinessBlockedTimelineEvents.length}`,
     `readinessBlockedTriggerCalls=${readinessBlockedTriggerCalls.length}`,
+    `invalidRunLimitStatus=${invalidRunLimitResult.status}`,
+    `invalidRunLimitStarted=${invalidRunLimitResult.startedRunCount}`,
+    `invalidRunLimitRuntimeStartMissingRequirements=${invalidRunLimitResult.runtimeStartMissingRequirements.join(',') || 'none'}`,
+    `invalidRunLimitTriggerRunEvidenceStatus=${invalidRunLimitResult.triggerRunEvidenceStatus}`,
+    `invalidRunLimitSweepSummary=${invalidRunLimitResult.summary}`,
+    `invalidRunLimitDecisionProposalEvents=${invalidRunLimitTimelineEvents.length}`,
+    `invalidRunLimitTriggerCalls=${invalidRunLimitTriggerCalls.length}`,
     `cronSoakFirstStatus=${cronSoakFirstResult.status}`,
     `cronSoakFirstStarted=${cronSoakFirstResult.startedRunCount}`,
     `cronSoakSecondStatus=${cronSoakSecondResult.status}`,
@@ -1363,6 +1434,8 @@ try {
     'sourceFailedSweepRecoveryEvidence=passed',
     'readinessBlockedDecisionProposalEvidence=recorded',
     'readinessBlockedNoTriggerEvidence=passed',
+    'runLimitAccountingDecisionProposalEvidence=recorded',
+    'invalidRunLimitNoTriggerEvidence=passed',
     'cronSoakRunLimitEvidence=passed',
     'cronSoakAutomationReadinessEvidence=passed',
     'cronSoakNoSecondTriggerEvidence=passed',

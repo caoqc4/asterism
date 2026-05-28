@@ -261,6 +261,13 @@ function isScheduledEventAutomationReadinessBlocked(result: ScheduledEventAgentT
     && result.plan.readiness.missingRequirements.length > 0;
 }
 
+function isScheduledEventRunLimitAccountingBlocked(result: ScheduledEventAgentTriggerResult): boolean {
+  return result.status === 'blocked'
+    && result.plan.policy !== null
+    && result.plan.runtimeStartMissingRequirements.includes('run_limit_count')
+    && result.plan.blockedReasons.some((reason) => /run-limit accounting/i.test(reason));
+}
+
 function hasScheduledEventRunTargetTaskMismatch(params: {
   run: RunRecord | null | undefined;
   task: ScheduledEventAgentTaskInput | null | undefined;
@@ -446,6 +453,7 @@ export class SchedulerService {
       const runCounts = await this.countRunsStartedToday(checkedTaskIds, now);
       const results: ScheduledEventAgentTriggerResult[] = [];
       const runLimitDecisionProposalStatuses: string[] = [];
+      const runLimitAccountingDecisionProposalStatuses: string[] = [];
       const readinessDecisionProposalStatuses: string[] = [];
 
       for (const task of tasks) {
@@ -469,6 +477,13 @@ export class SchedulerService {
               summary: `readinessDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
             }));
           readinessDecisionProposalStatuses.push(proposal.status);
+        } else if (isScheduledEventRunLimitAccountingBlocked(result)) {
+          const proposal = await this.proposeScheduledEventRunLimitAccountingDecision(task, result.plan, now)
+            .catch((error: unknown) => ({
+              status: 'failed' as const,
+              summary: `runLimitAccountingDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+            }));
+          runLimitAccountingDecisionProposalStatuses.push(proposal.status);
         }
       }
 
@@ -525,6 +540,7 @@ export class SchedulerService {
         `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
         `failureDecisionProposals=${failureDecisionProposals.length ? failureDecisionProposals.join(',') : 'none'}`,
         `runLimitDecisionProposals=${runLimitDecisionProposalStatuses.length ? runLimitDecisionProposalStatuses.join(',') : 'none'}`,
+        `runLimitAccountingDecisionProposals=${runLimitAccountingDecisionProposalStatuses.length ? runLimitAccountingDecisionProposalStatuses.join(',') : 'none'}`,
         `readinessDecisionProposals=${readinessDecisionProposalStatuses.length ? readinessDecisionProposalStatuses.join(',') : 'none'}`,
         `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
         `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
@@ -942,6 +958,39 @@ export class SchedulerService {
         `Scheduled/event Agent daily run limit reached for task ${task.id}.`,
         `Current limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
         'Taskplane should confirm whether to wait, adjust the Standing Approval limit, or pause automation.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
+    });
+  }
+
+  private async proposeScheduledEventRunLimitAccountingDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent 运行计数证据异常后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'runLimitAccountingDecisionProposal=skipped_existing',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      options: [
+        '暂停自动巡检并修复运行计数证据',
+        '人工复核今日运行记录后重试',
+        '保留 Standing Approval 但跳过本次 sweep',
+      ],
+      proposedOutcome: '暂停自动巡检并修复运行计数证据',
+      rationale: [
+        `Scheduled/event Agent run-limit accounting is invalid for task ${task.id}.`,
+        `Observed count: ${plan.runLimit.runsStartedToday ?? 'missing'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
+        'Taskplane should confirm the run-count evidence before any background start can spend Standing Approval capacity.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
       standingApprovalPolicyId: plan.policy?.id ?? null,
