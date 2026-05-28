@@ -424,6 +424,10 @@ export class SchedulerService {
         result.status === 'started' && result.run?.failureReason?.trim()
           ? [`${result.run.id}: ${result.run.failureReason.trim()}`]
           : []);
+      const failureDecisionProposals = results.flatMap((result) => {
+        const match = /failureDecisionProposal=([^/\s]+)/.exec(result.summary);
+        return match?.[1] && match[1] !== 'not_required' ? [match[1]] : [];
+      });
       const runtimeStartMissingRequirements = Array.from(new Set(
         results.flatMap((result) => result.plan.runtimeStartMissingRequirements),
       ));
@@ -457,6 +461,7 @@ export class SchedulerService {
         `blockedReasons=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
         `blockedTaskSummaries=${blockedTaskSummaries.length ? blockedTaskSummaries.join('; ') : 'none'}`,
         `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
+        `failureDecisionProposals=${failureDecisionProposals.length ? failureDecisionProposals.join(',') : 'none'}`,
         `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
         `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
         `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
@@ -711,6 +716,12 @@ export class SchedulerService {
     const triggerRunEvidenceStatus = terminalRunEvidenceStatus === 'present'
       ? 'ready_for_terminal_review'
       : 'pending_terminal_run_evidence';
+    const failureDecisionProposal = run.status === 'failed'
+      ? await this.proposeScheduledEventFailureDecision(task, plan, run).catch((error: unknown) => ({
+          status: 'failed' as const,
+          summary: `failureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+        }))
+      : null;
 
     return {
       status: 'started',
@@ -718,8 +729,38 @@ export class SchedulerService {
       run,
       terminalRunEvidenceStatus,
       triggerRunEvidenceStatus,
-      summary: `${plan.summary} / trigger=started / runId=${run.id} / terminalRunEvidence=${terminalRunEvidenceStatus} / triggerRunEvidenceStatus=${triggerRunEvidenceStatus} / timelineEvidence=${timelineEvidence}`,
+      summary: [
+        `${plan.summary} / trigger=started / runId=${run.id} / terminalRunEvidence=${terminalRunEvidenceStatus} / triggerRunEvidenceStatus=${triggerRunEvidenceStatus} / timelineEvidence=${timelineEvidence}`,
+        failureDecisionProposal
+          ? `failureDecisionProposal=${failureDecisionProposal.status} / failureDecisionSummary=${failureDecisionProposal.summary}`
+          : 'failureDecisionProposal=not_required',
+      ].join(' / '),
     };
+  }
+
+  private async proposeScheduledEventFailureDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    run: RunRecord,
+  ): Promise<SchedulerDecisionProposalResult> {
+    return this.proposeSchedulerDecision({
+      evidenceRunId: run.id,
+      options: [
+        '暂停自动巡检并等待人工处理',
+        '保留自动巡检但先修复失败原因',
+      ],
+      proposedOutcome: '暂停自动巡检并等待人工处理',
+      rationale: [
+        `Scheduled/event Agent run ${run.id} failed.`,
+        run.failureReason ? `Failure reason: ${run.failureReason}` : null,
+        'Taskplane should confirm the next recovery step before more background work continues.',
+      ].filter(Boolean).join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title: '确认定时/事件 Agent 失败后的下一步',
+    });
   }
 
   private async recordScheduledEventAgentTriggered(

@@ -379,6 +379,7 @@ try {
   assert(cronResult.startedRunIds.includes(cronRun.id), 'cron sweep did not expose the cron run id');
   assert(cronResult.runFailureReasons.includes(`${cronRun.id}: ${cronRun.failureReason}`), 'cron sweep did not expose terminal failure reason evidence');
   assert(cronResult.summary.includes(`runFailureReasons=${cronRun.id}: ${cronRun.failureReason}`), 'cron sweep summary did not preserve terminal failure reason evidence');
+  assert(cronResult.summary.includes('failureDecisionProposals=proposed'), 'cron sweep summary did not preserve failed-run Decision proposal evidence');
   assert(cronResult.triggerRunEvidenceStatus === 'ready_for_terminal_review', 'cron sweep did not expose ready trigger Run evidence status');
   assert(cronService.getStatus().lastScheduledEventAgentSweepSummary === cronResult.summary, 'cron sweep did not persist the sweep summary into scheduler status');
   assert(cronTriggerCalls.length === 1, 'cron sweep did not call the Code Agent trigger port exactly once');
@@ -388,7 +389,7 @@ try {
   assert(cronTriggerCalls[0].patchIntent.includes('Standing Approval scope: autonomy=L2_limited_authorized_action; riskCeiling=low; maxRunsPerDay=3; reason=Allow bounded scheduled/event Agent sweep smoke execution.'), 'cron sweep did not pass Standing Approval scope evidence into the bounded run');
   assert(cronTriggerCalls[0].patchIntent.includes('Post-step evidence: return terminal run output for Taskplane review.'), 'cron sweep did not pass post-step terminal evidence guidance into the bounded run');
   assert(cronTriggerCalls[0].patchIntent.includes('Workspace write boundary: workspaceWriteAllowed=false; proposals only.'), 'cron sweep did not pass workspace-write boundary into the bounded run');
-  assert(cronTimelineEvents.length === 1, 'cron sweep did not record trigger timeline evidence');
+  assert(cronTimelineEvents.length === 2, 'cron sweep did not record trigger and failed-run Decision proposal timeline evidence');
   assert(cronTimelineEvents[0].payload.runId === cronRun.id, 'cron timeline evidence did not preserve the cron run id');
   assert(cronTimelineEvents[0].payload.runFailureReason === cronRun.failureReason, 'cron timeline evidence did not preserve the terminal failure reason');
   assert(cronTimelineEvents[0].payload.runStatus === 'failed', 'cron timeline evidence did not preserve failed run status');
@@ -396,6 +397,11 @@ try {
   assert(cronTimelineEvents[0].payload.terminalRunEvidenceStatus === 'present', 'cron timeline evidence did not mark terminal Run evidence present');
   assert(cronTimelineEvents[0].payload.triggerKind === 'cron', 'cron timeline evidence did not preserve cron trigger kind');
   assert(cronTimelineEvents[0].payload.workspaceWriteAllowed === false, 'cron timeline evidence did not preserve workspaceWriteAllowed=false');
+  assert(cronTimelineEvents[1].type === 'panel.scheduler_decision_proposed', 'cron sweep did not record failed-run Decision proposal evidence');
+  assert(cronTimelineEvents[1].payload.evidenceRunId === cronRun.id, 'cron Decision proposal did not preserve failed run evidence id');
+  assert(cronTimelineEvents[1].payload.authorization === 'standing_approval', 'cron Decision proposal did not preserve Standing Approval authorization');
+  assert(cronTimelineEvents[1].payload.targetTaskId === 'task_scheduled_event_sweep_smoke', 'cron Decision proposal did not preserve target task identity');
+  assert(cronTimelineEvents[1].payload.title === '确认定时/事件 Agent 失败后的下一步', 'cron Decision proposal did not preserve recovery decision title');
   assert(beforeWorkspace === cronAfterWorkspace, 'scheduled/event Agent cron sweep smoke mutated the workspace fixture');
 
   const disconnectedSweepListenerEvents = [];

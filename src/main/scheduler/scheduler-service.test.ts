@@ -854,7 +854,7 @@ describe('SchedulerService', () => {
 
     await waitForAsyncSideEffect(() => {
       expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
-      expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+      expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
     });
     expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0]).toMatchObject({
       operatorConfirmed: true,
@@ -874,9 +874,24 @@ describe('SchedulerService', () => {
         workspaceWriteAllowed: false,
       }),
     }));
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_scheduled_callback_1',
+        proposedOutcome: '暂停自动巡检并等待人工处理',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 失败后的下一步',
+      }),
+    }));
     expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runFailureReasons=run_scheduled_callback_1: Model failed safely.');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('failureDecisionProposals=proposed');
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
