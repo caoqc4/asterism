@@ -286,6 +286,7 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
   return configurationSafetyScalarChips(surface, [
     'proposalReady',
     'proposalRequirements',
+    'proposalSatisfiedRequirements',
     'proposalMissingRequirements',
     'missingRequirements',
     'approvalQueueSurface',

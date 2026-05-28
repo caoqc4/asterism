@@ -124,6 +124,7 @@ export function planSchedulerDecisionProposal(params: {
       `proposalReady=${approvalItemAllowed ? 'yes' : 'no'}`,
       `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `proposalRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `proposalSatisfiedRequirements=${satisfiedRequirements.length ? satisfiedRequirements.join(',') : 'none'}`,
       `approvalItemAllowed=${approvalItemAllowed ? 'true' : 'false'}`,
       `approvalQueueSurface=${params.approvalQueueConnected ? (params.approvalQueueSurface ?? 'unknown') : 'missing'}`,
       `targetTask=${targetTaskId ?? 'missing'}`,

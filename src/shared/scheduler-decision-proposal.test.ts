@@ -36,6 +36,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('requirements=0/3');
     expect(plan.summary).toContain('proposalReady=no');
     expect(plan.summary).toContain('proposalRequirements=0/3');
+    expect(plan.summary).toContain('proposalSatisfiedRequirements=none');
     expect(plan.summary).toContain('approvalItemAllowed=false');
     expect(plan.summary).toContain('approvalQueueSurface=missing');
     expect(plan.summary).toContain('decisionPersistenceAllowed=false');
@@ -82,6 +83,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('requirements=3/3');
     expect(plan.summary).toContain('proposalReady=yes');
     expect(plan.summary).toContain('proposalRequirements=3/3');
+    expect(plan.summary).toContain('proposalSatisfiedRequirements=approval_queue,target_task_identity,authorization');
     expect(plan.summary).toContain('approvalQueueSurface=unknown');
     expect(plan.summary).toContain('authorization=operator_confirmation');
     expect(plan.summary).toContain('operatorId=operator_1');
@@ -122,6 +124,7 @@ describe('scheduler decision proposal contract', () => {
       blockedReasons: [],
     });
     expect(plan.summary).toContain('requirements=3/3');
+    expect(plan.summary).toContain('proposalSatisfiedRequirements=approval_queue,target_task_identity,authorization');
     expect(plan.summary).toContain('authorization=standing_approval');
     expect(plan.summary).toContain('standingApprovalPolicyId=policy_2');
     expect(plan.summary).toContain('standingApprovalScopeTask=task_decision_2');
@@ -198,6 +201,7 @@ describe('scheduler decision proposal contract', () => {
       missingRequirements: ['authorization'],
     });
     expect(partial.summary).toContain('requirements=2/3');
+    expect(partial.summary).toContain('proposalSatisfiedRequirements=approval_queue,target_task_identity');
     expect(partial.summary).toContain('approvalQueueSurface=task_dynamics');
     expect(partial.summary).toContain('authorization=missing');
     expect(partial.summary).toContain('standingApprovalPolicyId=policy_1');
@@ -245,6 +249,7 @@ describe('scheduler decision proposal contract', () => {
     });
     expect(ready.summary).toContain('proposalReady=yes');
     expect(ready.summary).toContain('requirements=3/3');
+    expect(ready.summary).toContain('proposalSatisfiedRequirements=approval_queue,target_task_identity,authorization');
     expect(ready.summary).toContain('approvalQueueSurface=task_dynamics');
     expect(ready.summary).toContain('authorization=operator_confirmation,standing_approval');
     expect(ready.summary).toContain('operatorId=operator_1');

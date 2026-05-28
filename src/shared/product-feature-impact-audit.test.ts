@@ -243,6 +243,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('proposalReady');
     expect(decisions?.evidence.join(' ')).toContain('requirements=x/3');
     expect(decisions?.evidence.join(' ')).toContain('proposalRequirements=x/3');
+    expect(decisions?.evidence.join(' ')).toContain('proposalSatisfiedRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('approvalQueueSurface');
     expect(decisions?.evidence.join(' ')).toContain('operatorId');
     expect(decisions?.evidence.join(' ')).toContain('standingApprovalPolicyId');
@@ -255,7 +256,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('runtime.scheduler summary through planSchedulerDecisionProposalFromEvidence');
     expect(decisions?.evidence.join(' ')).toContain('ConfigurationSafetyReport surfaces the approval queue, target-task, authorization source, standing-approval policy identity, no-persistence, no-writeback, and no-trigger boundary');
     expect(decisions?.evidence.join(' ')).toContain('Settings configuration safety rows now render runtime.scheduler evidence chips');
-    expect(decisions?.evidence.join(' ')).toContain('proposalRequirements, proposalMissingRequirements, missingRequirements');
+    expect(decisions?.evidence.join(' ')).toContain('proposalRequirements, proposalSatisfiedRequirements, proposalMissingRequirements, missingRequirements');
     expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed, writebackDispatchAllowed, schedulerTriggerAllowed');
     expect(decisions?.evidence.join(' ')).toContain('triggerPlanReady, runtimeStartAllowed, runtimeStartReady');
     expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerServiceConnected');

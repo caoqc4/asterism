@@ -4982,7 +4982,7 @@ describe('App redesign v1', () => {
           {
             id: 'runtime.scheduler',
             state: 'approval_required',
-            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / proposalRequirements=0/3 / proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization / missingRequirements=approval_queue_surface,target_task_identity,authorization / approvalQueueSurface=missing / authorization=missing / operatorId=missing / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
+            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / proposalRequirements=0/3 / proposalSatisfiedRequirements=none / proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization / missingRequirements=approval_queue_surface,target_task_identity,authorization / approvalQueueSurface=missing / authorization=missing / operatorId=missing / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
             diagnosticSummary: 'Scheduled/event trigger plan / status=blocked / triggerPlanReady=no / runtimeStartAllowed=false / runtimeStartReady=no / runtimeStartRequirements=1/3 / runtimeStartSatisfiedRequirements=scheduler_trigger_service / runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count / schedulerTriggerServiceConnected=true',
             requiresApproval: true,
             startupProbePolicy: 'never',
@@ -5045,6 +5045,7 @@ describe('App redesign v1', () => {
     const schedulerEvidence = screen.getByLabelText('runtime.scheduler evidence');
     expect(within(schedulerEvidence).getByText('proposalReady=no')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('proposalRequirements=0/3')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('proposalSatisfiedRequirements=none')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('missingRequirements=approval_queue_surface,target_task_identity,authorization')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('approvalQueueSurface=missing')).toBeTruthy();
