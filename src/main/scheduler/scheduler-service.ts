@@ -768,6 +768,8 @@ export class SchedulerService {
     const targetTaskId = input.targetTaskId.trim();
     const title = input.title.trim();
     const rationale = input.rationale.trim();
+    const options = input.options?.map((option) => option.trim()).filter(Boolean) ?? [];
+    const proposedOutcome = input.proposedOutcome?.trim() || '';
     if (!this.scheduledEventAgentTimelinePort) {
       return {
         status: 'blocked',
@@ -797,13 +799,15 @@ export class SchedulerService {
       targetTaskId,
     });
 
-    if (readiness.status !== 'ready' || !targetTaskId || !title || !rationale) {
+    if (readiness.status !== 'ready' || !targetTaskId || !title || !rationale || options.length === 0 || !proposedOutcome) {
       return {
         status: 'blocked',
         summary: [
           readiness.summary,
           `title=${title ? 'present' : 'missing'}`,
           `rationale=${rationale ? 'present' : 'missing'}`,
+          `options=${options.length ? options.length : 'missing'}`,
+          `proposedOutcome=${proposedOutcome ? 'present' : 'missing'}`,
           'schedulerDecisionProposal=blocked',
         ].join(' / '),
       };
@@ -821,8 +825,8 @@ export class SchedulerService {
         localRecoveryTaskId: input.localRecoveryTaskId?.trim() || null,
         operatorConfirmed: input.operatorConfirmed === true,
         operatorId: input.operatorId?.trim() || null,
-        options: input.options?.map((option) => option.trim()).filter(Boolean) ?? [],
-        proposedOutcome: input.proposedOutcome?.trim() || null,
+        options,
+        proposedOutcome,
         proposalReadinessSummary: readiness.summary,
         rationale,
         standingApprovalActive: input.standingApprovalActive === true,

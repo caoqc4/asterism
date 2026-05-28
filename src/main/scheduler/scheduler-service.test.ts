@@ -458,6 +458,60 @@ describe('SchedulerService', () => {
     expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
   });
 
+  it('blocks scheduler Decision proposals without concrete options and proposed outcome', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      options: ['  '],
+      proposedOutcome: ' ',
+      rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('proposalReady=yes');
+    expect(result.summary).toContain('options=missing');
+    expect(result.summary).toContain('proposedOutcome=missing');
+    expect(result.summary).toContain('schedulerDecisionProposal=blocked');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
   it('blocks local-recovery scheduler Decision proposals without recovered-run task identity', async () => {
     const timelinePort = {
       recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
