@@ -50,6 +50,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   const partialApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
     evidenceRunId: 'run_cli_decomposition_smoke',
     parentTaskId: 'task_project',
+    runtimeContract: buildAgentApiDecompositionRuntimeContract(),
     source: 'agent_cli_decomposition',
     subtasks: [buildSubtaskDraft()],
   });
@@ -61,6 +62,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   const readyApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
     evidenceRunId: 'run_api_decomposition_smoke',
     parentTaskId: 'task_project',
+    runtimeContract: buildAgentApiDecompositionRuntimeContract(),
     source: 'agent_api_decomposition',
     subtasks: [buildSubtaskDraft()],
   });
@@ -122,6 +124,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceDraftOnlyBeforeConfirmation=${scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
+  console.log(`serviceEvidenceTimelineRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') ?? 'missing'}`);
+  console.log(`serviceEvidenceTimelineInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') ?? 'missing'}`);
+  console.log(`serviceEvidenceTimelineInvocationPhase=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceChain') ?? 'missing'}`);
 
   if (
     blocked.ready
@@ -155,6 +161,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') !== 'true'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'
+    || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') !== 'api'
+    || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') !== 'api_runtime'
+    || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') !== 'decomposition_draft'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceChain') !== 'ready'
   ) {
     console.log('status=failed');
     return 1;
@@ -188,6 +198,14 @@ function sourceIsNewerThanBuild() {
   return sourceModulePaths
     .filter((modulePath) => fs.existsSync(modulePath))
     .some((modulePath) => fs.statSync(modulePath).mtimeMs > oldestBuildTime);
+}
+
+function buildAgentApiDecompositionRuntimeContract() {
+  return {
+    invocationLayer: 'api_runtime',
+    phase: 'decomposition_draft',
+    runtimeMode: 'api',
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

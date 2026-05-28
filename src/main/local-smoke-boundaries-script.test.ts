@@ -839,6 +839,10 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceProposalSubtaskUniqueChain=ready');
     expect(result.output).toContain('serviceEvidenceSourceEvidenceChain=ready');
     expect(result.output).toContain('serviceEvidenceEvidenceRunIdChain=ready');
+    expect(result.output).toContain('serviceEvidenceTimelineRuntimeMode=api');
+    expect(result.output).toContain('serviceEvidenceTimelineInvocationLayer=api_runtime');
+    expect(result.output).toContain('serviceEvidenceTimelineInvocationPhase=decomposition_draft');
+    expect(result.output).toContain('serviceEvidenceSelectedRuntimeEvidenceChain=ready');
   });
 
   it('keeps decomposition create-many apply plan readiness smoke read-only and build-gated by default', () => {

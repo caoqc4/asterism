@@ -99,7 +99,7 @@ describe('ai runtime invocation contract', () => {
     expect(blocked.summary).toContain('promotionRequirements=0/7');
     expect(blocked.summary).toContain('promotionMissingRequirements=selected_runtime_contract,parent_task_identity,reversible_proposal_card');
 
-    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
@@ -156,7 +156,7 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('derives Agent API decomposition promotion readiness from structured service evidence', () => {
-    const partialApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const partialApplyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_cli_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_cli_decomposition',
@@ -212,7 +212,7 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('runtimeMode=api');
     expect(partial.summary).toContain('invocationLayer=api_runtime');
 
-    const readyApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const readyApplyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
@@ -268,7 +268,7 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('blocks Agent API decomposition promotion when apply-plan source and timeline evidence are stitched', () => {
-    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
@@ -309,8 +309,45 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('evidenceRunIdChain=missing');
   });
 
-  it('blocks Agent API decomposition promotion when draft-only timeline evidence has no run identity', () => {
+  it('blocks Agent API decomposition promotion when selected-runtime evidence is not tied to the apply-plan timeline', () => {
     const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(mismatch.summary).toContain('runtimeMode=api');
+    expect(mismatch.summary).toContain('invocationLayer=api_runtime');
+    expect(mismatch.summary).toContain('timelineRuntimeMode=missing');
+    expect(mismatch.summary).toContain('timelineInvocationLayer=missing');
+    expect(mismatch.summary).toContain('timelineInvocationPhase=missing');
+    expect(mismatch.summary).toContain('selectedRuntimeEvidenceChain=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when draft-only timeline evidence has no run identity', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
       subtasks: [buildSubtaskDraft()],
@@ -343,7 +380,7 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('blocks Agent API decomposition promotion when parent-task evidence is stitched from another task', () => {
-    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project_a',
       source: 'agent_api_decomposition',
@@ -378,7 +415,7 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('blocks Agent API decomposition promotion when the reversible proposal belongs to another parent task', () => {
-    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project_a',
       source: 'agent_api_decomposition',
@@ -412,7 +449,7 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('blocks Agent API decomposition promotion when the proposal subtask count does not match the apply plan', () => {
-    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
@@ -449,7 +486,7 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('blocks Agent API decomposition promotion when the proposal id does not match the parent task', () => {
-    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
@@ -484,7 +521,7 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('blocks Agent API decomposition promotion when proposal subtask titles do not match the apply plan', () => {
-    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
@@ -524,7 +561,7 @@ describe('ai runtime invocation contract', () => {
       ...buildSubtaskDraft(),
       title: '需求与范围确认',
     };
-    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
@@ -1292,4 +1329,17 @@ function buildSubtaskDraft() {
     summary: '确认范围',
     title: '需求与范围确认',
   };
+}
+
+function buildAgentApiDecompositionApplyPlan(
+  params: Parameters<typeof buildSubtaskCreateManyWritebackApplyPlan>[0],
+) {
+  return buildSubtaskCreateManyWritebackApplyPlan({
+    ...params,
+    runtimeContract: params.runtimeContract ?? {
+      invocationLayer: 'api_runtime',
+      phase: 'decomposition_draft',
+      runtimeMode: 'api',
+    },
+  });
 }

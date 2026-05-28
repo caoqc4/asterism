@@ -161,10 +161,17 @@ export function projectDecompositionPromotionEvidenceChips(
     'parentTaskEvidenceChain',
     'subtaskCount',
     'evidenceRunId',
+    'timelineEvidenceRunId',
+    'sourceEvidenceChain',
+    'evidenceRunIdChain',
     'confirmationBoundary',
     'draftOnlyBeforeConfirmation',
     'runtimeMode',
     'invocationLayer',
+    'timelineRuntimeMode',
+    'timelineInvocationLayer',
+    'timelineInvocationPhase',
+    'selectedRuntimeEvidenceChain',
   ];
   return [
     `promotionReady=${readiness.ready ? 'yes' : 'no'}`,

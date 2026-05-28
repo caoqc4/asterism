@@ -1088,7 +1088,7 @@ function createMockApi() {
       },
       promotionReadiness: {
         ready: true,
-        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / selectedRuntimeContract=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / proposalCard=ready / applyPlan=subtask.create_many / source=agent_api_decomposition / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalSubtaskIdentityChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / missingRequirements=none / promotionMissingRequirements=none / missing=none',
+        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / selectedRuntimeContract=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / proposalCard=ready / applyPlan=subtask.create_many / source=agent_api_decomposition / sourceEvidenceChain=ready / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalSubtaskIdentityChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / timelineRuntimeMode=api / timelineInvocationLayer=api_runtime / timelineInvocationPhase=decomposition_draft / selectedRuntimeEvidenceChain=ready / missingRequirements=none / promotionMissingRequirements=none / missing=none',
         satisfiedRequirements: [
           'selected_runtime_contract',
           'parent_task_identity',
@@ -1206,7 +1206,7 @@ describe('App redesign v1', () => {
   it('projects decomposition promotion parent-chain evidence chips', () => {
     const chips = projectDecompositionPromotionEvidenceChips({
       ready: true,
-      summary: 'Agent API decomposition promotion readiness / ready=yes / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalSubtaskIdentityChain=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime',
+      summary: 'Agent API decomposition promotion readiness / ready=yes / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalSubtaskIdentityChain=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / sourceEvidenceChain=ready / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / timelineRuntimeMode=api / timelineInvocationLayer=api_runtime / timelineInvocationPhase=decomposition_draft / selectedRuntimeEvidenceChain=ready',
       satisfiedRequirements: [
         'selected_runtime_contract',
         'parent_task_identity',
@@ -1231,6 +1231,13 @@ describe('App redesign v1', () => {
     expect(chips).toContain('proposalSubtaskIdentityChain=ready');
     expect(chips).toContain('applyPlanParentTask=task_project');
     expect(chips).toContain('parentTaskEvidenceChain=ready');
+    expect(chips).toContain('timelineEvidenceRunId=agent_api_decomposition:task_project');
+    expect(chips).toContain('sourceEvidenceChain=ready');
+    expect(chips).toContain('evidenceRunIdChain=ready');
+    expect(chips).toContain('timelineRuntimeMode=api');
+    expect(chips).toContain('timelineInvocationLayer=api_runtime');
+    expect(chips).toContain('timelineInvocationPhase=decomposition_draft');
+    expect(chips).toContain('selectedRuntimeEvidenceChain=ready');
   });
 
   it('renders the redesigned navigation zones and keeps the external signal hint visible', async () => {

@@ -368,9 +368,16 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const timelineEvidenceRunId = typeof applyPlan?.timeline.payload.evidenceRunId === 'string'
     ? applyPlan.timeline.payload.evidenceRunId.trim()
     : '';
+  const timelineRuntimeContract = parseDecompositionTimelineRuntimeContract(applyPlan?.timeline.payload.runtimeContract);
   const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
   const evidenceRunIdChainReady = Boolean(applyPlanEvidenceRunId)
     && applyPlanEvidenceRunId === timelineEvidenceRunId;
+  const selectedRuntimeContractReady = selectedRuntime?.runtimeMode === 'api'
+    && selectedRuntime.invocationLayer === 'api_runtime'
+    && selectedRuntime.phase === 'decomposition_draft'
+    && timelineRuntimeContract?.runtimeMode === selectedRuntime.runtimeMode
+    && timelineRuntimeContract.invocationLayer === selectedRuntime.invocationLayer
+    && timelineRuntimeContract.phase === selectedRuntime.phase;
   const parentTaskId = evidenceParentTaskId || applyPlanParentTaskId;
   const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
@@ -415,11 +422,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && proposalSubtaskIdentityChainReady
   );
 
-  if (
-    selectedRuntime?.runtimeMode === 'api'
-    && selectedRuntime.invocationLayer === 'api_runtime'
-    && selectedRuntime.phase === 'decomposition_draft'
-  ) {
+  if (selectedRuntimeContractReady) {
     satisfiedRequirements.push('selected_runtime_contract');
   }
 
@@ -490,11 +493,46 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
       `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
+      `timelineRuntimeMode=${timelineRuntimeContract?.runtimeMode ?? 'missing'}`,
+      `timelineInvocationLayer=${timelineRuntimeContract?.invocationLayer ?? 'missing'}`,
+      `timelineInvocationPhase=${timelineRuntimeContract?.phase ?? 'missing'}`,
+      `selectedRuntimeEvidenceChain=${selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `promotionMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),
   };
+}
+
+function parseDecompositionTimelineRuntimeContract(value: unknown): TaskplaneSubtaskCreateManyRuntimeContractEvidence | null {
+  if (!value || typeof value !== 'object') return null;
+  const contract = value as Partial<TaskplaneSubtaskCreateManyRuntimeContractEvidence>;
+  if (
+    !isDecompositionRuntimeInvocationLayer(contract.invocationLayer)
+    || contract.phase !== 'decomposition_draft'
+    || !isDecompositionRuntimeMode(contract.runtimeMode)
+  ) {
+    return null;
+  }
+  return {
+    invocationLayer: contract.invocationLayer,
+    phase: contract.phase,
+    runtimeMode: contract.runtimeMode,
+  };
+}
+
+type TaskplaneSubtaskCreateManyRuntimeContractEvidence = {
+  invocationLayer: 'api_runtime' | 'selected_runtime';
+  phase: 'decomposition_draft';
+  runtimeMode: 'api' | 'codex' | 'claude';
+};
+
+function isDecompositionRuntimeInvocationLayer(value: unknown): value is TaskplaneSubtaskCreateManyRuntimeContractEvidence['invocationLayer'] {
+  return value === 'api_runtime' || value === 'selected_runtime';
+}
+
+function isDecompositionRuntimeMode(value: unknown): value is TaskplaneSubtaskCreateManyRuntimeContractEvidence['runtimeMode'] {
+  return value === 'api' || value === 'codex' || value === 'claude';
 }
 
 function normalizedSubtaskTitles(titles: readonly (string | null | undefined)[]): string[] {
