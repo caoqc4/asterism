@@ -237,6 +237,33 @@ describe('Taskplane writeback approval items', () => {
 
     expect(items).toEqual([]);
   });
+
+  it('blocks local-recovery scheduler Decision proposal timeline events without recovered-run task identity', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_recovery_missing_task',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          authorization: 'local_recovery',
+          evidenceRunId: 'run_recovered_1',
+          localRecoveryCompleted: true,
+          localRecoveryRunId: 'run_recovered_1',
+          options: ['复核失败证据后手动重跑'],
+          proposedOutcome: '复核失败证据后手动重跑',
+          rationale: 'Scheduler recovered a stale run but omitted recovered run task identity.',
+          targetTaskId: 'task_1',
+          title: '确认 stale run 自动恢复后的下一步',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
 });
 
 function buildRunDetail(partial: Partial<RunDetailRecord> = {}): RunDetailRecord {

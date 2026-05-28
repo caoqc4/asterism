@@ -784,7 +784,7 @@ export class SchedulerService {
       },
       localRecovery: {
         recoveredRunId: input.localRecoveryRunId ?? input.evidenceRunId ?? null,
-        taskId: input.localRecoveryTaskId ?? targetTaskId,
+        taskId: input.localRecoveryTaskId ?? null,
         status: input.localRecoveryCompleted === true ? 'completed' : 'missing',
       },
       standingApproval: {
@@ -816,7 +816,7 @@ export class SchedulerService {
         evidenceRunId: input.evidenceRunId?.trim() || null,
         localRecoveryCompleted: input.localRecoveryCompleted === true,
         localRecoveryRunId: input.localRecoveryRunId?.trim() || null,
-        localRecoveryTaskId: input.localRecoveryTaskId?.trim() || targetTaskId,
+        localRecoveryTaskId: input.localRecoveryTaskId?.trim() || null,
         operatorConfirmed: input.operatorConfirmed === true,
         operatorId: input.operatorId?.trim() || null,
         options: input.options?.map((option) => option.trim()).filter(Boolean) ?? [],
