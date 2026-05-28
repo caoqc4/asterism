@@ -783,7 +783,7 @@ export class SchedulerService {
         operatorId: input.operatorId ?? null,
       },
       localRecovery: {
-        recoveredRunId: input.localRecoveryRunId ?? input.evidenceRunId ?? null,
+        recoveredRunId: input.localRecoveryRunId ?? null,
         taskId: input.localRecoveryTaskId ?? null,
         status: input.localRecoveryCompleted === true ? 'completed' : 'missing',
       },

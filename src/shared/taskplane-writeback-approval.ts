@@ -247,7 +247,7 @@ function buildSchedulerDecisionApprovalItem(params: {
       operatorId: payload.operatorId ?? null,
     },
     localRecovery: {
-      recoveredRunId: payload.localRecoveryRunId ?? payload.evidenceRunId ?? null,
+      recoveredRunId: payload.localRecoveryRunId ?? null,
       taskId: payload.localRecoveryTaskId ?? null,
       status: payload.localRecoveryCompleted === true ? 'completed' : 'missing',
     },

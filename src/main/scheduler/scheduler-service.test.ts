@@ -510,6 +510,60 @@ describe('SchedulerService', () => {
     expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
   });
 
+  it('blocks local-recovery scheduler Decision proposals without explicit recovered-run identity', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      evidenceRunId: 'run_recovered_fallback_only',
+      localRecoveryCompleted: true,
+      localRecoveryTaskId: 'task_auto',
+      rationale: '本地恢复证据缺少显式 recovered run identity。',
+      targetTaskId: 'task_auto',
+      title: '确认自动恢复后的下一步',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('authorization=missing');
+    expect(result.summary).toContain('localRecoveryRunId=missing');
+    expect(result.summary).toContain('localRecoveryTask=task_auto');
+    expect(result.summary).toContain('localRecoveryTaskMatched=yes');
+    expect(result.summary).toContain('localRecoveryCompleted=no');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
   it('runs startup recovery and schedules jobs when enabled', async () => {
     const homeData = {
       ...buildHomeData(),
