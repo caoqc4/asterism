@@ -233,6 +233,9 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('proposalRequirements=x/3');
     expect(decisions?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('proposalMissingRequirements=...');
+    expect(decisions?.evidence.join(' ')).toContain('CapabilityRegistry now includes scheduler/background Decision proposal readiness');
+    expect(decisions?.evidence.join(' ')).toContain('runtime.scheduler summary through planSchedulerDecisionProposalFromEvidence');
+    expect(decisions?.evidence.join(' ')).toContain('ConfigurationSafetyReport surfaces the approval queue, target-task, authorization, no-persistence, no-writeback, and no-trigger boundary');
     expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=3/3 requirements');

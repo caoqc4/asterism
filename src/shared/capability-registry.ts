@@ -11,6 +11,7 @@ import {
   requiredRuntimeEntrypointGatesForKind,
   type RuntimeEntrypointGate,
 } from './runtime-entrypoint-coverage.js';
+import { planSchedulerDecisionProposalFromEvidence } from './scheduler-decision-proposal.js';
 import type { RuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 
 export type CapabilityRegistryStatus =
@@ -184,7 +185,7 @@ export function buildCapabilityRegistry(params: {
       access: 'mutating',
       requiresApproval: true,
       requiredGate: 'runtime_entrypoint_coverage',
-      summary: `scheduler=${snapshot?.flags.scheduler ?? 'unknown'}`,
+      summary: schedulerCapabilitySummary(snapshot?.flags.scheduler),
     },
     {
       id: 'sandbox.coding_agent',
@@ -271,6 +272,14 @@ export function capabilityRegistryAllowsWorkspaceVerification(
     && entry.status === 'available'
     && entry.requiredGate === 'runtime_pre_step'
   ));
+}
+
+function schedulerCapabilitySummary(schedulerFlag: RuntimeCapabilitySnapshot['flags']['scheduler'] | undefined): string {
+  const decisionProposalPlan = planSchedulerDecisionProposalFromEvidence({});
+  return [
+    `scheduler=${schedulerFlag ?? 'unknown'}`,
+    decisionProposalPlan.summary,
+  ].join(' / ');
 }
 
 export function agentCliStatusForCapability(

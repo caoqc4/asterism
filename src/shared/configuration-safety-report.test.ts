@@ -37,6 +37,8 @@ describe('configuration safety report', () => {
 
     expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')).toMatchObject({
       state: 'approval_required',
+      reason: expect.stringContaining('Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3'),
+      diagnosticSummary: expect.stringContaining('decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false'),
       requiresApproval: true,
       startupProbePolicy: 'never',
     });
@@ -71,6 +73,7 @@ describe('configuration safety report', () => {
     });
     expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')).toMatchObject({
       state: 'disabled_by_flag',
+      diagnosticSummary: expect.stringContaining('Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3'),
     });
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
       state: 'disabled_by_flag',
