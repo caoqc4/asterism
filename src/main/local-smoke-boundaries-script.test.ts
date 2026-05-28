@@ -813,6 +813,7 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('network=not-called');
     expect(result.output).toContain('startupProbe=not-attempted');
+    expect(result.output).toContain('providerToolStatus=not_declared');
     expect(result.output).toContain('workspace=unchanged');
   });
 

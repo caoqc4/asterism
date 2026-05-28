@@ -587,6 +587,7 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       agentApiExecutionRunGateSummary(),
       agentApiDecompositionPromotionSummary(),
       `providerToolReadiness=${providerToolReadiness.toolReadiness}`,
+      `providerToolStatus=${providerToolReadiness.status}`,
       `providerToolRequirements=${providerToolReadiness.satisfiedRequirements.length}/${providerToolReadiness.satisfiedRequirements.length + providerToolReadiness.missingRequirements.length}`,
       `providerToolMissingRequirements=${providerToolReadiness.missingRequirements.join(',') || 'none'}`,
       'startupProbe=never',
