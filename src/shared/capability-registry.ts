@@ -612,11 +612,14 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
 function agentApiExecutionRunPromotionSummary(): string {
   const promotionReadiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({});
   const promotionRequirementCount = promotionReadiness.satisfiedRequirements.length + promotionReadiness.missingRequirements.length;
+  const promotionGateCount = promotionReadiness.satisfiedGates.length + promotionReadiness.missingGates.length;
   return [
     `executionRunPromotionReady=${promotionReadiness.ready ? 'yes' : 'no'}`,
     `executionRunPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
+    `executionRunGateRequirements=${promotionReadiness.satisfiedGates.length}/${promotionGateCount}`,
     `executionRunMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
     `executionRunPromotionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
+    `executionRunPromotionMissingGates=${promotionReadiness.missingGates.join(',') || 'none'}`,
   ].join(' / ');
 }
 

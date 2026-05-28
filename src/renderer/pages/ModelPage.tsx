@@ -57,6 +57,7 @@ function normalizeAgentCliCapabilityMode(mode: FeatureFlags['agentCliCapabilityM
 }
 
 function agentApiExecutionReadiness(summary?: string | null): {
+  gateRequirementCount: string | null;
   keyGateList: string | null;
   keyGateCount: number;
   missingGateList: string | null;
@@ -64,11 +65,13 @@ function agentApiExecutionReadiness(summary?: string | null): {
   missingRequirementList: string | null;
   missingRequirementCount: number;
   promotionCount: string | null;
+  promotionMissingGateList: string | null;
   promotionMissingRequirementList: string | null;
   promotionReady: string | null;
 } {
   const text = summary ?? '';
   return {
+    gateRequirementCount: scalarValue(text, 'executionRunGateRequirements'),
     keyGateList: scalarValue(text, 'executionRunKeyGates'),
     keyGateCount: listValueCount(text, 'executionRunKeyGates'),
     missingGateList: scalarValue(text, 'executionRunMissingGates'),
@@ -76,6 +79,7 @@ function agentApiExecutionReadiness(summary?: string | null): {
     missingRequirementList: scalarValue(text, 'executionRunMissingRequirements'),
     missingRequirementCount: listValueCount(text, 'executionRunMissingRequirements'),
     promotionCount: scalarValue(text, 'executionRunPromotionRequirements'),
+    promotionMissingGateList: scalarValue(text, 'executionRunPromotionMissingGates'),
     promotionMissingRequirementList: scalarValue(text, 'executionRunPromotionMissingRequirements'),
     promotionReady: scalarValue(text, 'executionRunPromotionReady'),
   };
@@ -776,12 +780,18 @@ function AgentCliRuntimeSection({
               {apiExecutionReadiness.promotionReady && (
                 <span>{`promotionReady=${apiExecutionReadiness.promotionReady}`}</span>
               )}
+              {apiExecutionReadiness.gateRequirementCount && (
+                <span>{`gateRequirements=${apiExecutionReadiness.gateRequirementCount}`}</span>
+              )}
               <span>{`missingRequirements=${apiExecutionReadiness.missingRequirementCount}`}</span>
               {apiExecutionReadiness.missingRequirementList && (
                 <span>{`missingRequirementList=${apiExecutionReadiness.missingRequirementList}`}</span>
               )}
               {apiExecutionReadiness.promotionMissingRequirementList && (
                 <span>{`promotionMissingRequirementList=${apiExecutionReadiness.promotionMissingRequirementList}`}</span>
+              )}
+              {apiExecutionReadiness.promotionMissingGateList && (
+                <span>{`promotionMissingGateList=${apiExecutionReadiness.promotionMissingGateList}`}</span>
               )}
               <span>{`keyGates=${apiExecutionReadiness.keyGateCount}`}</span>
               {apiExecutionReadiness.keyGateList && (
