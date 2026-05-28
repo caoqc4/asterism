@@ -842,7 +842,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('Agent API decomposition readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');
-    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, startupProbe, providerOwnedMetadata, providerMetadataOwner, explicitToolDeclaration, explicitToolDeclarationSource, and declaredToolCount chips');
+    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, startupProbe, providerOwnedMetadata, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, and declaredToolCount chips');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
@@ -852,12 +852,15 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements');
     expect(capabilities?.evidence.join(' ')).toContain('providerMetadataOwner');
+    expect(capabilities?.evidence.join(' ')).toContain('providerMetadataPackage');
     expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclarationSource');
     expect(capabilities?.evidence.join(' ')).toContain('declaredToolCount');
+    expect(capabilities?.evidence.join(' ')).toContain('provider-owned package declarations');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness smoke');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements=3/5');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration');
+    expect(capabilities?.evidence.join(' ')).toContain('providerMetadataPackage=missing');
     expect(capabilities?.evidence.join(' ')).toContain('service-evidence=3/5 requirements');
     expect(capabilities?.evidence.join(' ')).toContain('provider_owned_metadata and explicit_tool_declaration missing');
     expect(capabilities?.evidence.join(' ')).toContain('runtimeExecutable=no');

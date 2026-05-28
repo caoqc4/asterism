@@ -90,6 +90,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerToolRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolRequirements') ?? 'missing'}`);
   console.log(`providerToolMissingRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolMissingRequirements') ?? 'missing'}`);
   console.log(`providerMetadataOwner=${scalarValue(agentApiRuntime.summary, 'providerMetadataOwner') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') ?? 'missing'}`);
+  console.log(`providerMetadataPackage=${scalarValue(agentApiRuntime.summary, 'providerMetadataPackage') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') ?? 'missing'}`);
   console.log(`explicitToolDeclarationSource=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclarationSource') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
   console.log(`declaredToolCount=${scalarValue(agentApiRuntime.summary, 'declaredToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
   console.log(`startupProbe=${scalarValue(agentApiRuntime.summary, 'startupProbe') ?? 'missing'}`);
@@ -102,6 +103,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`serviceEvidenceProviderToolRequirements=${serviceEvidenceReadiness.satisfiedRequirements.length}/5`);
   console.log(`serviceEvidenceProviderToolMissingRequirements=${serviceEvidenceReadiness.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceProviderMetadataOwner=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderMetadataPackage=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') ?? 'missing'}`);
   console.log(`serviceEvidenceExplicitToolDeclarationSource=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
   console.log(`serviceEvidenceDeclaredToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
 
@@ -117,6 +119,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     || !agentApiRuntime.summary.includes('providerToolRequirements=3/5')
     || !agentApiRuntime.summary.includes('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration')
     || serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') !== 'missing'
+    || serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') !== 'missing'
     || serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'missing'
     || serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') !== '0'
     || !agentApiRuntime.summary.includes('startupProbe=never')

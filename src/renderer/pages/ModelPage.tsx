@@ -98,6 +98,7 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   declaredToolCount: string | null;
   explicitToolDeclarationSource: string | null;
   explicitToolDeclaration: string | null;
+  providerMetadataPackage: string | null;
   providerMetadataOwner: string | null;
   providerOwnedMetadata: string | null;
   providerConfigured: string | null;
@@ -111,6 +112,7 @@ function agentApiProviderToolEvidence(summary?: string | null): {
     declaredToolCount: scalarValue(text, 'declaredToolCount'),
     explicitToolDeclaration: scalarValue(text, 'explicitToolDeclaration'),
     explicitToolDeclarationSource: scalarValue(text, 'explicitToolDeclarationSource'),
+    providerMetadataPackage: scalarValue(text, 'providerMetadataPackage'),
     providerMetadataOwner: scalarValue(text, 'providerMetadataOwner'),
     providerOwnedMetadata: scalarValue(text, 'providerOwnedMetadata'),
     providerConfigured: scalarValue(text, 'providerConfigured'),
@@ -806,6 +808,9 @@ function AgentCliRuntimeSection({
                 )}
                 {apiProviderToolEvidence.providerMetadataOwner && (
                   <span>{`providerMetadataOwner=${apiProviderToolEvidence.providerMetadataOwner}`}</span>
+                )}
+                {apiProviderToolEvidence.providerMetadataPackage && (
+                  <span>{`providerMetadataPackage=${apiProviderToolEvidence.providerMetadataPackage}`}</span>
                 )}
                 {apiProviderToolEvidence.explicitToolDeclaration && (
                   <span>{`explicitToolDeclaration=${apiProviderToolEvidence.explicitToolDeclaration}`}</span>

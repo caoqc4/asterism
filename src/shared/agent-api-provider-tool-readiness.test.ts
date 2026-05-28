@@ -30,6 +30,7 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('requirements=3/5');
     expect(readiness.summary).toContain('startupProbe=never');
     expect(readiness.summary).toContain('providerMetadataOwner=missing');
+    expect(readiness.summary).toContain('providerMetadataPackage=missing');
     expect(readiness.summary).toContain('explicitToolDeclarationSource=missing');
     expect(readiness.summary).toContain('declaredToolCount=0');
   });

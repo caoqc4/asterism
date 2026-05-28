@@ -593,6 +593,9 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataOwner')
         ? `providerMetadataOwner=${scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataOwner')}`
         : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataPackage')
+        ? `providerMetadataPackage=${scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataPackage')}`
+        : null,
       scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationSource')
         ? `explicitToolDeclarationSource=${scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationSource')}`
         : null,
