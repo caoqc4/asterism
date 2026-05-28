@@ -1018,14 +1018,11 @@ function scalarSummaryValue(summary: string, key: string): string | null {
 export function evaluateAgentApiExecutionPromotionReadinessForInvocation(
   invocation: ExecutionRunInvocationResult,
 ): AgentApiExecutionPromotionReadiness {
-  if (invocation.phase !== 'execution_run' || invocation.layer !== 'api_runtime' || invocation.status !== 'completed') {
+  if (invocation.phase !== 'execution_run' || invocation.layer !== 'api_runtime') {
     return evaluateAgentApiExecutionPromotionReadiness();
   }
 
-  return evaluateAgentApiExecutionPromotionReadiness({
-    satisfiedGates: invocation.requiredGates,
-    satisfiedRequirements: invocation.promotionRequirements,
-  });
+  return evaluateAgentApiExecutionPromotionReadiness();
 }
 
 function agentApiExecutionRequiredGates(): RuntimeEntrypointGate[] {

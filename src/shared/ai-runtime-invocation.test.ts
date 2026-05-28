@@ -1000,6 +1000,25 @@ describe('ai runtime invocation contract', () => {
     expect(readiness.summary).toContain('gates=0/9');
   });
 
+  it('does not promote Agent API execution from invocation-declared requirements without service evidence', () => {
+    const completedInvocation = {
+      ...buildDeferredAgentApiExecutionRunInvocation(),
+      status: 'completed' as const,
+    };
+
+    const readiness = evaluateAgentApiExecutionPromotionReadinessForInvocation(completedInvocation);
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      satisfiedRequirements: [],
+      satisfiedGates: [],
+      missingRequirements: completedInvocation.promotionRequirements,
+      missingGates: completedInvocation.requiredGates,
+    });
+    expect(readiness.summary).toContain('requirements=0/11');
+    expect(readiness.summary).toContain('gates=0/9');
+  });
+
   it('keeps Agent API execution promotion closed until every requirement and gate has service evidence', () => {
     const blocked = evaluateAgentApiExecutionPromotionReadiness({
       satisfiedGates: [
