@@ -298,8 +298,12 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
     'decisionPersistenceAllowed',
     'writebackDispatchAllowed',
     'schedulerTriggerAllowed',
+    'triggerPlanReady',
+    'runtimeStartAllowed',
+    'runtimeStartReady',
     'runtimeStartRequirements',
     'runtimeStartMissingRequirements',
+    'schedulerTriggerServiceConnected',
   ]);
 }
 
