@@ -394,6 +394,7 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('sourceFailedRecoveryRunId=');
     expect(script).toContain('sourceFailedSweepSummaryEvidence=recorded');
     expect(script).toContain('sourceFailedSweepRecoveryEvidence=passed');
+    expect(script).toContain('taskSourceFailureDecisionProposals=not_required_no_target_task');
     expect(script).toContain('readinessBlockedStatus=');
     expect(script).toContain('readinessBlockedAutomationMissingRequirements=');
     expect(script).toContain('readinessBlockedDecisionProposalEvents=');

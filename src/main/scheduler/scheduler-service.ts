@@ -570,6 +570,9 @@ export class SchedulerService {
             summary: `sweepFailureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(proposalError)}`,
           }))
         : null;
+      const taskSourceFailureDecisionProposalStatus = !failedTask && !failedPlan && !failedRun
+        ? 'not_required_no_target_task'
+        : 'not_required';
       const timelineFailureDecisionProposal = failedTask && failedPlan && failedRun
         ? await this.proposeScheduledEventTimelineFailureDecision(failedTask, failedPlan, failedRun, errorMessage, now)
           .catch((proposalError: unknown) => ({
@@ -593,6 +596,7 @@ export class SchedulerService {
         sweepFailureDecisionProposal
           ? `sweepFailureDecisionProposals=${sweepFailureDecisionProposal.status}`
           : 'sweepFailureDecisionProposals=not_required',
+        `taskSourceFailureDecisionProposals=${taskSourceFailureDecisionProposalStatus}`,
         timelineFailureDecisionProposal
           ? `timelineFailureDecisionProposals=${timelineFailureDecisionProposal.status}`
           : 'timelineFailureDecisionProposals=not_required',

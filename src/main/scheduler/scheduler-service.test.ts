@@ -1911,6 +1911,9 @@ describe('SchedulerService', () => {
     expect(failedSweep.summary).toContain('checked=0');
     expect(failedSweep.summary).toContain('checkedTaskIds=none');
     expect(failedSweep.summary).toContain('error=Task source failed - safely');
+    expect(failedSweep.summary).toContain('sweepFailureDecisionProposals=not_required');
+    expect(failedSweep.summary).toContain('taskSourceFailureDecisionProposals=not_required_no_target_task');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=not_required');
     expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:30:00.000Z');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();

@@ -880,6 +880,7 @@ try {
   assert(sourceFailedResult.summary.includes('checked=0'), 'source-failed sweep summary did not preserve checked=0 evidence');
   assert(sourceFailedResult.summary.includes('checkedTaskIds=none'), 'source-failed sweep summary did not preserve checkedTaskIds=none evidence');
   assert(sourceFailedResult.summary.includes('error=Task source failed - safely'), 'source-failed sweep summary did not preserve sanitized source error evidence');
+  assert(sourceFailedResult.summary.includes('taskSourceFailureDecisionProposals=not_required_no_target_task'), 'source-failed sweep summary did not preserve no-target Decision policy evidence');
   assert(sourceFailedResult.triggerRunEvidenceStatus === 'not_started', 'source-failed sweep should not start trigger Run evidence');
   assert(sourceFailedService.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T12:29:00.000Z', 'source-failed sweep did not preserve skipped sweep time in scheduler status');
   assert(sourceFailedService.getStatus().lastScheduledEventAgentSweepSummary === sourceFailedResult.summary, 'source-failed sweep did not persist the failed sweep summary into scheduler status');
