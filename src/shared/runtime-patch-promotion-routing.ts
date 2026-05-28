@@ -38,10 +38,12 @@ export type RuntimePatchPromotionRoutingServiceEvidence = {
     kind: 'patch' | 'task_file' | 'unknown';
     runId?: string | null;
     status: 'missing' | 'ready';
+    taskId?: string | null;
   } | null;
   postApplyRunEvidence?: {
     runId?: string | null;
     status: 'missing' | 'present';
+    taskId?: string | null;
     touchedFiles?: string[];
   } | null;
   promotionDecision?: {
@@ -49,11 +51,13 @@ export type RuntimePatchPromotionRoutingServiceEvidence = {
     decisionId?: string | null;
     runId?: string | null;
     status: 'approved' | 'missing' | 'pending';
+    taskId?: string | null;
   } | null;
   promotionPreflight?: {
     checkpointId?: string | null;
     runId?: string | null;
     status: 'blocked' | 'missing' | 'ready';
+    taskId?: string | null;
   } | null;
   selectedRuntimeContract?: {
     invocationLayer: 'api_runtime' | 'selected_runtime';
@@ -123,9 +127,19 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const preflightRunId = evidence.promotionPreflight?.runId?.trim() || '';
   const postApplyRunId = evidence.postApplyRunEvidence?.runId?.trim() || '';
   const selectedRuntime = evidence.selectedRuntimeContract;
+  const targetTaskId = evidence.targetTaskId?.trim() || '';
+  const patchTaskId = evidence.patchArtifact?.taskId?.trim() || '';
+  const decisionTaskId = evidence.promotionDecision?.taskId?.trim() || '';
+  const preflightTaskId = evidence.promotionPreflight?.taskId?.trim() || '';
+  const postApplyTaskId = evidence.postApplyRunEvidence?.taskId?.trim() || '';
   const touchedFiles = evidence.postApplyRunEvidence?.touchedFiles
     ?.map((file) => file.trim())
     .filter(Boolean) ?? [];
+  const targetTaskIdentityReady = Boolean(targetTaskId)
+    && patchTaskId === targetTaskId
+    && decisionTaskId === targetTaskId
+    && preflightTaskId === targetTaskId
+    && postApplyTaskId === targetTaskId;
 
   const selectedRuntimeContractReady = (
     selectedRuntime?.phase === 'execution_run'
@@ -178,7 +192,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     promotionPreflightReady,
     sameRunEvidenceChainReady,
     selectedRuntimeContractReady,
-    targetTaskIdentityReady: Boolean(evidence.targetTaskId?.trim()),
+    targetTaskIdentityReady,
   });
 
   return {
@@ -187,7 +201,12 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       readiness.summary,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
       `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
-      `targetTask=${evidence.targetTaskId?.trim() || 'missing'}`,
+      `targetTask=${targetTaskId || 'missing'}`,
+      `patchArtifactTask=${patchTaskId || 'missing'}`,
+      `promotionDecisionTask=${decisionTaskId || 'missing'}`,
+      `promotionPreflightTask=${preflightTaskId || 'missing'}`,
+      `postApplyTask=${postApplyTaskId || 'missing'}`,
+      `targetTaskEvidenceChain=${targetTaskIdentityReady ? 'ready' : 'missing'}`,
       `patchArtifactId=${evidence.patchArtifact?.artifactId?.trim() || 'missing'}`,
       `promotionDecisionId=${evidence.promotionDecision?.decisionId?.trim() || 'missing'}`,
       `promotionCheckpointId=${evidence.promotionDecision?.checkpointId?.trim() || 'missing'}`,

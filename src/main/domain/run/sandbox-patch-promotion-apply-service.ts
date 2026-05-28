@@ -239,10 +239,12 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
       kind: params.preflight.artifact.kind === 'patch' ? 'patch' : 'unknown',
       runId: params.preflight.artifact.sourceId,
       status: params.preflight.artifact.kind === 'patch' ? 'ready' : 'missing',
+      taskId: params.preflight.promotion.taskId,
     },
     postApplyRunEvidence: {
       runId: params.preflight.promotion.runId,
       status: params.touchedFiles.length ? 'present' : 'missing',
+      taskId: params.preflight.promotion.taskId,
       touchedFiles: params.touchedFiles,
     },
     promotionDecision: {
@@ -250,11 +252,13 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
       decisionId: params.preflight.promotion.decisionId,
       runId: params.preflight.checkpoint.runId,
       status: 'approved',
+      taskId: params.preflight.promotion.taskId,
     },
     promotionPreflight: {
       checkpointId: params.preflight.checkpoint.id,
       runId: params.preflight.checkpoint.runId,
       status: 'ready',
+      taskId: params.preflight.promotion.taskId,
     },
     targetTaskId: params.preflight.promotion.taskId,
   };
@@ -277,10 +281,12 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
       kind: 'patch',
       runId: params.promotion.runId,
       status: 'ready',
+      taskId: params.promotion.taskId,
     },
     postApplyRunEvidence: {
       runId: params.promotion.runId,
       status: params.promotion.expectedFiles.length ? 'present' : 'missing',
+      taskId: params.promotion.taskId,
       touchedFiles: params.promotion.expectedFiles,
     },
     promotionDecision: {
@@ -288,11 +294,13 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
       decisionId: params.promotion.decisionId,
       runId: params.promotion.runId,
       status: 'approved',
+      taskId: params.promotion.taskId,
     },
     promotionPreflight: {
       checkpointId: params.promotion.checkpointId,
       runId: params.promotion.runId,
       status: 'ready',
+      taskId: params.promotion.taskId,
     },
     targetTaskId: params.promotion.taskId,
   };

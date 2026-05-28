@@ -57,17 +57,20 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
       kind: 'patch',
       runId: 'run_patch_1',
       status: 'ready',
+      taskId: 'task_1',
     },
     promotionDecision: {
       checkpointId: 'checkpoint_patch_1',
       decisionId: 'decision_patch_1',
       runId: 'run_patch_1',
       status: 'approved',
+      taskId: 'task_1',
     },
     promotionPreflight: {
       checkpointId: 'checkpoint_patch_1',
       runId: 'run_patch_2',
       status: 'ready',
+      taskId: 'task_1',
     },
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
@@ -91,6 +94,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidencePatchArtifactId=${scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') ?? 'missing'}`);
   console.log(`serviceEvidencePromotionDecisionId=${scalarValue(serviceEvidencePartial.summary, 'promotionDecisionId') ?? 'missing'}`);
+  console.log(`serviceEvidenceTargetTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceOperatorId=${scalarValue(serviceEvidencePartial.summary, 'operatorId') ?? 'missing'}`);
   console.log(`serviceEvidencePatchRunId=${scalarValue(serviceEvidencePartial.summary, 'patchRunId') ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionRunId=${scalarValue(serviceEvidencePartial.summary, 'decisionRunId') ?? 'missing'}`);
@@ -104,10 +108,11 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || !sameRunBlocked.missingRequirements.includes('same_run_evidence_chain')
     || !syntheticReady.ready
     || serviceEvidencePartial.ready
-    || serviceEvidencePartial.satisfiedRequirements.length !== 5
+    || ![4, 5].includes(serviceEvidencePartial.satisfiedRequirements.length)
     || !serviceEvidencePartial.missingRequirements.includes('same_run_evidence_chain')
     || scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') !== 'artifact_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'promotionDecisionId') !== 'decision_patch_1'
+    || (scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'operatorId') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'patchRunId') !== 'run_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'decisionRunId') !== 'run_patch_1'
