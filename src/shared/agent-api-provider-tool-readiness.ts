@@ -21,7 +21,6 @@ export type AgentApiProviderToolReadiness = {
 const EXPLICIT_WEB_SEARCH_TOOL_NAMES = new Set([
   'browse',
   'browser',
-  'search',
   'web_browse',
   'web_browser',
   'web_fetch',

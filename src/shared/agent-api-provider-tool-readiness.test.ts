@@ -171,7 +171,7 @@ describe('Agent API provider tool readiness', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       configuredProvider: 'openai',
       explicitToolDeclarations: {
-        declaredTools: ['taskplane.create_task', 'file_search', 'database_search'],
+        declaredTools: ['taskplane.create_task', 'file_search', 'database_search', 'search'],
         packageName: '@openai/agents',
         source: 'provider_owned_metadata',
       },
@@ -199,7 +199,7 @@ describe('Agent API provider tool readiness', () => {
       ],
       missingRequirements: ['explicit_tool_declaration'],
     });
-    expect(readiness.summary).toContain('declaredToolCount=3');
+    expect(readiness.summary).toContain('declaredToolCount=4');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=0');
     expect(readiness.summary).toContain('declaredWebSearchTools=none');
     expect(readiness.summary).toContain('explicitToolDeclaration=missing');
