@@ -2,6 +2,7 @@ import type { AiRuntimeMode } from './types/settings.js';
 import type { AgentRuntimeVerifierResult } from './agent-runtime-verifier.js';
 import type { DecisionDraftRecord } from './types/decision.js';
 import type { PilotDecisionSnapshot } from './pilot-decision-contract.js';
+import type { RunStatus } from './types/run.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
 import type { TaskplaneSubtaskWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
@@ -185,6 +186,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     runId?: string | null;
     taskId?: string | null;
     terminalEvidenceStatus: 'missing' | 'pending' | 'present';
+    terminalRunStatus?: RunStatus | null;
   } | null;
   runGoalContract?: {
     completionConditionCount: number;
@@ -719,6 +721,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
   const runEvidenceId = evidence.runEvidencePersistence?.runId?.trim() || '';
   const runEvidenceTaskId = evidence.runEvidencePersistence?.taskId?.trim() || '';
+  const terminalRunStatus = evidence.runEvidencePersistence?.terminalRunStatus ?? null;
   const patchPromotionRunId = evidence.reviewedPatchApplyBoundary?.runId?.trim() || '';
   const patchPromotionTaskId = evidence.reviewedPatchApplyBoundary?.taskId?.trim() || '';
   const writeIntentRunId = evidence.writeIntentExtraction?.runId?.trim() || '';
@@ -729,6 +732,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && Boolean(runEvidenceTaskId)
     && Boolean(targetTaskId)
     && runEvidenceTaskId === targetTaskId;
+  const terminalRunStatusReady = terminalRunStatus === 'completed' || terminalRunStatus === 'failed';
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && (!runEvidenceId || runEvidenceTaskEvidenceChainReady);
   const selectedRuntimeRunEvidenceChainReady = Boolean(selectedRuntimeRunId)
@@ -862,6 +866,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   if (
     runEvidenceId
     && runEvidenceTaskEvidenceChainReady
+    && terminalRunStatusReady
     && evidence.runEvidencePersistence?.terminalEvidenceStatus === 'present'
   ) {
     satisfiedRequirements.push('run_evidence_persistence');
@@ -925,6 +930,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `postStepTask=${postStepTaskId || 'missing'}`,
       `postStepTaskEvidenceChain=${postStepTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `postStepVerifier=${verifier || 'missing'}`,
+      `terminalRunStatus=${terminalRunStatus ?? 'missing'}`,
+      `terminalRunStatusEvidenceChain=${terminalRunStatusReady ? 'ready' : 'missing'}`,
       `terminalEvidence=${evidence.runEvidencePersistence?.terminalEvidenceStatus ?? 'missing'}`,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
       `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,

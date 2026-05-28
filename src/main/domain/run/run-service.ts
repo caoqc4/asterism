@@ -457,6 +457,7 @@ export class RunService {
             runId: params.run.id,
             taskId: params.run.taskId,
             terminalEvidenceStatus: params.run.output?.trim() ? 'present' : 'missing',
+            terminalRunStatus: params.run.status,
           }
         : null,
       selectedRuntimeContract: params.capabilities?.executionRuntime.kind === 'agent_api'

@@ -122,6 +122,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       runId: 'run_api_execution',
       taskId: 'task_1',
       terminalEvidenceStatus: 'present',
+      terminalRunStatus: 'completed',
     },
     runGoalContract: {
       completionConditionCount: 1,
@@ -205,6 +206,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`artifactOnlyTaskMemoryGuidanceTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'taskMemoryGuidanceTaskEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyPostStepRunEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepRunEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyPostStepTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`artifactOnlyTerminalRunStatus=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatus') ?? 'missing'}`);
+  console.log(`artifactOnlyTerminalRunStatusEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatusEvidenceChain') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -250,6 +253,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'taskMemoryGuidanceTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepRunEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatus') !== 'completed'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatusEvidenceChain') !== 'ready'
   ) {
     console.log('status=failed');
     return 1;

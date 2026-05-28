@@ -824,6 +824,8 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('artifactOnlyWriteIntentTaskEvidenceChain=ready');
     expect(result.output).toContain('artifactOnlyTaskMemoryGuidanceTask=task_1');
     expect(result.output).toContain('artifactOnlyTaskMemoryGuidanceTaskEvidenceChain=ready');
+    expect(result.output).toContain('artifactOnlyTerminalRunStatus=completed');
+    expect(result.output).toContain('artifactOnlyTerminalRunStatusEvidenceChain=ready');
   });
 
   it('keeps Agent API decomposition promotion readiness smoke read-only and build-gated by default', () => {
