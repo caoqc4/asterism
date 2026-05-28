@@ -2621,6 +2621,22 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.45;
 }
+.settings-safety-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 3px 0;
+}
+.settings-safety-evidence span {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-sunk);
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
 
 .toggle {
   width: 36px;

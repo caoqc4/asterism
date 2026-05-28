@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { AiCommunicationStyle, AiConfigStatus, AiConfirmationThreshold } from '@shared/types/settings';
-import type { ConfigurationSafetyReport } from '@shared/configuration-safety-report';
+import type { ConfigurationSafetyReport, ConfigurationSafetySurface } from '@shared/configuration-safety-report';
 import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS, SELF_CHECK_RETRY_LIMIT } from '@shared/settings-defaults';
 import { CONFIGURATION_SAFETY_STATE_LABELS, configurationSafetyProbePolicyLabel } from '../lib/configurationSafetyLabels';
 
@@ -218,26 +218,36 @@ function ConfigurationSafetySection({ report }: { report: ConfigurationSafetyRep
         <span>{report.secretExposureSafe ? '密钥不外显' : '需检查密钥展示'}</span>
       </div>
       <div className="settings-safety-list">
-        {report.surfaces.map((surface) => (
-          <div key={surface.id} className="settings-safety-row">
-            <div className="settings-safety-main">
-              <span className={`settings-safety-state ${surface.state}`}>
-                {CONFIGURATION_SAFETY_STATE_LABELS[surface.state]}
-              </span>
-              <span className="settings-safety-id">{surface.id}</span>
+        {report.surfaces.map((surface) => {
+          const evidenceChips = configurationSafetyEvidenceChips(surface);
+          return (
+            <div key={surface.id} className="settings-safety-row">
+              <div className="settings-safety-main">
+                <span className={`settings-safety-state ${surface.state}`}>
+                  {CONFIGURATION_SAFETY_STATE_LABELS[surface.state]}
+                </span>
+                <span className="settings-safety-id">{surface.id}</span>
+              </div>
+              <div className="settings-safety-detail">
+                <span>{surface.reason}</span>
+                {surface.diagnosticSummary && surface.diagnosticSummary !== surface.reason && (
+                  <span>诊断：{surface.diagnosticSummary}</span>
+                )}
+                {evidenceChips.length > 0 && (
+                  <div className="settings-safety-evidence" aria-label={`${surface.id} evidence`}>
+                    {evidenceChips.map((chip) => (
+                      <span key={chip}>{chip}</span>
+                    ))}
+                  </div>
+                )}
+                <span>
+                  探测：{configurationSafetyProbePolicyLabel(surface.startupProbePolicy)}
+                  {surface.requiresApproval ? ' · 需用户确认' : ''}
+                </span>
+              </div>
             </div>
-            <div className="settings-safety-detail">
-              <span>{surface.reason}</span>
-              {surface.diagnosticSummary && surface.diagnosticSummary !== surface.reason && (
-                <span>诊断：{surface.diagnosticSummary}</span>
-              )}
-              <span>
-                探测：{configurationSafetyProbePolicyLabel(surface.startupProbePolicy)}
-                {surface.requiresApproval ? ' · 需用户确认' : ''}
-              </span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {report.blockedReasons.length > 0 && (
         <p className="settings-hint" style={{ marginTop: 8 }}>
@@ -246,6 +256,31 @@ function ConfigurationSafetySection({ report }: { report: ConfigurationSafetyRep
       )}
     </section>
   );
+}
+
+function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): string[] {
+  if (surface.id !== 'runtime.scheduler') return [];
+  const text = `${surface.reason} / ${surface.diagnosticSummary ?? ''}`;
+  return [
+    'proposalReady',
+    'approvalQueueSurface',
+    'authorization',
+    'operatorId',
+    'standingApprovalPolicyId',
+    'standingApprovalScopeTask',
+    'standingApprovalActive',
+    'runtimeStartRequirements',
+    'runtimeStartMissingRequirements',
+  ].map((key) => {
+    const value = scalarSummaryValue(text, key);
+    return value ? `${key}=${value}` : null;
+  }).filter((chip): chip is string => Boolean(chip));
+}
+
+function scalarSummaryValue(summary: string, key: string): string | null {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() ?? null;
 }
 
 function SegmentedControl<T extends string>({
