@@ -21,6 +21,7 @@ import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffol
 import type { TaskMemoryGuidanceState } from '@shared/task-memory-guidance-state';
 import type { TaskMemoryWriteProposal } from '@shared/task-memory-write-proposal';
 import { App } from './App';
+import { projectDecompositionPromotionEvidenceChips } from './pages/TasksPage';
 import {
   createManualWorkHabit,
   deleteWorkHabit,
@@ -1085,7 +1086,7 @@ function createMockApi() {
       },
       promotionReadiness: {
         ready: true,
-        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / selectedRuntimeContract=ready / parentTask=task_project / proposalCard=ready / applyPlan=subtask.create_many / source=agent_api_decomposition / proposalId=project_decomposition:task_project / subtaskCount=2 / evidenceRunId=missing / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / missingRequirements=none / promotionMissingRequirements=none / missing=none',
+        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / selectedRuntimeContract=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / proposalCard=ready / applyPlan=subtask.create_many / source=agent_api_decomposition / proposalId=project_decomposition:task_project / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / subtaskCount=2 / evidenceRunId=missing / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / missingRequirements=none / promotionMissingRequirements=none / missing=none',
         satisfiedRequirements: [
           'selected_runtime_contract',
           'parent_task_identity',
@@ -1198,6 +1199,28 @@ describe('App redesign v1', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+  });
+
+  it('projects decomposition promotion parent-chain evidence chips', () => {
+    const chips = projectDecompositionPromotionEvidenceChips({
+      ready: true,
+      summary: 'Agent API decomposition promotion readiness / ready=yes / proposalId=project_decomposition:task_project / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / subtaskCount=2 / evidenceRunId=missing / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime',
+      satisfiedRequirements: [
+        'selected_runtime_contract',
+        'parent_task_identity',
+        'reversible_proposal_card',
+        'subtask_create_many_apply_plan',
+        'agent_api_decomposition_source',
+        'operator_confirmation_boundary',
+        'draft_only_timeline_evidence',
+      ],
+      missingRequirements: [],
+    });
+
+    expect(chips).toContain('proposalParentTask=task_project');
+    expect(chips).toContain('proposalTaskEvidenceChain=ready');
+    expect(chips).toContain('applyPlanParentTask=task_project');
+    expect(chips).toContain('parentTaskEvidenceChain=ready');
   });
 
   it('renders the redesigned navigation zones and keeps the external signal hint visible', async () => {

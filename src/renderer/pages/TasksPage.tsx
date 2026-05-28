@@ -138,7 +138,7 @@ function standingApprovalEvidenceChips(draft: AgentStandingApprovalConfirmationD
   ];
 }
 
-function projectDecompositionPromotionEvidenceChips(
+export function projectDecompositionPromotionEvidenceChips(
   readiness: ProjectDecompositionResult['promotionReadiness'],
 ): string[] {
   if (!readiness) {
@@ -146,7 +146,11 @@ function projectDecompositionPromotionEvidenceChips(
   }
   const summaryKeys = [
     'proposalId',
+    'proposalParentTask',
+    'proposalTaskEvidenceChain',
     'parentTask',
+    'applyPlanParentTask',
+    'parentTaskEvidenceChain',
     'subtaskCount',
     'evidenceRunId',
     'confirmationBoundary',
