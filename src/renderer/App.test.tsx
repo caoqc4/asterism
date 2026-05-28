@@ -5007,7 +5007,7 @@ describe('App redesign v1', () => {
             id: 'sandbox.patch_promotion',
             state: 'approval_required',
             reason: 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.',
-            diagnosticSummary: 'Runtime patch promotion routing readiness / promotionReady=no / promotionRequirements=7/8 / promotionSatisfiedRequirements=target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence / promotionMissingRequirements=selected_runtime_contract / missingRequirements=selected_runtime_contract / selectedRuntimeContract=missing / targetTaskIdentity=ready / targetTaskEvidenceChain=ready / sameRunEvidenceChain=ready / explicitOperatorApply=ready / postApplyRunEvidence=ready / operatorId=local_operator / patchArtifactId=artifact_patch_1 / promotionDecisionId=decision_patch_1 / patchArtifactTask=task_1 / promotionDecisionTask=task_1 / promotionPreflightTask=task_1 / postApplyTask=task_1 / patchRunId=run_patch_1 / decisionRunId=run_patch_1 / preflightRunId=run_patch_1 / postApplyRunId=run_patch_1 / sameRunId=run_patch_1 / touchedFileCount=1 / touchedFiles=notes.md',
+            diagnosticSummary: 'Runtime patch promotion routing readiness / promotionReady=no / promotionRequirements=7/8 / promotionSatisfiedRequirements=target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence / promotionMissingRequirements=selected_runtime_contract / missingRequirements=selected_runtime_contract / selectedRuntimeContract=missing / targetTaskIdentity=ready / targetTaskEvidenceChain=ready / checkpointEvidenceChain=ready / sameRunEvidenceChain=ready / explicitOperatorApply=ready / postApplyRunEvidence=ready / operatorId=local_operator / patchArtifactId=artifact_patch_1 / promotionDecisionId=decision_patch_1 / promotionCheckpointId=checkpoint_patch_1 / preflightCheckpointId=checkpoint_patch_1 / patchArtifactTask=task_1 / promotionDecisionTask=task_1 / promotionPreflightTask=task_1 / postApplyTask=task_1 / patchRunId=run_patch_1 / decisionRunId=run_patch_1 / preflightRunId=run_patch_1 / postApplyRunId=run_patch_1 / sameRunId=run_patch_1 / touchedFileCount=1 / touchedFiles=notes.md',
             requiresApproval: true,
             startupProbePolicy: 'manual_only',
             exposesSecretValue: false,
@@ -5064,12 +5064,15 @@ describe('App redesign v1', () => {
     expect(within(patchPromotionEvidence).getByText('selectedRuntimeContract=missing')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('targetTaskIdentity=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('targetTaskEvidenceChain=ready')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('checkpointEvidenceChain=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('sameRunEvidenceChain=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('explicitOperatorApply=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('postApplyRunEvidence=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('operatorId=local_operator')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('patchArtifactId=artifact_patch_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('promotionDecisionId=decision_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('promotionCheckpointId=checkpoint_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('preflightCheckpointId=checkpoint_patch_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('patchArtifactTask=task_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('promotionDecisionTask=task_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('promotionPreflightTask=task_1')).toBeTruthy();

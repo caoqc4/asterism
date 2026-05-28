@@ -173,6 +173,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('promotionDecisionId=decision_patch_1');
     expect(partial.summary).toContain('promotionCheckpointId=checkpoint_patch_1');
     expect(partial.summary).toContain('preflightCheckpointId=checkpoint_patch_1');
+    expect(partial.summary).toContain('checkpointEvidenceChain=ready');
     expect(partial.summary).toContain('operatorId=missing');
     expect(partial.summary).toContain('patchRunId=run_patch_1');
     expect(partial.summary).toContain('decisionRunId=run_patch_1');
@@ -234,6 +235,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('decisionRunId=run_patch_1');
     expect(ready.summary).toContain('preflightRunId=run_patch_1');
     expect(ready.summary).toContain('postApplyRunId=run_patch_1');
+    expect(ready.summary).toContain('checkpointEvidenceChain=ready');
     expect(ready.summary).toContain('sameRunId=run_patch_1');
     expect(ready.summary).toContain('touchedFileCount=1');
     expect(ready.summary).toContain('touchedFiles=src/app.ts');
@@ -288,5 +290,60 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('promotionDecisionTask=task_other');
     expect(readiness.summary).toContain('targetTaskEvidenceChain=missing');
     expect(readiness.summary).toContain('sameRunEvidenceChain=ready');
+  });
+
+  it('requires promotion Decision and preflight evidence to reference the same checkpoint', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        confirmed: true,
+        operatorId: 'operator_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        checkpointId: 'checkpoint_other',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'promotion_preflight',
+        'same_run_evidence_chain',
+      ],
+    });
+    expect(readiness.summary).toContain('requirements=6/8');
+    expect(readiness.summary).toContain('promotionPreflight=missing');
+    expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
+    expect(readiness.summary).toContain('promotionCheckpointId=checkpoint_patch_1');
+    expect(readiness.summary).toContain('preflightCheckpointId=checkpoint_other');
+    expect(readiness.summary).toContain('checkpointEvidenceChain=missing');
   });
 });

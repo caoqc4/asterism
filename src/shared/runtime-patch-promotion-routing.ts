@@ -132,6 +132,8 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const decisionTaskId = evidence.promotionDecision?.taskId?.trim() || '';
   const preflightTaskId = evidence.promotionPreflight?.taskId?.trim() || '';
   const postApplyTaskId = evidence.postApplyRunEvidence?.taskId?.trim() || '';
+  const promotionCheckpointId = evidence.promotionDecision?.checkpointId?.trim() || '';
+  const preflightCheckpointId = evidence.promotionPreflight?.checkpointId?.trim() || '';
   const touchedFiles = evidence.postApplyRunEvidence?.touchedFiles
     ?.map((file) => file.trim())
     .filter(Boolean) ?? [];
@@ -157,12 +159,15 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const promotionDecisionReady = (
     evidence.promotionDecision?.status === 'approved'
     && Boolean(evidence.promotionDecision.decisionId?.trim())
-    && Boolean(evidence.promotionDecision.checkpointId?.trim())
+    && Boolean(promotionCheckpointId)
     && Boolean(decisionRunId)
   );
+  const checkpointEvidenceChainReady = Boolean(promotionCheckpointId)
+    && Boolean(preflightCheckpointId)
+    && promotionCheckpointId === preflightCheckpointId;
   const promotionPreflightReady = (
     evidence.promotionPreflight?.status === 'ready'
-    && Boolean(evidence.promotionPreflight.checkpointId?.trim())
+    && checkpointEvidenceChainReady
     && Boolean(preflightRunId)
   );
   const explicitOperatorApply = (
@@ -209,8 +214,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `targetTaskEvidenceChain=${targetTaskIdentityReady ? 'ready' : 'missing'}`,
       `patchArtifactId=${evidence.patchArtifact?.artifactId?.trim() || 'missing'}`,
       `promotionDecisionId=${evidence.promotionDecision?.decisionId?.trim() || 'missing'}`,
-      `promotionCheckpointId=${evidence.promotionDecision?.checkpointId?.trim() || 'missing'}`,
-      `preflightCheckpointId=${evidence.promotionPreflight?.checkpointId?.trim() || 'missing'}`,
+      `promotionCheckpointId=${promotionCheckpointId || 'missing'}`,
+      `preflightCheckpointId=${preflightCheckpointId || 'missing'}`,
+      `checkpointEvidenceChain=${checkpointEvidenceChainReady ? 'ready' : 'missing'}`,
       `operatorId=${explicitOperatorApply ? (evidence.explicitOperatorApply?.operatorId?.trim() ?? 'missing') : 'missing'}`,
       `patchRunId=${patchRunId || 'missing'}`,
       `decisionRunId=${decisionRunId || 'missing'}`,

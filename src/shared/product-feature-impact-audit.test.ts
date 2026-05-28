@@ -784,8 +784,10 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadiness');
     expect(taskFiles?.evidence.join(' ')).toContain('evaluateRuntimePatchPromotionRoutingReadinessFromEvidence');
     expect(taskFiles?.evidence.join(' ')).toContain('structured service evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('checkpoint evidence chain');
     expect(taskFiles?.evidence.join(' ')).toContain('target-task identity as an evidence chain');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskId, patchArtifact.taskId, promotionDecision.taskId, promotionPreflight.taskId, and postApplyRunEvidence.taskId must all match');
+    expect(taskFiles?.evidence.join(' ')).toContain('promotion Decision checkpoint and promotion preflight checkpoint as one checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionReady');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionRequirements=x/8');
@@ -793,6 +795,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionMissingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('operatorId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionDecisionId');
@@ -809,7 +812,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('settings and safety-report surfaces show the selected-runtime, target-task, same-run artifact');
     expect(taskFiles?.evidence.join(' ')).toContain('Settings configuration safety rows now render sandbox.patch_promotion evidence chips');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionRequirements, promotionSatisfiedRequirements, promotionMissingRequirements, missingRequirements');
-    expect(taskFiles?.evidence.join(' ')).toContain('targetTaskIdentity, targetTaskEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('targetTaskIdentity, targetTaskEvidenceChain, checkpointEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('promotionCheckpointId, preflightCheckpointId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, postApplyTask');
     expect(taskFiles?.evidence.join(' ')).toContain('patchRunId, decisionRunId, preflightRunId, postApplyRunId');
     expect(taskFiles?.evidence.join(' ')).toContain('patch promotion routing gaps and identity');
@@ -817,7 +821,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('blocked=2/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('same-run-blocked=7/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('service-evidence=4/8 requirements');
-    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, promotionDecisionId, patchArtifactTask, promotionDecisionTask, promotionPreflightTask, targetTaskEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, promotionDecisionId, patchArtifactTask, promotionDecisionTask, promotionPreflightTask, targetTaskEvidenceChain, checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('target_task_identity, explicit_operator_apply, same_run_evidence_chain, and post_apply_run_evidence missing');
     expect(taskFiles?.evidence.join(' ')).toContain('synthetic-ready=8/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService now appends evaluateRuntimePatchPromotionRoutingReadinessFromEvidence output');

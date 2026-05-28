@@ -54,6 +54,8 @@ describe('configuration safety report', () => {
       startupProbePolicy: 'manual_only',
     });
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')?.diagnosticSummary)
+      .toContain('checkpointEvidenceChain=missing');
+    expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')?.diagnosticSummary)
       .toContain('operatorId=missing / patchRunId=missing / decisionRunId=missing / preflightRunId=missing / postApplyRunId=missing / sameRunId=missing / touchedFileCount=0 / touchedFiles=none');
   });
 
