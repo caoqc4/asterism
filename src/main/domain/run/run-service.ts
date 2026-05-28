@@ -1,5 +1,6 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
+import { evaluateAgentApiExecutionPromotionReadinessFromEvidence } from '../../../shared/ai-runtime-invocation.js';
 import { evaluatePausedRunResumeEligibility } from '../../../shared/run-resume-eligibility.js';
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import {
@@ -211,6 +212,14 @@ export class RunService {
       input: input.instructions ?? null,
       output: formatRuntimeContextReadinessForStep(contextReadiness),
     });
+    await this.recordAgentApiExecutionPromotionReadiness({
+      capabilities,
+      contextReadiness,
+      input,
+      runId: created.id,
+      task: taskForExecution,
+      taskMemoryGuidance,
+    });
     const applicableWorkHabits = await this.buildApplicableWorkHabits(taskForExecution);
     const result =
       input.type === 'agent'
@@ -357,6 +366,63 @@ export class RunService {
     } catch {
       return null;
     }
+  }
+
+  private async recordAgentApiExecutionPromotionReadiness(params: {
+    capabilities: RuntimeCapabilitySnapshot | null;
+    contextReadiness: ReturnType<typeof evaluateRuntimeContextReadiness>;
+    input: CreateRunInput;
+    runId: string;
+    task: TaskDetail;
+    taskMemoryGuidance: TaskMemoryGuidanceState;
+  }): Promise<void> {
+    const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      contextManifestSummary: params.capabilities?.summary ?? null,
+      contextReadinessStep: {
+        status: params.contextReadiness.decision === 'ready' ? 'ready' : 'blocked',
+        stepId: 'context.readiness.evaluate',
+      },
+      gates: {
+        context_readiness: params.contextReadiness.decision === 'ready',
+        pre_step: true,
+        runtime_context_assembly: Boolean(params.capabilities?.model.configured),
+        subtask_start: true,
+        task_memory_coverage: params.taskMemoryGuidance.outcome === 'satisfied',
+        task_memory_guidance: params.taskMemoryGuidance.outcome === 'satisfied',
+      },
+      providerVisiblePreflight: params.capabilities?.model.configured
+        ? {
+            providerConfigured: true,
+            startupProbe: 'not_called',
+            status: 'ready',
+          }
+        : null,
+      runGoalContract: {
+        completionConditionCount: params.task.completionCriteria.length,
+        objective: params.input.instructions ?? params.task.nextStep ?? params.task.summary,
+      },
+      selectedRuntimeContract: params.capabilities?.executionRuntime.kind === 'agent_api'
+        ? {
+            invocationLayer: 'api_runtime',
+            phase: 'execution_run',
+            runtimeMode: 'api',
+          }
+        : null,
+      targetTaskId: params.task.id,
+      taskMemoryGuidance: {
+        guidanceCount: params.taskMemoryGuidance.targets.length,
+        status: params.taskMemoryGuidance.outcome === 'satisfied' ? 'ready' : 'missing',
+      },
+    });
+
+    await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'plan',
+      status: 'completed',
+      title: 'Agent API execution promotion readiness',
+      input: params.capabilities?.summary ?? null,
+      output: readiness.summary,
+    });
   }
 
   async continuePausedRun(runId: string): Promise<RunRecord> {
