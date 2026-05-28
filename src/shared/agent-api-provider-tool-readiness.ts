@@ -108,12 +108,10 @@ function declaredWebSearchTools(tools: string[] | undefined): string[] {
     if (EXPLICIT_WEB_SEARCH_TOOL_NAMES.has(normalizedTool)) return true;
 
     const segments = normalizedTool.split('_').filter(Boolean);
-    return segments.includes('web') && segments.some((segment) =>
-      segment === 'search'
-      || segment === 'fetch'
-      || segment === 'browse'
-      || segment === 'browser'
-    );
+    const last = segments.at(-1);
+    const previous = segments.at(-2);
+    if (last === 'browse' || last === 'browser') return true;
+    return previous === 'web' && (last === 'search' || last === 'fetch');
   });
 }
 
