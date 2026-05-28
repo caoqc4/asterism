@@ -770,6 +770,7 @@ export class SchedulerService {
     const rationale = input.rationale.trim();
     const options = input.options?.map((option) => option.trim()).filter(Boolean) ?? [];
     const proposedOutcome = input.proposedOutcome?.trim() || '';
+    const proposedOutcomeMatchesOption = Boolean(proposedOutcome) && options.includes(proposedOutcome);
     if (!this.scheduledEventAgentTimelinePort) {
       return {
         status: 'blocked',
@@ -799,7 +800,15 @@ export class SchedulerService {
       targetTaskId,
     });
 
-    if (readiness.status !== 'ready' || !targetTaskId || !title || !rationale || options.length === 0 || !proposedOutcome) {
+    if (
+      readiness.status !== 'ready'
+      || !targetTaskId
+      || !title
+      || !rationale
+      || options.length === 0
+      || !proposedOutcome
+      || !proposedOutcomeMatchesOption
+    ) {
       return {
         status: 'blocked',
         summary: [
@@ -808,6 +817,7 @@ export class SchedulerService {
           `rationale=${rationale ? 'present' : 'missing'}`,
           `options=${options.length ? options.length : 'missing'}`,
           `proposedOutcome=${proposedOutcome ? 'present' : 'missing'}`,
+          `proposedOutcomeMatchesOption=${proposedOutcomeMatchesOption ? 'yes' : 'no'}`,
           'schedulerDecisionProposal=blocked',
         ].join(' / '),
       };
