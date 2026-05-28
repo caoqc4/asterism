@@ -442,6 +442,7 @@ export class RunService {
       runEvidencePersistence: phase === 'post_run' && params.run
         ? {
             runId: params.run.id,
+            taskId: params.run.taskId,
             terminalEvidenceStatus: params.run.output?.trim() ? 'present' : 'missing',
           }
         : null,

@@ -173,6 +173,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   } | null;
   runEvidencePersistence?: {
     runId?: string | null;
+    taskId?: string | null;
     terminalEvidenceStatus: 'missing' | 'pending' | 'present';
   } | null;
   runGoalContract?: {
@@ -582,6 +583,9 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     .filter(Boolean) ?? [];
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
   const runEvidenceId = evidence.runEvidencePersistence?.runId?.trim() || '';
+  const runEvidenceTaskId = evidence.runEvidencePersistence?.taskId?.trim() || '';
+  const targetTaskIdentityReady = Boolean(targetTaskId)
+    && (!runEvidenceId || runEvidenceTaskId === targetTaskId);
 
   if (
     selectedRuntime?.runtimeMode === 'api'
@@ -591,7 +595,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('selected_runtime_contract');
   }
 
-  if (targetTaskId) {
+  if (targetTaskIdentityReady) {
     satisfiedRequirements.push('target_task_identity');
   }
 
@@ -656,6 +660,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     summary: [
       readiness.summary,
       `targetTask=${targetTaskId || 'missing'}`,
+      `runEvidenceTask=${runEvidenceTaskId || 'missing'}`,
+      `targetTaskEvidenceChain=${targetTaskIdentityReady ? 'ready' : 'missing'}`,
       `runId=${runEvidenceId || 'missing'}`,
       `contextStep=${contextStepId || 'missing'}`,
       `contextManifest=${contextManifest || 'missing'}`,

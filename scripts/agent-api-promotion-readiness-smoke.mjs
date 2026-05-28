@@ -93,6 +93,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',')}`);
   console.log(`serviceEvidenceMissingGates=${serviceEvidencePartial.missingGates.join(',')}`);
   console.log(`serviceEvidenceTargetTask=${scalarValue(serviceEvidencePartial.summary, 'targetTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceTargetTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'runId') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStep=${scalarValue(serviceEvidencePartial.summary, 'contextStep') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
@@ -108,6 +109,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || serviceEvidencePartial.satisfiedRequirements.length !== 5
     || serviceEvidencePartial.satisfiedGates.length !== 3
     || scalarValue(serviceEvidencePartial.summary, 'targetTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runId') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'contextStep') !== 'step_context_ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'

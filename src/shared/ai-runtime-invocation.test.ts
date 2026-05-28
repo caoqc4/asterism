@@ -606,6 +606,8 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('requirements=5/11');
     expect(partial.summary).toContain('gates=3/9');
     expect(partial.summary).toContain('targetTask=task_1');
+    expect(partial.summary).toContain('runEvidenceTask=missing');
+    expect(partial.summary).toContain('targetTaskEvidenceChain=ready');
     expect(partial.summary).toContain('runId=missing');
     expect(partial.summary).toContain('contextStep=step_context_ready');
     expect(partial.summary).toContain('contextManifest=task=task_1 / files=2');
@@ -625,6 +627,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('requirements=11/11');
     expect(ready.summary).toContain('gates=9/9');
     expect(ready.summary).toContain('targetTask=task_1');
+    expect(ready.summary).toContain('runEvidenceTask=task_1');
+    expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
     expect(ready.summary).toContain('runId=run_api_execution');
     expect(ready.summary).toContain('taskMemoryGuidance=ready');
     expect(ready.summary).toContain('taskMemoryGuidanceCount=1');
@@ -633,6 +637,23 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('reviewedPatchApplyBoundary=ready');
     expect(ready.summary).toContain('postStepVerifier=taskplane.verifier.lightweight');
     expect(ready.summary).toContain('terminalEvidence=present');
+
+    const mismatch = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runEvidencePersistence: {
+        runId: 'run_api_execution',
+        taskId: 'task_2',
+        terminalEvidenceStatus: 'present',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: expect.arrayContaining(['target_task_identity']),
+    });
+    expect(mismatch.summary).toContain('targetTask=task_1');
+    expect(mismatch.summary).toContain('runEvidenceTask=task_2');
+    expect(mismatch.summary).toContain('targetTaskEvidenceChain=missing');
   });
 
   it('wraps product-harness verification and memory proposal phases', () => {
@@ -719,6 +740,7 @@ function completeAgentApiExecutionPromotionEvidence() {
     },
     runEvidencePersistence: {
       runId: 'run_api_execution',
+      taskId: 'task_1',
       terminalEvidenceStatus: 'present' as const,
     },
     runGoalContract: {
