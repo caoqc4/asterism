@@ -241,6 +241,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
 }
 
 function sameStringSet(left: string[], right: string[]): boolean {
+  if (new Set(left).size !== left.length || new Set(right).size !== right.length) {
+    return false;
+  }
   if (left.length !== right.length) return false;
   const rightSet = new Set(right);
   return left.every((item) => rightSet.has(item));

@@ -203,6 +203,54 @@ describe('SandboxPatchPromotionApplyService', () => {
     }
   });
 
+  it('blocks duplicate patch file entries before writing workspace files', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-duplicate-file-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const diff = [
+        '--- a/notes.md',
+        '+++ b/notes.md',
+        '@@',
+        '-alpha',
+        '+beta',
+        '--- a/notes.md',
+        '+++ b/notes.md',
+        '@@',
+        '-beta',
+        '+gamma',
+      ].join('\n');
+      const { markBlocked, service } = buildService({
+        artifact: buildArtifact(diff),
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: [
+          'Patch promotion touched duplicate file: notes.md',
+        ],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(markBlocked).toHaveBeenCalledWith(
+        'sandbox_patch_promotion_1',
+        [
+          'Patch promotion touched duplicate file: notes.md',
+        ],
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion touched duplicate file: notes.md'),
+      );
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('touchedFileEvidenceChain=missing');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('treats already-promoted workspace content as idempotently applied', async () => {
     const tempRoot = makeTempDir('taskplane-sandbox-promotion-idempotent-');
 

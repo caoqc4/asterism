@@ -412,4 +412,57 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
     expect(readiness.summary).toContain('postApplyRunEvidence=missing');
   });
+
+  it('requires post-apply touched file evidence to be duplicate-free', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        confirmed: true,
+        operatorId: 'operator_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts', 'src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts', 'src/app.ts'],
+      },
+      promotionDecision: {
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'same_run_evidence_chain',
+        'post_apply_run_evidence',
+      ],
+    });
+    expect(readiness.summary).toContain('expectedFileCount=2');
+    expect(readiness.summary).toContain('touchedFileCount=2');
+    expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
+  });
 });

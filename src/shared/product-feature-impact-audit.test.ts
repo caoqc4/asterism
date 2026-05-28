@@ -823,6 +823,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('touchedFileCount');
     expect(taskFiles?.evidence.join(' ')).toContain('touchedFiles');
     expect(taskFiles?.evidence.join(' ')).toContain('touchedFileEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('expected and touched file evidence to be duplicate-free');
+    expect(taskFiles?.evidence.join(' ')).toContain('blocks duplicate patch file entries before writing workspace files');
     expect(taskFiles?.evidence.join(' ')).toContain('selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('ConfigurationSafetyReport now exposes runtime patch promotion routing readiness');
     expect(taskFiles?.evidence.join(' ')).toContain('sandbox.patch_promotion diagnostic summary');

@@ -387,8 +387,14 @@ async function validateSandboxPatchApplication(params: {
   const touchedFiles = params.parsedPatch.map((item) => item.file);
   const pendingWrites: Array<{ content: string; filePath: string }> = [];
   let alreadyApplied = true;
+  const seenTouchedFiles = new Set<string>();
 
   for (const file of touchedFiles) {
+    if (seenTouchedFiles.has(file)) {
+      blockedReasons.push(`Patch promotion touched duplicate file: ${file}`);
+    }
+    seenTouchedFiles.add(file);
+
     if (!expectedFiles.has(file)) {
       blockedReasons.push(`Patch promotion touched unexpected file: ${file}`);
     }
