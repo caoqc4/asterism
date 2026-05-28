@@ -283,6 +283,7 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
     'standingApprovalPolicyId',
     'standingApprovalScopeTask',
     'standingApprovalActive',
+    'standingApprovalScopeMatched',
     'runtimeStartRequirements',
     'runtimeStartMissingRequirements',
   ]);

@@ -42,6 +42,13 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     standingApprovalScopeTaskId: 'task_scheduler_decision_standing_smoke',
     targetTaskId: 'task_scheduler_decision_standing_smoke',
   });
+  const scopeMismatch = planSchedulerDecisionProposal({
+    approvalQueueConnected: true,
+    standingApprovalActive: true,
+    standingApprovalPolicyId: 'standing_policy_scope_mismatch_smoke',
+    standingApprovalScopeTaskId: 'task_scheduler_decision_other',
+    targetTaskId: 'task_scheduler_decision_scope_mismatch_smoke',
+  });
   const serviceEvidencePartial = planSchedulerDecisionProposalFromEvidence({
     approvalQueue: {
       connected: true,
@@ -76,9 +83,15 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`standingApprovalAuthorization=${standingApproval.authorizations.join(',') || 'none'}`);
   console.log(`standingApprovalPolicyId=${standingApproval.standingApprovalPolicyId ?? 'missing'}`);
   console.log(`standingApprovalScopeTask=${standingApproval.standingApprovalScopeTaskId ?? 'missing'}`);
+  console.log(`standingApprovalScopeMatched=${scalarValue(standingApproval.summary, 'standingApprovalScopeMatched') ?? 'missing'}`);
   console.log(`standingApprovalDecisionPersistenceAllowed=${String(standingApproval.decisionPersistenceAllowed)}`);
   console.log(`standingApprovalWritebackDispatchAllowed=${String(standingApproval.writebackDispatchAllowed)}`);
   console.log(`standingApprovalSchedulerTriggerAllowed=${String(standingApproval.schedulerTriggerAllowed)}`);
+  console.log(`scopeMismatchStatus=${scopeMismatch.status}`);
+  console.log(`scopeMismatchProposalReady=${scopeMismatch.approvalItemAllowed ? 'yes' : 'no'}`);
+  console.log(`scopeMismatchRequirements=${scopeMismatch.satisfiedRequirements.length}/3`);
+  console.log(`scopeMismatchAuthorization=${scopeMismatch.authorizations.join(',') || 'missing'}`);
+  console.log(`scopeMismatchStandingApprovalScopeMatched=${scalarValue(scopeMismatch.summary, 'standingApprovalScopeMatched') ?? 'missing'}`);
   console.log(`decisionPersistenceAllowed=${String(operatorConfirmed.decisionPersistenceAllowed || standingApproval.decisionPersistenceAllowed)}`);
   console.log(`writebackDispatchAllowed=${String(operatorConfirmed.writebackDispatchAllowed || standingApproval.writebackDispatchAllowed)}`);
   console.log(`schedulerTriggerAllowed=${String(operatorConfirmed.schedulerTriggerAllowed || standingApproval.schedulerTriggerAllowed)}`);
@@ -89,6 +102,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`serviceEvidenceApprovalQueueSurface=${serviceEvidencePartial.approvalQueueSurface ?? 'missing'}`);
   console.log(`serviceEvidenceStandingApprovalPolicyId=${serviceEvidencePartial.standingApprovalPolicyId ?? 'missing'}`);
   console.log(`serviceEvidenceStandingApprovalScopeTask=${serviceEvidencePartial.standingApprovalScopeTaskId ?? 'missing'}`);
+  console.log(`serviceEvidenceStandingApprovalScopeMatched=${scalarValue(serviceEvidencePartial.summary, 'standingApprovalScopeMatched') ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionPersistenceAllowed=${String(serviceEvidencePartial.decisionPersistenceAllowed)}`);
   console.log(`serviceEvidenceWritebackDispatchAllowed=${String(serviceEvidencePartial.writebackDispatchAllowed)}`);
   console.log(`serviceEvidenceSchedulerTriggerAllowed=${String(serviceEvidencePartial.schedulerTriggerAllowed)}`);
@@ -100,6 +114,11 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || operatorConfirmed.operatorId !== 'operator_scheduler_decision_smoke'
     || standingApproval.standingApprovalPolicyId !== 'standing_policy_smoke'
     || standingApproval.standingApprovalScopeTaskId !== 'task_scheduler_decision_standing_smoke'
+    || scalarValue(standingApproval.summary, 'standingApprovalScopeMatched') !== 'yes'
+    || scopeMismatch.approvalItemAllowed
+    || scopeMismatch.satisfiedRequirements.length !== 2
+    || !scopeMismatch.missingRequirements.includes('authorization')
+    || scalarValue(scopeMismatch.summary, 'standingApprovalScopeMatched') !== 'no'
     || operatorConfirmed.decisionPersistenceAllowed
     || operatorConfirmed.writebackDispatchAllowed
     || operatorConfirmed.schedulerTriggerAllowed
@@ -110,6 +129,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || serviceEvidencePartial.approvalQueueSurface !== 'task_dynamics'
     || serviceEvidencePartial.standingApprovalPolicyId !== 'standing_policy_1'
     || serviceEvidencePartial.standingApprovalScopeTaskId !== 'task_scheduler_decision_other'
+    || scalarValue(serviceEvidencePartial.summary, 'standingApprovalScopeMatched') !== 'no'
     || serviceEvidencePartial.satisfiedRequirements.length !== 2
     || !serviceEvidencePartial.missingRequirements.includes('authorization')
     || serviceEvidencePartial.decisionPersistenceAllowed
@@ -122,6 +142,12 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
 
   console.log('status=passed');
   return 0;
+}
+
+function scalarValue(summary, key) {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() ?? null;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

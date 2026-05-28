@@ -4963,7 +4963,7 @@ describe('App redesign v1', () => {
           {
             id: 'runtime.scheduler',
             state: 'approval_required',
-            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / approvalQueueSurface=missing / authorization=missing / operatorId=missing / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
+            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / approvalQueueSurface=missing / authorization=missing / operatorId=missing / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
             diagnosticSummary: 'Scheduled/event trigger plan / status=blocked / runtimeStartRequirements=1/3 / runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count',
             requiresApproval: true,
             startupProbePolicy: 'never',
@@ -5023,6 +5023,7 @@ describe('App redesign v1', () => {
     expect(within(schedulerEvidence).getByText('standingApprovalPolicyId=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('standingApprovalScopeTask=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('standingApprovalActive=no')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('standingApprovalScopeMatched=no')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('runtimeStartRequirements=1/3')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count')).toBeTruthy();
     expect(screen.getByText(/诊断：workspace=missing \/ selected=Codex CLI/)).toBeTruthy();

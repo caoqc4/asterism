@@ -60,9 +60,24 @@ export function planSchedulerDecisionProposal(params: {
   standingApprovalScopeTaskId?: string | null;
   targetTaskId?: string | null;
 } = {}): SchedulerDecisionProposalPlan {
+  const targetTaskId = params.targetTaskId?.trim() || null;
+  const operatorId = params.operatorId?.trim() || null;
+  const standingApprovalPolicyId = params.standingApprovalPolicyId?.trim() || null;
+  const standingApprovalScopeTaskId = params.standingApprovalScopeTaskId?.trim() || null;
+  const operatorConfirmed = params.operatorConfirmed === true && Boolean(operatorId);
+  const standingApprovalScopeMatched = (
+    Boolean(targetTaskId)
+    && Boolean(standingApprovalScopeTaskId)
+    && standingApprovalScopeTaskId === targetTaskId
+  );
+  const standingApprovalActive = (
+    params.standingApprovalActive === true
+    && Boolean(standingApprovalPolicyId)
+    && standingApprovalScopeMatched
+  );
   const authorizations = [
-    params.operatorConfirmed ? 'operator_confirmation' : null,
-    params.standingApprovalActive ? 'standing_approval' : null,
+    operatorConfirmed ? 'operator_confirmation' : null,
+    standingApprovalActive ? 'standing_approval' : null,
   ].filter((value): value is SchedulerDecisionProposalAuthorization => value !== null);
   const requiredRequirements = schedulerDecisionProposalRequirements();
   const blockedReasons = [];
@@ -73,7 +88,6 @@ export function planSchedulerDecisionProposal(params: {
     blockedReasons.push('Task Dynamics writeback approval queue is not connected.');
   }
 
-  const targetTaskId = params.targetTaskId?.trim() || null;
   if (!targetTaskId) {
     missingRequirements.push('target_task_identity');
     blockedReasons.push('Scheduler/background Decision proposal requires a target task identity.');
@@ -81,23 +95,20 @@ export function planSchedulerDecisionProposal(params: {
 
   if (authorizations.length === 0) {
     missingRequirements.push('authorization');
-    blockedReasons.push('Scheduler/background Decision proposal requires operator confirmation or active Standing Approval.');
+    blockedReasons.push('Scheduler/background Decision proposal requires operator confirmation or active target-scoped Standing Approval.');
   }
 
   const approvalItemAllowed = blockedReasons.length === 0;
   const status = approvalItemAllowed ? 'ready' : 'blocked';
   const missingRequirementSet = new Set(missingRequirements);
   const satisfiedRequirements = requiredRequirements.filter((requirement) => !missingRequirementSet.has(requirement));
-  const operatorId = params.operatorConfirmed ? (params.operatorId?.trim() || null) : null;
-  const standingApprovalPolicyId = params.standingApprovalPolicyId?.trim() || null;
-  const standingApprovalScopeTaskId = params.standingApprovalScopeTaskId?.trim() || null;
 
   return {
     status,
     approvalItemAllowed,
     approvalQueueSurface: params.approvalQueueConnected ? (params.approvalQueueSurface ?? 'unknown') : null,
     decisionPersistenceAllowed: false,
-    operatorId,
+    operatorId: operatorConfirmed ? operatorId : null,
     schedulerTriggerAllowed: false,
     standingApprovalPolicyId,
     standingApprovalScopeTaskId,
@@ -120,10 +131,11 @@ export function planSchedulerDecisionProposal(params: {
       'writebackDispatchAllowed=false',
       'schedulerTriggerAllowed=false',
       `authorization=${authorizations.length ? authorizations.join(',') : 'missing'}`,
-      `operatorId=${operatorId ?? 'missing'}`,
+      `operatorId=${operatorConfirmed ? operatorId : 'missing'}`,
       `standingApprovalPolicyId=${standingApprovalPolicyId ?? 'missing'}`,
       `standingApprovalScopeTask=${standingApprovalScopeTaskId ?? 'missing'}`,
-      `standingApprovalActive=${params.standingApprovalActive ? 'yes' : 'no'}`,
+      `standingApprovalActive=${standingApprovalActive ? 'yes' : 'no'}`,
+      `standingApprovalScopeMatched=${standingApprovalScopeMatched ? 'yes' : 'no'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `proposalMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,

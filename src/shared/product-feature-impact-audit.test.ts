@@ -235,6 +235,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('target-scoped Standing Approval');
     expect(decisions?.evidence.join(' ')).toContain('approval-item-only');
     expect(decisions?.evidence.join(' ')).toContain('target-task identity');
+    expect(decisions?.evidence.join(' ')).toContain('concrete operator confirmation');
     expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('writebackDispatchAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false');
@@ -247,6 +248,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('standingApprovalPolicyId');
     expect(decisions?.evidence.join(' ')).toContain('standingApprovalScopeTask');
     expect(decisions?.evidence.join(' ')).toContain('standingApprovalActive');
+    expect(decisions?.evidence.join(' ')).toContain('standingApprovalScopeMatched');
     expect(decisions?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('proposalMissingRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('CapabilityRegistry now includes scheduler/background Decision proposal readiness');
@@ -258,7 +260,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=3/3 requirements with operatorId evidence');
-    expect(decisions?.evidence.join(' ')).toContain('standing-approval=3/3 requirements with standingApprovalPolicyId and standingApprovalScopeTask evidence');
+    expect(decisions?.evidence.join(' ')).toContain('standing-approval=3/3 requirements with standingApprovalPolicyId, standingApprovalScopeTask, and standingApprovalScopeMatched=yes evidence');
+    expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=2/3 requirements with authorization missing');
     expect(decisions?.evidence.join(' ')).toContain('service-evidence=2/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('approvalQueueSurface=task_dynamics');
     expect(decisions?.evidence.join(' ')).toContain('authorization missing when Standing Approval scope does not match the target task');

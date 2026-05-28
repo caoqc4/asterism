@@ -30,7 +30,7 @@ describe('scheduler decision proposal contract', () => {
       blockedReasons: [
         'Task Dynamics writeback approval queue is not connected.',
         'Scheduler/background Decision proposal requires a target task identity.',
-        'Scheduler/background Decision proposal requires operator confirmation or active Standing Approval.',
+        'Scheduler/background Decision proposal requires operator confirmation or active target-scoped Standing Approval.',
       ],
     });
     expect(plan.summary).toContain('requirements=0/3');
@@ -46,6 +46,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('standingApprovalPolicyId=missing');
     expect(plan.summary).toContain('standingApprovalScopeTask=missing');
     expect(plan.summary).toContain('standingApprovalActive=no');
+    expect(plan.summary).toContain('standingApprovalScopeMatched=no');
     expect(plan.summary).toContain('missingRequirements=approval_queue,target_task_identity,authorization');
     expect(plan.summary).toContain('proposalMissingRequirements=approval_queue,target_task_identity,authorization');
   });
@@ -125,6 +126,45 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('standingApprovalPolicyId=policy_2');
     expect(plan.summary).toContain('standingApprovalScopeTask=task_decision_2');
     expect(plan.summary).toContain('standingApprovalActive=yes');
+    expect(plan.summary).toContain('standingApprovalScopeMatched=yes');
+  });
+
+  it('requires concrete operator identity or target-scoped Standing Approval for direct plans', () => {
+    const missingOperator = planSchedulerDecisionProposal({
+      approvalQueueConnected: true,
+      operatorConfirmed: true,
+      targetTaskId: 'task_decision_2',
+    });
+
+    expect(missingOperator).toMatchObject({
+      status: 'blocked',
+      approvalItemAllowed: false,
+      authorizations: [],
+      operatorId: null,
+      missingRequirements: ['authorization'],
+    });
+    expect(missingOperator.summary).toContain('authorization=missing');
+    expect(missingOperator.summary).toContain('operatorId=missing');
+
+    const scopeMismatch = planSchedulerDecisionProposal({
+      approvalQueueConnected: true,
+      standingApprovalActive: true,
+      standingApprovalPolicyId: 'policy_2',
+      standingApprovalScopeTaskId: 'task_other',
+      targetTaskId: 'task_decision_2',
+    });
+
+    expect(scopeMismatch).toMatchObject({
+      status: 'blocked',
+      approvalItemAllowed: false,
+      authorizations: [],
+      standingApprovalPolicyId: 'policy_2',
+      standingApprovalScopeTaskId: 'task_other',
+      missingRequirements: ['authorization'],
+    });
+    expect(scopeMismatch.summary).toContain('standingApprovalActive=no');
+    expect(scopeMismatch.summary).toContain('standingApprovalScopeMatched=no');
+    expect(scopeMismatch.summary).toContain('authorization=missing');
   });
 
   it('derives scheduler Decision proposal readiness from structured service evidence', () => {
@@ -163,6 +203,7 @@ describe('scheduler decision proposal contract', () => {
     expect(partial.summary).toContain('standingApprovalPolicyId=policy_1');
     expect(partial.summary).toContain('standingApprovalScopeTask=task_other');
     expect(partial.summary).toContain('standingApprovalActive=no');
+    expect(partial.summary).toContain('standingApprovalScopeMatched=no');
 
     const ready = planSchedulerDecisionProposalFromEvidence({
       approvalQueue: {
@@ -210,5 +251,6 @@ describe('scheduler decision proposal contract', () => {
     expect(ready.summary).toContain('standingApprovalPolicyId=policy_1');
     expect(ready.summary).toContain('standingApprovalScopeTask=task_decision_3');
     expect(ready.summary).toContain('standingApprovalActive=yes');
+    expect(ready.summary).toContain('standingApprovalScopeMatched=yes');
   });
 });
