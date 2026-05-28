@@ -134,6 +134,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('requirements=7/7');
     expect(ready.summary).toContain('promotionRequirements=7/7');
     expect(ready.summary).toContain('parentTask=task_project');
+    expect(ready.summary).toContain('applyPlanParentTask=task_project');
+    expect(ready.summary).toContain('parentTaskEvidenceChain=ready');
     expect(ready.summary).toContain('proposalCard=ready');
     expect(ready.summary).toContain('applyPlan=subtask.create_many');
     expect(ready.summary).toContain('source=agent_api_decomposition');
@@ -199,6 +201,7 @@ describe('ai runtime invocation contract', () => {
     });
     const ready = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
       applyPlan: readyApplyPlan,
+      parentTaskId: 'task_project',
       reversibleProposalCard: {
         proposalId: 'proposal_1',
         status: 'ready',
@@ -217,12 +220,47 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('requirements=7/7');
     expect(ready.summary).toContain('source=agent_api_decomposition');
     expect(ready.summary).toContain('proposalId=proposal_1');
+    expect(ready.summary).toContain('parentTask=task_project');
+    expect(ready.summary).toContain('applyPlanParentTask=task_project');
+    expect(ready.summary).toContain('parentTaskEvidenceChain=ready');
     expect(ready.summary).toContain('evidenceRunId=run_api_decomposition');
     expect(ready.summary).toContain('subtaskCount=1');
     expect(ready.summary).toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
     expect(ready.summary).toContain('draftOnlyBeforeConfirmation=true');
     expect(ready.summary).toContain('runtimeMode=api');
     expect(ready.summary).toContain('invocationLayer=api_runtime');
+  });
+
+  it('blocks Agent API decomposition promotion when parent-task evidence is stitched from another task', () => {
+    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project_a',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project_b',
+      reversibleProposalCard: {
+        proposalId: 'proposal_1',
+        status: 'ready',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['parent_task_identity'],
+    });
+    expect(mismatch.summary).toContain('parentTask=task_project_b');
+    expect(mismatch.summary).toContain('applyPlanParentTask=task_project_a');
+    expect(mismatch.summary).toContain('parentTaskEvidenceChain=missing');
+    expect(mismatch.summary).toContain('promotionMissingRequirements=parent_task_identity');
   });
 
   it('wraps decision drafts with API-runtime provenance', () => {

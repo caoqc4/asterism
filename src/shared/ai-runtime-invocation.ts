@@ -251,18 +251,23 @@ export function buildApiRuntimeDecompositionDraftInvocation(params: {
 
 export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   applyPlan?: TaskplaneSubtaskWritebackApplyPlan | null;
+  parentTaskId?: string | null;
   reversibleProposalCardReady?: boolean;
   selectedRuntimeContractReady?: boolean;
 }): AgentApiDecompositionPromotionReadiness {
   const requiredRequirements = agentApiDecompositionPromotionRequirements();
   const missingRequirements: AgentApiDecompositionPromotionRequirement[] = [];
   const applyPlan = params.applyPlan ?? null;
+  const evidenceParentTaskId = params.parentTaskId?.trim() || '';
+  const applyPlanParentTaskId = applyPlan?.input.parentTaskId?.trim() || '';
+  const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
+    && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
 
   if (!params.selectedRuntimeContractReady) {
     missingRequirements.push('selected_runtime_contract');
   }
 
-  if (!applyPlan?.input.parentTaskId?.trim()) {
+  if (!parentTaskIdentityReady) {
     missingRequirements.push('parent_task_identity');
   }
 
@@ -305,7 +310,9 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
       `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `promotionRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
-      `parentTask=${applyPlan?.input.parentTaskId?.trim() || 'missing'}`,
+      `parentTask=${evidenceParentTaskId || applyPlanParentTaskId || 'missing'}`,
+      `applyPlanParentTask=${applyPlanParentTaskId || 'missing'}`,
+      `parentTaskEvidenceChain=${parentTaskIdentityReady ? 'ready' : 'missing'}`,
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
@@ -330,7 +337,11 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const satisfiedRequirements: AgentApiDecompositionPromotionRequirement[] = [];
   const applyPlan = evidence.applyPlan ?? null;
   const selectedRuntime = evidence.selectedRuntimeContract;
-  const parentTaskId = evidence.parentTaskId?.trim() || applyPlan?.input.parentTaskId?.trim() || '';
+  const evidenceParentTaskId = evidence.parentTaskId?.trim() || '';
+  const applyPlanParentTaskId = applyPlan?.input.parentTaskId?.trim() || '';
+  const parentTaskId = evidenceParentTaskId || applyPlanParentTaskId;
+  const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
+    && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
   const proposalId = evidence.reversibleProposalCard?.proposalId?.trim() || '';
   const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
     ? applyPlan.timeline.payload.confirmationBoundary
@@ -349,7 +360,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('selected_runtime_contract');
   }
 
-  if (parentTaskId) {
+  if (parentTaskIdentityReady) {
     satisfiedRequirements.push('parent_task_identity');
   }
 
@@ -389,6 +400,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `promotionRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `selectedRuntimeContract=${satisfiedRequirementSet.has('selected_runtime_contract') ? 'ready' : 'missing'}`,
       `parentTask=${parentTaskId || 'missing'}`,
+      `applyPlanParentTask=${applyPlanParentTaskId || 'missing'}`,
+      `parentTaskEvidenceChain=${parentTaskIdentityReady ? 'ready' : 'missing'}`,
       `proposalCard=${reversibleProposalReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,

@@ -67,6 +67,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   });
   const serviceEvidencePartial = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
     applyPlan: partialApplyPlan,
+    parentTaskId: 'task_project',
     reversibleProposalCard: {
       proposalId: 'proposal_agent_api_decomposition',
       status: 'ready',
@@ -92,6 +93,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceProposalId=${scalarValue(serviceEvidencePartial.summary, 'proposalId') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTask=${scalarValue(serviceEvidencePartial.summary, 'parentTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanParentTask=${scalarValue(serviceEvidencePartial.summary, 'applyPlanParentTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceParentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'parentTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceSubtaskCount=${scalarValue(serviceEvidencePartial.summary, 'subtaskCount') ?? 'missing'}`);
   console.log(`serviceEvidenceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'evidenceRunId') ?? 'missing'}`);
   console.log(`serviceEvidenceConfirmationBoundary=${scalarValue(serviceEvidencePartial.summary, 'confirmationBoundary') ?? 'missing'}`);
@@ -109,6 +112,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || !serviceEvidencePartial.missingRequirements.includes('agent_api_decomposition_source')
     || scalarValue(serviceEvidencePartial.summary, 'proposalId') !== 'proposal_agent_api_decomposition'
     || scalarValue(serviceEvidencePartial.summary, 'parentTask') !== 'task_project'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanParentTask') !== 'task_project'
+    || scalarValue(serviceEvidencePartial.summary, 'parentTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'subtaskCount') !== '1'
     || scalarValue(serviceEvidencePartial.summary, 'evidenceRunId') !== 'run_cli_decomposition_smoke'
     || scalarValue(serviceEvidencePartial.summary, 'confirmationBoundary') !== 'operator_confirmed_subtask_create_many'
