@@ -807,6 +807,74 @@ try {
   assert(timelineFailedEvents[1].payload.evidenceRunId === timelineFailedRun.id, 'timeline-failed Decision proposal did not preserve started run evidence id');
   assert(timelineFailedEvents[1].payload.title === '确认定时/事件 Agent timeline 证据写入失败后的下一步', 'timeline-failed Decision proposal did not preserve review title');
 
+  const runIdentityFailedEvents = [];
+  const runIdentityFailedRun = {
+    ...run,
+    id: 'run_scheduled_event_identity_failed_smoke',
+    taskId: 'task_scheduled_event_wrong_target',
+  };
+  const runIdentityFailedService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent run-identity-failed sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent run-identity-failed sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent run-identity-failed sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async () => runIdentityFailedRun,
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        runIdentityFailedEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
+    },
+  );
+  const runIdentityFailedResult = await runIdentityFailedService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:31:30.000Z'),
+  );
+  assert(runIdentityFailedResult.status === 'skipped', 'run-identity-failed sweep should skip');
+  assert(runIdentityFailedResult.skipReason === 'sweep_failed', 'run-identity-failed sweep did not report sweep_failed');
+  assert(runIdentityFailedResult.startedRunIds.includes(runIdentityFailedRun.id), 'run-identity-failed sweep did not preserve the mismatched started run id');
+  assert(runIdentityFailedResult.summary.includes('Run target task mismatch'), 'run-identity-failed sweep summary did not preserve target-task mismatch evidence');
+  assert(runIdentityFailedResult.summary.includes('runIdentityDecisionProposals=proposed'), 'run-identity-failed sweep summary did not expose run-identity Decision proposal evidence');
+  assert(runIdentityFailedResult.summary.includes('timelineFailureDecisionProposals=not_required'), 'run-identity-failed sweep should not misclassify the mismatch as timeline failure');
+  assert(runIdentityFailedEvents.length === 1, 'run-identity-failed sweep should record only the scheduler Decision proposal');
+  assert(runIdentityFailedEvents[0].type === 'panel.scheduler_decision_proposed', 'run-identity-failed sweep did not record scheduler Decision proposal evidence');
+  assert(runIdentityFailedEvents[0].payload.evidenceRunId === runIdentityFailedRun.id, 'run-identity Decision proposal did not preserve started run evidence id');
+  assert(runIdentityFailedEvents[0].payload.title === '确认定时/事件 Agent Run 目标任务不一致后的下一步', 'run-identity Decision proposal did not preserve review title');
+
   const sourceFailedTriggerCalls = [];
   const sourceFailedTimelineEvents = [];
   let sourceFailedShouldThrow = true;
@@ -1225,6 +1293,10 @@ try {
     `timelineFailedTerminalRunEvidenceMissingRunIds=${timelineFailedResult.terminalRunEvidenceMissingRunIds.join(',') || 'none'}`,
     `timelineFailedSweepSummary=${timelineFailedResult.summary}`,
     `timelineFailedDecisionProposalEvents=${timelineFailedEvents.filter((event) => event.type === 'panel.scheduler_decision_proposed').length}`,
+    `runIdentityFailedStatus=${runIdentityFailedResult.status}`,
+    `runIdentityFailedStartedRunIds=${runIdentityFailedResult.startedRunIds.join(',') || 'none'}`,
+    `runIdentityFailedSweepSummary=${runIdentityFailedResult.summary}`,
+    `runIdentityFailedDecisionProposalEvents=${runIdentityFailedEvents.length}`,
     `sourceFailedStatus=${sourceFailedResult.status}`,
     `sourceFailedSkipReason=${sourceFailedResult.skipReason}`,
     `sourceFailedTriggerRunEvidenceStatus=${sourceFailedResult.triggerRunEvidenceStatus}`,
@@ -1285,6 +1357,8 @@ try {
     'timelineFailedTriggerRunEvidence=recorded',
     'timelineFailedSweepSummaryEvidence=recorded',
     'timelineFailedDecisionProposalEvidence=recorded',
+    'runIdentityFailedStartedRunEvidence=recorded',
+    'runIdentityFailedDecisionProposalEvidence=recorded',
     'sourceFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepRecoveryEvidence=passed',
     'readinessBlockedDecisionProposalEvidence=recorded',

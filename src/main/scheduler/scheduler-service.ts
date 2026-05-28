@@ -259,6 +259,13 @@ function isScheduledEventAutomationReadinessBlocked(result: ScheduledEventAgentT
     && result.plan.readiness.missingRequirements.length > 0;
 }
 
+function hasScheduledEventRunTargetTaskMismatch(params: {
+  run: RunRecord | null | undefined;
+  task: ScheduledEventAgentTaskInput | null | undefined;
+}): boolean {
+  return Boolean(params.run?.taskId && params.task?.id && params.run.taskId !== params.task.id);
+}
+
 function hasSchedulerDecisionProposalSince(
   task: ScheduledEventAgentTaskInput,
   title: string,
@@ -573,7 +580,18 @@ export class SchedulerService {
       const taskSourceFailureDecisionProposalStatus = !failedTask && !failedPlan && !failedRun
         ? 'not_required_no_target_task'
         : 'not_required';
-      const timelineFailureDecisionProposal = failedTask && failedPlan && failedRun
+      const runTargetTaskMismatch = hasScheduledEventRunTargetTaskMismatch({
+        run: failedRun,
+        task: failedTask,
+      });
+      const runIdentityDecisionProposal = failedTask && failedPlan && failedRun && runTargetTaskMismatch
+        ? await this.proposeScheduledEventRunIdentityDecision(failedTask, failedPlan, failedRun, errorMessage, now)
+          .catch((proposalError: unknown) => ({
+            status: 'failed' as const,
+            summary: `runIdentityDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(proposalError)}`,
+          }))
+        : null;
+      const timelineFailureDecisionProposal = failedTask && failedPlan && failedRun && !runTargetTaskMismatch
         ? await this.proposeScheduledEventTimelineFailureDecision(failedTask, failedPlan, failedRun, errorMessage, now)
           .catch((proposalError: unknown) => ({
             status: 'failed' as const,
@@ -597,6 +615,9 @@ export class SchedulerService {
           ? `sweepFailureDecisionProposals=${sweepFailureDecisionProposal.status}`
           : 'sweepFailureDecisionProposals=not_required',
         `taskSourceFailureDecisionProposals=${taskSourceFailureDecisionProposalStatus}`,
+        runIdentityDecisionProposal
+          ? `runIdentityDecisionProposals=${runIdentityDecisionProposal.status}`
+          : 'runIdentityDecisionProposals=not_required',
         timelineFailureDecisionProposal
           ? `timelineFailureDecisionProposals=${timelineFailureDecisionProposal.status}`
           : 'timelineFailureDecisionProposals=not_required',
@@ -796,6 +817,12 @@ export class SchedulerService {
         { plan, run: null, task },
       );
     });
+    if (run.taskId !== task.id) {
+      throw buildScheduledEventAgentSweepError(
+        `Run target task mismatch: expected ${task.id} but received ${run.taskId}.`,
+        { plan, run, task },
+      );
+    }
     const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now, triggerKind)
       .catch((error: unknown) => {
         throw buildScheduledEventAgentSweepError(
@@ -994,6 +1021,42 @@ export class SchedulerService {
         `Scheduled/event Agent started run ${run.id}, but timeline evidence failed for task ${task.id}.`,
         `Timeline error: ${errorMessage}.`,
         'Taskplane should confirm how to preserve recovery evidence before more background work continues.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
+    });
+  }
+
+  private async proposeScheduledEventRunIdentityDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    run: RunRecord,
+    errorMessage: string,
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent Run 目标任务不一致后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'runIdentityDecisionProposal=skipped_existing',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      evidenceRunId: run.id,
+      options: [
+        '暂停自动触发并人工复核运行归属',
+        '保留 Run 证据但重新生成目标任务运行',
+        '修复触发服务的目标任务绑定后再运行',
+      ],
+      proposedOutcome: '暂停自动触发并人工复核运行归属',
+      rationale: [
+        `Scheduled/event Agent returned run ${run.id} for task ${run.taskId}, but the target task was ${task.id}.`,
+        `Identity error: ${errorMessage}.`,
+        'Taskplane should confirm how to preserve evidence before any background automation continues for this task.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
       standingApprovalPolicyId: plan.policy?.id ?? null,

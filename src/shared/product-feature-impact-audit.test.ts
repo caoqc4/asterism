@@ -304,6 +304,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('no-generic-Decision boundary');
     expect(decisions?.evidence.join(' ')).toContain('timeline evidence write failures after a Run starts now route a deduplicated timeline-failure review policy');
     expect(decisions?.evidence.join(' ')).toContain('timelineFailureDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toContain('Run target-task mismatches now block target timeline evidence');
+    expect(decisions?.evidence.join(' ')).toContain('runIdentityDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('stale-run recovery now routes each recovered run');
     expect(decisions?.evidence.join(' ')).toContain('staleRunRecoveryDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
@@ -524,6 +526,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('timelineFailedTriggerRunEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('timelineFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('timelineFailedDecisionProposalEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('runIdentityFailedStartedRunEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('runIdentityFailedDecisionProposalEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSkipReason=sweep_failed');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedTriggerRunEvidenceStatus=not_started');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepSummaryEvidence=recorded');

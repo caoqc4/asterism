@@ -1760,6 +1760,96 @@ describe('SchedulerService', () => {
     }));
   });
 
+  it('proposes a scheduler Decision when a scheduled/event run returns the wrong target task', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_wrong_task_sweep',
+        taskId: 'task_other',
+        type: 'agent',
+        status: 'running',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T12:30:00.000Z'),
+    );
+
+    expect(failedSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'sweep_failed',
+      checkedTaskCount: 1,
+      checkedTaskIds: ['task_auto'],
+      startedRunCount: 1,
+      blockedTaskCount: 0,
+      startedRunIds: ['run_wrong_task_sweep'],
+      blockedTaskSummaries: [],
+      terminalRunEvidenceMissingRunIds: ['run_wrong_task_sweep'],
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(failedSweep.summary).toContain('error=Run target task mismatch: expected task_auto but received task_other.');
+    expect(failedSweep.summary).toContain('runIdentityDecisionProposals=proposed');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=not_required');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_wrong_task_sweep',
+        proposedOutcome: '暂停自动触发并人工复核运行归属',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent Run 目标任务不一致后的下一步',
+      }),
+    }));
+  });
+
   it('does not duplicate same-day scheduled/event timeline failure Decision proposals', async () => {
     const task = buildAutomationTaskDetail({
       timeline: [
