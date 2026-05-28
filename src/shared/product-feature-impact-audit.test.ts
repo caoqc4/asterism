@@ -1044,6 +1044,8 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('network=not-called');
     expect(smoke?.evidence.join(' ')).toContain('Codex native web/search smoke passed locally on 2026-05-27');
     expect(smoke?.evidence.join(' ')).toContain('status=passed');
+    expect(smoke?.evidence.join(' ')).toContain('Scheduler stale-run recovery now records lastRunSweepSummary');
+    expect(smoke?.evidence.join(' ')).toContain('agentRuntimeStarted=no');
     expect(smoke?.evidence.join(' ')).toContain('Claude Code 2.1.144 stream-json execution now uses --verbose');
     expect(smoke?.evidence.join(' ')).toContain('optional secondary adapter compatibility evidence');
     expect(smoke?.evidence.join(' ')).toContain('must not block Codex CLI, Agent API, scheduled/event, or writeback acceptance progress');

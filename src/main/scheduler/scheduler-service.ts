@@ -280,6 +280,7 @@ export class SchedulerService {
   private started = false;
   private lastBriefAt: string | null = null;
   private lastRunSweepAt: string | null = null;
+  private lastRunSweepSummary: string | null = null;
   private lastScheduledEventAgentSweepAt: string | null = null;
   private lastScheduledEventAgentSweepSummary: string | null = null;
   private scheduledEventAgentSweepInFlight = false;
@@ -354,6 +355,7 @@ export class SchedulerService {
       running: this.started,
       lastBriefAt: this.lastBriefAt,
       lastRunSweepAt: this.lastRunSweepAt,
+      lastRunSweepSummary: this.lastRunSweepSummary,
       lastScheduledEventAgentSweepAt: this.lastScheduledEventAgentSweepAt,
       lastScheduledEventAgentSweepSummary: this.lastScheduledEventAgentSweepSummary,
       scheduledEventAgentSweepJobConnected: this.started && this.hasScheduledEventAgentSweepPorts(),
@@ -1125,6 +1127,7 @@ export class SchedulerService {
 
   private async reconcileStaleRuns(): Promise<void> {
     const staleRuns = await this.runRepository.listIncompleteOlderThan(olderThanMinutes(5));
+    const recoveredRunIds: string[] = [];
 
     for (const run of staleRuns) {
       await this.runRepository.updateResult(
@@ -1134,9 +1137,18 @@ export class SchedulerService {
         'system',
         'Run exceeded the scheduler recovery window.',
       );
+      recoveredRunIds.push(run.id);
     }
 
     this.lastRunSweepAt = new Date().toISOString();
+    this.lastRunSweepSummary = [
+      'schedulerStaleRunRecovery=completed',
+      `checked=${staleRuns.length}`,
+      `recovered=${recoveredRunIds.length}`,
+      `recoveredRunIds=${recoveredRunIds.length ? recoveredRunIds.join(',') : 'none'}`,
+      'failureReason=Run exceeded the scheduler recovery window.',
+      'agentRuntimeStarted=no',
+    ].join(' / ');
   }
 }
 

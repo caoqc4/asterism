@@ -71,6 +71,7 @@ function buildHomeData(): HomeBriefData {
       running: false,
       lastBriefAt: null,
       lastRunSweepAt: null,
+      lastRunSweepSummary: null,
       lastScheduledEventAgentSweepAt: null,
       lastScheduledEventAgentSweepSummary: null,
       scheduledEventAgentSweepJobConnected: false,
@@ -332,6 +333,7 @@ describe('SchedulerService', () => {
       running: false,
       lastBriefAt: null,
       lastRunSweepAt: null,
+      lastRunSweepSummary: null,
       lastScheduledEventAgentSweepAt: null,
       lastScheduledEventAgentSweepSummary: null,
       scheduledEventAgentSweepJobConnected: false,
@@ -548,6 +550,9 @@ describe('SchedulerService', () => {
     expect(service.getStatus().running).toBe(true);
     expect(service.getStatus().lastBriefAt).not.toBeNull();
     expect(service.getStatus().lastRunSweepAt).not.toBeNull();
+    expect(service.getStatus().lastRunSweepSummary).toBe(
+      'schedulerStaleRunRecovery=completed / checked=1 / recovered=1 / recoveredRunIds=run_1 / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no',
+    );
     expect(scheduledJobs).toHaveLength(2);
 
     service.stop();
@@ -1959,6 +1964,9 @@ describe('SchedulerService', () => {
     expect(runRepository.listIncompleteOlderThan).toHaveBeenCalledTimes(1);
     expect(runRepository.updateResult).not.toHaveBeenCalled();
     expect(service.getStatus().lastRunSweepAt).not.toBeNull();
+    expect(service.getStatus().lastRunSweepSummary).toBe(
+      'schedulerStaleRunRecovery=completed / checked=0 / recovered=0 / recoveredRunIds=none / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no',
+    );
   });
 
   it('falls back to a local brief when AI brief generation fails', async () => {

@@ -38,6 +38,7 @@ function buildHomeData(): HomeBriefData {
       running: true,
       lastBriefAt: null,
       lastRunSweepAt: null,
+      lastRunSweepSummary: null,
       lastScheduledEventAgentSweepAt: null,
       lastScheduledEventAgentSweepSummary: null,
       scheduledEventAgentSweepJobConnected: false,
