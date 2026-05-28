@@ -289,6 +289,10 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   const ready = missingRequirements.length === 0;
   const missingRequirementSet = new Set(missingRequirements);
   const satisfiedRequirements = requiredRequirements.filter((requirement) => !missingRequirementSet.has(requirement));
+  const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
+    ? applyPlan.timeline.payload.confirmationBoundary
+    : 'missing';
+  const draftOnlyBeforeConfirmation = applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true;
 
   return {
     ready,
@@ -305,6 +309,13 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
+      'proposalId=missing',
+      `subtaskCount=${applyPlan?.input.subtasks.length ?? 0}`,
+      `evidenceRunId=${applyPlan?.input.evidenceRunId?.trim() || 'missing'}`,
+      `confirmationBoundary=${confirmationBoundary}`,
+      `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,
+      'runtimeMode=missing',
+      'invocationLayer=missing',
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `promotionMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
@@ -320,9 +331,14 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const applyPlan = evidence.applyPlan ?? null;
   const selectedRuntime = evidence.selectedRuntimeContract;
   const parentTaskId = evidence.parentTaskId?.trim() || applyPlan?.input.parentTaskId?.trim() || '';
+  const proposalId = evidence.reversibleProposalCard?.proposalId?.trim() || '';
+  const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
+    ? applyPlan.timeline.payload.confirmationBoundary
+    : 'missing';
+  const draftOnlyBeforeConfirmation = applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true;
   const reversibleProposalReady = (
     evidence.reversibleProposalCard?.status === 'ready'
-    && Boolean(evidence.reversibleProposalCard.proposalId?.trim())
+    && Boolean(proposalId)
   );
 
   if (
@@ -376,6 +392,13 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `proposalCard=${reversibleProposalReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
+      `proposalId=${proposalId || 'missing'}`,
+      `subtaskCount=${applyPlan?.input.subtasks.length ?? 0}`,
+      `evidenceRunId=${applyPlan?.input.evidenceRunId?.trim() || 'missing'}`,
+      `confirmationBoundary=${confirmationBoundary}`,
+      `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,
+      `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
+      `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `promotionMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,

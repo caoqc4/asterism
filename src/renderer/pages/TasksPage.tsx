@@ -138,6 +138,35 @@ function standingApprovalEvidenceChips(draft: AgentStandingApprovalConfirmationD
   ];
 }
 
+function projectDecompositionPromotionEvidenceChips(
+  readiness: ProjectDecompositionResult['promotionReadiness'],
+): string[] {
+  if (!readiness) {
+    return [];
+  }
+  const summaryKeys = [
+    'proposalId',
+    'parentTask',
+    'subtaskCount',
+    'evidenceRunId',
+    'confirmationBoundary',
+    'draftOnlyBeforeConfirmation',
+    'runtimeMode',
+    'invocationLayer',
+  ];
+  return [
+    `promotionReady=${readiness.ready ? 'yes' : 'no'}`,
+    `requirements=${readiness.satisfiedRequirements.length}/${readiness.satisfiedRequirements.length + readiness.missingRequirements.length}`,
+    `missing=${readiness.missingRequirements.join(',') || 'none'}`,
+    ...summaryKeys
+      .map((key) => {
+        const value = scalarSummaryValue(readiness.summary, key);
+        return value ? `${key}=${value}` : null;
+      })
+      .filter((chip): chip is string => Boolean(chip)),
+  ];
+}
+
 function scheduledEventAgentRunStartedMessage(result: TriggerScheduledEventAgentRunResult): string {
   const runFailureReason = result.run?.failureReason?.trim();
   const triggerEvidenceItems = result.plan.triggerRunEvidenceRequired.length > 0
@@ -5350,9 +5379,9 @@ function TaskPreview({
                 </div>
                 {projectDraft.promotionReadiness && (
                   <div className="task-detail-project-draft-readiness" aria-label="Agent API decomposition promotion readiness">
-                    <span>{`promotionReady=${projectDraft.promotionReadiness.ready ? 'yes' : 'no'}`}</span>
-                    <span>{`requirements=${projectDraft.promotionReadiness.satisfiedRequirements.length}/${projectDraft.promotionReadiness.satisfiedRequirements.length + projectDraft.promotionReadiness.missingRequirements.length}`}</span>
-                    <span>{`missing=${projectDraft.promotionReadiness.missingRequirements.join(',') || 'none'}`}</span>
+                    {projectDecompositionPromotionEvidenceChips(projectDraft.promotionReadiness).map((chip) => (
+                      <span key={chip}>{chip}</span>
+                    ))}
                   </div>
                 )}
                 <div className="task-detail-project-draft-list">

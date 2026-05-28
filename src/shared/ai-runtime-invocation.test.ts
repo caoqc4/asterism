@@ -100,6 +100,7 @@ describe('ai runtime invocation contract', () => {
     expect(blocked.summary).toContain('promotionMissingRequirements=selected_runtime_contract,parent_task_identity,reversible_proposal_card');
 
     const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
       subtasks: [{
@@ -136,6 +137,13 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('proposalCard=ready');
     expect(ready.summary).toContain('applyPlan=subtask.create_many');
     expect(ready.summary).toContain('source=agent_api_decomposition');
+    expect(ready.summary).toContain('proposalId=missing');
+    expect(ready.summary).toContain('subtaskCount=1');
+    expect(ready.summary).toContain('evidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
+    expect(ready.summary).toContain('draftOnlyBeforeConfirmation=true');
+    expect(ready.summary).toContain('runtimeMode=missing');
+    expect(ready.summary).toContain('invocationLayer=missing');
     expect(ready.summary).toContain('missingRequirements=none');
     expect(ready.summary).toContain('promotionMissingRequirements=none');
     expect(ready.summary).toContain('missing=none');
@@ -143,6 +151,7 @@ describe('ai runtime invocation contract', () => {
 
   it('derives Agent API decomposition promotion readiness from structured service evidence', () => {
     const partialApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_cli_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_cli_decomposition',
       subtasks: [buildSubtaskDraft()],
@@ -174,8 +183,16 @@ describe('ai runtime invocation contract', () => {
     });
     expect(partial.summary).toContain('requirements=6/7');
     expect(partial.summary).toContain('promotionMissingRequirements=agent_api_decomposition_source');
+    expect(partial.summary).toContain('proposalId=proposal_1');
+    expect(partial.summary).toContain('subtaskCount=1');
+    expect(partial.summary).toContain('evidenceRunId=run_cli_decomposition');
+    expect(partial.summary).toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
+    expect(partial.summary).toContain('draftOnlyBeforeConfirmation=true');
+    expect(partial.summary).toContain('runtimeMode=api');
+    expect(partial.summary).toContain('invocationLayer=api_runtime');
 
     const readyApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
       subtasks: [buildSubtaskDraft()],
@@ -199,6 +216,13 @@ describe('ai runtime invocation contract', () => {
     });
     expect(ready.summary).toContain('requirements=7/7');
     expect(ready.summary).toContain('source=agent_api_decomposition');
+    expect(ready.summary).toContain('proposalId=proposal_1');
+    expect(ready.summary).toContain('evidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('subtaskCount=1');
+    expect(ready.summary).toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
+    expect(ready.summary).toContain('draftOnlyBeforeConfirmation=true');
+    expect(ready.summary).toContain('runtimeMode=api');
+    expect(ready.summary).toContain('invocationLayer=api_runtime');
   });
 
   it('wraps decision drafts with API-runtime provenance', () => {

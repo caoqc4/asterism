@@ -44,6 +44,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     selectedRuntimeContractReady: false,
   });
   const partialApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    evidenceRunId: 'run_cli_decomposition_smoke',
     parentTaskId: 'task_project',
     source: 'agent_cli_decomposition',
     subtasks: [buildSubtaskDraft()],
@@ -54,6 +55,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     selectedRuntimeContractReady: true,
   });
   const readyApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    evidenceRunId: 'run_api_decomposition_smoke',
     parentTaskId: 'task_project',
     source: 'agent_api_decomposition',
     subtasks: [buildSubtaskDraft()],
@@ -88,6 +90,14 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidencePromotionReady=${serviceEvidencePartial.ready ? 'yes' : 'no'}`);
   console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/7`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceProposalId=${scalarValue(serviceEvidencePartial.summary, 'proposalId') ?? 'missing'}`);
+  console.log(`serviceEvidenceParentTask=${scalarValue(serviceEvidencePartial.summary, 'parentTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceSubtaskCount=${scalarValue(serviceEvidencePartial.summary, 'subtaskCount') ?? 'missing'}`);
+  console.log(`serviceEvidenceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'evidenceRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceConfirmationBoundary=${scalarValue(serviceEvidencePartial.summary, 'confirmationBoundary') ?? 'missing'}`);
+  console.log(`serviceEvidenceDraftOnlyBeforeConfirmation=${scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
+  console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
 
   if (
     blocked.ready
@@ -97,6 +107,14 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || serviceEvidencePartial.ready
     || serviceEvidencePartial.satisfiedRequirements.length !== 6
     || !serviceEvidencePartial.missingRequirements.includes('agent_api_decomposition_source')
+    || scalarValue(serviceEvidencePartial.summary, 'proposalId') !== 'proposal_agent_api_decomposition'
+    || scalarValue(serviceEvidencePartial.summary, 'parentTask') !== 'task_project'
+    || scalarValue(serviceEvidencePartial.summary, 'subtaskCount') !== '1'
+    || scalarValue(serviceEvidencePartial.summary, 'evidenceRunId') !== 'run_cli_decomposition_smoke'
+    || scalarValue(serviceEvidencePartial.summary, 'confirmationBoundary') !== 'operator_confirmed_subtask_create_many'
+    || scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') !== 'true'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
+    || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'
   ) {
     console.log('status=failed');
     return 1;
@@ -104,6 +122,12 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
 
   console.log('status=passed');
   return 0;
+}
+
+function scalarValue(summary, key) {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() ?? null;
 }
 
 function buildSubtaskDraft() {

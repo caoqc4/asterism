@@ -1085,7 +1085,7 @@ function createMockApi() {
       },
       promotionReadiness: {
         ready: true,
-        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / missingRequirements=none',
+        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / selectedRuntimeContract=ready / parentTask=task_project / proposalCard=ready / applyPlan=subtask.create_many / source=agent_api_decomposition / proposalId=project_decomposition:task_project / subtaskCount=2 / evidenceRunId=missing / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / missingRequirements=none / promotionMissingRequirements=none / missing=none',
         satisfiedRequirements: [
           'selected_runtime_contract',
           'parent_task_identity',
