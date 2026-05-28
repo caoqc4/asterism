@@ -862,6 +862,9 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('visible native search, hook, and subagent readiness labels');
     expect(capabilities?.evidence.join(' ')).toContain('native CLI prompts');
     expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness summary and missing evidence');
+    expect(capabilities?.evidence.join(' ')).toContain('nativeGoalReady');
+    expect(capabilities?.evidence.join(' ')).toContain('requirements=x/8');
+    expect(capabilities?.evidence.join(' ')).toContain('missingEvidence=...');
     expect(capabilities?.evidence.join(' ')).toContain('requires the selected adapter to declare native goal capability');
     expect(capabilities?.evidence.join(' ')).toContain('taskplaneGoalLoop=available');
     expect(capabilities?.evidence.join(' ')).toContain('skipReason=opt_in_required');
@@ -869,6 +872,9 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('native goal forwarding readiness smoke');
     expect(capabilities?.evidence.join(' ')).toContain('adapter capability missing');
     expect(capabilities?.evidence.join(' ')).toContain('ready_to_open_passthrough');
+    expect(capabilities?.evidence.join(' ')).toContain('requirements=3/8');
+    expect(capabilities?.evidence.join(' ')).toContain('requirements=4/8');
+    expect(capabilities?.evidence.join(' ')).toContain('requirements=8/8');
     expect(capabilities?.evidence.join(' ')).toContain('Provider-native and Gmail connector preflights now report skipReason=config_missing');
     expect(capabilities?.evidence.join(' ')).toContain('before any provider, Gmail, task-memory, or workspace effect is allowed');
     expect(capabilities?.evidence.join(' ')).toContain('runtime-neutral capability progress states');

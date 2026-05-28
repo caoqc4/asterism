@@ -42,15 +42,24 @@ export function evaluateNativeGoalForwardingReadiness(
     .filter(([key]) => evidence[key] !== true)
     .map(([, label]) => label);
   const ready = missingEvidence.length === 0;
+  const satisfiedEvidenceCount = evidenceLabels.length - missingEvidence.length;
+  const status = ready ? 'ready_to_open_passthrough' : 'audit_only';
+  const sentence = ready
+    ? `${evidence.adapterId} native goal forwarding has complete evidence for an explicit passthrough candidate.`
+    : `${evidence.adapterId} native goal forwarding remains audit-only; missing ${missingEvidence.join(', ')}.`;
 
   return {
     adapterId: evidence.adapterId,
     missingEvidence,
     ready,
-    status: ready ? 'ready_to_open_passthrough' : 'audit_only',
-    summary: ready
-      ? `${evidence.adapterId} native goal forwarding has complete evidence for an explicit passthrough candidate.`
-      : `${evidence.adapterId} native goal forwarding remains audit-only; missing ${missingEvidence.join(', ')}.`,
+    status,
+    summary: [
+      sentence,
+      `nativeGoalReady=${ready ? 'yes' : 'no'}`,
+      `status=${status}`,
+      `requirements=${satisfiedEvidenceCount}/${evidenceLabels.length}`,
+      `missingEvidence=${missingEvidence.length ? missingEvidence.join(',') : 'none'}`,
+    ].join(' / '),
   };
 }
 

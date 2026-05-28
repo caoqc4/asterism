@@ -19,7 +19,7 @@ describe('native-goal-forwarding-readiness', () => {
       missingEvidence: ['control boundary', 'packaged smoke'],
       ready: false,
       status: 'audit_only',
-      summary: 'codex native goal forwarding remains audit-only; missing control boundary, packaged smoke.',
+      summary: 'codex native goal forwarding remains audit-only; missing control boundary, packaged smoke. / nativeGoalReady=no / status=audit_only / requirements=6/8 / missingEvidence=control boundary,packaged smoke',
     });
   });
 
@@ -31,7 +31,7 @@ describe('native-goal-forwarding-readiness', () => {
       missingEvidence: [],
       ready: true,
       status: 'ready_to_open_passthrough',
-      summary: 'codex native goal forwarding has complete evidence for an explicit passthrough candidate.',
+      summary: 'codex native goal forwarding has complete evidence for an explicit passthrough candidate. / nativeGoalReady=yes / status=ready_to_open_passthrough / requirements=8/8 / missingEvidence=none',
     });
   });
 
@@ -54,6 +54,9 @@ describe('native-goal-forwarding-readiness', () => {
       status: 'audit_only',
       missingEvidence: ['command shape', 'progress evidence', 'control boundary', 'packaged smoke'],
     });
+    expect(readiness.summary).toContain('nativeGoalReady=no');
+    expect(readiness.summary).toContain('requirements=4/8');
+    expect(readiness.summary).toContain('missingEvidence=command shape,progress evidence,control boundary,packaged smoke');
     expect(evidence.notes?.join('\n')).toContain('Taskplane records the request as product-owned audit evidence');
   });
 
@@ -68,7 +71,7 @@ describe('native-goal-forwarding-readiness', () => {
       missingEvidence: ['adapter capability'],
       ready: false,
       status: 'audit_only',
-      summary: 'codex native goal forwarding remains audit-only; missing adapter capability.',
+      summary: 'codex native goal forwarding remains audit-only; missing adapter capability. / nativeGoalReady=no / status=audit_only / requirements=7/8 / missingEvidence=adapter capability',
     });
   });
 });
