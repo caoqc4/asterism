@@ -90,6 +90,7 @@ function agentApiDecompositionReadiness(summary?: string | null): {
   missingRequirementCount: number;
   promotionMissingRequirementList: string | null;
   promotionCount: string | null;
+  promotionReady: string | null;
 } {
   const text = summary ?? '';
   return {
@@ -97,6 +98,7 @@ function agentApiDecompositionReadiness(summary?: string | null): {
     missingRequirementCount: listValueCount(text, 'decompositionMissingRequirements'),
     promotionMissingRequirementList: scalarValue(text, 'decompositionPromotionMissingRequirements'),
     promotionCount: scalarValue(text, 'decompositionPromotionRequirements'),
+    promotionReady: scalarValue(text, 'decompositionPromotionReady'),
   };
 }
 
@@ -806,6 +808,9 @@ function AgentCliRuntimeSection({
               <span>decomposition promotion deferred</span>
               {apiDecompositionReadiness.promotionCount && (
                 <span>{`promotion=${apiDecompositionReadiness.promotionCount}`}</span>
+              )}
+              {apiDecompositionReadiness.promotionReady && (
+                <span>{`promotionReady=${apiDecompositionReadiness.promotionReady}`}</span>
               )}
               <span>{`missingRequirements=${apiDecompositionReadiness.missingRequirementCount}`}</span>
               {apiDecompositionReadiness.missingRequirementList && (

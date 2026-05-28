@@ -646,6 +646,7 @@ function agentApiDecompositionPromotionSummary(): string {
   const promotionReadiness = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({});
   const promotionRequirementCount = promotionReadiness.satisfiedRequirements.length + promotionReadiness.missingRequirements.length;
   return [
+    `decompositionPromotionReady=${promotionReadiness.ready ? 'yes' : 'no'}`,
     `decompositionPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
     `decompositionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
     `decompositionPromotionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
