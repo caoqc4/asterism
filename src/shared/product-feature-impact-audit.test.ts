@@ -301,6 +301,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartReady');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=x/3');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements=...');
+    expect(workHabits?.evidence.join(' ')).toContain('CapabilityRegistry now includes scheduled/event trigger runtime-start readiness');
+    expect(workHabits?.evidence.join(' ')).toContain('runtime.scheduler summary through planScheduledEventAgentTriggerFromEvidence');
+    expect(workHabits?.evidence.join(' ')).toContain('ConfigurationSafetyReport shows trigger-plan, scheduler-trigger-service, and run-limit-count gaps');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event trigger readiness smoke');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false with runtimeStartRequirements=1/3');
     expect(workHabits?.evidence.join(' ')).toContain('service-evidence=1/3 runtime-start requirements');

@@ -42,6 +42,10 @@ describe('configuration safety report', () => {
       requiresApproval: true,
       startupProbePolicy: 'never',
     });
+    expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')?.diagnosticSummary)
+      .toContain('Scheduled/event trigger plan / status=blocked / triggerPlanReady=no / runtimeStartAllowed=false / runtimeStartReady=no');
+    expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')?.diagnosticSummary)
+      .toContain('runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count');
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
       state: 'approval_required',
       reason: 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.',
@@ -75,6 +79,8 @@ describe('configuration safety report', () => {
       state: 'disabled_by_flag',
       diagnosticSummary: expect.stringContaining('Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3'),
     });
+    expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')?.diagnosticSummary)
+      .toContain('runtimeStartMissingRequirements=trigger_plan_ready,scheduler_trigger_service,run_limit_count');
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
       state: 'disabled_by_flag',
       reason: 'Sandbox patch promotion apply is disabled by feature flag; approvals remain preflight/no-write only and apply-to-workspace actions stay hidden.',

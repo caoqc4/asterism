@@ -1,6 +1,7 @@
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AgentCliRuntimeId, AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
 import type { AgentRuntimeNativeCapabilityAvailability } from './agent-runtime-goal.js';
+import { planScheduledEventAgentTriggerFromEvidence } from './agent-orchestration.js';
 import {
   evaluateAgentApiDecompositionPromotionReadinessFromEvidence,
   evaluateAgentApiExecutionPromotionReadinessFromEvidence,
@@ -276,9 +277,34 @@ export function capabilityRegistryAllowsWorkspaceVerification(
 
 function schedulerCapabilitySummary(schedulerFlag: RuntimeCapabilitySnapshot['flags']['scheduler'] | undefined): string {
   const decisionProposalPlan = planSchedulerDecisionProposalFromEvidence({});
+  const scheduledEventTriggerPlan = planScheduledEventAgentTriggerFromEvidence({
+    aiStatus: null,
+    now: new Date('2026-01-01T00:00:00.000Z'),
+    schedulerTriggerService: {
+      connected: schedulerFlag === 'available',
+    },
+    task: {
+      activeBlocker: null,
+      activeDependency: null,
+      activeWaitingItem: null,
+      completionCriteria: [],
+      id: 'diagnostic_scheduled_event_task',
+      nextStep: null,
+      processTemplates: [],
+      riskLevel: 'low',
+      sourceContexts: [],
+      state: 'planned',
+      summary: null,
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+      timeline: [],
+      waitingReason: null,
+    },
+  });
   return [
     `scheduler=${schedulerFlag ?? 'unknown'}`,
     decisionProposalPlan.summary,
+    scheduledEventTriggerPlan.summary,
   ].join(' / ');
 }
 
