@@ -3044,6 +3044,78 @@ describe('SchedulerService', () => {
     }));
   });
 
+  it('returns recovery evidence when an operator-started scheduled/event trigger port fails', async () => {
+    const now = new Date('2026-05-26T11:25:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockRejectedValue(new Error('trigger service timeout')),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: null,
+      terminalRunEvidenceStatus: 'not_started',
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(result.summary).toContain('reason=trigger service timeout');
+    expect(result.summary).toContain('sweepFailureDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动触发并人工复核调度器',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent sweep 异常后的下一步',
+      }),
+    }));
+  });
+
   it('returns recovery evidence instead of throwing when an operator-started scheduled/event run has the wrong target task', async () => {
     const now = new Date('2026-05-26T11:30:00.000Z');
     const task = buildAutomationTaskDetail({

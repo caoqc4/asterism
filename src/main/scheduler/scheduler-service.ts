@@ -892,12 +892,36 @@ export class SchedulerService {
 
     const run = await this.scheduledEventAgentRunPort.triggerCodeAgentRun(
       buildScheduledEventCodeAgentRunInput(task, plan, triggerKind),
-    ).catch((error: unknown) => {
-      throw buildScheduledEventAgentSweepError(
-        formatScheduledEventAgentSweepError(error),
-        { plan, run: null, task },
-      );
+    ).catch(async (error: unknown) => {
+      const errorMessage = formatScheduledEventAgentSweepError(error);
+      if (runIdentityMismatchHandling === 'throw_sweep_error') {
+        throw buildScheduledEventAgentSweepError(
+          errorMessage,
+          { plan, run: null, task },
+        );
+      }
+
+      const sweepFailureDecisionProposal = await this.proposeScheduledEventSweepFailureDecision(task, plan, errorMessage, now)
+        .catch((proposalError: unknown) => ({
+          status: 'failed' as const,
+          summary: `sweepFailureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(proposalError)}`,
+        }));
+
+      return {
+        status: 'blocked' as const,
+        plan,
+        run: null,
+        terminalRunEvidenceStatus: 'not_started' as const,
+        triggerRunEvidenceStatus: 'not_started' as const,
+        summary: [
+          `${plan.summary} / trigger=blocked / triggerRunEvidenceStatus=not_started / reason=${errorMessage}`,
+          `sweepFailureDecisionProposal=${sweepFailureDecisionProposal.status} / sweepFailureDecisionSummary=${sweepFailureDecisionProposal.summary}`,
+        ].join(' / '),
+      };
     });
+    if ('plan' in run && 'terminalRunEvidenceStatus' in run) {
+      return run;
+    }
     if (run.taskId !== task.id) {
       const errorMessage = `Run target task mismatch: expected ${task.id} but received ${run.taskId}.`;
       if (runIdentityMismatchHandling === 'throw_sweep_error') {
