@@ -310,10 +310,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || partialReadiness.ready
     || !syntheticReady.ready
     || serviceEvidencePartial.ready
-    || serviceEvidencePartial.satisfiedRequirements.length !== 5
+    || serviceEvidencePartial.satisfiedRequirements.length !== 3
     || serviceEvidencePartial.satisfiedGates.length !== 8
     || scalarValue(serviceEvidencePartial.summary, 'targetTask') !== 'task_1'
-    || scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'runEvidenceTaskEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'providerConfigured') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'configuredProvider') !== 'openai'
@@ -342,7 +342,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalConditions') !== '1'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalRun') !== 'run_api_execution_partial'
-    || scalarValue(serviceEvidencePartial.summary, 'runGoalRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'runGoalRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'

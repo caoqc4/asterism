@@ -766,7 +766,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && runEvidenceTaskId === targetTaskId;
   const terminalRunStatusReady = terminalRunStatus === 'completed' || terminalRunStatus === 'failed';
   const targetTaskIdentityReady = Boolean(targetTaskId)
-    && (!runEvidenceId || runEvidenceTaskEvidenceChainReady);
+    && runEvidenceTaskEvidenceChainReady;
   const selectedRuntimeRunEvidenceChainReady = Boolean(selectedRuntimeRunId)
     && Boolean(runEvidenceId)
     && selectedRuntimeRunId === runEvidenceId;
@@ -774,12 +774,14 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && Boolean(targetTaskId)
     && selectedRuntimeTaskId === targetTaskId;
   const writeIntentRunEvidenceChainReady = Boolean(writeIntentRunId)
-    && (!runEvidenceId || writeIntentRunId === runEvidenceId);
+    && Boolean(runEvidenceId)
+    && writeIntentRunId === runEvidenceId;
   const writeIntentTaskEvidenceChainReady = Boolean(writeIntentTaskId)
     && Boolean(targetTaskId)
     && writeIntentTaskId === targetTaskId;
   const runGoalRunEvidenceChainReady = Boolean(runGoalRunId)
-    && (!runEvidenceId || runGoalRunId === runEvidenceId);
+    && Boolean(runEvidenceId)
+    && runGoalRunId === runEvidenceId;
   const runGoalTaskEvidenceChainReady = Boolean(runGoalTaskId)
     && Boolean(targetTaskId)
     && runGoalTaskId === targetTaskId;

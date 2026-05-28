@@ -1065,7 +1065,6 @@ describe('ai runtime invocation contract', () => {
     expect(partial).toMatchObject({
       ready: false,
       satisfiedRequirements: [
-        'target_task_identity',
         'runtime_context_manifest',
         'context_readiness_step',
       ],
@@ -1083,11 +1082,11 @@ describe('ai runtime invocation contract', () => {
         'run_evidence_persistence',
       ]),
     });
-    expect(partial.summary).toContain('requirements=3/11');
+    expect(partial.summary).toContain('requirements=2/11');
     expect(partial.summary).toContain('gates=3/9');
     expect(partial.summary).toContain('targetTask=task_1');
     expect(partial.summary).toContain('runEvidenceTask=missing');
-    expect(partial.summary).toContain('targetTaskEvidenceChain=ready');
+    expect(partial.summary).toContain('targetTaskEvidenceChain=missing');
     expect(partial.summary).toContain('runEvidenceTaskEvidenceChain=missing');
     expect(partial.summary).toContain('selectedRuntimeRun=run_api_execution_partial');
     expect(partial.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
@@ -1321,6 +1320,23 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('requires Run Goal Contract evidence to belong to the same run and target task', () => {
+    const missingPersistedRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runEvidencePersistence: null,
+    });
+
+    expect(missingPersistedRun).toMatchObject({
+      ready: false,
+      missingRequirements: expect.arrayContaining([
+        'target_task_identity',
+        'run_goal_contract',
+        'run_evidence_persistence',
+      ]),
+    });
+    expect(missingPersistedRun.summary).toContain('runGoalRun=run_api_execution');
+    expect(missingPersistedRun.summary).toContain('runGoalRunEvidenceChain=missing');
+    expect(missingPersistedRun.summary).toContain('targetTaskEvidenceChain=missing');
+
     const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       runGoalContract: {

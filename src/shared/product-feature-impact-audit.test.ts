@@ -173,7 +173,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadinessForInvocation');
     expect(rightPanel?.evidence.join(' ')).toContain('structured service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('Run evidence persistence, and runtime gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('Run evidence task identity to match targetTaskId');
+    expect(rightPanel?.evidence.join(' ')).toContain('persisted post-run Run evidence task identity to match targetTaskId');
     expect(rightPanel?.evidence.join(' ')).toContain('run_evidence_persistence can stay ready');
     expect(rightPanel?.evidence.join(' ')).toContain('run_evidence_persistence to carry a terminal run status');
     expect(rightPanel?.evidence.join(' ')).toContain('selected_runtime_contract to carry same-run and target-task identity evidence');
@@ -182,8 +182,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('context_readiness_step to carry target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('treats task_memory_guidance as ready when there is no pending guidance or when completed guidance exists');
     expect(rightPanel?.evidence.join(' ')).toContain('while still requiring target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('run_goal_contract to carry same-run and target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with same-run and target-task identity evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('run_goal_contract to carry persisted same-run and target-task identity evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with persisted same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
@@ -221,7 +221,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API promotion readiness smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('deferred=0/11 requirements and 0/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('partial=5/11 requirements and 3/9 gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=5/11 requirements and 8/9 gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=3/11 requirements and 8/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called, taskMemoryGuidance=ready, taskMemoryGuidanceCount=0, runGoalConditions=1');
     expect(rightPanel?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain=missing, providerPreflightRunEvidenceChain=missing, and providerPreflightTaskEvidenceChain=ready');
     expect(rightPanel?.evidence.join(' ')).toContain('until persisted same-run Run evidence exists');
