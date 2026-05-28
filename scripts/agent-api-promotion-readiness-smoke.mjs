@@ -106,8 +106,11 @@ export async function runAgentApiPromotionReadinessSmoke() {
       taskId: 'task_1',
     },
     reviewedPatchApplyBoundary: {
+      appliedPromotionStatus: 'applied',
       explicitApplyOnly: true,
       promotionPreflightReady: true,
+      runId: 'run_api_execution',
+      taskId: 'task_1',
     },
     runEvidencePersistence: {
       runId: 'run_api_execution',

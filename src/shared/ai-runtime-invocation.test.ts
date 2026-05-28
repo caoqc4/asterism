@@ -888,6 +888,11 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('runGoalConditions=1');
     expect(ready.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
     expect(ready.summary).toContain('reviewedPatchApplyBoundary=ready');
+    expect(ready.summary).toContain('patchPromotionStatus=applied');
+    expect(ready.summary).toContain('patchPromotionRun=run_api_execution');
+    expect(ready.summary).toContain('patchPromotionRunEvidenceChain=ready');
+    expect(ready.summary).toContain('patchPromotionTask=task_1');
+    expect(ready.summary).toContain('patchPromotionTaskEvidenceChain=ready');
     expect(ready.summary).toContain('postStepVerifier=taskplane.verifier.lightweight');
     expect(ready.summary).toContain('terminalEvidence=present');
 
@@ -1027,6 +1032,66 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('providerPreflightTaskEvidenceChain=missing');
   });
 
+  it('requires reviewed patch apply evidence to be applied and tied to the same run and target task', () => {
+    const pending = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'pending',
+        explicitApplyOnly: true,
+        promotionPreflightReady: false,
+        runId: 'run_api_execution',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(pending).toMatchObject({
+      ready: false,
+      missingRequirements: ['reviewed_patch_apply_boundary'],
+    });
+    expect(pending.summary).toContain('reviewedPatchApplyBoundary=missing');
+    expect(pending.summary).toContain('patchPromotionStatus=pending');
+    expect(pending.summary).toContain('patchPromotionRunEvidenceChain=ready');
+    expect(pending.summary).toContain('patchPromotionTaskEvidenceChain=ready');
+
+    const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'applied',
+        explicitApplyOnly: true,
+        promotionPreflightReady: true,
+        runId: 'run_other',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['reviewed_patch_apply_boundary'],
+    });
+    expect(wrongRun.summary).toContain('patchPromotionRun=run_other');
+    expect(wrongRun.summary).toContain('patchPromotionRunEvidenceChain=missing');
+    expect(wrongRun.summary).toContain('patchPromotionTaskEvidenceChain=ready');
+
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'applied',
+        explicitApplyOnly: true,
+        promotionPreflightReady: true,
+        runId: 'run_api_execution',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['reviewed_patch_apply_boundary'],
+    });
+    expect(wrongTask.summary).toContain('patchPromotionRunEvidenceChain=ready');
+    expect(wrongTask.summary).toContain('patchPromotionTask=task_2');
+    expect(wrongTask.summary).toContain('patchPromotionTaskEvidenceChain=missing');
+  });
+
   it('wraps product-harness verification and memory proposal phases', () => {
     const verification = buildProductHarnessVerificationAssistInvocation({
       verification: {
@@ -1109,8 +1174,11 @@ function completeAgentApiExecutionPromotionEvidence() {
       taskId: 'task_1',
     },
     reviewedPatchApplyBoundary: {
+      appliedPromotionStatus: 'applied' as const,
       explicitApplyOnly: true,
       promotionPreflightReady: true,
+      runId: 'run_api_execution',
+      taskId: 'task_1',
     },
     runEvidencePersistence: {
       runId: 'run_api_execution',

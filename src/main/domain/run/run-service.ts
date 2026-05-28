@@ -33,6 +33,7 @@ import type {
   RunDetailRecord,
   RunRecord,
 } from '../../../shared/types/run.js';
+import type { SandboxPatchPromotionRecord } from '../../../shared/types/sandbox-patch-promotion.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import {
   projectWorkHabitLabel,
@@ -396,7 +397,7 @@ export class RunService {
       runId,
       task: params.task,
     });
-    const reviewedPatchApplyBoundaryReady = await this.hasReviewedPatchApplyBoundaryEvidence(
+    const reviewedPatchApplyBoundaryEvidence = await this.readReviewedPatchApplyBoundaryEvidence(
       phase === 'post_run' ? runId : null,
     );
     const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
@@ -426,10 +427,13 @@ export class RunService {
             taskId: params.task.id,
           }
         : null,
-      reviewedPatchApplyBoundary: reviewedPatchApplyBoundaryReady
+      reviewedPatchApplyBoundary: reviewedPatchApplyBoundaryEvidence
         ? {
+            appliedPromotionStatus: reviewedPatchApplyBoundaryEvidence.status,
             explicitApplyOnly: true,
-            promotionPreflightReady: true,
+            promotionPreflightReady: reviewedPatchApplyBoundaryEvidence.status === 'applied',
+            runId: reviewedPatchApplyBoundaryEvidence.runId,
+            taskId: reviewedPatchApplyBoundaryEvidence.taskId,
           }
         : null,
       postStepVerification: phase === 'post_run'
@@ -483,13 +487,15 @@ export class RunService {
     });
   }
 
-  private async hasReviewedPatchApplyBoundaryEvidence(runId: string | null): Promise<boolean> {
-    if (!runId || !this.sandboxPatchPromotionRepository) return false;
+  private async readReviewedPatchApplyBoundaryEvidence(runId: string | null): Promise<SandboxPatchPromotionRecord | null> {
+    if (!runId || !this.sandboxPatchPromotionRepository) return null;
     try {
       const promotions = await this.sandboxPatchPromotionRepository.listForRun(runId);
-      return promotions.some((promotion) => promotion.status === 'applied');
+      return promotions.find((promotion) => promotion.status === 'applied')
+        ?? promotions.find((promotion) => promotion.status === 'pending')
+        ?? null;
     } catch {
-      return false;
+      return null;
     }
   }
 

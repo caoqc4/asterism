@@ -173,8 +173,11 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     taskId?: string | null;
   } | null;
   reviewedPatchApplyBoundary?: {
+    appliedPromotionStatus?: 'applied' | 'blocked' | 'pending' | null;
     explicitApplyOnly: boolean;
     promotionPreflightReady: boolean;
+    runId?: string | null;
+    taskId?: string | null;
   } | null;
   runEvidencePersistence?: {
     runId?: string | null;
@@ -662,6 +665,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
   const runEvidenceId = evidence.runEvidencePersistence?.runId?.trim() || '';
   const runEvidenceTaskId = evidence.runEvidencePersistence?.taskId?.trim() || '';
+  const patchPromotionRunId = evidence.reviewedPatchApplyBoundary?.runId?.trim() || '';
+  const patchPromotionTaskId = evidence.reviewedPatchApplyBoundary?.taskId?.trim() || '';
   const writeIntentRunId = evidence.writeIntentExtraction?.runId?.trim() || '';
   const writeIntentTaskId = evidence.writeIntentExtraction?.taskId?.trim() || '';
   const runEvidenceTaskEvidenceChainReady = Boolean(runEvidenceId)
@@ -680,6 +685,19 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const providerPreflightTaskEvidenceChainReady = Boolean(providerPreflightTaskId)
     && Boolean(targetTaskId)
     && providerPreflightTaskId === targetTaskId;
+  const patchPromotionRunEvidenceChainReady = Boolean(patchPromotionRunId)
+    && Boolean(runEvidenceId)
+    && patchPromotionRunId === runEvidenceId;
+  const patchPromotionTaskEvidenceChainReady = Boolean(patchPromotionTaskId)
+    && Boolean(targetTaskId)
+    && patchPromotionTaskId === targetTaskId;
+  const reviewedPatchApplyBoundaryReady = (
+    evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
+    && evidence.reviewedPatchApplyBoundary.promotionPreflightReady === true
+    && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'applied'
+    && patchPromotionRunEvidenceChainReady
+    && patchPromotionTaskEvidenceChainReady
+  );
 
   if (
     selectedRuntime?.runtimeMode === 'api'
@@ -730,10 +748,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('write_intent_extraction');
   }
 
-  if (
-    evidence.reviewedPatchApplyBoundary?.explicitApplyOnly
-    && evidence.reviewedPatchApplyBoundary.promotionPreflightReady
-  ) {
+  if (reviewedPatchApplyBoundaryReady) {
     satisfiedRequirements.push('reviewed_patch_apply_boundary');
   }
 
@@ -782,7 +797,12 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `taskMemoryGuidanceCount=${evidence.taskMemoryGuidance?.guidanceCount ?? 0}`,
       `runGoalConditions=${evidence.runGoalContract?.completionConditionCount ?? 0}`,
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
-      `reviewedPatchApplyBoundary=${evidence.reviewedPatchApplyBoundary?.promotionPreflightReady === true ? 'ready' : 'missing'}`,
+      `reviewedPatchApplyBoundary=${reviewedPatchApplyBoundaryReady ? 'ready' : 'missing'}`,
+      `patchPromotionStatus=${evidence.reviewedPatchApplyBoundary?.appliedPromotionStatus ?? 'missing'}`,
+      `patchPromotionRun=${patchPromotionRunId || 'missing'}`,
+      `patchPromotionRunEvidenceChain=${patchPromotionRunEvidenceChainReady ? 'ready' : 'missing'}`,
+      `patchPromotionTask=${patchPromotionTaskId || 'missing'}`,
+      `patchPromotionTaskEvidenceChain=${patchPromotionTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `postStepVerifier=${verifier || 'missing'}`,
       `terminalEvidence=${evidence.runEvidencePersistence?.terminalEvidenceStatus ?? 'missing'}`,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,

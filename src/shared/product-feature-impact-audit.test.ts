@@ -177,8 +177,11 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('run_evidence_persistence can stay ready');
     expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with same-run and target-task identity evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, contextStep, contextManifest');
-    expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, postStepVerifier, terminalEvidence, runtimeMode, and invocationLayer identity chips');
+    expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, patchPromotionStatus, patchPromotionRun');
+    expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionRunEvidenceChain, patchPromotionTask, patchPromotionTaskEvidenceChain');
+    expect(rightPanel?.evidence.join(' ')).toContain('postStepVerifier, terminalEvidence, runtimeMode, and invocationLayer identity chips');
     expect(rightPanel?.evidence.join(' ')).toContain('hand-filled requirement arrays');
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('Retained API Runtime / Agent API-like RunService runs now persist an Agent API execution promotion readiness Run step');
@@ -192,6 +195,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Post-run Agent API execution promotion readiness now reads same-run sandbox patch promotion records');
     expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionRepository.listForRun');
     expect(rightPanel?.evidence.join(' ')).toContain('real applied promotion evidence exists');
+    expect(rightPanel?.evidence.join(' ')).toContain('belongs to the same run and target task');
     expect(rightPanel?.evidence.join(' ')).toContain('pending patch promotion evidence remains missing until explicit apply completes');
     expect(rightPanel?.evidence.join(' ')).toContain('parsed TASKPLANE_WRITE_INTENTS artifact.propose plus task_file.propose output and same-run patch promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('without hand-filled readiness');

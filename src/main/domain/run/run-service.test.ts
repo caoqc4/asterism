@@ -691,7 +691,9 @@ describe('RunService', () => {
     const sandboxPatchPromotionRepository = {
       listForRun: vi.fn().mockResolvedValue([{
         checkpointId: 'run_checkpoint_patch_1',
+        runId: 'run_1',
         status: 'applied',
+        taskId: 'task_1',
       }]),
     };
     const service = new RunService(
@@ -965,7 +967,9 @@ describe('RunService', () => {
     const sandboxPatchPromotionRepository = {
       listForRun: vi.fn().mockResolvedValue([{
         checkpointId: 'run_checkpoint_patch_1',
+        runId: 'run_1',
         status: 'applied',
+        taskId: 'task_1',
       }]),
     };
     const service = new RunService(
@@ -1111,7 +1115,9 @@ describe('RunService', () => {
     const sandboxPatchPromotionRepository = {
       listForRun: vi.fn().mockResolvedValue([{
         checkpointId: 'run_checkpoint_patch_1',
+        runId: 'run_1',
         status: 'pending',
+        taskId: 'task_1',
       }]),
     };
     const service = new RunService(
