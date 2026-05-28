@@ -837,6 +837,10 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('subtasks=not-created');
     expect(result.output).toContain('dispatch=not-called');
     expect(result.output).toContain('workspace=unchanged');
+    if (result.output.includes('status=skip')) {
+      expect(result.output).toContain('skipReason=build_required');
+      return;
+    }
   });
 
   it('keeps Agent API provider tool readiness smoke read-only and build-gated by default', () => {
@@ -917,6 +921,10 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('workspace=unchanged');
     expect(result.output).toContain('workspaceApply=not-attempted');
+    if (result.output.includes('status=skip')) {
+      expect(result.output).toContain('skipReason=build_required');
+      return;
+    }
   });
 
   it('keeps scheduler Decision proposal readiness smoke read-only and build-gated by default', () => {
@@ -1031,6 +1039,10 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('docker=not-started');
     expect(result.output).toContain('workspace=unchanged');
+    if (result.output.includes('status=skip')) {
+      expect(result.output).toContain('skipReason=build_required');
+      return;
+    }
   });
 
   it('keeps scheduled/event background live smoke skipped without provider spend by default', () => {

@@ -373,6 +373,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtime.scheduler summary through planScheduledEventAgentTriggerFromEvidence');
     expect(workHabits?.evidence.join(' ')).toContain('ConfigurationSafetyReport shows trigger-plan, scheduler-trigger-service, and run-limit-count gaps');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event trigger readiness smoke');
+    expect(workHabits?.evidence.join(' ')).toContain('read-only build-gated harness with stale-build detection');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false with runtimeStartRequirements=1/3');
     expect(workHabits?.evidence.join(' ')).toContain('service-evidence=1/3 runtime-start requirements');
     expect(workHabits?.evidence.join(' ')).toContain('run_limit_count missing');
@@ -669,6 +670,8 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('subtask create-many apply plan readiness smoke');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('read-only build-gated harness with stale-build detection');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('draftOnlyBeforeConfirmation=true');
@@ -797,6 +800,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('requirements=x/12');
     expect(taskFiles?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('sandbox patch promotion readiness smoke');
+    expect(taskFiles?.evidence.join(' ')).toContain('read-only build-gated harness with stale-build detection');
     expect(taskFiles?.evidence.join(' ')).toContain('missing_apply_metadata at 10/12 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('ready at 12/12 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('unsafe expected files stay blocked');

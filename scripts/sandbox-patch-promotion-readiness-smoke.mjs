@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'sandbox-patch-promotion-readiness.js');
+const sourceModulePath = path.join(root, 'src', 'shared', 'sandbox-patch-promotion-readiness.ts');
 
 export async function runSandboxPatchPromotionReadinessSmoke() {
   console.log('Sandbox patch promotion readiness smoke');
@@ -14,7 +15,7 @@ export async function runSandboxPatchPromotionReadinessSmoke() {
   console.log('workspace=unchanged');
   console.log('workspaceApply=not-attempted');
 
-  if (!fs.existsSync(modulePath)) {
+  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -119,6 +120,11 @@ function buildCheckpoint(partial = {}) {
     status: partial.status ?? 'open',
     stepId: partial.stepId ?? null,
   };
+}
+
+function sourceIsNewerThanBuild() {
+  if (!fs.existsSync(modulePath) || !fs.existsSync(sourceModulePath)) return false;
+  return fs.statSync(sourceModulePath).mtimeMs > fs.statSync(modulePath).mtimeMs;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

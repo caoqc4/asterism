@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'agent-orchestration.js');
+const sourceModulePath = path.join(root, 'src', 'shared', 'agent-orchestration.ts');
 
 export async function runScheduledEventTriggerReadinessSmoke() {
   console.log('Scheduled/event trigger readiness smoke');
@@ -14,7 +15,7 @@ export async function runScheduledEventTriggerReadinessSmoke() {
   console.log('docker=not-started');
   console.log('workspace=unchanged');
 
-  if (!fs.existsSync(modulePath)) {
+  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -240,6 +241,11 @@ function withStandingApproval(task, policy) {
       type: 'panel.standing_approval_confirmed',
     }],
   };
+}
+
+function sourceIsNewerThanBuild() {
+  if (!fs.existsSync(modulePath) || !fs.existsSync(sourceModulePath)) return false;
+  return fs.statSync(sourceModulePath).mtimeMs > fs.statSync(modulePath).mtimeMs;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

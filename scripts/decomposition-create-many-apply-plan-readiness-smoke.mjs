@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'taskplane-writeback-apply-plan.js');
+const sourceModulePath = path.join(root, 'src', 'shared', 'taskplane-writeback-apply-plan.ts');
 
 export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
   console.log('Subtask create-many apply plan readiness smoke');
@@ -15,7 +16,7 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
   console.log('dispatch=not-called');
   console.log('workspace=unchanged');
 
-  if (!fs.existsSync(modulePath)) {
+  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -87,6 +88,11 @@ function buildSubtaskDraft() {
     summary: 'Prepare one reversible child task draft.',
     title: 'Review reversible child task boundary',
   };
+}
+
+function sourceIsNewerThanBuild() {
+  if (!fs.existsSync(modulePath) || !fs.existsSync(sourceModulePath)) return false;
+  return fs.statSync(sourceModulePath).mtimeMs > fs.statSync(modulePath).mtimeMs;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
