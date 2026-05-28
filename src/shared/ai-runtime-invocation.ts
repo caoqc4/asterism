@@ -97,6 +97,20 @@ export function agentApiDecompositionPromotionRequirements(): AgentApiDecomposit
   ];
 }
 
+export type AgentApiDecompositionPromotionServiceEvidence = {
+  applyPlan?: TaskplaneSubtaskWritebackApplyPlan | null;
+  parentTaskId?: string | null;
+  reversibleProposalCard?: {
+    proposalId?: string | null;
+    status: 'missing' | 'ready';
+  } | null;
+  selectedRuntimeContract?: {
+    invocationLayer: RuntimeInvocationLayer;
+    phase: RuntimeInvocationPhase;
+    runtimeMode: AiRuntimeMode | 'local_rule' | 'product_harness';
+  } | null;
+};
+
 export type DecisionDraftInvocationResult = RuntimeInvocationBase & {
   phase: 'decision_draft';
   layer: 'api_runtime' | 'product_harness';
@@ -289,6 +303,77 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
       `selectedRuntimeContract=${params.selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `parentTask=${applyPlan?.input.parentTaskId?.trim() || 'missing'}`,
       `proposalCard=${params.reversibleProposalCardReady ? 'ready' : 'missing'}`,
+      `applyPlan=${applyPlan?.action ?? 'missing'}`,
+      `source=${applyPlan?.input.source ?? 'missing'}`,
+      `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+      `promotionMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+      `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+    ].join(' / '),
+  };
+}
+
+export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
+  evidence: AgentApiDecompositionPromotionServiceEvidence,
+): AgentApiDecompositionPromotionReadiness {
+  const requiredRequirements = agentApiDecompositionPromotionRequirements();
+  const satisfiedRequirements: AgentApiDecompositionPromotionRequirement[] = [];
+  const applyPlan = evidence.applyPlan ?? null;
+  const selectedRuntime = evidence.selectedRuntimeContract;
+  const parentTaskId = evidence.parentTaskId?.trim() || applyPlan?.input.parentTaskId?.trim() || '';
+  const reversibleProposalReady = (
+    evidence.reversibleProposalCard?.status === 'ready'
+    && Boolean(evidence.reversibleProposalCard.proposalId?.trim())
+  );
+
+  if (
+    selectedRuntime?.runtimeMode === 'api'
+    && selectedRuntime.invocationLayer === 'api_runtime'
+    && selectedRuntime.phase === 'decomposition_draft'
+  ) {
+    satisfiedRequirements.push('selected_runtime_contract');
+  }
+
+  if (parentTaskId) {
+    satisfiedRequirements.push('parent_task_identity');
+  }
+
+  if (reversibleProposalReady) {
+    satisfiedRequirements.push('reversible_proposal_card');
+  }
+
+  if (applyPlan?.action === 'subtask.create_many') {
+    satisfiedRequirements.push('subtask_create_many_apply_plan');
+  }
+
+  if (applyPlan?.input.source === 'agent_api_decomposition') {
+    satisfiedRequirements.push('agent_api_decomposition_source');
+  }
+
+  if (applyPlan?.timeline.payload.confirmationBoundary === 'operator_confirmed_subtask_create_many') {
+    satisfiedRequirements.push('operator_confirmation_boundary');
+  }
+
+  if (applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true) {
+    satisfiedRequirements.push('draft_only_timeline_evidence');
+  }
+
+  const satisfiedRequirementSet = new Set(satisfiedRequirements);
+  const missingRequirements = requiredRequirements.filter((requirement) => !satisfiedRequirementSet.has(requirement));
+  const ready = missingRequirements.length === 0;
+
+  return {
+    ready,
+    satisfiedRequirements,
+    missingRequirements,
+    summary: [
+      'Agent API decomposition promotion readiness',
+      `ready=${ready ? 'yes' : 'no'}`,
+      `promotionReady=${ready ? 'yes' : 'no'}`,
+      `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `promotionRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `selectedRuntimeContract=${satisfiedRequirementSet.has('selected_runtime_contract') ? 'ready' : 'missing'}`,
+      `parentTask=${parentTaskId || 'missing'}`,
+      `proposalCard=${reversibleProposalReady ? 'ready' : 'missing'}`,
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,

@@ -10,6 +10,7 @@ import {
   buildProductHarnessMemoryProposalInvocation,
   buildProductHarnessVerificationAssistInvocation,
   evaluateAgentApiDecompositionPromotionReadiness,
+  evaluateAgentApiDecompositionPromotionReadinessFromEvidence,
   evaluateAgentApiExecutionPromotionReadiness,
   evaluateAgentApiExecutionPromotionReadinessFromEvidence,
   evaluateAgentApiExecutionPromotionReadinessForInvocation,
@@ -138,6 +139,66 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('missingRequirements=none');
     expect(ready.summary).toContain('promotionMissingRequirements=none');
     expect(ready.summary).toContain('missing=none');
+  });
+
+  it('derives Agent API decomposition promotion readiness from structured service evidence', () => {
+    const partialApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      parentTaskId: 'task_project',
+      source: 'agent_cli_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+    const partial = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan: partialApplyPlan,
+      reversibleProposalCard: {
+        proposalId: 'proposal_1',
+        status: 'ready',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(partial).toMatchObject({
+      ready: false,
+      satisfiedRequirements: [
+        'selected_runtime_contract',
+        'parent_task_identity',
+        'reversible_proposal_card',
+        'subtask_create_many_apply_plan',
+        'operator_confirmation_boundary',
+        'draft_only_timeline_evidence',
+      ],
+      missingRequirements: ['agent_api_decomposition_source'],
+    });
+    expect(partial.summary).toContain('requirements=6/7');
+    expect(partial.summary).toContain('promotionMissingRequirements=agent_api_decomposition_source');
+
+    const readyApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+    const ready = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan: readyApplyPlan,
+      reversibleProposalCard: {
+        proposalId: 'proposal_1',
+        status: 'ready',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(ready).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+    });
+    expect(ready.summary).toContain('requirements=7/7');
+    expect(ready.summary).toContain('source=agent_api_decomposition');
   });
 
   it('wraps decision drafts with API-runtime provenance', () => {
@@ -562,5 +623,14 @@ function completeAgentApiExecutionPromotionEvidence() {
       status: 'ready' as const,
       supportedActions: ['artifact.propose', 'task_file.propose'],
     },
+  };
+}
+
+function buildSubtaskDraft() {
+  return {
+    acceptanceCriteria: '范围文档可验收',
+    dependency: null,
+    summary: '确认范围',
+    title: '需求与范围确认',
   };
 }

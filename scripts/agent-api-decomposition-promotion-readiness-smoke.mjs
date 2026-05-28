@@ -28,6 +28,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   const [
     {
       evaluateAgentApiDecompositionPromotionReadiness,
+      evaluateAgentApiDecompositionPromotionReadinessFromEvidence,
     },
     {
       buildSubtaskCreateManyWritebackApplyPlan,
@@ -62,6 +63,18 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     reversibleProposalCardReady: true,
     selectedRuntimeContractReady: true,
   });
+  const serviceEvidencePartial = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+    applyPlan: partialApplyPlan,
+    reversibleProposalCard: {
+      proposalId: 'proposal_agent_api_decomposition',
+      status: 'ready',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'decomposition_draft',
+      runtimeMode: 'api',
+    },
+  });
 
   console.log(`blockedPromotionReady=${blocked.ready ? 'yes' : 'no'}`);
   console.log(`blockedRequirements=${blocked.satisfiedRequirements.length}/7`);
@@ -72,12 +85,18 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`syntheticPromotionReady=${syntheticReady.ready ? 'yes' : 'no'}`);
   console.log(`syntheticRequirements=${syntheticReady.satisfiedRequirements.length}/7`);
   console.log(`syntheticMissingRequirements=${syntheticReady.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidencePromotionReady=${serviceEvidencePartial.ready ? 'yes' : 'no'}`);
+  console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/7`);
+  console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
 
   if (
     blocked.ready
     || partial.ready
     || !syntheticReady.ready
     || !partial.missingRequirements.includes('agent_api_decomposition_source')
+    || serviceEvidencePartial.ready
+    || serviceEvidencePartial.satisfiedRequirements.length !== 6
+    || !serviceEvidencePartial.missingRequirements.includes('agent_api_decomposition_source')
   ) {
     console.log('status=failed');
     return 1;
