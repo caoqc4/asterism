@@ -82,7 +82,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
       subtaskTitles: ['Review Agent API decomposition promotion boundary'],
     },
     selectedRuntimeContract: {
+      evidenceRunId: 'run_cli_decomposition_smoke',
       invocationLayer: 'api_runtime',
+      parentTaskId: 'task_project',
       phase: 'decomposition_draft',
       runtimeMode: 'api',
     },
@@ -124,6 +126,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceDraftOnlyBeforeConfirmation=${scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeEvidenceRunChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceRunChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeParentTask=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeParentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineInvocationPhase=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') ?? 'missing'}`);
@@ -161,6 +167,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') !== 'true'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceRunId') !== 'run_cli_decomposition_smoke'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceRunChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTask') !== 'task_project'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') !== 'api_runtime'
     || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') !== 'decomposition_draft'

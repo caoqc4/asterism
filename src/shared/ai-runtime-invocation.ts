@@ -109,7 +109,9 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
     subtaskTitles?: string[] | null;
   } | null;
   selectedRuntimeContract?: {
+    evidenceRunId?: string | null;
     invocationLayer: RuntimeInvocationLayer;
+    parentTaskId?: string | null;
     phase: RuntimeInvocationPhase;
     runtimeMode: AiRuntimeMode | 'local_rule' | 'product_harness';
   } | null;
@@ -371,6 +373,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const satisfiedRequirements: AgentApiDecompositionPromotionRequirement[] = [];
   const applyPlan = evidence.applyPlan ?? null;
   const selectedRuntime = evidence.selectedRuntimeContract;
+  const selectedRuntimeEvidenceRunId = selectedRuntime?.evidenceRunId?.trim() || '';
+  const selectedRuntimeParentTaskId = selectedRuntime?.parentTaskId?.trim() || '';
   const evidenceParentTaskId = evidence.parentTaskId?.trim() || '';
   const applyPlanParentTaskId = applyPlan?.input.parentTaskId?.trim() || '';
   const applyPlanEvidenceRunId = applyPlan?.input.evidenceRunId?.trim() || '';
@@ -381,9 +385,17 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
   const evidenceRunIdChainReady = Boolean(applyPlanEvidenceRunId)
     && applyPlanEvidenceRunId === timelineEvidenceRunId;
+  const selectedRuntimeEvidenceRunChainReady = Boolean(selectedRuntimeEvidenceRunId)
+    && Boolean(applyPlanEvidenceRunId)
+    && selectedRuntimeEvidenceRunId === applyPlanEvidenceRunId;
+  const selectedRuntimeParentTaskEvidenceChainReady = Boolean(selectedRuntimeParentTaskId)
+    && Boolean(applyPlanParentTaskId)
+    && selectedRuntimeParentTaskId === applyPlanParentTaskId;
   const selectedRuntimeContractReady = selectedRuntime?.runtimeMode === 'api'
     && selectedRuntime.invocationLayer === 'api_runtime'
     && selectedRuntime.phase === 'decomposition_draft'
+    && selectedRuntimeEvidenceRunChainReady
+    && selectedRuntimeParentTaskEvidenceChainReady
     && timelineRuntimeContract?.runtimeMode === selectedRuntime.runtimeMode
     && timelineRuntimeContract.invocationLayer === selectedRuntime.invocationLayer
     && timelineRuntimeContract.phase === selectedRuntime.phase;
@@ -502,6 +514,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
       `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
+      `selectedRuntimeEvidenceRunId=${selectedRuntimeEvidenceRunId || 'missing'}`,
+      `selectedRuntimeEvidenceRunChain=${selectedRuntimeEvidenceRunChainReady ? 'ready' : 'missing'}`,
+      `selectedRuntimeParentTask=${selectedRuntimeParentTaskId || 'missing'}`,
+      `selectedRuntimeParentTaskEvidenceChain=${selectedRuntimeParentTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `timelineRuntimeMode=${timelineRuntimeContract?.runtimeMode ?? 'missing'}`,
       `timelineInvocationLayer=${timelineRuntimeContract?.invocationLayer ?? 'missing'}`,
       `timelineInvocationPhase=${timelineRuntimeContract?.phase ?? 'missing'}`,

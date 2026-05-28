@@ -172,7 +172,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_cli_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -211,6 +213,10 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('draftOnlyBeforeConfirmation=true');
     expect(partial.summary).toContain('runtimeMode=api');
     expect(partial.summary).toContain('invocationLayer=api_runtime');
+    expect(partial.summary).toContain('selectedRuntimeEvidenceRunId=run_cli_decomposition');
+    expect(partial.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
+    expect(partial.summary).toContain('selectedRuntimeParentTask=task_project');
+    expect(partial.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
 
     const readyApplyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
@@ -229,7 +235,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -265,6 +273,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('draftOnlyBeforeConfirmation=true');
     expect(ready.summary).toContain('runtimeMode=api');
     expect(ready.summary).toContain('invocationLayer=api_runtime');
+    expect(ready.summary).toContain('selectedRuntimeEvidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
+    expect(ready.summary).toContain('selectedRuntimeParentTask=task_project');
+    expect(ready.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
   });
 
   it('blocks Agent API decomposition promotion when apply-plan source and timeline evidence are stitched', () => {
@@ -288,7 +300,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -328,7 +342,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -344,6 +360,69 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('timelineInvocationLayer=missing');
     expect(mismatch.summary).toContain('timelineInvocationPhase=missing');
     expect(mismatch.summary).toContain('selectedRuntimeEvidenceChain=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when selected-runtime evidence is stitched from another run or parent task', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const wrongRun = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_other',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(wrongRun.summary).toContain('selectedRuntimeEvidenceRunId=run_other');
+    expect(wrongRun.summary).toContain('selectedRuntimeEvidenceRunChain=missing');
+    expect(wrongRun.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
+
+    const wrongParent = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_other',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(wrongParent).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(wrongParent.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
+    expect(wrongParent.summary).toContain('selectedRuntimeParentTask=task_other');
+    expect(wrongParent.summary).toContain('selectedRuntimeParentTaskEvidenceChain=missing');
   });
 
   it('blocks Agent API decomposition promotion when draft-only timeline evidence has no run identity', () => {
@@ -364,7 +443,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -372,11 +453,12 @@ describe('ai runtime invocation contract', () => {
 
     expect(mismatch).toMatchObject({
       ready: false,
-      missingRequirements: ['draft_only_timeline_evidence'],
+      missingRequirements: ['selected_runtime_contract', 'draft_only_timeline_evidence'],
     });
     expect(mismatch.summary).toContain('evidenceRunId=missing');
     expect(mismatch.summary).toContain('timelineEvidenceRunId=missing');
     expect(mismatch.summary).toContain('evidenceRunIdChain=missing');
+    expect(mismatch.summary).toContain('selectedRuntimeEvidenceRunChain=missing');
   });
 
   it('blocks Agent API decomposition promotion when parent-task evidence is stitched from another task', () => {
@@ -398,7 +480,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project_a',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -432,7 +516,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project_a',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -467,7 +553,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -504,7 +592,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -539,7 +629,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['Different child task'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -579,7 +671,9 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认', '需求与范围确认'],
       },
       selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
