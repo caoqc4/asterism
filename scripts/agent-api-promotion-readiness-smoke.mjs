@@ -64,8 +64,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     providerVisiblePreflight: {
       configuredProvider: 'openai',
       providerConfigured: true,
+      runId: 'run_api_execution_partial',
       startupProbe: 'not_called',
       status: 'ready',
+      taskId: 'task_1',
     },
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
@@ -98,8 +100,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     providerVisiblePreflight: {
       configuredProvider: 'openai',
       providerConfigured: true,
+      runId: 'run_api_execution',
       startupProbe: 'not_called',
       status: 'ready',
+      taskId: 'task_1',
     },
     reviewedPatchApplyBoundary: {
       explicitApplyOnly: true,
@@ -156,6 +160,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceProviderConfigured=${scalarValue(serviceEvidencePartial.summary, 'providerConfigured') ?? 'missing'}`);
   console.log(`serviceEvidenceConfiguredProvider=${scalarValue(serviceEvidencePartial.summary, 'configuredProvider') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderStartupProbe=${scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderPreflightRun=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightRun') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderPreflightRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightRunEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderPreflightTask=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderPreflightTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'runId') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentRun=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
@@ -184,6 +192,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'providerConfigured') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'configuredProvider') !== 'openai'
     || scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') !== 'not_called'
+    || scalarValue(serviceEvidencePartial.summary, 'providerPreflightRun') !== 'run_api_execution_partial'
+    || scalarValue(serviceEvidencePartial.summary, 'providerPreflightRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'providerPreflightTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'providerPreflightTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runId') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') !== 'missing'

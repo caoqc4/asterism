@@ -174,14 +174,15 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('structured service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('Run evidence persistence, and runtime gates');
     expect(rightPanel?.evidence.join(' ')).toContain('Run evidence task identity to match targetTaskId');
-    expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with same-run and target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, providerConfigured, configuredProvider, providerStartupProbe, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, contextStep, contextManifest');
+    expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, contextStep, contextManifest');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, postStepVerifier, terminalEvidence, runtimeMode, and invocationLayer identity chips');
     expect(rightPanel?.evidence.join(' ')).toContain('hand-filled requirement arrays');
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('Retained API Runtime / Agent API-like RunService runs now persist an Agent API execution promotion readiness Run step');
     expect(rightPanel?.evidence.join(' ')).toContain('from real service evidence before provider-visible execution');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider-visible preflight run/task identity');
     expect(rightPanel?.evidence.join(' ')).toContain('simplicity_check, runtime_action, pre-step, and subtask-start gates');
     expect(rightPanel?.evidence.join(' ')).toContain('missing Write Intent extraction, reviewed-patch apply boundary, post-step verification, and terminal Run evidence explicit');
     expect(rightPanel?.evidence.join(' ')).toContain('Completed retained API Runtime / Agent API-like RunService runs now persist a post-run Agent API execution promotion readiness Run step');
@@ -200,7 +201,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('deferred=0/11 requirements and 0/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('partial=5/11 requirements and 3/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=5/11 requirements and 3/9 gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured=ready, configuredProvider=openai, and providerStartupProbe=not_called');
+    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called, providerPreflightRunEvidenceChain=ready, and providerPreflightTaskEvidenceChain=ready');
     expect(rightPanel?.evidence.join(' ')).toContain('synthetic-ready=11/11 requirements and 9/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API execution preflight smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible text-call readiness');

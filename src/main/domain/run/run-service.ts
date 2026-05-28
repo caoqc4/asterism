@@ -420,8 +420,10 @@ export class RunService {
         ? {
             configuredProvider: params.capabilities.model.provider,
             providerConfigured: true,
+            runId,
             startupProbe: 'not_called',
             status: 'ready',
+            taskId: params.task.id,
           }
         : null,
       reviewedPatchApplyBoundary: reviewedPatchApplyBoundaryReady

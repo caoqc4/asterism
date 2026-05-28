@@ -701,8 +701,10 @@ describe('ai runtime invocation contract', () => {
       providerVisiblePreflight: {
         configuredProvider: 'openai',
         providerConfigured: true,
+        runId: 'run_api_execution_partial',
         startupProbe: 'not_called',
         status: 'ready',
+        taskId: 'task_1',
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -743,6 +745,10 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('providerConfigured=ready');
     expect(partial.summary).toContain('configuredProvider=openai');
     expect(partial.summary).toContain('providerStartupProbe=not_called');
+    expect(partial.summary).toContain('providerPreflightRun=run_api_execution_partial');
+    expect(partial.summary).toContain('providerPreflightRunEvidenceChain=ready');
+    expect(partial.summary).toContain('providerPreflightTask=task_1');
+    expect(partial.summary).toContain('providerPreflightTaskEvidenceChain=ready');
     expect(partial.summary).toContain('runId=missing');
     expect(partial.summary).toContain('writeIntentRun=missing');
     expect(partial.summary).toContain('writeIntentRunEvidenceChain=missing');
@@ -771,6 +777,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('providerConfigured=ready');
     expect(ready.summary).toContain('configuredProvider=openai');
     expect(ready.summary).toContain('providerStartupProbe=not_called');
+    expect(ready.summary).toContain('providerPreflightRun=run_api_execution');
+    expect(ready.summary).toContain('providerPreflightRunEvidenceChain=ready');
+    expect(ready.summary).toContain('providerPreflightTask=task_1');
+    expect(ready.summary).toContain('providerPreflightTaskEvidenceChain=ready');
     expect(ready.summary).toContain('runId=run_api_execution');
     expect(ready.summary).toContain('writeIntentRun=run_api_execution');
     expect(ready.summary).toContain('writeIntentRunEvidenceChain=ready');
@@ -877,6 +887,48 @@ describe('ai runtime invocation contract', () => {
     expect(missingProvider.summary).toContain('providerStartupProbe=not_called');
   });
 
+  it('requires provider-visible preflight to belong to the same run and target task', () => {
+    const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      providerVisiblePreflight: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+        runId: 'run_other',
+        startupProbe: 'not_called',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['provider_visible_preflight'],
+    });
+    expect(wrongRun.summary).toContain('providerPreflightRun=run_other');
+    expect(wrongRun.summary).toContain('providerPreflightRunEvidenceChain=missing');
+    expect(wrongRun.summary).toContain('providerPreflightTaskEvidenceChain=ready');
+
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      providerVisiblePreflight: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+        runId: 'run_api_execution',
+        startupProbe: 'not_called',
+        status: 'ready',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['provider_visible_preflight'],
+    });
+    expect(wrongTask.summary).toContain('providerPreflightRunEvidenceChain=ready');
+    expect(wrongTask.summary).toContain('providerPreflightTask=task_2');
+    expect(wrongTask.summary).toContain('providerPreflightTaskEvidenceChain=missing');
+  });
+
   it('wraps product-harness verification and memory proposal phases', () => {
     const verification = buildProductHarnessVerificationAssistInvocation({
       verification: {
@@ -953,8 +1005,10 @@ function completeAgentApiExecutionPromotionEvidence() {
     providerVisiblePreflight: {
       configuredProvider: 'openai',
       providerConfigured: true,
+      runId: 'run_api_execution',
       startupProbe: 'not_called' as const,
       status: 'ready' as const,
+      taskId: 'task_1',
     },
     reviewedPatchApplyBoundary: {
       explicitApplyOnly: true,

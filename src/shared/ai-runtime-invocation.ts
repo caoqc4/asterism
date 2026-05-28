@@ -167,8 +167,10 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   providerVisiblePreflight?: {
     configuredProvider?: string | null;
     providerConfigured: boolean;
+    runId?: string | null;
     startupProbe: 'called' | 'never' | 'not_called';
     status: 'blocked' | 'ready' | 'skipped';
+    taskId?: string | null;
   } | null;
   reviewedPatchApplyBoundary?: {
     explicitApplyOnly: boolean;
@@ -620,6 +622,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
   const configuredProvider = evidence.providerVisiblePreflight?.configuredProvider?.trim() || '';
+  const providerPreflightRunId = evidence.providerVisiblePreflight?.runId?.trim() || '';
+  const providerPreflightTaskId = evidence.providerVisiblePreflight?.taskId?.trim() || '';
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
   const runEvidenceId = evidence.runEvidencePersistence?.runId?.trim() || '';
   const runEvidenceTaskId = evidence.runEvidencePersistence?.taskId?.trim() || '';
@@ -632,6 +636,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const writeIntentTaskEvidenceChainReady = Boolean(writeIntentTaskId)
     && Boolean(targetTaskId)
     && writeIntentTaskId === targetTaskId;
+  const providerPreflightRunEvidenceChainReady = Boolean(providerPreflightRunId)
+    && (!runEvidenceId || providerPreflightRunId === runEvidenceId);
+  const providerPreflightTaskEvidenceChainReady = Boolean(providerPreflightTaskId)
+    && Boolean(targetTaskId)
+    && providerPreflightTaskId === targetTaskId;
 
   if (
     selectedRuntime?.runtimeMode === 'api'
@@ -650,6 +659,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && evidence.providerVisiblePreflight.providerConfigured
     && Boolean(configuredProvider)
     && evidence.providerVisiblePreflight.startupProbe !== 'called'
+    && providerPreflightRunEvidenceChainReady
+    && providerPreflightTaskEvidenceChainReady
   ) {
     satisfiedRequirements.push('provider_visible_preflight');
   }
@@ -715,6 +726,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `providerConfigured=${evidence.providerVisiblePreflight?.providerConfigured === true ? 'ready' : 'missing'}`,
       `configuredProvider=${configuredProvider || 'missing'}`,
       `providerStartupProbe=${evidence.providerVisiblePreflight?.startupProbe ?? 'missing'}`,
+      `providerPreflightRun=${providerPreflightRunId || 'missing'}`,
+      `providerPreflightRunEvidenceChain=${providerPreflightRunEvidenceChainReady ? 'ready' : 'missing'}`,
+      `providerPreflightTask=${providerPreflightTaskId || 'missing'}`,
+      `providerPreflightTaskEvidenceChain=${providerPreflightTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `runId=${runEvidenceId || 'missing'}`,
       `writeIntentRun=${writeIntentRunId || 'missing'}`,
       `writeIntentRunEvidenceChain=${writeIntentRunEvidenceChainReady ? 'ready' : 'missing'}`,
