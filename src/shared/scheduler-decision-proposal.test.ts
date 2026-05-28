@@ -14,7 +14,10 @@ describe('scheduler decision proposal contract', () => {
       approvalItemAllowed: false,
       approvalQueueSurface: null,
       decisionPersistenceAllowed: false,
+      operatorId: null,
       schedulerTriggerAllowed: false,
+      standingApprovalPolicyId: null,
+      standingApprovalScopeTaskId: null,
       writebackDispatchAllowed: false,
       authorizations: [],
       targetTaskId: null,
@@ -39,6 +42,10 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('writebackDispatchAllowed=false');
     expect(plan.summary).toContain('schedulerTriggerAllowed=false');
     expect(plan.summary).toContain('targetTask=missing');
+    expect(plan.summary).toContain('operatorId=missing');
+    expect(plan.summary).toContain('standingApprovalPolicyId=missing');
+    expect(plan.summary).toContain('standingApprovalScopeTask=missing');
+    expect(plan.summary).toContain('standingApprovalActive=no');
     expect(plan.summary).toContain('missingRequirements=approval_queue,target_task_identity,authorization');
     expect(plan.summary).toContain('proposalMissingRequirements=approval_queue,target_task_identity,authorization');
   });
@@ -46,6 +53,7 @@ describe('scheduler decision proposal contract', () => {
   it('allows only a proposal approval item after operator confirmation', () => {
     const plan = planSchedulerDecisionProposal({
       approvalQueueConnected: true,
+      operatorId: 'operator_1',
       operatorConfirmed: true,
       targetTaskId: 'task_decision_1',
     });
@@ -55,7 +63,10 @@ describe('scheduler decision proposal contract', () => {
       approvalItemAllowed: true,
       approvalQueueSurface: 'unknown',
       decisionPersistenceAllowed: false,
+      operatorId: 'operator_1',
       schedulerTriggerAllowed: false,
+      standingApprovalPolicyId: null,
+      standingApprovalScopeTaskId: null,
       writebackDispatchAllowed: false,
       authorizations: ['operator_confirmation'],
       targetTaskId: 'task_decision_1',
@@ -72,6 +83,8 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('proposalRequirements=3/3');
     expect(plan.summary).toContain('approvalQueueSurface=unknown');
     expect(plan.summary).toContain('authorization=operator_confirmation');
+    expect(plan.summary).toContain('operatorId=operator_1');
+    expect(plan.summary).toContain('standingApprovalPolicyId=missing');
     expect(plan.summary).toContain('targetTask=task_decision_1');
     expect(plan.summary).toContain('missingRequirements=none');
     expect(plan.summary).toContain('proposalMissingRequirements=none');
@@ -82,6 +95,8 @@ describe('scheduler decision proposal contract', () => {
     const plan = planSchedulerDecisionProposal({
       approvalQueueConnected: true,
       standingApprovalActive: true,
+      standingApprovalPolicyId: 'policy_2',
+      standingApprovalScopeTaskId: 'task_decision_2',
       targetTaskId: 'task_decision_2',
     });
 
@@ -90,7 +105,10 @@ describe('scheduler decision proposal contract', () => {
       approvalItemAllowed: true,
       approvalQueueSurface: 'unknown',
       decisionPersistenceAllowed: false,
+      operatorId: null,
       schedulerTriggerAllowed: false,
+      standingApprovalPolicyId: 'policy_2',
+      standingApprovalScopeTaskId: 'task_decision_2',
       writebackDispatchAllowed: false,
       authorizations: ['standing_approval'],
       targetTaskId: 'task_decision_2',
@@ -104,6 +122,9 @@ describe('scheduler decision proposal contract', () => {
     });
     expect(plan.summary).toContain('requirements=3/3');
     expect(plan.summary).toContain('authorization=standing_approval');
+    expect(plan.summary).toContain('standingApprovalPolicyId=policy_2');
+    expect(plan.summary).toContain('standingApprovalScopeTask=task_decision_2');
+    expect(plan.summary).toContain('standingApprovalActive=yes');
   });
 
   it('derives scheduler Decision proposal readiness from structured service evidence', () => {
@@ -127,6 +148,9 @@ describe('scheduler decision proposal contract', () => {
       decisionPersistenceAllowed: false,
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
+      operatorId: null,
+      standingApprovalPolicyId: 'policy_1',
+      standingApprovalScopeTaskId: 'task_other',
       satisfiedRequirements: [
         'approval_queue',
         'target_task_identity',
@@ -136,6 +160,9 @@ describe('scheduler decision proposal contract', () => {
     expect(partial.summary).toContain('requirements=2/3');
     expect(partial.summary).toContain('approvalQueueSurface=task_dynamics');
     expect(partial.summary).toContain('authorization=missing');
+    expect(partial.summary).toContain('standingApprovalPolicyId=policy_1');
+    expect(partial.summary).toContain('standingApprovalScopeTask=task_other');
+    expect(partial.summary).toContain('standingApprovalActive=no');
 
     const ready = planSchedulerDecisionProposalFromEvidence({
       approvalQueue: {
@@ -161,6 +188,9 @@ describe('scheduler decision proposal contract', () => {
       decisionPersistenceAllowed: false,
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
+      operatorId: 'operator_1',
+      standingApprovalPolicyId: 'policy_1',
+      standingApprovalScopeTaskId: 'task_decision_3',
       authorizations: [
         'operator_confirmation',
         'standing_approval',
@@ -176,5 +206,9 @@ describe('scheduler decision proposal contract', () => {
     expect(ready.summary).toContain('requirements=3/3');
     expect(ready.summary).toContain('approvalQueueSurface=task_dynamics');
     expect(ready.summary).toContain('authorization=operator_confirmation,standing_approval');
+    expect(ready.summary).toContain('operatorId=operator_1');
+    expect(ready.summary).toContain('standingApprovalPolicyId=policy_1');
+    expect(ready.summary).toContain('standingApprovalScopeTask=task_decision_3');
+    expect(ready.summary).toContain('standingApprovalActive=yes');
   });
 });

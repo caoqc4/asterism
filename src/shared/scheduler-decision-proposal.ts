@@ -7,7 +7,10 @@ export type SchedulerDecisionProposalPlan = {
   approvalItemAllowed: boolean;
   approvalQueueSurface: 'task_dynamics' | 'right_panel' | 'unknown' | null;
   decisionPersistenceAllowed: false;
+  operatorId: string | null;
   schedulerTriggerAllowed: false;
+  standingApprovalPolicyId: string | null;
+  standingApprovalScopeTaskId: string | null;
   writebackDispatchAllowed: false;
   authorizations: SchedulerDecisionProposalAuthorization[];
   blockedReasons: string[];
@@ -50,8 +53,11 @@ export function schedulerDecisionProposalRequirements(): SchedulerDecisionPropos
 export function planSchedulerDecisionProposal(params: {
   approvalQueueConnected?: boolean;
   approvalQueueSurface?: 'task_dynamics' | 'right_panel' | 'unknown' | null;
+  operatorId?: string | null;
   operatorConfirmed?: boolean;
   standingApprovalActive?: boolean;
+  standingApprovalPolicyId?: string | null;
+  standingApprovalScopeTaskId?: string | null;
   targetTaskId?: string | null;
 } = {}): SchedulerDecisionProposalPlan {
   const authorizations = [
@@ -82,13 +88,19 @@ export function planSchedulerDecisionProposal(params: {
   const status = approvalItemAllowed ? 'ready' : 'blocked';
   const missingRequirementSet = new Set(missingRequirements);
   const satisfiedRequirements = requiredRequirements.filter((requirement) => !missingRequirementSet.has(requirement));
+  const operatorId = params.operatorConfirmed ? (params.operatorId?.trim() || null) : null;
+  const standingApprovalPolicyId = params.standingApprovalPolicyId?.trim() || null;
+  const standingApprovalScopeTaskId = params.standingApprovalScopeTaskId?.trim() || null;
 
   return {
     status,
     approvalItemAllowed,
     approvalQueueSurface: params.approvalQueueConnected ? (params.approvalQueueSurface ?? 'unknown') : null,
     decisionPersistenceAllowed: false,
+    operatorId,
     schedulerTriggerAllowed: false,
+    standingApprovalPolicyId,
+    standingApprovalScopeTaskId,
     writebackDispatchAllowed: false,
     authorizations,
     blockedReasons,
@@ -108,6 +120,10 @@ export function planSchedulerDecisionProposal(params: {
       'writebackDispatchAllowed=false',
       'schedulerTriggerAllowed=false',
       `authorization=${authorizations.length ? authorizations.join(',') : 'missing'}`,
+      `operatorId=${operatorId ?? 'missing'}`,
+      `standingApprovalPolicyId=${standingApprovalPolicyId ?? 'missing'}`,
+      `standingApprovalScopeTask=${standingApprovalScopeTaskId ?? 'missing'}`,
+      `standingApprovalActive=${params.standingApprovalActive ? 'yes' : 'no'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `proposalMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
@@ -133,8 +149,11 @@ export function planSchedulerDecisionProposalFromEvidence(
   return planSchedulerDecisionProposal({
     approvalQueueConnected: evidence.approvalQueue?.connected === true,
     approvalQueueSurface: evidence.approvalQueue?.surface ?? null,
+    operatorId: evidence.operatorConfirmation?.operatorId ?? null,
     operatorConfirmed,
     standingApprovalActive,
+    standingApprovalPolicyId: evidence.standingApproval?.policyId ?? null,
+    standingApprovalScopeTaskId: evidence.standingApproval?.scopeTaskId ?? null,
     targetTaskId,
   });
 }

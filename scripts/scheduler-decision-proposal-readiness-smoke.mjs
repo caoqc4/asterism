@@ -31,12 +31,15 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   const blocked = planSchedulerDecisionProposal();
   const operatorConfirmed = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
+    operatorId: 'operator_scheduler_decision_smoke',
     operatorConfirmed: true,
     targetTaskId: 'task_scheduler_decision_operator_smoke',
   });
   const standingApproval = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
     standingApprovalActive: true,
+    standingApprovalPolicyId: 'standing_policy_smoke',
+    standingApprovalScopeTaskId: 'task_scheduler_decision_standing_smoke',
     targetTaskId: 'task_scheduler_decision_standing_smoke',
   });
   const serviceEvidencePartial = planSchedulerDecisionProposalFromEvidence({
@@ -62,6 +65,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`operatorConfirmedRequirements=${operatorConfirmed.satisfiedRequirements.length}/3`);
   console.log(`operatorConfirmedApprovalQueueSurface=${operatorConfirmed.approvalQueueSurface ?? 'missing'}`);
   console.log(`operatorConfirmedAuthorization=${operatorConfirmed.authorizations.join(',') || 'none'}`);
+  console.log(`operatorConfirmedOperatorId=${operatorConfirmed.operatorId ?? 'missing'}`);
   console.log(`operatorConfirmedDecisionPersistenceAllowed=${String(operatorConfirmed.decisionPersistenceAllowed)}`);
   console.log(`operatorConfirmedWritebackDispatchAllowed=${String(operatorConfirmed.writebackDispatchAllowed)}`);
   console.log(`operatorConfirmedSchedulerTriggerAllowed=${String(operatorConfirmed.schedulerTriggerAllowed)}`);
@@ -70,6 +74,8 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`standingApprovalRequirements=${standingApproval.satisfiedRequirements.length}/3`);
   console.log(`standingApprovalApprovalQueueSurface=${standingApproval.approvalQueueSurface ?? 'missing'}`);
   console.log(`standingApprovalAuthorization=${standingApproval.authorizations.join(',') || 'none'}`);
+  console.log(`standingApprovalPolicyId=${standingApproval.standingApprovalPolicyId ?? 'missing'}`);
+  console.log(`standingApprovalScopeTask=${standingApproval.standingApprovalScopeTaskId ?? 'missing'}`);
   console.log(`standingApprovalDecisionPersistenceAllowed=${String(standingApproval.decisionPersistenceAllowed)}`);
   console.log(`standingApprovalWritebackDispatchAllowed=${String(standingApproval.writebackDispatchAllowed)}`);
   console.log(`standingApprovalSchedulerTriggerAllowed=${String(standingApproval.schedulerTriggerAllowed)}`);
@@ -81,6 +87,8 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/3`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceApprovalQueueSurface=${serviceEvidencePartial.approvalQueueSurface ?? 'missing'}`);
+  console.log(`serviceEvidenceStandingApprovalPolicyId=${serviceEvidencePartial.standingApprovalPolicyId ?? 'missing'}`);
+  console.log(`serviceEvidenceStandingApprovalScopeTask=${serviceEvidencePartial.standingApprovalScopeTaskId ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionPersistenceAllowed=${String(serviceEvidencePartial.decisionPersistenceAllowed)}`);
   console.log(`serviceEvidenceWritebackDispatchAllowed=${String(serviceEvidencePartial.writebackDispatchAllowed)}`);
   console.log(`serviceEvidenceSchedulerTriggerAllowed=${String(serviceEvidencePartial.schedulerTriggerAllowed)}`);
@@ -89,6 +97,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     blocked.approvalItemAllowed
     || !operatorConfirmed.approvalItemAllowed
     || !standingApproval.approvalItemAllowed
+    || operatorConfirmed.operatorId !== 'operator_scheduler_decision_smoke'
+    || standingApproval.standingApprovalPolicyId !== 'standing_policy_smoke'
+    || standingApproval.standingApprovalScopeTaskId !== 'task_scheduler_decision_standing_smoke'
     || operatorConfirmed.decisionPersistenceAllowed
     || operatorConfirmed.writebackDispatchAllowed
     || operatorConfirmed.schedulerTriggerAllowed
@@ -97,6 +108,8 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || standingApproval.schedulerTriggerAllowed
     || serviceEvidencePartial.approvalItemAllowed
     || serviceEvidencePartial.approvalQueueSurface !== 'task_dynamics'
+    || serviceEvidencePartial.standingApprovalPolicyId !== 'standing_policy_1'
+    || serviceEvidencePartial.standingApprovalScopeTaskId !== 'task_scheduler_decision_other'
     || serviceEvidencePartial.satisfiedRequirements.length !== 2
     || !serviceEvidencePartial.missingRequirements.includes('authorization')
     || serviceEvidencePartial.decisionPersistenceAllowed
