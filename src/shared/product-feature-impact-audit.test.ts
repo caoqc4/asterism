@@ -757,7 +757,12 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
     expect(capabilities?.evidence.join(' ')).toContain('provider configuration alone stays providerToolReadiness=not_declared');
+    expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now derives Agent API Runtime providerToolReadiness');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness smoke');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements=3/5');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration');
     expect(capabilities?.evidence.join(' ')).toContain('service-evidence=3/5 requirements');
     expect(capabilities?.evidence.join(' ')).toContain('provider_owned_metadata and explicit_tool_declaration missing');
     expect(capabilities?.evidence.join(' ')).toContain('runtimeExecutable=no');

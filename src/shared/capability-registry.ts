@@ -5,6 +5,7 @@ import {
   agentApiDecompositionPromotionRequirements,
   agentApiExecutionPromotionRequirements,
 } from './ai-runtime-invocation.js';
+import { evaluateAgentApiProviderToolReadinessFromEvidence } from './agent-api-provider-tool-readiness.js';
 import {
   RUNTIME_ENTRYPOINT_COVERAGE,
   requiredRuntimeEntrypointGatesForKind,
@@ -521,6 +522,14 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
   const selected = snapshot?.executionRuntime.kind === 'agent_api';
   const providerConfigured = Boolean(snapshot?.model.configured);
   const availableForSelectedProviderPhases = selected && providerConfigured;
+  const providerToolReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+    providerConfigured,
+    selectedRuntime: {
+      mode: selected ? 'api' : 'none',
+      runtimeKind: selected ? 'agent_api' : 'none',
+    },
+    startupProbe: 'never',
+  });
   return {
     id: 'agent_api.runtime',
     label: 'Agent API Runtime',
@@ -542,7 +551,9 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       agentApiExecutionRunPromotionSummary(),
       agentApiExecutionRunGateSummary(),
       agentApiDecompositionPromotionSummary(),
-      'providerToolReadiness=not_declared',
+      `providerToolReadiness=${providerToolReadiness.toolReadiness}`,
+      `providerToolRequirements=${providerToolReadiness.satisfiedRequirements.length}/${providerToolReadiness.satisfiedRequirements.length + providerToolReadiness.missingRequirements.length}`,
+      `providerToolMissingRequirements=${providerToolReadiness.missingRequirements.join(',') || 'none'}`,
       'startupProbe=never',
       selected ? 'selected=true' : null,
       providerConfigured ? 'provider=configured' : 'provider=missing',

@@ -76,6 +76,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`capabilityAccess=${agentApiRuntime.access}`);
   console.log(`requiresApproval=${String(agentApiRuntime.requiresApproval)}`);
   console.log(`providerToolReadiness=${scalarValue(agentApiRuntime.summary, 'providerToolReadiness') ?? 'missing'}`);
+  console.log(`providerToolRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolRequirements') ?? 'missing'}`);
+  console.log(`providerToolMissingRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolMissingRequirements') ?? 'missing'}`);
   console.log(`startupProbe=${scalarValue(agentApiRuntime.summary, 'startupProbe') ?? 'missing'}`);
   console.log(`executionRun=${scalarValue(agentApiRuntime.summary, 'executionRun') ?? 'missing'}`);
   console.log(`executionRunPromotionRequirements=${scalarValue(agentApiRuntime.summary, 'executionRunPromotionRequirements') ?? 'missing'}`);
@@ -103,6 +105,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     || agentApiRuntime.access !== 'mutating'
     || agentApiRuntime.requiresApproval !== true
     || !agentApiRuntime.summary.includes('providerToolReadiness=not_declared')
+    || !agentApiRuntime.summary.includes('providerToolRequirements=3/5')
+    || !agentApiRuntime.summary.includes('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration')
     || !agentApiRuntime.summary.includes('startupProbe=never')
     || !agentApiRuntime.summary.includes('executionRun=deferred')
     || serviceEvidenceReadiness.status !== 'not_declared'
