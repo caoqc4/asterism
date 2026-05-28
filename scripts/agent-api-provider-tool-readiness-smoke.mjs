@@ -89,6 +89,9 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerToolStatus=${providerToolStatus}`);
   console.log(`providerToolRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolRequirements') ?? 'missing'}`);
   console.log(`providerToolMissingRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolMissingRequirements') ?? 'missing'}`);
+  console.log(`providerMetadataOwner=${scalarValue(agentApiRuntime.summary, 'providerMetadataOwner') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') ?? 'missing'}`);
+  console.log(`explicitToolDeclarationSource=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclarationSource') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
+  console.log(`declaredToolCount=${scalarValue(agentApiRuntime.summary, 'declaredToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
   console.log(`startupProbe=${scalarValue(agentApiRuntime.summary, 'startupProbe') ?? 'missing'}`);
   console.log(`executionRun=${scalarValue(agentApiRuntime.summary, 'executionRun') ?? 'missing'}`);
   console.log(`executionRunPromotionRequirements=${scalarValue(agentApiRuntime.summary, 'executionRunPromotionRequirements') ?? 'missing'}`);
@@ -98,6 +101,9 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`serviceEvidenceProviderToolReadiness=${serviceEvidenceReadiness.toolReadiness}`);
   console.log(`serviceEvidenceProviderToolRequirements=${serviceEvidenceReadiness.satisfiedRequirements.length}/5`);
   console.log(`serviceEvidenceProviderToolMissingRequirements=${serviceEvidenceReadiness.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceProviderMetadataOwner=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') ?? 'missing'}`);
+  console.log(`serviceEvidenceExplicitToolDeclarationSource=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
+  console.log(`serviceEvidenceDeclaredToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
 
   if (
     snapshot.executionRuntime.kind !== 'agent_api'
@@ -110,6 +116,9 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     || providerToolStatus !== 'not_declared'
     || !agentApiRuntime.summary.includes('providerToolRequirements=3/5')
     || !agentApiRuntime.summary.includes('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration')
+    || serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') !== 'missing'
+    || serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'missing'
+    || serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') !== '0'
     || !agentApiRuntime.summary.includes('startupProbe=never')
     || !agentApiRuntime.summary.includes('executionRun=deferred')
     || serviceEvidenceReadiness.status !== 'not_declared'
@@ -129,6 +138,10 @@ function scalarValue(summary, key) {
   const prefix = `${key}=`;
   const part = summary.split(' / ').find((item) => item.startsWith(prefix));
   return part?.slice(prefix.length).trim() ?? null;
+}
+
+function serviceScalarValue(summary, key) {
+  return scalarValue(summary, key);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

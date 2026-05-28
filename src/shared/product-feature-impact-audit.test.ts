@@ -810,6 +810,9 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements');
+    expect(capabilities?.evidence.join(' ')).toContain('providerMetadataOwner');
+    expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclarationSource');
+    expect(capabilities?.evidence.join(' ')).toContain('declaredToolCount');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness smoke');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements=3/5');

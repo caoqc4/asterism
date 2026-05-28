@@ -29,6 +29,9 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerToolReadiness=not_declared');
     expect(readiness.summary).toContain('requirements=3/5');
     expect(readiness.summary).toContain('startupProbe=never');
+    expect(readiness.summary).toContain('providerMetadataOwner=missing');
+    expect(readiness.summary).toContain('explicitToolDeclarationSource=missing');
+    expect(readiness.summary).toContain('declaredToolCount=0');
   });
 
   it('requires provider-owned metadata and explicit declarations before reporting tools declared', () => {
@@ -64,6 +67,10 @@ describe('Agent API provider tool readiness', () => {
     });
     expect(readiness.summary).toContain('providerToolReadiness=declared');
     expect(readiness.summary).toContain('requirements=5/5');
+    expect(readiness.summary).toContain('providerMetadataOwner=openai');
+    expect(readiness.summary).toContain('providerMetadataPackage=@openai/agents');
+    expect(readiness.summary).toContain('explicitToolDeclarationSource=provider_owned_metadata');
+    expect(readiness.summary).toContain('declaredToolCount=1');
   });
 
   it('blocks readiness when a startup probe would be needed to discover tools', () => {
@@ -94,5 +101,7 @@ describe('Agent API provider tool readiness', () => {
       ],
     });
     expect(readiness.summary).toContain('startupProbe=called');
+    expect(readiness.summary).toContain('explicitToolDeclarationSource=runtime_probe');
+    expect(readiness.summary).toContain('declaredToolCount=1');
   });
 });

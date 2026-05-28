@@ -590,6 +590,15 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       `providerToolStatus=${providerToolReadiness.status}`,
       `providerToolRequirements=${providerToolReadiness.satisfiedRequirements.length}/${providerToolReadiness.satisfiedRequirements.length + providerToolReadiness.missingRequirements.length}`,
       `providerToolMissingRequirements=${providerToolReadiness.missingRequirements.join(',') || 'none'}`,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataOwner')
+        ? `providerMetadataOwner=${scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataOwner')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationSource')
+        ? `explicitToolDeclarationSource=${scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationSource')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'declaredToolCount')
+        ? `declaredToolCount=${scalarSummaryValue(providerToolReadiness.summary, 'declaredToolCount')}`
+        : null,
       'startupProbe=never',
       selected ? 'selected=true' : null,
       providerConfigured ? 'provider=configured' : 'provider=missing',
@@ -604,6 +613,12 @@ function agentApiExecutionRunPromotionSummary(): string {
     `executionRunPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
     `executionRunMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
   ].join(' / ');
+}
+
+function scalarSummaryValue(summary: string, key: string): string | null {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.startsWith(prefix));
+  return part?.slice(prefix.length).trim() ?? null;
 }
 
 function agentApiExecutionRunGateSummary(): string {
