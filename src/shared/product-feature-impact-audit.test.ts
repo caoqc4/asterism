@@ -331,6 +331,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('operator-started runs return blocked recovery evidence instead of throwing to IPC');
     expect(decisions?.evidence.join(' ')).toContain('completed runs without reviewable output or failureReason');
     expect(decisions?.evidence.join(' ')).toContain('terminalEvidenceDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toContain('duplicate task-source candidates now skip duplicate runtime starts');
+    expect(decisions?.evidence.join(' ')).toContain('duplicateCandidateDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('stale-run recovery now routes each recovered run');
     expect(decisions?.evidence.join(' ')).toContain('staleRunRecoveryDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
@@ -347,6 +349,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.gaps.join(' ')).toContain('no-target task-source failure policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated timeline-failure review policy');
     expect(decisions?.gaps.join(' ')).toContain('terminal-evidence review policy');
+    expect(decisions?.gaps.join(' ')).toContain('duplicate-candidate review policy');
     expect(decisions?.gaps.join(' ')).toContain('broader scheduler review policies');
     expect(decisions?.nextActions.join(' ')).toContain('remaining scheduled/event review policies');
     expect(decisions?.nextActions.join(' ')).toContain('deduplicated');
@@ -498,8 +501,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('Task Dynamics timeline port');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event task-source port');
     expect(workHabits?.evidence.join(' ')).toContain('missingPorts=run_port,timeline_port,task_source_port');
-    expect(workHabits?.evidence.join(' ')).toContain('increments the in-sweep run-limit count');
-    expect(workHabits?.evidence.join(' ')).toContain('duplicate candidates in one sweep cannot exceed the Standing Approval daily cap');
+    expect(workHabits?.evidence.join(' ')).toContain('deduplicates scheduled/event task candidates before runtime start');
+    expect(workHabits?.evidence.join(' ')).toContain('routes duplicate task-source evidence to a scheduler Decision proposal');
     expect(workHabits?.evidence.join(' ')).toContain('skipReason, checkedTaskIds, startedRunIds, blockedReasons, blockedTaskSummaries, runFailureReasons, automationMissingRequirements, automationSatisfiedRequirements, runtimeStartMissingRequirements, terminalRunEvidenceMissingRunIds, triggerRunEvidenceRequired, and triggerRunEvidenceStatus at the top level');
     expect(workHabits?.evidence.join(' ')).toContain('which automation-readiness requirements are satisfied or missing');
     expect(workHabits?.evidence.join(' ')).toContain('Brief now surfaces schedulerStatus.lastScheduledEventAgentSweepAt');
@@ -529,7 +532,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event Agent sweep smoke');
     expect(workHabits?.evidence.join(' ')).toContain('checked=2 duplicate candidates');
     expect(workHabits?.evidence.join(' ')).toContain('checkedTaskIdsEvidence=passed');
-    expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by in-sweep run-limit counting');
+    expect(workHabits?.evidence.join(' ')).toContain('blocked=1 by duplicate candidate skip before runtime start');
+    expect(workHabits?.evidence.join(' ')).toContain('duplicateCandidateDecision=proposed');
     expect(workHabits?.evidence.join(' ')).toContain('skipReason=none');
     expect(workHabits?.evidence.join(' ')).toContain('startedRunIds evidence');
     expect(workHabits?.evidence.join(' ')).toContain('blockedReasons evidence');
@@ -537,7 +541,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runFailureReasons evidence');
     expect(workHabits?.evidence.join(' ')).toContain('automationMissingRequirements evidence');
     expect(workHabits?.evidence.join(' ')).toContain('automationSatisfiedRequirements evidence');
-    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=passed');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceRequired evidence');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
@@ -677,7 +681,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('terminalTimelineWorkspaceBoundary=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('cronTimelineWorkspaceBoundary=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('startupSweepJobEvidence=recorded');
-    expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds=none');
+    expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_event_sweep_smoke');
     expect(workHabits?.evidence.join(' ')).toContain('provider=not-called');
     expect(workHabits?.cliOnlyClosure).toBe('supported');
     expect(workHabits?.gaps.join(' ')).toContain('CLI-first packaged scheduled/event Agent path is now supported');

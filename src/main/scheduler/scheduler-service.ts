@@ -293,6 +293,37 @@ function hasSchedulerDecisionProposalSince(
   });
 }
 
+function dedupeScheduledEventAgentTasks(
+  tasks: ScheduledEventAgentTaskInput[],
+): {
+  duplicateTaskIds: string[];
+  duplicateTasks: ScheduledEventAgentTaskInput[];
+  uniqueTasks: ScheduledEventAgentTaskInput[];
+} {
+  const seen = new Set<string>();
+  const duplicateTaskIds: string[] = [];
+  const duplicateTaskMap = new Map<string, ScheduledEventAgentTaskInput>();
+  const uniqueTasks: ScheduledEventAgentTaskInput[] = [];
+
+  for (const task of tasks) {
+    if (seen.has(task.id)) {
+      duplicateTaskIds.push(task.id);
+      if (!duplicateTaskMap.has(task.id)) {
+        duplicateTaskMap.set(task.id, task);
+      }
+      continue;
+    }
+    seen.add(task.id);
+    uniqueTasks.push(task);
+  }
+
+  return {
+    duplicateTaskIds,
+    duplicateTasks: Array.from(duplicateTaskMap.values()),
+    uniqueTasks,
+  };
+}
+
 export class SchedulerService {
   private jobs: ScheduledTask[] = [];
   private started = false;
@@ -450,17 +481,22 @@ export class SchedulerService {
     try {
       const tasks = await taskSourcePort.listScheduledEventAgentTriggerCandidates();
       checkedTaskIds = tasks.map((task) => task.id);
-      const runCounts = await this.countRunsStartedToday(checkedTaskIds, now);
+      const { duplicateTaskIds, duplicateTasks, uniqueTasks } = dedupeScheduledEventAgentTasks(tasks);
+      const uniqueTaskIds = uniqueTasks.map((task) => task.id);
+      const runCounts = await this.countRunsStartedToday(uniqueTaskIds, now);
       const results: ScheduledEventAgentTriggerResult[] = [];
+      const plansByTaskId = new Map<string, AgentScheduledEventTriggerPlan>();
       const runLimitDecisionProposalStatuses: string[] = [];
       const runLimitAccountingDecisionProposalStatuses: string[] = [];
       const readinessDecisionProposalStatuses: string[] = [];
+      const duplicateCandidateDecisionProposalStatuses: string[] = [];
 
-      for (const task of tasks) {
+      for (const task of uniqueTasks) {
         activeSweepTask = task;
         const result = await this.triggerScheduledEventAgentRun(task, now, runCounts, kind, 'throw_sweep_error');
         activeSweepTask = null;
         results.push(result);
+        plansByTaskId.set(task.id, result.plan);
         if (result.status === 'started') {
           runCounts[task.id] = (runCounts[task.id] ?? 0) + 1;
         } else if (isScheduledEventDailyRunLimitBlocked(result)) {
@@ -487,16 +523,35 @@ export class SchedulerService {
         }
       }
 
+      for (const task of duplicateTasks) {
+        const plan = plansByTaskId.get(task.id);
+        if (!plan) continue;
+        const proposal = await this.proposeScheduledEventDuplicateCandidateDecision(task, plan, duplicateTaskIds, now)
+          .catch((error: unknown) => ({
+            status: 'failed' as const,
+            summary: `duplicateCandidateDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+          }));
+        duplicateCandidateDecisionProposalStatuses.push(proposal.status);
+      }
+
       const startedRunCount = results.filter((result) => result.status === 'started').length;
-      const blockedTaskCount = results.length - startedRunCount;
+      const blockedTaskCount = results.length - startedRunCount + duplicateTaskIds.length;
       const startedRunIds = results.flatMap((result) => result.status === 'started' && result.run ? [result.run.id] : []);
-      const blockedReasons = results.flatMap((result) => result.status === 'blocked' ? result.plan.blockedReasons : []);
-      const blockedTaskSummaries = results.flatMap((result, index) => {
+      const duplicateBlockedReasons = duplicateTaskIds.map((taskId) =>
+        `Duplicate scheduled/event candidate skipped for task ${taskId}.`);
+      const blockedReasons = [
+        ...results.flatMap((result) => result.status === 'blocked' ? result.plan.blockedReasons : []),
+        ...duplicateBlockedReasons,
+      ];
+      const blockedTaskSummaries = [
+        ...results.flatMap((result, index) => {
         if (result.status !== 'blocked') return [];
-        const taskId = tasks[index]?.id ?? 'unknown';
+        const taskId = uniqueTasks[index]?.id ?? 'unknown';
         const reasons = result.plan.blockedReasons.length ? result.plan.blockedReasons.join('; ') : 'unknown';
         return [`${taskId}: ${reasons}`];
-      });
+        }),
+        ...duplicateTaskIds.map((taskId) => `${taskId}: duplicate scheduled/event candidate skipped before runtime start`),
+      ];
       const runFailureReasons = results.flatMap((result) =>
         result.status === 'started' && result.run?.failureReason?.trim()
           ? [`${result.run.id}: ${result.run.failureReason.trim()}`]
@@ -547,6 +602,8 @@ export class SchedulerService {
         `runLimitDecisionProposals=${runLimitDecisionProposalStatuses.length ? runLimitDecisionProposalStatuses.join(',') : 'none'}`,
         `runLimitAccountingDecisionProposals=${runLimitAccountingDecisionProposalStatuses.length ? runLimitAccountingDecisionProposalStatuses.join(',') : 'none'}`,
         `readinessDecisionProposals=${readinessDecisionProposalStatuses.length ? readinessDecisionProposalStatuses.join(',') : 'none'}`,
+        `duplicateCandidateTaskIds=${duplicateTaskIds.length ? duplicateTaskIds.join(',') : 'none'}`,
+        `duplicateCandidateDecisionProposals=${duplicateCandidateDecisionProposalStatuses.length ? duplicateCandidateDecisionProposalStatuses.join(',') : 'none'}`,
         `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
         `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
         `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
@@ -1072,6 +1129,40 @@ export class SchedulerService {
         `Scheduled/event Agent readiness is blocked for task ${task.id}.`,
         `Missing requirements: ${missingRequirements}.`,
         'Taskplane should confirm whether to repair task context, pause automation, or adjust the preparation boundary before more background work continues.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
+    });
+  }
+
+  private async proposeScheduledEventDuplicateCandidateDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    duplicateTaskIds: string[],
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent 候选任务重复后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'duplicateCandidateDecisionProposal=skipped_existing',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      options: [
+        '修复任务来源去重后下次 sweep 再运行',
+        '保留本次首个 Run 并人工复核候选来源',
+        '暂停该任务自动触发并检查调度规则',
+      ],
+      proposedOutcome: '修复任务来源去重后下次 sweep 再运行',
+      rationale: [
+        `Scheduled/event Agent sweep returned duplicate candidates for task ${task.id}.`,
+        `Duplicate task ids: ${duplicateTaskIds.join(',') || task.id}.`,
+        'Taskplane skipped duplicate candidates before runtime start so Standing Approval capacity is not spent twice in the same sweep.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
       standingApprovalPolicyId: plan.policy?.id ?? null,

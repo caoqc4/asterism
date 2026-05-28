@@ -1437,7 +1437,7 @@ describe('SchedulerService', () => {
     expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
   });
 
-  it('counts runs started earlier in the same scheduled/event sweep against the daily limit', async () => {
+  it('skips duplicate scheduled/event candidates before a second runtime start', async () => {
     const task = buildAutomationTaskDetail({
       timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2 })],
     });
@@ -1501,8 +1501,8 @@ describe('SchedulerService', () => {
       startedRunCount: 1,
       blockedTaskCount: 1,
       startedRunIds: ['run_scheduled_cron_1'],
-      blockedTaskSummaries: ['task_auto: Scheduled/event trigger daily run limit reached: 2/2.'],
-      runtimeStartMissingRequirements: ['trigger_plan_ready'],
+      blockedTaskSummaries: ['task_auto: duplicate scheduled/event candidate skipped before runtime start'],
+      runtimeStartMissingRequirements: [],
       terminalRunEvidenceMissingRunIds: ['run_scheduled_cron_1'],
       triggerRunEvidenceRequired: [
         'context_readiness',
@@ -1516,16 +1516,30 @@ describe('SchedulerService', () => {
       triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
     });
     expect(sweepResult.summary).toContain('checkedTaskIds=task_auto,task_auto');
-    expect(sweepResult.blockedReasons).toContain('Scheduled/event trigger daily run limit reached: 2/2.');
+    expect(sweepResult.blockedReasons).toContain('Duplicate scheduled/event candidate skipped for task task_auto.');
     expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
-    expect(sweepResult.summary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 2/2.');
-    expect(sweepResult.summary).toContain('blockedTaskSummaries=task_auto: Scheduled/event trigger daily run limit reached: 2/2.');
-    expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready');
+    expect(sweepResult.summary).toContain('blockedReasons=Duplicate scheduled/event candidate skipped for task task_auto.');
+    expect(sweepResult.summary).toContain('blockedTaskSummaries=task_auto: duplicate scheduled/event candidate skipped before runtime start');
+    expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=none');
+    expect(sweepResult.summary).toContain('duplicateCandidateTaskIds=task_auto');
+    expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('runLimitDecisionProposals=none');
     expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
-    expect(sweepResult.summary).toContain('runLimitDecisionProposals=proposed');
-    expect(sweepResult.summaries.join(' ')).toContain('daily run limit reached: 2/2');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '修复任务来源去重后下次 sweep 再运行',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 候选任务重复后的下一步',
+      }),
+    }));
   });
 
   it('skips overlapping scheduled/event sweeps while one sweep is in flight', async () => {

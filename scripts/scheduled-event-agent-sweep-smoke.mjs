@@ -104,20 +104,21 @@ try {
   assert(result.checkedTaskCount === 2, 'sweep did not check the duplicate scheduled task candidates');
   assert(result.checkedTaskIds.join(',') === 'task_scheduled_event_sweep_smoke,task_scheduled_event_sweep_smoke', 'sweep did not expose checked task ids in top-level evidence');
   assert(result.startedRunCount === 1, 'sweep did not start exactly one bounded run');
-  assert(result.blockedTaskCount === 1, 'sweep did not block the duplicate task after the daily limit was reached');
+  assert(result.blockedTaskCount === 1, 'sweep did not block the duplicate task before a second runtime start');
   assert(result.startedRunIds.includes(run.id), 'sweep did not expose started run ids in top-level evidence');
-  assert(result.blockedReasons.includes('Scheduled/event trigger daily run limit reached: 3/3.'), 'sweep did not expose blocked reasons in top-level evidence');
-  assert(result.blockedTaskSummaries.includes('task_scheduled_event_sweep_smoke: Scheduled/event trigger daily run limit reached: 3/3.'), 'sweep did not expose blocked task summaries in top-level evidence');
-  assert(result.runtimeStartMissingRequirements.includes('trigger_plan_ready'), 'sweep did not expose runtime-start missing requirements in top-level evidence');
+  assert(result.blockedReasons.includes('Duplicate scheduled/event candidate skipped for task task_scheduled_event_sweep_smoke.'), 'sweep did not expose duplicate blocked reasons in top-level evidence');
+  assert(result.blockedTaskSummaries.includes('task_scheduled_event_sweep_smoke: duplicate scheduled/event candidate skipped before runtime start'), 'sweep did not expose duplicate blocked task summaries in top-level evidence');
+  assert(result.runtimeStartMissingRequirements.length === 0, 'duplicate candidate skip should not report runtime-start missing requirements');
   assert(result.automationMissingRequirements.length === 0, 'sweep should expose no automation-readiness missing requirements for ready candidates');
   assert(result.automationSatisfiedRequirements.includes('scheduled_event_entrypoint'), 'sweep did not expose satisfied scheduled/event entrypoint readiness');
   assert(result.terminalRunEvidenceMissingRunIds.includes(run.id), 'sweep did not expose missing terminal Run evidence in top-level evidence');
   assert(result.triggerRunEvidenceRequired.includes('context_readiness'), 'sweep did not expose trigger Run evidence requirements in top-level evidence');
   assert(result.triggerRunEvidenceStatus === 'pending_terminal_run_evidence', 'sweep did not expose pending trigger Run evidence status in top-level evidence');
-  assert(result.summaries.join('\n').includes('daily run limit reached: 3/3'), 'sweep did not enforce the in-sweep daily run limit');
+  assert(result.summary.includes('duplicateCandidateTaskIds=task_scheduled_event_sweep_smoke'), 'sweep summary did not expose duplicate candidate ids');
+  assert(result.summary.includes('duplicateCandidateDecisionProposals=proposed'), 'sweep summary did not expose duplicate candidate Decision proposal evidence');
   assert(result.summary.includes('automationMissingRequirements=none'), 'sweep summary did not expose automation missing requirements');
   assert(result.summary.includes('automationSatisfiedRequirements='), 'sweep summary did not expose automation satisfied requirements');
-  assert(result.summary.includes('runLimitDecisionProposals=proposed'), 'sweep summary did not expose run-limit Decision proposal evidence');
+  assert(result.summary.includes('runLimitDecisionProposals=none'), 'duplicate candidate skip should not rely on run-limit Decision proposal evidence');
   assert(result.summary.includes('scheduled_event_entrypoint'), 'sweep summary did not expose satisfied scheduled/event entrypoint readiness');
   assert(service.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T11:00:00.000Z', 'completed sweep did not preserve the trigger time in scheduler status');
   assert(service.getStatus().lastScheduledEventAgentSweepSummary === result.summary, 'sweep did not persist the manual sweep summary into scheduler status');
@@ -125,7 +126,7 @@ try {
   assert(sweepListenerEvents[0].summary === result.summary, 'sweep listener did not preserve completed manual sweep summary');
   assert(runLimitCountCalls.length === 1, 'sweep did not load durable run-limit counts exactly once');
   assert(runLimitCountCalls[0].sinceIso === '2026-05-26T00:00:00.000Z', 'sweep did not load durable run-limit counts from the UTC day start');
-  assert(runLimitCountCalls[0].taskIds.join(',') === 'task_scheduled_event_sweep_smoke,task_scheduled_event_sweep_smoke', 'sweep did not load durable run-limit counts for checked task ids');
+  assert(runLimitCountCalls[0].taskIds.join(',') === 'task_scheduled_event_sweep_smoke', 'sweep did not load durable run-limit counts for unique task ids');
   assert(triggerCalls.length === 1, 'sweep did not call the Code Agent trigger port exactly once');
   assert(triggerCalls[0].operatorConfirmed === true, 'sweep did not preserve Standing Approval as operator confirmation');
   assert(triggerCalls[0].useModelProducer === true, 'sweep did not route through the model-producer Code Agent path');
@@ -142,7 +143,7 @@ try {
   assert(triggerCalls[0].patchIntent.includes('Run limit: 2/3.'), 'sweep did not pass persisted run-limit state into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Post-step evidence: return terminal run output for Taskplane review.'), 'sweep did not pass post-step terminal evidence guidance into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Workspace write boundary: workspaceWriteAllowed=false; proposals only.'), 'sweep did not pass workspace-write boundary into the bounded run');
-  assert(timelineEvents.length === 2, 'sweep did not record trigger and run-limit Decision proposal timeline evidence');
+  assert(timelineEvents.length === 2, 'sweep did not record trigger and duplicate-candidate Decision proposal timeline evidence');
   assert(timelineEvents[0].type === 'panel.scheduled_event_agent_triggered', 'sweep recorded the wrong timeline event type');
   assert(timelineEvents[0].payload.runId === run.id, 'timeline evidence did not preserve the run id');
   assert(timelineEvents[0].payload.runStatus === 'running', 'timeline evidence did not preserve the run status returned by the trigger port');
@@ -168,10 +169,10 @@ try {
   assert(timelineEvents[0].payload.triggeredAt === '2026-05-26T11:00:00.000Z', 'timeline evidence did not preserve the scheduler trigger time');
   assert(timelineEvents[0].payload.runLimit?.runsStartedToday === 2, 'timeline evidence did not preserve the persisted run-limit count');
   assert(timelineEvents[0].payload.runLimit?.maxRunsPerDay === 3, 'timeline evidence did not preserve the Standing Approval run limit');
-  assert(timelineEvents[1].type === 'panel.scheduler_decision_proposed', 'sweep did not record run-limit Decision proposal evidence');
-  assert(timelineEvents[1].payload.targetTaskId === 'task_scheduled_event_sweep_smoke', 'run-limit Decision proposal did not preserve target task identity');
-  assert(timelineEvents[1].payload.title === '确认定时/事件 Agent 达到每日运行上限后的下一步', 'run-limit Decision proposal did not preserve the recovery title');
-  assert(timelineEvents[1].payload.proposedOutcome === '等待下一次运行窗口', 'run-limit Decision proposal did not preserve the recommendation');
+  assert(timelineEvents[1].type === 'panel.scheduler_decision_proposed', 'sweep did not record duplicate-candidate Decision proposal evidence');
+  assert(timelineEvents[1].payload.targetTaskId === 'task_scheduled_event_sweep_smoke', 'duplicate-candidate Decision proposal did not preserve target task identity');
+  assert(timelineEvents[1].payload.title === '确认定时/事件 Agent 候选任务重复后的下一步', 'duplicate-candidate Decision proposal did not preserve the recovery title');
+  assert(timelineEvents[1].payload.proposedOutcome === '修复任务来源去重后下次 sweep 再运行', 'duplicate-candidate Decision proposal did not preserve the recommendation');
   assert(beforeWorkspace === afterWorkspace, 'scheduled/event Agent sweep smoke mutated the workspace fixture');
 
   const missingTimelineTriggerCalls = [];
@@ -1392,7 +1393,7 @@ try {
     `cronSoakTriggerCalls=${cronSoakTriggerCalls.length}`,
     `cronSoakTimelineEvents=${cronSoakTimelineEvents.length}`,
     `startupSweepJobConnected=${startupStatus.scheduledEventAgentSweepJobConnected ? 'yes' : 'no'}`,
-    'duplicateRunLimit=blocked',
+    'duplicateCandidateDecision=proposed',
     'checkedTaskIdsEvidence=passed',
     'blockedTaskSummaryEvidence=passed',
     'triggerRunEvidence=passed',
