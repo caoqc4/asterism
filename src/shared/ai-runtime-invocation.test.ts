@@ -744,6 +744,10 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('configuredProvider=openai');
     expect(partial.summary).toContain('providerStartupProbe=not_called');
     expect(partial.summary).toContain('runId=missing');
+    expect(partial.summary).toContain('writeIntentRun=missing');
+    expect(partial.summary).toContain('writeIntentRunEvidenceChain=missing');
+    expect(partial.summary).toContain('writeIntentTask=missing');
+    expect(partial.summary).toContain('writeIntentTaskEvidenceChain=missing');
     expect(partial.summary).toContain('contextStep=step_context_ready');
     expect(partial.summary).toContain('contextManifest=task=task_1 / files=2');
     expect(partial.summary).toContain('writeIntentActions=none');
@@ -768,6 +772,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('configuredProvider=openai');
     expect(ready.summary).toContain('providerStartupProbe=not_called');
     expect(ready.summary).toContain('runId=run_api_execution');
+    expect(ready.summary).toContain('writeIntentRun=run_api_execution');
+    expect(ready.summary).toContain('writeIntentRunEvidenceChain=ready');
+    expect(ready.summary).toContain('writeIntentTask=task_1');
+    expect(ready.summary).toContain('writeIntentTaskEvidenceChain=ready');
     expect(ready.summary).toContain('taskMemoryGuidance=ready');
     expect(ready.summary).toContain('taskMemoryGuidanceCount=1');
     expect(ready.summary).toContain('runGoalConditions=1');
@@ -808,6 +816,46 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: ['write_intent_extraction'],
     });
     expect(artifactOnly.summary).toContain('writeIntentActions=artifact.propose');
+    expect(artifactOnly.summary).toContain('writeIntentRunEvidenceChain=missing');
+    expect(artifactOnly.summary).toContain('writeIntentTaskEvidenceChain=missing');
+  });
+
+  it('requires write intent extraction to belong to the same run and target task', () => {
+    const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      writeIntentExtraction: {
+        runId: 'run_other',
+        status: 'ready',
+        supportedActions: ['artifact.propose', 'task_file.propose'],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['write_intent_extraction'],
+    });
+    expect(wrongRun.summary).toContain('writeIntentRun=run_other');
+    expect(wrongRun.summary).toContain('writeIntentRunEvidenceChain=missing');
+    expect(wrongRun.summary).toContain('writeIntentTaskEvidenceChain=ready');
+
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      writeIntentExtraction: {
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: ['artifact.propose', 'task_file.propose'],
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['write_intent_extraction'],
+    });
+    expect(wrongTask.summary).toContain('writeIntentRunEvidenceChain=ready');
+    expect(wrongTask.summary).toContain('writeIntentTask=task_2');
+    expect(wrongTask.summary).toContain('writeIntentTaskEvidenceChain=missing');
   });
 
   it('requires provider-visible preflight to carry the configured provider identity', () => {
@@ -932,8 +980,10 @@ function completeAgentApiExecutionPromotionEvidence() {
       status: 'ready' as const,
     },
     writeIntentExtraction: {
+      runId: 'run_api_execution',
       status: 'ready' as const,
       supportedActions: ['artifact.propose', 'task_file.propose'],
+      taskId: 'task_1',
     },
   };
 }

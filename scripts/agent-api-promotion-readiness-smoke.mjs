@@ -125,8 +125,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
     },
     writeIntentExtraction: {
+      runId: 'run_api_execution',
       status: 'ready',
       supportedActions: ['artifact.propose'],
+      taskId: 'task_1',
     },
   });
 
@@ -155,6 +157,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceConfiguredProvider=${scalarValue(serviceEvidencePartial.summary, 'configuredProvider') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderStartupProbe=${scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') ?? 'missing'}`);
   console.log(`serviceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'runId') ?? 'missing'}`);
+  console.log(`serviceEvidenceWriteIntentRun=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') ?? 'missing'}`);
+  console.log(`serviceEvidenceWriteIntentRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceWriteIntentTask=${scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceWriteIntentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStep=${scalarValue(serviceEvidencePartial.summary, 'contextStep') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
@@ -162,6 +168,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`artifactOnlyPromotionReady=${serviceEvidenceArtifactOnly.ready ? 'yes' : 'no'}`);
   console.log(`artifactOnlyMissingRequirements=${serviceEvidenceArtifactOnly.missingRequirements.join(',') || 'none'}`);
   console.log(`artifactOnlyWriteIntentActions=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`artifactOnlyWriteIntentRunEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
+  console.log(`artifactOnlyWriteIntentTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentTaskEvidenceChain') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -177,6 +185,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'configuredProvider') !== 'openai'
     || scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') !== 'not_called'
     || scalarValue(serviceEvidencePartial.summary, 'runId') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'writeIntentTaskEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'contextStep') !== 'step_context_ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
@@ -184,6 +196,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || serviceEvidenceArtifactOnly.ready
     || !serviceEvidenceArtifactOnly.missingRequirements.includes('write_intent_extraction')
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') !== 'artifact.propose'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentTaskEvidenceChain') !== 'ready'
   ) {
     console.log('status=failed');
     return 1;

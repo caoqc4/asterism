@@ -461,8 +461,10 @@ export class RunService {
       },
       writeIntentExtraction: supportedWriteActions.length
         ? {
+            runId,
             status: 'ready',
             supportedActions: supportedWriteActions,
+            taskId: params.task.id,
           }
         : null,
     });

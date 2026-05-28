@@ -194,8 +194,10 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     status: 'missing' | 'ready';
   } | null;
   writeIntentExtraction?: {
+    runId?: string | null;
     status: 'missing' | 'ready';
     supportedActions: string[];
+    taskId?: string | null;
   } | null;
   postStepVerification?: {
     status: 'missing' | 'ready';
@@ -621,8 +623,15 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
   const runEvidenceId = evidence.runEvidencePersistence?.runId?.trim() || '';
   const runEvidenceTaskId = evidence.runEvidencePersistence?.taskId?.trim() || '';
+  const writeIntentRunId = evidence.writeIntentExtraction?.runId?.trim() || '';
+  const writeIntentTaskId = evidence.writeIntentExtraction?.taskId?.trim() || '';
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && (!runEvidenceId || runEvidenceTaskId === targetTaskId);
+  const writeIntentRunEvidenceChainReady = Boolean(writeIntentRunId)
+    && (!runEvidenceId || writeIntentRunId === runEvidenceId);
+  const writeIntentTaskEvidenceChainReady = Boolean(writeIntentTaskId)
+    && Boolean(targetTaskId)
+    && writeIntentTaskId === targetTaskId;
 
   if (
     selectedRuntime?.runtimeMode === 'api'
@@ -665,6 +674,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     evidence.writeIntentExtraction?.status === 'ready'
     && supportedWriteActions.includes('artifact.propose')
     && supportedWriteActions.includes('task_file.propose')
+    && writeIntentRunEvidenceChainReady
+    && writeIntentTaskEvidenceChainReady
   ) {
     satisfiedRequirements.push('write_intent_extraction');
   }
@@ -705,6 +716,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `configuredProvider=${configuredProvider || 'missing'}`,
       `providerStartupProbe=${evidence.providerVisiblePreflight?.startupProbe ?? 'missing'}`,
       `runId=${runEvidenceId || 'missing'}`,
+      `writeIntentRun=${writeIntentRunId || 'missing'}`,
+      `writeIntentRunEvidenceChain=${writeIntentRunEvidenceChainReady ? 'ready' : 'missing'}`,
+      `writeIntentTask=${writeIntentTaskId || 'missing'}`,
+      `writeIntentTaskEvidenceChain=${writeIntentTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `contextStep=${contextStepId || 'missing'}`,
       `contextManifest=${contextManifest || 'missing'}`,
       `taskMemoryGuidance=${evidence.taskMemoryGuidance?.status ?? 'missing'}`,
