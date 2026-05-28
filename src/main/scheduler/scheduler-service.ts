@@ -515,7 +515,7 @@ export class SchedulerService {
         results.flatMap((result) => result.plan.readiness.satisfiedRequirements),
       ));
       const terminalRunEvidenceMissingRunIds = results.flatMap((result) =>
-        result.status === 'started' && result.run && !isTerminalScheduledEventRunStatus(result.run.status)
+        result.status === 'started' && result.run && scheduledEventRunTerminalEvidenceStatus(result.run) !== 'present'
           ? [result.run.id]
           : []);
       const triggerRunEvidenceRequired = Array.from(new Set(
@@ -845,10 +845,8 @@ export class SchedulerService {
         );
       }
 
-      const terminalRunEvidenceStatus = isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending';
-      const triggerRunEvidenceStatus = terminalRunEvidenceStatus === 'present'
-        ? 'ready_for_terminal_review'
-        : 'pending_terminal_run_evidence';
+      const terminalRunEvidenceStatus = scheduledEventRunTerminalEvidenceStatus(run);
+      const triggerRunEvidenceStatus = scheduledEventTriggerRunEvidenceStatus(terminalRunEvidenceStatus);
       const runIdentityDecisionProposal = await this.proposeScheduledEventRunIdentityDecision(task, plan, run, errorMessage, now)
         .catch((error: unknown) => ({
           status: 'failed' as const,
@@ -874,10 +872,8 @@ export class SchedulerService {
           { plan, run, task },
         );
       });
-    const terminalRunEvidenceStatus = isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending';
-    const triggerRunEvidenceStatus = terminalRunEvidenceStatus === 'present'
-      ? 'ready_for_terminal_review'
-      : 'pending_terminal_run_evidence';
+    const terminalRunEvidenceStatus = scheduledEventRunTerminalEvidenceStatus(run);
+    const triggerRunEvidenceStatus = scheduledEventTriggerRunEvidenceStatus(terminalRunEvidenceStatus);
     const failureDecisionProposal = run.status === 'failed'
       ? await this.proposeScheduledEventFailureDecision(task, plan, run, now).catch((error: unknown) => ({
           status: 'failed' as const,
@@ -1193,10 +1189,8 @@ export class SchedulerService {
         runFailureReason: run.failureReason,
         runOutputSource: run.outputSource,
         runStatus: run.status,
-        terminalRunEvidenceStatus: isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending',
-        triggerRunEvidenceStatus: isTerminalScheduledEventRunStatus(run.status)
-          ? 'ready_for_terminal_review'
-          : 'pending_terminal_run_evidence',
+        terminalRunEvidenceStatus: scheduledEventRunTerminalEvidenceStatus(run),
+        triggerRunEvidenceStatus: scheduledEventTriggerRunEvidenceStatus(scheduledEventRunTerminalEvidenceStatus(run)),
         targetTaskId: task.id,
         planSummary: plan.summary,
         standingApprovalPolicyId: plan.policy?.id ?? null,
@@ -1343,4 +1337,18 @@ export class SchedulerService {
 
 function isTerminalScheduledEventRunStatus(status: RunRecord['status']): boolean {
   return status === 'completed' || status === 'failed';
+}
+
+function scheduledEventRunTerminalEvidenceStatus(run: RunRecord): ScheduledEventAgentTriggerResult['terminalRunEvidenceStatus'] {
+  if (!isTerminalScheduledEventRunStatus(run.status)) return 'pending';
+  return run.output?.trim() || run.failureReason?.trim() ? 'present' : 'pending';
+}
+
+function scheduledEventTriggerRunEvidenceStatus(
+  terminalRunEvidenceStatus: ScheduledEventAgentTriggerResult['terminalRunEvidenceStatus'],
+): ScheduledEventAgentTriggerResult['triggerRunEvidenceStatus'] {
+  if (terminalRunEvidenceStatus === 'not_started') return 'not_started';
+  return terminalRunEvidenceStatus === 'present'
+    ? 'ready_for_terminal_review'
+    : 'pending_terminal_run_evidence';
 }

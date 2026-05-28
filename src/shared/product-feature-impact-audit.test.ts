@@ -428,6 +428,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('operator feedback now includes the required trigger evidence items, run-limit usage, and proposal-mode write boundary');
     expect(workHabits?.evidence.join(' ')).toContain('without requiring the operator to open event detail first');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus and triggerRunEvidenceStatus for the single-run operator action');
+    expect(workHabits?.evidence.join(' ')).toContain('terminal run status plus reviewable output or failureReason');
+    expect(workHabits?.evidence.join(' ')).toContain('completed/failed runs without inspectable evidence remain pending_terminal_run_evidence');
     expect(workHabits?.evidence.join(' ')).toContain('panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunEvidenceStatus');
     expect(workHabits?.evidence.join(' ')).toContain('triggerRunEvidenceStatus');
