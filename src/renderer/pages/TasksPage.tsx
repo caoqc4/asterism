@@ -46,6 +46,7 @@ import {
   type PriorityRecommendationCandidate,
   type PriorityRecommendationTaskSignal,
 } from '@shared/priority-recommendation-ranking';
+import { evaluateAgentApiDecompositionPromotionReadinessFromEvidence } from '@shared/ai-runtime-invocation';
 import { buildSubtaskCreateManyWritebackApplyPlan } from '@shared/taskplane-writeback-apply-plan';
 import {
   buildTaskplaneWritebackApprovalItems,
@@ -2907,6 +2908,25 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
           title: subtask.title,
         })),
       });
+      const promotionReadiness = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+        applyPlan: plan,
+        parentTaskId: project.id,
+        reversibleProposalCard: {
+          proposalId: `project_decomposition:${project.id}`,
+          status: 'ready',
+        },
+        selectedRuntimeContract: draft.invocation
+          ? {
+              invocationLayer: draft.invocation.layer,
+              phase: draft.invocation.phase,
+              runtimeMode: draft.invocation.runtime.mode,
+            }
+          : null,
+      });
+      if (!promotionReadiness.ready) {
+        setProjectDecompositionError(promotionReadiness.summary);
+        return;
+      }
       const result = await window.api.applyTaskplaneWriteback({
         plan,
         taskId: project.id,

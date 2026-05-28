@@ -1073,6 +1073,16 @@ function createMockApi() {
       ],
       review: '子任务保持大块、边界清楚，暂不继续细拆。',
       nextStep: '确认是否创建这些子任务。',
+      invocation: {
+        phase: 'decomposition_draft',
+        layer: 'api_runtime',
+        runtime: {
+          mode: 'api',
+          label: 'Agent API Runtime 规划',
+        },
+        status: 'completed',
+        summary: '已生成 2 个项目子任务草稿。',
+      },
     }),
   };
 
