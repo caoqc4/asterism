@@ -745,6 +745,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionMissingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('operatorId');
+    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId');
+    expect(taskFiles?.evidence.join(' ')).toContain('promotionDecisionId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchRunId');
     expect(taskFiles?.evidence.join(' ')).toContain('decisionRunId');
     expect(taskFiles?.evidence.join(' ')).toContain('preflightRunId');
@@ -757,6 +759,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('sandbox.patch_promotion diagnostic summary');
     expect(taskFiles?.evidence.join(' ')).toContain('settings and safety-report surfaces show the selected-runtime, target-task, same-run artifact');
     expect(taskFiles?.evidence.join(' ')).toContain('Settings configuration safety rows now render sandbox.patch_promotion evidence chips');
+    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, promotionDecisionId, patchRunId, decisionRunId, preflightRunId, postApplyRunId');
     expect(taskFiles?.evidence.join(' ')).toContain('patch promotion routing identity');
     expect(taskFiles?.evidence.join(' ')).toContain('runtime patch promotion routing readiness smoke');
     expect(taskFiles?.evidence.join(' ')).toContain('blocked=2/8 requirements');

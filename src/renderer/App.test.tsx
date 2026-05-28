@@ -4965,7 +4965,7 @@ describe('App redesign v1', () => {
             id: 'sandbox.patch_promotion',
             state: 'approval_required',
             reason: 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.',
-            diagnosticSummary: 'Runtime patch promotion routing readiness / promotionReady=no / promotionRequirements=7/8 / selectedRuntimeContract=missing / targetTaskIdentity=ready / sameRunEvidenceChain=ready / explicitOperatorApply=ready / postApplyRunEvidence=ready / operatorId=local_operator / sameRunId=run_patch_1 / touchedFileCount=1 / touchedFiles=notes.md',
+            diagnosticSummary: 'Runtime patch promotion routing readiness / promotionReady=no / promotionRequirements=7/8 / selectedRuntimeContract=missing / targetTaskIdentity=ready / sameRunEvidenceChain=ready / explicitOperatorApply=ready / postApplyRunEvidence=ready / operatorId=local_operator / patchArtifactId=artifact_patch_1 / promotionDecisionId=decision_patch_1 / patchRunId=run_patch_1 / decisionRunId=run_patch_1 / preflightRunId=run_patch_1 / postApplyRunId=run_patch_1 / sameRunId=run_patch_1 / touchedFileCount=1 / touchedFiles=notes.md',
             requiresApproval: true,
             startupProbePolicy: 'manual_only',
             exposesSecretValue: false,
@@ -5022,6 +5022,12 @@ describe('App redesign v1', () => {
     expect(within(patchPromotionEvidence).getByText('explicitOperatorApply=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('postApplyRunEvidence=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('operatorId=local_operator')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('patchArtifactId=artifact_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('promotionDecisionId=decision_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('patchRunId=run_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('decisionRunId=run_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('preflightRunId=run_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('postApplyRunId=run_patch_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('sameRunId=run_patch_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('touchedFileCount=1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('touchedFiles=notes.md')).toBeTruthy();
