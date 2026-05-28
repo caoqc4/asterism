@@ -418,6 +418,7 @@ export class RunService {
       },
       providerVisiblePreflight: params.capabilities?.model.configured
         ? {
+            configuredProvider: params.capabilities.model.provider,
             providerConfigured: true,
             startupProbe: 'not_called',
             status: 'ready',

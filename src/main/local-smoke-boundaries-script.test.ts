@@ -773,6 +773,13 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('workspace=unchanged');
     expect(result.output).toContain('promotionInProduct=deferred');
+    if (result.output.includes('status=skip')) {
+      expect(result.output).toContain('skipReason=build_required');
+      return;
+    }
+    expect(result.output).toContain('serviceEvidenceProviderConfigured=ready');
+    expect(result.output).toContain('serviceEvidenceConfiguredProvider=openai');
+    expect(result.output).toContain('serviceEvidenceProviderStartupProbe=not_called');
   });
 
   it('keeps Agent API decomposition promotion readiness smoke read-only and build-gated by default', () => {

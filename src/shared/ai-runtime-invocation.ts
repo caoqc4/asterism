@@ -164,6 +164,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   } | null;
   gates?: Partial<Record<RuntimeEntrypointGate, boolean>>;
   providerVisiblePreflight?: {
+    configuredProvider?: string | null;
     providerConfigured: boolean;
     startupProbe: 'called' | 'never' | 'not_called';
     status: 'blocked' | 'ready' | 'skipped';
@@ -594,6 +595,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
+  const configuredProvider = evidence.providerVisiblePreflight?.configuredProvider?.trim() || '';
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
   const runEvidenceId = evidence.runEvidencePersistence?.runId?.trim() || '';
   const runEvidenceTaskId = evidence.runEvidencePersistence?.taskId?.trim() || '';
@@ -615,6 +617,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   if (
     evidence.providerVisiblePreflight?.status === 'ready'
     && evidence.providerVisiblePreflight.providerConfigured
+    && Boolean(configuredProvider)
     && evidence.providerVisiblePreflight.startupProbe !== 'called'
   ) {
     satisfiedRequirements.push('provider_visible_preflight');
@@ -675,6 +678,9 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `targetTask=${targetTaskId || 'missing'}`,
       `runEvidenceTask=${runEvidenceTaskId || 'missing'}`,
       `targetTaskEvidenceChain=${targetTaskIdentityReady ? 'ready' : 'missing'}`,
+      `providerConfigured=${evidence.providerVisiblePreflight?.providerConfigured === true ? 'ready' : 'missing'}`,
+      `configuredProvider=${configuredProvider || 'missing'}`,
+      `providerStartupProbe=${evidence.providerVisiblePreflight?.startupProbe ?? 'missing'}`,
       `runId=${runEvidenceId || 'missing'}`,
       `contextStep=${contextStepId || 'missing'}`,
       `contextManifest=${contextManifest || 'missing'}`,

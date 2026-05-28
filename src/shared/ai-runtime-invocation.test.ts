@@ -613,6 +613,7 @@ describe('ai runtime invocation contract', () => {
         runtime_context_assembly: true,
       },
       providerVisiblePreflight: {
+        configuredProvider: 'openai',
         providerConfigured: true,
         startupProbe: 'not_called',
         status: 'ready',
@@ -653,6 +654,9 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('targetTask=task_1');
     expect(partial.summary).toContain('runEvidenceTask=missing');
     expect(partial.summary).toContain('targetTaskEvidenceChain=ready');
+    expect(partial.summary).toContain('providerConfigured=ready');
+    expect(partial.summary).toContain('configuredProvider=openai');
+    expect(partial.summary).toContain('providerStartupProbe=not_called');
     expect(partial.summary).toContain('runId=missing');
     expect(partial.summary).toContain('contextStep=step_context_ready');
     expect(partial.summary).toContain('contextManifest=task=task_1 / files=2');
@@ -674,6 +678,9 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('targetTask=task_1');
     expect(ready.summary).toContain('runEvidenceTask=task_1');
     expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('providerConfigured=ready');
+    expect(ready.summary).toContain('configuredProvider=openai');
+    expect(ready.summary).toContain('providerStartupProbe=not_called');
     expect(ready.summary).toContain('runId=run_api_execution');
     expect(ready.summary).toContain('taskMemoryGuidance=ready');
     expect(ready.summary).toContain('taskMemoryGuidanceCount=1');
@@ -699,6 +706,25 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('targetTask=task_1');
     expect(mismatch.summary).toContain('runEvidenceTask=task_2');
     expect(mismatch.summary).toContain('targetTaskEvidenceChain=missing');
+  });
+
+  it('requires provider-visible preflight to carry the configured provider identity', () => {
+    const missingProvider = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      providerVisiblePreflight: {
+        providerConfigured: true,
+        startupProbe: 'not_called',
+        status: 'ready',
+      },
+    });
+
+    expect(missingProvider).toMatchObject({
+      ready: false,
+      missingRequirements: ['provider_visible_preflight'],
+    });
+    expect(missingProvider.summary).toContain('providerConfigured=ready');
+    expect(missingProvider.summary).toContain('configuredProvider=missing');
+    expect(missingProvider.summary).toContain('providerStartupProbe=not_called');
   });
 
   it('wraps product-harness verification and memory proposal phases', () => {
@@ -775,6 +801,7 @@ function completeAgentApiExecutionPromotionEvidence() {
       verifier: 'taskplane.verifier.lightweight',
     },
     providerVisiblePreflight: {
+      configuredProvider: 'openai',
       providerConfigured: true,
       startupProbe: 'not_called' as const,
       status: 'ready' as const,

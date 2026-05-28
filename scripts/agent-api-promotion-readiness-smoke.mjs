@@ -61,6 +61,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       runtime_context_assembly: true,
     },
     providerVisiblePreflight: {
+      configuredProvider: 'openai',
       providerConfigured: true,
       startupProbe: 'not_called',
       status: 'ready',
@@ -94,6 +95,9 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceMissingGates=${serviceEvidencePartial.missingGates.join(',')}`);
   console.log(`serviceEvidenceTargetTask=${scalarValue(serviceEvidencePartial.summary, 'targetTask') ?? 'missing'}`);
   console.log(`serviceEvidenceTargetTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderConfigured=${scalarValue(serviceEvidencePartial.summary, 'providerConfigured') ?? 'missing'}`);
+  console.log(`serviceEvidenceConfiguredProvider=${scalarValue(serviceEvidencePartial.summary, 'configuredProvider') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderStartupProbe=${scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') ?? 'missing'}`);
   console.log(`serviceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'runId') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStep=${scalarValue(serviceEvidencePartial.summary, 'contextStep') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
@@ -110,6 +114,9 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || serviceEvidencePartial.satisfiedGates.length !== 3
     || scalarValue(serviceEvidencePartial.summary, 'targetTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'providerConfigured') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'configuredProvider') !== 'openai'
+    || scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') !== 'not_called'
     || scalarValue(serviceEvidencePartial.summary, 'runId') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'contextStep') !== 'step_context_ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'
