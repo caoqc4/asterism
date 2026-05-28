@@ -147,6 +147,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const touchedFiles = evidence.postApplyRunEvidence?.touchedFiles
     ?.map((file) => file.trim())
     .filter(Boolean) ?? [];
+  const expectedFileEvidenceChainReady = expectedFiles.length > 0
+    && expectedFiles.every(isSafeWorkspaceRelativePath)
+    && new Set(expectedFiles).size === expectedFiles.length;
   const filePathSafetyChainReady = expectedFiles.length > 0
     && touchedFiles.length > 0
     && expectedFiles.every(isSafeWorkspaceRelativePath)
@@ -173,8 +176,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && evidence.patchArtifact.kind === 'patch'
     && Boolean(evidence.patchArtifact.artifactId?.trim())
     && Boolean(patchRunId)
-    && expectedFiles.length > 0
-    && expectedFiles.every(isSafeWorkspaceRelativePath)
+    && expectedFileEvidenceChainReady
   );
   const promotionDecisionReady = (
     evidence.promotionDecision?.status === 'approved'
@@ -261,6 +263,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `sameRunId=${sameRunEvidenceChainReady ? patchRunId : 'missing'}`,
       `expectedFileCount=${expectedFiles.length}`,
       `expectedFiles=${expectedFiles.length ? expectedFiles.join(',') : 'none'}`,
+      `expectedFileEvidenceChain=${expectedFileEvidenceChainReady ? 'ready' : 'missing'}`,
       `touchedFileCount=${touchedFiles.length}`,
       `touchedFiles=${touchedFiles.length ? touchedFiles.join(',') : 'none'}`,
       `filePathSafetyChain=${filePathSafetyChainReady ? 'ready' : 'missing'}`,

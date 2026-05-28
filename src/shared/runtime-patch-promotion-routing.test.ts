@@ -183,6 +183,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('sameRunId=missing');
     expect(partial.summary).toContain('expectedFileCount=1');
     expect(partial.summary).toContain('expectedFiles=src/app.ts');
+    expect(partial.summary).toContain('expectedFileEvidenceChain=ready');
     expect(partial.summary).toContain('touchedFileCount=0');
     expect(partial.summary).toContain('touchedFiles=none');
     expect(partial.summary).toContain('filePathSafetyChain=missing');
@@ -252,6 +253,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('sameRunId=run_patch_1');
     expect(ready.summary).toContain('expectedFileCount=1');
     expect(ready.summary).toContain('expectedFiles=src/app.ts');
+    expect(ready.summary).toContain('expectedFileEvidenceChain=ready');
     expect(ready.summary).toContain('touchedFileCount=1');
     expect(ready.summary).toContain('touchedFiles=src/app.ts');
     expect(ready.summary).toContain('filePathSafetyChain=ready');
@@ -544,6 +546,7 @@ describe('runtime patch promotion routing readiness', () => {
       ],
     });
     expect(readiness.summary).toContain('expectedFiles=../secrets.txt');
+    expect(readiness.summary).toContain('expectedFileEvidenceChain=missing');
     expect(readiness.summary).toContain('touchedFiles=../secrets.txt');
     expect(readiness.summary).toContain('filePathSafetyChain=missing');
     expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
@@ -598,12 +601,15 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness).toMatchObject({
       ready: false,
       missingRequirements: [
+        'patch_artifact',
         'same_run_evidence_chain',
         'post_apply_run_evidence',
       ],
     });
     expect(readiness.summary).toContain('expectedFileCount=2');
     expect(readiness.summary).toContain('touchedFileCount=2');
+    expect(readiness.summary).toContain('expectedFileEvidenceChain=missing');
+    expect(readiness.summary).toContain('patchArtifact=missing');
     expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
   });
 });
