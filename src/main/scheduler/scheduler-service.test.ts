@@ -551,7 +551,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastBriefAt).not.toBeNull();
     expect(service.getStatus().lastRunSweepAt).not.toBeNull();
     expect(service.getStatus().lastRunSweepSummary).toBe(
-      'schedulerStaleRunRecovery=completed / checked=1 / recovered=1 / recoveredRunIds=run_1 / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no',
+      'schedulerStaleRunRecovery=completed / checked=1 / recovered=1 / recoveredRunIds=run_1 / staleRunRecoveryDecisionProposals=run_1:skipped_no_timeline / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no',
     );
     expect(scheduledJobs).toHaveLength(2);
 
@@ -1965,8 +1965,75 @@ describe('SchedulerService', () => {
     expect(runRepository.updateResult).not.toHaveBeenCalled();
     expect(service.getStatus().lastRunSweepAt).not.toBeNull();
     expect(service.getStatus().lastRunSweepSummary).toBe(
-      'schedulerStaleRunRecovery=completed / checked=0 / recovered=0 / recoveredRunIds=none / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no',
+      'schedulerStaleRunRecovery=completed / checked=0 / recovered=0 / recoveredRunIds=none / staleRunRecoveryDecisionProposals=none / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no',
     );
+  });
+
+  it('proposes a Task Dynamics Decision after local stale-run recovery', async () => {
+    const staleRun = {
+      ...buildRunRecord(),
+      id: 'run_stale_recovered',
+      taskId: 'task_stale_recovered',
+    };
+    const runRepository = {
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([staleRun]),
+      updateResult: vi.fn().mockResolvedValue({
+        ...staleRun,
+        status: 'failed',
+        output: 'Run 超过恢复窗口，已由本地 scheduler 标记为 failed。',
+        outputSource: 'system',
+        failureReason: 'Run exceeded the scheduler recovery window.',
+      }),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      {
+        resolveRuntimeConfig: vi.fn().mockRejectedValue(new Error('skip AI brief')),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    await service.start();
+
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_stale_recovered',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'local_recovery',
+        evidenceRunId: 'run_stale_recovered',
+        localRecoveryCompleted: true,
+        localRecoveryRunId: 'run_stale_recovered',
+        proposedOutcome: '复核失败证据后手动重跑',
+        targetTaskId: 'task_stale_recovered',
+        title: '确认 stale run 自动恢复后的下一步',
+      }),
+    }));
+    expect(service.getStatus().lastRunSweepSummary).toContain('staleRunRecoveryDecisionProposals=run_stale_recovered:proposed');
+    expect(service.getStatus().lastRunSweepSummary).toContain('agentRuntimeStarted=no');
   });
 
   it('falls back to a local brief when AI brief generation fails', async () => {

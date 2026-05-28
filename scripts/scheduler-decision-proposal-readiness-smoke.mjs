@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'scheduler-decision-proposal.js');
+const sourceModulePath = path.join(root, 'src', 'shared', 'scheduler-decision-proposal.ts');
 
 export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log('Scheduler Decision proposal readiness smoke');
@@ -16,7 +17,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log('schedulerTrigger=not-attempted');
   console.log('workspace=unchanged');
 
-  if (!fs.existsSync(modulePath)) {
+  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -41,6 +42,12 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     standingApprovalPolicyId: 'standing_policy_smoke',
     standingApprovalScopeTaskId: 'task_scheduler_decision_standing_smoke',
     targetTaskId: 'task_scheduler_decision_standing_smoke',
+  });
+  const localRecovery = planSchedulerDecisionProposal({
+    approvalQueueConnected: true,
+    localRecoveryCompleted: true,
+    localRecoveryRunId: 'run_scheduler_recovery_smoke',
+    targetTaskId: 'task_scheduler_decision_recovery_smoke',
   });
   const scopeMismatch = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
@@ -87,6 +94,15 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`standingApprovalDecisionPersistenceAllowed=${String(standingApproval.decisionPersistenceAllowed)}`);
   console.log(`standingApprovalWritebackDispatchAllowed=${String(standingApproval.writebackDispatchAllowed)}`);
   console.log(`standingApprovalSchedulerTriggerAllowed=${String(standingApproval.schedulerTriggerAllowed)}`);
+  console.log(`localRecoveryStatus=${localRecovery.status}`);
+  console.log(`localRecoveryProposalReady=${localRecovery.approvalItemAllowed ? 'yes' : 'no'}`);
+  console.log(`localRecoveryRequirements=${localRecovery.satisfiedRequirements.length}/3`);
+  console.log(`localRecoveryAuthorization=${localRecovery.authorizations.join(',') || 'none'}`);
+  console.log(`localRecoveryRunId=${scalarValue(localRecovery.summary, 'localRecoveryRunId') ?? 'missing'}`);
+  console.log(`localRecoveryCompleted=${scalarValue(localRecovery.summary, 'localRecoveryCompleted') ?? 'missing'}`);
+  console.log(`localRecoveryDecisionPersistenceAllowed=${String(localRecovery.decisionPersistenceAllowed)}`);
+  console.log(`localRecoveryWritebackDispatchAllowed=${String(localRecovery.writebackDispatchAllowed)}`);
+  console.log(`localRecoverySchedulerTriggerAllowed=${String(localRecovery.schedulerTriggerAllowed)}`);
   console.log(`scopeMismatchStatus=${scopeMismatch.status}`);
   console.log(`scopeMismatchProposalReady=${scopeMismatch.approvalItemAllowed ? 'yes' : 'no'}`);
   console.log(`scopeMismatchRequirements=${scopeMismatch.satisfiedRequirements.length}/3`);
@@ -111,10 +127,14 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     blocked.approvalItemAllowed
     || !operatorConfirmed.approvalItemAllowed
     || !standingApproval.approvalItemAllowed
+    || !localRecovery.approvalItemAllowed
     || operatorConfirmed.operatorId !== 'operator_scheduler_decision_smoke'
     || standingApproval.standingApprovalPolicyId !== 'standing_policy_smoke'
     || standingApproval.standingApprovalScopeTaskId !== 'task_scheduler_decision_standing_smoke'
     || scalarValue(standingApproval.summary, 'standingApprovalScopeMatched') !== 'yes'
+    || localRecovery.authorizations.join(',') !== 'local_recovery'
+    || scalarValue(localRecovery.summary, 'localRecoveryRunId') !== 'run_scheduler_recovery_smoke'
+    || scalarValue(localRecovery.summary, 'localRecoveryCompleted') !== 'yes'
     || scopeMismatch.approvalItemAllowed
     || scopeMismatch.satisfiedRequirements.length !== 2
     || !scopeMismatch.missingRequirements.includes('authorization')
@@ -125,6 +145,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || standingApproval.decisionPersistenceAllowed
     || standingApproval.writebackDispatchAllowed
     || standingApproval.schedulerTriggerAllowed
+    || localRecovery.decisionPersistenceAllowed
+    || localRecovery.writebackDispatchAllowed
+    || localRecovery.schedulerTriggerAllowed
     || serviceEvidencePartial.approvalItemAllowed
     || serviceEvidencePartial.approvalQueueSurface !== 'task_dynamics'
     || serviceEvidencePartial.standingApprovalPolicyId !== 'standing_policy_1'
@@ -148,6 +171,11 @@ function scalarValue(summary, key) {
   const prefix = `${key}=`;
   const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
   return part?.trim().slice(prefix.length).trim() ?? null;
+}
+
+function sourceIsNewerThanBuild() {
+  if (!fs.existsSync(sourceModulePath) || !fs.existsSync(modulePath)) return false;
+  return fs.statSync(sourceModulePath).mtimeMs > fs.statSync(modulePath).mtimeMs;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

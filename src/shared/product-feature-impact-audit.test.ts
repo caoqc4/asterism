@@ -243,6 +243,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('approval-item-only');
     expect(decisions?.evidence.join(' ')).toContain('target-task identity');
     expect(decisions?.evidence.join(' ')).toContain('concrete operator confirmation');
+    expect(decisions?.evidence.join(' ')).toContain('completed local recovery evidence');
     expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('writebackDispatchAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false');
@@ -252,6 +253,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('proposalRequirements=x/3');
     expect(decisions?.evidence.join(' ')).toContain('proposalSatisfiedRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('approvalQueueSurface');
+    expect(decisions?.evidence.join(' ')).toContain('localRecoveryRunId');
+    expect(decisions?.evidence.join(' ')).toContain('localRecoveryCompleted');
     expect(decisions?.evidence.join(' ')).toContain('operatorId');
     expect(decisions?.evidence.join(' ')).toContain('standingApprovalPolicyId');
     expect(decisions?.evidence.join(' ')).toContain('standingApprovalScopeTask');
@@ -276,6 +279,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=3/3 requirements with operatorId evidence');
+    expect(decisions?.evidence.join(' ')).toContain('local-recovery=3/3 requirements with localRecoveryRunId evidence');
     expect(decisions?.evidence.join(' ')).toContain('standing-approval=3/3 requirements with standingApprovalPolicyId, standingApprovalScopeTask, and standingApprovalScopeMatched=yes evidence');
     expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=2/3 requirements with authorization missing');
     expect(decisions?.evidence.join(' ')).toContain('service-evidence=2/3 requirements');
@@ -296,6 +300,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('sweepFailureDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('timeline evidence write failures after a Run starts now route a deduplicated timeline-failure review policy');
     expect(decisions?.evidence.join(' ')).toContain('timelineFailureDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toContain('stale-run recovery now routes each recovered run');
+    expect(decisions?.evidence.join(' ')).toContain('staleRunRecoveryDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
     expect(decisions?.evidence.join(' ')).toContain('selected Agent CLI modes stay product_harness/skipped');
     expect(decisions?.evidence.join(' ')).toContain('Approved checkpoint Decision resume is limited to open tool_permission');

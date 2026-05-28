@@ -171,6 +171,47 @@ describe('Taskplane writeback approval items', () => {
     expect(items[0]?.detail).toContain('approvalQueueSurface=task_dynamics');
   });
 
+  it('turns local-recovery scheduler Decision proposal events into the same approval queue', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_recovery_decision',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          authorization: 'local_recovery',
+          evidenceRunId: 'run_recovered_1',
+          localRecoveryCompleted: true,
+          localRecoveryRunId: 'run_recovered_1',
+          options: ['复核失败证据后手动重跑', '保持 failed 并补充 Task 记忆'],
+          proposedOutcome: '复核失败证据后手动重跑',
+          rationale: 'Scheduler recovered a stale run and needs an operator-confirmed next step.',
+          targetTaskId: 'task_1',
+          title: '确认 stale run 自动恢复后的下一步',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toMatchObject([{
+      kind: 'scheduler_decision',
+      plan: {
+        action: 'decision.create',
+        input: {
+          sourceId: 'run_recovered_1',
+          sourceLabel: 'Scheduler/background Decision proposal',
+          taskId: 'task_1',
+          title: '确认 stale run 自动恢复后的下一步',
+        },
+      },
+      source: 'scheduler_decision_proposal',
+    }]);
+    expect(items[0]?.detail).toContain('authorization=local_recovery');
+    expect(items[0]?.detail).toContain('localRecoveryCompleted=yes');
+  });
+
   it('blocks scheduler Decision proposal timeline events without target-scoped authorization', () => {
     const items = buildTaskplaneWritebackApprovalItems({
       runDetails: [],

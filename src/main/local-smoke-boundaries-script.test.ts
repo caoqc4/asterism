@@ -924,6 +924,15 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('writebackDispatch=not-attempted');
     expect(result.output).toContain('schedulerTrigger=not-attempted');
     expect(result.output).toContain('workspace=unchanged');
+    if (result.output.includes('status=skip')) {
+      expect(result.output).toContain('skipReason=build_required');
+      return;
+    }
+    expect(result.output).toContain('localRecoveryProposalReady=yes');
+    expect(result.output).toContain('localRecoveryAuthorization=local_recovery');
+    expect(result.output).toContain('localRecoveryRunId=run_scheduler_recovery_smoke');
+    expect(result.output).toContain('localRecoveryCompleted=yes');
+    expect(result.output).toContain('localRecoveryDecisionPersistenceAllowed=false');
   });
 
   it('validates Agent API execution preflight config before calling a provider', () => {

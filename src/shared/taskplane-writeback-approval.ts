@@ -209,8 +209,10 @@ export function buildTaskplaneWritebackApprovalItems(params: {
 }
 
 type SchedulerDecisionProposalTimelinePayload = {
-  authorization?: 'operator_confirmation' | 'standing_approval' | 'operator_confirmation,standing_approval';
+  authorization?: 'local_recovery' | 'operator_confirmation' | 'standing_approval' | string;
   evidenceRunId?: string | null;
+  localRecoveryCompleted?: boolean;
+  localRecoveryRunId?: string | null;
   operatorConfirmed?: boolean;
   operatorId?: string | null;
   options?: unknown;
@@ -242,6 +244,10 @@ function buildSchedulerDecisionApprovalItem(params: {
     operatorConfirmation: {
       confirmed: payload.operatorConfirmed === true,
       operatorId: payload.operatorId ?? null,
+    },
+    localRecovery: {
+      recoveredRunId: payload.localRecoveryRunId ?? payload.evidenceRunId ?? null,
+      status: payload.localRecoveryCompleted === true ? 'completed' : 'missing',
     },
     standingApproval: {
       active: payload.standingApprovalActive === true,

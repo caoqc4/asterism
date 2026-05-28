@@ -1,4 +1,5 @@
 export type SchedulerDecisionProposalAuthorization =
+  | 'local_recovery'
   | 'operator_confirmation'
   | 'standing_approval';
 
@@ -34,6 +35,10 @@ export type SchedulerDecisionProposalServiceEvidence = {
     confirmed: boolean;
     operatorId?: string | null;
   } | null;
+  localRecovery?: {
+    recoveredRunId?: string | null;
+    status: 'completed' | 'missing';
+  } | null;
   standingApproval?: {
     active: boolean;
     policyId?: string | null;
@@ -58,6 +63,8 @@ export function planSchedulerDecisionProposal(params: {
   standingApprovalActive?: boolean;
   standingApprovalPolicyId?: string | null;
   standingApprovalScopeTaskId?: string | null;
+  localRecoveryRunId?: string | null;
+  localRecoveryCompleted?: boolean;
   targetTaskId?: string | null;
 } = {}): SchedulerDecisionProposalPlan {
   const targetTaskId = params.targetTaskId?.trim() || null;
@@ -65,6 +72,8 @@ export function planSchedulerDecisionProposal(params: {
   const standingApprovalPolicyId = params.standingApprovalPolicyId?.trim() || null;
   const standingApprovalScopeTaskId = params.standingApprovalScopeTaskId?.trim() || null;
   const operatorConfirmed = params.operatorConfirmed === true && Boolean(operatorId);
+  const localRecoveryRunId = params.localRecoveryRunId?.trim() || null;
+  const localRecoveryCompleted = params.localRecoveryCompleted === true && Boolean(localRecoveryRunId);
   const standingApprovalScopeMatched = (
     Boolean(targetTaskId)
     && Boolean(standingApprovalScopeTaskId)
@@ -76,6 +85,7 @@ export function planSchedulerDecisionProposal(params: {
     && standingApprovalScopeMatched
   );
   const authorizations = [
+    localRecoveryCompleted ? 'local_recovery' : null,
     operatorConfirmed ? 'operator_confirmation' : null,
     standingApprovalActive ? 'standing_approval' : null,
   ].filter((value): value is SchedulerDecisionProposalAuthorization => value !== null);
@@ -95,7 +105,7 @@ export function planSchedulerDecisionProposal(params: {
 
   if (authorizations.length === 0) {
     missingRequirements.push('authorization');
-    blockedReasons.push('Scheduler/background Decision proposal requires operator confirmation or active target-scoped Standing Approval.');
+    blockedReasons.push('Scheduler/background Decision proposal requires operator confirmation, active target-scoped Standing Approval, or completed local recovery evidence.');
   }
 
   const approvalItemAllowed = blockedReasons.length === 0;
@@ -132,6 +142,8 @@ export function planSchedulerDecisionProposal(params: {
       'writebackDispatchAllowed=false',
       'schedulerTriggerAllowed=false',
       `authorization=${authorizations.length ? authorizations.join(',') : 'missing'}`,
+      `localRecoveryRunId=${localRecoveryRunId ?? 'missing'}`,
+      `localRecoveryCompleted=${localRecoveryCompleted ? 'yes' : 'no'}`,
       `operatorId=${operatorConfirmed ? operatorId : 'missing'}`,
       `standingApprovalPolicyId=${standingApprovalPolicyId ?? 'missing'}`,
       `standingApprovalScopeTask=${standingApprovalScopeTaskId ?? 'missing'}`,
@@ -158,12 +170,18 @@ export function planSchedulerDecisionProposalFromEvidence(
     && Boolean(targetTaskId)
     && evidence.standingApproval.scopeTaskId?.trim() === targetTaskId
   );
+  const localRecoveryCompleted = (
+    evidence.localRecovery?.status === 'completed'
+    && Boolean(evidence.localRecovery.recoveredRunId?.trim())
+  );
 
   return planSchedulerDecisionProposal({
     approvalQueueConnected: evidence.approvalQueue?.connected === true,
     approvalQueueSurface: evidence.approvalQueue?.surface ?? null,
     operatorId: evidence.operatorConfirmation?.operatorId ?? null,
     operatorConfirmed,
+    localRecoveryCompleted,
+    localRecoveryRunId: evidence.localRecovery?.recoveredRunId ?? null,
     standingApprovalActive,
     standingApprovalPolicyId: evidence.standingApproval?.policyId ?? null,
     standingApprovalScopeTaskId: evidence.standingApproval?.scopeTaskId ?? null,

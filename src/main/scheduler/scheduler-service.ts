@@ -67,6 +67,8 @@ export type ScheduledEventAgentTimelinePort = {
 
 export type SchedulerDecisionProposalInput = {
   evidenceRunId?: string | null;
+  localRecoveryCompleted?: boolean;
+  localRecoveryRunId?: string | null;
   operatorConfirmed?: boolean;
   operatorId?: string | null;
   options?: string[];
@@ -674,6 +676,10 @@ export class SchedulerService {
         confirmed: input.operatorConfirmed === true,
         operatorId: input.operatorId ?? null,
       },
+      localRecovery: {
+        recoveredRunId: input.localRecoveryRunId ?? input.evidenceRunId ?? null,
+        status: input.localRecoveryCompleted === true ? 'completed' : 'missing',
+      },
       standingApproval: {
         active: input.standingApprovalActive === true,
         policyId: input.standingApprovalPolicyId ?? null,
@@ -701,6 +707,8 @@ export class SchedulerService {
         approvalQueueSurface: 'task_dynamics',
         authorization: readiness.authorizations.join(','),
         evidenceRunId: input.evidenceRunId?.trim() || null,
+        localRecoveryCompleted: input.localRecoveryCompleted === true,
+        localRecoveryRunId: input.localRecoveryRunId?.trim() || null,
         operatorConfirmed: input.operatorConfirmed === true,
         operatorId: input.operatorId?.trim() || null,
         options: input.options?.map((option) => option.trim()).filter(Boolean) ?? [],
@@ -991,6 +999,39 @@ export class SchedulerService {
     });
   }
 
+  private async proposeStaleRunRecoveryDecision(
+    run: RunRecord,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_no_timeline'; summary: string } | { status: 'failed'; summary: string }> {
+    if (!this.scheduledEventAgentTimelinePort) {
+      return {
+        status: 'skipped_no_timeline',
+        summary: 'staleRunRecoveryDecisionProposal=skipped_no_timeline',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      evidenceRunId: run.id,
+      localRecoveryCompleted: true,
+      localRecoveryRunId: run.id,
+      options: [
+        '复核失败证据后手动重跑',
+        '保持 failed 并补充 Task 记忆',
+        '暂停相关自动化并人工调查',
+      ],
+      proposedOutcome: '复核失败证据后手动重跑',
+      rationale: [
+        `Scheduler recovered stale run ${run.id} for task ${run.taskId}.`,
+        'The run was marked failed by local recovery without starting an Agent runtime.',
+        'Taskplane should confirm whether to manually rerun, preserve memory, or pause related automation.',
+      ].join(' '),
+      targetTaskId: run.taskId,
+      title: '确认 stale run 自动恢复后的下一步',
+    }).catch((error: unknown) => ({
+      status: 'failed' as const,
+      summary: `staleRunRecoveryDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+    }));
+  }
+
   private async recordScheduledEventAgentTriggered(
     task: ScheduledEventAgentTaskInput,
     plan: AgentScheduledEventTriggerPlan,
@@ -1128,6 +1169,7 @@ export class SchedulerService {
   private async reconcileStaleRuns(): Promise<void> {
     const staleRuns = await this.runRepository.listIncompleteOlderThan(olderThanMinutes(5));
     const recoveredRunIds: string[] = [];
+    const decisionProposalSummaries: string[] = [];
 
     for (const run of staleRuns) {
       await this.runRepository.updateResult(
@@ -1138,6 +1180,8 @@ export class SchedulerService {
         'Run exceeded the scheduler recovery window.',
       );
       recoveredRunIds.push(run.id);
+      const proposal = await this.proposeStaleRunRecoveryDecision(run);
+      decisionProposalSummaries.push(`${run.id}:${proposal.status}`);
     }
 
     this.lastRunSweepAt = new Date().toISOString();
@@ -1146,6 +1190,7 @@ export class SchedulerService {
       `checked=${staleRuns.length}`,
       `recovered=${recoveredRunIds.length}`,
       `recoveredRunIds=${recoveredRunIds.length ? recoveredRunIds.join(',') : 'none'}`,
+      `staleRunRecoveryDecisionProposals=${decisionProposalSummaries.length ? decisionProposalSummaries.join(',') : 'none'}`,
       'failureReason=Run exceeded the scheduler recovery window.',
       'agentRuntimeStarted=no',
     ].join(' / ');
