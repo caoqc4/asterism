@@ -309,6 +309,39 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('evidenceRunIdChain=missing');
   });
 
+  it('blocks Agent API decomposition promotion when draft-only timeline evidence has no run identity', () => {
+    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['draft_only_timeline_evidence'],
+    });
+    expect(mismatch.summary).toContain('evidenceRunId=missing');
+    expect(mismatch.summary).toContain('timelineEvidenceRunId=missing');
+    expect(mismatch.summary).toContain('evidenceRunIdChain=missing');
+  });
+
   it('blocks Agent API decomposition promotion when parent-task evidence is stitched from another task', () => {
     const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
       evidenceRunId: 'run_api_decomposition',

@@ -70,6 +70,7 @@ export type ProjectDecompositionPromotionReadinessSummary = {
 };
 
 export type ProjectDecompositionResult = {
+  evidenceRunId?: string | null;
   parentGoal: string;
   subtasks: ProjectSubtaskDraft[];
   review: string;

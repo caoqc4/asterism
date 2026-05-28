@@ -277,9 +277,8 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
     ? applyPlan.timeline.payload.evidenceRunId.trim()
     : '';
   const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
-  const evidenceRunIdChainReady = applyPlanEvidenceRunId || timelineEvidenceRunId
-    ? Boolean(applyPlanEvidenceRunId) && applyPlanEvidenceRunId === timelineEvidenceRunId
-    : true;
+  const evidenceRunIdChainReady = Boolean(applyPlanEvidenceRunId)
+    && applyPlanEvidenceRunId === timelineEvidenceRunId;
   const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
 
@@ -368,9 +367,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     ? applyPlan.timeline.payload.evidenceRunId.trim()
     : '';
   const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
-  const evidenceRunIdChainReady = applyPlanEvidenceRunId || timelineEvidenceRunId
-    ? Boolean(applyPlanEvidenceRunId) && applyPlanEvidenceRunId === timelineEvidenceRunId
-    : true;
+  const evidenceRunIdChainReady = Boolean(applyPlanEvidenceRunId)
+    && applyPlanEvidenceRunId === timelineEvidenceRunId;
   const parentTaskId = evidenceParentTaskId || applyPlanParentTaskId;
   const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);

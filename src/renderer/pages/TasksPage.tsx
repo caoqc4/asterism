@@ -2938,6 +2938,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     setProjectDecompositionError(null);
     try {
       const plan = buildSubtaskCreateManyWritebackApplyPlan({
+        evidenceRunId: draft.evidenceRunId ?? null,
         nextStep: draft.nextStep,
         parentSummary: draft.parentGoal,
         parentTaskId: project.id,

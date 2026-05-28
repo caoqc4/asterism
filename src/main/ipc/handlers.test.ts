@@ -973,6 +973,7 @@ describe('registerIpcHandlers', () => {
     const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
     const prompt = generateTextMock.mock.calls[0]?.[0]?.prompt as string;
     expect(result).toMatchObject({
+      evidenceRunId: expect.stringMatching(/^agent_api_decomposition:task_1:[a-f0-9]{12}$/),
       parentGoal: '完成董事会材料修订',
       invocation: {
         phase: 'decomposition_draft',
@@ -1004,6 +1005,9 @@ describe('registerIpcHandlers', () => {
     });
     expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('promotionReady=yes');
     expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('source=agent_api_decomposition');
+    const evidenceRunId = (result as { evidenceRunId?: string }).evidenceRunId ?? '';
+    expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain(`evidenceRunId=${evidenceRunId}`);
+    expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('evidenceRunIdChain=ready');
     expect(system).toContain('Taskplane Agent Operating Principles');
     expect(system).toContain('## Task Creation Protocol');
     expect(system).toContain('Subtasks remain drafts until the user confirms creation.');

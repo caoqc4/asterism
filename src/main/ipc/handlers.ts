@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 import type { AgentCliRuntimeId } from '../../shared/agent-cli-runtime-status.js';
 import type {
@@ -1083,7 +1084,13 @@ export function registerIpcHandlers(): void {
       draft: decomposition,
       runtimeLabel: `Agent API Runtime · ${config.provider} / ${config.model}`,
     });
+    const evidenceRunId = [
+      'agent_api_decomposition',
+      input.taskId,
+      createHash('sha256').update(result.text).digest('hex').slice(0, 12),
+    ].join(':');
     const promotionApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId,
       nextStep: decomposition.nextStep,
       parentSummary: decomposition.parentGoal,
       parentTaskId: input.taskId,
@@ -1128,6 +1135,7 @@ export function registerIpcHandlers(): void {
     }
     return {
       ...invocation.draft,
+      evidenceRunId,
       invocation: {
         phase: invocation.phase,
         layer: invocation.layer,
