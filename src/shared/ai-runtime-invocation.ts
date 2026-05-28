@@ -101,6 +101,7 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
   applyPlan?: TaskplaneSubtaskWritebackApplyPlan | null;
   parentTaskId?: string | null;
   reversibleProposalCard?: {
+    parentTaskId?: string | null;
     proposalId?: string | null;
     status: 'missing' | 'ready';
   } | null;
@@ -343,6 +344,11 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
   const proposalId = evidence.reversibleProposalCard?.proposalId?.trim() || '';
+  const proposalParentTaskId = evidence.reversibleProposalCard?.parentTaskId?.trim() || '';
+  const proposalTaskEvidenceChainReady = Boolean(proposalParentTaskId)
+    && Boolean(parentTaskId)
+    && proposalParentTaskId === parentTaskId
+    && (!applyPlanParentTaskId || proposalParentTaskId === applyPlanParentTaskId);
   const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
     ? applyPlan.timeline.payload.confirmationBoundary
     : 'missing';
@@ -350,6 +356,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const reversibleProposalReady = (
     evidence.reversibleProposalCard?.status === 'ready'
     && Boolean(proposalId)
+    && proposalTaskEvidenceChainReady
   );
 
   if (
@@ -406,6 +413,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `applyPlan=${applyPlan?.action ?? 'missing'}`,
       `source=${applyPlan?.input.source ?? 'missing'}`,
       `proposalId=${proposalId || 'missing'}`,
+      `proposalParentTask=${proposalParentTaskId || 'missing'}`,
+      `proposalTaskEvidenceChain=${proposalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `subtaskCount=${applyPlan?.input.subtasks.length ?? 0}`,
       `evidenceRunId=${applyPlan?.input.evidenceRunId?.trim() || 'missing'}`,
       `confirmationBoundary=${confirmationBoundary}`,

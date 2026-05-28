@@ -2950,6 +2950,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         applyPlan: plan,
         parentTaskId: project.id,
         reversibleProposalCard: {
+          parentTaskId: project.id,
           proposalId: `project_decomposition:${project.id}`,
           status: 'ready',
         },

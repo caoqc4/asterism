@@ -69,6 +69,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     applyPlan: partialApplyPlan,
     parentTaskId: 'task_project',
     reversibleProposalCard: {
+      parentTaskId: 'task_project',
       proposalId: 'proposal_agent_api_decomposition',
       status: 'ready',
     },
@@ -92,6 +93,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/7`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceProposalId=${scalarValue(serviceEvidencePartial.summary, 'proposalId') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalParentTask=${scalarValue(serviceEvidencePartial.summary, 'proposalParentTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTask=${scalarValue(serviceEvidencePartial.summary, 'parentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanParentTask=${scalarValue(serviceEvidencePartial.summary, 'applyPlanParentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'parentTaskEvidenceChain') ?? 'missing'}`);
@@ -111,6 +114,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || serviceEvidencePartial.satisfiedRequirements.length !== 6
     || !serviceEvidencePartial.missingRequirements.includes('agent_api_decomposition_source')
     || scalarValue(serviceEvidencePartial.summary, 'proposalId') !== 'proposal_agent_api_decomposition'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalParentTask') !== 'task_project'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'parentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanParentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'parentTaskEvidenceChain') !== 'ready'

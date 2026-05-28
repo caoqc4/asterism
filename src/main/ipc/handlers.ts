@@ -1098,6 +1098,7 @@ export function registerIpcHandlers(): void {
       applyPlan: promotionApplyPlan,
       parentTaskId: input.taskId,
       reversibleProposalCard: {
+        parentTaskId: input.taskId,
         proposalId: `project_decomposition:${input.taskId}`,
         status: 'ready',
       },
