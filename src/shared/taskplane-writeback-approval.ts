@@ -213,6 +213,7 @@ type SchedulerDecisionProposalTimelinePayload = {
   evidenceRunId?: string | null;
   localRecoveryCompleted?: boolean;
   localRecoveryRunId?: string | null;
+  localRecoveryTaskId?: string | null;
   operatorConfirmed?: boolean;
   operatorId?: string | null;
   options?: unknown;
@@ -247,6 +248,7 @@ function buildSchedulerDecisionApprovalItem(params: {
     },
     localRecovery: {
       recoveredRunId: payload.localRecoveryRunId ?? payload.evidenceRunId ?? null,
+      taskId: payload.localRecoveryTaskId ?? targetTaskId,
       status: payload.localRecoveryCompleted === true ? 'completed' : 'missing',
     },
     standingApproval: {

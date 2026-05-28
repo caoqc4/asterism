@@ -69,6 +69,7 @@ export type SchedulerDecisionProposalInput = {
   evidenceRunId?: string | null;
   localRecoveryCompleted?: boolean;
   localRecoveryRunId?: string | null;
+  localRecoveryTaskId?: string | null;
   operatorConfirmed?: boolean;
   operatorId?: string | null;
   options?: string[];
@@ -783,6 +784,7 @@ export class SchedulerService {
       },
       localRecovery: {
         recoveredRunId: input.localRecoveryRunId ?? input.evidenceRunId ?? null,
+        taskId: input.localRecoveryTaskId ?? targetTaskId,
         status: input.localRecoveryCompleted === true ? 'completed' : 'missing',
       },
       standingApproval: {
@@ -814,6 +816,7 @@ export class SchedulerService {
         evidenceRunId: input.evidenceRunId?.trim() || null,
         localRecoveryCompleted: input.localRecoveryCompleted === true,
         localRecoveryRunId: input.localRecoveryRunId?.trim() || null,
+        localRecoveryTaskId: input.localRecoveryTaskId?.trim() || targetTaskId,
         operatorConfirmed: input.operatorConfirmed === true,
         operatorId: input.operatorId?.trim() || null,
         options: input.options?.map((option) => option.trim()).filter(Boolean) ?? [],
@@ -1342,6 +1345,7 @@ export class SchedulerService {
       evidenceRunId: run.id,
       localRecoveryCompleted: true,
       localRecoveryRunId: run.id,
+      localRecoveryTaskId: run.taskId,
       options: [
         '复核失败证据后手动重跑',
         '保持 failed 并补充 Task 记忆',

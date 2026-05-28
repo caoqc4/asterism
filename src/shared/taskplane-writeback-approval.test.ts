@@ -185,6 +185,7 @@ describe('Taskplane writeback approval items', () => {
           evidenceRunId: 'run_recovered_1',
           localRecoveryCompleted: true,
           localRecoveryRunId: 'run_recovered_1',
+          localRecoveryTaskId: 'task_1',
           options: ['复核失败证据后手动重跑', '保持 failed 并补充 Task 记忆'],
           proposedOutcome: '复核失败证据后手动重跑',
           rationale: 'Scheduler recovered a stale run and needs an operator-confirmed next step.',
@@ -210,6 +211,7 @@ describe('Taskplane writeback approval items', () => {
     }]);
     expect(items[0]?.detail).toContain('authorization=local_recovery');
     expect(items[0]?.detail).toContain('localRecoveryCompleted=yes');
+    expect(items[0]?.detail).toContain('localRecoveryTaskMatched=yes');
   });
 
   it('blocks scheduler Decision proposal timeline events without target-scoped authorization', () => {

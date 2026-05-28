@@ -2276,6 +2276,7 @@ describe('SchedulerService', () => {
         evidenceRunId: 'run_stale_recovered',
         localRecoveryCompleted: true,
         localRecoveryRunId: 'run_stale_recovered',
+        localRecoveryTaskId: 'task_stale_recovered',
         proposedOutcome: '复核失败证据后手动重跑',
         targetTaskId: 'task_stale_recovered',
         title: '确认 stale run 自动恢复后的下一步',

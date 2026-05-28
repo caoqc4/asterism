@@ -47,6 +47,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     approvalQueueConnected: true,
     localRecoveryCompleted: true,
     localRecoveryRunId: 'run_scheduler_recovery_smoke',
+    localRecoveryTaskId: 'task_scheduler_decision_recovery_smoke',
     targetTaskId: 'task_scheduler_decision_recovery_smoke',
   });
   const scopeMismatch = planSchedulerDecisionProposal({
@@ -99,7 +100,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`localRecoveryRequirements=${localRecovery.satisfiedRequirements.length}/3`);
   console.log(`localRecoveryAuthorization=${localRecovery.authorizations.join(',') || 'none'}`);
   console.log(`localRecoveryRunId=${scalarValue(localRecovery.summary, 'localRecoveryRunId') ?? 'missing'}`);
+  console.log(`localRecoveryTask=${scalarValue(localRecovery.summary, 'localRecoveryTask') ?? 'missing'}`);
   console.log(`localRecoveryCompleted=${scalarValue(localRecovery.summary, 'localRecoveryCompleted') ?? 'missing'}`);
+  console.log(`localRecoveryTaskMatched=${scalarValue(localRecovery.summary, 'localRecoveryTaskMatched') ?? 'missing'}`);
   console.log(`localRecoveryDecisionPersistenceAllowed=${String(localRecovery.decisionPersistenceAllowed)}`);
   console.log(`localRecoveryWritebackDispatchAllowed=${String(localRecovery.writebackDispatchAllowed)}`);
   console.log(`localRecoverySchedulerTriggerAllowed=${String(localRecovery.schedulerTriggerAllowed)}`);
@@ -134,7 +137,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || scalarValue(standingApproval.summary, 'standingApprovalScopeMatched') !== 'yes'
     || localRecovery.authorizations.join(',') !== 'local_recovery'
     || scalarValue(localRecovery.summary, 'localRecoveryRunId') !== 'run_scheduler_recovery_smoke'
+    || scalarValue(localRecovery.summary, 'localRecoveryTask') !== 'task_scheduler_decision_recovery_smoke'
     || scalarValue(localRecovery.summary, 'localRecoveryCompleted') !== 'yes'
+    || scalarValue(localRecovery.summary, 'localRecoveryTaskMatched') !== 'yes'
     || scopeMismatch.approvalItemAllowed
     || scopeMismatch.satisfiedRequirements.length !== 2
     || !scopeMismatch.missingRequirements.includes('authorization')

@@ -44,7 +44,9 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('schedulerTriggerAllowed=false');
     expect(plan.summary).toContain('targetTask=missing');
     expect(plan.summary).toContain('localRecoveryRunId=missing');
+    expect(plan.summary).toContain('localRecoveryTask=missing');
     expect(plan.summary).toContain('localRecoveryCompleted=no');
+    expect(plan.summary).toContain('localRecoveryTaskMatched=no');
     expect(plan.summary).toContain('operatorId=missing');
     expect(plan.summary).toContain('standingApprovalPolicyId=missing');
     expect(plan.summary).toContain('standingApprovalScopeTask=missing');
@@ -139,6 +141,7 @@ describe('scheduler decision proposal contract', () => {
       approvalQueueConnected: true,
       localRecoveryCompleted: true,
       localRecoveryRunId: 'run_recovered_1',
+      localRecoveryTaskId: 'task_recovered_1',
       targetTaskId: 'task_recovered_1',
     });
 
@@ -159,7 +162,9 @@ describe('scheduler decision proposal contract', () => {
     });
     expect(plan.summary).toContain('authorization=local_recovery');
     expect(plan.summary).toContain('localRecoveryRunId=run_recovered_1');
+    expect(plan.summary).toContain('localRecoveryTask=task_recovered_1');
     expect(plan.summary).toContain('localRecoveryCompleted=yes');
+    expect(plan.summary).toContain('localRecoveryTaskMatched=yes');
   });
 
   it('requires concrete operator identity or target-scoped Standing Approval for direct plans', () => {
@@ -247,6 +252,7 @@ describe('scheduler decision proposal contract', () => {
       localRecovery: {
         recoveredRunId: 'run_recovered_1',
         status: 'completed',
+        taskId: 'task_decision_3',
       },
       targetTaskId: 'task_decision_3',
     });
@@ -260,7 +266,32 @@ describe('scheduler decision proposal contract', () => {
     });
     expect(localRecovery.summary).toContain('authorization=local_recovery');
     expect(localRecovery.summary).toContain('localRecoveryRunId=run_recovered_1');
+    expect(localRecovery.summary).toContain('localRecoveryTask=task_decision_3');
     expect(localRecovery.summary).toContain('localRecoveryCompleted=yes');
+
+    const wrongRecoveryTask = planSchedulerDecisionProposalFromEvidence({
+      approvalQueue: {
+        connected: true,
+        surface: 'task_dynamics',
+      },
+      localRecovery: {
+        recoveredRunId: 'run_recovered_1',
+        status: 'completed',
+        taskId: 'task_other',
+      },
+      targetTaskId: 'task_decision_3',
+    });
+
+    expect(wrongRecoveryTask).toMatchObject({
+      status: 'blocked',
+      approvalItemAllowed: false,
+      authorizations: [],
+      missingRequirements: ['authorization'],
+    });
+    expect(wrongRecoveryTask.summary).toContain('localRecoveryRunId=run_recovered_1');
+    expect(wrongRecoveryTask.summary).toContain('localRecoveryTask=task_other');
+    expect(wrongRecoveryTask.summary).toContain('localRecoveryCompleted=no');
+    expect(wrongRecoveryTask.summary).toContain('localRecoveryTaskMatched=no');
 
     const ready = planSchedulerDecisionProposalFromEvidence({
       approvalQueue: {
