@@ -1546,11 +1546,14 @@ describe('App redesign v1', () => {
     expect(within(executionReadiness).getByText('execution_run deferred')).toBeTruthy();
     expect(within(executionReadiness).getByText('promotion=0/11')).toBeTruthy();
     expect(within(executionReadiness).getByText('missingRequirements=3')).toBeTruthy();
+    expect(within(executionReadiness).getByText('missingRequirementList=selected_runtime_contract,target_task_identity,provider_visible_preflight')).toBeTruthy();
     expect(within(executionReadiness).getByText('missingGates=2')).toBeTruthy();
+    expect(within(executionReadiness).getByText('missingGateList=runtime_context_assembly,context_readiness')).toBeTruthy();
     const decompositionReadiness = screen.getByLabelText('Agent API decomposition readiness');
     expect(within(decompositionReadiness).getByText('decomposition promotion deferred')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('promotion=0/7')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('missingRequirements=3')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('missingRequirementList=selected_runtime_contract,parent_task_identity,reversible_proposal_card')).toBeTruthy();
     const providerToolReadiness = screen.getByLabelText('Agent API provider tool readiness');
     expect(within(providerToolReadiness).getByText('providerToolReadiness=not_declared')).toBeTruthy();
     expect(within(providerToolReadiness).getByText('providerToolStatus=not_declared')).toBeTruthy();

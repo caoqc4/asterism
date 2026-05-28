@@ -57,24 +57,30 @@ function normalizeAgentCliCapabilityMode(mode: FeatureFlags['agentCliCapabilityM
 }
 
 function agentApiExecutionReadiness(summary?: string | null): {
+  missingGateList: string | null;
   missingGateCount: number;
+  missingRequirementList: string | null;
   missingRequirementCount: number;
   promotionCount: string | null;
 } {
   const text = summary ?? '';
   return {
+    missingGateList: scalarValue(text, 'executionRunMissingGates'),
     missingGateCount: listValueCount(text, 'executionRunMissingGates'),
+    missingRequirementList: scalarValue(text, 'executionRunMissingRequirements'),
     missingRequirementCount: listValueCount(text, 'executionRunMissingRequirements'),
     promotionCount: scalarValue(text, 'executionRunPromotionRequirements'),
   };
 }
 
 function agentApiDecompositionReadiness(summary?: string | null): {
+  missingRequirementList: string | null;
   missingRequirementCount: number;
   promotionCount: string | null;
 } {
   const text = summary ?? '';
   return {
+    missingRequirementList: scalarValue(text, 'decompositionMissingRequirements'),
     missingRequirementCount: listValueCount(text, 'decompositionMissingRequirements'),
     promotionCount: scalarValue(text, 'decompositionPromotionRequirements'),
   };
@@ -756,7 +762,13 @@ function AgentCliRuntimeSection({
                 <span>{`promotion=${apiExecutionReadiness.promotionCount}`}</span>
               )}
               <span>{`missingRequirements=${apiExecutionReadiness.missingRequirementCount}`}</span>
+              {apiExecutionReadiness.missingRequirementList && (
+                <span>{`missingRequirementList=${apiExecutionReadiness.missingRequirementList}`}</span>
+              )}
               <span>{`missingGates=${apiExecutionReadiness.missingGateCount}`}</span>
+              {apiExecutionReadiness.missingGateList && (
+                <span>{`missingGateList=${apiExecutionReadiness.missingGateList}`}</span>
+              )}
             </div>
             <div className="agent-api-execution-readiness" aria-label="Agent API decomposition readiness">
               <span>decomposition promotion deferred</span>
@@ -764,6 +776,9 @@ function AgentCliRuntimeSection({
                 <span>{`promotion=${apiDecompositionReadiness.promotionCount}`}</span>
               )}
               <span>{`missingRequirements=${apiDecompositionReadiness.missingRequirementCount}`}</span>
+              {apiDecompositionReadiness.missingRequirementList && (
+                <span>{`missingRequirementList=${apiDecompositionReadiness.missingRequirementList}`}</span>
+              )}
             </div>
             {apiProviderToolReadiness && (
               <div className="agent-api-execution-readiness" aria-label="Agent API provider tool readiness">
