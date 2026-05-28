@@ -5,6 +5,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
+const providerToolReadinessModulePath = path.join(root, 'dist-electron', 'shared', 'agent-api-provider-tool-readiness.js');
 const capabilityRegistryModulePath = path.join(root, 'dist-electron', 'shared', 'capability-registry.js');
 const runtimeSnapshotModulePath = path.join(root, 'dist-electron', 'shared', 'runtime-capability-snapshot.js');
 
@@ -16,13 +17,20 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log('startupProbe=not-attempted');
   console.log('workspace=unchanged');
 
-  if (!fs.existsSync(capabilityRegistryModulePath) || !fs.existsSync(runtimeSnapshotModulePath)) {
+  if (
+    !fs.existsSync(providerToolReadinessModulePath)
+    || !fs.existsSync(capabilityRegistryModulePath)
+    || !fs.existsSync(runtimeSnapshotModulePath)
+  ) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
     return 0;
   }
 
+  const {
+    evaluateAgentApiProviderToolReadinessFromEvidence,
+  } = await import(pathToFileURL(providerToolReadinessModulePath).href);
   const { buildCapabilityRegistry } = await import(pathToFileURL(capabilityRegistryModulePath).href);
   const { buildRuntimeCapabilitySnapshot } = await import(pathToFileURL(runtimeSnapshotModulePath).href);
   const snapshot = buildRuntimeCapabilitySnapshot({
@@ -73,6 +81,20 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`executionRunPromotionRequirements=${scalarValue(agentApiRuntime.summary, 'executionRunPromotionRequirements') ?? 'missing'}`);
   console.log(`decompositionPromotionRequirements=${scalarValue(agentApiRuntime.summary, 'decompositionPromotionRequirements') ?? 'missing'}`);
 
+  const serviceEvidenceReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+    providerConfigured: snapshot.model.configured,
+    selectedRuntime: {
+      mode: snapshot.executionRuntime.mode,
+      runtimeKind: snapshot.executionRuntime.kind,
+    },
+    startupProbe: 'never',
+  });
+
+  console.log(`serviceEvidenceProviderToolStatus=${serviceEvidenceReadiness.status}`);
+  console.log(`serviceEvidenceProviderToolReadiness=${serviceEvidenceReadiness.toolReadiness}`);
+  console.log(`serviceEvidenceProviderToolRequirements=${serviceEvidenceReadiness.satisfiedRequirements.length}/5`);
+  console.log(`serviceEvidenceProviderToolMissingRequirements=${serviceEvidenceReadiness.missingRequirements.join(',') || 'none'}`);
+
   if (
     snapshot.executionRuntime.kind !== 'agent_api'
     || snapshot.executionRuntime.executable
@@ -83,6 +105,10 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     || !agentApiRuntime.summary.includes('providerToolReadiness=not_declared')
     || !agentApiRuntime.summary.includes('startupProbe=never')
     || !agentApiRuntime.summary.includes('executionRun=deferred')
+    || serviceEvidenceReadiness.status !== 'not_declared'
+    || serviceEvidenceReadiness.satisfiedRequirements.length !== 3
+    || !serviceEvidenceReadiness.missingRequirements.includes('provider_owned_metadata')
+    || !serviceEvidenceReadiness.missingRequirements.includes('explicit_tool_declaration')
   ) {
     console.log('status=failed');
     return 1;

@@ -748,7 +748,12 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('missing gate count visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API decomposition readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness chips');
+    expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
+    expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
+    expect(capabilities?.evidence.join(' ')).toContain('provider configuration alone stays providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness smoke');
+    expect(capabilities?.evidence.join(' ')).toContain('service-evidence=3/5 requirements');
+    expect(capabilities?.evidence.join(' ')).toContain('provider_owned_metadata and explicit_tool_declaration missing');
     expect(capabilities?.evidence.join(' ')).toContain('runtimeExecutable=no');
     expect(capabilities?.evidence.join(' ')).toContain('provider=not-called');
     expect(capabilities?.evidence.join(' ')).toContain('network=not-called');
@@ -787,6 +792,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.nextActions.join(' ')).toContain('opportunistically when local account support is available');
     expect(capabilities?.nextActions.join(' ')).toContain('not as a CLI-first blocker');
     expect(capabilities?.nextActions.join(' ')).toContain('stable non-executing metadata');
+    expect(capabilities?.nextActions.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.nextActions.join(' ')).toContain('read-only Agent API provider tool readiness smoke');
     expect(capabilities?.nextActions.join(' ')).toContain('read-only native goal forwarding readiness smoke');
     expect(capabilities?.cliOnlyClosure).toBe('supported');
