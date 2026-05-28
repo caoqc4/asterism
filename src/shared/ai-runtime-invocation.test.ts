@@ -15,6 +15,7 @@ import {
   evaluateAgentApiExecutionPromotionReadinessFromEvidence,
   evaluateAgentApiExecutionPromotionReadinessForInvocation,
 } from './ai-runtime-invocation.js';
+import type { AgentApiExecutionPromotionServiceEvidence } from './ai-runtime-invocation.js';
 import { buildSubtaskCreateManyWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
 
 describe('ai runtime invocation contract', () => {
@@ -1522,6 +1523,27 @@ describe('ai runtime invocation contract', () => {
     expect(missingProvider.summary).toContain('providerConfigured=ready');
     expect(missingProvider.summary).toContain('configuredProvider=missing');
     expect(missingProvider.summary).toContain('providerStartupProbe=not_called');
+  });
+
+  it('requires provider-visible preflight to carry explicit no-startup-probe evidence', () => {
+    const missingStartupProbe = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      providerVisiblePreflight: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+        runId: 'run_api_execution',
+        status: 'ready',
+        taskId: 'task_1',
+      } as unknown as NonNullable<AgentApiExecutionPromotionServiceEvidence['providerVisiblePreflight']>,
+    });
+
+    expect(missingStartupProbe).toMatchObject({
+      ready: false,
+      missingRequirements: ['provider_visible_preflight'],
+    });
+    expect(missingStartupProbe.summary).toContain('providerStartupProbe=missing');
+    expect(missingStartupProbe.summary).toContain('providerPreflightRunEvidenceChain=ready');
+    expect(missingStartupProbe.summary).toContain('providerPreflightTaskEvidenceChain=ready');
   });
 
   it('requires provider-visible preflight to belong to the same run and target task', () => {

@@ -839,7 +839,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     evidence.providerVisiblePreflight?.status === 'ready'
     && evidence.providerVisiblePreflight.providerConfigured
     && Boolean(configuredProvider)
-    && evidence.providerVisiblePreflight.startupProbe !== 'called'
+    && (
+      evidence.providerVisiblePreflight.startupProbe === 'never'
+      || evidence.providerVisiblePreflight.startupProbe === 'not_called'
+    )
     && providerPreflightRunEvidenceChainReady
     && providerPreflightTaskEvidenceChainReady
   ) {
