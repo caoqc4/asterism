@@ -285,6 +285,9 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
   if (surface.id !== 'runtime.scheduler') return [];
   return configurationSafetyScalarChips(surface, [
     'proposalReady',
+    'proposalRequirements',
+    'proposalMissingRequirements',
+    'missingRequirements',
     'approvalQueueSurface',
     'authorization',
     'operatorId',
@@ -292,6 +295,9 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
     'standingApprovalScopeTask',
     'standingApprovalActive',
     'standingApprovalScopeMatched',
+    'decisionPersistenceAllowed',
+    'writebackDispatchAllowed',
+    'schedulerTriggerAllowed',
     'runtimeStartRequirements',
     'runtimeStartMissingRequirements',
   ]);

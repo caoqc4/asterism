@@ -255,6 +255,10 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('runtime.scheduler summary through planSchedulerDecisionProposalFromEvidence');
     expect(decisions?.evidence.join(' ')).toContain('ConfigurationSafetyReport surfaces the approval queue, target-task, authorization source, standing-approval policy identity, no-persistence, no-writeback, and no-trigger boundary');
     expect(decisions?.evidence.join(' ')).toContain('Settings configuration safety rows now render runtime.scheduler evidence chips');
+    expect(decisions?.evidence.join(' ')).toContain('proposalRequirements, proposalMissingRequirements, missingRequirements');
+    expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed, writebackDispatchAllowed, schedulerTriggerAllowed');
+    expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal gaps');
+    expect(decisions?.evidence.join(' ')).toContain('closed persistence/writeback/trigger gates');
     expect(decisions?.evidence.join(' ')).toContain('runtimeStartRequirements');
     expect(decisions?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
     expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');

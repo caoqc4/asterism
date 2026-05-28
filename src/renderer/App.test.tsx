@@ -4973,7 +4973,7 @@ describe('App redesign v1', () => {
           {
             id: 'runtime.scheduler',
             state: 'approval_required',
-            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / approvalQueueSurface=missing / authorization=missing / operatorId=missing / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
+            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / proposalRequirements=0/3 / proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization / missingRequirements=approval_queue_surface,target_task_identity,authorization / approvalQueueSurface=missing / authorization=missing / operatorId=missing / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
             diagnosticSummary: 'Scheduled/event trigger plan / status=blocked / runtimeStartRequirements=1/3 / runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count',
             requiresApproval: true,
             startupProbePolicy: 'never',
@@ -5035,6 +5035,9 @@ describe('App redesign v1', () => {
     expect(within(patchPromotionEvidence).getByText('touchedFiles=notes.md')).toBeTruthy();
     const schedulerEvidence = screen.getByLabelText('runtime.scheduler evidence');
     expect(within(schedulerEvidence).getByText('proposalReady=no')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('proposalRequirements=0/3')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('missingRequirements=approval_queue_surface,target_task_identity,authorization')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('approvalQueueSurface=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('authorization=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('operatorId=missing')).toBeTruthy();
@@ -5042,6 +5045,9 @@ describe('App redesign v1', () => {
     expect(within(schedulerEvidence).getByText('standingApprovalScopeTask=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('standingApprovalActive=no')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('standingApprovalScopeMatched=no')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('decisionPersistenceAllowed=false')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('writebackDispatchAllowed=false')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('schedulerTriggerAllowed=false')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('runtimeStartRequirements=1/3')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count')).toBeTruthy();
     expect(screen.getByText(/诊断：workspace=missing \/ selected=Codex CLI/)).toBeTruthy();
