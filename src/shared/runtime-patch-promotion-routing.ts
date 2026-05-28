@@ -238,6 +238,11 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const postApplyRunEvidenceReady = (
     evidence.postApplyRunEvidence?.status === 'present'
     && Boolean(postApplyRunId)
+    && Boolean(patchRunId)
+    && postApplyRunId === patchRunId
+    && Boolean(postApplyTaskId)
+    && Boolean(targetTaskId)
+    && postApplyTaskId === targetTaskId
     && touchedFileEvidenceChainReady
   );
   const sameRunEvidenceChainReady = (

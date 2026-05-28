@@ -591,6 +591,128 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('postApplyRunEvidence=missing');
   });
 
+  it('requires post-apply Run evidence to belong to the same run and target task', () => {
+    const wrongRun = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_other',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'same_run_evidence_chain',
+        'post_apply_run_evidence',
+      ],
+    });
+    expect(wrongRun.summary).toContain('postApplyRunId=run_other');
+    expect(wrongRun.summary).toContain('postApplyTask=task_1');
+    expect(wrongRun.summary).toContain('postApplyRunEvidence=missing');
+    expect(wrongRun.summary).toContain('touchedFileEvidenceChain=ready');
+
+    const wrongTask = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_other',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'target_task_identity',
+        'same_run_evidence_chain',
+        'post_apply_run_evidence',
+      ],
+    });
+    expect(wrongTask.summary).toContain('postApplyRunId=run_patch_1');
+    expect(wrongTask.summary).toContain('postApplyTask=task_other');
+    expect(wrongTask.summary).toContain('targetTaskEvidenceChain=missing');
+    expect(wrongTask.summary).toContain('postApplyRunEvidence=missing');
+    expect(wrongTask.summary).toContain('touchedFileEvidenceChain=ready');
+  });
+
   it('requires expected and touched files to stay inside safe workspace-relative paths', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
