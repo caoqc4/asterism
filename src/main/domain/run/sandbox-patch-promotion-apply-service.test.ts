@@ -192,8 +192,12 @@ describe('SandboxPatchPromotionApplyService', () => {
       expect(markBlocked).toHaveBeenCalledWith(
         'sandbox_patch_promotion_1',
         ['Patch promotion workspace content does not match reviewed base: second.md'],
-        'Sandbox patch promotion apply blocked: Patch promotion workspace content does not match reviewed base: second.md',
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion workspace content does not match reviewed base: second.md'),
       );
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionSatisfiedRequirements=patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionMissingRequirements=selected_runtime_contract,target_task_identity,same_run_evidence_chain,post_apply_run_evidence');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('postApplyRunEvidence=missing');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

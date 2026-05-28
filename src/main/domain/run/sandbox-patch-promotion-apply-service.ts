@@ -89,7 +89,15 @@ export class SandboxPatchPromotionApplyService {
     });
 
     if (!validation.valid) {
-      return this.blocked(validation.blockedReasons, preflight.promotion);
+      return this.blocked(
+        validation.blockedReasons,
+        preflight.promotion,
+        buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight({
+          operatorConfirmed: options.operatorConfirmed === true,
+          operatorId: options.operatorId,
+          preflight,
+        }),
+      );
     }
 
     if (validation.alreadyApplied) {
@@ -142,8 +150,12 @@ export class SandboxPatchPromotionApplyService {
   private async blocked(
     blockedReasons: string[],
     promotion: SandboxPatchPromotionRecord | undefined,
+    routingSummary?: string,
   ): Promise<SandboxPatchPromotionApplyResult> {
-    const auditSummary = `Sandbox patch promotion apply blocked: ${blockedReasons.join(' ')}`;
+    const auditSummary = [
+      `Sandbox patch promotion apply blocked: ${blockedReasons.join(' ')}`,
+      routingSummary,
+    ].filter(Boolean).join(' / ');
     const blockedPromotion = promotion
       ? await this.promotionRepository.markBlocked(promotion.id, blockedReasons, auditSummary)
       : undefined;
@@ -156,6 +168,48 @@ export class SandboxPatchPromotionApplyService {
       touchedFiles: [],
     };
   }
+}
+
+function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(params: {
+  operatorConfirmed: boolean;
+  operatorId?: string | null;
+  preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>;
+}): string {
+  const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
+    explicitOperatorApply: {
+      confirmed: params.operatorConfirmed,
+      operatorId: params.operatorId ?? null,
+    },
+    patchArtifact: {
+      artifactId: params.preflight.artifact.id,
+      kind: params.preflight.artifact.kind === 'patch' ? 'patch' : 'unknown',
+      runId: params.preflight.artifact.sourceId,
+      status: params.preflight.artifact.kind === 'patch' ? 'ready' : 'missing',
+      taskId: params.preflight.promotion.taskId,
+    },
+    postApplyRunEvidence: {
+      runId: null,
+      status: 'missing',
+      taskId: null,
+      touchedFiles: [],
+    },
+    promotionDecision: {
+      checkpointId: params.preflight.checkpoint.id,
+      decisionId: params.preflight.promotion.decisionId,
+      runId: params.preflight.checkpoint.runId,
+      status: 'approved',
+      taskId: params.preflight.promotion.taskId,
+    },
+    promotionPreflight: {
+      checkpointId: params.preflight.checkpoint.id,
+      runId: params.preflight.checkpoint.runId,
+      status: 'ready',
+      taskId: params.preflight.promotion.taskId,
+    },
+    targetTaskId: params.preflight.promotion.taskId,
+  };
+  const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
+  return `futureRuntimeRouting=${readiness.summary}`;
 }
 
 function parseArtifactContent(value: string): SandboxPatchReviewArtifactContent | null {
