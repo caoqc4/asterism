@@ -263,6 +263,8 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
     return configurationSafetyScalarChips(surface, [
       'promotionReady',
       'promotionRequirements',
+      'promotionMissingRequirements',
+      'missingRequirements',
       'selectedRuntimeContract',
       'targetTaskIdentity',
       'sameRunEvidenceChain',

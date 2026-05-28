@@ -759,8 +759,9 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('sandbox.patch_promotion diagnostic summary');
     expect(taskFiles?.evidence.join(' ')).toContain('settings and safety-report surfaces show the selected-runtime, target-task, same-run artifact');
     expect(taskFiles?.evidence.join(' ')).toContain('Settings configuration safety rows now render sandbox.patch_promotion evidence chips');
+    expect(taskFiles?.evidence.join(' ')).toContain('promotionMissingRequirements, missingRequirements');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, promotionDecisionId, patchRunId, decisionRunId, preflightRunId, postApplyRunId');
-    expect(taskFiles?.evidence.join(' ')).toContain('patch promotion routing identity');
+    expect(taskFiles?.evidence.join(' ')).toContain('patch promotion routing gaps and identity');
     expect(taskFiles?.evidence.join(' ')).toContain('runtime patch promotion routing readiness smoke');
     expect(taskFiles?.evidence.join(' ')).toContain('blocked=2/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('same-run-blocked=7/8 requirements');
