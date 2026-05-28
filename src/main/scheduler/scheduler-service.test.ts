@@ -242,14 +242,17 @@ function buildReadyAutomationAiConfigService() {
   };
 }
 
-function buildStandingApprovalTimeline(partial: { maxRunsPerDay?: number; expiresAt?: string } = {}) {
+function buildStandingApprovalTimeline(
+  partial: { maxRunsPerDay?: number; expiresAt?: string; taskId?: string } = {},
+) {
+  const taskId = partial.taskId ?? 'task_auto';
   return {
     id: 'timeline_approval',
-    taskId: 'task_auto',
+    taskId,
     type: 'panel.standing_approval_confirmed',
     payload: JSON.stringify({
       policy: {
-        id: 'standing_approval:task_auto:coding:local_sandbox',
+        id: `standing_approval:${taskId}:coding:local_sandbox`,
         allowedAutonomyLevel: 'L2_limited_authorized_action',
         allowedLanes: ['coding'],
         allowedRuntimeIds: ['local_sandbox'],
@@ -260,7 +263,7 @@ function buildStandingApprovalTimeline(partial: { maxRunsPerDay?: number; expire
         riskCeiling: 'low',
         status: 'active',
         taskFacets: ['scheduled'],
-        taskId: 'task_auto',
+        taskId,
         taskTypes: ['routine'],
       },
       schedulerTriggerAllowed: false,
@@ -1843,6 +1846,96 @@ describe('SchedulerService', () => {
         title: '确认定时/事件 Agent 候选任务重复后的下一步',
       }),
     }));
+  });
+
+  it('keeps duplicate scheduled/event candidate Decision evidence scoped to each target task', async () => {
+    const taskA = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2 })],
+    });
+    const taskB = buildAutomationTaskDetail({
+      id: 'task_beta',
+      nextStep: 'Prepare the beta weekly update.',
+      summary: 'Known beta weekly update task.',
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2, taskId: 'task_beta' })],
+      title: 'Beta weekly update',
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1, task_beta: 1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockImplementation(async (input: { taskId: string }) => ({
+        ...buildRunRecord(),
+        id: `run_${input.taskId}`,
+        taskId: input.taskId,
+        type: 'agent',
+      } satisfies RunRecord)),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([taskA, taskB, taskA, taskB]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:30:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
+      checkedTaskIds: ['task_auto', 'task_beta', 'task_auto', 'task_beta'],
+      startedRunCount: 2,
+      blockedTaskCount: 2,
+      startedRunIds: ['run_task_auto', 'run_task_beta'],
+    });
+    expect(sweepResult.summary).toContain('duplicateCandidateTaskIds=task_auto,task_beta');
+    expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposals=proposed,proposed');
+    const proposalPayloads = timelinePort.recordTimelineEvent.mock.calls
+      .map((call) => call[0])
+      .filter((event) => event.type === 'panel.scheduler_decision_proposed')
+      .map((event) => event.payload);
+    expect(proposalPayloads).toHaveLength(2);
+    expect(proposalPayloads).toContainEqual(expect.objectContaining({
+      rationale: expect.stringContaining('Duplicate task ids: task_auto.'),
+      targetTaskId: 'task_auto',
+    }));
+    expect(proposalPayloads).toContainEqual(expect.objectContaining({
+      rationale: expect.stringContaining('Duplicate task ids: task_beta.'),
+      targetTaskId: 'task_beta',
+    }));
+    const taskAutoProposal = proposalPayloads.find((payload) => payload?.targetTaskId === 'task_auto');
+    const taskBetaProposal = proposalPayloads.find((payload) => payload?.targetTaskId === 'task_beta');
+    expect(taskAutoProposal?.rationale).not.toContain('task_beta');
+    expect(taskBetaProposal?.rationale).not.toContain('task_auto');
   });
 
   it('skips overlapping scheduled/event sweeps while one sweep is in flight', async () => {

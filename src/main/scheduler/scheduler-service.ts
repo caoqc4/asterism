@@ -327,6 +327,13 @@ function dedupeScheduledEventAgentTasks(
   };
 }
 
+function duplicateScheduledEventAgentTaskIdsForTarget(
+  duplicateTaskIds: string[],
+  targetTaskId: string,
+): string[] {
+  return duplicateTaskIds.filter((taskId) => taskId === targetTaskId);
+}
+
 export class SchedulerService {
   private jobs: ScheduledTask[] = [];
   private started = false;
@@ -529,7 +536,12 @@ export class SchedulerService {
       for (const task of duplicateTasks) {
         const plan = plansByTaskId.get(task.id);
         if (!plan) continue;
-        const proposal = await this.proposeScheduledEventDuplicateCandidateDecision(task, plan, duplicateTaskIds, now)
+        const proposal = await this.proposeScheduledEventDuplicateCandidateDecision(
+          task,
+          plan,
+          duplicateScheduledEventAgentTaskIdsForTarget(duplicateTaskIds, task.id),
+          now,
+        )
           .catch((error: unknown) => ({
             status: 'failed' as const,
             summary: `duplicateCandidateDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
