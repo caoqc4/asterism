@@ -12,6 +12,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan).toMatchObject({
       status: 'blocked',
       approvalItemAllowed: false,
+      approvalQueueSurface: null,
       decisionPersistenceAllowed: false,
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
@@ -33,6 +34,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('proposalReady=no');
     expect(plan.summary).toContain('proposalRequirements=0/3');
     expect(plan.summary).toContain('approvalItemAllowed=false');
+    expect(plan.summary).toContain('approvalQueueSurface=missing');
     expect(plan.summary).toContain('decisionPersistenceAllowed=false');
     expect(plan.summary).toContain('writebackDispatchAllowed=false');
     expect(plan.summary).toContain('schedulerTriggerAllowed=false');
@@ -51,6 +53,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan).toMatchObject({
       status: 'ready',
       approvalItemAllowed: true,
+      approvalQueueSurface: 'unknown',
       decisionPersistenceAllowed: false,
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
@@ -67,6 +70,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('requirements=3/3');
     expect(plan.summary).toContain('proposalReady=yes');
     expect(plan.summary).toContain('proposalRequirements=3/3');
+    expect(plan.summary).toContain('approvalQueueSurface=unknown');
     expect(plan.summary).toContain('authorization=operator_confirmation');
     expect(plan.summary).toContain('targetTask=task_decision_1');
     expect(plan.summary).toContain('missingRequirements=none');
@@ -84,6 +88,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan).toMatchObject({
       status: 'ready',
       approvalItemAllowed: true,
+      approvalQueueSurface: 'unknown',
       decisionPersistenceAllowed: false,
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
@@ -118,6 +123,7 @@ describe('scheduler decision proposal contract', () => {
     expect(partial).toMatchObject({
       status: 'blocked',
       approvalItemAllowed: false,
+      approvalQueueSurface: 'task_dynamics',
       decisionPersistenceAllowed: false,
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
@@ -128,6 +134,7 @@ describe('scheduler decision proposal contract', () => {
       missingRequirements: ['authorization'],
     });
     expect(partial.summary).toContain('requirements=2/3');
+    expect(partial.summary).toContain('approvalQueueSurface=task_dynamics');
     expect(partial.summary).toContain('authorization=missing');
 
     const ready = planSchedulerDecisionProposalFromEvidence({
@@ -150,6 +157,7 @@ describe('scheduler decision proposal contract', () => {
     expect(ready).toMatchObject({
       status: 'ready',
       approvalItemAllowed: true,
+      approvalQueueSurface: 'task_dynamics',
       decisionPersistenceAllowed: false,
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
@@ -166,6 +174,7 @@ describe('scheduler decision proposal contract', () => {
     });
     expect(ready.summary).toContain('proposalReady=yes');
     expect(ready.summary).toContain('requirements=3/3');
+    expect(ready.summary).toContain('approvalQueueSurface=task_dynamics');
     expect(ready.summary).toContain('authorization=operator_confirmation,standing_approval');
   });
 });

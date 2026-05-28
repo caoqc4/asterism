@@ -242,6 +242,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('proposalReady');
     expect(decisions?.evidence.join(' ')).toContain('requirements=x/3');
     expect(decisions?.evidence.join(' ')).toContain('proposalRequirements=x/3');
+    expect(decisions?.evidence.join(' ')).toContain('approvalQueueSurface');
     expect(decisions?.evidence.join(' ')).toContain('missingRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('proposalMissingRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('CapabilityRegistry now includes scheduler/background Decision proposal readiness');
@@ -252,6 +253,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=3/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('standing-approval=3/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('service-evidence=2/3 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('approvalQueueSurface=task_dynamics');
     expect(decisions?.evidence.join(' ')).toContain('authorization missing when Standing Approval scope does not match the target task');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
     expect(decisions?.evidence.join(' ')).toContain('selected Agent CLI modes stay product_harness/skipped');

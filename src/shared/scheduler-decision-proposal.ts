@@ -5,6 +5,7 @@ export type SchedulerDecisionProposalAuthorization =
 export type SchedulerDecisionProposalPlan = {
   status: 'ready' | 'blocked';
   approvalItemAllowed: boolean;
+  approvalQueueSurface: 'task_dynamics' | 'right_panel' | 'unknown' | null;
   decisionPersistenceAllowed: false;
   schedulerTriggerAllowed: false;
   writebackDispatchAllowed: false;
@@ -48,6 +49,7 @@ export function schedulerDecisionProposalRequirements(): SchedulerDecisionPropos
 
 export function planSchedulerDecisionProposal(params: {
   approvalQueueConnected?: boolean;
+  approvalQueueSurface?: 'task_dynamics' | 'right_panel' | 'unknown' | null;
   operatorConfirmed?: boolean;
   standingApprovalActive?: boolean;
   targetTaskId?: string | null;
@@ -84,6 +86,7 @@ export function planSchedulerDecisionProposal(params: {
   return {
     status,
     approvalItemAllowed,
+    approvalQueueSurface: params.approvalQueueConnected ? (params.approvalQueueSurface ?? 'unknown') : null,
     decisionPersistenceAllowed: false,
     schedulerTriggerAllowed: false,
     writebackDispatchAllowed: false,
@@ -99,6 +102,7 @@ export function planSchedulerDecisionProposal(params: {
       `requirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `proposalRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `approvalItemAllowed=${approvalItemAllowed ? 'true' : 'false'}`,
+      `approvalQueueSurface=${params.approvalQueueConnected ? (params.approvalQueueSurface ?? 'unknown') : 'missing'}`,
       `targetTask=${targetTaskId ?? 'missing'}`,
       'decisionPersistenceAllowed=false',
       'writebackDispatchAllowed=false',
@@ -128,6 +132,7 @@ export function planSchedulerDecisionProposalFromEvidence(
 
   return planSchedulerDecisionProposal({
     approvalQueueConnected: evidence.approvalQueue?.connected === true,
+    approvalQueueSurface: evidence.approvalQueue?.surface ?? null,
     operatorConfirmed,
     standingApprovalActive,
     targetTaskId,

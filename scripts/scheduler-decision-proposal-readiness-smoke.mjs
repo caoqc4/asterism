@@ -56,9 +56,11 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`blockedProposalReady=${blocked.approvalItemAllowed ? 'yes' : 'no'}`);
   console.log(`blockedRequirements=${blocked.satisfiedRequirements.length}/3`);
   console.log(`blockedMissingRequirements=${blocked.missingRequirements.join(',') || 'none'}`);
+  console.log(`blockedApprovalQueueSurface=${blocked.approvalQueueSurface ?? 'missing'}`);
   console.log(`operatorConfirmedStatus=${operatorConfirmed.status}`);
   console.log(`operatorConfirmedProposalReady=${operatorConfirmed.approvalItemAllowed ? 'yes' : 'no'}`);
   console.log(`operatorConfirmedRequirements=${operatorConfirmed.satisfiedRequirements.length}/3`);
+  console.log(`operatorConfirmedApprovalQueueSurface=${operatorConfirmed.approvalQueueSurface ?? 'missing'}`);
   console.log(`operatorConfirmedAuthorization=${operatorConfirmed.authorizations.join(',') || 'none'}`);
   console.log(`operatorConfirmedDecisionPersistenceAllowed=${String(operatorConfirmed.decisionPersistenceAllowed)}`);
   console.log(`operatorConfirmedWritebackDispatchAllowed=${String(operatorConfirmed.writebackDispatchAllowed)}`);
@@ -66,6 +68,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`standingApprovalStatus=${standingApproval.status}`);
   console.log(`standingApprovalProposalReady=${standingApproval.approvalItemAllowed ? 'yes' : 'no'}`);
   console.log(`standingApprovalRequirements=${standingApproval.satisfiedRequirements.length}/3`);
+  console.log(`standingApprovalApprovalQueueSurface=${standingApproval.approvalQueueSurface ?? 'missing'}`);
   console.log(`standingApprovalAuthorization=${standingApproval.authorizations.join(',') || 'none'}`);
   console.log(`standingApprovalDecisionPersistenceAllowed=${String(standingApproval.decisionPersistenceAllowed)}`);
   console.log(`standingApprovalWritebackDispatchAllowed=${String(standingApproval.writebackDispatchAllowed)}`);
@@ -77,6 +80,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`serviceEvidenceProposalReady=${serviceEvidencePartial.approvalItemAllowed ? 'yes' : 'no'}`);
   console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/3`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceApprovalQueueSurface=${serviceEvidencePartial.approvalQueueSurface ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionPersistenceAllowed=${String(serviceEvidencePartial.decisionPersistenceAllowed)}`);
   console.log(`serviceEvidenceWritebackDispatchAllowed=${String(serviceEvidencePartial.writebackDispatchAllowed)}`);
   console.log(`serviceEvidenceSchedulerTriggerAllowed=${String(serviceEvidencePartial.schedulerTriggerAllowed)}`);
@@ -92,6 +96,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || standingApproval.writebackDispatchAllowed
     || standingApproval.schedulerTriggerAllowed
     || serviceEvidencePartial.approvalItemAllowed
+    || serviceEvidencePartial.approvalQueueSurface !== 'task_dynamics'
     || serviceEvidencePartial.satisfiedRequirements.length !== 2
     || !serviceEvidencePartial.missingRequirements.includes('authorization')
     || serviceEvidencePartial.decisionPersistenceAllowed
