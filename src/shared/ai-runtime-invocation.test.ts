@@ -785,6 +785,7 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('targetTask=task_1');
     expect(partial.summary).toContain('runEvidenceTask=missing');
     expect(partial.summary).toContain('targetTaskEvidenceChain=ready');
+    expect(partial.summary).toContain('runEvidenceTaskEvidenceChain=missing');
     expect(partial.summary).toContain('providerConfigured=ready');
     expect(partial.summary).toContain('configuredProvider=openai');
     expect(partial.summary).toContain('providerStartupProbe=not_called');
@@ -817,6 +818,7 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('targetTask=task_1');
     expect(ready.summary).toContain('runEvidenceTask=task_1');
     expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('runEvidenceTaskEvidenceChain=ready');
     expect(ready.summary).toContain('providerConfigured=ready');
     expect(ready.summary).toContain('configuredProvider=openai');
     expect(ready.summary).toContain('providerStartupProbe=not_called');
@@ -848,11 +850,12 @@ describe('ai runtime invocation contract', () => {
 
     expect(mismatch).toMatchObject({
       ready: false,
-      missingRequirements: expect.arrayContaining(['target_task_identity']),
+      missingRequirements: expect.arrayContaining(['target_task_identity', 'run_evidence_persistence']),
     });
     expect(mismatch.summary).toContain('targetTask=task_1');
     expect(mismatch.summary).toContain('runEvidenceTask=task_2');
     expect(mismatch.summary).toContain('targetTaskEvidenceChain=missing');
+    expect(mismatch.summary).toContain('runEvidenceTaskEvidenceChain=missing');
   });
 
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {

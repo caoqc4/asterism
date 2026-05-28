@@ -640,8 +640,12 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const runEvidenceTaskId = evidence.runEvidencePersistence?.taskId?.trim() || '';
   const writeIntentRunId = evidence.writeIntentExtraction?.runId?.trim() || '';
   const writeIntentTaskId = evidence.writeIntentExtraction?.taskId?.trim() || '';
+  const runEvidenceTaskEvidenceChainReady = Boolean(runEvidenceId)
+    && Boolean(runEvidenceTaskId)
+    && Boolean(targetTaskId)
+    && runEvidenceTaskId === targetTaskId;
   const targetTaskIdentityReady = Boolean(targetTaskId)
-    && (!runEvidenceId || runEvidenceTaskId === targetTaskId);
+    && (!runEvidenceId || runEvidenceTaskEvidenceChainReady);
   const writeIntentRunEvidenceChainReady = Boolean(writeIntentRunId)
     && (!runEvidenceId || writeIntentRunId === runEvidenceId);
   const writeIntentTaskEvidenceChainReady = Boolean(writeIntentTaskId)
@@ -715,6 +719,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
 
   if (
     runEvidenceId
+    && runEvidenceTaskEvidenceChainReady
     && evidence.runEvidencePersistence?.terminalEvidenceStatus === 'present'
   ) {
     satisfiedRequirements.push('run_evidence_persistence');
@@ -734,6 +739,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `targetTask=${targetTaskId || 'missing'}`,
       `runEvidenceTask=${runEvidenceTaskId || 'missing'}`,
       `targetTaskEvidenceChain=${targetTaskIdentityReady ? 'ready' : 'missing'}`,
+      `runEvidenceTaskEvidenceChain=${runEvidenceTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `providerConfigured=${evidence.providerVisiblePreflight?.providerConfigured === true ? 'ready' : 'missing'}`,
       `configuredProvider=${configuredProvider || 'missing'}`,
       `providerStartupProbe=${evidence.providerVisiblePreflight?.startupProbe ?? 'missing'}`,

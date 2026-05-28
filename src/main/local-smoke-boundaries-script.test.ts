@@ -788,6 +788,7 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceProviderConfigured=ready');
     expect(result.output).toContain('serviceEvidenceConfiguredProvider=openai');
     expect(result.output).toContain('serviceEvidenceProviderStartupProbe=not_called');
+    expect(result.output).toContain('serviceEvidenceRunEvidenceTaskEvidenceChain=missing');
     expect(result.output).toContain('serviceEvidenceProviderPreflightRun=run_api_execution_partial');
     expect(result.output).toContain('serviceEvidenceProviderPreflightRunEvidenceChain=ready');
     expect(result.output).toContain('serviceEvidenceProviderPreflightTask=task_1');

@@ -157,6 +157,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceMissingGates=${serviceEvidencePartial.missingGates.join(',')}`);
   console.log(`serviceEvidenceTargetTask=${scalarValue(serviceEvidencePartial.summary, 'targetTask') ?? 'missing'}`);
   console.log(`serviceEvidenceTargetTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceRunEvidenceTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runEvidenceTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderConfigured=${scalarValue(serviceEvidencePartial.summary, 'providerConfigured') ?? 'missing'}`);
   console.log(`serviceEvidenceConfiguredProvider=${scalarValue(serviceEvidencePartial.summary, 'configuredProvider') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderStartupProbe=${scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') ?? 'missing'}`);
@@ -189,6 +190,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || serviceEvidencePartial.satisfiedGates.length !== 3
     || scalarValue(serviceEvidencePartial.summary, 'targetTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'runEvidenceTaskEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'providerConfigured') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'configuredProvider') !== 'openai'
     || scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') !== 'not_called'
