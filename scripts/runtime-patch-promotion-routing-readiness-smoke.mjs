@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'runtime-patch-promotion-routing.js');
+const sourceModulePath = path.join(root, 'src', 'shared', 'runtime-patch-promotion-routing.ts');
 
 export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log('Runtime patch promotion routing readiness smoke');
@@ -15,7 +16,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log('workspaceApply=not-attempted');
   console.log('promotionInProduct=explicit_apply_only');
 
-  if (!fs.existsSync(modulePath)) {
+  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -113,7 +114,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || !sameRunBlocked.missingRequirements.includes('same_run_evidence_chain')
     || !syntheticReady.ready
     || serviceEvidencePartial.ready
-    || ![4, 5].includes(serviceEvidencePartial.satisfiedRequirements.length)
+    || serviceEvidencePartial.satisfiedRequirements.length !== 4
     || !serviceEvidencePartial.missingRequirements.includes('same_run_evidence_chain')
     || scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') !== 'artifact_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'promotionDecisionId') !== 'decision_patch_1'
@@ -141,6 +142,13 @@ function scalarValue(summary, key) {
   const prefix = `${key}=`;
   const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
   return part?.trim().slice(prefix.length).trim() ?? null;
+}
+
+function sourceIsNewerThanBuild() {
+  if (!fs.existsSync(sourceModulePath)) return false;
+  const sourceStat = fs.statSync(sourceModulePath);
+  const buildStat = fs.statSync(modulePath);
+  return sourceStat.mtimeMs > buildStat.mtimeMs;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

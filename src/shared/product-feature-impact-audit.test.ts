@@ -834,6 +834,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('expectedFileCount, expectedFiles, touchedFileCount, touchedFiles, and touchedFileEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('patch promotion routing gaps and identity');
     expect(taskFiles?.evidence.join(' ')).toContain('runtime patch promotion routing readiness smoke');
+    expect(taskFiles?.evidence.join(' ')).toContain('stale-build detection');
     expect(taskFiles?.evidence.join(' ')).toContain('blocked=2/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('same-run-blocked=7/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('service-evidence=4/8 requirements');

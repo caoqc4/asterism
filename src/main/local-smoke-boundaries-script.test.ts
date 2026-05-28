@@ -883,6 +883,8 @@ describe('local smoke script default boundaries', () => {
       expect(result.output).toContain('skipReason=build_required');
       return;
     }
+    expect(result.output).toContain('serviceEvidenceRequirements=4/8');
+    expect(result.output).toContain('serviceEvidenceMissingRequirements=target_task_identity,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
     expect(result.output).toContain('serviceEvidenceExpectedFileCount=1');
     expect(result.output).toContain('serviceEvidenceExpectedFiles=src/app.ts');
     expect(result.output).toContain('serviceEvidenceTouchedFileEvidenceChain=missing');
