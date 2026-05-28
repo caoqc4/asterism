@@ -89,8 +89,12 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerToolStatus=${providerToolStatus}`);
   console.log(`providerToolRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolRequirements') ?? 'missing'}`);
   console.log(`providerToolMissingRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolMissingRequirements') ?? 'missing'}`);
+  console.log(`selectedApiRuntime=${scalarValue(agentApiRuntime.summary, 'selectedApiRuntime') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'selectedApiRuntime') ?? 'missing'}`);
+  console.log(`providerConfiguredStatus=${scalarValue(agentApiRuntime.summary, 'providerConfigured') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerConfigured') ?? 'missing'}`);
+  console.log(`providerOwnedMetadata=${scalarValue(agentApiRuntime.summary, 'providerOwnedMetadata') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerOwnedMetadata') ?? 'missing'}`);
   console.log(`providerMetadataOwner=${scalarValue(agentApiRuntime.summary, 'providerMetadataOwner') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') ?? 'missing'}`);
   console.log(`providerMetadataPackage=${scalarValue(agentApiRuntime.summary, 'providerMetadataPackage') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') ?? 'missing'}`);
+  console.log(`explicitToolDeclaration=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclaration') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclaration') ?? 'missing'}`);
   console.log(`explicitToolDeclarationSource=${scalarValue(agentApiRuntime.summary, 'explicitToolDeclarationSource') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
   console.log(`declaredToolCount=${scalarValue(agentApiRuntime.summary, 'declaredToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
   console.log(`startupProbe=${scalarValue(agentApiRuntime.summary, 'startupProbe') ?? 'missing'}`);
@@ -102,33 +106,44 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`serviceEvidenceProviderToolReadiness=${serviceEvidenceReadiness.toolReadiness}`);
   console.log(`serviceEvidenceProviderToolRequirements=${serviceEvidenceReadiness.satisfiedRequirements.length}/5`);
   console.log(`serviceEvidenceProviderToolMissingRequirements=${serviceEvidenceReadiness.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceSelectedApiRuntime=${serviceScalarValue(serviceEvidenceReadiness.summary, 'selectedApiRuntime') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderConfigured=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerConfigured') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderOwnedMetadata=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerOwnedMetadata') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderMetadataOwner=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderMetadataPackage=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') ?? 'missing'}`);
+  console.log(`serviceEvidenceExplicitToolDeclaration=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclaration') ?? 'missing'}`);
   console.log(`serviceEvidenceExplicitToolDeclarationSource=${serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') ?? 'missing'}`);
   console.log(`serviceEvidenceDeclaredToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
 
-  if (
-    snapshot.executionRuntime.kind !== 'agent_api'
-    || snapshot.executionRuntime.executable
-    || agentApiRuntime.status !== 'available'
-    || agentApiRuntime.visibility !== 'hidden'
-    || agentApiRuntime.access !== 'mutating'
-    || agentApiRuntime.requiresApproval !== true
-    || !agentApiRuntime.summary.includes('providerToolReadiness=not_declared')
-    || providerToolStatus !== 'not_declared'
-    || !agentApiRuntime.summary.includes('providerToolRequirements=3/5')
-    || !agentApiRuntime.summary.includes('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration')
-    || serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') !== 'missing'
-    || serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') !== 'missing'
-    || serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'missing'
-    || serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') !== '0'
-    || !agentApiRuntime.summary.includes('startupProbe=never')
-    || !agentApiRuntime.summary.includes('executionRun=deferred')
-    || serviceEvidenceReadiness.status !== 'not_declared'
-    || serviceEvidenceReadiness.satisfiedRequirements.length !== 3
-    || !serviceEvidenceReadiness.missingRequirements.includes('provider_owned_metadata')
-    || !serviceEvidenceReadiness.missingRequirements.includes('explicit_tool_declaration')
-  ) {
+  const failureReasons = [
+    snapshot.executionRuntime.kind !== 'agent_api' ? 'runtime_kind' : null,
+    snapshot.executionRuntime.executable ? 'runtime_executable' : null,
+    agentApiRuntime.status !== 'available' ? 'capability_status' : null,
+    agentApiRuntime.visibility !== 'hidden' ? 'capability_visibility' : null,
+    agentApiRuntime.access !== 'mutating' ? 'capability_access' : null,
+    agentApiRuntime.requiresApproval !== true ? 'requires_approval' : null,
+    !agentApiRuntime.summary.includes('providerToolReadiness=not_declared') ? 'provider_tool_readiness' : null,
+    providerToolStatus !== 'not_declared' ? 'provider_tool_status' : null,
+    !agentApiRuntime.summary.includes('providerToolRequirements=3/5') ? 'provider_tool_requirements' : null,
+    !agentApiRuntime.summary.includes('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration') ? 'provider_tool_missing_requirements' : null,
+    !agentApiRuntime.summary.includes('selectedApiRuntime=ready') ? 'selected_api_runtime' : null,
+    !agentApiRuntime.summary.includes('providerConfigured=ready') ? 'provider_configured' : null,
+    !agentApiRuntime.summary.includes('providerOwnedMetadata=missing') ? 'provider_owned_metadata' : null,
+    !agentApiRuntime.summary.includes('explicitToolDeclaration=missing') ? 'explicit_tool_declaration' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') !== 'missing' ? 'service_metadata_owner' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') !== 'missing' ? 'service_metadata_package' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'missing' ? 'service_tool_declaration_source' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') !== '0' ? 'service_declared_tool_count' : null,
+    !agentApiRuntime.summary.includes('startupProbe=never') ? 'startup_probe' : null,
+    !agentApiRuntime.summary.includes('executionRun=deferred') ? 'execution_run' : null,
+    serviceEvidenceReadiness.status !== 'not_declared' ? 'service_status' : null,
+    serviceEvidenceReadiness.satisfiedRequirements.length !== 3 ? 'service_requirement_count' : null,
+    !serviceEvidenceReadiness.missingRequirements.includes('provider_owned_metadata') ? 'service_provider_owned_metadata_missing' : null,
+    !serviceEvidenceReadiness.missingRequirements.includes('explicit_tool_declaration') ? 'service_explicit_tool_declaration_missing' : null,
+  ].filter(Boolean);
+
+  if (failureReasons.length > 0) {
+    console.log(`failureReasons=${failureReasons.join(',')}`);
     console.log('status=failed');
     return 1;
   }

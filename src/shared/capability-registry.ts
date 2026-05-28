@@ -590,11 +590,23 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       `providerToolStatus=${providerToolReadiness.status}`,
       `providerToolRequirements=${providerToolReadiness.satisfiedRequirements.length}/${providerToolReadiness.satisfiedRequirements.length + providerToolReadiness.missingRequirements.length}`,
       `providerToolMissingRequirements=${providerToolReadiness.missingRequirements.join(',') || 'none'}`,
+      scalarSummaryValue(providerToolReadiness.summary, 'selectedApiRuntime')
+        ? `selectedApiRuntime=${scalarSummaryValue(providerToolReadiness.summary, 'selectedApiRuntime')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerConfigured')
+        ? `providerConfigured=${scalarSummaryValue(providerToolReadiness.summary, 'providerConfigured')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerOwnedMetadata')
+        ? `providerOwnedMetadata=${scalarSummaryValue(providerToolReadiness.summary, 'providerOwnedMetadata')}`
+        : null,
       scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataOwner')
         ? `providerMetadataOwner=${scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataOwner')}`
         : null,
       scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataPackage')
         ? `providerMetadataPackage=${scalarSummaryValue(providerToolReadiness.summary, 'providerMetadataPackage')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclaration')
+        ? `explicitToolDeclaration=${scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclaration')}`
         : null,
       scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationSource')
         ? `explicitToolDeclarationSource=${scalarSummaryValue(providerToolReadiness.summary, 'explicitToolDeclarationSource')}`

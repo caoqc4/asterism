@@ -842,6 +842,10 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionMissingRequirements=...');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=blocked|not_declared|declared');
+    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime');
+    expect(capabilities?.evidence.join(' ')).toContain('providerConfigured');
+    expect(capabilities?.evidence.join(' ')).toContain('providerOwnedMetadata');
+    expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclaration');
     expect(capabilities?.evidence.join(' ')).toContain('startupProbe=never');
     expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API execution_run readiness chips');
@@ -868,8 +872,12 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements');
+    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime');
+    expect(capabilities?.evidence.join(' ')).toContain('providerConfigured');
+    expect(capabilities?.evidence.join(' ')).toContain('providerOwnedMetadata');
     expect(capabilities?.evidence.join(' ')).toContain('providerMetadataOwner');
     expect(capabilities?.evidence.join(' ')).toContain('providerMetadataPackage');
+    expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclaration');
     expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclarationSource');
     expect(capabilities?.evidence.join(' ')).toContain('declaredToolCount');
     expect(capabilities?.evidence.join(' ')).toContain('provider-owned package declarations');
