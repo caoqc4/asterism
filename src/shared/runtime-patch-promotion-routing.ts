@@ -68,7 +68,9 @@ export type RuntimePatchPromotionRoutingServiceEvidence = {
   selectedRuntimeContract?: {
     invocationLayer: 'api_runtime' | 'selected_runtime';
     phase: 'execution_run';
+    runId?: string | null;
     runtimeMode: 'api' | 'codex' | 'claude';
+    taskId?: string | null;
   } | null;
   targetTaskId?: string | null;
 };
@@ -133,6 +135,8 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const preflightRunId = evidence.promotionPreflight?.runId?.trim() || '';
   const postApplyRunId = evidence.postApplyRunEvidence?.runId?.trim() || '';
   const selectedRuntime = evidence.selectedRuntimeContract;
+  const selectedRuntimeRunId = selectedRuntime?.runId?.trim() || '';
+  const selectedRuntimeTaskId = selectedRuntime?.taskId?.trim() || '';
   const targetTaskId = evidence.targetTaskId?.trim() || '';
   const patchTaskId = evidence.patchArtifact?.taskId?.trim() || '';
   const decisionTaskId = evidence.promotionDecision?.taskId?.trim() || '';
@@ -175,6 +179,12 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       (selectedRuntime.invocationLayer === 'api_runtime' && selectedRuntime.runtimeMode === 'api')
       || (selectedRuntime.invocationLayer === 'selected_runtime' && selectedRuntime.runtimeMode !== 'api')
     )
+    && Boolean(selectedRuntimeRunId)
+    && Boolean(patchRunId)
+    && selectedRuntimeRunId === patchRunId
+    && Boolean(selectedRuntimeTaskId)
+    && Boolean(targetTaskId)
+    && selectedRuntimeTaskId === targetTaskId
   );
   const patchArtifactReady = (
     evidence.patchArtifact?.status === 'ready'
@@ -252,6 +262,10 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       readiness.summary,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
       `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
+      `selectedRuntimeRun=${selectedRuntimeRunId || 'missing'}`,
+      `selectedRuntimeRunEvidenceChain=${selectedRuntimeRunId && patchRunId && selectedRuntimeRunId === patchRunId ? 'ready' : 'missing'}`,
+      `selectedRuntimeTask=${selectedRuntimeTaskId || 'missing'}`,
+      `selectedRuntimeTaskEvidenceChain=${selectedRuntimeTaskId && targetTaskId && selectedRuntimeTaskId === targetTaskId ? 'ready' : 'missing'}`,
       `targetTask=${targetTaskId || 'missing'}`,
       `patchArtifactTask=${patchTaskId || 'missing'}`,
       `promotionDecisionTask=${decisionTaskId || 'missing'}`,

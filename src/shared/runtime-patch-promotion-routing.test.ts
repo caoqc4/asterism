@@ -148,20 +148,25 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial).toMatchObject({
       ready: false,
       satisfiedRequirements: [
-        'selected_runtime_contract',
         'patch_artifact',
         'promotion_decision',
         'promotion_preflight',
       ],
       missingRequirements: [
+        'selected_runtime_contract',
         'target_task_identity',
         'explicit_operator_apply',
         'same_run_evidence_chain',
         'post_apply_run_evidence',
       ],
     });
-    expect(partial.summary).toContain('requirements=4/8');
-    expect(partial.summary).toContain('promotionSatisfiedRequirements=selected_runtime_contract,patch_artifact,promotion_decision,promotion_preflight');
+    expect(partial.summary).toContain('requirements=3/8');
+    expect(partial.summary).toContain('promotionSatisfiedRequirements=patch_artifact,promotion_decision,promotion_preflight');
+    expect(partial.summary).toContain('selectedRuntimeContract=missing');
+    expect(partial.summary).toContain('selectedRuntimeRun=missing');
+    expect(partial.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
+    expect(partial.summary).toContain('selectedRuntimeTask=missing');
+    expect(partial.summary).toContain('selectedRuntimeTaskEvidenceChain=missing');
     expect(partial.summary).toContain('targetTaskIdentity=missing');
     expect(partial.summary).toContain('sameRunEvidenceChain=missing');
     expect(partial.summary).toContain('runtimeMode=api');
@@ -234,7 +239,9 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_patch_1',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
@@ -309,7 +316,9 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_patch_1',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
@@ -366,7 +375,9 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_patch_1',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
@@ -425,7 +436,9 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_patch_1',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
@@ -489,7 +502,9 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_patch_1',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
@@ -549,7 +564,9 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_patch_1',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
@@ -610,7 +627,9 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_patch_1',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
@@ -673,7 +692,9 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_patch_1',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
