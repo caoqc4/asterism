@@ -122,6 +122,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     runGoalContract: {
       completionConditionCount: 1,
       objective: 'Produce reviewable task evidence.',
+      runId: 'run_api_execution',
+      taskId: 'task_1',
     },
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',

@@ -177,10 +177,12 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('run_evidence_persistence can stay ready');
     expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime_context_manifest to carry the target task identity');
+    expect(rightPanel?.evidence.join(' ')).toContain('run_goal_contract to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, contextStep, contextManifest, contextManifestTask, contextManifestEvidenceChain');
+    expect(rightPanel?.evidence.join(' ')).toContain('taskMemoryGuidance, taskMemoryGuidanceCount, runGoalConditions, runGoalRun, runGoalRunEvidenceChain, runGoalTask, runGoalTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, patchPromotionStatus, patchPromotionRun');
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionRunEvidenceChain, patchPromotionTask, patchPromotionTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('postStepRun, postStepRunEvidenceChain, postStepTask, postStepTaskEvidenceChain, postStepVerifier');

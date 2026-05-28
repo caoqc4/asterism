@@ -960,6 +960,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('contextManifestEvidenceChain=ready');
     expect(ready.summary).toContain('taskMemoryGuidanceCount=1');
     expect(ready.summary).toContain('runGoalConditions=1');
+    expect(ready.summary).toContain('runGoalRun=run_api_execution');
+    expect(ready.summary).toContain('runGoalRunEvidenceChain=ready');
+    expect(ready.summary).toContain('runGoalTask=task_1');
+    expect(ready.summary).toContain('runGoalTaskEvidenceChain=ready');
     expect(ready.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
     expect(ready.summary).toContain('reviewedPatchApplyBoundary=ready');
     expect(ready.summary).toContain('patchPromotionStatus=applied');
@@ -1021,6 +1025,44 @@ describe('ai runtime invocation contract', () => {
     expect(serviceTaskEvidence.summary).toContain('contextManifest=executionKind=api / status=partial');
     expect(serviceTaskEvidence.summary).toContain('contextManifestTask=task_1');
     expect(serviceTaskEvidence.summary).toContain('contextManifestEvidenceChain=ready');
+  });
+
+  it('requires Run Goal Contract evidence to belong to the same run and target task', () => {
+    const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runGoalContract: {
+        completionConditionCount: 1,
+        objective: 'Produce reviewable task evidence.',
+        runId: 'run_other',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['run_goal_contract'],
+    });
+    expect(wrongRun.summary).toContain('runGoalRun=run_other');
+    expect(wrongRun.summary).toContain('runGoalRunEvidenceChain=missing');
+    expect(wrongRun.summary).toContain('runGoalTaskEvidenceChain=ready');
+
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runGoalContract: {
+        completionConditionCount: 1,
+        objective: 'Produce reviewable task evidence.',
+        runId: 'run_api_execution',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['run_goal_contract'],
+    });
+    expect(wrongTask.summary).toContain('runGoalRunEvidenceChain=ready');
+    expect(wrongTask.summary).toContain('runGoalTask=task_2');
+    expect(wrongTask.summary).toContain('runGoalTaskEvidenceChain=missing');
   });
 
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
@@ -1336,6 +1378,8 @@ function completeAgentApiExecutionPromotionEvidence() {
     runGoalContract: {
       completionConditionCount: 1,
       objective: 'Produce reviewable task evidence.',
+      runId: 'run_api_execution',
+      taskId: 'task_1',
     },
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime' as const,

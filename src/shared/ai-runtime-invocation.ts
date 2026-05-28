@@ -188,6 +188,8 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   runGoalContract?: {
     completionConditionCount: number;
     objective?: string | null;
+    runId?: string | null;
+    taskId?: string | null;
   } | null;
   selectedRuntimeContract?: {
     invocationLayer: RuntimeInvocationLayer;
@@ -698,6 +700,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     || '';
   const contextStepId = evidence.contextReadinessStep?.stepId?.trim() || '';
   const runGoalObjective = evidence.runGoalContract?.objective?.trim() || '';
+  const runGoalRunId = evidence.runGoalContract?.runId?.trim() || '';
+  const runGoalTaskId = evidence.runGoalContract?.taskId?.trim() || '';
   const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
@@ -724,6 +728,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const writeIntentTaskEvidenceChainReady = Boolean(writeIntentTaskId)
     && Boolean(targetTaskId)
     && writeIntentTaskId === targetTaskId;
+  const runGoalRunEvidenceChainReady = Boolean(runGoalRunId)
+    && (!runEvidenceId || runGoalRunId === runEvidenceId);
+  const runGoalTaskEvidenceChainReady = Boolean(runGoalTaskId)
+    && Boolean(targetTaskId)
+    && runGoalTaskId === targetTaskId;
   const providerPreflightRunEvidenceChainReady = Boolean(providerPreflightRunId)
     && (!runEvidenceId || providerPreflightRunId === runEvidenceId);
   const providerPreflightTaskEvidenceChainReady = Boolean(providerPreflightTaskId)
@@ -788,7 +797,13 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('task_memory_guidance');
   }
 
-  if (runGoalObjective && evidence.runGoalContract?.completionConditionCount && evidence.runGoalContract.completionConditionCount > 0) {
+  if (
+    runGoalObjective
+    && evidence.runGoalContract?.completionConditionCount
+    && evidence.runGoalContract.completionConditionCount > 0
+    && runGoalRunEvidenceChainReady
+    && runGoalTaskEvidenceChainReady
+  ) {
     satisfiedRequirements.push('run_goal_contract');
   }
 
@@ -857,6 +872,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `taskMemoryGuidance=${evidence.taskMemoryGuidance?.status ?? 'missing'}`,
       `taskMemoryGuidanceCount=${evidence.taskMemoryGuidance?.guidanceCount ?? 0}`,
       `runGoalConditions=${evidence.runGoalContract?.completionConditionCount ?? 0}`,
+      `runGoalRun=${runGoalRunId || 'missing'}`,
+      `runGoalRunEvidenceChain=${runGoalRunEvidenceChainReady ? 'ready' : 'missing'}`,
+      `runGoalTask=${runGoalTaskId || 'missing'}`,
+      `runGoalTaskEvidenceChain=${runGoalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
       `reviewedPatchApplyBoundary=${reviewedPatchApplyBoundaryReady ? 'ready' : 'missing'}`,
       `patchPromotionStatus=${evidence.reviewedPatchApplyBoundary?.appliedPromotionStatus ?? 'missing'}`,

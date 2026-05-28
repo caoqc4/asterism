@@ -448,6 +448,8 @@ export class RunService {
       runGoalContract: {
         completionConditionCount: params.task.completionCriteria.length,
         objective: params.input.instructions ?? params.task.nextStep ?? params.task.summary,
+        runId,
+        taskId: params.task.id,
       },
       runEvidencePersistence: phase === 'post_run' && params.run
         ? {
