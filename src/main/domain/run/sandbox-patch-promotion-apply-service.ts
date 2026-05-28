@@ -177,8 +177,11 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(p
 }): string {
   const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
     explicitOperatorApply: {
+      checkpointId: params.preflight.checkpoint.id,
       confirmed: params.operatorConfirmed,
       operatorId: params.operatorId ?? null,
+      runId: params.preflight.checkpoint.runId,
+      taskId: params.preflight.promotion.taskId,
     },
     patchArtifact: {
       artifactId: params.preflight.artifact.id,
@@ -286,8 +289,11 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
 }): string {
   const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
     explicitOperatorApply: {
+      checkpointId: params.preflight.checkpoint.id,
       confirmed: params.operatorConfirmed,
       operatorId: params.operatorId ?? null,
+      runId: params.preflight.promotion.runId,
+      taskId: params.preflight.promotion.taskId,
     },
     patchArtifact: {
       artifactId: params.preflight.artifact.id,
@@ -329,8 +335,11 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
 }): string {
   const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
     explicitOperatorApply: {
+      checkpointId: params.promotion.checkpointId,
       confirmed: params.operatorConfirmed,
       operatorId: params.operatorId ?? null,
+      runId: params.promotion.runId,
+      taskId: params.promotion.taskId,
     },
     patchArtifact: {
       artifactId: params.promotion.artifactId,

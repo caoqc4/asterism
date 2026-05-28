@@ -99,6 +99,10 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceTargetTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceCheckpointEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'checkpointEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceOperatorId=${scalarValue(serviceEvidencePartial.summary, 'operatorId') ?? 'missing'}`);
+  console.log(`serviceEvidenceOperatorApplyTask=${scalarValue(serviceEvidencePartial.summary, 'operatorApplyTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceOperatorApplyRun=${scalarValue(serviceEvidencePartial.summary, 'operatorApplyRun') ?? 'missing'}`);
+  console.log(`serviceEvidenceOperatorApplyCheckpoint=${scalarValue(serviceEvidencePartial.summary, 'operatorApplyCheckpoint') ?? 'missing'}`);
+  console.log(`serviceEvidenceOperatorApplyEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'operatorApplyEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidencePatchRunId=${scalarValue(serviceEvidencePartial.summary, 'patchRunId') ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionRunId=${scalarValue(serviceEvidencePartial.summary, 'decisionRunId') ?? 'missing'}`);
   console.log(`serviceEvidencePreflightRunId=${scalarValue(serviceEvidencePartial.summary, 'preflightRunId') ?? 'missing'}`);
@@ -122,6 +126,10 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || (scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'checkpointEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'operatorId') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'operatorApplyTask') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'operatorApplyRun') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'operatorApplyCheckpoint') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'operatorApplyEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'patchRunId') !== 'run_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'decisionRunId') !== 'run_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'preflightRunId') !== 'run_patch_2'

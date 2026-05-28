@@ -190,8 +190,11 @@ describe('runtime patch promotion routing readiness', () => {
 
     const ready = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
         confirmed: true,
         operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',
@@ -237,6 +240,10 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
     expect(ready.summary).toContain('sameRunEvidenceChain=ready');
     expect(ready.summary).toContain('operatorId=operator_1');
+    expect(ready.summary).toContain('operatorApplyTask=task_1');
+    expect(ready.summary).toContain('operatorApplyRun=run_patch_1');
+    expect(ready.summary).toContain('operatorApplyCheckpoint=checkpoint_patch_1');
+    expect(ready.summary).toContain('operatorApplyEvidenceChain=ready');
     expect(ready.summary).toContain('patchRunId=run_patch_1');
     expect(ready.summary).toContain('decisionRunId=run_patch_1');
     expect(ready.summary).toContain('preflightRunId=run_patch_1');
@@ -254,8 +261,11 @@ describe('runtime patch promotion routing readiness', () => {
   it('requires patch, decision, preflight, and post-apply evidence to match the target task', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
         confirmed: true,
         operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',
@@ -303,11 +313,71 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('sameRunEvidenceChain=ready');
   });
 
+  it('requires explicit operator apply evidence to match the same target task, run, and checkpoint', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_other',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: ['explicit_operator_apply'],
+    });
+    expect(readiness.summary).toContain('requirements=7/8');
+    expect(readiness.summary).toContain('explicitOperatorApply=missing');
+    expect(readiness.summary).toContain('operatorId=missing');
+    expect(readiness.summary).toContain('operatorApplyTask=task_1');
+    expect(readiness.summary).toContain('operatorApplyRun=run_patch_1');
+    expect(readiness.summary).toContain('operatorApplyCheckpoint=checkpoint_other');
+    expect(readiness.summary).toContain('operatorApplyEvidenceChain=missing');
+  });
+
   it('requires promotion Decision and preflight evidence to reference the same checkpoint', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
         confirmed: true,
         operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',
@@ -348,22 +418,28 @@ describe('runtime patch promotion routing readiness', () => {
       ready: false,
       missingRequirements: [
         'promotion_preflight',
+        'explicit_operator_apply',
         'same_run_evidence_chain',
       ],
     });
-    expect(readiness.summary).toContain('requirements=6/8');
+    expect(readiness.summary).toContain('requirements=5/8');
     expect(readiness.summary).toContain('promotionPreflight=missing');
+    expect(readiness.summary).toContain('explicitOperatorApply=missing');
     expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
     expect(readiness.summary).toContain('promotionCheckpointId=checkpoint_patch_1');
     expect(readiness.summary).toContain('preflightCheckpointId=checkpoint_other');
     expect(readiness.summary).toContain('checkpointEvidenceChain=missing');
+    expect(readiness.summary).toContain('operatorApplyEvidenceChain=missing');
   });
 
   it('requires post-apply touched files to match the reviewed patch expected file set', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
         confirmed: true,
         operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',
@@ -418,8 +494,11 @@ describe('runtime patch promotion routing readiness', () => {
   it('requires expected and touched files to stay inside safe workspace-relative paths', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
         confirmed: true,
         operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',
@@ -475,8 +554,11 @@ describe('runtime patch promotion routing readiness', () => {
   it('requires post-apply touched file evidence to be duplicate-free', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
         confirmed: true,
         operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
       },
       patchArtifact: {
         artifactId: 'artifact_patch_1',

@@ -817,6 +817,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('target-task identity as an evidence chain');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskId, patchArtifact.taskId, promotionDecision.taskId, promotionPreflight.taskId, and postApplyRunEvidence.taskId must all match');
     expect(taskFiles?.evidence.join(' ')).toContain('promotion Decision checkpoint and promotion preflight checkpoint as one checkpointEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('explicit operator apply as an operatorApplyEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('same target task, same run, and same checkpoint');
     expect(taskFiles?.evidence.join(' ')).toContain('expected patch files and post-apply touched files as one touchedFileEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('expected patch files and post-apply touched files as one filePathSafetyChain');
     expect(taskFiles?.evidence.join(' ')).toContain('unsafe workspace paths');
@@ -828,7 +830,11 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('promotionMissingRequirements=...');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('checkpointEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('operatorId');
+    expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyTask');
+    expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyRun');
+    expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyCheckpoint');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionDecisionId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchRunId');
@@ -851,6 +857,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('Settings configuration safety rows now render sandbox.patch_promotion evidence chips');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionRequirements, promotionSatisfiedRequirements, promotionMissingRequirements, missingRequirements');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskIdentity, targetTaskEvidenceChain, checkpointEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyTask, operatorApplyRun, operatorApplyCheckpoint, operatorApplyEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionCheckpointId, preflightCheckpointId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, postApplyTask');
     expect(taskFiles?.evidence.join(' ')).toContain('patchRunId, decisionRunId, preflightRunId, postApplyRunId');
@@ -867,6 +874,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('synthetic-ready=8/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService now appends evaluateRuntimePatchPromotionRoutingReadinessFromEvidence output');
     expect(taskFiles?.evidence.join(' ')).toContain('real workspace apply evidence records target-task identity across patch artifact, promotion Decision, preflight, and post-apply evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('explicit operator apply with same task/run/checkpoint evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('remaining selected-runtime-contract gap');
     expect(taskFiles?.evidence.join(' ')).toContain('preflight reports an already_applied promotion');
     expect(taskFiles?.evidence.join(' ')).toContain('idempotent apply responses aligned with applied audit evidence');

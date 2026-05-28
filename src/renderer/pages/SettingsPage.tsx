@@ -274,6 +274,10 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
       'explicitOperatorApply',
       'postApplyRunEvidence',
       'operatorId',
+      'operatorApplyTask',
+      'operatorApplyRun',
+      'operatorApplyCheckpoint',
+      'operatorApplyEvidenceChain',
       'patchArtifactId',
       'promotionDecisionId',
       'promotionCheckpointId',
@@ -291,6 +295,7 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
       'expectedFiles',
       'touchedFileCount',
       'touchedFiles',
+      'filePathSafetyChain',
       'touchedFileEvidenceChain',
     ]);
   }

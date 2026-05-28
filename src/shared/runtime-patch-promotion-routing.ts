@@ -30,8 +30,11 @@ export function runtimePatchPromotionRoutingRequirements(): RuntimePatchPromotio
 
 export type RuntimePatchPromotionRoutingServiceEvidence = {
   explicitOperatorApply?: {
+    checkpointId?: string | null;
     confirmed: boolean;
     operatorId?: string | null;
+    runId?: string | null;
+    taskId?: string | null;
   } | null;
   patchArtifact?: {
     artifactId?: string | null;
@@ -135,6 +138,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const postApplyTaskId = evidence.postApplyRunEvidence?.taskId?.trim() || '';
   const promotionCheckpointId = evidence.promotionDecision?.checkpointId?.trim() || '';
   const preflightCheckpointId = evidence.promotionPreflight?.checkpointId?.trim() || '';
+  const operatorApplyTaskId = evidence.explicitOperatorApply?.taskId?.trim() || '';
+  const operatorApplyRunId = evidence.explicitOperatorApply?.runId?.trim() || '';
+  const operatorApplyCheckpointId = evidence.explicitOperatorApply?.checkpointId?.trim() || '';
   const expectedFiles = evidence.patchArtifact?.expectedFiles
     ?.map((file) => file.trim())
     .filter(Boolean) ?? [];
@@ -184,9 +190,21 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && checkpointEvidenceChainReady
     && Boolean(preflightRunId)
   );
+  const operatorApplyEvidenceChainReady = (
+    Boolean(operatorApplyTaskId)
+    && Boolean(operatorApplyRunId)
+    && Boolean(operatorApplyCheckpointId)
+    && operatorApplyTaskId === targetTaskId
+    && operatorApplyRunId === patchRunId
+    && operatorApplyRunId === decisionRunId
+    && operatorApplyRunId === preflightRunId
+    && operatorApplyCheckpointId === promotionCheckpointId
+    && operatorApplyCheckpointId === preflightCheckpointId
+  );
   const explicitOperatorApply = (
     evidence.explicitOperatorApply?.confirmed === true
     && Boolean(evidence.explicitOperatorApply.operatorId?.trim())
+    && operatorApplyEvidenceChainReady
   );
   const postApplyRunEvidenceReady = (
     evidence.postApplyRunEvidence?.status === 'present'
@@ -232,6 +250,10 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `preflightCheckpointId=${preflightCheckpointId || 'missing'}`,
       `checkpointEvidenceChain=${checkpointEvidenceChainReady ? 'ready' : 'missing'}`,
       `operatorId=${explicitOperatorApply ? (evidence.explicitOperatorApply?.operatorId?.trim() ?? 'missing') : 'missing'}`,
+      `operatorApplyTask=${operatorApplyTaskId || 'missing'}`,
+      `operatorApplyRun=${operatorApplyRunId || 'missing'}`,
+      `operatorApplyCheckpoint=${operatorApplyCheckpointId || 'missing'}`,
+      `operatorApplyEvidenceChain=${operatorApplyEvidenceChainReady ? 'ready' : 'missing'}`,
       `patchRunId=${patchRunId || 'missing'}`,
       `decisionRunId=${decisionRunId || 'missing'}`,
       `preflightRunId=${preflightRunId || 'missing'}`,

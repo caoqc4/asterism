@@ -56,7 +56,7 @@ describe('configuration safety report', () => {
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')?.diagnosticSummary)
       .toContain('checkpointEvidenceChain=missing');
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')?.diagnosticSummary)
-      .toContain('operatorId=missing / patchRunId=missing / decisionRunId=missing / preflightRunId=missing / postApplyRunId=missing / sameRunId=missing / expectedFileCount=0 / expectedFiles=none / touchedFileCount=0 / touchedFiles=none / filePathSafetyChain=missing / touchedFileEvidenceChain=missing');
+      .toContain('operatorId=missing / operatorApplyTask=missing / operatorApplyRun=missing / operatorApplyCheckpoint=missing / operatorApplyEvidenceChain=missing / patchRunId=missing / decisionRunId=missing / preflightRunId=missing / postApplyRunId=missing / sameRunId=missing / expectedFileCount=0 / expectedFiles=none / touchedFileCount=0 / touchedFiles=none / filePathSafetyChain=missing / touchedFileEvidenceChain=missing');
   });
 
   it('explains blocked missing or disabled configuration', () => {
