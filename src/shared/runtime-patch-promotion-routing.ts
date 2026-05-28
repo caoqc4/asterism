@@ -218,6 +218,11 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && artifactEvidenceChainReady
     && checkpointEvidenceChainReady
     && Boolean(preflightRunId)
+    && Boolean(patchRunId)
+    && preflightRunId === patchRunId
+    && Boolean(preflightTaskId)
+    && Boolean(targetTaskId)
+    && preflightTaskId === targetTaskId
   );
   const operatorApplyEvidenceChainReady = (
     Boolean(operatorApplyTaskId)

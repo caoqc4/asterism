@@ -150,24 +150,25 @@ describe('runtime patch promotion routing readiness', () => {
       satisfiedRequirements: [
         'patch_artifact',
         'promotion_decision',
-        'promotion_preflight',
       ],
       missingRequirements: [
         'selected_runtime_contract',
         'target_task_identity',
+        'promotion_preflight',
         'explicit_operator_apply',
         'same_run_evidence_chain',
         'post_apply_run_evidence',
       ],
     });
-    expect(partial.summary).toContain('requirements=3/8');
-    expect(partial.summary).toContain('promotionSatisfiedRequirements=patch_artifact,promotion_decision,promotion_preflight');
+    expect(partial.summary).toContain('requirements=2/8');
+    expect(partial.summary).toContain('promotionSatisfiedRequirements=patch_artifact,promotion_decision');
     expect(partial.summary).toContain('selectedRuntimeContract=missing');
     expect(partial.summary).toContain('selectedRuntimeRun=missing');
     expect(partial.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
     expect(partial.summary).toContain('selectedRuntimeTask=missing');
     expect(partial.summary).toContain('selectedRuntimeTaskEvidenceChain=missing');
     expect(partial.summary).toContain('targetTaskIdentity=missing');
+    expect(partial.summary).toContain('promotionPreflight=missing');
     expect(partial.summary).toContain('sameRunEvidenceChain=missing');
     expect(partial.summary).toContain('runtimeMode=api');
     expect(partial.summary).toContain('invocationLayer=api_runtime');
@@ -334,6 +335,135 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('promotionDecisionTask=task_other');
     expect(readiness.summary).toContain('targetTaskEvidenceChain=missing');
     expect(readiness.summary).toContain('sameRunEvidenceChain=ready');
+  });
+
+  it('requires promotion preflight evidence to belong to the same run as the reviewed patch', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_other',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'promotion_preflight',
+        'explicit_operator_apply',
+        'same_run_evidence_chain',
+      ],
+    });
+    expect(readiness.summary).toContain('requirements=5/8');
+    expect(readiness.summary).toContain('promotionPreflight=missing');
+    expect(readiness.summary).toContain('explicitOperatorApply=missing');
+    expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
+    expect(readiness.summary).toContain('patchRunId=run_patch_1');
+    expect(readiness.summary).toContain('preflightRunId=run_patch_other');
+    expect(readiness.summary).toContain('targetTaskEvidenceChain=ready');
+  });
+
+  it('requires promotion preflight evidence to belong to the target task', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_other',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'target_task_identity',
+        'promotion_preflight',
+        'same_run_evidence_chain',
+      ],
+    });
+    expect(readiness.summary).toContain('requirements=5/8');
+    expect(readiness.summary).toContain('targetTaskIdentity=missing');
+    expect(readiness.summary).toContain('promotionPreflight=missing');
+    expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
+    expect(readiness.summary).toContain('promotionPreflightTask=task_other');
+    expect(readiness.summary).toContain('targetTaskEvidenceChain=missing');
   });
 
   it('requires explicit operator apply evidence to match the same target task, run, and checkpoint', () => {

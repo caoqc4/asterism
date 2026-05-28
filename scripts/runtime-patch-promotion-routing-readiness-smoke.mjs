@@ -130,8 +130,9 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || !sameRunBlocked.missingRequirements.includes('same_run_evidence_chain')
     || !syntheticReady.ready
     || serviceEvidencePartial.ready
-    || serviceEvidencePartial.satisfiedRequirements.length !== 3
+    || serviceEvidencePartial.satisfiedRequirements.length !== 2
     || !serviceEvidencePartial.missingRequirements.includes('selected_runtime_contract')
+    || !serviceEvidencePartial.missingRequirements.includes('promotion_preflight')
     || !serviceEvidencePartial.missingRequirements.includes('same_run_evidence_chain')
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') !== 'missing'
