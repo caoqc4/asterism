@@ -151,10 +151,10 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const operatorApplyRunId = evidence.explicitOperatorApply?.runId?.trim() || '';
   const operatorApplyCheckpointId = evidence.explicitOperatorApply?.checkpointId?.trim() || '';
   const expectedFiles = evidence.patchArtifact?.expectedFiles
-    ?.map((file) => file.trim())
+    ?.map(normalizeWorkspaceRelativePath)
     .filter(Boolean) ?? [];
   const touchedFiles = evidence.postApplyRunEvidence?.touchedFiles
-    ?.map((file) => file.trim())
+    ?.map(normalizeWorkspaceRelativePath)
     .filter(Boolean) ?? [];
   const expectedFileEvidenceChainReady = expectedFiles.length > 0
     && expectedFiles.every(isSafeWorkspaceRelativePath)
@@ -310,8 +310,12 @@ function sameStringSet(left: string[], right: string[]): boolean {
   return left.every((item) => rightSet.has(item));
 }
 
+function normalizeWorkspaceRelativePath(value: string): string {
+  return value.replaceAll('\\', '/').trim();
+}
+
 function isSafeWorkspaceRelativePath(value: string): boolean {
-  const normalized = value.replaceAll('\\', '/').trim();
+  const normalized = normalizeWorkspaceRelativePath(value);
   if (!normalized
     || normalized.startsWith('/')
     || normalized.startsWith('../')
