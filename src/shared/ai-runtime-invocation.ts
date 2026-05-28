@@ -140,6 +140,50 @@ export type AgentApiExecutionPromotionReadiness = {
   summary: string;
 };
 
+export type AgentApiExecutionPromotionServiceEvidence = {
+  contextManifestSummary?: string | null;
+  contextReadinessStep?: {
+    status: 'blocked' | 'ready';
+    stepId?: string | null;
+  } | null;
+  gates?: Partial<Record<RuntimeEntrypointGate, boolean>>;
+  providerVisiblePreflight?: {
+    providerConfigured: boolean;
+    startupProbe: 'called' | 'never' | 'not_called';
+    status: 'blocked' | 'ready' | 'skipped';
+  } | null;
+  reviewedPatchApplyBoundary?: {
+    explicitApplyOnly: boolean;
+    promotionPreflightReady: boolean;
+  } | null;
+  runEvidencePersistence?: {
+    runId?: string | null;
+    terminalEvidenceStatus: 'missing' | 'pending' | 'present';
+  } | null;
+  runGoalContract?: {
+    completionConditionCount: number;
+    objective?: string | null;
+  } | null;
+  selectedRuntimeContract?: {
+    invocationLayer: RuntimeInvocationLayer;
+    phase: RuntimeInvocationPhase;
+    runtimeMode: AiRuntimeMode | 'local_rule' | 'product_harness';
+  } | null;
+  targetTaskId?: string | null;
+  taskMemoryGuidance?: {
+    guidanceCount: number;
+    status: 'missing' | 'ready';
+  } | null;
+  writeIntentExtraction?: {
+    status: 'missing' | 'ready';
+    supportedActions: string[];
+  } | null;
+  postStepVerification?: {
+    status: 'missing' | 'ready';
+    verifier?: string | null;
+  } | null;
+};
+
 export type VerificationAssistInvocationResult = RuntimeInvocationBase & {
   phase: 'verification_assist';
   layer: 'product_harness';
@@ -392,6 +436,82 @@ export function evaluateAgentApiExecutionPromotionReadiness(params: {
       `missingGates=${missingGates.length ? missingGates.join(',') : 'none'}`,
     ].join(' / '),
   };
+}
+
+export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
+  evidence: AgentApiExecutionPromotionServiceEvidence,
+): AgentApiExecutionPromotionReadiness {
+  const satisfiedRequirements: AgentApiExecutionPromotionRequirement[] = [];
+  const selectedRuntime = evidence.selectedRuntimeContract;
+
+  if (
+    selectedRuntime?.runtimeMode === 'api'
+    && selectedRuntime.invocationLayer === 'api_runtime'
+    && selectedRuntime.phase === 'execution_run'
+  ) {
+    satisfiedRequirements.push('selected_runtime_contract');
+  }
+
+  if (evidence.targetTaskId?.trim()) {
+    satisfiedRequirements.push('target_task_identity');
+  }
+
+  if (
+    evidence.providerVisiblePreflight?.status === 'ready'
+    && evidence.providerVisiblePreflight.providerConfigured
+    && evidence.providerVisiblePreflight.startupProbe !== 'called'
+  ) {
+    satisfiedRequirements.push('provider_visible_preflight');
+  }
+
+  if (evidence.contextManifestSummary?.trim()) {
+    satisfiedRequirements.push('runtime_context_manifest');
+  }
+
+  if (evidence.contextReadinessStep?.status === 'ready' && evidence.contextReadinessStep.stepId?.trim()) {
+    satisfiedRequirements.push('context_readiness_step');
+  }
+
+  if ((evidence.taskMemoryGuidance?.status === 'ready') && evidence.taskMemoryGuidance.guidanceCount > 0) {
+    satisfiedRequirements.push('task_memory_guidance');
+  }
+
+  if ((evidence.runGoalContract?.objective?.trim()) && evidence.runGoalContract.completionConditionCount > 0) {
+    satisfiedRequirements.push('run_goal_contract');
+  }
+
+  if (
+    evidence.writeIntentExtraction?.status === 'ready'
+    && evidence.writeIntentExtraction.supportedActions.includes('artifact.propose')
+  ) {
+    satisfiedRequirements.push('write_intent_extraction');
+  }
+
+  if (
+    evidence.reviewedPatchApplyBoundary?.explicitApplyOnly
+    && evidence.reviewedPatchApplyBoundary.promotionPreflightReady
+  ) {
+    satisfiedRequirements.push('reviewed_patch_apply_boundary');
+  }
+
+  if (evidence.postStepVerification?.status === 'ready' && evidence.postStepVerification.verifier?.trim()) {
+    satisfiedRequirements.push('post_step_verification');
+  }
+
+  if (
+    evidence.runEvidencePersistence?.runId?.trim()
+    && evidence.runEvidencePersistence.terminalEvidenceStatus === 'present'
+  ) {
+    satisfiedRequirements.push('run_evidence_persistence');
+  }
+
+  const requiredGates = agentApiExecutionRequiredGates();
+  const satisfiedGates = requiredGates.filter((gate) => evidence.gates?.[gate] === true);
+
+  return evaluateAgentApiExecutionPromotionReadiness({
+    satisfiedGates,
+    satisfiedRequirements,
+  });
 }
 
 export function evaluateAgentApiExecutionPromotionReadinessForInvocation(

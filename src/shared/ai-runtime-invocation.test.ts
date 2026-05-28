@@ -11,6 +11,7 @@ import {
   buildProductHarnessVerificationAssistInvocation,
   evaluateAgentApiDecompositionPromotionReadiness,
   evaluateAgentApiExecutionPromotionReadiness,
+  evaluateAgentApiExecutionPromotionReadinessFromEvidence,
   evaluateAgentApiExecutionPromotionReadinessForInvocation,
 } from './ai-runtime-invocation.js';
 import { buildSubtaskCreateManyWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
@@ -393,6 +394,70 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('missingGates=none');
   });
 
+  it('derives Agent API execution promotion readiness from structured service evidence', () => {
+    const partial = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      contextManifestSummary: 'task=task_1 / files=2',
+      contextReadinessStep: {
+        status: 'ready',
+        stepId: 'step_context_ready',
+      },
+      gates: {
+        simplicity_check: true,
+        runtime_action: true,
+        runtime_context_assembly: true,
+      },
+      providerVisiblePreflight: {
+        providerConfigured: true,
+        startupProbe: 'not_called',
+        status: 'ready',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runtimeMode: 'api',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(partial).toMatchObject({
+      ready: false,
+      satisfiedRequirements: [
+        'selected_runtime_contract',
+        'target_task_identity',
+        'provider_visible_preflight',
+        'runtime_context_manifest',
+        'context_readiness_step',
+      ],
+      satisfiedGates: [
+        'simplicity_check',
+        'runtime_action',
+        'runtime_context_assembly',
+      ],
+      missingRequirements: expect.arrayContaining([
+        'task_memory_guidance',
+        'run_goal_contract',
+        'write_intent_extraction',
+        'reviewed_patch_apply_boundary',
+        'post_step_verification',
+        'run_evidence_persistence',
+      ]),
+    });
+    expect(partial.summary).toContain('requirements=5/11');
+    expect(partial.summary).toContain('gates=3/9');
+
+    const ready = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+    });
+
+    expect(ready).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+      missingGates: [],
+    });
+    expect(ready.summary).toContain('requirements=11/11');
+    expect(ready.summary).toContain('gates=9/9');
+  });
+
   it('wraps product-harness verification and memory proposal phases', () => {
     const verification = buildProductHarnessVerificationAssistInvocation({
       verification: {
@@ -443,3 +508,59 @@ describe('ai runtime invocation contract', () => {
     });
   });
 });
+
+function completeAgentApiExecutionPromotionEvidence() {
+  return {
+    contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
+    contextReadinessStep: {
+      status: 'ready' as const,
+      stepId: 'step_context_ready',
+    },
+    gates: {
+      simplicity_check: true,
+      runtime_action: true,
+      runtime_context_assembly: true,
+      context_readiness: true,
+      task_memory_coverage: true,
+      task_memory_guidance: true,
+      pre_step: true,
+      subtask_start: true,
+      post_step: true,
+    },
+    postStepVerification: {
+      status: 'ready' as const,
+      verifier: 'taskplane.verifier.lightweight',
+    },
+    providerVisiblePreflight: {
+      providerConfigured: true,
+      startupProbe: 'not_called' as const,
+      status: 'ready' as const,
+    },
+    reviewedPatchApplyBoundary: {
+      explicitApplyOnly: true,
+      promotionPreflightReady: true,
+    },
+    runEvidencePersistence: {
+      runId: 'run_api_execution',
+      terminalEvidenceStatus: 'present' as const,
+    },
+    runGoalContract: {
+      completionConditionCount: 1,
+      objective: 'Produce reviewable task evidence.',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime' as const,
+      phase: 'execution_run' as const,
+      runtimeMode: 'api' as const,
+    },
+    targetTaskId: 'task_1',
+    taskMemoryGuidance: {
+      guidanceCount: 1,
+      status: 'ready' as const,
+    },
+    writeIntentExtraction: {
+      status: 'ready' as const,
+      supportedActions: ['artifact.propose', 'task_file.propose'],
+    },
+  };
+}

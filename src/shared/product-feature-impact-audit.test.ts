@@ -169,13 +169,18 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible preflight');
     expect(rightPanel?.evidence.join(' ')).toContain('Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary');
     expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness');
+    expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadinessFromEvidence');
     expect(rightPanel?.evidence.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadinessForInvocation');
+    expect(rightPanel?.evidence.join(' ')).toContain('structured service evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('Run evidence persistence, and runtime gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('hand-filled requirement arrays');
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API promotion readiness smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('deferred=0/11 requirements and 0/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('partial=5/11 requirements and 3/9 gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=5/11 requirements and 3/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('synthetic-ready=11/11 requirements and 9/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API execution preflight smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('provider-visible text-call readiness');
@@ -198,7 +203,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.cliOnlyClosure).toBe('supported');
     expect(rightPanel?.gaps.join(' ')).toContain('Future Agent API execution remains deferred');
     expect(rightPanel?.nextActions.join(' ')).toContain('read-only promotion readiness smoke');
-    expect(rightPanel?.nextActions.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness both report ready');
+    expect(rightPanel?.nextActions.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness, and evaluateAgentApiExecutionPromotionReadinessFromEvidence all report ready');
+    expect(rightPanel?.nextActions.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadinessFromEvidence all report ready');
     expect(rightPanel?.gaps.join(' ')).toContain('selected-runtime contract and reviewed-patch apply already own the operator-facing workspace mutation boundary');
     expect(rightPanel?.gates).toContain('context_readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('Shared writeback proposal builder');

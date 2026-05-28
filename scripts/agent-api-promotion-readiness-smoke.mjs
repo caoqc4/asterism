@@ -25,6 +25,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     agentApiExecutionPromotionRequirements,
     buildDeferredAgentApiExecutionRunInvocation,
     evaluateAgentApiExecutionPromotionReadiness,
+    evaluateAgentApiExecutionPromotionReadinessFromEvidence,
     evaluateAgentApiExecutionPromotionReadinessForInvocation,
   } = await import(pathToFileURL(modulePath).href);
 
@@ -48,6 +49,29 @@ export async function runAgentApiPromotionReadinessSmoke() {
     satisfiedGates: deferredInvocation.requiredGates,
     satisfiedRequirements: agentApiExecutionPromotionRequirements(),
   });
+  const serviceEvidencePartial = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+    contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
+    contextReadinessStep: {
+      status: 'ready',
+      stepId: 'step_context_ready',
+    },
+    gates: {
+      simplicity_check: true,
+      runtime_action: true,
+      runtime_context_assembly: true,
+    },
+    providerVisiblePreflight: {
+      providerConfigured: true,
+      startupProbe: 'not_called',
+      status: 'ready',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      runtimeMode: 'api',
+    },
+    targetTaskId: 'task_1',
+  });
 
   console.log(`deferredInvocationStatus=${deferredInvocation.status}`);
   console.log(`deferredPromotionReady=${deferredReadiness.ready ? 'yes' : 'no'}`);
@@ -63,12 +87,20 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`syntheticPromotionReady=${syntheticReady.ready ? 'yes' : 'no'}`);
   console.log(`syntheticRequirements=${syntheticReady.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
   console.log(`syntheticGates=${syntheticReady.satisfiedGates.length}/${deferredInvocation.requiredGates.length}`);
+  console.log(`serviceEvidencePromotionReady=${serviceEvidencePartial.ready ? 'yes' : 'no'}`);
+  console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
+  console.log(`serviceEvidenceGates=${serviceEvidencePartial.satisfiedGates.length}/${deferredInvocation.requiredGates.length}`);
+  console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',')}`);
+  console.log(`serviceEvidenceMissingGates=${serviceEvidencePartial.missingGates.join(',')}`);
 
   if (
     deferredInvocation.status !== 'skipped'
     || deferredReadiness.ready
     || partialReadiness.ready
     || !syntheticReady.ready
+    || serviceEvidencePartial.ready
+    || serviceEvidencePartial.satisfiedRequirements.length !== 5
+    || serviceEvidencePartial.satisfiedGates.length !== 3
   ) {
     console.log('status=failed');
     return 1;
