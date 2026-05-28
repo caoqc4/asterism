@@ -104,6 +104,7 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
     parentTaskId?: string | null;
     proposalId?: string | null;
     status: 'missing' | 'ready';
+    subtaskCount?: number | null;
   } | null;
   selectedRuntimeContract?: {
     invocationLayer: RuntimeInvocationLayer;
@@ -346,10 +347,18 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
   const proposalId = evidence.reversibleProposalCard?.proposalId?.trim() || '';
   const proposalParentTaskId = evidence.reversibleProposalCard?.parentTaskId?.trim() || '';
+  const applyPlanSubtaskCount = applyPlan?.input.subtasks.length ?? 0;
+  const proposalSubtaskCount = typeof evidence.reversibleProposalCard?.subtaskCount === 'number'
+    && Number.isFinite(evidence.reversibleProposalCard.subtaskCount)
+    ? evidence.reversibleProposalCard.subtaskCount
+    : null;
   const proposalTaskEvidenceChainReady = Boolean(proposalParentTaskId)
     && Boolean(parentTaskId)
     && proposalParentTaskId === parentTaskId
     && (!applyPlanParentTaskId || proposalParentTaskId === applyPlanParentTaskId);
+  const proposalSubtaskEvidenceChainReady = proposalSubtaskCount !== null
+    && proposalSubtaskCount > 0
+    && proposalSubtaskCount === applyPlanSubtaskCount;
   const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
     ? applyPlan.timeline.payload.confirmationBoundary
     : 'missing';
@@ -358,6 +367,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     evidence.reversibleProposalCard?.status === 'ready'
     && Boolean(proposalId)
     && proposalTaskEvidenceChainReady
+    && proposalSubtaskEvidenceChainReady
   );
 
   if (
@@ -416,7 +426,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `proposalId=${proposalId || 'missing'}`,
       `proposalParentTask=${proposalParentTaskId || 'missing'}`,
       `proposalTaskEvidenceChain=${proposalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
-      `subtaskCount=${applyPlan?.input.subtasks.length ?? 0}`,
+      `proposalSubtaskCount=${proposalSubtaskCount ?? 'missing'}`,
+      `applyPlanSubtaskCount=${applyPlanSubtaskCount}`,
+      `proposalSubtaskEvidenceChain=${proposalSubtaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `subtaskCount=${applyPlanSubtaskCount}`,
       `evidenceRunId=${applyPlan?.input.evidenceRunId?.trim() || 'missing'}`,
       `confirmationBoundary=${confirmationBoundary}`,
       `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,

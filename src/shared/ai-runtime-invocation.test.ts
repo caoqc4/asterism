@@ -164,6 +164,7 @@ describe('ai runtime invocation contract', () => {
         parentTaskId: 'task_project',
         proposalId: 'proposal_1',
         status: 'ready',
+        subtaskCount: 1,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -187,6 +188,9 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('requirements=6/7');
     expect(partial.summary).toContain('promotionMissingRequirements=agent_api_decomposition_source');
     expect(partial.summary).toContain('proposalId=proposal_1');
+    expect(partial.summary).toContain('proposalSubtaskCount=1');
+    expect(partial.summary).toContain('applyPlanSubtaskCount=1');
+    expect(partial.summary).toContain('proposalSubtaskEvidenceChain=ready');
     expect(partial.summary).toContain('subtaskCount=1');
     expect(partial.summary).toContain('evidenceRunId=run_cli_decomposition');
     expect(partial.summary).toContain('confirmationBoundary=operator_confirmed_subtask_create_many');
@@ -207,6 +211,7 @@ describe('ai runtime invocation contract', () => {
         parentTaskId: 'task_project',
         proposalId: 'proposal_1',
         status: 'ready',
+        subtaskCount: 1,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -224,6 +229,9 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('proposalId=proposal_1');
     expect(ready.summary).toContain('proposalParentTask=task_project');
     expect(ready.summary).toContain('proposalTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('proposalSubtaskCount=1');
+    expect(ready.summary).toContain('applyPlanSubtaskCount=1');
+    expect(ready.summary).toContain('proposalSubtaskEvidenceChain=ready');
     expect(ready.summary).toContain('parentTask=task_project');
     expect(ready.summary).toContain('applyPlanParentTask=task_project');
     expect(ready.summary).toContain('parentTaskEvidenceChain=ready');
@@ -250,6 +258,7 @@ describe('ai runtime invocation contract', () => {
         parentTaskId: 'task_project_b',
         proposalId: 'proposal_1',
         status: 'ready',
+        subtaskCount: 1,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -298,6 +307,42 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('proposalCard=missing');
     expect(mismatch.summary).toContain('proposalParentTask=task_project_b');
     expect(mismatch.summary).toContain('proposalTaskEvidenceChain=missing');
+    expect(mismatch.summary).toContain('promotionMissingRequirements=reversible_proposal_card');
+  });
+
+  it('blocks Agent API decomposition promotion when the proposal subtask count does not match the apply plan', () => {
+    const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'proposal_1',
+        status: 'ready',
+        subtaskCount: 2,
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalCard=missing');
+    expect(mismatch.summary).toContain('proposalTaskEvidenceChain=ready');
+    expect(mismatch.summary).toContain('proposalSubtaskCount=2');
+    expect(mismatch.summary).toContain('applyPlanSubtaskCount=1');
+    expect(mismatch.summary).toContain('proposalSubtaskEvidenceChain=missing');
     expect(mismatch.summary).toContain('promotionMissingRequirements=reversible_proposal_card');
   });
 
