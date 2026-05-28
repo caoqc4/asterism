@@ -984,6 +984,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclarationPackage');
     expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclarationPackageMatchesMetadata');
     expect(capabilities?.evidence.join(' ')).toContain('startupProbe=never');
+    expect(capabilities?.evidence.join(' ')).toContain('generic unknown-provider metadata');
     expect(capabilities?.evidence.join(' ')).toContain('mismatched provider metadata');
     expect(capabilities?.evidence.join(' ')).toContain('mismatched declaration package identity');
     expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');
@@ -1009,7 +1010,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
-    expect(capabilities?.evidence.join(' ')).toContain('provider configuration alone, anonymous provider configuration, mismatched provider metadata, mismatched tool-declaration package identity, unrelated provider-owned function tools, and generic file_search/database_search declarations stay providerToolReadiness=not_declared');
+    expect(capabilities?.evidence.join(' ')).toContain('requiring unknown-provider metadata to identify the configured provider by owner or package name');
+    expect(capabilities?.evidence.join(' ')).toContain('provider configuration alone, anonymous provider configuration, generic unknown-provider metadata, mismatched provider metadata, mismatched tool-declaration package identity, unrelated provider-owned function tools, and generic file_search/database_search declarations stay providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now derives Agent API Runtime providerToolReadiness');
     expect(capabilities?.evidence.join(' ')).toContain('keeps selected Agent API Runtime disabled when provider identity is missing');
     expect(capabilities?.evidence.join(' ')).toContain('no-start local provider package metadata for @ai-sdk/openai and @ai-sdk/anthropic');

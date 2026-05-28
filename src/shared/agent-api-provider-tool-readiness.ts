@@ -38,7 +38,7 @@ export type AgentApiProviderToolReadinessServiceEvidence = {
   } | null;
   providerConfigured?: boolean;
   providerOwnedMetadata?: {
-    owner: 'anthropic' | 'openai' | 'provider' | 'unknown';
+    owner: 'anthropic' | 'openai' | 'provider' | 'unknown' | (string & {});
     packageName?: string | null;
     present: boolean;
   } | null;
@@ -140,7 +140,8 @@ function providerMetadataMatchesConfiguredProvider(params: {
     return metadata.owner === 'anthropic'
       || packageName.includes('anthropic');
   }
-  return metadata.owner === 'provider' || metadata.owner === configuredProvider;
+  return metadata.owner === configuredProvider
+    || packageName.includes(configuredProvider);
 }
 
 export function evaluateAgentApiProviderToolReadinessFromEvidence(
