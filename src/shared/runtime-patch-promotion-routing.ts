@@ -324,6 +324,7 @@ function isSafeWorkspaceRelativePath(value: string): boolean {
   const normalized = normalizeWorkspaceRelativePath(value);
   if (!normalized
     || normalized.startsWith('/')
+    || /^[a-z]:\//i.test(normalized)
     || normalized.startsWith('../')
     || normalized.includes('/../')
     || normalized === '.'
