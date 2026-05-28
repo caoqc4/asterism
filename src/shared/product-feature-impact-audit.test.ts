@@ -289,6 +289,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('failureDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('daily run-limit blocks now route a deduplicated run-limit review policy');
     expect(decisions?.evidence.join(' ')).toContain('runLimitDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toContain('automation-readiness blocks now route a deduplicated readiness-review policy');
+    expect(decisions?.evidence.join(' ')).toContain('readinessDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('trigger-port sweep failures now route a deduplicated sweep-failure review policy');
     expect(decisions?.evidence.join(' ')).toContain('sweepFailureDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('timeline evidence write failures after a Run starts now route a deduplicated timeline-failure review policy');
@@ -301,6 +303,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.cliOnlyClosure).toBe('supported');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated failed-run recovery policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated daily run-limit review policy');
+    expect(decisions?.gaps.join(' ')).toContain('deduplicated automation-readiness review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated sweep-failure trigger review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated timeline-failure review policy');
     expect(decisions?.gaps.join(' ')).toContain('broader scheduler review policies');
@@ -512,6 +515,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedTriggerRunEvidenceStatus=not_started');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepRecoveryEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('readinessBlockedDecisionProposalEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('readinessBlockedNoTriggerEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakRunLimitEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakAutomationReadinessEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronSoakNoSecondTriggerEvidence=passed');
@@ -573,6 +578,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('timelineFailedSweepSummaryEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('timelineFailedDecisionProposalEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('sourceFailedSweepSummaryEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('readinessBlockedDecisionProposalEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunStatusEvidence=recorded');

@@ -895,6 +895,76 @@ try {
   assert(sourceFailedRecoveryResult.status === 'completed', 'source-failed sweep recovery did not complete after the in-flight guard was released');
   assert(sourceFailedRecoveryResult.startedRunIds.includes(sourceRecoveryRun.id), 'source-failed sweep recovery did not start a bounded run after source recovery');
 
+  const readinessBlockedTimelineEvents = [];
+  const readinessBlockedTriggerCalls = [];
+  const readinessBlockedTask = {
+    ...buildReadyScheduledTask(),
+    nextStep: '',
+    sourceContexts: [],
+    summary: '',
+  };
+  const readinessBlockedService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent readiness-blocked sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent readiness-blocked sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent readiness-blocked sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async (input) => {
+        readinessBlockedTriggerCalls.push(input);
+        throw new Error('Scheduled/event Agent readiness-blocked sweep smoke should not call the trigger port.');
+      },
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        readinessBlockedTimelineEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [readinessBlockedTask],
+    },
+  );
+  const readinessBlockedResult = await readinessBlockedService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:30:30.000Z'),
+  );
+  assert(readinessBlockedResult.status === 'completed', 'readiness-blocked sweep should complete with a blocked task');
+  assert(readinessBlockedResult.startedRunCount === 0, 'readiness-blocked sweep should not start a run');
+  assert(readinessBlockedResult.automationMissingRequirements.includes('inputs'), 'readiness-blocked sweep did not preserve missing input evidence');
+  assert(readinessBlockedResult.summary.includes('readinessDecisionProposals=proposed'), 'readiness-blocked sweep summary did not preserve Decision proposal evidence');
+  assert(readinessBlockedTriggerCalls.length === 0, 'readiness-blocked sweep unexpectedly called the Code Agent trigger port');
+  assert(readinessBlockedTimelineEvents.length === 1, 'readiness-blocked sweep did not record exactly one Decision proposal event');
+  assert(readinessBlockedTimelineEvents[0]?.type === 'panel.scheduler_decision_proposed', 'readiness-blocked sweep did not record a scheduler Decision proposal event');
+
   let persistedCronSoakRunCount = 0;
   const cronSoakRun = {
     ...terminalRun,
@@ -1161,6 +1231,13 @@ try {
     `sourceFailedSweepSummary=${sourceFailedResult.summary}`,
     `sourceFailedRecoveryStatus=${sourceFailedRecoveryResult.status}`,
     `sourceFailedRecoveryRunId=${sourceRecoveryRun.id}`,
+    `readinessBlockedStatus=${readinessBlockedResult.status}`,
+    `readinessBlockedStarted=${readinessBlockedResult.startedRunCount}`,
+    `readinessBlockedAutomationMissingRequirements=${readinessBlockedResult.automationMissingRequirements.join(',') || 'none'}`,
+    `readinessBlockedTriggerRunEvidenceStatus=${readinessBlockedResult.triggerRunEvidenceStatus}`,
+    `readinessBlockedSweepSummary=${readinessBlockedResult.summary}`,
+    `readinessBlockedDecisionProposalEvents=${readinessBlockedTimelineEvents.length}`,
+    `readinessBlockedTriggerCalls=${readinessBlockedTriggerCalls.length}`,
     `cronSoakFirstStatus=${cronSoakFirstResult.status}`,
     `cronSoakFirstStarted=${cronSoakFirstResult.startedRunCount}`,
     `cronSoakSecondStatus=${cronSoakSecondResult.status}`,
@@ -1209,6 +1286,8 @@ try {
     'timelineFailedDecisionProposalEvidence=recorded',
     'sourceFailedSweepSummaryEvidence=recorded',
     'sourceFailedSweepRecoveryEvidence=passed',
+    'readinessBlockedDecisionProposalEvidence=recorded',
+    'readinessBlockedNoTriggerEvidence=passed',
     'cronSoakRunLimitEvidence=passed',
     'cronSoakAutomationReadinessEvidence=passed',
     'cronSoakNoSecondTriggerEvidence=passed',

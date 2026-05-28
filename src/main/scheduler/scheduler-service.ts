@@ -251,6 +251,12 @@ function isScheduledEventDailyRunLimitBlocked(result: ScheduledEventAgentTrigger
     && result.plan.blockedReasons.some((reason) => /daily run limit reached/i.test(reason));
 }
 
+function isScheduledEventAutomationReadinessBlocked(result: ScheduledEventAgentTriggerResult): boolean {
+  return result.status === 'blocked'
+    && result.plan.policy !== null
+    && result.plan.readiness.missingRequirements.length > 0;
+}
+
 function hasSchedulerDecisionProposalSince(
   task: ScheduledEventAgentTaskInput,
   title: string,
@@ -427,6 +433,7 @@ export class SchedulerService {
       const runCounts = await this.countRunsStartedToday(checkedTaskIds, now);
       const results: ScheduledEventAgentTriggerResult[] = [];
       const runLimitDecisionProposalStatuses: string[] = [];
+      const readinessDecisionProposalStatuses: string[] = [];
 
       for (const task of tasks) {
         activeSweepTask = task;
@@ -442,6 +449,13 @@ export class SchedulerService {
               summary: `runLimitDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
             }));
           runLimitDecisionProposalStatuses.push(proposal.status);
+        } else if (isScheduledEventAutomationReadinessBlocked(result)) {
+          const proposal = await this.proposeScheduledEventReadinessBlockedDecision(task, result.plan, now)
+            .catch((error: unknown) => ({
+              status: 'failed' as const,
+              summary: `readinessDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+            }));
+          readinessDecisionProposalStatuses.push(proposal.status);
         }
       }
 
@@ -498,6 +512,7 @@ export class SchedulerService {
         `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
         `failureDecisionProposals=${failureDecisionProposals.length ? failureDecisionProposals.join(',') : 'none'}`,
         `runLimitDecisionProposals=${runLimitDecisionProposalStatuses.length ? runLimitDecisionProposalStatuses.join(',') : 'none'}`,
+        `readinessDecisionProposals=${readinessDecisionProposalStatuses.length ? readinessDecisionProposalStatuses.join(',') : 'none'}`,
         `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
         `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
         `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
@@ -858,6 +873,43 @@ export class SchedulerService {
         `Scheduled/event Agent daily run limit reached for task ${task.id}.`,
         `Current limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
         'Taskplane should confirm whether to wait, adjust the Standing Approval limit, or pause automation.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
+    });
+  }
+
+  private async proposeScheduledEventReadinessBlockedDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent readiness 阻塞后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'readinessDecisionProposal=skipped_existing',
+      };
+    }
+
+    const missingRequirements = plan.readiness.missingRequirements.length
+      ? plan.readiness.missingRequirements.join(',')
+      : 'unknown';
+
+    return this.proposeSchedulerDecision({
+      options: [
+        '补齐任务上下文后下次 sweep 再运行',
+        '暂停该任务的自动触发并人工处理',
+        '保留自动触发但先调整任务准备条件',
+      ],
+      proposedOutcome: '补齐任务上下文后下次 sweep 再运行',
+      rationale: [
+        `Scheduled/event Agent readiness is blocked for task ${task.id}.`,
+        `Missing requirements: ${missingRequirements}.`,
+        'Taskplane should confirm whether to repair task context, pause automation, or adjust the preparation boundary before more background work continues.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
       standingApprovalPolicyId: plan.policy?.id ?? null,
