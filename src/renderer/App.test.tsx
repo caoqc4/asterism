@@ -5057,7 +5057,7 @@ describe('App redesign v1', () => {
             id: 'runtime.scheduler',
             state: 'approval_required',
             reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / proposalRequirements=0/3 / proposalSatisfiedRequirements=none / proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization / missingRequirements=approval_queue_surface,target_task_identity,authorization / approvalQueueSurface=missing / authorization=missing / operatorId=missing / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
-            diagnosticSummary: 'Scheduled/event trigger plan / status=blocked / triggerPlanReady=no / runtimeStartAllowed=false / runtimeStartReady=no / runtimeStartRequirements=1/3 / runtimeStartSatisfiedRequirements=scheduler_trigger_service / runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count / schedulerTriggerServiceConnected=true',
+            diagnosticSummary: 'Scheduled/event trigger plan / status=blocked / triggerPlanReady=no / runtimeStartAllowed=false / runtimeStartReady=no / runtimeStartRequirements=1/4 / runtimeStartSatisfiedRequirements=scheduler_trigger_service / runtimeStartMissingRequirements=trigger_plan_ready,selected_runtime_identity,run_limit_count / schedulerTriggerServiceConnected=true / selectedRuntimeIdentity=missing',
             requiresApproval: true,
             startupProbePolicy: 'never',
             exposesSecretValue: false,
@@ -5155,10 +5155,11 @@ describe('App redesign v1', () => {
     expect(within(schedulerEvidence).getByText('triggerPlanReady=no')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('runtimeStartAllowed=false')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('runtimeStartReady=no')).toBeTruthy();
-    expect(within(schedulerEvidence).getByText('runtimeStartRequirements=1/3')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('runtimeStartRequirements=1/4')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('runtimeStartSatisfiedRequirements=scheduler_trigger_service')).toBeTruthy();
-    expect(within(schedulerEvidence).getByText('runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('runtimeStartMissingRequirements=trigger_plan_ready,selected_runtime_identity,run_limit_count')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('schedulerTriggerServiceConnected=true')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('selectedRuntimeIdentity=missing')).toBeTruthy();
     expect(screen.getByText(/诊断：workspace=missing \/ selected=Codex CLI/)).toBeTruthy();
     expect(screen.getByText(/探测：仅手动 · 需用户确认/)).toBeTruthy();
     expect(screen.getByText(/当前不会自动启用受阻能力/)).toBeTruthy();

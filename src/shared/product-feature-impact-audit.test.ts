@@ -406,7 +406,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartReady');
-    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=x/3');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=x/4');
+    expect(workHabits?.evidence.join(' ')).toContain('selected_runtime_identity');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('CapabilityRegistry now includes scheduled/event trigger runtime-start readiness');
@@ -414,11 +415,11 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('ConfigurationSafetyReport shows trigger-plan, scheduler-trigger-service, and run-limit-count gaps');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event trigger readiness smoke');
     expect(workHabits?.evidence.join(' ')).toContain('read-only build-gated harness with stale-build detection');
-    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false with runtimeStartRequirements=1/3');
-    expect(workHabits?.evidence.join(' ')).toContain('service-evidence=1/3 runtime-start requirements');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false with runtimeStartRequirements=2/4');
+    expect(workHabits?.evidence.join(' ')).toContain('service-evidence=2/4 runtime-start requirements');
     expect(workHabits?.evidence.join(' ')).toContain('run_limit_count missing');
     expect(workHabits?.evidence.join(' ')).toContain('daily-cap-reached plans stay blocked');
-    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=3/3');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=4/4');
     expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers and triggerScheduledEventAgentRun');
     expect(workHabits?.evidence.join(' ')).toContain('build scheduled/event trigger plans through planScheduledEventAgentTriggerFromEvidence');
     expect(workHabits?.evidence.join(' ')).toContain('no-start diagnostics and real trigger attempts share the same service-evidence contract');

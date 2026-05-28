@@ -331,6 +331,7 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
     'runtimeStartSatisfiedRequirements',
     'runtimeStartMissingRequirements',
     'schedulerTriggerServiceConnected',
+    'selectedRuntimeIdentity',
   ]);
 }
 

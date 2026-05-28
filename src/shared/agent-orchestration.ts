@@ -200,12 +200,14 @@ export type AgentStandingApprovalConfirmationDraft = {
 export type AgentScheduledEventRuntimeStartRequirement =
   | 'trigger_plan_ready'
   | 'scheduler_trigger_service'
+  | 'selected_runtime_identity'
   | 'run_limit_count';
 
 export function scheduledEventRuntimeStartRequirements(): AgentScheduledEventRuntimeStartRequirement[] {
   return [
     'trigger_plan_ready',
     'scheduler_trigger_service',
+    'selected_runtime_identity',
     'run_limit_count',
   ];
 }
@@ -1176,8 +1178,10 @@ export function planScheduledEventAgentTrigger(params: {
   const runtimeStartAllowed = status === 'ready' && schedulerTriggerServiceConnected;
   const runtimeStartRequirements = scheduledEventRuntimeStartRequirements();
   const runtimeStartMissingRequirements: AgentScheduledEventRuntimeStartRequirement[] = [];
+  const selectedRuntimeIdentityReady = Boolean(policy?.allowedRuntimeIds.includes(runtimeId));
   if (status !== 'ready') runtimeStartMissingRequirements.push('trigger_plan_ready');
   if (!schedulerTriggerServiceConnected) runtimeStartMissingRequirements.push('scheduler_trigger_service');
+  if (!selectedRuntimeIdentityReady) runtimeStartMissingRequirements.push('selected_runtime_identity');
   if (!runLimitCountReady) runtimeStartMissingRequirements.push('run_limit_count');
   const runtimeStartMissingRequirementSet = new Set(runtimeStartMissingRequirements);
   const runtimeStartSatisfiedRequirements = runtimeStartRequirements.filter((requirement) =>
@@ -1220,6 +1224,7 @@ export function planScheduledEventAgentTrigger(params: {
       `runtimeStartSatisfiedRequirements=${runtimeStartSatisfiedRequirements.length ? runtimeStartSatisfiedRequirements.join(',') : 'none'}`,
       `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
       `schedulerTriggerServiceConnected=${schedulerTriggerServiceConnected ? 'true' : 'false'}`,
+      `selectedRuntimeIdentity=${selectedRuntimeIdentityReady ? runtimeId : 'missing'}`,
       'triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step',
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,

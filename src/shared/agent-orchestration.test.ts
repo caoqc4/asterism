@@ -885,6 +885,7 @@ describe('agent orchestration snapshot', () => {
       ],
       runtimeStartSatisfiedRequirements: [
         'trigger_plan_ready',
+        'selected_runtime_identity',
       ],
       triggerRunEvidenceRequired: [
         'context_readiness',
@@ -904,10 +905,11 @@ describe('agent orchestration snapshot', () => {
     });
     expect(plan.summary).toContain('runtimeStartAllowed=false');
     expect(plan.summary).toContain('runtimeStartReady=no');
-    expect(plan.summary).toContain('runtimeStartRequirements=1/3');
-    expect(plan.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready');
+    expect(plan.summary).toContain('runtimeStartRequirements=2/4');
+    expect(plan.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,selected_runtime_identity');
     expect(plan.summary).toContain('runtimeStartMissingRequirements=scheduler_trigger_service,run_limit_count');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
+    expect(plan.summary).toContain('selectedRuntimeIdentity=local_sandbox');
     expect(plan.summary).toContain('triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
     expect(plan.evidence).toContain('targetTask=task_1');
     expect(plan.summary).toContain('runLimit=not_counted/3');
@@ -981,6 +983,7 @@ describe('agent orchestration snapshot', () => {
       runtimeStartSatisfiedRequirements: [
         'trigger_plan_ready',
         'scheduler_trigger_service',
+        'selected_runtime_identity',
         'run_limit_count',
       ],
     });
@@ -989,10 +992,11 @@ describe('agent orchestration snapshot', () => {
     expect(plan.readiness.summary).toContain('missingRequirements=none');
     expect(plan.summary).toContain('runtimeStartAllowed=true');
     expect(plan.summary).toContain('runtimeStartReady=yes');
-    expect(plan.summary).toContain('runtimeStartRequirements=3/3');
-    expect(plan.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,scheduler_trigger_service,run_limit_count');
+    expect(plan.summary).toContain('runtimeStartRequirements=4/4');
+    expect(plan.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,scheduler_trigger_service,selected_runtime_identity,run_limit_count');
     expect(plan.summary).toContain('runtimeStartMissingRequirements=none');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=true');
+    expect(plan.summary).toContain('selectedRuntimeIdentity=local_sandbox');
   });
 
   it('blocks scheduled/event runtime start when trigger service lacks run-limit accounting', () => {
@@ -1047,13 +1051,75 @@ describe('agent orchestration snapshot', () => {
       ],
       runtimeStartSatisfiedRequirements: [
         'scheduler_trigger_service',
+        'selected_runtime_identity',
       ],
       blockedReasons: expect.arrayContaining([
         'Scheduled/event trigger runtime start requires daily run-limit accounting.',
       ]),
     });
-    expect(plan.summary).toContain('runtimeStartRequirements=1/3');
+    expect(plan.summary).toContain('runtimeStartRequirements=2/4');
     expect(plan.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready,run_limit_count');
+  });
+
+  it('blocks scheduled/event runtime start when the selected runtime is outside Standing Approval scope', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+
+    const plan = planScheduledEventAgentTrigger({
+      aiStatus: readyAutomationAiStatus(),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      runLimit: {
+        runsStartedToday: 0,
+      },
+      runtimeId: 'agent_api_runtime',
+      schedulerTriggerServiceConnected: true,
+      task: {
+        ...task,
+        id: 'task_1',
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: 'task_1',
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy: draft.policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:01:00.000Z',
+        }],
+      },
+    });
+
+    expect(plan).toMatchObject({
+      status: 'blocked',
+      runtimeStartAllowed: false,
+      policy: null,
+      runtimeStartMissingRequirements: [
+        'trigger_plan_ready',
+        'selected_runtime_identity',
+        'run_limit_count',
+      ],
+      runtimeStartSatisfiedRequirements: [
+        'scheduler_trigger_service',
+      ],
+    });
+    expect(plan.summary).toContain('selectedRuntimeIdentity=missing');
   });
 
   it('blocks scheduled/event trigger planning when daily run limit is reached', () => {
@@ -1111,6 +1177,7 @@ describe('agent orchestration snapshot', () => {
         'scheduler_trigger_service',
       ],
       runtimeStartSatisfiedRequirements: [
+        'selected_runtime_identity',
         'run_limit_count',
       ],
       blockedReasons: expect.arrayContaining([
@@ -1145,6 +1212,7 @@ describe('agent orchestration snapshot', () => {
       runtimeStartMissingRequirements: [
         'trigger_plan_ready',
         'scheduler_trigger_service',
+        'selected_runtime_identity',
         'run_limit_count',
       ],
       blockedReasons: expect.arrayContaining([
@@ -1152,7 +1220,7 @@ describe('agent orchestration snapshot', () => {
         'Scheduled/event trigger planner only handles scheduled, event, or routine tasks.',
       ]),
     });
-    expect(plan.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready,scheduler_trigger_service,run_limit_count');
+    expect(plan.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready,scheduler_trigger_service,selected_runtime_identity,run_limit_count');
   });
 
   it('derives scheduled/event trigger readiness from structured service evidence', () => {
@@ -1204,7 +1272,7 @@ describe('agent orchestration snapshot', () => {
       status: 'blocked',
       runtimeStartAllowed: false,
       schedulerTriggerServiceConnected: true,
-      runtimeStartSatisfiedRequirements: ['scheduler_trigger_service'],
+      runtimeStartSatisfiedRequirements: ['scheduler_trigger_service', 'selected_runtime_identity'],
       runtimeStartMissingRequirements: [
         'trigger_plan_ready',
         'run_limit_count',
@@ -1213,8 +1281,8 @@ describe('agent orchestration snapshot', () => {
         'Scheduled/event trigger runtime start requires daily run-limit accounting.',
       ]),
     });
-    expect(missingRunLimit.summary).toContain('runtimeStartRequirements=1/3');
-    expect(missingRunLimit.summary).toContain('runtimeStartSatisfiedRequirements=scheduler_trigger_service');
+    expect(missingRunLimit.summary).toContain('runtimeStartRequirements=2/4');
+    expect(missingRunLimit.summary).toContain('runtimeStartSatisfiedRequirements=scheduler_trigger_service,selected_runtime_identity');
 
     const ready = planScheduledEventAgentTriggerFromEvidence({
       aiStatus: readyAutomationAiStatus(),
@@ -1244,13 +1312,14 @@ describe('agent orchestration snapshot', () => {
       runtimeStartSatisfiedRequirements: [
         'trigger_plan_ready',
         'scheduler_trigger_service',
+        'selected_runtime_identity',
         'run_limit_count',
       ],
     });
     expect(ready.evidence).toContain('targetTask=task_1');
     expect(ready.evidence).toContain('runLimit=0/3');
-    expect(ready.summary).toContain('runtimeStartRequirements=3/3');
-    expect(ready.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,scheduler_trigger_service,run_limit_count');
+    expect(ready.summary).toContain('runtimeStartRequirements=4/4');
+    expect(ready.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,scheduler_trigger_service,selected_runtime_identity,run_limit_count');
   });
 });
 

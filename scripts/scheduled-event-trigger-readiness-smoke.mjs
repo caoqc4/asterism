@@ -98,7 +98,8 @@ export async function runScheduledEventTriggerReadinessSmoke() {
 
   if (
     noService.runtimeStartAllowed
-    || noService.runtimeStartSatisfiedRequirements.length !== 1
+    || noService.runtimeStartSatisfiedRequirements.length !== 2
+    || !noService.runtimeStartSatisfiedRequirements.includes('selected_runtime_identity')
     || !noService.runtimeStartMissingRequirements.includes('scheduler_trigger_service')
     || !noService.runtimeStartMissingRequirements.includes('run_limit_count')
     || noRunLimit.runtimeStartAllowed
@@ -109,9 +110,11 @@ export async function runScheduledEventTriggerReadinessSmoke() {
     || !dailyCapReached.blockedReasons.some((reason) => reason.includes('daily run limit reached'))
     || !ready.runtimeStartAllowed
     || ready.runtimeStartMissingRequirements.length !== 0
-    || ready.runtimeStartSatisfiedRequirements.length !== 3
+    || ready.runtimeStartSatisfiedRequirements.length !== 4
+    || !ready.runtimeStartSatisfiedRequirements.includes('selected_runtime_identity')
     || serviceEvidencePartial.runtimeStartAllowed
-    || serviceEvidencePartial.runtimeStartSatisfiedRequirements.length !== 1
+    || serviceEvidencePartial.runtimeStartSatisfiedRequirements.length !== 2
+    || !serviceEvidencePartial.runtimeStartSatisfiedRequirements.includes('selected_runtime_identity')
     || !serviceEvidencePartial.runtimeStartMissingRequirements.includes('run_limit_count')
   ) {
     console.log('status=failed');
@@ -126,7 +129,7 @@ function printPlan(prefix, plan) {
   console.log(`${prefix}Status=${plan.status}`);
   console.log(`${prefix}TriggerPlanReady=${plan.triggerPlanReady ? 'yes' : 'no'}`);
   console.log(`${prefix}RuntimeStartAllowed=${String(plan.runtimeStartAllowed)}`);
-  console.log(`${prefix}RuntimeStartRequirements=${plan.runtimeStartSatisfiedRequirements.length}/3`);
+  console.log(`${prefix}RuntimeStartRequirements=${plan.runtimeStartSatisfiedRequirements.length}/4`);
   console.log(`${prefix}RuntimeStartMissingRequirements=${plan.runtimeStartMissingRequirements.join(',') || 'none'}`);
   console.log(`${prefix}RunLimit=${plan.runLimit.runsStartedToday ?? 'not_counted'}/${plan.runLimit.maxRunsPerDay ?? 'none'}`);
 }
