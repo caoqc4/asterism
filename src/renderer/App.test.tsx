@@ -5056,7 +5056,7 @@ describe('App redesign v1', () => {
           {
             id: 'runtime.scheduler',
             state: 'approval_required',
-            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / proposalRequirements=0/3 / proposalSatisfiedRequirements=none / proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization / missingRequirements=approval_queue_surface,target_task_identity,authorization / approvalQueueSurface=missing / authorization=missing / operatorId=missing / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
+            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / proposalRequirements=0/3 / proposalSatisfiedRequirements=none / proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization / missingRequirements=approval_queue_surface,target_task_identity,authorization / approvalQueueSurface=missing / authorization=missing / operatorId=missing / localRecoveryRunId=missing / localRecoveryTask=missing / localRecoveryCompleted=no / localRecoveryTaskMatched=no / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
             diagnosticSummary: 'Scheduled/event trigger plan / status=blocked / triggerPlanReady=no / runtimeStartAllowed=false / runtimeStartReady=no / runtimeStartRequirements=1/4 / runtimeStartSatisfiedRequirements=scheduler_trigger_service / runtimeStartMissingRequirements=trigger_plan_ready,selected_runtime_identity,run_limit_count / schedulerTriggerServiceConnected=true / selectedRuntimeIdentity=missing',
             requiresApproval: true,
             startupProbePolicy: 'never',
@@ -5145,6 +5145,10 @@ describe('App redesign v1', () => {
     expect(within(schedulerEvidence).getByText('approvalQueueSurface=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('authorization=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('operatorId=missing')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('localRecoveryRunId=missing')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('localRecoveryTask=missing')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('localRecoveryCompleted=no')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('localRecoveryTaskMatched=no')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('standingApprovalPolicyId=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('standingApprovalScopeTask=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('standingApprovalActive=no')).toBeTruthy();

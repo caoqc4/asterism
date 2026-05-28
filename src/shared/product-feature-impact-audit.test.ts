@@ -303,7 +303,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=3/3 requirements with operatorId evidence');
-    expect(decisions?.evidence.join(' ')).toContain('local-recovery=3/3 requirements with localRecoveryRunId evidence');
+    expect(decisions?.evidence.join(' ')).toContain('local-recovery=3/3 requirements with localRecoveryRunId');
     expect(decisions?.evidence.join(' ')).toContain('standing-approval=3/3 requirements with standingApprovalPolicyId, standingApprovalScopeTask, and standingApprovalScopeMatched=yes evidence');
     expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=2/3 requirements with authorization missing');
     expect(decisions?.evidence.join(' ')).toContain('service-evidence=2/3 requirements');
