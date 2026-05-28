@@ -895,6 +895,91 @@ describe('SchedulerService', () => {
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
+  it('does not duplicate same-day failed-run Decision proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_failed_run_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent 失败后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: 'Model failed safely again.',
+        id: 'run_scheduled_callback_2',
+        status: 'failed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('failureDecisionProposals=skipped_existing');
+    expect(sweepResult.runFailureReasons).toEqual(['run_scheduled_callback_2: Model failed safely again.']);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_callback_2',
+        runStatus: 'failed',
+        triggerKind: 'cron',
+      }),
+    }));
+  });
+
   it('blocks a second cron sweep when persisted same-day run count reaches the standing approval limit', async () => {
     let persistedRunCount = 0;
     const task = buildAutomationTaskDetail({

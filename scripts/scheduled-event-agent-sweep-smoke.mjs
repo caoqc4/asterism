@@ -409,6 +409,78 @@ try {
   assert(cronTimelineEvents[1].payload.title === '确认定时/事件 Agent 失败后的下一步', 'cron Decision proposal did not preserve recovery decision title');
   assert(beforeWorkspace === cronAfterWorkspace, 'scheduled/event Agent cron sweep smoke mutated the workspace fixture');
 
+  const failedRunDedupEvents = [];
+  const failedRunDedupRun = {
+    ...cronRun,
+    failureReason: 'Scheduled/event smoke failed again.',
+    id: 'run_scheduled_event_sweep_failed_dedup',
+  };
+  const failedRunDedupService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent failed-run dedupe smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent failed-run dedupe smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent failed-run dedupe smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    {
+      triggerCodeAgentRun: async () => failedRunDedupRun,
+    },
+    {
+      recordTimelineEvent: async (input) => {
+        failedRunDedupEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask({
+        timeline: [{
+          createdAt: '2026-05-26T09:00:00.000Z',
+          id: 'timeline_failed_run_decision_existing',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent 失败后的下一步',
+          }),
+          taskId: 'task_scheduled_event_sweep_smoke',
+          type: 'panel.scheduler_decision_proposed',
+        }],
+      })],
+    },
+  );
+  const failedRunDedupResult = await failedRunDedupService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:16:00.000Z'),
+  );
+
+  assert(failedRunDedupResult.summary.includes('failureDecisionProposals=skipped_existing'), 'cron sweep did not dedupe same-day failed-run Decision proposal evidence');
+  assert(failedRunDedupEvents.length === 1, 'failed-run dedupe sweep should record only trigger evidence');
+  assert(failedRunDedupEvents[0].type === 'panel.scheduled_event_agent_triggered', 'failed-run dedupe sweep should not record a duplicate Decision proposal');
+
   const disconnectedSweepListenerEvents = [];
   const disconnectedService = new SchedulerService(
     {
@@ -1099,6 +1171,7 @@ try {
     'terminalTriggerRunEvidence=passed',
     'cronTriggerRunEvidence=passed',
     'cronRunFailureReasonEvidence=passed',
+    'failedRunDecisionDedupeEvidence=passed',
     'runLimitEvidence=passed',
     'durableRunLimitCountEvidence=passed',
     'runtimeStartRequirements=passed',
@@ -1153,6 +1226,31 @@ try {
 function buildReadyScheduledTask(options = {}) {
   const taskId = 'task_scheduled_event_sweep_smoke';
   const maxRunsPerDay = options.maxRunsPerDay ?? 3;
+  const standingApprovalTimeline = {
+    createdAt: '2026-05-26T10:05:00.000Z',
+    id: 'timeline_scheduled_event_sweep_standing_approval',
+    payload: JSON.stringify({
+      policy: {
+        allowedAutonomyLevel: 'L2_limited_authorized_action',
+        allowedLanes: ['coding'],
+        allowedRuntimeIds: ['local_sandbox'],
+        createdAt: '2026-05-26T10:00:00.000Z',
+        expiresAt: '2026-05-27T10:00:00.000Z',
+        id: `standing_approval:${taskId}:coding:local_sandbox`,
+        maxRunsPerDay,
+        reason: 'Allow bounded scheduled/event Agent sweep smoke execution.',
+        riskCeiling: 'low',
+        status: 'active',
+        taskFacets: ['scheduled'],
+        taskId,
+        taskTypes: ['routine'],
+      },
+      schedulerTriggerAllowed: false,
+      workspaceWriteAllowed: false,
+    }),
+    taskId,
+    type: 'panel.standing_approval_confirmed',
+  };
 
   return {
     activeBlocker: null,
@@ -1212,31 +1310,7 @@ function buildReadyScheduledTask(options = {}) {
     summary: 'Known scheduled/event Agent sweep smoke task.',
     taskFacets: ['scheduled', 'routine'],
     taskType: 'routine',
-    timeline: [{
-      createdAt: '2026-05-26T10:05:00.000Z',
-      id: 'timeline_scheduled_event_sweep_standing_approval',
-      payload: JSON.stringify({
-        policy: {
-          allowedAutonomyLevel: 'L2_limited_authorized_action',
-          allowedLanes: ['coding'],
-          allowedRuntimeIds: ['local_sandbox'],
-          createdAt: '2026-05-26T10:00:00.000Z',
-          expiresAt: '2026-05-27T10:00:00.000Z',
-          id: `standing_approval:${taskId}:coding:local_sandbox`,
-          maxRunsPerDay,
-          reason: 'Allow bounded scheduled/event Agent sweep smoke execution.',
-          riskCeiling: 'low',
-          status: 'active',
-          taskFacets: ['scheduled'],
-          taskId,
-          taskTypes: ['routine'],
-        },
-        schedulerTriggerAllowed: false,
-        workspaceWriteAllowed: false,
-      }),
-      taskId,
-      type: 'panel.standing_approval_confirmed',
-    }],
+    timeline: [standingApprovalTimeline, ...(options.timeline ?? [])],
     waitingReason: null,
   };
 }

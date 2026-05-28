@@ -769,7 +769,7 @@ export class SchedulerService {
       ? 'ready_for_terminal_review'
       : 'pending_terminal_run_evidence';
     const failureDecisionProposal = run.status === 'failed'
-      ? await this.proposeScheduledEventFailureDecision(task, plan, run).catch((error: unknown) => ({
+      ? await this.proposeScheduledEventFailureDecision(task, plan, run, now).catch((error: unknown) => ({
           status: 'failed' as const,
           summary: `failureDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
         }))
@@ -794,7 +794,16 @@ export class SchedulerService {
     task: ScheduledEventAgentTaskInput,
     plan: AgentScheduledEventTriggerPlan,
     run: RunRecord,
-  ): Promise<SchedulerDecisionProposalResult> {
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent 失败后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'failureDecisionProposal=skipped_existing',
+      };
+    }
+
     return this.proposeSchedulerDecision({
       evidenceRunId: run.id,
       options: [
@@ -811,7 +820,7 @@ export class SchedulerService {
       standingApprovalPolicyId: plan.policy?.id ?? null,
       standingApprovalScopeTaskId: task.id,
       targetTaskId: task.id,
-      title: '确认定时/事件 Agent 失败后的下一步',
+      title,
     });
   }
 

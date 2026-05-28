@@ -428,6 +428,7 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('sweepAutomationReadinessEvidence=passed');
     expect(script).toContain('cronTriggerRunEvidence=passed');
     expect(script).toContain('cronRunFailureReasonEvidence=passed');
+    expect(script).toContain('failedRunDecisionDedupeEvidence=passed');
     expect(script).toContain('blockedTaskSummaryEvidence=passed');
     expect(script).toContain('checkedTaskIdsEvidence=passed');
     expect(script).toContain('panel.scheduled_event_agent_triggered');

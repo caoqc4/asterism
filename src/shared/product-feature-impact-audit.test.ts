@@ -281,7 +281,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('converts only ready proposals into the existing TaskplaneWritebackApprovalItem queue');
     expect(decisions?.evidence.join(' ')).toContain('SchedulerService.proposeSchedulerDecision');
     expect(decisions?.evidence.join(' ')).toContain('records panel.scheduler_decision_proposed only when ready');
-    expect(decisions?.evidence.join(' ')).toContain('failed terminal runs now route a concrete failure-review policy');
+    expect(decisions?.evidence.join(' ')).toContain('failed terminal runs now route a deduplicated failure-review policy');
+    expect(decisions?.evidence.join(' ')).toContain('at most one target-scoped panel.scheduler_decision_proposed recovery Decision proposal per task per UTC day');
     expect(decisions?.evidence.join(' ')).toContain('failureDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('daily run-limit blocks now route a deduplicated run-limit review policy');
     expect(decisions?.evidence.join(' ')).toContain('runLimitDecisionProposals summary evidence');
@@ -293,7 +294,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('cannot turn ordinary Decision approval into arbitrary tool execution');
     expect(decisions?.evidence.join(' ')).toContain('Decision actions in DecisionService and DecisionsPage pass through decision_action');
     expect(decisions?.cliOnlyClosure).toBe('supported');
-    expect(decisions?.gaps.join(' ')).toContain('concrete failed-run recovery policy');
+    expect(decisions?.gaps.join(' ')).toContain('deduplicated failed-run recovery policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated daily run-limit review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated sweep-failure trigger review policy');
     expect(decisions?.gaps.join(' ')).toContain('broader scheduler review policies');
@@ -528,6 +529,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('terminalTriggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronTriggerRunEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunFailureReasonEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('failedRunDecisionDedupeEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('triggerKindEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTargetTaskEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('boundedRunTaskMemoryEvidence=passed');
@@ -565,8 +567,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('terminalRunStatusEvidence=recorded');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunStatusEvidence=recorded');
-    expect(workHabits?.evidence.join(' ')).toContain('Local scheduled/event Agent sweep acceptance on 2026-05-27 passed');
+    expect(workHabits?.evidence.join(' ')).toContain('Local scheduled/event Agent sweep acceptance on 2026-05-28 passed');
     expect(workHabits?.evidence.join(' ')).toContain('cronRunFailureReasonEvidence=passed');
+    expect(workHabits?.evidence.join(' ')).toContain('failedRunDecisionDedupeEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('durableRunLimitCountEvidence=passed');
     expect(workHabits?.evidence.join(' ')).toContain('runLimitCountSince=2026-05-26T00:00:00.000Z');
     expect(workHabits?.evidence.join(' ')).toContain('manual scheduled/event Agent background live preflight');
