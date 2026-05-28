@@ -159,6 +159,7 @@ export type AgentApiExecutionPromotionReadiness = {
 
 export type AgentApiExecutionPromotionServiceEvidence = {
   contextManifestSummary?: string | null;
+  contextManifestTaskId?: string | null;
   contextReadinessStep?: {
     status: 'blocked' | 'ready';
     stepId?: string | null;
@@ -692,6 +693,9 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const selectedRuntime = evidence.selectedRuntimeContract;
   const targetTaskId = evidence.targetTaskId?.trim() || '';
   const contextManifest = evidence.contextManifestSummary?.trim() || '';
+  const contextManifestTaskId = evidence.contextManifestTaskId?.trim()
+    || scalarSummaryValue(contextManifest, 'task')
+    || '';
   const contextStepId = evidence.contextReadinessStep?.stepId?.trim() || '';
   const runGoalObjective = evidence.runGoalContract?.objective?.trim() || '';
   const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
@@ -737,6 +741,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const postStepTaskEvidenceChainReady = Boolean(postStepTaskId)
     && Boolean(targetTaskId)
     && postStepTaskId === targetTaskId;
+  const contextManifestEvidenceChainReady = Boolean(contextManifest)
+    && Boolean(contextManifestTaskId)
+    && Boolean(targetTaskId)
+    && contextManifestTaskId === targetTaskId;
   const reviewedPatchApplyBoundaryReady = (
     evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
     && evidence.reviewedPatchApplyBoundary.promotionPreflightReady === true
@@ -768,7 +776,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('provider_visible_preflight');
   }
 
-  if (contextManifest) {
+  if (contextManifestEvidenceChainReady) {
     satisfiedRequirements.push('runtime_context_manifest');
   }
 
@@ -844,6 +852,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `writeIntentTaskEvidenceChain=${writeIntentTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `contextStep=${contextStepId || 'missing'}`,
       `contextManifest=${contextManifest || 'missing'}`,
+      `contextManifestTask=${contextManifestTaskId || 'missing'}`,
+      `contextManifestEvidenceChain=${contextManifestEvidenceChainReady ? 'ready' : 'missing'}`,
       `taskMemoryGuidance=${evidence.taskMemoryGuidance?.status ?? 'missing'}`,
       `taskMemoryGuidanceCount=${evidence.taskMemoryGuidance?.guidanceCount ?? 0}`,
       `runGoalConditions=${evidence.runGoalContract?.completionConditionCount ?? 0}`,
@@ -864,6 +874,12 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
     ].join(' / '),
   };
+}
+
+function scalarSummaryValue(summary: string, key: string): string | null {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() ?? null;
 }
 
 export function evaluateAgentApiExecutionPromotionReadinessForInvocation(

@@ -402,6 +402,7 @@ export class RunService {
     );
     const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       contextManifestSummary: params.capabilities?.summary ?? null,
+      contextManifestTaskId: params.task.id,
       contextReadinessStep: {
         status: params.contextReadiness.decision === 'ready' ? 'ready' : 'blocked',
         stepId: 'context.readiness.evaluate',

@@ -922,6 +922,8 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('writeIntentTaskEvidenceChain=missing');
     expect(partial.summary).toContain('contextStep=step_context_ready');
     expect(partial.summary).toContain('contextManifest=task=task_1 / files=2');
+    expect(partial.summary).toContain('contextManifestTask=task_1');
+    expect(partial.summary).toContain('contextManifestEvidenceChain=ready');
     expect(partial.summary).toContain('writeIntentActions=none');
     expect(partial.summary).toContain('runtimeMode=api');
     expect(partial.summary).toContain('invocationLayer=api_runtime');
@@ -954,6 +956,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('writeIntentTask=task_1');
     expect(ready.summary).toContain('writeIntentTaskEvidenceChain=ready');
     expect(ready.summary).toContain('taskMemoryGuidance=ready');
+    expect(ready.summary).toContain('contextManifestTask=task_1');
+    expect(ready.summary).toContain('contextManifestEvidenceChain=ready');
     expect(ready.summary).toContain('taskMemoryGuidanceCount=1');
     expect(ready.summary).toContain('runGoalConditions=1');
     expect(ready.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
@@ -987,6 +991,36 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('runEvidenceTask=task_2');
     expect(mismatch.summary).toContain('targetTaskEvidenceChain=missing');
     expect(mismatch.summary).toContain('runEvidenceTaskEvidenceChain=missing');
+  });
+
+  it('requires runtime context manifest evidence to belong to the target task', () => {
+    const mismatch = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      contextManifestSummary: 'task=task_2 / files=2 / sourceContexts=1',
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['runtime_context_manifest'],
+    });
+    expect(mismatch.summary).toContain('targetTask=task_1');
+    expect(mismatch.summary).toContain('contextManifest=task=task_2 / files=2 / sourceContexts=1');
+    expect(mismatch.summary).toContain('contextManifestTask=task_2');
+    expect(mismatch.summary).toContain('contextManifestEvidenceChain=missing');
+
+    const serviceTaskEvidence = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      contextManifestSummary: 'executionKind=api / status=partial',
+      contextManifestTaskId: 'task_1',
+    });
+
+    expect(serviceTaskEvidence).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+    });
+    expect(serviceTaskEvidence.summary).toContain('contextManifest=executionKind=api / status=partial');
+    expect(serviceTaskEvidence.summary).toContain('contextManifestTask=task_1');
+    expect(serviceTaskEvidence.summary).toContain('contextManifestEvidenceChain=ready');
   });
 
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
