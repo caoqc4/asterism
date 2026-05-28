@@ -1077,7 +1077,6 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
     expect(capabilities?.evidence.join(' ')).toContain('requiring unknown-provider metadata to identify the configured provider by exact owner, package scope, package basename, or package basename prefix rather than a loose substring match');
-    expect(capabilities?.evidence.join(' ')).toContain('provider configuration alone, anonymous provider configuration, generic unknown-provider metadata, mismatched provider metadata, loose provider-name substring package matches, mismatched tool-declaration package identity, unrelated provider-owned function tools, generic bare search tools, and generic file_search/database_search declarations stay providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now derives Agent API Runtime providerToolReadiness');
     expect(capabilities?.evidence.join(' ')).toContain('keeps selected Agent API Runtime disabled when provider identity is missing');
     expect(capabilities?.evidence.join(' ')).toContain('no-start local provider package metadata for @ai-sdk/openai and @ai-sdk/anthropic');

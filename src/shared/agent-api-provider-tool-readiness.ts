@@ -135,6 +135,17 @@ function packageNameIdentifiesProvider(packageName: string, provider: string): b
     || basename.startsWith(`${normalizedProvider}-`);
 }
 
+function packageNameIdentifiesKnownProvider(packageName: string, provider: 'anthropic' | 'openai'): boolean {
+  const normalizedPackage = packageName.trim().toLowerCase();
+  if (!normalizedPackage) return false;
+
+  const packageParts = normalizedPackage.split('/');
+  const scope = packageParts.length > 1 ? packageParts[0]?.replace(/^@/, '') : '';
+  const basename = packageParts[packageParts.length - 1] ?? normalizedPackage;
+
+  return scope === provider || basename === provider;
+}
+
 function providerMetadataMatchesConfiguredProvider(params: {
   configuredProvider?: string | null;
   metadata?: AgentApiProviderToolReadinessServiceEvidence['providerOwnedMetadata'];
@@ -147,11 +158,11 @@ function providerMetadataMatchesConfiguredProvider(params: {
   const packageName = metadata.packageName?.trim().toLowerCase() ?? '';
   if (configuredProvider === 'openai') {
     return metadata.owner === 'openai'
-      || packageNameIdentifiesProvider(packageName, 'openai');
+      || packageNameIdentifiesKnownProvider(packageName, 'openai');
   }
   if (configuredProvider === 'anthropic') {
     return metadata.owner === 'anthropic'
-      || packageNameIdentifiesProvider(packageName, 'anthropic');
+      || packageNameIdentifiesKnownProvider(packageName, 'anthropic');
   }
   return metadata.owner === configuredProvider
     || packageNameIdentifiesProvider(packageName, configuredProvider);
