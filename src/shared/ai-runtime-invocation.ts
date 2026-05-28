@@ -195,7 +195,9 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   selectedRuntimeContract?: {
     invocationLayer: RuntimeInvocationLayer;
     phase: RuntimeInvocationPhase;
+    runId?: string | null;
     runtimeMode: AiRuntimeMode | 'local_rule' | 'product_harness';
+    taskId?: string | null;
   } | null;
   targetTaskId?: string | null;
   taskMemoryGuidance?: {
@@ -696,6 +698,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const satisfiedRequirements: AgentApiExecutionPromotionRequirement[] = [];
   const selectedRuntime = evidence.selectedRuntimeContract;
   const targetTaskId = evidence.targetTaskId?.trim() || '';
+  const selectedRuntimeRunId = selectedRuntime?.runId?.trim() || '';
+  const selectedRuntimeTaskId = selectedRuntime?.taskId?.trim() || '';
   const contextManifest = evidence.contextManifestSummary?.trim() || '';
   const contextManifestTaskId = evidence.contextManifestTaskId?.trim()
     || scalarSummaryValue(contextManifest, 'task')
@@ -727,6 +731,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && runEvidenceTaskId === targetTaskId;
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && (!runEvidenceId || runEvidenceTaskEvidenceChainReady);
+  const selectedRuntimeRunEvidenceChainReady = Boolean(selectedRuntimeRunId)
+    && (!runEvidenceId || selectedRuntimeRunId === runEvidenceId);
+  const selectedRuntimeTaskEvidenceChainReady = Boolean(selectedRuntimeTaskId)
+    && Boolean(targetTaskId)
+    && selectedRuntimeTaskId === targetTaskId;
   const writeIntentRunEvidenceChainReady = Boolean(writeIntentRunId)
     && (!runEvidenceId || writeIntentRunId === runEvidenceId);
   const writeIntentTaskEvidenceChainReady = Boolean(writeIntentTaskId)
@@ -776,6 +785,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     selectedRuntime?.runtimeMode === 'api'
     && selectedRuntime.invocationLayer === 'api_runtime'
     && selectedRuntime.phase === 'execution_run'
+    && selectedRuntimeRunEvidenceChainReady
+    && selectedRuntimeTaskEvidenceChainReady
   ) {
     satisfiedRequirements.push('selected_runtime_contract');
   }
@@ -871,6 +882,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `runEvidenceTask=${runEvidenceTaskId || 'missing'}`,
       `targetTaskEvidenceChain=${targetTaskIdentityReady ? 'ready' : 'missing'}`,
       `runEvidenceTaskEvidenceChain=${runEvidenceTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `selectedRuntimeRun=${selectedRuntimeRunId || 'missing'}`,
+      `selectedRuntimeRunEvidenceChain=${selectedRuntimeRunEvidenceChainReady ? 'ready' : 'missing'}`,
+      `selectedRuntimeTask=${selectedRuntimeTaskId || 'missing'}`,
+      `selectedRuntimeTaskEvidenceChain=${selectedRuntimeTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `providerConfigured=${evidence.providerVisiblePreflight?.providerConfigured === true ? 'ready' : 'missing'}`,
       `configuredProvider=${configuredProvider || 'missing'}`,
       `providerStartupProbe=${evidence.providerVisiblePreflight?.startupProbe ?? 'missing'}`,

@@ -175,6 +175,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Run evidence persistence, and runtime gates');
     expect(rightPanel?.evidence.join(' ')).toContain('Run evidence task identity to match targetTaskId');
     expect(rightPanel?.evidence.join(' ')).toContain('run_evidence_persistence can stay ready');
+    expect(rightPanel?.evidence.join(' ')).toContain('selected_runtime_contract to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime_context_manifest to carry the target task identity');
     expect(rightPanel?.evidence.join(' ')).toContain('context_readiness_step to carry target-task identity evidence');
@@ -183,7 +184,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain');
+    expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
+    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('contextStep, contextStepTask, contextStepTaskEvidenceChain, contextManifest, contextManifestTask, contextManifestEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('taskMemoryGuidance, taskMemoryGuidanceCount, taskMemoryGuidanceTask, taskMemoryGuidanceTaskEvidenceChain, runGoalConditions');
     expect(rightPanel?.evidence.join(' ')).toContain('runGoalRun, runGoalRunEvidenceChain, runGoalTask, runGoalTaskEvidenceChain');

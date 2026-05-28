@@ -73,7 +73,9 @@ export async function runAgentApiPromotionReadinessSmoke() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      runId: 'run_api_execution_partial',
       runtimeMode: 'api',
+      taskId: 'task_1',
     },
     targetTaskId: 'task_1',
   });
@@ -130,7 +132,9 @@ export async function runAgentApiPromotionReadinessSmoke() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      runId: 'run_api_execution',
       runtimeMode: 'api',
+      taskId: 'task_1',
     },
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
@@ -176,6 +180,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceProviderPreflightTask=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightTask') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderPreflightTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'runId') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeRun=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeTask=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentRun=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentTask=${scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') ?? 'missing'}`);
@@ -217,6 +225,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'providerPreflightTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'providerPreflightTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runId') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') !== 'run_api_execution_partial'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') !== 'missing'

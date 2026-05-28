@@ -875,7 +875,9 @@ describe('ai runtime invocation contract', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        runId: 'run_api_execution_partial',
         runtimeMode: 'api',
+        taskId: 'task_1',
       },
       targetTaskId: 'task_1',
     });
@@ -909,6 +911,10 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('runEvidenceTask=missing');
     expect(partial.summary).toContain('targetTaskEvidenceChain=ready');
     expect(partial.summary).toContain('runEvidenceTaskEvidenceChain=missing');
+    expect(partial.summary).toContain('selectedRuntimeRun=run_api_execution_partial');
+    expect(partial.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
+    expect(partial.summary).toContain('selectedRuntimeTask=task_1');
+    expect(partial.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
     expect(partial.summary).toContain('providerConfigured=ready');
     expect(partial.summary).toContain('configuredProvider=openai');
     expect(partial.summary).toContain('providerStartupProbe=not_called');
@@ -946,6 +952,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('runEvidenceTask=task_1');
     expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
     expect(ready.summary).toContain('runEvidenceTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('selectedRuntimeRun=run_api_execution');
+    expect(ready.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
+    expect(ready.summary).toContain('selectedRuntimeTask=task_1');
+    expect(ready.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
     expect(ready.summary).toContain('providerConfigured=ready');
     expect(ready.summary).toContain('configuredProvider=openai');
     expect(ready.summary).toContain('providerStartupProbe=not_called');
@@ -1032,6 +1042,46 @@ describe('ai runtime invocation contract', () => {
     expect(serviceTaskEvidence.summary).toContain('contextManifest=executionKind=api / status=partial');
     expect(serviceTaskEvidence.summary).toContain('contextManifestTask=task_1');
     expect(serviceTaskEvidence.summary).toContain('contextManifestEvidenceChain=ready');
+  });
+
+  it('requires selected runtime contract evidence to belong to the same run and target task', () => {
+    const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_other',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(wrongRun.summary).toContain('selectedRuntimeRun=run_other');
+    expect(wrongRun.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
+    expect(wrongRun.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
+
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_api_execution',
+        runtimeMode: 'api',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(wrongTask.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
+    expect(wrongTask.summary).toContain('selectedRuntimeTask=task_2');
+    expect(wrongTask.summary).toContain('selectedRuntimeTaskEvidenceChain=missing');
   });
 
   it('requires context readiness step evidence to belong to the target task', () => {
@@ -1431,7 +1481,9 @@ function completeAgentApiExecutionPromotionEvidence() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime' as const,
       phase: 'execution_run' as const,
+      runId: 'run_api_execution',
       runtimeMode: 'api' as const,
+      taskId: 'task_1',
     },
     targetTaskId: 'task_1',
     taskMemoryGuidance: {

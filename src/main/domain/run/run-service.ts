@@ -463,7 +463,9 @@ export class RunService {
         ? {
             invocationLayer: 'api_runtime',
             phase: 'execution_run',
+            runId,
             runtimeMode: 'api',
+            taskId: params.task.id,
           }
         : null,
       targetTaskId: params.task.id,
