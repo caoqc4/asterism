@@ -71,6 +71,7 @@ import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provi
 import {
   buildApiRuntimeChatAssistantInvocation,
   buildApiRuntimeDecompositionDraftInvocation,
+  evaluateAgentApiDecompositionPromotionReadinessFromEvidence,
 } from '../../shared/ai-runtime-invocation.js';
 import { getServices } from '../bootstrap/services.js';
 import { getLanguageModel } from '../executors/ai-client.js';
@@ -90,6 +91,7 @@ import { normalizeCreateManualArtifactInput } from '../../shared/runtime-surface
 import { evaluateRuntimeSubtaskDraft } from '../../shared/runtime-subtask-evaluator.js';
 import { evaluateRuntimeAction } from '../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../shared/runtime-verification.js';
+import { buildSubtaskCreateManyWritebackApplyPlan } from '../../shared/taskplane-writeback-apply-plan.js';
 import {
   extractJsonObjectFromText,
   normalizeProjectDecompositionDraft,
@@ -1073,6 +1075,38 @@ export function registerIpcHandlers(): void {
       draft: decomposition,
       runtimeLabel: `Agent API Runtime · ${config.provider} / ${config.model}`,
     });
+    const promotionApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      nextStep: decomposition.nextStep,
+      parentSummary: decomposition.parentGoal,
+      parentTaskId: input.taskId,
+      review: decomposition.review,
+      runtimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: invocation.phase,
+        runtimeLabel: invocation.runtime.label,
+        runtimeMode: 'api',
+      },
+      source: 'agent_api_decomposition',
+      subtasks: decomposition.subtasks.map((subtask) => ({
+        acceptanceCriteria: subtask.acceptanceCriteria,
+        dependency: subtask.dependency,
+        summary: subtask.summary,
+        title: subtask.title,
+      })),
+    });
+    const promotionReadiness = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan: promotionApplyPlan,
+      parentTaskId: input.taskId,
+      reversibleProposalCard: {
+        proposalId: `project_decomposition:${input.taskId}`,
+        status: 'ready',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: invocation.phase,
+        runtimeMode: 'api',
+      },
+    });
     const appliedHabitIds = applicableWorkHabitMatches.map((match) => match.habit.id);
     if (appliedHabitIds.length > 0) {
       try {
@@ -1089,6 +1123,12 @@ export function registerIpcHandlers(): void {
         runtime: invocation.runtime,
         status: invocation.status,
         summary: invocation.summary,
+      },
+      promotionReadiness: {
+        ready: promotionReadiness.ready,
+        summary: promotionReadiness.summary,
+        satisfiedRequirements: promotionReadiness.satisfiedRequirements,
+        missingRequirements: promotionReadiness.missingRequirements,
       },
     };
   });

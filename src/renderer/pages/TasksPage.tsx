@@ -5348,6 +5348,13 @@ function TaskPreview({
                     {projectDraft.invocation ? ` · ${projectDraft.invocation.runtime.label}` : ''}
                   </span>
                 </div>
+                {projectDraft.promotionReadiness && (
+                  <div className="task-detail-project-draft-readiness" aria-label="Agent API decomposition promotion readiness">
+                    <span>{`promotionReady=${projectDraft.promotionReadiness.ready ? 'yes' : 'no'}`}</span>
+                    <span>{`requirements=${projectDraft.promotionReadiness.satisfiedRequirements.length}/${projectDraft.promotionReadiness.satisfiedRequirements.length + projectDraft.promotionReadiness.missingRequirements.length}`}</span>
+                    <span>{`missing=${projectDraft.promotionReadiness.missingRequirements.join(',') || 'none'}`}</span>
+                  </div>
+                )}
                 <div className="task-detail-project-draft-list">
                   {projectDraft.subtasks.slice(0, 3).map((subtask) => (
                     <div key={`${task.id}-${subtask.title}`} className="task-detail-project-draft-item">

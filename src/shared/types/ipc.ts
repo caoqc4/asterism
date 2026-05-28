@@ -62,12 +62,20 @@ export type ProjectSubtaskDraft = {
   rationale: string;
 };
 
+export type ProjectDecompositionPromotionReadinessSummary = {
+  ready: boolean;
+  summary: string;
+  satisfiedRequirements: string[];
+  missingRequirements: string[];
+};
+
 export type ProjectDecompositionResult = {
   parentGoal: string;
   subtasks: ProjectSubtaskDraft[];
   review: string;
   nextStep: string;
   invocation?: ProjectDecompositionInvocationSummary;
+  promotionReadiness?: ProjectDecompositionPromotionReadinessSummary;
 };
 
 import type { TaskplaneWritebackApplyPlan } from '../taskplane-writeback-apply-plan.js';

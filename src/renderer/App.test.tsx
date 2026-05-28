@@ -1083,6 +1083,20 @@ function createMockApi() {
         status: 'completed',
         summary: '已生成 2 个项目子任务草稿。',
       },
+      promotionReadiness: {
+        ready: true,
+        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / missingRequirements=none',
+        satisfiedRequirements: [
+          'selected_runtime_contract',
+          'parent_task_identity',
+          'reversible_proposal_card',
+          'subtask_create_many_apply_plan',
+          'agent_api_decomposition_source',
+          'operator_confirmation_boundary',
+          'draft_only_timeline_evidence',
+        ],
+        missingRequirements: [],
+      },
     }),
   };
 

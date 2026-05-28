@@ -988,7 +988,22 @@ describe('registerIpcHandlers', () => {
       invocation: {
         summary: '已生成 1 个项目子任务草稿。',
       },
+      promotionReadiness: {
+        ready: true,
+        satisfiedRequirements: [
+          'selected_runtime_contract',
+          'parent_task_identity',
+          'reversible_proposal_card',
+          'subtask_create_many_apply_plan',
+          'agent_api_decomposition_source',
+          'operator_confirmation_boundary',
+          'draft_only_timeline_evidence',
+        ],
+        missingRequirements: [],
+      },
     });
+    expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('promotionReady=yes');
+    expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('source=agent_api_decomposition');
     expect(system).toContain('Taskplane Agent Operating Principles');
     expect(system).toContain('## Task Creation Protocol');
     expect(system).toContain('Subtasks remain drafts until the user confirms creation.');

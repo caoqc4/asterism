@@ -646,6 +646,10 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('runtimeMode=api');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('Agent API project decomposition drafts now return promotionReadiness');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('before the operator confirms child creation');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('Agent API decomposition promotion readiness smoke');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('blocked=0/7 requirements');
