@@ -64,6 +64,8 @@ function agentApiExecutionReadiness(summary?: string | null): {
   missingRequirementList: string | null;
   missingRequirementCount: number;
   promotionCount: string | null;
+  promotionMissingRequirementList: string | null;
+  promotionReady: string | null;
 } {
   const text = summary ?? '';
   return {
@@ -74,6 +76,8 @@ function agentApiExecutionReadiness(summary?: string | null): {
     missingRequirementList: scalarValue(text, 'executionRunMissingRequirements'),
     missingRequirementCount: listValueCount(text, 'executionRunMissingRequirements'),
     promotionCount: scalarValue(text, 'executionRunPromotionRequirements'),
+    promotionMissingRequirementList: scalarValue(text, 'executionRunPromotionMissingRequirements'),
+    promotionReady: scalarValue(text, 'executionRunPromotionReady'),
   };
 }
 
@@ -769,9 +773,15 @@ function AgentCliRuntimeSection({
               {apiExecutionReadiness.promotionCount && (
                 <span>{`promotion=${apiExecutionReadiness.promotionCount}`}</span>
               )}
+              {apiExecutionReadiness.promotionReady && (
+                <span>{`promotionReady=${apiExecutionReadiness.promotionReady}`}</span>
+              )}
               <span>{`missingRequirements=${apiExecutionReadiness.missingRequirementCount}`}</span>
               {apiExecutionReadiness.missingRequirementList && (
                 <span>{`missingRequirementList=${apiExecutionReadiness.missingRequirementList}`}</span>
+              )}
+              {apiExecutionReadiness.promotionMissingRequirementList && (
+                <span>{`promotionMissingRequirementList=${apiExecutionReadiness.promotionMissingRequirementList}`}</span>
               )}
               <span>{`keyGates=${apiExecutionReadiness.keyGateCount}`}</span>
               {apiExecutionReadiness.keyGateList && (

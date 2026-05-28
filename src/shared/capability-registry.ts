@@ -613,8 +613,10 @@ function agentApiExecutionRunPromotionSummary(): string {
   const promotionReadiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({});
   const promotionRequirementCount = promotionReadiness.satisfiedRequirements.length + promotionReadiness.missingRequirements.length;
   return [
+    `executionRunPromotionReady=${promotionReadiness.ready ? 'yes' : 'no'}`,
     `executionRunPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
     `executionRunMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
+    `executionRunPromotionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
   ].join(' / ');
 }
 

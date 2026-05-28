@@ -829,8 +829,10 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('safe-read-only probe policy');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilitySafetyStrip for agent_api.runtime');
     expect(capabilities?.evidence.join(' ')).toContain('deferred execution_run boundary');
+    expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionReady=no');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionRequirements=0/11');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunMissingRequirements=...');
+    expect(capabilities?.evidence.join(' ')).toContain('executionRunPromotionMissingRequirements=...');
     expect(capabilities?.evidence.join(' ')).toContain('executionRunMissingGates=...');
     expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionRequirements=0/7');
     expect(capabilities?.evidence.join(' ')).toContain('decompositionMissingRequirements=...');
@@ -840,6 +842,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('startupProbe=never');
     expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API execution_run readiness chips');
+    expect(capabilities?.evidence.join(' ')).toContain('promotion ready state');
+    expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list');
     expect(capabilities?.evidence.join(' ')).toContain('key gate count');
     expect(capabilities?.evidence.join(' ')).toContain('key gate list');
     expect(capabilities?.evidence.join(' ')).toContain('missing gate count');
