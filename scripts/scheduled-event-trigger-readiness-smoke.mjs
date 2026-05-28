@@ -26,6 +26,7 @@ export async function runScheduledEventTriggerReadinessSmoke() {
     buildStandingApprovalConfirmationDraft,
     evaluateSkillInformedAutomationReadiness,
     planScheduledEventAgentTrigger,
+    planScheduledEventAgentTriggerFromEvidence,
   } = await import(pathToFileURL(modulePath).href);
 
   const baseTask = matureAutomationTask();
@@ -67,11 +68,31 @@ export async function runScheduledEventTriggerReadinessSmoke() {
     runLimit: { runsStartedToday: 0 },
     schedulerTriggerServiceConnected: true,
   });
+  const serviceEvidencePartial = planScheduledEventAgentTriggerFromEvidence({
+    aiStatus,
+    now: new Date('2026-05-26T11:00:00.000Z'),
+    runLimit: {
+      runsStartedToday: 0,
+      status: 'missing',
+    },
+    schedulerTriggerService: {
+      connected: true,
+    },
+    standingApprovalRecord: {
+      createdAt: '2026-05-26T10:01:00.000Z',
+      id: 'timeline_approval_service_evidence',
+      policy: draft.policy,
+      schedulerTriggerAllowed: false,
+      workspaceWriteAllowed: false,
+    },
+    task: baseTask,
+  });
 
   printPlan('noService', noService);
   printPlan('noRunLimit', noRunLimit);
   printPlan('dailyCapReached', dailyCapReached);
   printPlan('ready', ready);
+  printPlan('serviceEvidence', serviceEvidencePartial);
   console.log(`triggerRunEvidenceRequired=${ready.triggerRunEvidenceRequired.join(',')}`);
 
   if (
@@ -88,6 +109,9 @@ export async function runScheduledEventTriggerReadinessSmoke() {
     || !ready.runtimeStartAllowed
     || ready.runtimeStartMissingRequirements.length !== 0
     || ready.runtimeStartSatisfiedRequirements.length !== 3
+    || serviceEvidencePartial.runtimeStartAllowed
+    || serviceEvidencePartial.runtimeStartSatisfiedRequirements.length !== 1
+    || !serviceEvidencePartial.runtimeStartMissingRequirements.includes('run_limit_count')
   ) {
     console.log('status=failed');
     return 1;

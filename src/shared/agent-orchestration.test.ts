@@ -9,6 +9,7 @@ import {
   evaluateStandingApprovalForAutomation,
   evaluateSkillInformedAutomationReadiness,
   planScheduledEventAgentTrigger,
+  planScheduledEventAgentTriggerFromEvidence,
   projectAgentRunLifecycle,
   validateAgentExecutionOrchestrationRequest,
 } from './agent-orchestration.js';
@@ -1150,6 +1151,102 @@ describe('agent orchestration snapshot', () => {
       ]),
     });
     expect(plan.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready,scheduler_trigger_service,run_limit_count');
+  });
+
+  it('derives scheduled/event trigger readiness from structured service evidence', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+    const taskWithIdentity = {
+      ...task,
+      id: 'task_1',
+      timeline: [],
+    };
+
+    const missingRunLimit = planScheduledEventAgentTriggerFromEvidence({
+      aiStatus: readyAutomationAiStatus(),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      runLimit: {
+        runsStartedToday: 0,
+        status: 'missing',
+      },
+      schedulerTriggerService: {
+        connected: true,
+      },
+      standingApprovalRecord: {
+        createdAt: '2026-05-26T10:01:00.000Z',
+        id: 'timeline_approval',
+        policy: draft.policy,
+        schedulerTriggerAllowed: false,
+        workspaceWriteAllowed: false,
+      },
+      task: taskWithIdentity,
+    });
+
+    expect(missingRunLimit).toMatchObject({
+      status: 'blocked',
+      runtimeStartAllowed: false,
+      schedulerTriggerServiceConnected: true,
+      runtimeStartSatisfiedRequirements: ['scheduler_trigger_service'],
+      runtimeStartMissingRequirements: [
+        'trigger_plan_ready',
+        'run_limit_count',
+      ],
+      blockedReasons: expect.arrayContaining([
+        'Scheduled/event trigger runtime start requires daily run-limit accounting.',
+      ]),
+    });
+    expect(missingRunLimit.summary).toContain('runtimeStartRequirements=1/3');
+
+    const ready = planScheduledEventAgentTriggerFromEvidence({
+      aiStatus: readyAutomationAiStatus(),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      runLimit: {
+        runsStartedToday: 0,
+        status: 'present',
+      },
+      schedulerTriggerService: {
+        connected: true,
+      },
+      standingApprovalRecord: {
+        createdAt: '2026-05-26T10:01:00.000Z',
+        id: 'timeline_approval',
+        policy: draft.policy,
+        schedulerTriggerAllowed: false,
+        workspaceWriteAllowed: false,
+      },
+      task: taskWithIdentity,
+    });
+
+    expect(ready).toMatchObject({
+      status: 'ready',
+      runtimeStartAllowed: true,
+      schedulerTriggerServiceConnected: true,
+      runtimeStartMissingRequirements: [],
+      runtimeStartSatisfiedRequirements: [
+        'trigger_plan_ready',
+        'scheduler_trigger_service',
+        'run_limit_count',
+      ],
+    });
+    expect(ready.evidence).toContain('targetTask=task_1');
+    expect(ready.evidence).toContain('runLimit=0/3');
+    expect(ready.summary).toContain('runtimeStartRequirements=3/3');
   });
 });
 

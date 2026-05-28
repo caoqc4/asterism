@@ -285,7 +285,10 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('Settings confirmation threshold now clarifies');
     expect(workHabits?.evidence.join(' ')).toContain('does not bypass Standing Approval, workspace writes, external connectors, paid actions, or release/deploy hard confirmations');
     expect(workHabits?.evidence.join(' ')).toContain('planScheduledEventAgentTrigger');
+    expect(workHabits?.evidence.join(' ')).toContain('planScheduledEventAgentTriggerFromEvidence');
     expect(workHabits?.evidence.join(' ')).toContain('shared scheduled/event trigger planner');
+    expect(workHabits?.evidence.join(' ')).toContain('structured service evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('confirmed Standing Approval timeline record');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=true only when a dedicated trigger service is connected and daily run-limit count evidence is present');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements');
@@ -295,6 +298,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('scheduled/event trigger readiness smoke');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartAllowed=false with runtimeStartRequirements=1/3');
+    expect(workHabits?.evidence.join(' ')).toContain('service-evidence=1/3 runtime-start requirements');
+    expect(workHabits?.evidence.join(' ')).toContain('run_limit_count missing');
     expect(workHabits?.evidence.join(' ')).toContain('daily-cap-reached plans stay blocked');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=3/3');
     expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
@@ -555,6 +560,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.nextActions.join(' ')).toContain('Keep scheduled/event execution on the supported CLI-first packaged path');
     expect(workHabits?.nextActions.join(' ')).toContain('future API-backed scheduled execution');
     expect(workHabits?.nextActions.join(' ')).toContain('read-only scheduled/event trigger readiness smoke');
+    expect(workHabits?.nextActions.join(' ')).toContain('planScheduledEventAgentTriggerFromEvidence');
     expect(workHabits?.nextActions.join(' ')).toContain('standing-approval');
     expect(rightPanel?.writeIntents).toContain('task_file.propose');
     expect(rightPanel?.writeIntents).toContain('artifact.propose');

@@ -238,6 +238,48 @@ export type AgentScheduledEventTriggerPlan = {
   summary: string;
 };
 
+export type AgentScheduledEventTriggerServiceEvidence = {
+  aiStatus: Pick<
+    AiConfigStatus,
+    'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'
+  > | null;
+  lane?: AgentExecutionOrchestrationLane;
+  now: Date;
+  runLimit?: {
+    runsStartedToday: number;
+    status: 'missing' | 'present';
+  } | null;
+  runtimeId?: string;
+  schedulerTriggerService?: {
+    connected: boolean;
+  } | null;
+  standingApprovalRecord?: {
+    createdAt: string;
+    id: string;
+    policy: AgentStandingApprovalPolicy;
+    schedulerTriggerAllowed: false;
+    workspaceWriteAllowed: false;
+  } | null;
+  task: Pick<
+    TaskDetail,
+    | 'activeBlocker'
+    | 'activeDependency'
+    | 'activeWaitingItem'
+    | 'completionCriteria'
+    | 'id'
+    | 'nextStep'
+    | 'processTemplates'
+    | 'riskLevel'
+    | 'sourceContexts'
+    | 'state'
+    | 'summary'
+    | 'taskFacets'
+    | 'taskType'
+    | 'timeline'
+    | 'waitingReason'
+  >;
+};
+
 export type AgentExecutionOrchestrationSnapshot = {
   runtime: ExecutionRuntimeSnapshot;
   profile: AgentProfileSnapshot;
@@ -1182,6 +1224,42 @@ export function planScheduledEventAgentTrigger(params: {
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
     ].join(' / '),
   };
+}
+
+export function planScheduledEventAgentTriggerFromEvidence(
+  evidence: AgentScheduledEventTriggerServiceEvidence,
+): AgentScheduledEventTriggerPlan {
+  const standingApprovalTimeline = evidence.standingApprovalRecord
+    ? [{
+        createdAt: evidence.standingApprovalRecord.createdAt,
+        id: evidence.standingApprovalRecord.id,
+        payload: JSON.stringify({
+          policy: evidence.standingApprovalRecord.policy,
+          schedulerTriggerAllowed: evidence.standingApprovalRecord.schedulerTriggerAllowed,
+          workspaceWriteAllowed: evidence.standingApprovalRecord.workspaceWriteAllowed,
+        }),
+        taskId: evidence.task.id,
+        type: 'panel.standing_approval_confirmed' as const,
+      }]
+    : [];
+
+  return planScheduledEventAgentTrigger({
+    aiStatus: evidence.aiStatus,
+    lane: evidence.lane,
+    now: evidence.now,
+    runLimit: evidence.runLimit?.status === 'present'
+      ? { runsStartedToday: evidence.runLimit.runsStartedToday }
+      : null,
+    runtimeId: evidence.runtimeId,
+    schedulerTriggerServiceConnected: evidence.schedulerTriggerService?.connected === true,
+    task: {
+      ...evidence.task,
+      timeline: [
+        ...evidence.task.timeline,
+        ...standingApprovalTimeline,
+      ],
+    },
+  });
 }
 
 function isRiskAllowedByStandingApproval(
