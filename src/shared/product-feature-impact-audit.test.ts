@@ -310,9 +310,9 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('run_limit_count missing');
     expect(workHabits?.evidence.join(' ')).toContain('daily-cap-reached plans stay blocked');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=3/3');
-    expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers');
-    expect(workHabits?.evidence.join(' ')).toContain('no-start scheduler diagnostic entrypoint');
-    expect(workHabits?.evidence.join(' ')).toContain('does not resolve runtime config');
+    expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.diagnoseScheduledEventAgentTriggers and triggerScheduledEventAgentRun');
+    expect(workHabits?.evidence.join(' ')).toContain('build scheduled/event trigger plans through planScheduledEventAgentTriggerFromEvidence');
+    expect(workHabits?.evidence.join(' ')).toContain('no-start diagnostics and real trigger attempts share the same service-evidence contract');
     expect(workHabits?.evidence.join(' ')).toContain('daily run-limit accounting input');
     expect(workHabits?.evidence.join(' ')).toContain('maxRunsPerDay has been reached');
     expect(workHabits?.evidence.join(' ')).toContain('RunRepository.countCreatedSinceByTask');

@@ -3,7 +3,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import type { SchedulerStatus } from '../../shared/types/scheduler.js';
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import {
-  planScheduledEventAgentTrigger,
+  planScheduledEventAgentTriggerFromEvidence,
   type AgentScheduledEventTriggerPlan,
 } from '../../shared/agent-orchestration.js';
 import type { TaskDetail } from '../../shared/types/task.js';
@@ -170,6 +170,33 @@ function formatMissingScheduledEventAgentSweepPorts(params: {
 function formatScheduledEventAgentSweepError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
   return (raw.trim() || 'unknown').replace(/\s+/g, ' ').replace(/\//g, '-');
+}
+
+function planScheduledEventAgentTriggerFromServiceEvidence(params: {
+  aiStatus: Pick<
+    AiConfigStatus,
+    'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'
+  > | null;
+  now: Date;
+  runCountsStartedTodayByTaskId: Record<string, number>;
+  schedulerTriggerServiceConnected: boolean;
+  task: ScheduledEventAgentTaskInput;
+}): AgentScheduledEventTriggerPlan {
+  const runsStartedToday = params.runCountsStartedTodayByTaskId[params.task.id];
+  return planScheduledEventAgentTriggerFromEvidence({
+    aiStatus: params.aiStatus,
+    now: params.now,
+    runLimit: runsStartedToday === undefined
+      ? null
+      : {
+          runsStartedToday,
+          status: 'present',
+        },
+    schedulerTriggerService: {
+      connected: params.schedulerTriggerServiceConnected,
+    },
+    task: params.task,
+  });
 }
 
 type ScheduledEventAgentSweepFailureEvidence = {
@@ -517,12 +544,11 @@ export class SchedulerService {
     const runCounts = runCountsStartedTodayByTaskId
       ?? await this.countRunsStartedToday(tasks.map((task) => task.id), now);
 
-    return tasks.map((task) => planScheduledEventAgentTrigger({
+    return tasks.map((task) => planScheduledEventAgentTriggerFromServiceEvidence({
       aiStatus,
       now,
-      runLimit: runCounts[task.id] === undefined
-        ? null
-        : { runsStartedToday: runCounts[task.id] },
+      runCountsStartedTodayByTaskId: runCounts,
+      schedulerTriggerServiceConnected: false,
       task,
     }));
   }
@@ -552,12 +578,10 @@ export class SchedulerService {
     const aiStatus = await this.getScheduledEventAgentTriggerAiStatus();
     const runCounts = runCountsStartedTodayByTaskId
       ?? await this.countRunsStartedToday([task.id], now);
-    const plan = planScheduledEventAgentTrigger({
+    const plan = planScheduledEventAgentTriggerFromServiceEvidence({
       aiStatus,
       now,
-      runLimit: runCounts[task.id] === undefined
-        ? null
-        : { runsStartedToday: runCounts[task.id] },
+      runCountsStartedTodayByTaskId: runCounts,
       schedulerTriggerServiceConnected: true,
       task,
     });
