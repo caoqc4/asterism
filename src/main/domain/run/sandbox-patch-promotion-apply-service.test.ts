@@ -251,6 +251,59 @@ describe('SandboxPatchPromotionApplyService', () => {
     }
   });
 
+  it('blocks unsafe patch file aliases before writing workspace files', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-unsafe-file-');
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, 'src', 'app.ts'), 'alpha\n');
+      const diff = [
+        '--- a/src/./app.ts',
+        '+++ b/src/./app.ts',
+        '@@',
+        '-alpha',
+        '+beta',
+        '--- /dev/null',
+        '+++ b/C:\\secrets\\token.txt',
+        '@@',
+        '+token',
+      ].join('\n');
+      const promotion = buildPromotion({ expectedFiles: ['src/./app.ts', 'C:\\secrets\\token.txt'] });
+      const { markBlocked, service } = buildService({
+        artifact: buildArtifact(diff),
+        promotion,
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: [
+          'Patch promotion touched unsafe file: src/./app.ts',
+          'Patch promotion touched unsafe file: C:\\secrets\\token.txt',
+        ],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'src', 'app.ts'), 'utf8')).toBe('alpha\n');
+      expect(fs.existsSync(path.join(tempRoot, 'C:', 'secrets', 'token.txt'))).toBe(false);
+      expect(markBlocked).toHaveBeenCalledWith(
+        'sandbox_patch_promotion_1',
+        [
+          'Patch promotion touched unsafe file: src/./app.ts',
+          'Patch promotion touched unsafe file: C:\\secrets\\token.txt',
+        ],
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion touched unsafe file: src/./app.ts Patch promotion touched unsafe file: C:\\secrets\\token.txt'),
+      );
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('filePathSafetyChain=missing');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('treats already-promoted workspace content as idempotently applied', async () => {
     const tempRoot = makeTempDir('taskplane-sandbox-promotion-idempotent-');
 
