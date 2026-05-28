@@ -307,6 +307,15 @@ export class RunService {
     );
     await this.taskService.annotateRunFailed(input.taskId, result.message, failed.id);
     await this.persistTerminalRunVerifications(failed, applicableWorkHabits.summaries);
+    await this.recordAgentApiExecutionPromotionReadiness({
+      capabilities,
+      contextReadiness,
+      input,
+      phase: 'post_run',
+      run: failed,
+      task: taskForExecution,
+      taskMemoryGuidance,
+    });
     return failed;
   }
 
@@ -456,7 +465,7 @@ export class RunService {
         ? {
             runId: params.run.id,
             taskId: params.run.taskId,
-            terminalEvidenceStatus: params.run.output?.trim() ? 'present' : 'missing',
+            terminalEvidenceStatus: params.run.output?.trim() || params.run.failureReason?.trim() ? 'present' : 'missing',
             terminalRunStatus: params.run.status,
           }
         : null,

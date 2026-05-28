@@ -202,6 +202,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('simplicity_check, runtime_action, pre-step, and subtask-start gates');
     expect(rightPanel?.evidence.join(' ')).toContain('missing Write Intent extraction, reviewed-patch apply boundary, post-step verification, and terminal Run evidence explicit');
     expect(rightPanel?.evidence.join(' ')).toContain('Completed retained API Runtime / Agent API-like RunService runs now persist a post-run Agent API execution promotion readiness Run step');
+    expect(rightPanel?.evidence.join(' ')).toContain('Failed retained API Runtime / Agent API-like RunService runs now also persist a post-run Agent API execution promotion readiness Run step');
+    expect(rightPanel?.evidence.join(' ')).toContain('treating failureReason as reviewable terminal evidence when output is absent');
     expect(rightPanel?.evidence.join(' ')).toContain('adding post-step verification and terminal Run evidence persistence');
     expect(rightPanel?.evidence.join(' ')).toContain('keeping Write Intent extraction and reviewed-patch apply boundary closed');
     expect(rightPanel?.evidence.join(' ')).toContain('Post-run Agent API execution promotion readiness now reads same-run sandbox patch promotion records');

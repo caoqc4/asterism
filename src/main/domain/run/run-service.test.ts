@@ -1469,7 +1469,7 @@ describe('RunService', () => {
       create: vi.fn().mockResolvedValue(buildRunRecord('pending')),
       updateResult: vi.fn().mockResolvedValue({
         ...buildRunRecord('failed'),
-        output: 'Executor exploded',
+        output: null,
         outputSource: 'system',
         failureReason: 'Executor exploded',
       }),
@@ -1547,6 +1547,18 @@ describe('RunService', () => {
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_4',
       expect.objectContaining({ status: 'failed', error: 'Executor exploded' }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('terminalRunStatus=failed'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('terminalEvidence=present'),
+      }),
     );
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('failed');
