@@ -409,6 +409,7 @@ export class RunService {
     const reviewedPatchApplyBoundaryEvidence = await this.readReviewedPatchApplyBoundaryEvidence(
       phase === 'post_run' ? runId : null,
     );
+    const taskMemoryGuidanceReady = params.taskMemoryGuidance.outcome !== 'pending';
     const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       contextManifestSummary: params.capabilities?.summary ?? null,
       contextManifestTaskId: params.task.id,
@@ -425,8 +426,8 @@ export class RunService {
         pre_step: true,
         runtime_context_assembly: Boolean(params.capabilities?.model.configured),
         subtask_start: true,
-        task_memory_coverage: params.taskMemoryGuidance.outcome === 'satisfied',
-        task_memory_guidance: params.taskMemoryGuidance.outcome === 'satisfied',
+        task_memory_coverage: taskMemoryGuidanceReady,
+        task_memory_guidance: taskMemoryGuidanceReady,
       },
       providerVisiblePreflight: params.capabilities?.model.configured
         ? {
@@ -481,7 +482,7 @@ export class RunService {
       targetTaskId: params.task.id,
       taskMemoryGuidance: {
         guidanceCount: params.taskMemoryGuidance.targets.length,
-        status: params.taskMemoryGuidance.outcome === 'satisfied' ? 'ready' : 'missing',
+        status: taskMemoryGuidanceReady ? 'ready' : 'missing',
         taskId: params.task.id,
       },
       writeIntentExtraction: supportedWriteActions.length

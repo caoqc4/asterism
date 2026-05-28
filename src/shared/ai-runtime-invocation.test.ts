@@ -1273,6 +1273,24 @@ describe('ai runtime invocation contract', () => {
   });
 
   it('requires task memory guidance evidence to belong to the target task', () => {
+    const noPendingGuidance = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      taskMemoryGuidance: {
+        guidanceCount: 0,
+        status: 'ready',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(noPendingGuidance).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+    });
+    expect(noPendingGuidance.summary).toContain('taskMemoryGuidance=ready');
+    expect(noPendingGuidance.summary).toContain('taskMemoryGuidanceCount=0');
+    expect(noPendingGuidance.summary).toContain('taskMemoryGuidanceTask=task_1');
+    expect(noPendingGuidance.summary).toContain('taskMemoryGuidanceTaskEvidenceChain=ready');
+
     const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       taskMemoryGuidance: {

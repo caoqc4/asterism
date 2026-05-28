@@ -180,7 +180,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime_context_manifest to carry the target task identity');
     expect(rightPanel?.evidence.join(' ')).toContain('context_readiness_step to carry target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('task_memory_guidance to carry target-task identity evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('treats task_memory_guidance as ready when there is no pending guidance or when completed guidance exists');
+    expect(rightPanel?.evidence.join(' ')).toContain('while still requiring target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('run_goal_contract to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status plus same-run and target-task identity evidence');

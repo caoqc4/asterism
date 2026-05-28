@@ -813,7 +813,7 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution promotion readiness',
-        output: expect.stringContaining('missingRequirements=task_memory_guidance,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence'),
+        output: expect.stringContaining('missingRequirements=selected_runtime_contract,provider_visible_preflight,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
@@ -845,7 +845,7 @@ describe('RunService', () => {
         kind: 'plan',
         status: 'completed',
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('missingRequirements=task_memory_guidance,run_goal_contract,write_intent_extraction'),
+        output: expect.stringContaining('missingRequirements=run_goal_contract,write_intent_extraction'),
       }),
     );
     expect(sandboxPatchPromotionRepository.listForRun).toHaveBeenCalledWith('run_1');
@@ -858,7 +858,7 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.not.stringContaining('missingRequirements=task_memory_guidance,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence'),
+        output: expect.not.stringContaining('missingRequirements=selected_runtime_contract,provider_visible_preflight,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
@@ -1000,13 +1000,13 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('requirements=10/11'),
+        output: expect.stringContaining('requirements=11/11'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('missingRequirements=task_memory_guidance'),
+        output: expect.stringContaining('missingRequirements=none'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
@@ -1148,13 +1148,13 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('requirements=9/11'),
+        output: expect.stringContaining('requirements=10/11'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('missingRequirements=task_memory_guidance,reviewed_patch_apply_boundary'),
+        output: expect.stringContaining('missingRequirements=reviewed_patch_apply_boundary'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(

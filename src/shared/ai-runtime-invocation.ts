@@ -842,7 +842,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
 
   if (
     (evidence.taskMemoryGuidance?.status === 'ready')
-    && evidence.taskMemoryGuidance.guidanceCount > 0
+    && Number.isFinite(evidence.taskMemoryGuidance.guidanceCount)
+    && evidence.taskMemoryGuidance.guidanceCount >= 0
     && taskMemoryGuidanceTaskEvidenceChainReady
   ) {
     satisfiedRequirements.push('task_memory_guidance');
