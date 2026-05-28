@@ -643,6 +643,7 @@ function agentApiDecompositionPromotionSummary(): string {
   return [
     `decompositionPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
     `decompositionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
+    `decompositionPromotionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
   ].join(' / ');
 }
 

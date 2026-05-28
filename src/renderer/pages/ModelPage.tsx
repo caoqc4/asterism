@@ -80,12 +80,14 @@ function agentApiExecutionReadiness(summary?: string | null): {
 function agentApiDecompositionReadiness(summary?: string | null): {
   missingRequirementList: string | null;
   missingRequirementCount: number;
+  promotionMissingRequirementList: string | null;
   promotionCount: string | null;
 } {
   const text = summary ?? '';
   return {
     missingRequirementList: scalarValue(text, 'decompositionMissingRequirements'),
     missingRequirementCount: listValueCount(text, 'decompositionMissingRequirements'),
+    promotionMissingRequirementList: scalarValue(text, 'decompositionPromotionMissingRequirements'),
     promotionCount: scalarValue(text, 'decompositionPromotionRequirements'),
   };
 }
@@ -788,6 +790,9 @@ function AgentCliRuntimeSection({
               <span>{`missingRequirements=${apiDecompositionReadiness.missingRequirementCount}`}</span>
               {apiDecompositionReadiness.missingRequirementList && (
                 <span>{`missingRequirementList=${apiDecompositionReadiness.missingRequirementList}`}</span>
+              )}
+              {apiDecompositionReadiness.promotionMissingRequirementList && (
+                <span>{`promotionMissingRequirementList=${apiDecompositionReadiness.promotionMissingRequirementList}`}</span>
               )}
             </div>
             {apiProviderToolReadiness && (

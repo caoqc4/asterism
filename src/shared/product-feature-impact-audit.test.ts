@@ -831,6 +831,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('executionRunMissingGates=...');
     expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionRequirements=0/7');
     expect(capabilities?.evidence.join(' ')).toContain('decompositionMissingRequirements=...');
+    expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionMissingRequirements=...');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=blocked|not_declared|declared');
     expect(capabilities?.evidence.join(' ')).toContain('startupProbe=never');
@@ -843,6 +844,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('missing gate list');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API decomposition readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list visible');
+    expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');
     expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, startupProbe, providerOwnedMetadata, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, and declaredToolCount chips');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
