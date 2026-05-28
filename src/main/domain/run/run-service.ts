@@ -7,6 +7,7 @@ import {
   buildRuntimeCapabilitySnapshot,
   type RuntimeCapabilitySnapshot,
 } from '../../../shared/runtime-capability-snapshot.js';
+import { buildTaskplaneWritebackProposalsFromText } from '../../../shared/taskplane-writeback-proposal.js';
 import {
   evaluateRuntimeContextReadiness,
   formatRuntimeContextReadinessForStep,
@@ -263,6 +264,15 @@ export class RunService {
         completed.id,
       );
       await this.persistTerminalRunVerifications(completed, applicableWorkHabits.summaries);
+      await this.recordAgentApiExecutionPromotionReadiness({
+        capabilities,
+        contextReadiness,
+        input,
+        phase: 'post_run',
+        run: completed,
+        task: taskForExecution,
+        taskMemoryGuidance,
+      });
       return completed;
     }
 
@@ -372,10 +382,20 @@ export class RunService {
     capabilities: RuntimeCapabilitySnapshot | null;
     contextReadiness: ReturnType<typeof evaluateRuntimeContextReadiness>;
     input: CreateRunInput;
-    runId: string;
+    phase?: 'pre_execution' | 'post_run';
+    run?: RunRecord;
+    runId?: string;
     task: TaskDetail;
     taskMemoryGuidance: TaskMemoryGuidanceState;
   }): Promise<void> {
+    const phase = params.phase ?? 'pre_execution';
+    const runId = params.run?.id ?? params.runId;
+    if (!runId) return;
+    const supportedWriteActions = deriveWriteIntentSupportedActions({
+      output: params.run?.output ?? null,
+      runId,
+      task: params.task,
+    });
     const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       contextManifestSummary: params.capabilities?.summary ?? null,
       contextReadinessStep: {
@@ -384,6 +404,7 @@ export class RunService {
       },
       gates: {
         context_readiness: params.contextReadiness.decision === 'ready',
+        post_step: phase === 'post_run',
         pre_step: true,
         runtime_context_assembly: Boolean(params.capabilities?.model.configured),
         subtask_start: true,
@@ -397,10 +418,22 @@ export class RunService {
             status: 'ready',
           }
         : null,
+      postStepVerification: phase === 'post_run'
+        ? {
+            status: 'ready',
+            verifier: 'lightweight_rule_engine',
+          }
+        : null,
       runGoalContract: {
         completionConditionCount: params.task.completionCriteria.length,
         objective: params.input.instructions ?? params.task.nextStep ?? params.task.summary,
       },
+      runEvidencePersistence: phase === 'post_run' && params.run
+        ? {
+            runId: params.run.id,
+            terminalEvidenceStatus: params.run.output?.trim() ? 'present' : 'missing',
+          }
+        : null,
       selectedRuntimeContract: params.capabilities?.executionRuntime.kind === 'agent_api'
         ? {
             invocationLayer: 'api_runtime',
@@ -413,13 +446,21 @@ export class RunService {
         guidanceCount: params.taskMemoryGuidance.targets.length,
         status: params.taskMemoryGuidance.outcome === 'satisfied' ? 'ready' : 'missing',
       },
+      writeIntentExtraction: supportedWriteActions.length
+        ? {
+            status: 'ready',
+            supportedActions: supportedWriteActions,
+          }
+        : null,
     });
 
     await this.runStepRepository.create({
-      runId: params.runId,
+      runId,
       kind: 'plan',
       status: 'completed',
-      title: 'Agent API execution promotion readiness',
+      title: phase === 'post_run'
+        ? 'Agent API execution post-run promotion readiness'
+        : 'Agent API execution promotion readiness',
       input: params.capabilities?.summary ?? null,
       output: readiness.summary,
     });
@@ -661,4 +702,25 @@ export class RunService {
       },
     });
   }
+}
+
+function deriveWriteIntentSupportedActions(params: {
+  output: string | null;
+  runId: string;
+  task: TaskDetail;
+}): string[] {
+  if (!params.output?.trim()) return [];
+  const proposals = buildTaskplaneWritebackProposalsFromText({
+    output: params.output,
+    runId: params.runId,
+    taskId: params.task.id,
+    taskTitle: params.task.title,
+  });
+  const actions = [];
+  if (proposals.artifact) actions.push('artifact.propose');
+  if (proposals.sourceContext) actions.push('source_context.create');
+  if (proposals.structured) actions.push(proposals.structured.intent.type);
+  if (proposals.taskFile) actions.push('task_file.propose');
+  if (proposals.taskRecord) actions.push('task_record.create');
+  return actions;
 }
