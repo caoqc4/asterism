@@ -2,8 +2,8 @@ import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AgentCliRuntimeId, AgentCliRuntimeStatus } from './agent-cli-runtime-status.js';
 import type { AgentRuntimeNativeCapabilityAvailability } from './agent-runtime-goal.js';
 import {
-  agentApiDecompositionPromotionRequirements,
-  agentApiExecutionPromotionRequirements,
+  evaluateAgentApiDecompositionPromotionReadinessFromEvidence,
+  evaluateAgentApiExecutionPromotionReadinessFromEvidence,
 } from './ai-runtime-invocation.js';
 import { evaluateAgentApiProviderToolReadinessFromEvidence } from './agent-api-provider-tool-readiness.js';
 import {
@@ -562,10 +562,11 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
 }
 
 function agentApiExecutionRunPromotionSummary(): string {
-  const promotionRequirements = agentApiExecutionPromotionRequirements();
+  const promotionReadiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({});
+  const promotionRequirementCount = promotionReadiness.satisfiedRequirements.length + promotionReadiness.missingRequirements.length;
   return [
-    `executionRunPromotionRequirements=0/${promotionRequirements.length}`,
-    `executionRunMissingRequirements=${promotionRequirements.join(',')}`,
+    `executionRunPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
+    `executionRunMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
   ].join(' / ');
 }
 
@@ -583,10 +584,11 @@ function agentApiExecutionRunGateSummary(): string {
 }
 
 function agentApiDecompositionPromotionSummary(): string {
-  const promotionRequirements = agentApiDecompositionPromotionRequirements();
+  const promotionReadiness = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({});
+  const promotionRequirementCount = promotionReadiness.satisfiedRequirements.length + promotionReadiness.missingRequirements.length;
   return [
-    `decompositionPromotionRequirements=0/${promotionRequirements.length}`,
-    `decompositionMissingRequirements=${promotionRequirements.join(',')}`,
+    `decompositionPromotionRequirements=${promotionReadiness.satisfiedRequirements.length}/${promotionRequirementCount}`,
+    `decompositionMissingRequirements=${promotionReadiness.missingRequirements.join(',') || 'none'}`,
   ].join(' / ');
 }
 
