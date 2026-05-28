@@ -816,6 +816,12 @@ describe('RunService', () => {
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
+        output: expect.not.stringContaining('missingGates=simplicity_check,runtime_action'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
         runId: 'run_1',
         kind: 'plan',
         status: 'completed',
@@ -851,6 +857,12 @@ describe('RunService', () => {
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
         output: expect.not.stringContaining('missingRequirements=task_memory_guidance,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.not.stringContaining('missingGates=simplicity_check,runtime_action'),
       }),
     );
     expect(runStepRepository.update).toHaveBeenCalledWith(
@@ -997,6 +1009,12 @@ describe('RunService', () => {
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
         output: expect.not.stringContaining('reviewed_patch_apply_boundary'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.not.stringContaining('missingGates=simplicity_check,runtime_action'),
       }),
     );
   });

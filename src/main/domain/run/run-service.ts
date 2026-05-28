@@ -406,6 +406,8 @@ export class RunService {
         stepId: 'context.readiness.evaluate',
       },
       gates: {
+        simplicity_check: true,
+        runtime_action: true,
         context_readiness: params.contextReadiness.decision === 'ready',
         post_step: phase === 'post_run',
         pre_step: true,
