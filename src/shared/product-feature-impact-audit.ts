@@ -336,8 +336,9 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Decision actions in DecisionService and DecisionsPage pass through decision_action, task-memory guidance, pre-step, and post-step gates before approve, defer, or cancel effects are recorded.',
       'RuntimeEntrypointCoverage now registers future scheduler/background Decisions as proposal-only decision_draft work that cannot persist Decisions or invoke writeback without operator confirmation or standing approval.',
       'planSchedulerDecisionProposal now models the scheduler/background Decision proposal boundary as approval-item-only: it requires target-task identity, the Task Dynamics writeback approval queue, plus operator confirmation or active Standing Approval, while keeping decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false.',
+      'planSchedulerDecisionProposalFromEvidence now derives scheduler/background Decision proposal readiness from structured service evidence for approval-queue connectivity, target-task identity, operator confirmation, and target-scoped Standing Approval while still keeping Decision persistence, writeback dispatch, and scheduler triggers closed.',
       'Scheduler/background Decision proposal plans now return satisfied and missing requirement lists plus proposalReady, requirements=x/3, proposalRequirements=x/3, missingRequirements=..., and proposalMissingRequirements=... summary evidence without opening Decision persistence, writeback dispatch, or scheduler triggers.',
-      'The scheduler Decision proposal readiness smoke now runs planSchedulerDecisionProposal as a read-only build-gated harness, proving blocked=0/3 requirements, operator-confirmed=3/3 requirements, and standing-approval=3/3 requirements while keeping decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false without provider calls, Decision persistence, writeback dispatch, scheduler triggers, or workspace writes.',
+      'The scheduler Decision proposal readiness smoke now runs planSchedulerDecisionProposal and planSchedulerDecisionProposalFromEvidence as a read-only build-gated harness, proving blocked=0/3 requirements, operator-confirmed=3/3 requirements, standing-approval=3/3 requirements, and service-evidence=2/3 requirements with authorization missing when Standing Approval scope does not match the target task, while keeping decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false without provider calls, Decision persistence, writeback dispatch, scheduler triggers, or workspace writes.',
       'Future scheduler/background Decision drafts also remain without IPC or scheduler triggers until that same operator-confirmation or standing-approval model exists.',
       'Completion verification is separate from model output.',
       'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
@@ -348,7 +349,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Future background scheduler decisions have a deferred proposal-only contract; wiring it still requires an operator confirmation or standing-approval model before main-side writeback dispatch.',
     ],
     nextActions: [
-      'Reuse planSchedulerDecisionProposal, the read-only scheduler Decision proposal readiness smoke, and the Task Dynamics writeback approval queue for any future non-panel runtime review surface before enabling writeback dispatch or scheduler triggers.',
+      'Reuse planSchedulerDecisionProposal, planSchedulerDecisionProposalFromEvidence, the read-only scheduler Decision proposal readiness smoke, and the Task Dynamics writeback approval queue for any future non-panel runtime review surface before enabling writeback dispatch or scheduler triggers.',
     ],
   },
   {

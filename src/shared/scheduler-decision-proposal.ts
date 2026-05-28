@@ -21,6 +21,23 @@ export type SchedulerDecisionProposalRequirement =
   | 'target_task_identity'
   | 'authorization';
 
+export type SchedulerDecisionProposalServiceEvidence = {
+  approvalQueue?: {
+    connected: boolean;
+    surface?: 'task_dynamics' | 'right_panel' | 'unknown';
+  } | null;
+  operatorConfirmation?: {
+    confirmed: boolean;
+    operatorId?: string | null;
+  } | null;
+  standingApproval?: {
+    active: boolean;
+    policyId?: string | null;
+    scopeTaskId?: string | null;
+  } | null;
+  targetTaskId?: string | null;
+};
+
 export function schedulerDecisionProposalRequirements(): SchedulerDecisionProposalRequirement[] {
   return [
     'approval_queue',
@@ -92,4 +109,27 @@ export function planSchedulerDecisionProposal(params: {
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
     ].join(' / '),
   };
+}
+
+export function planSchedulerDecisionProposalFromEvidence(
+  evidence: SchedulerDecisionProposalServiceEvidence = {},
+): SchedulerDecisionProposalPlan {
+  const targetTaskId = evidence.targetTaskId?.trim() || null;
+  const operatorConfirmed = (
+    evidence.operatorConfirmation?.confirmed === true
+    && Boolean(evidence.operatorConfirmation.operatorId?.trim())
+  );
+  const standingApprovalActive = (
+    evidence.standingApproval?.active === true
+    && Boolean(evidence.standingApproval.policyId?.trim())
+    && Boolean(targetTaskId)
+    && evidence.standingApproval.scopeTaskId?.trim() === targetTaskId
+  );
+
+  return planSchedulerDecisionProposal({
+    approvalQueueConnected: evidence.approvalQueue?.connected === true,
+    operatorConfirmed,
+    standingApprovalActive,
+    targetTaskId,
+  });
 }

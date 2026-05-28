@@ -217,6 +217,9 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('scheduler/background Decisions as proposal-only decision_draft work');
     expect(decisions?.evidence.join(' ')).toContain('without operator confirmation or standing approval');
     expect(decisions?.evidence.join(' ')).toContain('planSchedulerDecisionProposal');
+    expect(decisions?.evidence.join(' ')).toContain('planSchedulerDecisionProposalFromEvidence');
+    expect(decisions?.evidence.join(' ')).toContain('structured service evidence');
+    expect(decisions?.evidence.join(' ')).toContain('target-scoped Standing Approval');
     expect(decisions?.evidence.join(' ')).toContain('approval-item-only');
     expect(decisions?.evidence.join(' ')).toContain('target-task identity');
     expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed=false');
@@ -232,6 +235,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=3/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('standing-approval=3/3 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('service-evidence=2/3 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('authorization missing when Standing Approval scope does not match the target task');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
     expect(decisions?.evidence.join(' ')).toContain('selected Agent CLI modes stay product_harness/skipped');
     expect(decisions?.evidence.join(' ')).toContain('Approved checkpoint Decision resume is limited to open tool_permission');
@@ -240,6 +245,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.cliOnlyClosure).toBe('supported');
     expect(decisions?.gaps.join(' ')).toContain('deferred proposal-only contract');
     expect(decisions?.nextActions.join(' ')).toContain('planSchedulerDecisionProposal');
+    expect(decisions?.nextActions.join(' ')).toContain('planSchedulerDecisionProposalFromEvidence');
     expect(decisions?.nextActions.join(' ')).toContain('read-only scheduler Decision proposal readiness smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose Write Intent can now carry kind=patch');
     expect(rightPanel?.evidence.join(' ')).toContain('imported_patch_artifact sandbox draft sources');

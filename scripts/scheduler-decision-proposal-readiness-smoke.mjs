@@ -25,6 +25,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
 
   const {
     planSchedulerDecisionProposal,
+    planSchedulerDecisionProposalFromEvidence,
   } = await import(pathToFileURL(modulePath).href);
 
   const blocked = planSchedulerDecisionProposal();
@@ -37,6 +38,18 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     approvalQueueConnected: true,
     standingApprovalActive: true,
     targetTaskId: 'task_scheduler_decision_standing_smoke',
+  });
+  const serviceEvidencePartial = planSchedulerDecisionProposalFromEvidence({
+    approvalQueue: {
+      connected: true,
+      surface: 'task_dynamics',
+    },
+    standingApproval: {
+      active: true,
+      policyId: 'standing_policy_1',
+      scopeTaskId: 'task_scheduler_decision_other',
+    },
+    targetTaskId: 'task_scheduler_decision_service_smoke',
   });
 
   console.log(`blockedStatus=${blocked.status}`);
@@ -60,6 +73,13 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`decisionPersistenceAllowed=${String(operatorConfirmed.decisionPersistenceAllowed || standingApproval.decisionPersistenceAllowed)}`);
   console.log(`writebackDispatchAllowed=${String(operatorConfirmed.writebackDispatchAllowed || standingApproval.writebackDispatchAllowed)}`);
   console.log(`schedulerTriggerAllowed=${String(operatorConfirmed.schedulerTriggerAllowed || standingApproval.schedulerTriggerAllowed)}`);
+  console.log(`serviceEvidenceStatus=${serviceEvidencePartial.status}`);
+  console.log(`serviceEvidenceProposalReady=${serviceEvidencePartial.approvalItemAllowed ? 'yes' : 'no'}`);
+  console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/3`);
+  console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceDecisionPersistenceAllowed=${String(serviceEvidencePartial.decisionPersistenceAllowed)}`);
+  console.log(`serviceEvidenceWritebackDispatchAllowed=${String(serviceEvidencePartial.writebackDispatchAllowed)}`);
+  console.log(`serviceEvidenceSchedulerTriggerAllowed=${String(serviceEvidencePartial.schedulerTriggerAllowed)}`);
 
   if (
     blocked.approvalItemAllowed
@@ -71,6 +91,12 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || standingApproval.decisionPersistenceAllowed
     || standingApproval.writebackDispatchAllowed
     || standingApproval.schedulerTriggerAllowed
+    || serviceEvidencePartial.approvalItemAllowed
+    || serviceEvidencePartial.satisfiedRequirements.length !== 2
+    || !serviceEvidencePartial.missingRequirements.includes('authorization')
+    || serviceEvidencePartial.decisionPersistenceAllowed
+    || serviceEvidencePartial.writebackDispatchAllowed
+    || serviceEvidencePartial.schedulerTriggerAllowed
   ) {
     console.log('status=failed');
     return 1;

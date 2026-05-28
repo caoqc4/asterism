@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { planSchedulerDecisionProposal } from './scheduler-decision-proposal.js';
+import {
+  planSchedulerDecisionProposal,
+  planSchedulerDecisionProposalFromEvidence,
+} from './scheduler-decision-proposal.js';
 
 describe('scheduler decision proposal contract', () => {
   it('blocks background Decision proposal work without approval queue and authorization', () => {
@@ -96,5 +99,73 @@ describe('scheduler decision proposal contract', () => {
     });
     expect(plan.summary).toContain('requirements=3/3');
     expect(plan.summary).toContain('authorization=standing_approval');
+  });
+
+  it('derives scheduler Decision proposal readiness from structured service evidence', () => {
+    const partial = planSchedulerDecisionProposalFromEvidence({
+      approvalQueue: {
+        connected: true,
+        surface: 'task_dynamics',
+      },
+      standingApproval: {
+        active: true,
+        policyId: 'policy_1',
+        scopeTaskId: 'task_other',
+      },
+      targetTaskId: 'task_decision_3',
+    });
+
+    expect(partial).toMatchObject({
+      status: 'blocked',
+      approvalItemAllowed: false,
+      decisionPersistenceAllowed: false,
+      schedulerTriggerAllowed: false,
+      writebackDispatchAllowed: false,
+      satisfiedRequirements: [
+        'approval_queue',
+        'target_task_identity',
+      ],
+      missingRequirements: ['authorization'],
+    });
+    expect(partial.summary).toContain('requirements=2/3');
+    expect(partial.summary).toContain('authorization=missing');
+
+    const ready = planSchedulerDecisionProposalFromEvidence({
+      approvalQueue: {
+        connected: true,
+        surface: 'task_dynamics',
+      },
+      operatorConfirmation: {
+        confirmed: true,
+        operatorId: 'operator_1',
+      },
+      standingApproval: {
+        active: true,
+        policyId: 'policy_1',
+        scopeTaskId: 'task_decision_3',
+      },
+      targetTaskId: 'task_decision_3',
+    });
+
+    expect(ready).toMatchObject({
+      status: 'ready',
+      approvalItemAllowed: true,
+      decisionPersistenceAllowed: false,
+      schedulerTriggerAllowed: false,
+      writebackDispatchAllowed: false,
+      authorizations: [
+        'operator_confirmation',
+        'standing_approval',
+      ],
+      satisfiedRequirements: [
+        'approval_queue',
+        'target_task_identity',
+        'authorization',
+      ],
+      missingRequirements: [],
+    });
+    expect(ready.summary).toContain('proposalReady=yes');
+    expect(ready.summary).toContain('requirements=3/3');
+    expect(ready.summary).toContain('authorization=operator_confirmation,standing_approval');
   });
 });
