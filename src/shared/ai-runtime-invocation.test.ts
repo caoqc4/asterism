@@ -1426,6 +1426,27 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('runGoalTaskEvidenceChain=missing');
   });
 
+  it('does not satisfy the pre-step gate from a Run Goal Contract on another run', () => {
+    const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runGoalContract: {
+        completionConditionCount: 1,
+        objective: 'Produce reviewable task evidence.',
+        runId: 'run_other',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['run_goal_contract'],
+      missingGates: ['pre_step'],
+    });
+    expect(wrongRun.summary).toContain('runGoalRun=run_other');
+    expect(wrongRun.summary).toContain('runGoalRunEvidenceChain=missing');
+    expect(wrongRun.summary).toContain('preStepGateEvidenceChain=missing');
+  });
+
   it('requires task memory guidance evidence to belong to the target task', () => {
     const noPendingGuidance = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),

@@ -829,6 +829,25 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && patchPromotionRunEvidenceChainReady
     && patchPromotionTaskEvidenceChainReady
   );
+  const runGoalContractReady = Boolean(
+    runGoalObjective
+    && evidence.runGoalContract?.completionConditionCount
+    && evidence.runGoalContract.completionConditionCount > 0
+    && runGoalRunEvidenceChainReady
+    && runGoalTaskEvidenceChainReady,
+  );
+  const taskMemoryGuidanceReady = (
+    evidence.taskMemoryGuidance?.status === 'ready'
+    && Number.isFinite(evidence.taskMemoryGuidance.guidanceCount)
+    && evidence.taskMemoryGuidance.guidanceCount >= 0
+    && taskMemoryGuidanceTaskEvidenceChainReady
+  );
+  const postStepVerificationReady = (
+    evidence.postStepVerification?.status === 'ready'
+    && Boolean(verifier)
+    && postStepRunEvidenceChainReady
+    && postStepTaskEvidenceChainReady
+  );
 
   if (
     selectedRuntime?.runtimeMode === 'api'
@@ -870,22 +889,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('context_readiness_step');
   }
 
-  if (
-    (evidence.taskMemoryGuidance?.status === 'ready')
-    && Number.isFinite(evidence.taskMemoryGuidance.guidanceCount)
-    && evidence.taskMemoryGuidance.guidanceCount >= 0
-    && taskMemoryGuidanceTaskEvidenceChainReady
-  ) {
+  if (taskMemoryGuidanceReady) {
     satisfiedRequirements.push('task_memory_guidance');
   }
 
-  if (
-    runGoalObjective
-    && evidence.runGoalContract?.completionConditionCount
-    && evidence.runGoalContract.completionConditionCount > 0
-    && runGoalRunEvidenceChainReady
-    && runGoalTaskEvidenceChainReady
-  ) {
+  if (runGoalContractReady) {
     satisfiedRequirements.push('run_goal_contract');
   }
 
@@ -903,12 +911,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('reviewed_patch_apply_boundary');
   }
 
-  if (
-    evidence.postStepVerification?.status === 'ready'
-    && verifier
-    && postStepRunEvidenceChainReady
-    && postStepTaskEvidenceChainReady
-  ) {
+  if (postStepVerificationReady) {
     satisfiedRequirements.push('post_step_verification');
   }
 
@@ -922,7 +925,20 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   }
 
   const requiredGates = agentApiExecutionRequiredGates();
-  const satisfiedGates = requiredGates.filter((gate) => evidence.gates?.[gate] === true);
+  const gateEvidenceReady = (gate: RuntimeEntrypointGate): boolean => {
+    if (evidence.gates?.[gate] !== true) return false;
+    if (gate === 'runtime_context_assembly') return contextManifestEvidenceChainReady;
+    if (gate === 'context_readiness') {
+      return evidence.contextReadinessStep?.status === 'ready'
+        && Boolean(contextStepId)
+        && contextStepTaskEvidenceChainReady;
+    }
+    if (gate === 'task_memory_guidance') return taskMemoryGuidanceReady;
+    if (gate === 'pre_step') return runGoalContractReady;
+    if (gate === 'post_step') return postStepVerificationReady;
+    return true;
+  };
+  const satisfiedGates = requiredGates.filter((gate) => gateEvidenceReady(gate));
 
   const readiness = evaluateAgentApiExecutionPromotionReadiness({
     satisfiedGates,
@@ -955,18 +971,22 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `contextStep=${contextStepId || 'missing'}`,
       `contextStepTask=${contextStepTaskId || 'missing'}`,
       `contextStepTaskEvidenceChain=${contextStepTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `contextReadinessGateEvidenceChain=${gateEvidenceReady('context_readiness') ? 'ready' : 'missing'}`,
       `contextManifest=${contextManifest || 'missing'}`,
       `contextManifestTask=${contextManifestTaskId || 'missing'}`,
       `contextManifestEvidenceChain=${contextManifestEvidenceChainReady ? 'ready' : 'missing'}`,
+      `runtimeContextAssemblyGateEvidenceChain=${gateEvidenceReady('runtime_context_assembly') ? 'ready' : 'missing'}`,
       `taskMemoryGuidance=${evidence.taskMemoryGuidance?.status ?? 'missing'}`,
       `taskMemoryGuidanceCount=${evidence.taskMemoryGuidance?.guidanceCount ?? 0}`,
       `taskMemoryGuidanceTask=${taskMemoryGuidanceTaskId || 'missing'}`,
       `taskMemoryGuidanceTaskEvidenceChain=${taskMemoryGuidanceTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `taskMemoryGuidanceGateEvidenceChain=${gateEvidenceReady('task_memory_guidance') ? 'ready' : 'missing'}`,
       `runGoalConditions=${evidence.runGoalContract?.completionConditionCount ?? 0}`,
       `runGoalRun=${runGoalRunId || 'missing'}`,
       `runGoalRunEvidenceChain=${runGoalRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `runGoalTask=${runGoalTaskId || 'missing'}`,
       `runGoalTaskEvidenceChain=${runGoalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `preStepGateEvidenceChain=${gateEvidenceReady('pre_step') ? 'ready' : 'missing'}`,
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
       `reviewedPatchApplyBoundary=${reviewedPatchApplyBoundaryReady ? 'ready' : 'missing'}`,
       `patchPromotionStatus=${evidence.reviewedPatchApplyBoundary?.appliedPromotionStatus ?? 'missing'}`,
@@ -979,6 +999,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `postStepTask=${postStepTaskId || 'missing'}`,
       `postStepTaskEvidenceChain=${postStepTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `postStepVerifier=${verifier || 'missing'}`,
+      `postStepGateEvidenceChain=${gateEvidenceReady('post_step') ? 'ready' : 'missing'}`,
       `terminalRunStatus=${terminalRunStatus ?? 'missing'}`,
       `terminalRunStatusEvidenceChain=${terminalRunStatusReady ? 'ready' : 'missing'}`,
       `terminalEvidence=${evidence.runEvidencePersistence?.terminalEvidenceStatus ?? 'missing'}`,

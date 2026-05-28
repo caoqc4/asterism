@@ -266,17 +266,21 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceContextStep=${scalarValue(serviceEvidencePartial.summary, 'contextStep') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStepTask=${scalarValue(serviceEvidencePartial.summary, 'contextStepTask') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStepTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'contextStepTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceContextReadinessGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'contextReadinessGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceContextManifestTask=${scalarValue(serviceEvidencePartial.summary, 'contextManifestTask') ?? 'missing'}`);
   console.log(`serviceEvidenceContextManifestEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'contextManifestEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeContextAssemblyGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runtimeContextAssemblyGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidance=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidance') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidanceCount=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceCount') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidanceTask=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTask') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidanceTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceTaskMemoryGuidanceGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRunGoalConditions=${scalarValue(serviceEvidencePartial.summary, 'runGoalConditions') ?? 'missing'}`);
   console.log(`serviceEvidenceRunGoalRun=${scalarValue(serviceEvidencePartial.summary, 'runGoalRun') ?? 'missing'}`);
   console.log(`serviceEvidenceRunGoalRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runGoalRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRunGoalTask=${scalarValue(serviceEvidencePartial.summary, 'runGoalTask') ?? 'missing'}`);
   console.log(`serviceEvidenceRunGoalTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runGoalTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidencePreStepGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'preStepGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
@@ -311,7 +315,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || !syntheticReady.ready
     || serviceEvidencePartial.ready
     || serviceEvidencePartial.satisfiedRequirements.length !== 3
-    || serviceEvidencePartial.satisfiedGates.length !== 8
+    || serviceEvidencePartial.satisfiedGates.length !== 7
     || scalarValue(serviceEvidencePartial.summary, 'targetTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'runEvidenceTaskEvidenceChain') !== 'missing'
@@ -334,17 +338,21 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'contextStep') !== 'step_context_ready'
     || scalarValue(serviceEvidencePartial.summary, 'contextStepTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'contextStepTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'contextReadinessGateEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'contextManifestTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'contextManifestEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeContextAssemblyGateEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidance') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceCount') !== '0'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceGateEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalConditions') !== '1'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalRun') !== 'run_api_execution_partial'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'preStepGateEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'
