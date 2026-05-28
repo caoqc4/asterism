@@ -734,7 +734,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('operator confirmation boundary, and draft-only timeline evidence');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('keeps parent-task identity missing when the service parentTaskId and apply-plan parentTaskId do not match');
+      .toContain('keeps parent-task identity missing when the service parentTaskId is absent or does not match the apply-plan parentTaskId');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('keeps agent_api_decomposition_source missing when apply-plan input source and timeline source diverge');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))

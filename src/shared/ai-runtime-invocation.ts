@@ -292,8 +292,9 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
   const evidenceRunIdChainReady = Boolean(applyPlanEvidenceRunId)
     && applyPlanEvidenceRunId === timelineEvidenceRunId;
-  const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
-    && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
+  const parentTaskIdentityReady = Boolean(evidenceParentTaskId)
+    && Boolean(applyPlanParentTaskId)
+    && evidenceParentTaskId === applyPlanParentTaskId;
 
   if (!params.selectedRuntimeContractReady) {
     missingRequirements.push('selected_runtime_contract');
@@ -408,8 +409,9 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && timelineRuntimeParentTaskId === selectedRuntimeParentTaskId
     && timelineRuntimeParentTaskId === applyPlanParentTaskId;
   const parentTaskId = evidenceParentTaskId || applyPlanParentTaskId;
-  const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
-    && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
+  const parentTaskIdentityReady = Boolean(evidenceParentTaskId)
+    && Boolean(applyPlanParentTaskId)
+    && evidenceParentTaskId === applyPlanParentTaskId;
   const proposalId = evidence.reversibleProposalCard?.proposalId?.trim() || '';
   const proposalParentTaskId = evidence.reversibleProposalCard?.parentTaskId?.trim() || '';
   const expectedProposalId = parentTaskId ? `project_decomposition:${parentTaskId}` : '';

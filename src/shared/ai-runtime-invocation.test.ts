@@ -112,6 +112,7 @@ describe('ai runtime invocation contract', () => {
     });
     const ready = evaluateAgentApiDecompositionPromotionReadiness({
       applyPlan,
+      parentTaskId: 'task_project',
       reversibleProposalCardReady: true,
       selectedRuntimeContractReady: true,
     });
@@ -164,6 +165,7 @@ describe('ai runtime invocation contract', () => {
     });
     const partial = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
       applyPlan: partialApplyPlan,
+      parentTaskId: 'task_project',
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
@@ -545,6 +547,41 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('applyPlanParentTask=task_project_a');
     expect(mismatch.summary).toContain('parentTaskEvidenceChain=missing');
     expect(mismatch.summary).toContain('promotionMissingRequirements=parent_task_identity');
+  });
+
+  it('blocks Agent API decomposition promotion when service parent-task evidence is absent', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['parent_task_identity'],
+    });
+    expect(mismatch.summary).toContain('parentTask=task_project');
+    expect(mismatch.summary).toContain('applyPlanParentTask=task_project');
+    expect(mismatch.summary).toContain('parentTaskEvidenceChain=missing');
   });
 
   it('blocks Agent API decomposition promotion when the reversible proposal belongs to another parent task', () => {

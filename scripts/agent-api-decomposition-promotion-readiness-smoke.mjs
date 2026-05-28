@@ -56,6 +56,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   });
   const partial = evaluateAgentApiDecompositionPromotionReadiness({
     applyPlan: partialApplyPlan,
+    parentTaskId: 'task_project',
     reversibleProposalCardReady: true,
     selectedRuntimeContractReady: true,
   });
@@ -68,6 +69,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   });
   const syntheticReady = evaluateAgentApiDecompositionPromotionReadiness({
     applyPlan: readyApplyPlan,
+    parentTaskId: 'task_project',
     reversibleProposalCardReady: true,
     selectedRuntimeContractReady: true,
   });
