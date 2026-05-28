@@ -787,6 +787,9 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceProviderConfigured=ready');
     expect(result.output).toContain('serviceEvidenceConfiguredProvider=openai');
     expect(result.output).toContain('serviceEvidenceProviderStartupProbe=not_called');
+    expect(result.output).toContain('artifactOnlyPromotionReady=no');
+    expect(result.output).toContain('artifactOnlyMissingRequirements=write_intent_extraction');
+    expect(result.output).toContain('artifactOnlyWriteIntentActions=artifact.propose');
   });
 
   it('keeps Agent API decomposition promotion readiness smoke read-only and build-gated by default', () => {

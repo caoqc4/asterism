@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'ai-runtime-invocation.js');
+const sourceModulePath = path.join(root, 'src', 'shared', 'ai-runtime-invocation.ts');
 
 export async function runAgentApiPromotionReadinessSmoke() {
   console.log('Agent API promotion readiness smoke');
@@ -14,7 +15,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log('workspace=unchanged');
   console.log('promotionInProduct=deferred');
 
-  if (!fs.existsSync(modulePath)) {
+  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -73,6 +74,61 @@ export async function runAgentApiPromotionReadinessSmoke() {
     },
     targetTaskId: 'task_1',
   });
+  const serviceEvidenceArtifactOnly = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+    contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
+    contextReadinessStep: {
+      status: 'ready',
+      stepId: 'step_context_ready',
+    },
+    gates: {
+      simplicity_check: true,
+      runtime_action: true,
+      runtime_context_assembly: true,
+      context_readiness: true,
+      task_memory_coverage: true,
+      task_memory_guidance: true,
+      pre_step: true,
+      subtask_start: true,
+      post_step: true,
+    },
+    postStepVerification: {
+      status: 'ready',
+      verifier: 'taskplane.verifier.lightweight',
+    },
+    providerVisiblePreflight: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+      startupProbe: 'not_called',
+      status: 'ready',
+    },
+    reviewedPatchApplyBoundary: {
+      explicitApplyOnly: true,
+      promotionPreflightReady: true,
+    },
+    runEvidencePersistence: {
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+      terminalEvidenceStatus: 'present',
+    },
+    runGoalContract: {
+      completionConditionCount: 1,
+      objective: 'Produce reviewable task evidence.',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      runtimeMode: 'api',
+    },
+    targetTaskId: 'task_1',
+    taskMemoryGuidance: {
+      guidanceCount: 1,
+      status: 'ready',
+    },
+    writeIntentExtraction: {
+      status: 'ready',
+      supportedActions: ['artifact.propose'],
+    },
+  });
 
   console.log(`deferredInvocationStatus=${deferredInvocation.status}`);
   console.log(`deferredPromotionReady=${deferredReadiness.ready ? 'yes' : 'no'}`);
@@ -103,6 +159,9 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
+  console.log(`artifactOnlyPromotionReady=${serviceEvidenceArtifactOnly.ready ? 'yes' : 'no'}`);
+  console.log(`artifactOnlyMissingRequirements=${serviceEvidenceArtifactOnly.missingRequirements.join(',') || 'none'}`);
+  console.log(`artifactOnlyWriteIntentActions=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -122,6 +181,9 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'
+    || serviceEvidenceArtifactOnly.ready
+    || !serviceEvidenceArtifactOnly.missingRequirements.includes('write_intent_extraction')
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') !== 'artifact.propose'
   ) {
     console.log('status=failed');
     return 1;
@@ -135,6 +197,13 @@ function scalarValue(summary, key) {
   const prefix = `${key}=`;
   const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
   return part?.trim().slice(prefix.length).trim() ?? null;
+}
+
+function sourceIsNewerThanBuild() {
+  if (!fs.existsSync(sourceModulePath)) return false;
+  const sourceStat = fs.statSync(sourceModulePath);
+  const buildStat = fs.statSync(modulePath);
+  return sourceStat.mtimeMs > buildStat.mtimeMs;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

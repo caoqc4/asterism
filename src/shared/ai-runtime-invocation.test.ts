@@ -746,6 +746,22 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('targetTaskEvidenceChain=missing');
   });
 
+  it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
+    const artifactOnly = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      writeIntentExtraction: {
+        status: 'ready',
+        supportedActions: ['artifact.propose'],
+      },
+    });
+
+    expect(artifactOnly).toMatchObject({
+      ready: false,
+      missingRequirements: ['write_intent_extraction'],
+    });
+    expect(artifactOnly.summary).toContain('writeIntentActions=artifact.propose');
+  });
+
   it('requires provider-visible preflight to carry the configured provider identity', () => {
     const missingProvider = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),

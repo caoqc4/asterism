@@ -648,6 +648,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   if (
     evidence.writeIntentExtraction?.status === 'ready'
     && supportedWriteActions.includes('artifact.propose')
+    && supportedWriteActions.includes('task_file.propose')
   ) {
     satisfiedRequirements.push('write_intent_extraction');
   }

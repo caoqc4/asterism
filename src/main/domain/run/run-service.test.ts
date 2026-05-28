@@ -898,6 +898,12 @@ describe('RunService', () => {
             '-old',
             '+new',
           ].join('\n'),
+        }, {
+          type: 'task_file.propose',
+          title: 'notes.md',
+          path: 'notes.md',
+          content: 'new',
+          summary: 'Reviewable task file evidence.',
         }],
       }),
       '```',

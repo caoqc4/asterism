@@ -175,6 +175,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Run evidence persistence, and runtime gates');
     expect(rightPanel?.evidence.join(' ')).toContain('Run evidence task identity to match targetTaskId');
     expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity');
+    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, providerConfigured, configuredProvider, providerStartupProbe, runId, contextStep, contextManifest');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, postStepVerifier, terminalEvidence, runtimeMode, and invocationLayer identity chips');
     expect(rightPanel?.evidence.join(' ')).toContain('hand-filled requirement arrays');
@@ -189,7 +190,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('Post-run Agent API execution promotion readiness now reads same-run sandbox patch promotion records');
     expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionRepository.listForRun');
     expect(rightPanel?.evidence.join(' ')).toContain('real non-blocked promotion evidence exists');
-    expect(rightPanel?.evidence.join(' ')).toContain('parsed TASKPLANE_WRITE_INTENTS artifact.propose output plus same-run patch promotion evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('parsed TASKPLANE_WRITE_INTENTS artifact.propose plus task_file.propose output and same-run patch promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('without hand-filled readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run promotion requirements and missing lists through evaluateAgentApiExecutionPromotionReadinessFromEvidence');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports aligned with service-evidence readiness');
