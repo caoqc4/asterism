@@ -2720,6 +2720,88 @@ describe('SchedulerService', () => {
     expect(scheduledJobs).toHaveLength(0);
   });
 
+  it('returns recovery evidence instead of throwing when an operator-started scheduled/event run has the wrong target task', async () => {
+    const now = new Date('2026-05-26T11:30:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_wrong_target_1',
+      output: null,
+      outputSource: null,
+      status: 'running',
+      taskId: 'task_other',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: {
+        id: 'run_scheduled_wrong_target_1',
+        taskId: 'task_other',
+      },
+      terminalRunEvidenceStatus: 'pending',
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('runId=run_scheduled_wrong_target_1');
+    expect(result.summary).toContain('Run target task mismatch: expected task_auto but received task_other.');
+    expect(result.summary).toContain('runIdentityDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_scheduled_wrong_target_1',
+        proposedOutcome: '暂停自动触发并人工复核运行归属',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent Run 目标任务不一致后的下一步',
+      }),
+    }));
+  });
+
   it('falls back to plain brief generation when brief template selection fails', async () => {
     const homeData = {
       ...buildHomeData(),

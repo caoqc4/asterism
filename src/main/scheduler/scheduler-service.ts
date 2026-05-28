@@ -107,6 +107,8 @@ export type ScheduledEventAgentTaskInput = Pick<
   | 'waitingReason'
 >;
 
+type ScheduledEventRunIdentityMismatchHandling = 'return_blocked' | 'throw_sweep_error';
+
 function olderThanMinutes(minutes: number): string {
   return new Date(Date.now() - minutes * 60_000).toISOString();
 }
@@ -448,7 +450,7 @@ export class SchedulerService {
 
       for (const task of tasks) {
         activeSweepTask = task;
-        const result = await this.triggerScheduledEventAgentRun(task, now, runCounts, kind);
+        const result = await this.triggerScheduledEventAgentRun(task, now, runCounts, kind, 'throw_sweep_error');
         activeSweepTask = null;
         results.push(result);
         if (result.status === 'started') {
@@ -759,6 +761,7 @@ export class SchedulerService {
     now: Date = new Date(),
     runCountsStartedTodayByTaskId: Record<string, number> | null = null,
     triggerKind: 'cron' | 'manual' = 'manual',
+    runIdentityMismatchHandling: ScheduledEventRunIdentityMismatchHandling = 'return_blocked',
   ): Promise<ScheduledEventAgentTriggerResult> {
     if (!this.scheduledEventAgentRunPort) {
       const [plan] = await this.diagnoseScheduledEventAgentTriggers(
@@ -818,10 +821,35 @@ export class SchedulerService {
       );
     });
     if (run.taskId !== task.id) {
-      throw buildScheduledEventAgentSweepError(
-        `Run target task mismatch: expected ${task.id} but received ${run.taskId}.`,
-        { plan, run, task },
-      );
+      const errorMessage = `Run target task mismatch: expected ${task.id} but received ${run.taskId}.`;
+      if (runIdentityMismatchHandling === 'throw_sweep_error') {
+        throw buildScheduledEventAgentSweepError(
+          errorMessage,
+          { plan, run, task },
+        );
+      }
+
+      const terminalRunEvidenceStatus = isTerminalScheduledEventRunStatus(run.status) ? 'present' : 'pending';
+      const triggerRunEvidenceStatus = terminalRunEvidenceStatus === 'present'
+        ? 'ready_for_terminal_review'
+        : 'pending_terminal_run_evidence';
+      const runIdentityDecisionProposal = await this.proposeScheduledEventRunIdentityDecision(task, plan, run, errorMessage, now)
+        .catch((error: unknown) => ({
+          status: 'failed' as const,
+          summary: `runIdentityDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+        }));
+
+      return {
+        status: 'blocked',
+        plan,
+        run,
+        terminalRunEvidenceStatus,
+        triggerRunEvidenceStatus,
+        summary: [
+          `${plan.summary} / trigger=blocked / runId=${run.id} / terminalRunEvidence=${terminalRunEvidenceStatus} / triggerRunEvidenceStatus=${triggerRunEvidenceStatus} / reason=${errorMessage}`,
+          `runIdentityDecisionProposal=${runIdentityDecisionProposal.status} / runIdentityDecisionSummary=${runIdentityDecisionProposal.summary}`,
+        ].join(' / '),
+      };
     }
     const timelineEvidence = await this.recordScheduledEventAgentTriggered(task, plan, run, now, triggerKind)
       .catch((error: unknown) => {

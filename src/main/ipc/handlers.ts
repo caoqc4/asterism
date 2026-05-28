@@ -862,9 +862,17 @@ export function registerIpcHandlers(): void {
       throw new Error(`Task not found: ${input.taskId}`);
     }
     const result = await services.schedulerService.triggerScheduledEventAgentRun(task);
-    if (result.status === 'started' && result.run) {
+    if (result.run) {
       emitAppEvent('run.changed', result.run.id);
+    }
+    if (result.status === 'started' && result.run) {
       emitAppEvent('task.changed', result.run.taskId);
+      emitAppEvent('brief.changed');
+    } else if (result.status === 'blocked' && result.run) {
+      emitAppEvent('task.changed', input.taskId);
+      if (result.run.taskId !== input.taskId) {
+        emitAppEvent('task.changed', result.run.taskId);
+      }
       emitAppEvent('brief.changed');
     }
     return result;

@@ -1989,6 +1989,66 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
   });
 
+  it('refreshes scheduled event Agent recovery surfaces when IPC returns a blocked run', async () => {
+    const task = {
+      id: 'task_auto',
+      title: 'Weekly update',
+      nextStep: 'Prepare the weekly update.',
+      timeline: [],
+    };
+    servicesMock.taskService.getDetail.mockResolvedValue(task);
+    servicesMock.schedulerService.triggerScheduledEventAgentRun.mockResolvedValue({
+      status: 'blocked',
+      run: {
+        id: 'run_wrong_task_1',
+        taskId: 'task_other',
+        type: 'agent',
+        status: 'running',
+        instructions: 'Scheduled event Agent trigger.',
+        output: null,
+        outputSource: null,
+        failureReason: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      plan: {
+        status: 'ready',
+        triggerPlanReady: true,
+        runtimeStartAllowed: true,
+        schedulerTriggerServiceConnected: true,
+        triggerRunEvidenceRequired: ['context_readiness'],
+        policy: null,
+        runLimit: {
+          maxRunsPerDay: null,
+          runsStartedToday: null,
+        },
+        readiness: {},
+        standingApproval: {},
+        blockedReasons: [],
+        evidence: [],
+        summary: 'Scheduled/event trigger plan / status=ready',
+      },
+      terminalRunEvidenceStatus: 'pending',
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+      summary: 'Scheduled/event trigger plan / trigger=blocked / runId=run_wrong_task_1 / runIdentityDecisionProposal=proposed',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string }],
+      Awaited<ReturnType<typeof servicesMock.schedulerService.triggerScheduledEventAgentRun>>
+    >('scheduler:triggerScheduledEventAgentRun');
+
+    const result = await handler({}, { taskId: 'task_auto' });
+
+    expect(servicesMock.taskService.getDetail).toHaveBeenCalledWith('task_auto');
+    expect(servicesMock.schedulerService.triggerScheduledEventAgentRun).toHaveBeenCalledWith(task);
+    expect(result.status).toBe('blocked');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_wrong_task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_auto');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'task.changed', 'task_other');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(4, 'brief.changed');
+  });
+
   it('blocks scheduled event Agent trigger IPC when the task is missing', async () => {
     servicesMock.taskService.getDetail.mockResolvedValue(null);
     const handler = getRegisteredHandler<

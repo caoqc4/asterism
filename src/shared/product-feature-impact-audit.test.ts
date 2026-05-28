@@ -306,6 +306,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('timelineFailureDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('Run target-task mismatches now block target timeline evidence');
     expect(decisions?.evidence.join(' ')).toContain('runIdentityDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toContain('operator-started runs return blocked recovery evidence instead of throwing to IPC');
     expect(decisions?.evidence.join(' ')).toContain('stale-run recovery now routes each recovered run');
     expect(decisions?.evidence.join(' ')).toContain('staleRunRecoveryDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
@@ -409,6 +410,8 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('post-step terminal-evidence guidance');
     expect(workHabits?.evidence.join(' ')).toContain('workspaceWriteAllowed=false proposal-only boundary');
     expect(workHabits?.evidence.join(' ')).toContain('scheduler:triggerScheduledEventAgentRun');
+    expect(workHabits?.evidence.join(' ')).toContain('blocked operator-started run preserves recovery evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('run-identity mismatch');
     expect(workHabits?.evidence.join(' ')).toContain('启动一次');
     expect(workHabits?.evidence.join(' ')).toContain('without enabling a background scheduler job');
     expect(workHabits?.evidence.join(' ')).toContain('operator feedback now includes the required trigger evidence items, run-limit usage, and proposal-mode write boundary');
@@ -430,7 +433,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('blocks even operator-confirmed scheduled/event starts when the Task Dynamics timeline evidence port is not connected');
     expect(workHabits?.evidence.join(' ')).toContain('L2 Agent action evidence mandatory before any Code Agent run can start');
     expect(workHabits?.evidence.join(' ')).toContain('emits run.changed, task.changed, and brief.changed after a started scheduled/event Agent run');
-    expect(workHabits?.evidence.join(' ')).toContain('refreshes the same product surfaces as other Run start paths');
+    expect(workHabits?.evidence.join(' ')).toContain('refreshes run plus target/returned task surfaces');
     expect(workHabits?.evidence.join(' ')).toContain('RuntimeEventRecord now formats panel.scheduled_event_agent_triggered');
     expect(workHabits?.evidence.join(' ')).toContain('readable Task Dynamics detail with run id');
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
