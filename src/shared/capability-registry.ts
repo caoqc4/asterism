@@ -6,7 +6,10 @@ import {
   evaluateAgentApiDecompositionPromotionReadinessFromEvidence,
   evaluateAgentApiExecutionPromotionReadinessFromEvidence,
 } from './ai-runtime-invocation.js';
-import { evaluateAgentApiProviderToolReadinessFromEvidence } from './agent-api-provider-tool-readiness.js';
+import {
+  deriveAgentApiProviderToolMetadata,
+  evaluateAgentApiProviderToolReadinessFromEvidence,
+} from './agent-api-provider-tool-readiness.js';
 import {
   RUNTIME_ENTRYPOINT_COVERAGE,
   requiredRuntimeEntrypointGatesForKind,
@@ -557,8 +560,13 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
   const selected = snapshot?.executionRuntime.kind === 'agent_api';
   const providerConfigured = Boolean(snapshot?.model.configured);
   const availableForSelectedProviderPhases = selected && providerConfigured;
+  const providerToolMetadata = providerConfigured
+    ? deriveAgentApiProviderToolMetadata(snapshot?.model.provider)
+    : { explicitToolDeclarations: null, providerOwnedMetadata: null };
   const providerToolReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+    explicitToolDeclarations: providerToolMetadata.explicitToolDeclarations,
     providerConfigured,
+    providerOwnedMetadata: providerToolMetadata.providerOwnedMetadata,
     selectedRuntime: {
       mode: selected ? 'api' : 'none',
       runtimeKind: selected ? 'agent_api' : 'none',

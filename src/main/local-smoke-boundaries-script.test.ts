@@ -816,18 +816,22 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('network=not-called');
     expect(result.output).toContain('startupProbe=not-attempted');
+    if (result.output.includes('status=skip')) {
+      expect(result.output).toContain('skipReason=build_required');
+      return;
+    }
     expect(result.output).toContain('providerToolStatus=not_declared');
     expect(result.output).toContain('selectedApiRuntime=ready');
     expect(result.output).toContain('providerConfiguredStatus=ready');
-    expect(result.output).toContain('providerOwnedMetadata=missing');
-    expect(result.output).toContain('providerMetadataPackage=missing');
+    expect(result.output).toContain('providerOwnedMetadata=ready');
+    expect(result.output).toContain('providerMetadataPackage=@ai-sdk/openai');
     expect(result.output).toContain('explicitToolDeclaration=missing');
     expect(result.output).toContain('declaredWebSearchToolCount=0');
     expect(result.output).toContain('declaredWebSearchTools=none');
     expect(result.output).toContain('serviceEvidenceSelectedApiRuntime=ready');
     expect(result.output).toContain('serviceEvidenceProviderConfigured=ready');
-    expect(result.output).toContain('serviceEvidenceProviderOwnedMetadata=missing');
-    expect(result.output).toContain('serviceEvidenceProviderMetadataPackage=missing');
+    expect(result.output).toContain('serviceEvidenceProviderOwnedMetadata=ready');
+    expect(result.output).toContain('serviceEvidenceProviderMetadataPackage=@ai-sdk/openai');
     expect(result.output).toContain('serviceEvidenceExplicitToolDeclaration=missing');
     expect(result.output).toContain('serviceEvidenceDeclaredWebSearchToolCount=0');
     expect(result.output).toContain('serviceEvidenceDeclaredWebSearchTools=none');

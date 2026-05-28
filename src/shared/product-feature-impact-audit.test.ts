@@ -903,6 +903,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
     expect(capabilities?.evidence.join(' ')).toContain('provider configuration alone and unrelated provider-owned function tools stay providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now derives Agent API Runtime providerToolReadiness');
+    expect(capabilities?.evidence.join(' ')).toContain('no-start local provider package metadata for @ai-sdk/openai and @ai-sdk/anthropic');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements');
@@ -920,13 +921,13 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('web/search-specific declarations');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness smoke');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=not_declared');
-    expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements=3/5');
-    expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration');
-    expect(capabilities?.evidence.join(' ')).toContain('providerMetadataPackage=missing');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements=4/5');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolMissingRequirements=explicit_tool_declaration');
+    expect(capabilities?.evidence.join(' ')).toContain('providerMetadataPackage=@ai-sdk/openai');
     expect(capabilities?.evidence.join(' ')).toContain('declaredWebSearchToolCount=0');
     expect(capabilities?.evidence.join(' ')).toContain('declaredWebSearchTools=none');
-    expect(capabilities?.evidence.join(' ')).toContain('service-evidence=3/5 requirements');
-    expect(capabilities?.evidence.join(' ')).toContain('provider_owned_metadata and explicit_tool_declaration missing');
+    expect(capabilities?.evidence.join(' ')).toContain('service-evidence=4/5 requirements');
+    expect(capabilities?.evidence.join(' ')).toContain('explicit_tool_declaration missing');
     expect(capabilities?.evidence.join(' ')).toContain('runtimeExecutable=no');
     expect(capabilities?.evidence.join(' ')).toContain('provider=not-called');
     expect(capabilities?.evidence.join(' ')).toContain('network=not-called');

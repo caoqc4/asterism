@@ -38,6 +38,44 @@ export type AgentApiProviderToolReadinessServiceEvidence = {
   startupProbe?: 'called' | 'never' | 'not_attempted';
 };
 
+export function deriveAgentApiProviderToolMetadata(
+  provider: string | null | undefined,
+): Pick<AgentApiProviderToolReadinessServiceEvidence, 'explicitToolDeclarations' | 'providerOwnedMetadata'> {
+  const normalizedProvider = provider?.trim().toLowerCase() ?? '';
+  if (normalizedProvider === 'openai') {
+    return {
+      explicitToolDeclarations: {
+        declaredTools: [],
+        source: 'provider_owned_metadata',
+      },
+      providerOwnedMetadata: {
+        owner: 'provider',
+        packageName: '@ai-sdk/openai',
+        present: true,
+      },
+    };
+  }
+
+  if (normalizedProvider === 'anthropic') {
+    return {
+      explicitToolDeclarations: {
+        declaredTools: [],
+        source: 'provider_owned_metadata',
+      },
+      providerOwnedMetadata: {
+        owner: 'provider',
+        packageName: '@ai-sdk/anthropic',
+        present: true,
+      },
+    };
+  }
+
+  return {
+    explicitToolDeclarations: null,
+    providerOwnedMetadata: null,
+  };
+}
+
 export function agentApiProviderToolReadinessRequirements(): AgentApiProviderToolReadinessRequirement[] {
   return [
     'selected_api_runtime',

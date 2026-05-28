@@ -197,7 +197,7 @@ describe('configuration safety report', () => {
 
     expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
       state: 'approval_required',
-      reason: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=3/5 / providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / providerOwnedMetadata=missing / providerMetadataOwner=missing / providerMetadataPackage=missing / explicitToolDeclaration=missing / explicitToolDeclarationSource=missing / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
+      reason: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / providerOwnedMetadata=ready / providerMetadataOwner=provider / providerMetadataPackage=@ai-sdk/anthropic / explicitToolDeclaration=missing / explicitToolDeclarationSource=provider_owned_metadata / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
       requiresApproval: true,
       startupProbePolicy: 'never',
     });

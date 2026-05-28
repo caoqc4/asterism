@@ -29,6 +29,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   }
 
   const {
+    deriveAgentApiProviderToolMetadata,
     evaluateAgentApiProviderToolReadinessFromEvidence,
   } = await import(pathToFileURL(providerToolReadinessModulePath).href);
   const { buildCapabilityRegistry } = await import(pathToFileURL(capabilityRegistryModulePath).href);
@@ -67,8 +68,11 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     return 1;
   }
 
+  const providerToolMetadata = deriveAgentApiProviderToolMetadata(snapshot.model.provider);
   const serviceEvidenceReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+    explicitToolDeclarations: providerToolMetadata.explicitToolDeclarations,
     providerConfigured: snapshot.model.configured,
+    providerOwnedMetadata: providerToolMetadata.providerOwnedMetadata,
     selectedRuntime: {
       mode: snapshot.executionRuntime.mode,
       runtimeKind: snapshot.executionRuntime.kind,
@@ -128,23 +132,24 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     agentApiRuntime.requiresApproval !== true ? 'requires_approval' : null,
     !agentApiRuntime.summary.includes('providerToolReadiness=not_declared') ? 'provider_tool_readiness' : null,
     providerToolStatus !== 'not_declared' ? 'provider_tool_status' : null,
-    !agentApiRuntime.summary.includes('providerToolRequirements=3/5') ? 'provider_tool_requirements' : null,
-    !agentApiRuntime.summary.includes('providerToolMissingRequirements=provider_owned_metadata,explicit_tool_declaration') ? 'provider_tool_missing_requirements' : null,
+    !agentApiRuntime.summary.includes('providerToolRequirements=4/5') ? 'provider_tool_requirements' : null,
+    !agentApiRuntime.summary.includes('providerToolMissingRequirements=explicit_tool_declaration') ? 'provider_tool_missing_requirements' : null,
     !agentApiRuntime.summary.includes('selectedApiRuntime=ready') ? 'selected_api_runtime' : null,
     !agentApiRuntime.summary.includes('providerConfigured=ready') ? 'provider_configured' : null,
-    !agentApiRuntime.summary.includes('providerOwnedMetadata=missing') ? 'provider_owned_metadata' : null,
+    !agentApiRuntime.summary.includes('providerOwnedMetadata=ready') ? 'provider_owned_metadata' : null,
+    !agentApiRuntime.summary.includes('providerMetadataPackage=@ai-sdk/openai') ? 'provider_metadata_package' : null,
     !agentApiRuntime.summary.includes('explicitToolDeclaration=missing') ? 'explicit_tool_declaration' : null,
-    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') !== 'missing' ? 'service_metadata_owner' : null,
-    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') !== 'missing' ? 'service_metadata_package' : null,
-    serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'missing' ? 'service_tool_declaration_source' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataOwner') !== 'provider' ? 'service_metadata_owner' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerMetadataPackage') !== '@ai-sdk/openai' ? 'service_metadata_package' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'explicitToolDeclarationSource') !== 'provider_owned_metadata' ? 'service_tool_declaration_source' : null,
     serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') !== '0' ? 'service_declared_tool_count' : null,
     (serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchToolCount') ?? '0') !== '0' ? 'service_declared_web_search_tool_count' : null,
     (serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none') !== 'none' ? 'service_declared_web_search_tools' : null,
     !agentApiRuntime.summary.includes('startupProbe=never') ? 'startup_probe' : null,
     !agentApiRuntime.summary.includes('executionRun=deferred') ? 'execution_run' : null,
     serviceEvidenceReadiness.status !== 'not_declared' ? 'service_status' : null,
-    serviceEvidenceReadiness.satisfiedRequirements.length !== 3 ? 'service_requirement_count' : null,
-    !serviceEvidenceReadiness.missingRequirements.includes('provider_owned_metadata') ? 'service_provider_owned_metadata_missing' : null,
+    serviceEvidenceReadiness.satisfiedRequirements.length !== 4 ? 'service_requirement_count' : null,
+    serviceEvidenceReadiness.missingRequirements.includes('provider_owned_metadata') ? 'service_provider_owned_metadata_missing' : null,
     !serviceEvidenceReadiness.missingRequirements.includes('explicit_tool_declaration') ? 'service_explicit_tool_declaration_missing' : null,
   ].filter(Boolean);
 
