@@ -235,4 +235,39 @@ describe('SandboxPatchPromotionApplyService', () => {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
   });
+
+  it('returns routing readiness evidence when preflight reports an already applied promotion', async () => {
+    const promotion = buildPromotion({ status: 'applied' });
+    const service = new SandboxPatchPromotionApplyService(
+      {
+        preflight: vi.fn().mockResolvedValue({
+          promotion,
+          status: 'already_applied',
+          summary: 'Sandbox patch promotion preflight: already_applied / checkpoint=run_checkpoint_1',
+        }),
+      },
+      {
+        markApplied: vi.fn(),
+        markBlocked: vi.fn(),
+      },
+      () => '/tmp/unused',
+    );
+
+    const result = await service.apply('run_checkpoint_1', {
+      operatorConfirmed: true,
+      operatorId: 'local_operator',
+    });
+
+    expect(result).toMatchObject({
+      status: 'already_applied',
+      touchedFiles: ['notes.md'],
+    });
+    expect(result.auditSummary).toContain('Sandbox patch promotion already applied / checkpoint=run_checkpoint_1 / files=notes.md');
+    expect(result.auditSummary).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+    expect(result.auditSummary).toContain('promotionRequirements=7/8');
+    expect(result.auditSummary).toContain('explicitOperatorApply=ready');
+    expect(result.auditSummary).toContain('sameRunEvidenceChain=ready');
+    expect(result.auditSummary).toContain('postApplyRunEvidence=ready');
+    expect(result.auditSummary).toContain('promotionMissingRequirements=selected_runtime_contract');
+  });
 });

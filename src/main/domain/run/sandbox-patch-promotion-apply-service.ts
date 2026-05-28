@@ -45,8 +45,18 @@ export class SandboxPatchPromotionApplyService {
     }
 
     if (preflight.status === 'already_applied') {
+      const auditSummary = [
+        'Sandbox patch promotion already applied',
+        `checkpoint=${preflight.promotion.checkpointId}`,
+        `files=${preflight.promotion.expectedFiles.join(', ')}`,
+        buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion({
+          operatorConfirmed: options.operatorConfirmed === true,
+          operatorId: options.operatorId,
+          promotion: preflight.promotion,
+        }),
+      ].join(' / ');
       return {
-        auditSummary: `Sandbox patch promotion already applied: checkpoint=${preflight.promotion.checkpointId}`,
+        auditSummary,
         promotion: preflight.promotion,
         status: 'already_applied',
         touchedFiles: preflight.promotion.expectedFiles,
@@ -247,6 +257,44 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
       status: 'ready',
     },
     targetTaskId: params.preflight.promotion.taskId,
+  };
+  const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
+  return `futureRuntimeRouting=${readiness.summary}`;
+}
+
+function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(params: {
+  operatorConfirmed: boolean;
+  operatorId?: string | null;
+  promotion: SandboxPatchPromotionRecord;
+}): string {
+  const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
+    explicitOperatorApply: {
+      confirmed: params.operatorConfirmed,
+      operatorId: params.operatorId ?? null,
+    },
+    patchArtifact: {
+      artifactId: params.promotion.artifactId,
+      kind: 'patch',
+      runId: params.promotion.runId,
+      status: 'ready',
+    },
+    postApplyRunEvidence: {
+      runId: params.promotion.runId,
+      status: params.promotion.expectedFiles.length ? 'present' : 'missing',
+      touchedFiles: params.promotion.expectedFiles,
+    },
+    promotionDecision: {
+      checkpointId: params.promotion.checkpointId,
+      decisionId: params.promotion.decisionId,
+      runId: params.promotion.runId,
+      status: 'approved',
+    },
+    promotionPreflight: {
+      checkpointId: params.promotion.checkpointId,
+      runId: params.promotion.runId,
+      status: 'ready',
+    },
+    targetTaskId: params.promotion.taskId,
   };
   const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
   return `futureRuntimeRouting=${readiness.summary}`;
