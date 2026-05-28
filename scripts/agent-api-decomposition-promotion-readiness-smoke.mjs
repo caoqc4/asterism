@@ -133,6 +133,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceTimelineRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineInvocationPhase=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') ?? 'missing'}`);
+  console.log(`serviceEvidenceTimelineRuntimeEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeEvidenceRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceTimelineRuntimeParentTask=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeParentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceChain') ?? 'missing'}`);
 
   if (
@@ -174,6 +176,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') !== 'api_runtime'
     || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') !== 'decomposition_draft'
+    || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeEvidenceRunId') !== 'run_cli_decomposition_smoke'
+    || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeParentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceChain') !== 'ready'
   ) {
     console.log('status=failed');

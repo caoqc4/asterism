@@ -153,7 +153,9 @@ describe('Taskplane writeback apply plans', () => {
           confirmationBoundary: 'operator_confirmed_subtask_create_many',
           draftOnlyBeforeConfirmation: true,
           runtimeContract: {
+            evidenceRunId: null,
             invocationLayer: 'api_runtime',
+            parentTaskId: 'task_project',
             phase: 'decomposition_draft',
             runtimeLabel: 'Agent API Runtime · openai / gpt-test',
             runtimeMode: 'api',

@@ -217,6 +217,8 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
     expect(partial.summary).toContain('selectedRuntimeParentTask=task_project');
     expect(partial.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
+    expect(partial.summary).toContain('timelineRuntimeEvidenceRunId=run_cli_decomposition');
+    expect(partial.summary).toContain('timelineRuntimeParentTask=task_project');
 
     const readyApplyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
@@ -277,6 +279,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
     expect(ready.summary).toContain('selectedRuntimeParentTask=task_project');
     expect(ready.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('timelineRuntimeEvidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('timelineRuntimeParentTask=task_project');
   });
 
   it('blocks Agent API decomposition promotion when apply-plan source and timeline evidence are stitched', () => {
@@ -423,6 +427,51 @@ describe('ai runtime invocation contract', () => {
     expect(wrongParent.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
     expect(wrongParent.summary).toContain('selectedRuntimeParentTask=task_other');
     expect(wrongParent.summary).toContain('selectedRuntimeParentTaskEvidenceChain=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when timeline runtime contract identity is stitched', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+    applyPlan.timeline.payload.runtimeContract = {
+      evidenceRunId: 'run_other',
+      invocationLayer: 'api_runtime',
+      parentTaskId: 'task_other',
+      phase: 'decomposition_draft',
+      runtimeMode: 'api',
+    };
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(mismatch.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
+    expect(mismatch.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
+    expect(mismatch.summary).toContain('timelineRuntimeEvidenceRunId=run_other');
+    expect(mismatch.summary).toContain('timelineRuntimeParentTask=task_other');
+    expect(mismatch.summary).toContain('selectedRuntimeEvidenceChain=missing');
   });
 
   it('blocks Agent API decomposition promotion when draft-only timeline evidence has no run identity', () => {

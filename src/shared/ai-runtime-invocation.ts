@@ -382,6 +382,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     ? applyPlan.timeline.payload.evidenceRunId.trim()
     : '';
   const timelineRuntimeContract = parseDecompositionTimelineRuntimeContract(applyPlan?.timeline.payload.runtimeContract);
+  const timelineRuntimeEvidenceRunId = timelineRuntimeContract?.evidenceRunId?.trim() || '';
+  const timelineRuntimeParentTaskId = timelineRuntimeContract?.parentTaskId?.trim() || '';
   const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
   const evidenceRunIdChainReady = Boolean(applyPlanEvidenceRunId)
     && applyPlanEvidenceRunId === timelineEvidenceRunId;
@@ -398,7 +400,13 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && selectedRuntimeParentTaskEvidenceChainReady
     && timelineRuntimeContract?.runtimeMode === selectedRuntime.runtimeMode
     && timelineRuntimeContract.invocationLayer === selectedRuntime.invocationLayer
-    && timelineRuntimeContract.phase === selectedRuntime.phase;
+    && timelineRuntimeContract.phase === selectedRuntime.phase
+    && Boolean(timelineRuntimeEvidenceRunId)
+    && timelineRuntimeEvidenceRunId === selectedRuntimeEvidenceRunId
+    && timelineRuntimeEvidenceRunId === applyPlanEvidenceRunId
+    && Boolean(timelineRuntimeParentTaskId)
+    && timelineRuntimeParentTaskId === selectedRuntimeParentTaskId
+    && timelineRuntimeParentTaskId === applyPlanParentTaskId;
   const parentTaskId = evidenceParentTaskId || applyPlanParentTaskId;
   const parentTaskIdentityReady = Boolean(applyPlanParentTaskId)
     && (!evidenceParentTaskId || evidenceParentTaskId === applyPlanParentTaskId);
@@ -521,6 +529,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `timelineRuntimeMode=${timelineRuntimeContract?.runtimeMode ?? 'missing'}`,
       `timelineInvocationLayer=${timelineRuntimeContract?.invocationLayer ?? 'missing'}`,
       `timelineInvocationPhase=${timelineRuntimeContract?.phase ?? 'missing'}`,
+      `timelineRuntimeEvidenceRunId=${timelineRuntimeEvidenceRunId || 'missing'}`,
+      `timelineRuntimeParentTask=${timelineRuntimeParentTaskId || 'missing'}`,
       `selectedRuntimeEvidenceChain=${selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `promotionMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
@@ -540,14 +550,18 @@ function parseDecompositionTimelineRuntimeContract(value: unknown): TaskplaneSub
     return null;
   }
   return {
+    evidenceRunId: typeof contract.evidenceRunId === 'string' ? contract.evidenceRunId : null,
     invocationLayer: contract.invocationLayer,
+    parentTaskId: typeof contract.parentTaskId === 'string' ? contract.parentTaskId : null,
     phase: contract.phase,
     runtimeMode: contract.runtimeMode,
   };
 }
 
 type TaskplaneSubtaskCreateManyRuntimeContractEvidence = {
+  evidenceRunId?: string | null;
   invocationLayer: 'api_runtime' | 'selected_runtime';
+  parentTaskId?: string | null;
   phase: 'decomposition_draft';
   runtimeMode: 'api' | 'codex' | 'claude';
 };

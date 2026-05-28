@@ -33,7 +33,9 @@ export type TaskplaneSubtaskCreateManyInput = {
 };
 
 export type TaskplaneSubtaskCreateManyRuntimeContract = {
+  evidenceRunId?: string | null;
   invocationLayer: 'api_runtime' | 'selected_runtime';
+  parentTaskId?: string | null;
   phase: 'decomposition_draft';
   runtimeLabel?: string | null;
   runtimeMode: 'api' | 'codex' | 'claude';
@@ -143,6 +145,13 @@ export function buildSubtaskCreateManyWritebackApplyPlan(params: {
   source?: 'agent_api_decomposition' | 'agent_cli_decomposition' | 'taskplane_write_intent';
   subtasks: TaskplaneSubtaskDraftInput[];
 }): TaskplaneSubtaskWritebackApplyPlan {
+  const runtimeContract = params.runtimeContract
+    ? {
+        ...params.runtimeContract,
+        evidenceRunId: params.runtimeContract.evidenceRunId ?? params.evidenceRunId ?? null,
+        parentTaskId: params.runtimeContract.parentTaskId ?? params.parentTaskId,
+      }
+    : null;
   return {
     action: 'subtask.create_many',
     input: {
@@ -163,7 +172,7 @@ export function buildSubtaskCreateManyWritebackApplyPlan(params: {
         evidenceRunId: params.evidenceRunId ?? null,
         nextStep: params.nextStep ?? null,
         review: params.review ?? null,
-        runtimeContract: params.runtimeContract ?? null,
+        runtimeContract,
         source: params.source ?? 'agent_cli_decomposition',
         subtaskCount: params.subtasks.length,
       },
