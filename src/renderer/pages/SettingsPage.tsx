@@ -302,6 +302,7 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
     'runtimeStartAllowed',
     'runtimeStartReady',
     'runtimeStartRequirements',
+    'runtimeStartSatisfiedRequirements',
     'runtimeStartMissingRequirements',
     'schedulerTriggerServiceConnected',
   ]);

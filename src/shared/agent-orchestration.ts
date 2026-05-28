@@ -1217,6 +1217,7 @@ export function planScheduledEventAgentTrigger(params: {
       `runtimeStartAllowed=${runtimeStartAllowed ? 'true' : 'false'}`,
       `runtimeStartReady=${runtimeStartAllowed ? 'yes' : 'no'}`,
       `runtimeStartRequirements=${runtimeStartSatisfiedRequirements.length}/${runtimeStartRequirements.length}`,
+      `runtimeStartSatisfiedRequirements=${runtimeStartSatisfiedRequirements.length ? runtimeStartSatisfiedRequirements.join(',') : 'none'}`,
       `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
       `schedulerTriggerServiceConnected=${schedulerTriggerServiceConnected ? 'true' : 'false'}`,
       'triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step',

@@ -263,6 +263,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('closed persistence/writeback/trigger gates');
     expect(decisions?.evidence.join(' ')).toContain('scheduled/event runtime-start state');
     expect(decisions?.evidence.join(' ')).toContain('runtimeStartRequirements');
+    expect(decisions?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements');
     expect(decisions?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
     expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/3 requirements');
@@ -330,6 +331,7 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartReady');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartRequirements=x/3');
+    expect(workHabits?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('CapabilityRegistry now includes scheduled/event trigger runtime-start readiness');
     expect(workHabits?.evidence.join(' ')).toContain('runtime.scheduler summary through planScheduledEventAgentTriggerFromEvidence');

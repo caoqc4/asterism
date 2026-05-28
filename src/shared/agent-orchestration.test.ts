@@ -905,6 +905,7 @@ describe('agent orchestration snapshot', () => {
     expect(plan.summary).toContain('runtimeStartAllowed=false');
     expect(plan.summary).toContain('runtimeStartReady=no');
     expect(plan.summary).toContain('runtimeStartRequirements=1/3');
+    expect(plan.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready');
     expect(plan.summary).toContain('runtimeStartMissingRequirements=scheduler_trigger_service,run_limit_count');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
     expect(plan.summary).toContain('triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
@@ -989,6 +990,7 @@ describe('agent orchestration snapshot', () => {
     expect(plan.summary).toContain('runtimeStartAllowed=true');
     expect(plan.summary).toContain('runtimeStartReady=yes');
     expect(plan.summary).toContain('runtimeStartRequirements=3/3');
+    expect(plan.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,scheduler_trigger_service,run_limit_count');
     expect(plan.summary).toContain('runtimeStartMissingRequirements=none');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=true');
   });
@@ -1212,6 +1214,7 @@ describe('agent orchestration snapshot', () => {
       ]),
     });
     expect(missingRunLimit.summary).toContain('runtimeStartRequirements=1/3');
+    expect(missingRunLimit.summary).toContain('runtimeStartSatisfiedRequirements=scheduler_trigger_service');
 
     const ready = planScheduledEventAgentTriggerFromEvidence({
       aiStatus: readyAutomationAiStatus(),
@@ -1247,6 +1250,7 @@ describe('agent orchestration snapshot', () => {
     expect(ready.evidence).toContain('targetTask=task_1');
     expect(ready.evidence).toContain('runLimit=0/3');
     expect(ready.summary).toContain('runtimeStartRequirements=3/3');
+    expect(ready.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,scheduler_trigger_service,run_limit_count');
   });
 });
 
