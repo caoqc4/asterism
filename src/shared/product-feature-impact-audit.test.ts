@@ -830,7 +830,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('Agent API execution_run readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('missing gate count visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API decomposition readiness chips');
-    expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerMetadataOwner, explicitToolDeclarationSource, and declaredToolCount chips');
+    expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');
+    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, startupProbe, providerOwnedMetadata, providerMetadataOwner, explicitToolDeclaration, explicitToolDeclarationSource, and declaredToolCount chips');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');

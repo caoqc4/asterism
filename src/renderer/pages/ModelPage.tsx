@@ -91,13 +91,27 @@ function agentApiProviderToolStatus(summary?: string | null): string | null {
 function agentApiProviderToolEvidence(summary?: string | null): {
   declaredToolCount: string | null;
   explicitToolDeclarationSource: string | null;
+  explicitToolDeclaration: string | null;
   providerMetadataOwner: string | null;
+  providerOwnedMetadata: string | null;
+  providerConfigured: string | null;
+  providerToolMissingRequirements: string | null;
+  providerToolRequirements: string | null;
+  selectedApiRuntime: string | null;
+  startupProbe: string | null;
 } {
   const text = summary ?? '';
   return {
     declaredToolCount: scalarValue(text, 'declaredToolCount'),
+    explicitToolDeclaration: scalarValue(text, 'explicitToolDeclaration'),
     explicitToolDeclarationSource: scalarValue(text, 'explicitToolDeclarationSource'),
     providerMetadataOwner: scalarValue(text, 'providerMetadataOwner'),
+    providerOwnedMetadata: scalarValue(text, 'providerOwnedMetadata'),
+    providerConfigured: scalarValue(text, 'providerConfigured'),
+    providerToolMissingRequirements: scalarValue(text, 'providerToolMissingRequirements'),
+    providerToolRequirements: scalarValue(text, 'providerToolRequirements'),
+    selectedApiRuntime: scalarValue(text, 'selectedApiRuntime'),
+    startupProbe: scalarValue(text, 'startupProbe'),
   };
 }
 
@@ -757,8 +771,29 @@ function AgentCliRuntimeSection({
                 {apiProviderToolStatus && (
                   <span>{`providerToolStatus=${apiProviderToolStatus}`}</span>
                 )}
+                {apiProviderToolEvidence.providerToolRequirements && (
+                  <span>{`providerToolRequirements=${apiProviderToolEvidence.providerToolRequirements}`}</span>
+                )}
+                {apiProviderToolEvidence.providerToolMissingRequirements && (
+                  <span>{`providerToolMissingRequirements=${apiProviderToolEvidence.providerToolMissingRequirements}`}</span>
+                )}
+                {apiProviderToolEvidence.selectedApiRuntime && (
+                  <span>{`selectedApiRuntime=${apiProviderToolEvidence.selectedApiRuntime}`}</span>
+                )}
+                {apiProviderToolEvidence.providerConfigured && (
+                  <span>{`providerConfigured=${apiProviderToolEvidence.providerConfigured}`}</span>
+                )}
+                {apiProviderToolEvidence.startupProbe && (
+                  <span>{`startupProbe=${apiProviderToolEvidence.startupProbe}`}</span>
+                )}
+                {apiProviderToolEvidence.providerOwnedMetadata && (
+                  <span>{`providerOwnedMetadata=${apiProviderToolEvidence.providerOwnedMetadata}`}</span>
+                )}
                 {apiProviderToolEvidence.providerMetadataOwner && (
                   <span>{`providerMetadataOwner=${apiProviderToolEvidence.providerMetadataOwner}`}</span>
+                )}
+                {apiProviderToolEvidence.explicitToolDeclaration && (
+                  <span>{`explicitToolDeclaration=${apiProviderToolEvidence.explicitToolDeclaration}`}</span>
                 )}
                 {apiProviderToolEvidence.explicitToolDeclarationSource && (
                   <span>{`explicitToolDeclarationSource=${apiProviderToolEvidence.explicitToolDeclarationSource}`}</span>
