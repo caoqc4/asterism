@@ -1321,6 +1321,65 @@ describe('agent orchestration snapshot', () => {
     expect(ready.summary).toContain('runtimeStartRequirements=4/4');
     expect(ready.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,scheduler_trigger_service,selected_runtime_identity,run_limit_count');
   });
+
+  it('rejects scheduled/event service evidence with unsafe Standing Approval write boundaries', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+
+    const unsafeBoundary = planScheduledEventAgentTriggerFromEvidence({
+      aiStatus: readyAutomationAiStatus(),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      runLimit: {
+        runsStartedToday: 0,
+        status: 'present',
+      },
+      schedulerTriggerService: {
+        connected: true,
+      },
+      standingApprovalRecord: {
+        createdAt: '2026-05-26T10:01:00.000Z',
+        id: 'timeline_approval',
+        policy: draft.policy,
+        schedulerTriggerAllowed: true,
+        workspaceWriteAllowed: true,
+      } as unknown as Parameters<typeof planScheduledEventAgentTriggerFromEvidence>[0]['standingApprovalRecord'],
+      task: {
+        id: 'task_1',
+        ...task,
+        timeline: [],
+      },
+    });
+
+    expect(unsafeBoundary).toMatchObject({
+      status: 'blocked',
+      runtimeStartAllowed: false,
+      runtimeStartMissingRequirements: [
+        'trigger_plan_ready',
+        'selected_runtime_identity',
+        'run_limit_count',
+      ],
+    });
+    expect(unsafeBoundary.blockedReasons).toContain('Standing Approval policy is missing.');
+    expect(unsafeBoundary.summary).toContain('schedulerTriggerServiceConnected=true');
+    expect(unsafeBoundary.summary).toContain('runtimeStartSatisfiedRequirements=scheduler_trigger_service');
+    expect(unsafeBoundary.summary).not.toContain('standingApprovalReady=yes');
+  });
 });
 
 function readyAutomationAiStatus(): Pick<AiConfigStatus, 'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'> {

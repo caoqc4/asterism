@@ -1235,14 +1235,18 @@ export function planScheduledEventAgentTrigger(params: {
 export function planScheduledEventAgentTriggerFromEvidence(
   evidence: AgentScheduledEventTriggerServiceEvidence,
 ): AgentScheduledEventTriggerPlan {
-  const standingApprovalTimeline = evidence.standingApprovalRecord
+  const standingApprovalRecord = evidence.standingApprovalRecord;
+  const standingApprovalBoundaryReady = Boolean(standingApprovalRecord)
+    && standingApprovalRecord?.schedulerTriggerAllowed === false
+    && standingApprovalRecord.workspaceWriteAllowed === false;
+  const standingApprovalTimeline = standingApprovalRecord && standingApprovalBoundaryReady
     ? [{
-        createdAt: evidence.standingApprovalRecord.createdAt,
-        id: evidence.standingApprovalRecord.id,
+        createdAt: standingApprovalRecord.createdAt,
+        id: standingApprovalRecord.id,
         payload: JSON.stringify({
-          policy: evidence.standingApprovalRecord.policy,
-          schedulerTriggerAllowed: evidence.standingApprovalRecord.schedulerTriggerAllowed,
-          workspaceWriteAllowed: evidence.standingApprovalRecord.workspaceWriteAllowed,
+          policy: standingApprovalRecord.policy,
+          schedulerTriggerAllowed: standingApprovalRecord.schedulerTriggerAllowed,
+          workspaceWriteAllowed: standingApprovalRecord.workspaceWriteAllowed,
         }),
         taskId: evidence.task.id,
         type: 'panel.standing_approval_confirmed' as const,
