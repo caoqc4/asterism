@@ -487,7 +487,7 @@ export class RunService {
     if (!runId || !this.sandboxPatchPromotionRepository) return false;
     try {
       const promotions = await this.sandboxPatchPromotionRepository.listForRun(runId);
-      return promotions.some((promotion) => promotion.status !== 'blocked');
+      return promotions.some((promotion) => promotion.status === 'applied');
     } catch {
       return false;
     }

@@ -191,7 +191,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('keeping Write Intent extraction and reviewed-patch apply boundary closed');
     expect(rightPanel?.evidence.join(' ')).toContain('Post-run Agent API execution promotion readiness now reads same-run sandbox patch promotion records');
     expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionRepository.listForRun');
-    expect(rightPanel?.evidence.join(' ')).toContain('real non-blocked promotion evidence exists');
+    expect(rightPanel?.evidence.join(' ')).toContain('real applied promotion evidence exists');
+    expect(rightPanel?.evidence.join(' ')).toContain('pending patch promotion evidence remains missing until explicit apply completes');
     expect(rightPanel?.evidence.join(' ')).toContain('parsed TASKPLANE_WRITE_INTENTS artifact.propose plus task_file.propose output and same-run patch promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('without hand-filled readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run promotion requirements and missing lists through evaluateAgentApiExecutionPromotionReadinessFromEvidence');
