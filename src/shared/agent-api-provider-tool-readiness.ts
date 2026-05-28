@@ -121,6 +121,20 @@ function normalizeProvider(value: string | null | undefined): string {
   return value?.trim().toLowerCase() ?? '';
 }
 
+function packageNameIdentifiesProvider(packageName: string, provider: string): boolean {
+  const normalizedPackage = packageName.trim().toLowerCase();
+  const normalizedProvider = provider.trim().toLowerCase();
+  if (!normalizedPackage || !normalizedProvider) return false;
+
+  const packageParts = normalizedPackage.split('/');
+  const scope = packageParts.length > 1 ? packageParts[0]?.replace(/^@/, '') : '';
+  const basename = packageParts[packageParts.length - 1] ?? normalizedPackage;
+
+  return scope === normalizedProvider
+    || basename === normalizedProvider
+    || basename.startsWith(`${normalizedProvider}-`);
+}
+
 function providerMetadataMatchesConfiguredProvider(params: {
   configuredProvider?: string | null;
   metadata?: AgentApiProviderToolReadinessServiceEvidence['providerOwnedMetadata'];
@@ -133,14 +147,14 @@ function providerMetadataMatchesConfiguredProvider(params: {
   const packageName = metadata.packageName?.trim().toLowerCase() ?? '';
   if (configuredProvider === 'openai') {
     return metadata.owner === 'openai'
-      || packageName.includes('openai');
+      || packageNameIdentifiesProvider(packageName, 'openai');
   }
   if (configuredProvider === 'anthropic') {
     return metadata.owner === 'anthropic'
-      || packageName.includes('anthropic');
+      || packageNameIdentifiesProvider(packageName, 'anthropic');
   }
   return metadata.owner === configuredProvider
-    || packageName.includes(configuredProvider);
+    || packageNameIdentifiesProvider(packageName, configuredProvider);
 }
 
 export function evaluateAgentApiProviderToolReadinessFromEvidence(

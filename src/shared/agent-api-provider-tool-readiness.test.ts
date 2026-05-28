@@ -405,6 +405,76 @@ describe('Agent API provider tool readiness', () => {
     expect(packageMatch.summary).toContain('providerMetadataMatchesSelected=yes');
   });
 
+  it('does not accept loose package substring matches as unknown-provider identity evidence', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'router',
+      explicitToolDeclarations: {
+        declaredTools: ['web_search'],
+        packageName: '@vendor/fal-openrouter-tools',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'provider',
+        packageName: '@vendor/fal-openrouter-tools',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'not_declared',
+      toolReadiness: 'not_declared',
+      missingRequirements: [
+        'provider_owned_metadata',
+        'explicit_tool_declaration',
+      ],
+    });
+    expect(readiness.summary).toContain('configuredProvider=router');
+    expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
+    expect(readiness.summary).toContain('providerOwnedMetadata=missing');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+    expect(readiness.summary).toContain('explicitToolDeclaration=missing');
+  });
+
+  it('does not accept a generic provider name embedded inside a known package name', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'ai',
+      explicitToolDeclarations: {
+        declaredTools: ['web_search'],
+        packageName: '@ai-sdk/openai',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'provider',
+        packageName: '@ai-sdk/openai',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'not_declared',
+      toolReadiness: 'not_declared',
+      missingRequirements: [
+        'provider_owned_metadata',
+        'explicit_tool_declaration',
+      ],
+    });
+    expect(readiness.summary).toContain('configuredProvider=ai');
+    expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
+    expect(readiness.summary).toContain('providerMetadataPackage=@ai-sdk/openai');
+  });
+
   it('blocks readiness when a startup probe would be needed to discover tools', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       configuredProvider: 'openai',
