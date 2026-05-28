@@ -43,6 +43,7 @@ describe('configuration safety report', () => {
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
       state: 'approval_required',
       reason: 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.',
+      diagnosticSummary: 'Runtime patch promotion routing readiness / ready=no / promotionReady=no / requirements=0/8 / promotionRequirements=0/8 / selectedRuntimeContract=missing / targetTaskIdentity=missing / patchArtifact=missing / promotionDecision=missing / promotionPreflight=missing / explicitOperatorApply=missing / sameRunEvidenceChain=missing / postApplyRunEvidence=missing / missingRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence / promotionMissingRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence / missing=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence',
       requiresApproval: true,
       startupProbePolicy: 'manual_only',
     });
@@ -74,6 +75,7 @@ describe('configuration safety report', () => {
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
       state: 'disabled_by_flag',
       reason: 'Sandbox patch promotion apply is disabled by feature flag; approvals remain preflight/no-write only and apply-to-workspace actions stay hidden.',
+      diagnosticSummary: expect.stringContaining('Runtime patch promotion routing readiness / ready=no / promotionReady=no / requirements=0/8'),
     });
     expect(report.blockedReasons).toEqual(expect.arrayContaining([
       'model.provider: Model provider or model is missing.',

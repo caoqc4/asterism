@@ -1,4 +1,5 @@
 import type { CapabilityRegistryEntry } from './capability-registry.js';
+import { evaluateRuntimePatchPromotionRoutingReadinessFromEvidence } from './runtime-patch-promotion-routing.js';
 import type { AiConfigStatus } from './types/settings.js';
 
 export type ConfigurationSafetyState =
@@ -88,6 +89,7 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
       reason: status.featureFlags.enableSandboxPatchPromotionApply
         ? 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.'
         : 'Sandbox patch promotion apply is disabled by feature flag; approvals remain preflight/no-write only and apply-to-workspace actions stay hidden.',
+      diagnosticSummary: runtimePatchPromotionRoutingDiagnosticSummary(),
       requiresApproval: true,
       startupProbePolicy: 'manual_only',
       exposesSecretValue: false,
@@ -145,6 +147,11 @@ export function buildConfigurationSafetyReport(status: AiConfigStatus): Configur
     blockedReasons,
     summary: `configured=${safeSurfaces.filter((surface) => surface.state === 'configured').length} / approvalRequired=${safeSurfaces.filter((surface) => surface.state === 'approval_required').length} / blocked=${blockedReasons.length}`,
   };
+}
+
+function runtimePatchPromotionRoutingDiagnosticSummary(): string {
+  const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({});
+  return readiness.summary;
 }
 
 function surfaceFromCapability(
