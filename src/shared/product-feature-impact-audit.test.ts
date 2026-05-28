@@ -280,6 +280,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('records panel.scheduler_decision_proposed only when ready');
     expect(decisions?.evidence.join(' ')).toContain('failed terminal runs now route a concrete failure-review policy');
     expect(decisions?.evidence.join(' ')).toContain('failureDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toContain('daily run-limit blocks now route a deduplicated run-limit review policy');
+    expect(decisions?.evidence.join(' ')).toContain('runLimitDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');
     expect(decisions?.evidence.join(' ')).toContain('selected Agent CLI modes stay product_harness/skipped');
     expect(decisions?.evidence.join(' ')).toContain('Approved checkpoint Decision resume is limited to open tool_permission');
@@ -287,8 +289,10 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('Decision actions in DecisionService and DecisionsPage pass through decision_action');
     expect(decisions?.cliOnlyClosure).toBe('supported');
     expect(decisions?.gaps.join(' ')).toContain('concrete failed-run recovery policy');
+    expect(decisions?.gaps.join(' ')).toContain('deduplicated daily run-limit review policy');
     expect(decisions?.gaps.join(' ')).toContain('broader scheduler review policies');
-    expect(decisions?.nextActions.join(' ')).toContain('additional scheduled/event review policies');
+    expect(decisions?.nextActions.join(' ')).toContain('remaining scheduled/event review policies');
+    expect(decisions?.nextActions.join(' ')).toContain('deduplicated');
     expect(decisions?.nextActions.join(' ')).toContain('real run/sweep evidence');
     expect(decisions?.nextActions.join(' ')).toContain('TaskplaneWritebackApprovalItem confirmation');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose Write Intent can now carry kind=patch');

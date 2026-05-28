@@ -354,6 +354,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Task Dynamics now accepts panel.scheduler_decision_proposed timeline events as scheduler/background Decision proposal sources, rechecks planSchedulerDecisionProposalFromEvidence with approvalQueueSurface=task_dynamics, target-task identity, and operator confirmation or target-scoped Standing Approval, then converts only ready proposals into the existing TaskplaneWritebackApprovalItem queue and decision.create apply plan after operator confirmation.',
       'SchedulerService.proposeSchedulerDecision now provides the non-panel producer entrypoint for scheduler/background Decision proposals: it reuses planSchedulerDecisionProposalFromEvidence, requires Task Dynamics timeline evidence, target-task identity, concrete operator confirmation or target-scoped Standing Approval, records panel.scheduler_decision_proposed only when ready, and keeps durable Decision creation behind the Task Dynamics approval queue.',
       'Scheduled/event Agent failed terminal runs now route a concrete failure-review policy through SchedulerService.proposeSchedulerDecision, recording a target-scoped panel.scheduler_decision_proposed recovery Decision proposal with run failure evidence, Standing Approval authorization, and failureDecisionProposals summary evidence while still requiring Task Dynamics confirmation before durable Decision creation.',
+      'Scheduled/event Agent daily run-limit blocks now route a deduplicated run-limit review policy through SchedulerService.proposeSchedulerDecision, recording one target-scoped panel.scheduler_decision_proposed limit Decision proposal per task per UTC day with run-limit sweep evidence and runLimitDecisionProposals summary evidence while preserving the no-start, approval-required boundary.',
       'Future scheduler/background Decision drafts also remain without IPC or scheduler triggers until that same operator-confirmation or standing-approval model exists.',
       'Completion verification is separate from model output.',
       'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
@@ -361,10 +362,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Tasks detail project verification now asks shared TaskAdvancementOrchestrator for a selected-task verification movement before rendering local project readiness evidence.',
     ],
     gaps: [
-      'Future background scheduler decisions now have a SchedulerService proposal producer, Task Dynamics approval queue path, and concrete failed-run recovery policy; broader scheduler review policies still need to decide when to call proposeSchedulerDecision from other real run/sweep evidence.',
+      'Future background scheduler decisions now have a SchedulerService proposal producer, Task Dynamics approval queue path, concrete failed-run recovery policy, and deduplicated daily run-limit review policy; broader scheduler review policies still need to decide when other run/sweep evidence deserves a Decision proposal.',
     ],
     nextActions: [
-      'Add additional scheduled/event review policies through SchedulerService.proposeSchedulerDecision only when real run/sweep evidence justifies a Decision proposal, then keep durable Decision creation behind the Task Dynamics TaskplaneWritebackApprovalItem confirmation and main-side writeback dispatch boundary.',
+      'Add any remaining scheduled/event review policies through SchedulerService.proposeSchedulerDecision only when real run/sweep evidence justifies a Decision proposal, keep them deduplicated where repeated cron evidence is expected, and keep durable Decision creation behind the Task Dynamics TaskplaneWritebackApprovalItem confirmation and main-side writeback dispatch boundary.',
     ],
   },
   {

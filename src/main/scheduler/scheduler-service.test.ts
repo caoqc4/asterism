@@ -968,13 +968,93 @@ describe('SchedulerService', () => {
     });
 
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
-    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('status=completed');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('started=0');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blocked=1');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 1/1.');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runLimitDecisionProposals=proposed');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('automationMissingRequirements=none');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '等待下一次运行窗口',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate daily run-limit Decision proposals already recorded today', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline({ maxRunsPerDay: 1 }),
+        {
+          id: 'timeline_run_limit_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('runLimitDecisionProposals=skipped_existing');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
   });
 
   it('counts runs started earlier in the same scheduled/event sweep against the daily limit', async () => {
@@ -1063,7 +1143,8 @@ describe('SchedulerService', () => {
     expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=trigger_plan_ready');
     expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
-    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(sweepResult.summary).toContain('runLimitDecisionProposals=proposed');
     expect(sweepResult.summaries.join(' ')).toContain('daily run limit reached: 2/2');
   });
 

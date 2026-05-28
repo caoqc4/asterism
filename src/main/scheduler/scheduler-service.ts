@@ -245,6 +245,29 @@ function getScheduledEventAgentSweepFailureEvidence(
   return evidence ?? null;
 }
 
+function isScheduledEventDailyRunLimitBlocked(result: ScheduledEventAgentTriggerResult): boolean {
+  return result.status === 'blocked'
+    && result.plan.blockedReasons.some((reason) => /daily run limit reached/i.test(reason));
+}
+
+function hasSchedulerDecisionProposalSince(
+  task: ScheduledEventAgentTaskInput,
+  title: string,
+  sinceIso: string,
+): boolean {
+  const sinceTime = Date.parse(sinceIso);
+  return task.timeline.some((event) => {
+    if (event.type !== 'panel.scheduler_decision_proposed') return false;
+    if (Date.parse(event.createdAt) < sinceTime) return false;
+    try {
+      const payload = event.payload ? JSON.parse(event.payload) as Record<string, unknown> : {};
+      return payload.title === title;
+    } catch {
+      return false;
+    }
+  });
+}
+
 export class SchedulerService {
   private jobs: ScheduledTask[] = [];
   private started = false;
@@ -401,12 +424,20 @@ export class SchedulerService {
       checkedTaskIds = tasks.map((task) => task.id);
       const runCounts = await this.countRunsStartedToday(checkedTaskIds, now);
       const results: ScheduledEventAgentTriggerResult[] = [];
+      const runLimitDecisionProposalStatuses: string[] = [];
 
       for (const task of tasks) {
         const result = await this.triggerScheduledEventAgentRun(task, now, runCounts, kind);
         results.push(result);
         if (result.status === 'started') {
           runCounts[task.id] = (runCounts[task.id] ?? 0) + 1;
+        } else if (isScheduledEventDailyRunLimitBlocked(result)) {
+          const proposal = await this.proposeScheduledEventRunLimitDecision(task, result.plan, now)
+            .catch((error: unknown) => ({
+              status: 'failed' as const,
+              summary: `runLimitDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+            }));
+          runLimitDecisionProposalStatuses.push(proposal.status);
         }
       }
 
@@ -462,6 +493,7 @@ export class SchedulerService {
         `blockedTaskSummaries=${blockedTaskSummaries.length ? blockedTaskSummaries.join('; ') : 'none'}`,
         `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
         `failureDecisionProposals=${failureDecisionProposals.length ? failureDecisionProposals.join(',') : 'none'}`,
+        `runLimitDecisionProposals=${runLimitDecisionProposalStatuses.length ? runLimitDecisionProposalStatuses.join(',') : 'none'}`,
         `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
         `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
         `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
@@ -760,6 +792,39 @@ export class SchedulerService {
       standingApprovalScopeTaskId: task.id,
       targetTaskId: task.id,
       title: '确认定时/事件 Agent 失败后的下一步',
+    });
+  }
+
+  private async proposeScheduledEventRunLimitDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent 达到每日运行上限后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'runLimitDecisionProposal=skipped_existing',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      options: [
+        '等待下一次运行窗口',
+        '调整 Standing Approval 每日运行上限',
+        '暂停自动巡检并人工复核',
+      ],
+      proposedOutcome: '等待下一次运行窗口',
+      rationale: [
+        `Scheduled/event Agent daily run limit reached for task ${task.id}.`,
+        `Current limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
+        'Taskplane should confirm whether to wait, adjust the Standing Approval limit, or pause automation.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
     });
   }
 

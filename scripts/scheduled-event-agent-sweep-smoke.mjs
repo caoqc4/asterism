@@ -117,6 +117,7 @@ try {
   assert(result.summaries.join('\n').includes('daily run limit reached: 3/3'), 'sweep did not enforce the in-sweep daily run limit');
   assert(result.summary.includes('automationMissingRequirements=none'), 'sweep summary did not expose automation missing requirements');
   assert(result.summary.includes('automationSatisfiedRequirements='), 'sweep summary did not expose automation satisfied requirements');
+  assert(result.summary.includes('runLimitDecisionProposals=proposed'), 'sweep summary did not expose run-limit Decision proposal evidence');
   assert(result.summary.includes('scheduled_event_entrypoint'), 'sweep summary did not expose satisfied scheduled/event entrypoint readiness');
   assert(service.getStatus().lastScheduledEventAgentSweepAt === '2026-05-26T11:00:00.000Z', 'completed sweep did not preserve the trigger time in scheduler status');
   assert(service.getStatus().lastScheduledEventAgentSweepSummary === result.summary, 'sweep did not persist the manual sweep summary into scheduler status');
@@ -141,7 +142,7 @@ try {
   assert(triggerCalls[0].patchIntent.includes('Run limit: 2/3.'), 'sweep did not pass persisted run-limit state into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Post-step evidence: return terminal run output for Taskplane review.'), 'sweep did not pass post-step terminal evidence guidance into the bounded run');
   assert(triggerCalls[0].patchIntent.includes('Workspace write boundary: workspaceWriteAllowed=false; proposals only.'), 'sweep did not pass workspace-write boundary into the bounded run');
-  assert(timelineEvents.length === 1, 'sweep did not record trigger timeline evidence');
+  assert(timelineEvents.length === 2, 'sweep did not record trigger and run-limit Decision proposal timeline evidence');
   assert(timelineEvents[0].type === 'panel.scheduled_event_agent_triggered', 'sweep recorded the wrong timeline event type');
   assert(timelineEvents[0].payload.runId === run.id, 'timeline evidence did not preserve the run id');
   assert(timelineEvents[0].payload.runStatus === 'running', 'timeline evidence did not preserve the run status returned by the trigger port');
@@ -167,6 +168,10 @@ try {
   assert(timelineEvents[0].payload.triggeredAt === '2026-05-26T11:00:00.000Z', 'timeline evidence did not preserve the scheduler trigger time');
   assert(timelineEvents[0].payload.runLimit?.runsStartedToday === 2, 'timeline evidence did not preserve the persisted run-limit count');
   assert(timelineEvents[0].payload.runLimit?.maxRunsPerDay === 3, 'timeline evidence did not preserve the Standing Approval run limit');
+  assert(timelineEvents[1].type === 'panel.scheduler_decision_proposed', 'sweep did not record run-limit Decision proposal evidence');
+  assert(timelineEvents[1].payload.targetTaskId === 'task_scheduled_event_sweep_smoke', 'run-limit Decision proposal did not preserve target task identity');
+  assert(timelineEvents[1].payload.title === '确认定时/事件 Agent 达到每日运行上限后的下一步', 'run-limit Decision proposal did not preserve the recovery title');
+  assert(timelineEvents[1].payload.proposedOutcome === '等待下一次运行窗口', 'run-limit Decision proposal did not preserve the recommendation');
   assert(beforeWorkspace === afterWorkspace, 'scheduled/event Agent sweep smoke mutated the workspace fixture');
 
   const missingTimelineTriggerCalls = [];
@@ -882,9 +887,11 @@ try {
   assert(cronSoakSecondResult.blockedReasons.includes('Scheduled/event trigger daily run limit reached: 1/1.'), 'cron soak second sweep did not expose persisted daily cap evidence');
   assert(cronSoakSecondResult.automationMissingRequirements.length === 0, 'cron soak second sweep should keep automation readiness satisfied while run-limit blocks');
   assert(cronSoakSecondResult.summary.includes('automationMissingRequirements=none'), 'cron soak second sweep summary did not preserve automation-readiness status');
+  assert(cronSoakSecondResult.summary.includes('runLimitDecisionProposals=proposed'), 'cron soak second sweep summary did not preserve run-limit Decision proposal evidence');
   assert(cronSoakSecondResult.triggerRunEvidenceStatus === 'not_started', 'cron soak second sweep should not start trigger evidence');
   assert(cronSoakTriggerCalls.length === 1, 'cron soak should only call the trigger port once across two sweeps');
-  assert(cronSoakTimelineEvents.length === 1, 'cron soak should only record timeline evidence for the first started run');
+  assert(cronSoakTimelineEvents.length === 2, 'cron soak should record started-run evidence plus one run-limit Decision proposal');
+  assert(cronSoakTimelineEvents[1].type === 'panel.scheduler_decision_proposed', 'cron soak did not record the run-limit Decision proposal');
   assert(cronSoakService.getStatus().lastScheduledEventAgentSweepSummary === cronSoakSecondResult.summary, 'cron soak did not persist the second sweep summary');
 
   const startupService = new SchedulerService(
