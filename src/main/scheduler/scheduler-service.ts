@@ -284,10 +284,12 @@ function hasSchedulerDecisionProposalSince(
   const sinceTime = Date.parse(sinceIso);
   return task.timeline.some((event) => {
     if (event.type !== 'panel.scheduler_decision_proposed') return false;
-    if (Date.parse(event.createdAt) < sinceTime) return false;
+    if (event.taskId !== task.id) return false;
+    const eventTime = Date.parse(event.createdAt);
+    if (!Number.isFinite(eventTime) || eventTime < sinceTime) return false;
     try {
       const payload = event.payload ? JSON.parse(event.payload) as Record<string, unknown> : {};
-      return payload.title === title;
+      return payload.title === title && payload.targetTaskId === task.id;
     } catch {
       return false;
     }

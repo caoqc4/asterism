@@ -465,6 +465,7 @@ try {
           createdAt: '2026-05-26T09:00:00.000Z',
           id: 'timeline_failed_run_decision_existing',
           payload: JSON.stringify({
+            targetTaskId: 'task_scheduled_event_sweep_smoke',
             title: '确认定时/事件 Agent 失败后的下一步',
           }),
           taskId: 'task_scheduled_event_sweep_smoke',

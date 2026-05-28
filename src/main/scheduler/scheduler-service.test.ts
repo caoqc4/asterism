@@ -1016,6 +1016,7 @@ describe('SchedulerService', () => {
           taskId: 'task_auto',
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
+            targetTaskId: 'task_auto',
             title: '确认定时/事件 Agent 失败后的下一步',
           }),
           createdAt: '2026-05-26T09:00:00.000Z',
@@ -1087,6 +1088,90 @@ describe('SchedulerService', () => {
         runId: 'run_scheduled_callback_2',
         runStatus: 'failed',
         triggerKind: 'cron',
+      }),
+    }));
+  });
+
+  it('does not let title-only scheduler Decision proposal history suppress target-scoped proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_failed_run_decision_without_target',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent 失败后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: 'Model failed safely with stale title-only history.',
+        id: 'run_scheduled_callback_target_scoped',
+        status: 'failed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('failureDecisionProposals=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        evidenceRunId: 'run_scheduled_callback_target_scoped',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 失败后的下一步',
       }),
     }));
   });
@@ -1196,6 +1281,7 @@ describe('SchedulerService', () => {
           taskId: 'task_auto',
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
+            targetTaskId: 'task_auto',
             title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
           }),
           createdAt: '2026-05-26T09:00:00.000Z',
@@ -1339,6 +1425,7 @@ describe('SchedulerService', () => {
           taskId: 'task_auto',
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
+            targetTaskId: 'task_auto',
             title: '确认定时/事件 Agent 运行计数证据异常后的下一步',
           }),
           createdAt: '2026-05-26T09:00:00.000Z',
@@ -1487,6 +1574,7 @@ describe('SchedulerService', () => {
           taskId: 'task_auto',
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
+            targetTaskId: 'task_auto',
             title: '确认定时/事件 Agent readiness 阻塞后的下一步',
           }),
           createdAt: '2026-05-26T09:00:00.000Z',
@@ -1860,6 +1948,7 @@ describe('SchedulerService', () => {
           taskId: 'task_auto',
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
+            targetTaskId: 'task_auto',
             title: '确认定时/事件 Agent sweep 异常后的下一步',
           }),
           createdAt: '2026-05-26T09:00:00.000Z',
@@ -2121,6 +2210,7 @@ describe('SchedulerService', () => {
           taskId: 'task_auto',
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
+            targetTaskId: 'task_auto',
             title: '确认定时/事件 Agent timeline 证据写入失败后的下一步',
           }),
           createdAt: '2026-05-26T09:00:00.000Z',
@@ -3087,6 +3177,7 @@ describe('SchedulerService', () => {
           taskId: 'task_auto',
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
+            targetTaskId: 'task_auto',
             title: '确认定时/事件 Agent 终态证据缺失后的下一步',
           }),
           createdAt: '2026-05-26T10:45:00.000Z',
@@ -3406,6 +3497,7 @@ describe('SchedulerService', () => {
           taskId: 'task_auto',
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
+            targetTaskId: 'task_auto',
             title: '确认定时/事件 Agent Run 目标任务不一致后的下一步',
           }),
           createdAt: '2026-05-26T10:30:00.000Z',
