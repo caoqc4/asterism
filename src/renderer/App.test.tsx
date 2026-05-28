@@ -1353,6 +1353,27 @@ describe('App redesign v1', () => {
     expect(screen.getByTitle('scheduledEventAgentSweep=cron / status=skipped / reason=waiting_for_first_tick')).toBeTruthy();
   });
 
+  it('shows scheduler stale-run recovery evidence in Brief', async () => {
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    const recoverySummary = 'schedulerStaleRunRecovery=completed / checked=2 / recovered=1 / recoveredRunIds=run_stale_1 / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no';
+    homeBrief.schedulerStatus = {
+      enabled: true,
+      running: true,
+      lastBriefAt: null,
+      lastRunSweepAt: '2026-05-27T06:17:00.000Z',
+      lastRunSweepSummary: recoverySummary,
+      lastScheduledEventAgentSweepAt: null,
+      lastScheduledEventAgentSweepSummary: 'scheduledEventAgentSweep=cron / status=skipped / reason=waiting_for_first_tick',
+      scheduledEventAgentSweepJobConnected: true,
+    };
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+
+    render(<App />);
+
+    expect(await screen.findByText('运行恢复: 已检查 · 检查 2 · 恢复 1')).toBeTruthy();
+    expect(screen.getByTitle(recoverySummary)).toBeTruthy();
+  });
+
   it('shows skipped scheduled/event sweep reasons in Brief without calling them completed runs', async () => {
     const homeBrief = buildBriefData(harness.tasks, harness.decisions);
     const sweepSummary = 'scheduledEventAgentSweep=cron / status=skipped / reason=ports_not_connected / missingPorts=run_port,timeline_port,task_source_port / triggerRunEvidenceStatus=not_started';

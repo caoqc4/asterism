@@ -127,6 +127,18 @@ function schedulerSweepLabel(data: HomeBriefData | null): string | null {
   return '自动巡检: 已启用';
 }
 
+function schedulerRecoveryLabel(data: HomeBriefData | null): string | null {
+  const summary = data?.schedulerStatus.lastRunSweepSummary ?? '';
+  if (!summary) return null;
+  const checked = summary.match(/(?:^| \/ )checked=(\d+)(?: \/|$)/)?.[1];
+  const recovered = summary.match(/(?:^| \/ )recovered=(\d+)(?: \/|$)/)?.[1];
+  return [
+    '运行恢复: 已检查',
+    checked !== undefined ? `检查 ${checked}` : null,
+    recovered !== undefined ? `恢复 ${recovered}` : null,
+  ].filter(Boolean).join(' · ');
+}
+
 function schedulerSweepCountLabel(summary: string): string | null {
   const checked = summary.match(/(?:^| \/ )checked=(\d+)(?: \/|$)/)?.[1];
   const started = summary.match(/(?:^| \/ )started=(\d+)(?: \/|$)/)?.[1];
@@ -314,6 +326,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
   const waitingCount = tasks.filter((t) => t.status === 'waiting').length;
   const recentBriefSnapshots = briefData?.recentBriefSnapshots ?? [];
   const scheduledSweepLabel = schedulerSweepLabel(briefData);
+  const scheduledRecoveryLabel = schedulerRecoveryLabel(briefData);
 
   return (
     <div className="brief-page">
@@ -367,6 +380,17 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
           >
             <span className={briefData?.schedulerStatus.running ? 'dot running' : 'dot'} />
             {scheduledSweepLabel}
+          </div>
+        )}
+        {scheduledRecoveryLabel && (
+          <div
+            className="stat-chip"
+            title={briefData?.schedulerStatus.lastRunSweepSummary
+              ?? briefData?.schedulerStatus.lastRunSweepAt
+              ?? undefined}
+          >
+            <span className="dot" />
+            {scheduledRecoveryLabel}
           </div>
         )}
       </div>
