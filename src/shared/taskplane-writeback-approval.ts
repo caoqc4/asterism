@@ -9,13 +9,17 @@ import {
 import {
   buildTaskplaneWritebackProposalsFromText,
   type TaskplaneTaskFileWritebackProposal,
+  type TaskplaneStructuredWritebackProposal,
 } from './taskplane-writeback-proposal.js';
+import { planSchedulerDecisionProposalFromEvidence } from './scheduler-decision-proposal.js';
+import type { TaskplaneDecisionCreateIntent } from './taskplane-write-intent.js';
 import { buildTaskMemoryWriteApplyPlan } from './task-memory-write-proposal.js';
 import type { ArtifactRecord } from './types/artifact.js';
 import type { BlockerRecord } from './types/blocker.js';
 import type { DecisionRecord } from './types/decision.js';
 import type { RunDetailRecord } from './types/run.js';
 import type { SourceContextRecord } from './types/source-context.js';
+import type { TimelineEventRecord } from './types/task.js';
 import type { TaskFileRecord } from './types/task-file.js';
 
 export type TaskplaneWritebackApprovalKind =
@@ -24,6 +28,7 @@ export type TaskplaneWritebackApprovalKind =
   | 'structured'
   | 'task_file'
   | 'task_memory'
+  | 'scheduler_decision'
   | 'task_record';
 
 export type TaskplaneWritebackApprovalItem = {
@@ -32,7 +37,7 @@ export type TaskplaneWritebackApprovalItem = {
   kind: TaskplaneWritebackApprovalKind;
   plan: TaskplaneWritebackApplyPlan;
   runId: string;
-  source: 'runtime_write_intent' | 'task_memory_guidance';
+  source: 'runtime_write_intent' | 'scheduler_decision_proposal' | 'task_memory_guidance';
   summary: string;
   taskId: string;
   title: string;
@@ -51,6 +56,7 @@ export function buildTaskplaneWritebackApprovalItems(params: {
   date?: Date;
   existing?: TaskplaneWritebackApprovalExistingState;
   runDetails: RunDetailRecord[];
+  timeline?: TimelineEventRecord[] | null;
   taskId: string;
   taskTitle: string;
 }): TaskplaneWritebackApprovalItem[] {
@@ -190,7 +196,122 @@ export function buildTaskplaneWritebackApprovalItems(params: {
     }
   }
 
+  for (const event of params.timeline ?? []) {
+    const schedulerDecisionItem = buildSchedulerDecisionApprovalItem({
+      event,
+      existing: params.existing,
+      taskId: params.taskId,
+    });
+    if (schedulerDecisionItem) items.push(schedulerDecisionItem);
+  }
+
   return dedupeApprovalItems(items);
+}
+
+type SchedulerDecisionProposalTimelinePayload = {
+  authorization?: 'operator_confirmation' | 'standing_approval' | 'operator_confirmation,standing_approval';
+  evidenceRunId?: string | null;
+  operatorConfirmed?: boolean;
+  operatorId?: string | null;
+  options?: unknown;
+  proposedOutcome?: string | null;
+  rationale?: string | null;
+  standingApprovalActive?: boolean;
+  standingApprovalPolicyId?: string | null;
+  standingApprovalScopeTaskId?: string | null;
+  targetTaskId?: string | null;
+  title?: string | null;
+};
+
+function buildSchedulerDecisionApprovalItem(params: {
+  event: TimelineEventRecord;
+  existing: TaskplaneWritebackApprovalExistingState | null | undefined;
+  taskId: string;
+}): TaskplaneWritebackApprovalItem | null {
+  if (params.event.type !== 'panel.scheduler_decision_proposed') return null;
+  const payload = parseSchedulerDecisionPayload(params.event.payload);
+  if (!payload) return null;
+  const targetTaskId = payload.targetTaskId?.trim() || params.event.taskId;
+  if (targetTaskId !== params.taskId) return null;
+
+  const readiness = planSchedulerDecisionProposalFromEvidence({
+    approvalQueue: {
+      connected: true,
+      surface: 'task_dynamics',
+    },
+    operatorConfirmation: {
+      confirmed: payload.operatorConfirmed === true,
+      operatorId: payload.operatorId ?? null,
+    },
+    standingApproval: {
+      active: payload.standingApprovalActive === true,
+      policyId: payload.standingApprovalPolicyId ?? null,
+      scopeTaskId: payload.standingApprovalScopeTaskId ?? null,
+    },
+    targetTaskId,
+  });
+  if (readiness.status !== 'ready' || !payload.title?.trim() || !payload.rationale?.trim()) {
+    return null;
+  }
+
+  const evidenceRunId = payload.evidenceRunId?.trim() || params.event.id;
+  const intent: TaskplaneDecisionCreateIntent = {
+    evidenceRunId,
+    options: parseStringList(payload.options),
+    proposedOutcome: payload.proposedOutcome?.trim() || undefined,
+    rationale: payload.rationale.trim(),
+    taskId: params.taskId,
+    title: payload.title.trim(),
+    type: 'decision.create',
+  };
+  const proposal: TaskplaneStructuredWritebackProposal = {
+    detail: intent.rationale,
+    evidenceRunId,
+    intent,
+    title: `调度决策提案：${intent.title}`,
+  };
+  if (hasStructuredWriteback(params.existing, evidenceRunId, proposal)) return null;
+
+  const plan = buildStructuredWritebackApplyPlan({
+    proposal,
+    sourceLabel: 'Scheduler/background Decision proposal',
+    taskId: params.taskId,
+  });
+
+  return {
+    detail: [
+      intent.rationale,
+      readiness.summary,
+    ].filter(Boolean).join('\n'),
+    id: approvalId(params.event.id, 'scheduler_decision', intent.title),
+    kind: 'scheduler_decision',
+    plan,
+    runId: evidenceRunId,
+    source: 'scheduler_decision_proposal',
+    summary: '已通过 Task Dynamics 队列、目标任务身份和授权检查；确认后创建 Decision。',
+    taskId: params.taskId,
+    title: proposal.title,
+  };
+}
+
+function parseSchedulerDecisionPayload(payload: string | null): SchedulerDecisionProposalTimelinePayload | null {
+  if (!payload) return null;
+  try {
+    const parsed = JSON.parse(payload) as unknown;
+    return isRecord(parsed) ? parsed as SchedulerDecisionProposalTimelinePayload : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseStringList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value.map((item) => typeof item === 'string' ? item.trim() : '').filter(Boolean);
+  return items.length ? items : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function buildTaskFileApprovalItem(params: {

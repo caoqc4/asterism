@@ -128,6 +128,72 @@ describe('Taskplane writeback approval items', () => {
       title: '更新 Task.md',
     }]);
   });
+
+  it('turns authorized scheduler Decision proposal timeline events into the same approval queue', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_decision',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          evidenceRunId: 'run_scheduler_1',
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          rationale: '最近一次自动巡检已经生成可审核证据，需要确认后续策略。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toMatchObject([{
+      kind: 'scheduler_decision',
+      plan: {
+        action: 'decision.create',
+        input: {
+          sourceId: 'run_scheduler_1',
+          sourceLabel: 'Scheduler/background Decision proposal',
+          taskId: 'task_1',
+          title: '确认自动巡检策略',
+        },
+      },
+      summary: expect.stringContaining('目标任务身份和授权检查'),
+      source: 'scheduler_decision_proposal',
+      title: '调度决策提案：确认自动巡检策略',
+    }]);
+    expect(items[0]?.detail).toContain('proposalReady=yes');
+    expect(items[0]?.detail).toContain('approvalQueueSurface=task_dynamics');
+  });
+
+  it('blocks scheduler Decision proposal timeline events without target-scoped authorization', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_decision',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          rationale: '需要确认后续策略。',
+          standingApprovalActive: true,
+          standingApprovalPolicyId: 'policy_1',
+          standingApprovalScopeTaskId: 'task_other',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
 });
 
 function buildRunDetail(partial: Partial<RunDetailRecord> = {}): RunDetailRecord {

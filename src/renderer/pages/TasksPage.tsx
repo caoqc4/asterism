@@ -1973,6 +1973,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         runDetails: selectedRuns
           .map((run) => selectedRunDetailsById[run.id])
           .filter((detail): detail is RunDetailRecord => Boolean(detail)),
+        timeline: selectedTaskDetail?.timeline ?? [],
         taskId: selectedTask.id,
         taskTitle: selectedTask.title,
       }).filter((item) => !appliedWritebackApprovalIds[item.id])
@@ -4244,7 +4245,7 @@ function TaskTimelineView({
                   <div className="task-writeback-approval-main">
                     <div className="task-writeback-approval-title">
                       <strong>{item.title}</strong>
-                      <span>{item.source === 'task_memory_guidance' ? '任务记忆' : 'Write Intent'}</span>
+                      <span>{writebackApprovalSourceLabel(item)}</span>
                     </div>
                     <p>{item.summary}</p>
                     <small>{truncateRuntimeApprovalDetail(item.detail)}</small>
@@ -4359,6 +4360,12 @@ function truncateRuntimeApprovalDetail(value: string): string {
   const compact = value.replace(/\s+/g, ' ').trim();
   if (compact.length <= 160) return compact;
   return `${compact.slice(0, 157)}...`;
+}
+
+function writebackApprovalSourceLabel(item: TaskplaneWritebackApprovalItem): string {
+  if (item.source === 'task_memory_guidance') return '任务记忆';
+  if (item.source === 'scheduler_decision_proposal') return '调度提案';
+  return 'Write Intent';
 }
 
 function formatRuntimeReplayGroupTimeRange(group: RuntimeReplayGroup): string {

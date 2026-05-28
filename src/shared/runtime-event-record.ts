@@ -534,6 +534,7 @@ function timelineDetail(type: string, payload: string | null): string | null {
   if (type === 'panel.task_goal_paused') return formatTaskGoalControlDetail(payload, '已暂停');
   if (type === 'panel.task_goal_resumed') return formatTaskGoalControlDetail(payload, '已恢复');
   if (type === 'panel.runtime_native_goal_requested') return formatRuntimeNativeGoalRequestedDetail(payload);
+  if (type === 'panel.scheduler_decision_proposed') return formatSchedulerDecisionProposedDetail(payload);
   if (type === 'panel.scheduled_event_agent_triggered') return formatScheduledEventAgentTriggeredDetail(payload);
   if (type.startsWith('completion_criteria.')) return formatCompletionCriteriaDetail(payload);
   if (type.startsWith('task_dependency.')) return formatTaskDependencyDetail(payload);
@@ -550,6 +551,27 @@ function timelineDetail(type: string, payload: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+function formatSchedulerDecisionProposedDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const title = typeof parsed.title === 'string' && parsed.title.trim()
+    ? `提案：${parsed.title.trim()}`
+    : null;
+  const targetTaskId = typeof parsed.targetTaskId === 'string' && parsed.targetTaskId.trim()
+    ? `目标任务：${parsed.targetTaskId.trim()}`
+    : null;
+  const authorization = typeof parsed.authorization === 'string' && parsed.authorization.trim()
+    ? `授权：${parsed.authorization.trim()}`
+    : null;
+  const approvalQueueSurface = typeof parsed.approvalQueueSurface === 'string' && parsed.approvalQueueSurface.trim()
+    ? `审批队列：${parsed.approvalQueueSurface.trim()}`
+    : '审批队列：task_dynamics';
+  const proposedOutcome = typeof parsed.proposedOutcome === 'string' && parsed.proposedOutcome.trim()
+    ? `建议：${parsed.proposedOutcome.trim()}`
+    : null;
+  return [title, targetTaskId, approvalQueueSurface, authorization, proposedOutcome].filter(Boolean).join(' / ') || null;
 }
 
 function formatTaskGoalUpdatedDetail(payload: string): string | null {

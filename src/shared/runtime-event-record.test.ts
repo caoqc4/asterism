@@ -211,6 +211,18 @@ describe('runtime event record projection', () => {
           }),
           createdAt: '2026-05-14T08:04:00.000Z',
         },
+        {
+          id: 'timeline-scheduler-decision',
+          taskId: 'task-1',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            authorization: 'standing_approval',
+            proposedOutcome: '继续自动巡检',
+            targetTaskId: 'task-1',
+            title: '确认自动巡检策略',
+          }),
+          createdAt: '2026-05-14T08:04:30.000Z',
+        },
       ],
     });
 
@@ -244,6 +256,10 @@ describe('runtime event record projection', () => {
     expect(events.find((event) => event.sourceId === 'timeline-scheduled-trigger')).toMatchObject({
       title: '定时/事件 Agent 已启动',
       detail: 'Run：run-scheduled-1 / 任务：task-1 / 计划：Scheduled report refresh ready / 状态：completed / 终态证据：已记录 / 触发证据：可复核 / 触发证据项：context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step / 自动化准备：已满足 / 启动门：已满足 / 触发：自动巡检 / 授权：standing_approval:task-1:coding:local_sandbox / 限额：1/3 / 写入：提案模式',
+    });
+    expect(events.find((event) => event.sourceId === 'timeline-scheduler-decision')).toMatchObject({
+      title: '调度决策提案已进入审批队列',
+      detail: '提案：确认自动巡检策略 / 目标任务：task-1 / 审批队列：task_dynamics / 授权：standing_approval / 建议：继续自动巡检',
     });
   });
 
