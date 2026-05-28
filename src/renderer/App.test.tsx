@@ -4955,6 +4955,7 @@ describe('App redesign v1', () => {
             id: 'sandbox.patch_promotion',
             state: 'approval_required',
             reason: 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.',
+            diagnosticSummary: 'Runtime patch promotion routing readiness / promotionReady=no / promotionRequirements=7/8 / selectedRuntimeContract=missing / targetTaskIdentity=ready / sameRunEvidenceChain=ready / explicitOperatorApply=ready / postApplyRunEvidence=ready / operatorId=local_operator / sameRunId=run_patch_1 / touchedFileCount=1 / touchedFiles=notes.md',
             requiresApproval: true,
             startupProbePolicy: 'manual_only',
             exposesSecretValue: false,
@@ -5002,6 +5003,18 @@ describe('App redesign v1', () => {
     expect(screen.getByText('sandbox.patch_promotion')).toBeTruthy();
     expect(screen.getByText(/explicit operator actions only/)).toBeTruthy();
     expect(screen.getByText(/reviewed patch evidence, operator confirmation, and promotion preflight/)).toBeTruthy();
+    const patchPromotionEvidence = screen.getByLabelText('sandbox.patch_promotion evidence');
+    expect(within(patchPromotionEvidence).getByText('promotionReady=no')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('promotionRequirements=7/8')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('selectedRuntimeContract=missing')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('targetTaskIdentity=ready')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('sameRunEvidenceChain=ready')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('explicitOperatorApply=ready')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('postApplyRunEvidence=ready')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('operatorId=local_operator')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('sameRunId=run_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('touchedFileCount=1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('touchedFiles=notes.md')).toBeTruthy();
     const schedulerEvidence = screen.getByLabelText('runtime.scheduler evidence');
     expect(within(schedulerEvidence).getByText('proposalReady=no')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('approvalQueueSurface=missing')).toBeTruthy();

@@ -49,10 +49,12 @@ describe('configuration safety report', () => {
     expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')).toMatchObject({
       state: 'approval_required',
       reason: 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.',
-      diagnosticSummary: 'Runtime patch promotion routing readiness / ready=no / promotionReady=no / requirements=0/8 / promotionRequirements=0/8 / selectedRuntimeContract=missing / targetTaskIdentity=missing / patchArtifact=missing / promotionDecision=missing / promotionPreflight=missing / explicitOperatorApply=missing / sameRunEvidenceChain=missing / postApplyRunEvidence=missing / missingRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence / promotionMissingRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence / missing=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence',
+      diagnosticSummary: expect.stringContaining('Runtime patch promotion routing readiness / ready=no / promotionReady=no / requirements=0/8'),
       requiresApproval: true,
       startupProbePolicy: 'manual_only',
     });
+    expect(report.surfaces.find((surface) => surface.id === 'sandbox.patch_promotion')?.diagnosticSummary)
+      .toContain('operatorId=missing / patchRunId=missing / decisionRunId=missing / preflightRunId=missing / postApplyRunId=missing / sameRunId=missing / touchedFileCount=0 / touchedFiles=none');
   });
 
   it('explains blocked missing or disabled configuration', () => {

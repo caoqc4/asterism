@@ -153,6 +153,21 @@ describe('runtime patch promotion routing readiness', () => {
     });
     expect(partial.summary).toContain('requirements=5/8');
     expect(partial.summary).toContain('sameRunEvidenceChain=missing');
+    expect(partial.summary).toContain('runtimeMode=api');
+    expect(partial.summary).toContain('invocationLayer=api_runtime');
+    expect(partial.summary).toContain('targetTask=task_1');
+    expect(partial.summary).toContain('patchArtifactId=artifact_patch_1');
+    expect(partial.summary).toContain('promotionDecisionId=decision_patch_1');
+    expect(partial.summary).toContain('promotionCheckpointId=checkpoint_patch_1');
+    expect(partial.summary).toContain('preflightCheckpointId=checkpoint_patch_1');
+    expect(partial.summary).toContain('operatorId=missing');
+    expect(partial.summary).toContain('patchRunId=run_patch_1');
+    expect(partial.summary).toContain('decisionRunId=run_patch_1');
+    expect(partial.summary).toContain('preflightRunId=run_patch_2');
+    expect(partial.summary).toContain('postApplyRunId=missing');
+    expect(partial.summary).toContain('sameRunId=missing');
+    expect(partial.summary).toContain('touchedFileCount=0');
+    expect(partial.summary).toContain('touchedFiles=none');
 
     const ready = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
@@ -195,5 +210,13 @@ describe('runtime patch promotion routing readiness', () => {
     });
     expect(ready.summary).toContain('requirements=8/8');
     expect(ready.summary).toContain('sameRunEvidenceChain=ready');
+    expect(ready.summary).toContain('operatorId=operator_1');
+    expect(ready.summary).toContain('patchRunId=run_patch_1');
+    expect(ready.summary).toContain('decisionRunId=run_patch_1');
+    expect(ready.summary).toContain('preflightRunId=run_patch_1');
+    expect(ready.summary).toContain('postApplyRunId=run_patch_1');
+    expect(ready.summary).toContain('sameRunId=run_patch_1');
+    expect(ready.summary).toContain('touchedFileCount=1');
+    expect(ready.summary).toContain('touchedFiles=src/app.ts');
   });
 });

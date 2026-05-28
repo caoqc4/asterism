@@ -259,9 +259,23 @@ function ConfigurationSafetySection({ report }: { report: ConfigurationSafetyRep
 }
 
 function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): string[] {
+  if (surface.id === 'sandbox.patch_promotion') {
+    return configurationSafetyScalarChips(surface, [
+      'promotionReady',
+      'promotionRequirements',
+      'selectedRuntimeContract',
+      'targetTaskIdentity',
+      'sameRunEvidenceChain',
+      'explicitOperatorApply',
+      'postApplyRunEvidence',
+      'operatorId',
+      'sameRunId',
+      'touchedFileCount',
+      'touchedFiles',
+    ]);
+  }
   if (surface.id !== 'runtime.scheduler') return [];
-  const text = `${surface.reason} / ${surface.diagnosticSummary ?? ''}`;
-  return [
+  return configurationSafetyScalarChips(surface, [
     'proposalReady',
     'approvalQueueSurface',
     'authorization',
@@ -271,7 +285,12 @@ function configurationSafetyEvidenceChips(surface: ConfigurationSafetySurface): 
     'standingApprovalActive',
     'runtimeStartRequirements',
     'runtimeStartMissingRequirements',
-  ].map((key) => {
+  ]);
+}
+
+function configurationSafetyScalarChips(surface: ConfigurationSafetySurface, keys: string[]): string[] {
+  const text = `${surface.reason} / ${surface.diagnosticSummary ?? ''}`;
+  return keys.map((key) => {
     const value = scalarSummaryValue(text, key);
     return value ? `${key}=${value}` : null;
   }).filter((chip): chip is string => Boolean(chip));

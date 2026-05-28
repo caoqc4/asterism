@@ -89,6 +89,14 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidencePromotionReady=${serviceEvidencePartial.ready ? 'yes' : 'no'}`);
   console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/8`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidencePatchArtifactId=${scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') ?? 'missing'}`);
+  console.log(`serviceEvidencePromotionDecisionId=${scalarValue(serviceEvidencePartial.summary, 'promotionDecisionId') ?? 'missing'}`);
+  console.log(`serviceEvidenceOperatorId=${scalarValue(serviceEvidencePartial.summary, 'operatorId') ?? 'missing'}`);
+  console.log(`serviceEvidencePatchRunId=${scalarValue(serviceEvidencePartial.summary, 'patchRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceDecisionRunId=${scalarValue(serviceEvidencePartial.summary, 'decisionRunId') ?? 'missing'}`);
+  console.log(`serviceEvidencePreflightRunId=${scalarValue(serviceEvidencePartial.summary, 'preflightRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceSameRunId=${scalarValue(serviceEvidencePartial.summary, 'sameRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceTouchedFileCount=${scalarValue(serviceEvidencePartial.summary, 'touchedFileCount') ?? 'missing'}`);
 
   if (
     blocked.ready
@@ -98,6 +106,14 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || serviceEvidencePartial.ready
     || serviceEvidencePartial.satisfiedRequirements.length !== 5
     || !serviceEvidencePartial.missingRequirements.includes('same_run_evidence_chain')
+    || scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') !== 'artifact_patch_1'
+    || scalarValue(serviceEvidencePartial.summary, 'promotionDecisionId') !== 'decision_patch_1'
+    || scalarValue(serviceEvidencePartial.summary, 'operatorId') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'patchRunId') !== 'run_patch_1'
+    || scalarValue(serviceEvidencePartial.summary, 'decisionRunId') !== 'run_patch_1'
+    || scalarValue(serviceEvidencePartial.summary, 'preflightRunId') !== 'run_patch_2'
+    || scalarValue(serviceEvidencePartial.summary, 'sameRunId') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'touchedFileCount') !== '0'
   ) {
     console.log('status=failed');
     return 1;
@@ -105,6 +121,12 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
 
   console.log('status=passed');
   return 0;
+}
+
+function scalarValue(summary, key) {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() ?? null;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

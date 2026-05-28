@@ -122,6 +122,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const preflightRunId = evidence.promotionPreflight?.runId?.trim() || '';
   const postApplyRunId = evidence.postApplyRunEvidence?.runId?.trim() || '';
   const selectedRuntime = evidence.selectedRuntimeContract;
+  const touchedFiles = evidence.postApplyRunEvidence?.touchedFiles
+    ?.map((file) => file.trim())
+    .filter(Boolean) ?? [];
 
   const selectedRuntimeContractReady = (
     selectedRuntime?.phase === 'execution_run'
@@ -154,7 +157,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const postApplyRunEvidenceReady = (
     evidence.postApplyRunEvidence?.status === 'present'
     && Boolean(postApplyRunId)
-    && (evidence.postApplyRunEvidence.touchedFiles?.length ?? 0) > 0
+    && touchedFiles.length > 0
   );
   const sameRunEvidenceChainReady = (
     patchArtifactReady
@@ -166,7 +169,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && patchRunId === postApplyRunId
   );
 
-  return evaluateRuntimePatchPromotionRoutingReadiness({
+  const readiness = evaluateRuntimePatchPromotionRoutingReadiness({
     explicitOperatorApply,
     patchArtifactReady,
     postApplyRunEvidenceReady,
@@ -176,4 +179,26 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     selectedRuntimeContractReady,
     targetTaskIdentityReady: Boolean(evidence.targetTaskId?.trim()),
   });
+
+  return {
+    ...readiness,
+    summary: [
+      readiness.summary,
+      `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
+      `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
+      `targetTask=${evidence.targetTaskId?.trim() || 'missing'}`,
+      `patchArtifactId=${evidence.patchArtifact?.artifactId?.trim() || 'missing'}`,
+      `promotionDecisionId=${evidence.promotionDecision?.decisionId?.trim() || 'missing'}`,
+      `promotionCheckpointId=${evidence.promotionDecision?.checkpointId?.trim() || 'missing'}`,
+      `preflightCheckpointId=${evidence.promotionPreflight?.checkpointId?.trim() || 'missing'}`,
+      `operatorId=${explicitOperatorApply ? (evidence.explicitOperatorApply?.operatorId?.trim() ?? 'missing') : 'missing'}`,
+      `patchRunId=${patchRunId || 'missing'}`,
+      `decisionRunId=${decisionRunId || 'missing'}`,
+      `preflightRunId=${preflightRunId || 'missing'}`,
+      `postApplyRunId=${postApplyRunId || 'missing'}`,
+      `sameRunId=${sameRunEvidenceChainReady ? patchRunId : 'missing'}`,
+      `touchedFileCount=${touchedFiles.length}`,
+      `touchedFiles=${touchedFiles.length ? touchedFiles.join(',') : 'none'}`,
+    ].join(' / '),
+  };
 }
