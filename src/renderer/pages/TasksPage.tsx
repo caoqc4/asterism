@@ -3061,6 +3061,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         reversibleProposalCard: {
           acceptanceCriteria: draft.subtasks.map((subtask) => subtask.acceptanceCriteria),
           dependencies: draft.subtasks.map((subtask) => subtask.dependency),
+          evidenceRunId: draft.evidenceRunId ?? null,
           parentTaskId: project.id,
           proposalId: `project_decomposition:${project.id}`,
           rationales: draft.subtasks.map((subtask) => subtask.rationale),
