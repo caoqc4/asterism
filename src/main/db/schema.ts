@@ -262,3 +262,69 @@ export const workHabits = sqliteTable('work_habits', {
   applicationCount: integer('application_count').notNull().default(0),
   updatedAt: text('updated_at').notNull(),
 });
+
+export const businessLines = sqliteTable('business_lines', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  summary: text('summary'),
+  goal: text('goal'),
+  kind: text('kind').notNull().default('general'),
+  legacyTaskId: text('legacy_task_id'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const businessLineRecords = sqliteTable('business_line_records', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(),
+  businessLineId: text('business_line_id').notNull(),
+  source: text('source').notNull(),
+  summary: text('summary').notNull(),
+  confidence: integer('confidence').notNull().default(70),
+  linkedActionId: text('linked_action_id'),
+  linkedDecisionId: text('linked_decision_id'),
+  shouldAffectFutureContext: text('should_affect_future_context').notNull().default('true'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const businessLineActions = sqliteTable('business_line_actions', {
+  id: text('id').primaryKey(),
+  businessLineId: text('business_line_id').notNull(),
+  taskId: text('task_id').notNull(),
+  sourceReviewId: text('source_review_id'),
+  sourceRecordId: text('source_record_id'),
+  status: text('status').notNull().default('active'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const businessLineReviews = sqliteTable('business_line_reviews', {
+  id: text('id').primaryKey(),
+  businessLineId: text('business_line_id').notNull(),
+  sourceActionId: text('source_action_id'),
+  resultSummary: text('result_summary').notNull(),
+  evidenceItems: text('evidence_items').notNull().default('[]'),
+  hypothesisChange: text('hypothesis_change'),
+  skillUpdateSuggestions: text('skill_update_suggestions').notNull().default('[]'),
+  nextActionSuggestions: text('next_action_suggestions').notNull().default('[]'),
+  confidence: integer('confidence').notNull().default(70),
+  requiresDecision: text('requires_decision').notNull().default('false'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const businessLineSkillRevisions = sqliteTable('business_line_skill_revisions', {
+  id: text('id').primaryKey(),
+  skillId: text('skill_id').notNull(),
+  businessLineId: text('business_line_id').notNull(),
+  scopePath: text('scope_path').notNull(),
+  previousContent: text('previous_content'),
+  nextContent: text('next_content').notNull(),
+  changeReason: text('change_reason').notNull(),
+  sourceReviewId: text('source_review_id').notNull(),
+  approvedBy: text('approved_by'),
+  status: text('status').notNull().default('proposed'),
+  effectiveAt: text('effective_at'),
+  rollbackTargetRevisionId: text('rollback_target_revision_id'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});

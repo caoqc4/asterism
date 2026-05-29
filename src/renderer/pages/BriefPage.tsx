@@ -43,6 +43,7 @@ function deferLabel(value: string): string {
 
 interface BriefPageProps {
   onOpenTask: (id: string) => void;
+  onOpenBusinessLine: (id: string) => void;
   onOpenDecision: () => void;
   onOpenPanel: (taskId: string, draftPrompt?: string) => void;
 }
@@ -81,12 +82,12 @@ function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
 function briefDisplaySummary(data: HomeBriefData | null, visibleCount: number): string {
   const attention = data?.briefAttention;
   if (!attention) {
-    return `显示 ${visibleCount} 件；与 Tasks 共用优先处理信号，拖拽只调整今日顺序。`;
+    return `显示 ${visibleCount} 件；与业务线 Next Actions 共用优先处理信号，拖拽只调整今日顺序。`;
   }
   const prefix = attention.truncated
     ? `显示前 ${attention.displayedCount}/${attention.totalCount} 件`
     : `显示 ${attention.displayedCount} 件`;
-  return `${prefix}；与 Tasks 共用同一排序，Brief 只做今日注意力摘要。`;
+  return `${prefix}；与业务线 Next Actions 共用同一排序，Today 只做今日注意力摘要。`;
 }
 
 function schedulerSweepLabel(data: HomeBriefData | null): string | null {
@@ -201,7 +202,7 @@ function focusAttentionLabel(task: FocusTask): string {
   return '这是共享优先队列中的下一项可行动任务。';
 }
 
-export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPageProps) {
+export function BriefPage({ onOpenTask, onOpenBusinessLine, onOpenDecision, onOpenPanel }: BriefPageProps) {
   const [tasks, setTasks] = useState<FocusTask[]>([]);
   const [signals, setSignals] = useState<ExternalSignal[]>([]);
   const [briefData, setBriefData] = useState<HomeBriefData | null>(null);
@@ -394,6 +395,47 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
           </div>
         )}
       </div>
+
+      {/* Focus cards */}
+      {(briefData?.businessLineSuggestions?.length ?? 0) > 0 && (
+        <div className="brief-section">
+          <div className="brief-section-label">业务线建议</div>
+          <div className="brief-section-note">
+            优先显示能形成学习闭环的下一步。
+          </div>
+          <div className="business-today-list">
+            {briefData!.businessLineSuggestions!.map((suggestion) => (
+              <div key={suggestion.id} className="business-today-card">
+                <div className="business-today-top">
+                  <button className="link-button" onClick={() => onOpenBusinessLine(suggestion.businessLineId)}>
+                    {suggestion.businessLineTitle}
+                  </button>
+                  <span className="tag">{suggestion.type}</span>
+                  <span className={`risk-pill risk-${suggestion.risk.level}`}>{suggestion.risk.level}</span>
+                  {suggestion.requiresDecision && <span className="risk-pill risk-medium">Decision</span>}
+                </div>
+                <h3>{suggestion.nextStep}</h3>
+                <p>{suggestion.whyNow}</p>
+                <div className="business-source-list">
+                  {(suggestion.sourceRecords.length > 0 ? suggestion.sourceRecords : ['missing-context']).map((source) => (
+                    <span key={source}>{source}</span>
+                  ))}
+                </div>
+                <div className="business-today-actions">
+                  <button className="btn sm" onClick={() => onOpenBusinessLine(suggestion.businessLineId)}>
+                    查看业务线
+                  </button>
+                  {suggestion.taskId && (
+                    <button className="btn sm primary" onClick={() => onOpenPanel(suggestion.taskId!, `请围绕这个业务线建议推进下一步。\n\n业务线：${suggestion.businessLineTitle}\n为什么现在：${suggestion.whyNow}\n来源：${suggestion.sourceRecords.join(' / ') || 'missing context'}\n风险：${suggestion.risk.level}${suggestion.risk.note ? ` - ${suggestion.risk.note}` : ''}`)}>
+                      AI 协助
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Focus cards */}
       <div className="brief-section">

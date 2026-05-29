@@ -974,6 +974,10 @@ function createMockApi() {
       updatedAt: now,
     })),
     getHomeBrief: vi.fn().mockResolvedValue(buildBriefData(tasks, decisions)),
+    listBusinessLines: vi.fn().mockResolvedValue([]),
+    getBusinessLineWorkspace: vi.fn().mockResolvedValue(null),
+    recordBusinessLineReview: vi.fn(),
+    acceptBusinessLineSkillRevision: vi.fn(),
     listRuns: vi.fn().mockResolvedValue(runs),
     getRunDetail: vi.fn().mockImplementation(async (runId) => {
       const run = runs.find((item) => item.id === runId);
@@ -1354,15 +1358,16 @@ describe('App redesign v1', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    expect(await screen.findByRole('button', { name: /Brief/ })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Today/ })).toBeTruthy();
     expect(screen.getByText('Work')).toBeTruthy();
     expect(screen.getByText('Capabilities')).toBeTruthy();
-    expect(screen.getByText(/任务级 Agent · 通用任务流/)).toBeTruthy();
+    expect(screen.getByText(/业务线 Agent · 学习闭环/)).toBeTruthy();
     expect(screen.getByTitle(/搜索、提问或捕获任务想法/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Business/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Tasks/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
-    expect(screen.getByText(/与 Tasks 共用/)).toBeTruthy();
+    expect(screen.getByText(/与业务线 Next Actions 共用/)).toBeTruthy();
     expect(screen.getAllByText(/入选依据/).length).toBeGreaterThan(0);
     expect(screen.getByText('暂无外部信号。')).toBeTruthy();
     expect(screen.getByText(/等待你确认是否长成任务/)).toBeTruthy();
@@ -1423,7 +1428,7 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText('证据复核任务')).toBeTruthy();
     expect(screen.getByText(/显示前 1\/7 件/)).toBeTruthy();
-    expect(screen.getByText(/Brief 只做今日注意力摘要/)).toBeTruthy();
+    expect(screen.getByText(/Today 只做今日注意力摘要/)).toBeTruthy();
     expect(screen.getByText(/入选依据：有新的来源或产出可能影响下一步/)).toBeTruthy();
     const records = JSON.parse(window.localStorage.getItem('taskplane.systemBrief.records.v1') ?? '[]') as Array<{
       payload: { reasonCount: number };
@@ -1431,6 +1436,36 @@ describe('App redesign v1', () => {
     expect(records[0]?.payload.reasonCount).toBe(1);
 
     expect(harness.api.getHomeBrief).toHaveBeenCalled();
+  });
+
+  it('renders Today suggestions with business line trust metadata', async () => {
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    homeBrief.businessLineSuggestions = [{
+      id: 'business-line-progress:business_line_task_product:task_product',
+      type: 'progress',
+      businessLineId: 'business_line_task_product',
+      businessLineTitle: 'GoalPilot product',
+      whyNow: 'Accepted learning changed the next recommendation.',
+      nextStep: 'Update Today suggestion trust layer.',
+      sourceRecords: ['review: navigation model changed', 'rule: anchor to learning loop'],
+      risk: {
+        level: 'medium',
+        note: 'Touches navigation model',
+      },
+      requiresDecision: true,
+      taskId: 'task_risk',
+    }];
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+
+    render(<App />);
+
+    expect(await screen.findByText('业务线建议')).toBeTruthy();
+    expect(screen.getByText('GoalPilot product')).toBeTruthy();
+    expect(screen.getByText('Update Today suggestion trust layer.')).toBeTruthy();
+    expect(screen.getByText('Accepted learning changed the next recommendation.')).toBeTruthy();
+    expect(screen.getByText('review: navigation model changed')).toBeTruthy();
+    expect(screen.getByText('medium')).toBeTruthy();
+    expect(screen.getByText('Decision')).toBeTruthy();
   });
 
   it('shows scheduled/event sweep status in Brief when scheduler is enabled', async () => {

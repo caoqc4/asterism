@@ -1,6 +1,7 @@
 import { AppConfigService } from '../config/app-config-service.js';
 import { initDatabase } from '../db/client.js';
 import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repository.js';
+import { BusinessLineRepository } from '../db/repositories/business-line-repository.js';
 import { DecisionRepository } from '../db/repositories/decision-repository.js';
 import { ArtifactRepository } from '../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../db/repositories/blocker-repository.js';
@@ -19,6 +20,7 @@ import { TaskProcessBindingRepository } from '../db/repositories/task-process-bi
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
 import { WorkHabitRepository } from '../db/repositories/work-habit-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
+import { BusinessLineService } from '../domain/business-line/business-line-service.js';
 import { WorkHabitService } from '../domain/context/work-habit-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
 import { ExternalAccessSourceIngestionService } from '../domain/external-access/external-access-source-ingestion-service.js';
@@ -67,6 +69,7 @@ const taskFileRepository = new TaskFileRepository();
 const processTemplateRepository = new ProcessTemplateRepository();
 const taskProcessBindingRepository = new TaskProcessBindingRepository();
 const briefSnapshotRepository = new BriefSnapshotRepository();
+const businessLineRepository = new BusinessLineRepository();
 const waitingItemRepository = new WaitingItemRepository();
 const workHabitRepository = new WorkHabitRepository();
 let schedulerService: SchedulerService | null = null;
@@ -159,6 +162,11 @@ const decisionService = new DecisionService(
   runVerificationRepository,
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
+const businessLineService = new BusinessLineService(
+  businessLineRepository,
+  taskService,
+  decisionService,
+);
 const taskplaneWritebackDispatchService = new TaskplaneWritebackDispatchService(
   taskService,
   decisionService,
@@ -305,6 +313,7 @@ const services = {
   sandboxPatchPromotionApplyService,
   taskService,
   decisionService,
+  businessLineService,
   taskplaneWritebackDispatchService,
   runService,
   operatorStartedRunService,

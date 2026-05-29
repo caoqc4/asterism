@@ -296,6 +296,75 @@ function bootstrapTables(connection: Database.Database): void {
       application_count INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS business_lines (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      summary TEXT,
+      goal TEXT,
+      kind TEXT NOT NULL DEFAULT 'general',
+      legacy_task_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS business_lines_legacy_task_idx
+      ON business_lines(legacy_task_id);
+
+    CREATE TABLE IF NOT EXISTS business_line_records (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      business_line_id TEXT NOT NULL,
+      source TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      confidence INTEGER NOT NULL DEFAULT 70,
+      linked_action_id TEXT,
+      linked_decision_id TEXT,
+      should_affect_future_context TEXT NOT NULL DEFAULT 'true',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS business_line_actions (
+      id TEXT PRIMARY KEY,
+      business_line_id TEXT NOT NULL,
+      task_id TEXT NOT NULL,
+      source_review_id TEXT,
+      source_record_id TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS business_line_reviews (
+      id TEXT PRIMARY KEY,
+      business_line_id TEXT NOT NULL,
+      source_action_id TEXT,
+      result_summary TEXT NOT NULL,
+      evidence_items TEXT NOT NULL DEFAULT '[]',
+      hypothesis_change TEXT,
+      skill_update_suggestions TEXT NOT NULL DEFAULT '[]',
+      next_action_suggestions TEXT NOT NULL DEFAULT '[]',
+      confidence INTEGER NOT NULL DEFAULT 70,
+      requires_decision TEXT NOT NULL DEFAULT 'false',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS business_line_skill_revisions (
+      id TEXT PRIMARY KEY,
+      skill_id TEXT NOT NULL,
+      business_line_id TEXT NOT NULL,
+      scope_path TEXT NOT NULL,
+      previous_content TEXT,
+      next_content TEXT NOT NULL,
+      change_reason TEXT NOT NULL,
+      source_review_id TEXT NOT NULL,
+      approved_by TEXT,
+      status TEXT NOT NULL DEFAULT 'proposed',
+      effective_at TEXT,
+      rollback_target_revision_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   ensureColumn(connection, 'runs', 'instructions', 'TEXT');
@@ -369,6 +438,30 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'task_process_bindings', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(connection, 'task_process_bindings', 'updated_at', 'TEXT');
   ensureColumn(connection, 'task_process_bindings', 'removed_at', 'TEXT');
+  ensureColumn(connection, 'business_lines', 'summary', 'TEXT');
+  ensureColumn(connection, 'business_lines', 'goal', 'TEXT');
+  ensureColumn(connection, 'business_lines', 'kind', "TEXT NOT NULL DEFAULT 'general'");
+  ensureColumn(connection, 'business_lines', 'legacy_task_id', 'TEXT');
+  ensureColumn(connection, 'business_lines', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'business_line_records', 'confidence', 'INTEGER NOT NULL DEFAULT 70');
+  ensureColumn(connection, 'business_line_records', 'linked_action_id', 'TEXT');
+  ensureColumn(connection, 'business_line_records', 'linked_decision_id', 'TEXT');
+  ensureColumn(connection, 'business_line_records', 'should_affect_future_context', "TEXT NOT NULL DEFAULT 'true'");
+  ensureColumn(connection, 'business_line_actions', 'source_review_id', 'TEXT');
+  ensureColumn(connection, 'business_line_actions', 'source_record_id', 'TEXT');
+  ensureColumn(connection, 'business_line_actions', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(connection, 'business_line_actions', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'business_line_reviews', 'source_action_id', 'TEXT');
+  ensureColumn(connection, 'business_line_reviews', 'evidence_items', "TEXT NOT NULL DEFAULT '[]'");
+  ensureColumn(connection, 'business_line_reviews', 'hypothesis_change', 'TEXT');
+  ensureColumn(connection, 'business_line_reviews', 'skill_update_suggestions', "TEXT NOT NULL DEFAULT '[]'");
+  ensureColumn(connection, 'business_line_reviews', 'next_action_suggestions', "TEXT NOT NULL DEFAULT '[]'");
+  ensureColumn(connection, 'business_line_reviews', 'confidence', 'INTEGER NOT NULL DEFAULT 70');
+  ensureColumn(connection, 'business_line_reviews', 'requires_decision', "TEXT NOT NULL DEFAULT 'false'");
+  ensureColumn(connection, 'business_line_skill_revisions', 'approved_by', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'effective_at', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'rollback_target_revision_id', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'updated_at', 'TEXT');
 }
 
 function ensureColumn(

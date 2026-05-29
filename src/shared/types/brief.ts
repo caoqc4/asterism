@@ -7,6 +7,7 @@ import type { ResponsibilityKind } from './responsibility.js';
 import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
 import type { TaskDependencyRecord } from './task-dependency.js';
+import type { BusinessLineTodaySuggestion } from './business-line.js';
 import type {
   ResumeCurrentMethodSliceRecord,
   ResumeKeySourceSliceRecord,
@@ -244,6 +245,7 @@ export type HomeBriefData = {
   priorityLede?: string;
   briefAttention?: HomeBriefAttentionSummary;
   briefFocusTasks?: HomeBriefFocusTask[];
+  businessLineSuggestions?: BusinessLineTodaySuggestion[];
 };
 
 export type ResponsibilitySummarySlice = {

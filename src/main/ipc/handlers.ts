@@ -13,6 +13,11 @@ import type {
 } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
+  AcceptBusinessLineSkillRevisionInput,
+  CreateBusinessLineInput,
+  RecordBusinessLineReviewInput,
+} from '../../shared/types/business-line.js';
+import type {
   CreateCompletionCriteriaInput,
   UpdateCompletionCriteriaInput,
 } from '../../shared/types/completion-criteria.js';
@@ -789,7 +794,44 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('brief:getHomeData', async () => {
-    return getServices().homeBriefService.getHomeData();
+    const data = await getServices().homeBriefService.getHomeData();
+    return {
+      ...data,
+      businessLineSuggestions: await getServices().businessLineService.listTodaySuggestions(),
+    };
+  });
+
+  ipcMain.handle('businessLine:list', async () => {
+    return getServices().businessLineService.list();
+  });
+
+  ipcMain.handle('businessLine:create', async (_event, input: CreateBusinessLineInput) => {
+    const created = await getServices().businessLineService.create(input);
+    emitAppEvent('businessLine.changed', created.id);
+    emitAppEvent('brief.changed');
+    return getServices().businessLineService.getWorkspace(created.id);
+  });
+
+  ipcMain.handle('businessLine:getWorkspace', async (_event, businessLineId: string) => {
+    return getServices().businessLineService.getWorkspace(businessLineId);
+  });
+
+  ipcMain.handle('businessLine:recordReview', async (_event, input: RecordBusinessLineReviewInput) => {
+    const workspace = await getServices().businessLineService.recordReview(input);
+    emitAppEvent('businessLine.changed', input.businessLineId);
+    emitAppEvent('brief.changed');
+    if (input.requiresDecision) emitAppEvent('decision.changed');
+    return workspace;
+  });
+
+  ipcMain.handle('businessLine:acceptSkillRevision', async (
+    _event,
+    input: AcceptBusinessLineSkillRevisionInput,
+  ) => {
+    const workspace = await getServices().businessLineService.acceptSkillRevision(input);
+    emitAppEvent('businessLine.changed', workspace.businessLine.id);
+    emitAppEvent('brief.changed');
+    return workspace;
   });
 
   ipcMain.handle('run:list', async () => {

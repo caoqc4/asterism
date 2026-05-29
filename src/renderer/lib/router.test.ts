@@ -12,8 +12,8 @@ describe('renderer router', () => {
   });
 
   it('writes retained routes to the hash', () => {
-    setRoute('work-habits');
+    setRoute('business');
 
-    expect(window.location.hash).toBe('#work-habits');
+    expect(window.location.hash).toBe('#business');
   });
 });

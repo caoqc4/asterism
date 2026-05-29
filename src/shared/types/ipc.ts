@@ -85,6 +85,13 @@ import type { TaskplaneWritebackDispatchResult } from '../taskplane-writeback-di
 import type { AgentScheduledEventTriggerPlan } from '../agent-orchestration.js';
 import type { HomeBriefData } from './brief.js';
 import type {
+  AcceptBusinessLineSkillRevisionInput,
+  BusinessLineListItem,
+  BusinessLineWorkspace,
+  CreateBusinessLineInput,
+  RecordBusinessLineReviewInput,
+} from './business-line.js';
+import type {
   BlockerRecord,
   CreateBlockerInput,
   UpdateBlockerInput,
@@ -371,6 +378,13 @@ export type ElectronApi = {
   createDecision: (input: CreateDecisionInput) => Promise<DecisionRecord>;
   actOnDecision: (input: DecisionActionInput) => Promise<DecisionRecord>;
   getHomeBrief: () => Promise<HomeBriefData>;
+  listBusinessLines?: () => Promise<BusinessLineListItem[]>;
+  createBusinessLine?: (input: CreateBusinessLineInput) => Promise<BusinessLineWorkspace>;
+  getBusinessLineWorkspace?: (businessLineId: string) => Promise<BusinessLineWorkspace | null>;
+  recordBusinessLineReview?: (input: RecordBusinessLineReviewInput) => Promise<BusinessLineWorkspace>;
+  acceptBusinessLineSkillRevision?: (
+    input: AcceptBusinessLineSkillRevisionInput,
+  ) => Promise<BusinessLineWorkspace>;
   listRuns: () => Promise<RunRecord[]>;
   getRunDetail: (runId: string) => Promise<RunDetailRecord | null>;
   triggerRun: (input: CreateRunInput) => Promise<RunRecord>;

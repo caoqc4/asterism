@@ -3,6 +3,7 @@ export type AppEventType =
   | 'decision.changed'
   | 'run.changed'
   | 'brief.changed'
+  | 'businessLine.changed'
   | 'settings.changed';
 
 export type AppEvent = {

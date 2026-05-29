@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
 import { BriefPage } from './pages/BriefPage';
+import { BusinessLinesPage } from './pages/BusinessLinesPage';
 import { TasksPage, type TaskWorkspaceSelectionContext } from './pages/TasksPage';
 import { DecisionsPage } from './pages/DecisionsPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
@@ -15,7 +16,8 @@ import goalPilotLogo from './assets/brand/goalpilot-logo-ui.png';
 const PRODUCT_BRAND_NAME = 'GoalPilot';
 
 const ROUTE_LABELS: Record<AppRoute, string> = {
-  brief: 'Brief',
+  brief: 'Today',
+  business: 'Business',
   tasks: 'Tasks',
   decisions: 'Decisions',
   'work-habits': 'Work Habits',
@@ -44,6 +46,7 @@ export function App() {
     selectedFile: null,
   });
   const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
+  const [businessFocusId, setBusinessFocusId] = useState<string | null>(null);
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
   const refreshAiRuntimeAvailability = useCallback(() => {
@@ -61,6 +64,7 @@ export function App() {
     setRouteState(r);
     setRoute(r);
     setTaskFocusId(null);
+    setBusinessFocusId(null);
     if (r !== 'tasks') {
       setWorkspaceSelection({ taskId: null, taskTitle: null, parentTaskId: null, childTaskIds: [], selectedFile: null });
     }
@@ -70,6 +74,12 @@ export function App() {
     setRouteState('tasks');
     setRoute('tasks');
     setTaskFocusId(taskId);
+  }, []);
+
+  const openBusinessLine = useCallback((businessLineId: string) => {
+    setRouteState('business');
+    setRoute('business');
+    setBusinessFocusId(businessLineId);
   }, []);
 
   const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt = false, forceTaskBinding = false, prefillDraftPrompt = false) => {
@@ -162,8 +172,16 @@ export function App() {
           {route === 'brief' && (
             <BriefPage
               onOpenTask={openTaskInTasks}
+              onOpenBusinessLine={openBusinessLine}
               onOpenDecision={() => navigate('decisions')}
               onOpenPanel={openPanelForTask}
+            />
+          )}
+          {route === 'business' && (
+            <BusinessLinesPage
+              onOpenPanel={openPanelForTask}
+              onOpenTask={openTaskInTasks}
+              focusBusinessLineId={businessFocusId}
             />
           )}
           {route === 'tasks' && (
@@ -258,8 +276,8 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
 
       <nav className="nav">
         <div className="nav-zone-label">Work</div>
-        <NavItem icon={<IconBrief />} label="Brief" active={route === 'brief'} onClick={() => onNavigate('brief')} />
-        <NavItem icon={<IconTasks />} label="Tasks" active={route === 'tasks'} onClick={() => onNavigate('tasks')} />
+        <NavItem icon={<IconBrief />} label="Today" active={route === 'brief'} onClick={() => onNavigate('brief')} />
+        <NavItem icon={<IconBusiness />} label="Business" active={route === 'business'} onClick={() => onNavigate('business')} />
         <NavItem icon={<IconDecisions />} label="Decisions" active={route === 'decisions'} onClick={() => onNavigate('decisions')} />
 
         <div className="nav-divider" />
@@ -276,7 +294,7 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
         <div className="avatar">G</div>
         <div className="footer-meta">
           <strong>{PRODUCT_BRAND_NAME}</strong>
-          任务级 Agent · 通用任务流
+          业务线 Agent · 学习闭环
         </div>
       </div>
     </aside>
@@ -362,6 +380,16 @@ function IconTasks() {
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1.5" y="1.5" width="11" height="11" rx="2" />
       <polyline points="4,7 6,9 10,5" />
+    </svg>
+  );
+}
+
+function IconBusiness() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 11.5V3.5L7 1.5L12 3.5V11.5" />
+      <path d="M4 11.5V6.5H10V11.5" />
+      <path d="M5.5 4.5H8.5" />
     </svg>
   );
 }
