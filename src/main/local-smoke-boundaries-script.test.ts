@@ -1082,6 +1082,9 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('localRecoveryAuthorizationCount=1');
     expect(result.output).toContain('localRecoveryAuthorization=local_recovery');
     expect(result.output).toContain('localRecoveryAuthorizationEvidenceChain=ready');
+    expect(result.output).toContain('localRecoveryDecisionTitleKey=confirm_scheduler_action');
+    expect(result.output).toContain('localRecoveryDecisionOptionKeys=approve,hold');
+    expect(result.output).toContain('localRecoveryDecisionProposedOutcomeKey=approve');
     expect(result.output).toContain('localRecoveryRunId=run_scheduler_recovery_smoke');
     expect(result.output).toContain('localRecoveryTask=task_scheduler_decision_recovery_smoke');
     expect(result.output).toContain('localRecoveryCompleted=yes');
@@ -1091,6 +1094,9 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('scopeMismatchAuthorizationEvidenceChain=missing');
     expect(result.output).toContain('serviceEvidenceAuthorizationCount=0');
     expect(result.output).toContain('serviceEvidenceAuthorizationEvidenceChain=missing');
+    expect(result.output).toContain('serviceEvidenceDecisionTitleKey=confirm_scheduler_action');
+    expect(result.output).toContain('serviceEvidenceDecisionOptionKeys=approve,hold');
+    expect(result.output).toContain('serviceEvidenceDecisionProposedOutcomeKey=approve');
   });
 
   it('validates Agent API execution preflight config before calling a provider', () => {

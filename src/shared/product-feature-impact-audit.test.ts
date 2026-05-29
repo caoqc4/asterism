@@ -1493,10 +1493,13 @@ describe('product feature impact audit', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
     expect(decisions?.evidence.join(' ')).toContain('valid Decision payload');
-    expect(decisions?.evidence.join(' ')).toContain('decisionPayload, decisionTitle, decisionRationale, decisionOptions, decisionOptionIdentity, decisionProposedOutcome, decisionProposedOutcomeMatchesOption');
+    expect(decisions?.evidence.join(' ')).toContain('decisionPayload, decisionTitle, decisionTitleKey, decisionRationale, decisionOptions, decisionOptionKeys');
+    expect(decisions?.evidence.join(' ')).toContain('decisionProposedOutcome, decisionProposedOutcomeKey, decisionProposedOutcomeMatchesOption');
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/4 requirements');
-    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=4/4 requirements with operatorId, decisionPayload=ready, authorizationCount=1');
-    expect(decisions?.evidence.join(' ')).toContain('local-recovery=4/4 requirements with decisionPayload=ready, authorizationCount=1');
+    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=4/4 requirements with operatorId, decisionPayload=ready, decisionTitleKey=confirm_scheduler_action');
+    expect(decisions?.evidence.join(' ')).toContain('local-recovery=4/4 requirements with decisionPayload=ready, decisionTitleKey=confirm_scheduler_action');
+    expect(decisions?.evidence.join(' ')).toContain('decisionOptionKeys=approve,hold');
+    expect(decisions?.evidence.join(' ')).toContain('decisionProposedOutcomeKey=approve');
     expect(decisions?.evidence.join(' ')).toContain('standing-approval=4/4 requirements with authorizationCount=1');
     expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=3/4 requirements with authorizationCount=0 and authorizationEvidenceChain=missing');
     expect(decisions?.evidence.join(' ')).toContain('service-evidence=3/4 requirements');
@@ -1515,6 +1518,7 @@ describe('product feature impact audit', () => {
 
     expect(evidence).toContain('requires proposalReadinessSummary to preserve decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false');
     expect(evidence).toContain('cannot enter the confirmation queue unless producer evidence explicitly keeps direct Decision persistence, direct writeback, and runtime triggering closed');
+    expect(evidence).toContain('normalized title/option/outcome identity');
   });
 
   it('records scheduler Decision approval queue dedupe coverage', () => {

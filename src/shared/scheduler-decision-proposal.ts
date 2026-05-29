@@ -85,12 +85,14 @@ export function planSchedulerDecisionProposal(params: {
   const title = normalizeDecisionProposalText(params.title);
   const rationale = normalizeDecisionProposalText(params.rationale);
   const options = (params.options ?? []).map(normalizeDecisionProposalText).filter(Boolean);
-  const optionIdentityKeys = options.map((option) => option.toLocaleLowerCase());
+  const titleIdentityKey = decisionProposalIdentityKey(title);
+  const optionIdentityKeys = options.map(decisionProposalIdentityKey);
   const optionIdentityReady = options.length > 0 && new Set(optionIdentityKeys).size === optionIdentityKeys.length;
   const proposedOutcomeInput = normalizeDecisionProposalText(params.proposedOutcome);
+  const proposedOutcomeIdentityKey = decisionProposalIdentityKey(proposedOutcomeInput);
   const proposedOutcomeMatched = Boolean(
     proposedOutcomeInput
-    && options.some((option) => option.toLocaleLowerCase() === proposedOutcomeInput.toLocaleLowerCase()),
+    && options.some((option) => decisionProposalIdentityKey(option) === proposedOutcomeIdentityKey),
   );
   const decisionPayloadReady = Boolean(title && rationale && optionIdentityReady && proposedOutcomeMatched);
   const operatorId = params.operatorId?.trim() || null;
@@ -183,10 +185,13 @@ export function planSchedulerDecisionProposal(params: {
       `approvalQueueSurfaceReady=${approvalQueueReady ? 'yes' : 'no'}`,
       `decisionPayload=${decisionPayloadReady ? 'ready' : 'missing'}`,
       `decisionTitle=${title ? 'present' : 'missing'}`,
+      `decisionTitleKey=${titleIdentityKey || 'missing'}`,
       `decisionRationale=${rationale ? 'present' : 'missing'}`,
       `decisionOptions=${options.length ? options.length : 'missing'}`,
+      `decisionOptionKeys=${optionIdentityKeys.length ? optionIdentityKeys.join(',') : 'missing'}`,
       `decisionOptionIdentity=${optionIdentityReady ? 'ready' : 'duplicate_or_missing'}`,
       `decisionProposedOutcome=${proposedOutcomeInput ? 'present' : 'missing'}`,
+      `decisionProposedOutcomeKey=${proposedOutcomeIdentityKey || 'missing'}`,
       `decisionProposedOutcomeMatchesOption=${proposedOutcomeMatched ? 'yes' : 'no'}`,
       `targetTask=${targetTaskId ?? 'missing'}`,
       'decisionPersistenceAllowed=false',
@@ -253,4 +258,8 @@ export function planSchedulerDecisionProposalFromEvidence(
 
 function normalizeDecisionProposalText(value: string | null | undefined): string {
   return value?.replace(/\s+/g, ' ').trim() ?? '';
+}
+
+function decisionProposalIdentityKey(value: string): string {
+  return value.toLocaleLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/gi, '_').replace(/^_+|_+$/g, '');
 }
