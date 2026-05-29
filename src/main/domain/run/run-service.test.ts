@@ -846,6 +846,18 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution promotion readiness',
+        output: expect.stringContaining('pilotDecisionEvidenceChain=ready'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
+        output: expect.stringContaining('pilotDecisionExecutor=agent_api'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
         output: expect.stringContaining('missingRequirements=selected_runtime_contract,target_task_identity,provider_visible_preflight,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence'),
       }),
     );

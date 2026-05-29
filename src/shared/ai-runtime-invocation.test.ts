@@ -1631,6 +1631,14 @@ describe('ai runtime invocation contract', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      pilotDecision: {
+        backend: 'agent_api',
+        executor: 'agent_api',
+        messagePriority: 'steer',
+        movement: 'execute',
+        operationMode: 'product_control_layer',
+        priorityLane: 'continue_or_review',
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1696,6 +1704,13 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('providerPreflightRunEvidenceChain=missing');
     expect(partial.summary).toContain('providerPreflightTask=task_1');
     expect(partial.summary).toContain('providerPreflightTaskEvidenceChain=ready');
+    expect(partial.summary).toContain('pilotDecisionEvidenceChain=ready');
+    expect(partial.summary).toContain('pilotDecisionExecutor=agent_api');
+    expect(partial.summary).toContain('pilotDecisionMovement=execute');
+    expect(partial.summary).toContain('pilotDecisionOperationMode=product_control_layer');
+    expect(partial.summary).toContain('pilotDecisionBackend=agent_api');
+    expect(partial.summary).toContain('pilotDecisionMessagePriority=steer');
+    expect(partial.summary).toContain('pilotDecisionPriorityLane=continue_or_review');
     expect(partial.summary).toContain('runId=missing');
     expect(partial.summary).toContain('writeIntentRun=missing');
     expect(partial.summary).toContain('writeIntentRunEvidenceChain=missing');

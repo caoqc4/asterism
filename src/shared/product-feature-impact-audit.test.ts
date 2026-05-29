@@ -240,7 +240,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry either applied patch promotion status plus same-run and target-task identity evidence or explicit noWorkspaceWriteRequired/not_required evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
-    expect(rightPanel?.evidence.join(' ')).toContain('providerPreflightStatus, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, writeIntentExtraction, writeIntentSupportedActionCount, writeIntentActions, writeIntentDeclaredActionCount, declaredWriteIntentActions, writeIntentDeclaredActionEvidenceChain, writeIntentMode, noWriteIntentRequired');
+    expect(rightPanel?.evidence.join(' ')).toContain('providerPreflightStatus, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, pilotDecisionEvidenceChain, pilotDecisionExecutor, pilotDecisionMovement, pilotDecisionOperationMode, pilotDecisionBackend, pilotDecisionMessagePriority, pilotDecisionPriorityLane, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, writeIntentExtraction, writeIntentSupportedActionCount, writeIntentActions, writeIntentDeclaredActionCount, declaredWriteIntentActions, writeIntentDeclaredActionEvidenceChain, writeIntentMode, noWriteIntentRequired');
     expect(rightPanel?.evidence.join(' ')).toContain('contextStep, contextStepTask, contextStepTaskEvidenceChain, contextManifest, contextManifestTask, contextManifestEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('taskMemoryGuidance, taskMemoryGuidanceCount, taskMemoryGuidanceTask, taskMemoryGuidanceTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('runGoalRun, runGoalRunEvidenceChain, runGoalTask, runGoalTaskEvidenceChain');
@@ -1669,6 +1669,11 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion or phase closeout handoff messages');
     expect(rightPanel?.evidence.join(' ')).toContain('execution requests and progress intents now pass the bounded Pilot decision snapshot into RunService');
     expect(rightPanel?.evidence.join(' ')).toContain('persist it in the Agent API execution promotion readiness step input');
+    expect(rightPanel?.evidence.join(' ')).toContain('readiness summary, including pilotDecisionEvidenceChain');
+    expect(rightPanel?.evidence.join(' ')).toContain('pilotDecisionExecutor');
+    expect(rightPanel?.evidence.join(' ')).toContain('pilotDecisionMovement');
+    expect(rightPanel?.evidence.join(' ')).toContain('pilotDecisionOperationMode');
+    expect(rightPanel?.evidence.join(' ')).toContain('pilotDecisionBackend');
     expect(rightPanel?.evidence.join(' ')).toContain('completed Agent API execution summaries now surface Agent API execution promotion readiness Run-step evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('missing requirement lists from slash-separated readiness summaries');
     expect(rightPanel?.evidence.join(' ')).toContain('noWorkspaceWriteRequired=yes readiness as an operator-visible no-workspace-write completion signal');
@@ -1680,6 +1685,18 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('post-run evidence and workspace boundary without opening Run detail');
     expect(rightPanel?.gaps.join(' ')).toContain('explicit right-panel execution requests and task-bound progress intents can enter RunService');
     expect(rightPanel?.nextActions.join(' ')).toContain('expanding from right-panel execution/progress intents');
+  });
+
+  it('records Agent API execution pilot-decision readiness chips', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    const evidence = rightPanel?.evidence.join(' ');
+
+    expect(evidence).toContain('pilotDecisionEvidenceChain');
+    expect(evidence).toContain('pilotDecisionExecutor=agent_api');
+    expect(evidence).toContain('pilotDecisionMovement=execute');
+    expect(evidence).toContain('pilotDecisionOperationMode=product_control_layer');
+    expect(evidence).toContain('pilotDecisionMessagePriority');
+    expect(evidence).toContain('pilotDecisionPriorityLane');
   });
 
   it('records Agent API execution terminal evidence summary coverage', () => {

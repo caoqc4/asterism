@@ -93,6 +93,14 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    pilotDecision: {
+      backend: 'agent_api',
+      executor: 'agent_api',
+      messagePriority: 'steer',
+      movement: 'execute',
+      operationMode: 'product_control_layer',
+      priorityLane: 'continue_or_review',
+    },
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
@@ -559,6 +567,13 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceProviderPreflightRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderPreflightTask=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightTask') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderPreflightTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidencePilotDecisionEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'pilotDecisionEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidencePilotDecisionExecutor=${scalarValue(serviceEvidencePartial.summary, 'pilotDecisionExecutor') ?? 'missing'}`);
+  console.log(`serviceEvidencePilotDecisionMovement=${scalarValue(serviceEvidencePartial.summary, 'pilotDecisionMovement') ?? 'missing'}`);
+  console.log(`serviceEvidencePilotDecisionOperationMode=${scalarValue(serviceEvidencePartial.summary, 'pilotDecisionOperationMode') ?? 'missing'}`);
+  console.log(`serviceEvidencePilotDecisionBackend=${scalarValue(serviceEvidencePartial.summary, 'pilotDecisionBackend') ?? 'missing'}`);
+  console.log(`serviceEvidencePilotDecisionMessagePriority=${scalarValue(serviceEvidencePartial.summary, 'pilotDecisionMessagePriority') ?? 'missing'}`);
+  console.log(`serviceEvidencePilotDecisionPriorityLane=${scalarValue(serviceEvidencePartial.summary, 'pilotDecisionPriorityLane') ?? 'missing'}`);
   console.log(`serviceEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'runId') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeRun=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') ?? 'missing'}`);

@@ -511,6 +511,16 @@ export class RunService {
             taskId: params.task.id,
           }
         : null,
+      pilotDecision: params.input.pilotDecision
+        ? {
+            backend: params.input.pilotDecision.backend,
+            executor: params.input.pilotDecision.executor,
+            messagePriority: params.input.pilotDecision.messagePriority,
+            movement: params.input.pilotDecision.movement,
+            operationMode: params.input.pilotDecision.operationMode,
+            priorityLane: params.input.pilotDecision.priorityLane,
+          }
+        : null,
       reviewedPatchApplyBoundary: reviewedPatchApplyBoundaryEvidence
         ? {
             appliedPromotionStatus: reviewedPatchApplyBoundaryEvidence.status,

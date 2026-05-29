@@ -194,6 +194,10 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     status: 'blocked' | 'ready' | 'skipped';
     taskId?: string | null;
   } | null;
+  pilotDecision?: Pick<
+    PilotDecisionSnapshot,
+    'backend' | 'executor' | 'messagePriority' | 'movement' | 'operationMode' | 'priorityLane'
+  > | null;
   reviewedPatchApplyBoundary?: {
     appliedPromotionStatus?: 'applied' | 'blocked' | 'not_required' | 'pending' | null;
     explicitApplyOnly: boolean;
@@ -958,6 +962,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action))
     );
   const configuredProvider = evidence.providerVisiblePreflight?.configuredProvider?.trim() || '';
+  const pilotDecision = evidence.pilotDecision;
   const providerPreflightRunId = evidence.providerVisiblePreflight?.runId?.trim() || '';
   const providerPreflightTaskId = evidence.providerVisiblePreflight?.taskId?.trim() || '';
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
@@ -982,6 +987,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && runEvidenceTaskId === targetTaskId;
   const terminalRunStatusReady = terminalRunStatus === 'completed' || terminalRunStatus === 'failed';
   const terminalEvidenceSummaryReady = Boolean(terminalEvidenceSummary);
+  const pilotDecisionEvidenceChainReady = Boolean(pilotDecision)
+    && pilotDecision?.executor === 'agent_api'
+    && pilotDecision.movement === 'execute'
+    && pilotDecision.operationMode === 'product_control_layer';
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && runEvidenceTaskEvidenceChainReady;
   const selectedRuntimeRunEvidenceChainReady = Boolean(selectedRuntimeRunId)
@@ -1221,6 +1230,13 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `providerPreflightRunEvidenceChain=${providerPreflightRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `providerPreflightTask=${providerPreflightTaskId || 'missing'}`,
       `providerPreflightTaskEvidenceChain=${providerPreflightTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `pilotDecisionEvidenceChain=${pilotDecisionEvidenceChainReady ? 'ready' : 'missing'}`,
+      `pilotDecisionExecutor=${pilotDecision?.executor ?? 'missing'}`,
+      `pilotDecisionMovement=${pilotDecision?.movement ?? 'missing'}`,
+      `pilotDecisionOperationMode=${pilotDecision?.operationMode ?? 'missing'}`,
+      `pilotDecisionBackend=${pilotDecision?.backend ?? 'missing'}`,
+      `pilotDecisionMessagePriority=${pilotDecision?.messagePriority ?? 'missing'}`,
+      `pilotDecisionPriorityLane=${pilotDecision?.priorityLane ?? 'missing'}`,
       `runId=${runEvidenceId || 'missing'}`,
       `writeIntentRun=${writeIntentRunId || 'missing'}`,
       `writeIntentRunEvidenceChain=${writeIntentRunEvidenceChainReady ? 'ready' : 'missing'}`,
