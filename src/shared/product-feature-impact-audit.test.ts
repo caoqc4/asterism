@@ -1256,6 +1256,13 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('browser.search/search.web_fetch/task_browser/vendor:browse/web_search_cache-style helpers');
   });
 
+  it('records provider-native session payload identity gating', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+
+    expect(capabilities?.evidence.join(' ')).toContain('Provider-native agent session gates now require the provider-native payload provider identity');
+    expect(capabilities?.evidence.join(' ')).toContain('different configured runtime cannot cross the provider-native session boundary');
+  });
+
   it('records exact Agent API execution Write Intent action identity coverage', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
 

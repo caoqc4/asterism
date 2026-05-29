@@ -51,6 +51,13 @@ export function evaluateProviderNativeSessionGate(
     };
   }
 
+  if (params.textResult.providerPayload.provider !== params.provider) {
+    return {
+      allowed: false,
+      reason: 'Provider-native payload provider does not match the selected runtime provider.',
+    };
+  }
+
   if (!params.normalization) {
     return {
       allowed: false,

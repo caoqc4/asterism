@@ -101,6 +101,19 @@ describe('evaluateProviderNativeSessionGate', () => {
       reason: 'No provider-native payload is available for this run.',
     },
     {
+      label: 'provider payload identity mismatch',
+      overrides: {
+        textResult: {
+          text: 'Agent output',
+          providerPayload: {
+            ...textResultWithPayload.providerPayload,
+            provider: 'anthropic',
+          },
+        },
+      },
+      reason: 'Provider-native payload provider does not match the selected runtime provider.',
+    },
+    {
       label: 'missing normalization',
       overrides: {
         normalization: null,
