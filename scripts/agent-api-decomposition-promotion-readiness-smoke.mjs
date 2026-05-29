@@ -78,7 +78,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   const serviceEvidencePartial = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
     applyPlan: partialApplyPlan,
     parentTaskId: 'task_project',
-    reversibleProposalCard: buildReversibleProposalCard(),
+    reversibleProposalCard: buildReversibleProposalCard('run_cli_decomposition_smoke'),
     providerConfiguration: {
       configuredProvider: 'openai',
       providerConfigured: true,
@@ -95,7 +95,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   const serviceEvidenceReady = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
     applyPlan: readyApplyPlan,
     parentTaskId: 'task_project',
-    reversibleProposalCard: buildReversibleProposalCard(),
+    reversibleProposalCard: buildReversibleProposalCard('run_api_decomposition_smoke'),
     providerConfiguration: {
       configuredProvider: 'openai',
       providerConfigured: true,
@@ -133,6 +133,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceProposalId=${scalarValue(serviceEvidencePartial.summary, 'proposalId') ?? 'missing'}`);
   console.log(`serviceEvidenceExpectedProposalId=${scalarValue(serviceEvidencePartial.summary, 'expectedProposalId') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalIdEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalIdEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'proposalEvidenceRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalEvidenceRunChain=${scalarValue(serviceEvidencePartial.summary, 'proposalEvidenceRunChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalParentTask=${scalarValue(serviceEvidencePartial.summary, 'proposalParentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskCount=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskCount') ?? 'missing'}`);
@@ -210,6 +212,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'proposalId') !== 'project_decomposition:task_project'
     || scalarValue(serviceEvidencePartial.summary, 'expectedProposalId') !== 'project_decomposition:task_project'
     || scalarValue(serviceEvidencePartial.summary, 'proposalIdEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalEvidenceRunId') !== 'run_cli_decomposition_smoke'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalEvidenceRunChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalParentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'proposalTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskCount') !== '1'
@@ -292,8 +296,9 @@ function buildSubtaskDraft() {
   };
 }
 
-function buildReversibleProposalCard() {
+function buildReversibleProposalCard(evidenceRunId) {
   return {
+    evidenceRunId,
     parentTaskId: 'task_project',
     proposalId: 'project_decomposition:task_project',
     status: 'ready',

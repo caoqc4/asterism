@@ -170,6 +170,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_cli_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -208,6 +209,8 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('proposalId=project_decomposition:task_project');
     expect(partial.summary).toContain('expectedProposalId=project_decomposition:task_project');
     expect(partial.summary).toContain('proposalIdEvidenceChain=ready');
+    expect(partial.summary).toContain('proposalEvidenceRunId=run_cli_decomposition');
+    expect(partial.summary).toContain('proposalEvidenceRunChain=ready');
     expect(partial.summary).toContain('proposalSubtaskCount=1');
     expect(partial.summary).toContain('applyPlanSubtaskCount=1');
     expect(partial.summary).toContain('proposalSubtaskEvidenceChain=ready');
@@ -253,6 +256,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -283,6 +287,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('proposalId=project_decomposition:task_project');
     expect(ready.summary).toContain('expectedProposalId=project_decomposition:task_project');
     expect(ready.summary).toContain('proposalIdEvidenceChain=ready');
+    expect(ready.summary).toContain('proposalEvidenceRunId=run_api_decomposition');
+    expect(ready.summary).toContain('proposalEvidenceRunChain=ready');
     expect(ready.summary).toContain('proposalParentTask=task_project');
     expect(ready.summary).toContain('proposalTaskEvidenceChain=ready');
     expect(ready.summary).toContain('proposalSubtaskCount=1');
@@ -344,6 +350,7 @@ describe('ai runtime invocation contract', () => {
         rationales: ['独立边界清楚'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -369,6 +376,50 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('selectedRuntimeEvidenceChain=missing');
   });
 
+  it('blocks Agent API decomposition promotion when the proposal card comes from another run', () => {
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan: buildAgentApiDecompositionApplyPlan({
+        evidenceRunId: 'run_api_decomposition',
+        parentTaskId: 'task_project',
+        source: 'agent_api_decomposition',
+        subtasks: [buildSubtaskDraft()],
+      }),
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        acceptanceCriteria: ['范围文档可验收'],
+        evidenceRunId: 'run_other',
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        rationales: ['独立边界清楚'],
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
+        subtaskTitles: ['需求与范围确认'],
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        provider: 'openai',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalIdEvidenceChain=ready');
+    expect(mismatch.summary).toContain('proposalEvidenceRunId=run_other');
+    expect(mismatch.summary).toContain('proposalEvidenceRunChain=missing');
+    expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=ready');
+  });
+
   it('blocks Agent API decomposition promotion when configured provider evidence is stitched', () => {
     const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
       applyPlan: buildAgentApiDecompositionApplyPlan({
@@ -383,6 +434,7 @@ describe('ai runtime invocation contract', () => {
         rationales: ['独立边界清楚'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -431,6 +483,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -451,6 +504,7 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch).toMatchObject({
       ready: false,
       missingRequirements: [
+        'reversible_proposal_card',
         'agent_api_decomposition_source',
         'draft_only_timeline_evidence',
       ],
@@ -461,6 +515,8 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('evidenceRunId=run_api_decomposition');
     expect(mismatch.summary).toContain('timelineEvidenceRunId=run_other');
     expect(mismatch.summary).toContain('evidenceRunIdChain=missing');
+    expect(mismatch.summary).toContain('proposalEvidenceRunId=run_api_decomposition');
+    expect(mismatch.summary).toContain('proposalEvidenceRunChain=missing');
   });
 
   it('blocks Agent API decomposition promotion when selected-runtime evidence is not tied to the apply-plan timeline', () => {
@@ -478,6 +534,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -521,6 +578,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -552,6 +610,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -594,6 +653,7 @@ describe('ai runtime invocation contract', () => {
         acceptanceCriteria: ['范围文档可验收'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         rationales: ['独立边界清楚'],
         status: 'ready',
         subtaskCount: 1,
@@ -640,6 +700,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -681,6 +742,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -700,11 +762,13 @@ describe('ai runtime invocation contract', () => {
 
     expect(mismatch).toMatchObject({
       ready: false,
-      missingRequirements: ['selected_runtime_contract', 'draft_only_timeline_evidence'],
+      missingRequirements: ['selected_runtime_contract', 'reversible_proposal_card', 'draft_only_timeline_evidence'],
     });
     expect(mismatch.summary).toContain('evidenceRunId=missing');
     expect(mismatch.summary).toContain('timelineEvidenceRunId=missing');
     expect(mismatch.summary).toContain('evidenceRunIdChain=missing');
+    expect(mismatch.summary).toContain('proposalEvidenceRunId=run_api_decomposition');
+    expect(mismatch.summary).toContain('proposalEvidenceRunChain=missing');
     expect(mismatch.summary).toContain('selectedRuntimeEvidenceRunChain=missing');
   });
 
@@ -722,6 +786,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project_b',
         proposalId: 'project_decomposition:task_project_b',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -762,6 +827,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -802,6 +868,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project_b',
         proposalId: 'project_decomposition:task_project_b',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
@@ -842,6 +909,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 2,
         subtaskSummaries: ['确认范围'],
@@ -926,6 +994,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskTitles: ['Different child task'],
@@ -967,6 +1036,7 @@ describe('ai runtime invocation contract', () => {
         rationales: ['独立边界清楚'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['Different summary'],
@@ -1009,6 +1079,7 @@ describe('ai runtime invocation contract', () => {
         rationales: ['独立边界清楚'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -1051,6 +1122,7 @@ describe('ai runtime invocation contract', () => {
         rationales: ['Different rationale'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -1098,6 +1170,7 @@ describe('ai runtime invocation contract', () => {
         dependencies: ['其他依赖'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],
@@ -1143,6 +1216,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 2,
         subtaskTitles: ['需求与范围确认', '需求与范围确认'],
@@ -1196,6 +1270,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 2,
         subtaskTitles: ['需求分析', '分析需求'],
@@ -1244,6 +1319,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 2,
         subtaskTitles: ['需求与范围确认', ''],
@@ -1306,6 +1382,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 0,
         subtaskTitles: [],
@@ -1349,6 +1426,7 @@ describe('ai runtime invocation contract', () => {
       reversibleProposalCard: {
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
+        evidenceRunId: 'run_api_decomposition',
         status: 'ready',
         subtaskCount: 1,
         subtaskSummaries: ['确认范围'],

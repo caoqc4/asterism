@@ -803,7 +803,9 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('keeps draft_only_timeline_evidence missing when apply-plan evidenceRunId and timeline evidenceRunId diverge or when both run identities are absent');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('keeps the reversible proposal card missing when its proposalId, parentTaskId, subtask count, subtask title identity, subtask rationale identity, subtask dependency identity, or subtask-title uniqueness does not match the same apply-plan evidence chain');
+      .toContain('keeps the reversible proposal card missing when its proposalId, evidenceRunId, parentTaskId, subtask count, subtask title identity, subtask rationale identity, subtask dependency identity, or subtask-title uniqueness does not match the same apply-plan evidence chain');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('proposal cards from another decomposition run cannot be stitched into the current create-many apply plan');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('satisfied and missing requirement lists');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
@@ -815,7 +817,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('promotionMissingRequirements=...');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('proposalId, expectedProposalId, proposalIdEvidenceChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalRationales, applyPlanRationales');
+      .toContain('proposalId, expectedProposalId, proposalIdEvidenceChain, proposalEvidenceRunId, proposalEvidenceRunChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalRationales, applyPlanRationales');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('proposalSubtaskUniqueChain, proposalSubtaskIdentityChain, proposalSubtaskTitleEvidenceChain, applyPlanSubtaskTitleEvidenceChain, parentTask, applyPlanParentTask, parentTaskEvidenceChain, subtaskCount, evidenceRunId, timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
@@ -887,7 +889,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('service-evidence=6/7 requirements');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('proposalId, expectedProposalId, proposalIdEvidenceChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalRationales, applyPlanRationales');
+      .toContain('proposalId, expectedProposalId, proposalIdEvidenceChain, proposalEvidenceRunId, proposalEvidenceRunChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalRationales, applyPlanRationales');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('proposalSubtaskUniqueChain, proposalSubtaskIdentityChain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))

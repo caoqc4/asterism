@@ -113,6 +113,7 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
   reversibleProposalCard?: {
     acceptanceCriteria?: string[] | null;
     dependencies?: (string | null)[] | null;
+    evidenceRunId?: string | null;
     parentTaskId?: string | null;
     proposalId?: string | null;
     rationales?: (string | null)[] | null;
@@ -504,11 +505,16 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && Boolean(applyPlanParentTaskId)
     && evidenceParentTaskId === applyPlanParentTaskId;
   const proposalId = evidence.reversibleProposalCard?.proposalId?.trim() || '';
+  const proposalEvidenceRunId = evidence.reversibleProposalCard?.evidenceRunId?.trim() || '';
   const proposalParentTaskId = evidence.reversibleProposalCard?.parentTaskId?.trim() || '';
   const expectedProposalId = parentTaskId ? `project_decomposition:${parentTaskId}` : '';
   const proposalIdEvidenceChainReady = Boolean(proposalId)
     && Boolean(expectedProposalId)
     && proposalId === expectedProposalId;
+  const proposalEvidenceRunChainReady = Boolean(proposalEvidenceRunId)
+    && Boolean(applyPlanEvidenceRunId)
+    && proposalEvidenceRunId === applyPlanEvidenceRunId
+    && proposalEvidenceRunId === timelineEvidenceRunId;
   const applyPlanSubtaskCount = applyPlan?.input.subtasks.length ?? 0;
   const applyPlanSubtaskTitles = normalizedSubtaskTitles(applyPlan?.input.subtasks.map((subtask) => subtask.title) ?? []);
   const applyPlanSubtaskSummaries = normalizedSubtaskTextList(applyPlan?.input.subtasks.map((subtask) => subtask.summary) ?? []);
@@ -605,6 +611,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const reversibleProposalReady = (
     evidence.reversibleProposalCard?.status === 'ready'
     && proposalIdEvidenceChainReady
+    && proposalEvidenceRunChainReady
     && proposalTaskEvidenceChainReady
     && proposalSubtaskEvidenceChainReady
     && proposalSubtaskIdentityChainReady
@@ -667,6 +674,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `proposalId=${proposalId || 'missing'}`,
       `expectedProposalId=${expectedProposalId || 'missing'}`,
       `proposalIdEvidenceChain=${proposalIdEvidenceChainReady ? 'ready' : 'missing'}`,
+      `proposalEvidenceRunId=${proposalEvidenceRunId || 'missing'}`,
+      `proposalEvidenceRunChain=${proposalEvidenceRunChainReady ? 'ready' : 'missing'}`,
       `proposalParentTask=${proposalParentTaskId || 'missing'}`,
       `proposalTaskEvidenceChain=${proposalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskCount=${proposalSubtaskCount ?? 'missing'}`,
