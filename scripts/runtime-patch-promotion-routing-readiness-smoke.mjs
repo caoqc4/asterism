@@ -88,6 +88,57 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     },
     targetTaskId: 'task_1',
   });
+  const serviceEvidenceReady = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+    explicitOperatorApply: {
+      checkpointId: 'checkpoint_patch_1',
+      confirmed: true,
+      operatorId: 'local_operator',
+      runId: 'run_patch_1',
+      taskId: 'task_1',
+    },
+    patchArtifact: {
+      artifactId: 'artifact_patch_1',
+      expectedFiles: ['src/app.ts'],
+      kind: 'patch',
+      runId: 'run_patch_1',
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    postApplyRunEvidence: {
+      runId: 'run_patch_1',
+      status: 'present',
+      taskId: 'task_1',
+      touchedFiles: ['src/app.ts'],
+    },
+    promotionDecision: {
+      artifactId: 'artifact_patch_1',
+      checkpointId: 'checkpoint_patch_1',
+      decisionId: 'decision_patch_1',
+      runId: 'run_patch_1',
+      status: 'approved',
+      taskId: 'task_1',
+    },
+    promotionPreflight: {
+      artifactId: 'artifact_patch_1',
+      checkpointId: 'checkpoint_patch_1',
+      runId: 'run_patch_1',
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    providerConfiguration: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      provider: 'openai',
+      runId: 'run_patch_1',
+      runtimeMode: 'api',
+      taskId: 'task_1',
+    },
+    targetTaskId: 'task_1',
+  });
 
   console.log(`blockedPromotionReady=${blocked.ready ? 'yes' : 'no'}`);
   console.log(`blockedRequirements=${blocked.satisfiedRequirements.length}/8`);
@@ -107,6 +158,16 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceDirectRuntimeWorkspaceWrite=${scalarValue(serviceEvidencePartial.summary, 'directRuntimeWorkspaceWrite') ?? 'missing'}`);
   console.log(`serviceEvidenceWorkspaceMutationPath=${scalarValue(serviceEvidencePartial.summary, 'workspaceMutationPath') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyPromotionReady=${serviceEvidenceReady.ready ? 'yes' : 'no'}`);
+  console.log(`serviceEvidenceReadyRequirements=${serviceEvidenceReady.satisfiedRequirements.length}/8`);
+  console.log(`serviceEvidenceReadyMissingRequirements=${serviceEvidenceReady.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceReadyDirectRuntimeWorkspaceWrite=${scalarValue(serviceEvidenceReady.summary, 'directRuntimeWorkspaceWrite') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyWorkspaceMutationPath=${scalarValue(serviceEvidenceReady.summary, 'workspaceMutationPath') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadySelectedRuntimeContract=${scalarValue(serviceEvidenceReady.summary, 'selectedRuntimeContract') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyTargetTaskEvidenceChain=${scalarValue(serviceEvidenceReady.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyOperatorApplyEvidenceChain=${scalarValue(serviceEvidenceReady.summary, 'operatorApplyEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadySameRunId=${scalarValue(serviceEvidenceReady.summary, 'sameRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyPostApplyFilesMatched=${scalarValue(serviceEvidenceReady.summary, 'postApplyFilesMatched') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeRun=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeTask=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') ?? 'missing'}`);
@@ -157,6 +218,16 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || !serviceEvidencePartial.missingRequirements.includes('same_run_evidence_chain')
     || scalarValue(serviceEvidencePartial.summary, 'directRuntimeWorkspaceWrite') !== 'blocked'
     || scalarValue(serviceEvidencePartial.summary, 'workspaceMutationPath') !== 'explicit_operator_apply_only'
+    || !serviceEvidenceReady.ready
+    || serviceEvidenceReady.satisfiedRequirements.length !== 8
+    || serviceEvidenceReady.missingRequirements.length !== 0
+    || scalarValue(serviceEvidenceReady.summary, 'directRuntimeWorkspaceWrite') !== 'blocked'
+    || scalarValue(serviceEvidenceReady.summary, 'workspaceMutationPath') !== 'explicit_operator_apply_only'
+    || scalarValue(serviceEvidenceReady.summary, 'selectedRuntimeContract') !== 'ready'
+    || scalarValue(serviceEvidenceReady.summary, 'targetTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceReady.summary, 'operatorApplyEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceReady.summary, 'sameRunId') !== 'run_patch_1'
+    || scalarValue(serviceEvidenceReady.summary, 'postApplyFilesMatched') !== 'yes'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') !== 'missing'

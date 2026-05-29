@@ -1477,6 +1477,14 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('postApplyFilesMatched=yes, and promotionMissingRequirements=none');
   });
 
+  it('records service-evidence-ready runtime patch promotion smoke coverage', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('service-evidence-ready=8/8 requirements');
+    expect(evidence).toContain('selectedRuntimeContract, targetTaskEvidenceChain, operatorApplyEvidenceChain, sameRunId, and postApplyFilesMatched ready');
+  });
+
   it('records missing terminal failure evidence in scheduler recovery proposals', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
