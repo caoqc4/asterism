@@ -1652,6 +1652,14 @@ describe('product feature impact audit', () => {
       .toContain('right-panel and Tasks confirmation on TaskplaneWritebackApplyPlan');
   });
 
+  it('records service-evidence-ready Agent API decomposition smoke coverage', () => {
+    const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
+    const evidence = decomposition?.evidence.join(' ');
+
+    expect(evidence).toContain('service-evidence-ready=7/7 requirements');
+    expect(evidence).toContain('agent_api_decomposition source, sourceEvidenceChain, evidenceRunIdChain, and selectedRuntimeEvidenceChain ready');
+  });
+
   it('records Tasks project Agent API decomposition provider identity coverage', () => {
     const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
     const evidence = decomposition?.evidence.join(' ');

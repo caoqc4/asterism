@@ -76,23 +76,30 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   const serviceEvidencePartial = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
     applyPlan: partialApplyPlan,
     parentTaskId: 'task_project',
-    reversibleProposalCard: {
-      parentTaskId: 'task_project',
-      proposalId: 'project_decomposition:task_project',
-      status: 'ready',
-      subtaskCount: 1,
-      subtaskSummaries: ['Prepare one reversible child task draft for promotion-readiness evidence.'],
-      subtaskTitles: ['Review Agent API decomposition promotion boundary'],
-      acceptanceCriteria: ['The reversible child-task draft can be reviewed before persistence.'],
-      rationales: ['This is an independent and reviewable promotion-readiness slice.'],
-      dependencies: [null],
-    },
+    reversibleProposalCard: buildReversibleProposalCard(),
     providerConfiguration: {
       configuredProvider: 'openai',
       providerConfigured: true,
     },
     selectedRuntimeContract: {
       evidenceRunId: 'run_cli_decomposition_smoke',
+      invocationLayer: 'api_runtime',
+      parentTaskId: 'task_project',
+      provider: 'openai',
+      phase: 'decomposition_draft',
+      runtimeMode: 'api',
+    },
+  });
+  const serviceEvidenceReady = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+    applyPlan: readyApplyPlan,
+    parentTaskId: 'task_project',
+    reversibleProposalCard: buildReversibleProposalCard(),
+    providerConfiguration: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+    },
+    selectedRuntimeContract: {
+      evidenceRunId: 'run_api_decomposition_smoke',
       invocationLayer: 'api_runtime',
       parentTaskId: 'task_project',
       provider: 'openai',
@@ -113,6 +120,14 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidencePromotionReady=${serviceEvidencePartial.ready ? 'yes' : 'no'}`);
   console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/7`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceReadyPromotionReady=${serviceEvidenceReady.ready ? 'yes' : 'no'}`);
+  console.log(`serviceEvidenceReadyRequirements=${serviceEvidenceReady.satisfiedRequirements.length}/7`);
+  console.log(`serviceEvidenceReadyMissingRequirements=${serviceEvidenceReady.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceReadySource=${scalarValue(serviceEvidenceReady.summary, 'source') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadySourceEvidenceChain=${scalarValue(serviceEvidenceReady.summary, 'sourceEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyEvidenceRunId=${scalarValue(serviceEvidenceReady.summary, 'evidenceRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyTimelineEvidenceRunId=${scalarValue(serviceEvidenceReady.summary, 'timelineEvidenceRunId') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadySelectedRuntimeEvidenceChain=${scalarValue(serviceEvidenceReady.summary, 'selectedRuntimeEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalId=${scalarValue(serviceEvidencePartial.summary, 'proposalId') ?? 'missing'}`);
   console.log(`serviceEvidenceExpectedProposalId=${scalarValue(serviceEvidencePartial.summary, 'expectedProposalId') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalIdEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalIdEvidenceChain') ?? 'missing'}`);
@@ -180,6 +195,14 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || serviceEvidencePartial.ready
     || serviceEvidencePartial.satisfiedRequirements.length !== 6
     || !serviceEvidencePartial.missingRequirements.includes('agent_api_decomposition_source')
+    || !serviceEvidenceReady.ready
+    || serviceEvidenceReady.satisfiedRequirements.length !== 7
+    || serviceEvidenceReady.missingRequirements.length !== 0
+    || scalarValue(serviceEvidenceReady.summary, 'source') !== 'agent_api_decomposition'
+    || scalarValue(serviceEvidenceReady.summary, 'sourceEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceReady.summary, 'evidenceRunId') !== 'run_api_decomposition_smoke'
+    || scalarValue(serviceEvidenceReady.summary, 'timelineEvidenceRunId') !== 'run_api_decomposition_smoke'
+    || scalarValue(serviceEvidenceReady.summary, 'selectedRuntimeEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalId') !== 'project_decomposition:task_project'
     || scalarValue(serviceEvidencePartial.summary, 'expectedProposalId') !== 'project_decomposition:task_project'
     || scalarValue(serviceEvidencePartial.summary, 'proposalIdEvidenceChain') !== 'ready'
@@ -260,6 +283,20 @@ function buildSubtaskDraft() {
     rationale: 'This is an independent and reviewable promotion-readiness slice.',
     summary: 'Prepare one reversible child task draft for promotion-readiness evidence.',
     title: 'Review Agent API decomposition promotion boundary',
+  };
+}
+
+function buildReversibleProposalCard() {
+  return {
+    parentTaskId: 'task_project',
+    proposalId: 'project_decomposition:task_project',
+    status: 'ready',
+    subtaskCount: 1,
+    subtaskSummaries: ['Prepare one reversible child task draft for promotion-readiness evidence.'],
+    subtaskTitles: ['Review Agent API decomposition promotion boundary'],
+    acceptanceCriteria: ['The reversible child-task draft can be reviewed before persistence.'],
+    rationales: ['This is an independent and reviewable promotion-readiness slice.'],
+    dependencies: [null],
   };
 }
 
