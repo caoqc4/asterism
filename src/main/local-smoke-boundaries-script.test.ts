@@ -1159,6 +1159,20 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceReadyDecisionPersistenceAllowed=false');
     expect(result.output).toContain('serviceEvidenceReadyWritebackDispatchAllowed=false');
     expect(result.output).toContain('serviceEvidenceReadySchedulerTriggerAllowed=false');
+    expect(result.output).toContain('approvalItemDecisionCreateReady=yes');
+    expect(result.output).toContain('approvalItemCount=1');
+    expect(result.output).toContain('approvalItemKind=scheduler_decision');
+    expect(result.output).toContain('approvalItemSource=scheduler_decision_proposal');
+    expect(result.output).toContain('approvalItemTask=task_scheduler_decision_service_ready_smoke');
+    expect(result.output).toContain('approvalItemRun=run_scheduler_service_ready_smoke');
+    expect(result.output).toContain('approvalPlanAction=decision.create');
+    expect(result.output).toContain('approvalPlanSourceId=run_scheduler_service_ready_smoke');
+    expect(result.output).toContain('approvalPlanSourceLabel=Scheduler/background Decision proposal');
+    expect(result.output).toContain('approvalPlanTask=task_scheduler_decision_service_ready_smoke');
+    expect(result.output).toContain('approvalPlanTitle=Confirm scheduler action');
+    expect(result.output).toContain('approvalPlanOptionCount=2');
+    expect(result.output).toContain('approvalPlanRecommended=Approve');
+    expect(result.output).toContain('approvalItemStillRequiresConfirmation=yes');
   });
 
   it('validates Agent API execution preflight config before calling a provider', () => {

@@ -6,7 +6,9 @@ import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'scheduler-decision-proposal.js');
+const writebackApprovalModulePath = path.join(root, 'dist-electron', 'shared', 'taskplane-writeback-approval.js');
 const sourceModulePath = path.join(root, 'src', 'shared', 'scheduler-decision-proposal.ts');
+const writebackApprovalSourceModulePath = path.join(root, 'src', 'shared', 'taskplane-writeback-approval.ts');
 
 export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log('Scheduler Decision proposal readiness smoke');
@@ -17,7 +19,11 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log('schedulerTrigger=not-attempted');
   console.log('workspace=unchanged');
 
-  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
+  if (
+    !fs.existsSync(modulePath)
+    || !fs.existsSync(writebackApprovalModulePath)
+    || sourceIsNewerThanBuild()
+  ) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -28,6 +34,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     planSchedulerDecisionProposal,
     planSchedulerDecisionProposalFromEvidence,
   } = await import(pathToFileURL(modulePath).href);
+  const {
+    buildTaskplaneWritebackApprovalItems,
+  } = await import(pathToFileURL(writebackApprovalModulePath).href);
 
   const blocked = planSchedulerDecisionProposal();
   const operatorConfirmed = planSchedulerDecisionProposal({
@@ -115,6 +124,30 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     },
     targetTaskId: 'task_scheduler_decision_service_ready_smoke',
   });
+  const approvalItems = buildTaskplaneWritebackApprovalItems({
+    runDetails: [],
+    taskId: 'task_scheduler_decision_service_ready_smoke',
+    taskTitle: 'Scheduler decision readiness smoke task',
+    timeline: [{
+      createdAt: '2026-05-29T00:00:00.000Z',
+      id: 'timeline_scheduler_decision_service_ready_smoke',
+      payload: JSON.stringify({
+        evidenceRunId: serviceEvidenceReady.evidenceRunId,
+        operatorConfirmed: true,
+        operatorId: 'operator_scheduler_service_ready_smoke',
+        options: ['Approve', 'Hold'],
+        proposedOutcome: 'Approve',
+        proposalReadinessSummary: serviceEvidenceReady.summary,
+        rationale: 'Review scheduler proposal.',
+        targetTaskId: 'task_scheduler_decision_service_ready_smoke',
+        title: 'Confirm scheduler action',
+      }),
+      taskId: 'task_scheduler_decision_service_ready_smoke',
+      type: 'panel.scheduler_decision_proposed',
+    }],
+  });
+  const approvalItem = approvalItems[0] ?? null;
+  const approvalPlan = approvalItem?.plan ?? null;
 
   console.log(`blockedStatus=${blocked.status}`);
   console.log(`blockedProposalReady=${blocked.approvalItemAllowed ? 'yes' : 'no'}`);
@@ -219,6 +252,20 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`serviceEvidenceReadyDecisionPersistenceAllowed=${String(serviceEvidenceReady.decisionPersistenceAllowed)}`);
   console.log(`serviceEvidenceReadyWritebackDispatchAllowed=${String(serviceEvidenceReady.writebackDispatchAllowed)}`);
   console.log(`serviceEvidenceReadySchedulerTriggerAllowed=${String(serviceEvidenceReady.schedulerTriggerAllowed)}`);
+  console.log(`approvalItemDecisionCreateReady=${approvalItem?.kind === 'scheduler_decision' && approvalPlan?.action === 'decision.create' ? 'yes' : 'no'}`);
+  console.log(`approvalItemCount=${approvalItems.length}`);
+  console.log(`approvalItemKind=${approvalItem?.kind ?? 'missing'}`);
+  console.log(`approvalItemSource=${approvalItem?.source ?? 'missing'}`);
+  console.log(`approvalItemTask=${approvalItem?.taskId ?? 'missing'}`);
+  console.log(`approvalItemRun=${approvalItem?.runId ?? 'missing'}`);
+  console.log(`approvalPlanAction=${approvalPlan?.action ?? 'missing'}`);
+  console.log(`approvalPlanSourceId=${approvalPlan?.input?.sourceId ?? 'missing'}`);
+  console.log(`approvalPlanSourceLabel=${approvalPlan?.input?.sourceLabel ?? 'missing'}`);
+  console.log(`approvalPlanTask=${approvalPlan?.input?.taskId ?? 'missing'}`);
+  console.log(`approvalPlanTitle=${approvalPlan?.input?.title ?? 'missing'}`);
+  console.log(`approvalPlanOptionCount=${Array.isArray(approvalPlan?.input?.options) ? approvalPlan.input.options.length : 'missing'}`);
+  console.log(`approvalPlanRecommended=${approvalPlan?.input?.recommendation?.label ?? 'missing'}`);
+  console.log(`approvalItemStillRequiresConfirmation=${approvalItem ? 'yes' : 'missing'}`);
 
   if (
     blocked.approvalItemAllowed
@@ -305,6 +352,19 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || serviceEvidenceReady.decisionPersistenceAllowed
     || serviceEvidenceReady.writebackDispatchAllowed
     || serviceEvidenceReady.schedulerTriggerAllowed
+    || approvalItems.length !== 1
+    || approvalItem?.kind !== 'scheduler_decision'
+    || approvalItem.source !== 'scheduler_decision_proposal'
+    || approvalItem.taskId !== 'task_scheduler_decision_service_ready_smoke'
+    || approvalItem.runId !== 'run_scheduler_service_ready_smoke'
+    || approvalPlan?.action !== 'decision.create'
+    || approvalPlan.input?.sourceId !== 'run_scheduler_service_ready_smoke'
+    || approvalPlan.input?.sourceLabel !== 'Scheduler/background Decision proposal'
+    || approvalPlan.input?.taskId !== 'task_scheduler_decision_service_ready_smoke'
+    || approvalPlan.input?.title !== 'Confirm scheduler action'
+    || !Array.isArray(approvalPlan.input?.options)
+    || approvalPlan.input.options.length !== 2
+    || approvalPlan.input?.recommendation?.label !== 'Approve'
   ) {
     console.log('status=failed');
     return 1;
@@ -321,8 +381,15 @@ function scalarValue(summary, key) {
 }
 
 function sourceIsNewerThanBuild() {
-  if (!fs.existsSync(sourceModulePath) || !fs.existsSync(modulePath)) return false;
-  return fs.statSync(sourceModulePath).mtimeMs > fs.statSync(modulePath).mtimeMs;
+  const pairs = [
+    [sourceModulePath, modulePath],
+    [writebackApprovalSourceModulePath, writebackApprovalModulePath],
+  ];
+  return pairs.some(([source, build]) => (
+    fs.existsSync(source)
+    && fs.existsSync(build)
+    && fs.statSync(source).mtimeMs > fs.statSync(build).mtimeMs
+  ));
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

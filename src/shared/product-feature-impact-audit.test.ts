@@ -126,6 +126,20 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('patchPromotionTaskEvidenceChain=ready');
   });
 
+  it('records scheduler Decision approval-item conversion evidence', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+    const evidence = decisions?.evidence.join(' ') ?? '';
+
+    expect(evidence).toContain('TaskplaneWritebackApprovalItem conversion');
+    expect(evidence).toContain('approvalItemDecisionCreateReady=yes');
+    expect(evidence).toContain('approvalItemKind=scheduler_decision');
+    expect(evidence).toContain('approvalPlanAction=decision.create');
+    expect(evidence).toContain('approvalPlanSourceId=run_scheduler_service_ready_smoke');
+    expect(evidence).toContain('approvalPlanTask=task_scheduler_decision_service_ready_smoke');
+    expect(evidence).toContain('approvalPlanOptionCount=2');
+    expect(evidence).toContain('approvalPlanRecommended=Approve');
+  });
+
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');
