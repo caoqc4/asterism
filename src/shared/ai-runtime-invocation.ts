@@ -184,8 +184,9 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     taskId?: string | null;
   } | null;
   reviewedPatchApplyBoundary?: {
-    appliedPromotionStatus?: 'applied' | 'blocked' | 'pending' | null;
+    appliedPromotionStatus?: 'applied' | 'blocked' | 'not_required' | 'pending' | null;
     explicitApplyOnly: boolean;
+    noWorkspaceWriteRequired?: boolean;
     promotionPreflightReady: boolean;
     runId?: string | null;
     taskId?: string | null;
@@ -216,6 +217,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     taskId?: string | null;
   } | null;
   writeIntentExtraction?: {
+    noWriteIntentRequired?: boolean;
     runId?: string | null;
     status: 'missing' | 'ready';
     supportedActions: string[];
@@ -779,12 +781,17 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
   const supportedWriteActionSet = new Set(supportedWriteActions);
+  const noWriteIntentRequiredReady = evidence.writeIntentExtraction?.noWriteIntentRequired === true
+    && supportedWriteActions.length === 0;
   const writeIntentActionIdentityReady = supportedWriteActions.length === AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.size
     && supportedWriteActionSet.size === supportedWriteActions.length
     && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action))
     && [...AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS].every((action) => supportedWriteActionSet.has(action));
-  const writeIntentActionBoundaryReady = supportedWriteActions.length > 0
-    && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action));
+  const writeIntentActionBoundaryReady = noWriteIntentRequiredReady
+    || (
+      supportedWriteActions.length > 0
+      && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action))
+    );
   const configuredProvider = evidence.providerVisiblePreflight?.configuredProvider?.trim() || '';
   const providerPreflightRunId = evidence.providerVisiblePreflight?.runId?.trim() || '';
   const providerPreflightTaskId = evidence.providerVisiblePreflight?.taskId?.trim() || '';
@@ -853,10 +860,18 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && contextStepTaskId === targetTaskId;
   const reviewedPatchApplyBoundaryReady = (
     evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
-    && evidence.reviewedPatchApplyBoundary.promotionPreflightReady === true
-    && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'applied'
     && patchPromotionRunEvidenceChainReady
     && patchPromotionTaskEvidenceChainReady
+    && (
+      (
+        evidence.reviewedPatchApplyBoundary.promotionPreflightReady === true
+        && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'applied'
+      )
+      || (
+        evidence.reviewedPatchApplyBoundary.noWorkspaceWriteRequired === true
+        && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'not_required'
+      )
+    )
   );
   const runGoalContractReady = Boolean(
     runGoalObjective
@@ -928,7 +943,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
 
   if (
     evidence.writeIntentExtraction?.status === 'ready'
-    && writeIntentActionIdentityReady
+    && (writeIntentActionIdentityReady || noWriteIntentRequiredReady)
     && writeIntentActionBoundaryReady
     && writeIntentRunEvidenceChainReady
     && writeIntentTaskEvidenceChainReady
@@ -1019,10 +1034,13 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `runGoalTaskEvidenceChain=${runGoalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `preStepGateEvidenceChain=${gateEvidenceReady('pre_step') ? 'ready' : 'missing'}`,
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
+      `writeIntentMode=${noWriteIntentRequiredReady ? 'no_write_intents_required' : 'proposal_boundary'}`,
+      `noWriteIntentRequired=${evidence.writeIntentExtraction?.noWriteIntentRequired === true ? 'yes' : 'no'}`,
       `writeIntentActionIdentityChain=${writeIntentActionIdentityReady ? 'ready' : 'missing'}`,
       `writeIntentActionBoundary=${writeIntentActionBoundaryReady ? 'ready' : 'missing'}`,
       `reviewedPatchApplyBoundary=${reviewedPatchApplyBoundaryReady ? 'ready' : 'missing'}`,
       `reviewedPatchExplicitApply=${evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true ? 'yes' : 'no'}`,
+      `noWorkspaceWriteRequired=${evidence.reviewedPatchApplyBoundary?.noWorkspaceWriteRequired === true ? 'yes' : 'no'}`,
       `patchPromotionPreflight=${evidence.reviewedPatchApplyBoundary?.promotionPreflightReady === true ? 'ready' : 'missing'}`,
       `patchPromotionStatus=${evidence.reviewedPatchApplyBoundary?.appliedPromotionStatus ?? 'missing'}`,
       `patchPromotionRun=${patchPromotionRunId || 'missing'}`,

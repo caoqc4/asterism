@@ -224,6 +224,79 @@ export async function runAgentApiPromotionReadinessSmoke() {
       taskId: 'task_1',
     },
   });
+  const serviceEvidenceNoWriteRequired = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+    contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
+    contextReadinessStep: {
+      status: 'ready',
+      stepId: 'step_context_ready',
+      taskId: 'task_1',
+    },
+    gates: {
+      simplicity_check: true,
+      runtime_action: true,
+      runtime_context_assembly: true,
+      context_readiness: true,
+      task_memory_coverage: true,
+      task_memory_guidance: true,
+      pre_step: true,
+      subtask_start: true,
+      post_step: true,
+    },
+    postStepVerification: {
+      runId: 'run_api_execution',
+      status: 'ready',
+      taskId: 'task_1',
+      verifier: 'taskplane.verifier.lightweight',
+    },
+    providerVisiblePreflight: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+      runId: 'run_api_execution',
+      startupProbe: 'not_called',
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    reviewedPatchApplyBoundary: {
+      appliedPromotionStatus: 'not_required',
+      explicitApplyOnly: true,
+      noWorkspaceWriteRequired: true,
+      promotionPreflightReady: false,
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+    },
+    runEvidencePersistence: {
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+      terminalEvidenceStatus: 'present',
+      terminalRunStatus: 'completed',
+    },
+    runGoalContract: {
+      completionConditionCount: 1,
+      objective: 'Produce reviewable task evidence.',
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      runId: 'run_api_execution',
+      runtimeMode: 'api',
+      taskId: 'task_1',
+    },
+    targetTaskId: 'task_1',
+    taskMemoryGuidance: {
+      guidanceCount: 1,
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    writeIntentExtraction: {
+      noWriteIntentRequired: true,
+      runId: 'run_api_execution',
+      status: 'ready',
+      supportedActions: [],
+      taskId: 'task_1',
+    },
+  });
 
   console.log(`deferredInvocationStatus=${deferredInvocation.status}`);
   console.log(`deferredPromotionReady=${deferredReadiness.ready ? 'yes' : 'no'}`);
@@ -317,6 +390,17 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`postRunNoWritebackReviewedPatchApplyBoundary=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
   console.log(`postRunNoWritebackReviewedPatchExplicitApply=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchExplicitApply') ?? 'missing'}`);
   console.log(`postRunNoWritebackPatchPromotionPreflight=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'patchPromotionPreflight') ?? 'missing'}`);
+  console.log(`noWriteRequiredPromotionReady=${serviceEvidenceNoWriteRequired.ready ? 'yes' : 'no'}`);
+  console.log(`noWriteRequiredRequirements=${serviceEvidenceNoWriteRequired.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
+  console.log(`noWriteRequiredGates=${serviceEvidenceNoWriteRequired.satisfiedGates.length}/${deferredInvocation.requiredGates.length}`);
+  console.log(`noWriteRequiredMissingRequirements=${serviceEvidenceNoWriteRequired.missingRequirements.join(',') || 'none'}`);
+  console.log(`noWriteRequiredWriteIntentActions=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`noWriteRequiredWriteIntentMode=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'writeIntentMode') ?? 'missing'}`);
+  console.log(`noWriteRequiredNoWriteIntentRequired=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWriteIntentRequired') ?? 'missing'}`);
+  console.log(`noWriteRequiredWriteIntentActionBoundary=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'writeIntentActionBoundary') ?? 'missing'}`);
+  console.log(`noWriteRequiredReviewedPatchApplyBoundary=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
+  console.log(`noWriteRequiredNoWorkspaceWriteRequired=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWorkspaceWriteRequired') ?? 'missing'}`);
+  console.log(`noWriteRequiredPatchPromotionStatus=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'patchPromotionStatus') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -399,6 +483,17 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchApplyBoundary') !== 'missing'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchExplicitApply') !== 'no'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'patchPromotionPreflight') !== 'missing'
+    || !serviceEvidenceNoWriteRequired.ready
+    || serviceEvidenceNoWriteRequired.satisfiedRequirements.length !== 11
+    || serviceEvidenceNoWriteRequired.satisfiedGates.length !== 9
+    || serviceEvidenceNoWriteRequired.missingRequirements.length !== 0
+    || scalarValue(serviceEvidenceNoWriteRequired.summary, 'writeIntentActions') !== 'none'
+    || scalarValue(serviceEvidenceNoWriteRequired.summary, 'writeIntentMode') !== 'no_write_intents_required'
+    || scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWriteIntentRequired') !== 'yes'
+    || scalarValue(serviceEvidenceNoWriteRequired.summary, 'writeIntentActionBoundary') !== 'ready'
+    || scalarValue(serviceEvidenceNoWriteRequired.summary, 'reviewedPatchApplyBoundary') !== 'ready'
+    || scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWorkspaceWriteRequired') !== 'yes'
+    || scalarValue(serviceEvidenceNoWriteRequired.summary, 'patchPromotionStatus') !== 'not_required'
   ) {
     console.log('status=failed');
     return 1;

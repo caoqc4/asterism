@@ -847,6 +847,17 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('postRunNoWritebackWriteIntentExtraction=missing');
     expect(result.output).toContain('postRunNoWritebackReviewedPatchExplicitApply=no');
     expect(result.output).toContain('postRunNoWritebackPatchPromotionPreflight=missing');
+    expect(result.output).toContain('noWriteRequiredPromotionReady=yes');
+    expect(result.output).toContain('noWriteRequiredRequirements=11/11');
+    expect(result.output).toContain('noWriteRequiredGates=9/9');
+    expect(result.output).toContain('noWriteRequiredMissingRequirements=none');
+    expect(result.output).toContain('noWriteRequiredWriteIntentActions=none');
+    expect(result.output).toContain('noWriteRequiredWriteIntentMode=no_write_intents_required');
+    expect(result.output).toContain('noWriteRequiredNoWriteIntentRequired=yes');
+    expect(result.output).toContain('noWriteRequiredWriteIntentActionBoundary=ready');
+    expect(result.output).toContain('noWriteRequiredReviewedPatchApplyBoundary=ready');
+    expect(result.output).toContain('noWriteRequiredNoWorkspaceWriteRequired=yes');
+    expect(result.output).toContain('noWriteRequiredPatchPromotionStatus=not_required');
   });
 
   it('keeps Agent API decomposition promotion readiness smoke read-only and build-gated by default', () => {

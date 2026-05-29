@@ -1767,7 +1767,48 @@ describe('ai runtime invocation contract', () => {
     expect(postRunNoWriteback.summary).toContain('postStepRunEvidenceChain=ready');
     expect(postRunNoWriteback.summary).toContain('postStepTaskEvidenceChain=ready');
     expect(postRunNoWriteback.summary).toContain('writeIntentActions=none');
+    expect(postRunNoWriteback.summary).toContain('writeIntentMode=proposal_boundary');
+    expect(postRunNoWriteback.summary).toContain('noWriteIntentRequired=no');
     expect(postRunNoWriteback.summary).toContain('reviewedPatchApplyBoundary=missing');
+  });
+
+  it('allows Agent API execution promotion when a completed run proves no write intents or workspace patch were required', () => {
+    const noWriteRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'not_required',
+        explicitApplyOnly: true,
+        noWorkspaceWriteRequired: true,
+        promotionPreflightReady: false,
+        runId: 'run_api_execution',
+        taskId: 'task_1',
+      },
+      writeIntentExtraction: {
+        noWriteIntentRequired: true,
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: [],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(noWriteRun).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+      missingGates: [],
+    });
+    expect(noWriteRun.summary).toContain('writeIntentActions=none');
+    expect(noWriteRun.summary).toContain('writeIntentMode=no_write_intents_required');
+    expect(noWriteRun.summary).toContain('noWriteIntentRequired=yes');
+    expect(noWriteRun.summary).toContain('writeIntentActionIdentityChain=missing');
+    expect(noWriteRun.summary).toContain('writeIntentActionBoundary=ready');
+    expect(noWriteRun.summary).toContain('reviewedPatchApplyBoundary=ready');
+    expect(noWriteRun.summary).toContain('reviewedPatchExplicitApply=yes');
+    expect(noWriteRun.summary).toContain('noWorkspaceWriteRequired=yes');
+    expect(noWriteRun.summary).toContain('patchPromotionPreflight=missing');
+    expect(noWriteRun.summary).toContain('patchPromotionStatus=not_required');
+    expect(noWriteRun.summary).toContain('patchPromotionRunEvidenceChain=ready');
+    expect(noWriteRun.summary).toContain('patchPromotionTaskEvidenceChain=ready');
   });
 
   it('requires provider-visible preflight to carry the configured provider identity', () => {
