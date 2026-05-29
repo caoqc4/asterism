@@ -125,7 +125,10 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   untrustedWebSearchToolCount: string | null;
   untrustedWebSearchTools: string | null;
   explicitToolDeclarationSource: string | null;
+  explicitToolDeclarationPackage: string | null;
+  explicitToolDeclarationPackageMatchesMetadata: string | null;
   configuredProvider: string | null;
+  configuredProviderEvidenceChain: string | null;
   providerMetadataMatchesSelected: string | null;
   explicitToolDeclaration: string | null;
   providerMetadataPackage: string | null;
@@ -135,6 +138,8 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   providerToolMissingRequirements: string | null;
   providerToolRequirements: string | null;
   selectedApiRuntime: string | null;
+  selectedRuntimeProvider: string | null;
+  selectedRuntimeProviderEvidenceChain: string | null;
   startupProbe: string | null;
 } {
   const text = summary ?? '';
@@ -147,9 +152,12 @@ function agentApiProviderToolEvidence(summary?: string | null): {
     untrustedWebSearchToolCount: scalarValue(text, 'untrustedWebSearchToolCount'),
     untrustedWebSearchTools: scalarValue(text, 'untrustedWebSearchTools'),
     configuredProvider: scalarValue(text, 'configuredProvider'),
+    configuredProviderEvidenceChain: scalarValue(text, 'configuredProviderEvidenceChain'),
     providerMetadataMatchesSelected: scalarValue(text, 'providerMetadataMatchesSelected'),
     explicitToolDeclaration: scalarValue(text, 'explicitToolDeclaration'),
     explicitToolDeclarationSource: scalarValue(text, 'explicitToolDeclarationSource'),
+    explicitToolDeclarationPackage: scalarValue(text, 'explicitToolDeclarationPackage'),
+    explicitToolDeclarationPackageMatchesMetadata: scalarValue(text, 'explicitToolDeclarationPackageMatchesMetadata'),
     providerMetadataPackage: scalarValue(text, 'providerMetadataPackage'),
     providerMetadataOwner: scalarValue(text, 'providerMetadataOwner'),
     providerOwnedMetadata: scalarValue(text, 'providerOwnedMetadata'),
@@ -157,6 +165,8 @@ function agentApiProviderToolEvidence(summary?: string | null): {
     providerToolMissingRequirements: scalarValue(text, 'providerToolMissingRequirements'),
     providerToolRequirements: scalarValue(text, 'providerToolRequirements'),
     selectedApiRuntime: scalarValue(text, 'selectedApiRuntime'),
+    selectedRuntimeProvider: scalarValue(text, 'selectedRuntimeProvider'),
+    selectedRuntimeProviderEvidenceChain: scalarValue(text, 'selectedRuntimeProviderEvidenceChain'),
     startupProbe: scalarValue(text, 'startupProbe'),
   };
 }
@@ -872,6 +882,15 @@ function AgentCliRuntimeSection({
                 {apiProviderToolEvidence.configuredProvider && (
                   <span>{`configuredProvider=${apiProviderToolEvidence.configuredProvider}`}</span>
                 )}
+                {apiProviderToolEvidence.configuredProviderEvidenceChain && (
+                  <span>{`configuredProviderEvidenceChain=${apiProviderToolEvidence.configuredProviderEvidenceChain}`}</span>
+                )}
+                {apiProviderToolEvidence.selectedRuntimeProvider && (
+                  <span>{`selectedRuntimeProvider=${apiProviderToolEvidence.selectedRuntimeProvider}`}</span>
+                )}
+                {apiProviderToolEvidence.selectedRuntimeProviderEvidenceChain && (
+                  <span>{`selectedRuntimeProviderEvidenceChain=${apiProviderToolEvidence.selectedRuntimeProviderEvidenceChain}`}</span>
+                )}
                 {apiProviderToolEvidence.startupProbe && (
                   <span>{`startupProbe=${apiProviderToolEvidence.startupProbe}`}</span>
                 )}
@@ -892,6 +911,12 @@ function AgentCliRuntimeSection({
                 )}
                 {apiProviderToolEvidence.explicitToolDeclarationSource && (
                   <span>{`explicitToolDeclarationSource=${apiProviderToolEvidence.explicitToolDeclarationSource}`}</span>
+                )}
+                {apiProviderToolEvidence.explicitToolDeclarationPackage && (
+                  <span>{`explicitToolDeclarationPackage=${apiProviderToolEvidence.explicitToolDeclarationPackage}`}</span>
+                )}
+                {apiProviderToolEvidence.explicitToolDeclarationPackageMatchesMetadata && (
+                  <span>{`explicitToolDeclarationPackageMatchesMetadata=${apiProviderToolEvidence.explicitToolDeclarationPackageMatchesMetadata}`}</span>
                 )}
                 {apiProviderToolEvidence.declaredToolCount && (
                   <span>{`declaredToolCount=${apiProviderToolEvidence.declaredToolCount}`}</span>
