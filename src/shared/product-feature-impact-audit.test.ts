@@ -347,15 +347,16 @@ describe('product feature impact audit', () => {
     expect(decisions?.gaps.join(' ')).toContain('deduplicated daily run-limit review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated run-limit accounting evidence review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated automation-readiness review policy');
+    expect(decisions?.gaps.join(' ')).toContain('deduplicated trigger-service-disconnected review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated sweep-failure trigger review policy');
     expect(decisions?.gaps.join(' ')).toContain('no-target task-source failure policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated timeline-failure review policy');
     expect(decisions?.gaps.join(' ')).toContain('deduplicated run-identity review policy');
     expect(decisions?.gaps.join(' ')).toContain('terminal-evidence review policy');
     expect(decisions?.gaps.join(' ')).toContain('duplicate-candidate review policy');
-    expect(decisions?.gaps.join(' ')).toContain('broader scheduler review policies');
-    expect(decisions?.nextActions.join(' ')).toContain('remaining scheduled/event review policies');
-    expect(decisions?.nextActions.join(' ')).toContain('deduplicated');
+    expect(decisions?.gaps.join(' ')).toContain('future scheduler/background Decision drafts still remain without direct IPC persistence');
+    expect(decisions?.nextActions.join(' ')).toContain('Promote future scheduler/background Decision drafts only through SchedulerService.proposeSchedulerDecision');
+    expect(decisions?.nextActions.join(' ')).toContain('deduplication');
     expect(decisions?.nextActions.join(' ')).toContain('real run/sweep evidence');
     expect(decisions?.nextActions.join(' ')).toContain('TaskplaneWritebackApprovalItem confirmation');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose Write Intent can now carry kind=patch');
@@ -1198,6 +1199,17 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('missing/invalid run-limit accounting evidence');
     expect(decisions?.evidence.join(' ')).toContain('disconnected trigger-service blocks through SchedulerService.proposeSchedulerDecision');
     expect(decisions?.evidence.join(' ')).toContain('deduplicated Standing Approval authorized triggerServiceDecisionProposal');
+  });
+
+  it('records background trigger-service disconnected scheduler Decision proposal coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+    const workHabits = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'work_habits_settings_scheduled');
+
+    expect(decisions?.evidence.join(' ')).toContain('background sweeps with Task Source and Task Dynamics timeline connected but the Run trigger service disconnected');
+    expect(decisions?.evidence.join(' ')).toContain('trigger-service-disconnected Decision proposals');
+    expect(decisions?.evidence.join(' ')).toContain('keep triggerRunEvidenceStatus=not_started without starting a runtime');
+    expect(workHabits?.evidence.join(' ')).toContain('triggerServiceDisconnectedDecisionProposalEvidence=recorded');
+    expect(workHabits?.evidence.join(' ')).toContain('triggerServiceDisconnectedNoTriggerEvidence=passed');
   });
 
   it('records near-duplicate subtask title blocking for decomposition promotion readiness', () => {

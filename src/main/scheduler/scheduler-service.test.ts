@@ -3554,6 +3554,82 @@ describe('SchedulerService', () => {
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
   });
 
+  it('proposes scheduler Decisions during background sweeps when only the trigger service port is disconnected', async () => {
+    const now = new Date('2026-05-26T11:05:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      buildReadyAutomationAiConfigService() as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const result = await service.runScheduledEventAgentTriggerSweep('cron', now);
+
+    expect(result).toMatchObject({
+      status: 'skipped',
+      skipReason: 'ports_not_connected',
+      checkedTaskCount: 1,
+      checkedTaskIds: ['task_auto'],
+      startedRunCount: 0,
+      blockedTaskCount: 1,
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(result.runtimeStartMissingRequirements).toContain('scheduler_trigger_service');
+    expect(result.summary).toContain('missingPorts=run_port');
+    expect(result.summary).toContain('triggerServiceDecisionProposals=proposed');
+    expect(result.summary).toContain('triggerServiceDecisionProposalTasks=task_auto');
+    expect(result.summary).toContain('checkedTaskIds=task_auto');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(result.summary);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动触发并修复触发服务',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 触发服务未连接后的下一步',
+      }),
+    }));
+  });
+
   it('proposes a scheduler Decision when an operator-started scheduled/event trigger hits the daily run limit', async () => {
     const now = new Date('2026-05-26T11:05:00.000Z');
     const task = buildAutomationTaskDetail({

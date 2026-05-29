@@ -543,6 +543,71 @@ try {
   assert(disconnectedSweepListenerEvents.length === 1, 'sweep listener did not record disconnected skipped sweep');
   assert(disconnectedSweepListenerEvents[0].summary === disconnectedResult.summary, 'sweep listener did not preserve disconnected skipped sweep summary');
 
+  const triggerServiceDisconnectedTimelineEvents = [];
+  const triggerServiceDisconnectedService = new SchedulerService(
+    {
+      read: () => ({
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+    },
+    {
+      getHomeData: async () => {
+        throw new Error('Scheduled/event Agent trigger-service disconnected sweep smoke should not build a Brief.');
+      },
+    },
+    {
+      create: async () => null,
+    },
+    {
+      countCreatedSinceByTask: async () => ({ task_scheduled_event_sweep_smoke: 0 }),
+      listIncompleteOlderThan: async () => [],
+      updateResult: async () => null,
+    },
+    {
+      getStatus: async () => buildReadyAiStatus(tempRoot),
+      resolveRuntimeConfig: async () => {
+        throw new Error('Scheduled/event Agent trigger-service disconnected sweep smoke should not resolve API runtime config.');
+      },
+    },
+    {
+      execute: async () => {
+        throw new Error('Scheduled/event Agent trigger-service disconnected sweep smoke should not call a Brief executor.');
+      },
+    },
+    {
+      select: async () => ({ reason: 'not-used', selectedTemplates: [], shouldUse: false }),
+    },
+    undefined,
+    {
+      recordTimelineEvent: async (input) => {
+        triggerServiceDisconnectedTimelineEvents.push(input);
+      },
+    },
+    {
+      listScheduledEventAgentTriggerCandidates: async () => [buildReadyScheduledTask()],
+    },
+  );
+  const triggerServiceDisconnectedResult = await triggerServiceDisconnectedService.runScheduledEventAgentTriggerSweep(
+    'cron',
+    new Date('2026-05-26T12:21:00.000Z'),
+  );
+
+  assert(triggerServiceDisconnectedResult.status === 'skipped', 'trigger-service disconnected sweep should skip');
+  assert(triggerServiceDisconnectedResult.skipReason === 'ports_not_connected', 'trigger-service disconnected sweep did not report ports_not_connected');
+  assert(triggerServiceDisconnectedResult.checkedTaskIds.join(',') === 'task_scheduled_event_sweep_smoke', 'trigger-service disconnected sweep did not preserve checked task evidence');
+  assert(triggerServiceDisconnectedResult.startedRunCount === 0, 'trigger-service disconnected sweep must not start a Code Agent run');
+  assert(triggerServiceDisconnectedResult.blockedTaskCount === 1, 'trigger-service disconnected sweep did not preserve blocked task evidence');
+  assert(triggerServiceDisconnectedResult.triggerRunEvidenceStatus === 'not_started', 'trigger-service disconnected sweep should not start trigger Run evidence');
+  assert(triggerServiceDisconnectedResult.summary.includes('missingPorts=run_port'), 'trigger-service disconnected sweep did not preserve the missing run port');
+  assert(triggerServiceDisconnectedResult.summary.includes('triggerServiceDecisionProposals=proposed'), 'trigger-service disconnected sweep did not propose a recovery Decision');
+  assert(triggerServiceDisconnectedResult.summary.includes('triggerServiceDecisionProposalTasks=task_scheduled_event_sweep_smoke'), 'trigger-service disconnected sweep did not preserve proposal task evidence');
+  assert(triggerServiceDisconnectedTimelineEvents.length === 1, 'trigger-service disconnected sweep did not record exactly one Decision proposal');
+  assert(triggerServiceDisconnectedTimelineEvents[0].type === 'panel.scheduler_decision_proposed', 'trigger-service disconnected sweep did not record scheduler Decision proposal evidence');
+  assert(triggerServiceDisconnectedTimelineEvents[0].payload.targetTaskId === 'task_scheduled_event_sweep_smoke', 'trigger-service disconnected Decision proposal did not preserve target task identity');
+  assert(triggerServiceDisconnectedTimelineEvents[0].payload.title === '确认定时/事件 Agent 触发服务未连接后的下一步', 'trigger-service disconnected Decision proposal did not preserve recovery title');
+
   let releaseInFlightCandidates;
   const inFlightCandidatePromise = new Promise((resolve) => {
     releaseInFlightCandidates = () => resolve([]);
@@ -1335,6 +1400,13 @@ try {
     `disconnectedSweepAt=${disconnectedService.getStatus().lastScheduledEventAgentSweepAt}`,
     `disconnectedSweepSummary=${disconnectedService.getStatus().lastScheduledEventAgentSweepSummary}`,
     `disconnectedSweepListenerEvents=${disconnectedSweepListenerEvents.length}`,
+    `triggerServiceDisconnectedStatus=${triggerServiceDisconnectedResult.status}`,
+    `triggerServiceDisconnectedCheckedTaskIds=${triggerServiceDisconnectedResult.checkedTaskIds.join(',') || 'none'}`,
+    `triggerServiceDisconnectedStarted=${triggerServiceDisconnectedResult.startedRunCount}`,
+    `triggerServiceDisconnectedBlocked=${triggerServiceDisconnectedResult.blockedTaskCount}`,
+    `triggerServiceDisconnectedTriggerRunEvidenceStatus=${triggerServiceDisconnectedResult.triggerRunEvidenceStatus}`,
+    `triggerServiceDisconnectedSweepSummary=${triggerServiceDisconnectedResult.summary}`,
+    `triggerServiceDisconnectedDecisionProposalEvents=${triggerServiceDisconnectedTimelineEvents.length}`,
     `inFlightStatus=${inFlightResult.status}`,
     `inFlightSkipReason=${inFlightResult.skipReason}`,
     `inFlightTriggerRunEvidenceStatus=${inFlightResult.triggerRunEvidenceStatus}`,
@@ -1419,6 +1491,8 @@ try {
     'completedSweepTimeEvidence=recorded',
     'disconnectedSweepSummaryEvidence=recorded',
     'disconnectedSweepListenerEvidence=passed',
+    'triggerServiceDisconnectedDecisionProposalEvidence=recorded',
+    'triggerServiceDisconnectedNoTriggerEvidence=passed',
     'inFlightSweepSummaryEvidence=recorded',
     'inFlightSweepListenerEvidence=passed',
     'failedSweepSummaryEvidence=recorded',

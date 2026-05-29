@@ -441,6 +441,10 @@ export class SchedulerService {
       taskSourcePortConnected: Boolean(taskSourcePort),
       timelinePortConnected: Boolean(timelinePort),
     });
+    if (!runPort && timelinePort && taskSourcePort) {
+      return this.runScheduledEventAgentTriggerServiceDisconnectedSweep(kind, now);
+    }
+
     if (!runPort || !timelinePort || !taskSourcePort) {
       const summary = `scheduledEventAgentSweep=${kind} / status=skipped / reason=ports_not_connected / missingPorts=${missingPorts} / triggerRunEvidenceStatus=not_started`;
       this.lastScheduledEventAgentSweepAt = now.toISOString();
@@ -781,6 +785,136 @@ export class SchedulerService {
       });
     } finally {
       this.scheduledEventAgentSweepInFlight = false;
+    }
+  }
+
+  private async runScheduledEventAgentTriggerServiceDisconnectedSweep(
+    kind: 'cron' | 'manual',
+    now: Date,
+  ): Promise<ScheduledEventAgentSweepResult> {
+    const taskSourcePort = this.scheduledEventAgentTaskSourcePort;
+    if (!taskSourcePort) {
+      throw new Error('Scheduled/event Agent task source port is not connected.');
+    }
+
+    try {
+      const tasks = await taskSourcePort.listScheduledEventAgentTriggerCandidates();
+      const { uniqueTasks } = dedupeScheduledEventAgentTasks(tasks);
+      const plans = await this.diagnoseScheduledEventAgentTriggers(uniqueTasks, now);
+      const triggerServiceDecisionProposalStatuses: string[] = [];
+      const triggerServiceDecisionProposalTaskIds: string[] = [];
+
+      for (const [index, task] of uniqueTasks.entries()) {
+        const plan = plans[index];
+        if (!plan) continue;
+        const proposal = await this.proposeScheduledEventTriggerServiceDisconnectedDecision(task, plan, now)
+          .catch((error: unknown) => ({
+            status: 'failed' as const,
+            summary: `triggerServiceDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+          }));
+        triggerServiceDecisionProposalStatuses.push(proposal.status);
+        triggerServiceDecisionProposalTaskIds.push(task.id);
+      }
+
+      const checkedTaskIds = tasks.map((task) => task.id);
+      const uniqueTaskIds = uniqueTasks.map((task) => task.id);
+      const automationMissingRequirements = Array.from(new Set(
+        plans.flatMap((plan) => plan.readiness.missingRequirements),
+      ));
+      const automationSatisfiedRequirements = Array.from(new Set(
+        plans.flatMap((plan) => plan.readiness.satisfiedRequirements),
+      ));
+      const runtimeStartMissingRequirements = Array.from(new Set([
+        'scheduler_trigger_service' as const,
+        ...plans.flatMap((plan) => plan.runtimeStartMissingRequirements),
+      ]));
+      const triggerRunEvidenceRequired = Array.from(new Set(
+        plans.flatMap((plan) => plan.triggerRunEvidenceRequired),
+      ));
+      const blockedReasons = [
+        'ports_not_connected',
+        'Scheduled event Agent trigger service is not connected.',
+      ];
+      const blockedTaskSummaries = uniqueTaskIds.map((taskId) =>
+        `${taskId}: trigger service port disconnected before runtime start`);
+      const summary = [
+        `scheduledEventAgentSweep=${kind}`,
+        'status=skipped',
+        'reason=ports_not_connected',
+        'missingPorts=run_port',
+        `checked=${tasks.length}`,
+        `checkedTaskIds=${checkedTaskIds.length ? checkedTaskIds.join(',') : 'none'}`,
+        'started=0',
+        `blocked=${uniqueTaskIds.length}`,
+        `blockedTaskSummaries=${blockedTaskSummaries.length ? blockedTaskSummaries.join('; ') : 'none'}`,
+        `triggerServiceDecisionProposals=${triggerServiceDecisionProposalStatuses.length ? triggerServiceDecisionProposalStatuses.join(',') : 'none'}`,
+        `triggerServiceDecisionProposalTasks=${triggerServiceDecisionProposalTaskIds.length ? triggerServiceDecisionProposalTaskIds.join(',') : 'none'}`,
+        `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
+        `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
+        `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
+        `triggerRunEvidenceRequired=${triggerRunEvidenceRequired.length ? triggerRunEvidenceRequired.join(',') : 'none'}`,
+        'triggerRunEvidenceStatus=not_started',
+      ].join(' / ');
+
+      this.lastScheduledEventAgentSweepAt = now.toISOString();
+      this.lastScheduledEventAgentSweepSummary = summary;
+
+      return this.publishScheduledEventAgentSweepResult({
+        status: 'skipped',
+        skipReason: 'ports_not_connected',
+        checkedTaskCount: tasks.length,
+        checkedTaskIds,
+        startedRunCount: 0,
+        blockedTaskCount: uniqueTaskIds.length,
+        startedRunIds: [],
+        blockedReasons,
+        blockedTaskSummaries,
+        runFailureReasons: [],
+        automationMissingRequirements,
+        automationSatisfiedRequirements,
+        runtimeStartMissingRequirements,
+        terminalRunEvidenceMissingRunIds: [],
+        triggerRunEvidenceRequired,
+        triggerRunEvidenceStatus: 'not_started',
+        summaries: plans.map((plan) => plan.summary),
+        summary,
+      });
+    } catch (error) {
+      const errorMessage = formatScheduledEventAgentSweepError(error);
+      const summary = [
+        `scheduledEventAgentSweep=${kind}`,
+        'status=skipped',
+        'reason=sweep_failed',
+        'checked=0',
+        'checkedTaskIds=none',
+        `error=${errorMessage}`,
+        'taskSourceFailureDecisionProposals=not_required_no_target_task',
+        'triggerRunEvidenceStatus=not_started',
+      ].join(' / ');
+
+      this.lastScheduledEventAgentSweepAt = now.toISOString();
+      this.lastScheduledEventAgentSweepSummary = summary;
+
+      return this.publishScheduledEventAgentSweepResult({
+        status: 'skipped',
+        skipReason: 'sweep_failed',
+        checkedTaskCount: 0,
+        checkedTaskIds: [],
+        startedRunCount: 0,
+        blockedTaskCount: 0,
+        startedRunIds: [],
+        blockedReasons: [`sweep_failed: ${errorMessage}`],
+        blockedTaskSummaries: [],
+        runFailureReasons: [],
+        automationMissingRequirements: [],
+        automationSatisfiedRequirements: [],
+        runtimeStartMissingRequirements: ['trigger_plan_ready'],
+        terminalRunEvidenceMissingRunIds: [],
+        triggerRunEvidenceRequired: [],
+        triggerRunEvidenceStatus: 'not_started',
+        summaries: [],
+        summary,
+      });
     }
   }
 
