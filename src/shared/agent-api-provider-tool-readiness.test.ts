@@ -23,16 +23,20 @@ describe('Agent API provider tool readiness', () => {
         'provider_payload_identity',
         'normalized_plan_identity',
         'provider_call_ids',
+        'provider_web_search_calls',
       ],
     });
     expect(readiness.summary).toContain('providerNativeSessionReady=no');
-    expect(readiness.summary).toContain('providerNativeSessionRequirements=2/5');
+    expect(readiness.summary).toContain('providerNativeSessionRequirements=2/6');
     expect(readiness.summary).toContain('providerNativeFlag=enabled');
     expect(readiness.summary).toContain('providerNativeSelectedProvider=openai');
     expect(readiness.summary).toContain('providerNativePayloadProvider=missing');
     expect(readiness.summary).toContain('providerNativePlanProvider=missing');
     expect(readiness.summary).toContain('providerNativeProviderCallIds=missing');
     expect(readiness.summary).toContain('providerNativeProviderCallIdCount=0');
+    expect(readiness.summary).toContain('providerNativeProviderCallTools=missing');
+    expect(readiness.summary).toContain('providerNativeProviderWebSearchCallCount=0');
+    expect(readiness.summary).toContain('providerNativeProviderWebSearchCallTools=none');
   });
 
   it('requires provider-native payload, normalized plan, and call ids to match selected provider', () => {
@@ -42,6 +46,7 @@ describe('Agent API provider tool readiness', () => {
       payloadProvider: 'anthropic',
       providerCallSource: 'provider_payload',
       providerCallIds: ['call_1'],
+      providerCallToolNames: ['web_search_preview'],
       selectedRuntimeProvider: 'openai',
     });
 
@@ -58,6 +63,7 @@ describe('Agent API provider tool readiness', () => {
       payloadProvider: 'openai',
       providerCallSource: 'provider_payload',
       providerCallIds: ['call_1', '  call_2  '],
+      providerCallToolNames: ['web_search_preview', 'openai:web_search'],
       selectedRuntimeProvider: 'openai',
     });
 
@@ -66,12 +72,15 @@ describe('Agent API provider tool readiness', () => {
       missingRequirements: [],
     });
     expect(ready.summary).toContain('providerNativeSessionReady=yes');
-    expect(ready.summary).toContain('providerNativeSessionRequirements=5/5');
+    expect(ready.summary).toContain('providerNativeSessionRequirements=6/6');
     expect(ready.summary).toContain('providerNativePayloadProviderMatchesSelected=yes');
     expect(ready.summary).toContain('providerNativePlanProviderMatchesSelected=yes');
     expect(ready.summary).toContain('providerNativeProviderCallIds=call_1,call_2');
     expect(ready.summary).toContain('providerNativeProviderCallSource=provider_payload');
     expect(ready.summary).toContain('providerNativeProviderCallIdCount=2');
+    expect(ready.summary).toContain('providerNativeProviderCallTools=web_search_preview,openai:web_search');
+    expect(ready.summary).toContain('providerNativeProviderWebSearchCallCount=2');
+    expect(ready.summary).toContain('providerNativeProviderWebSearchCallTools=web_search_preview,openai:web_search');
   });
 
   it('requires provider call ids to come from provider payload evidence before declaring a native session ready', () => {
@@ -80,16 +89,40 @@ describe('Agent API provider tool readiness', () => {
       normalizedPlanProvider: 'openai',
       payloadProvider: 'openai',
       providerCallIds: ['call_1'],
+      providerCallToolNames: ['web_search_preview'],
       selectedRuntimeProvider: 'openai',
     });
 
     expect(readiness).toMatchObject({
       ready: false,
-      missingRequirements: ['provider_call_ids'],
+      missingRequirements: ['provider_call_ids', 'provider_web_search_calls'],
     });
     expect(readiness.summary).toContain('providerNativeProviderCallIds=call_1');
     expect(readiness.summary).toContain('providerNativeProviderCallSource=unknown');
     expect(readiness.summary).toContain('providerNativeProviderCallIdCount=1');
+    expect(readiness.summary).toContain('providerNativeProviderCallTools=web_search_preview');
+    expect(readiness.summary).toContain('providerNativeProviderWebSearchCallCount=0');
+  });
+
+  it('requires provider-native call ids to identify web/search tools from provider payload evidence', () => {
+    const readiness = evaluateAgentApiProviderNativeSessionReadinessFromEvidence({
+      featureFlagEnabled: true,
+      normalizedPlanProvider: 'openai',
+      payloadProvider: 'openai',
+      providerCallIds: ['call_1'],
+      providerCallSource: 'provider_payload',
+      providerCallToolNames: ['file_search', 'database_search'],
+      selectedRuntimeProvider: 'openai',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: ['provider_web_search_calls'],
+    });
+    expect(readiness.summary).toContain('providerNativeSessionRequirements=5/6');
+    expect(readiness.summary).toContain('providerNativeProviderCallTools=file_search,database_search');
+    expect(readiness.summary).toContain('providerNativeProviderWebSearchCallCount=0');
+    expect(readiness.summary).toContain('providerNativeProviderWebSearchCallTools=none');
   });
 
   it('does not infer provider tools from API runtime selection and provider config alone', () => {

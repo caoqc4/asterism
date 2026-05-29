@@ -15,7 +15,8 @@ export type AgentApiProviderNativeSessionReadinessRequirement =
   | 'selected_runtime_provider'
   | 'provider_payload_identity'
   | 'normalized_plan_identity'
-  | 'provider_call_ids';
+  | 'provider_call_ids'
+  | 'provider_web_search_calls';
 
 export type AgentApiProviderToolReadiness = {
   missingRequirements: AgentApiProviderToolReadinessRequirement[];
@@ -63,6 +64,7 @@ export type AgentApiProviderNativeSessionReadinessEvidence = {
   providerCallSource?: 'normalized_plan' | 'provider_payload' | 'runtime_projection' | 'unknown';
   payloadProvider?: string | null;
   providerCallIds?: string[] | null;
+  providerCallToolNames?: string[] | null;
   selectedRuntimeProvider?: string | null;
 };
 
@@ -123,6 +125,7 @@ export function agentApiProviderNativeSessionReadinessRequirements(): AgentApiPr
     'provider_payload_identity',
     'normalized_plan_identity',
     'provider_call_ids',
+    'provider_web_search_calls',
   ];
 }
 
@@ -352,6 +355,10 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
     .map((id) => id.trim())
     .filter(Boolean);
   const providerCallSource = evidence.providerCallSource ?? 'unknown';
+  const providerCallToolNames = normalizeDeclaredTools(evidence.providerCallToolNames ?? []);
+  const providerWebSearchCallToolNames = providerCallSource === 'provider_payload'
+    ? declaredWebSearchTools(providerCallToolNames, selectedRuntimeProvider)
+    : [];
   const payloadProviderMatchesSelected = Boolean(selectedRuntimeProvider)
     && Boolean(payloadProvider)
     && payloadProvider === selectedRuntimeProvider;
@@ -366,6 +373,9 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
   if (normalizedPlanProviderMatchesSelected) satisfiedRequirements.push('normalized_plan_identity');
   if (providerCallIds.length > 0 && providerCallSource === 'provider_payload') {
     satisfiedRequirements.push('provider_call_ids');
+  }
+  if (providerWebSearchCallToolNames.length > 0) {
+    satisfiedRequirements.push('provider_web_search_calls');
   }
 
   const satisfiedRequirementSet = new Set(satisfiedRequirements);
@@ -391,6 +401,9 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
       `providerNativeProviderCallIds=${providerCallIds.length ? providerCallIds.join(',') : 'missing'}`,
       `providerNativeProviderCallSource=${providerCallSource}`,
       `providerNativeProviderCallIdCount=${providerCallIds.length}`,
+      `providerNativeProviderCallTools=${providerCallToolNames.length ? providerCallToolNames.join(',') : 'missing'}`,
+      `providerNativeProviderWebSearchCallCount=${providerWebSearchCallToolNames.length}`,
+      `providerNativeProviderWebSearchCallTools=${providerWebSearchCallToolNames.length ? providerWebSearchCallToolNames.join(',') : 'none'}`,
     ].join(' / '),
   };
 }
