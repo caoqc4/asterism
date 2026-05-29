@@ -905,7 +905,7 @@ describe('ai runtime invocation contract', () => {
     });
     expect(generic.summary).toContain('subtaskCount=0');
     expect(generic.summary).toContain('applyPlanSubtaskTitles=missing');
-    expect(generic.summary).toContain('applyPlanSubtaskTitleEvidenceChain=ready');
+    expect(generic.summary).toContain('applyPlanSubtaskTitleEvidenceChain=missing');
 
     const blankTitleApplyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',

@@ -296,7 +296,8 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   const applyPlanEvidenceRunId = applyPlan?.input.evidenceRunId?.trim() || '';
   const applyPlanSubtaskCount = applyPlan?.input.subtasks.length ?? 0;
   const applyPlanSubtaskTitles = normalizedSubtaskTitles(applyPlan?.input.subtasks.map((subtask) => subtask.title) ?? []);
-  const applyPlanSubtaskTitleEvidenceChainReady = applyPlanSubtaskTitles.length === applyPlanSubtaskCount;
+  const applyPlanSubtaskTitleEvidenceChainReady = applyPlanSubtaskCount > 0
+    && applyPlanSubtaskTitles.length === applyPlanSubtaskCount;
   const applyPlanReady = applyPlan?.action === 'subtask.create_many'
     && applyPlanSubtaskCount > 0
     && applyPlanSubtaskTitleEvidenceChainReady;

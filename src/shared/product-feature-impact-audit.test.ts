@@ -1205,6 +1205,14 @@ describe('product feature impact audit', () => {
     expect(decomposition?.evidence.join(' ')).toContain('near-duplicate subtask titles cannot satisfy duplicate-free promotion readiness');
   });
 
+  it('records empty create-many title evidence blocking for decomposition promotion readiness', () => {
+    const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
+    const evidence = decomposition?.evidence.join(' ');
+
+    expect(evidence).toContain('applyPlanSubtaskTitleEvidenceChain missing for empty create-many apply plans');
+    expect(evidence).toContain('zero-subtask draft cannot report title evidence as ready');
+  });
+
   it('records Agent API provider namespaced tool readiness coverage', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
