@@ -286,6 +286,7 @@ function hasSchedulerDecisionProposalSince(
   sinceIso: string,
 ): boolean {
   const sinceTime = Date.parse(sinceIso);
+  const normalizedTitle = normalizeSchedulerDecisionText(title);
   return task.timeline.some((event) => {
     if (event.type !== 'panel.scheduler_decision_proposed') return false;
     if (event.taskId !== task.id) return false;
@@ -293,7 +294,10 @@ function hasSchedulerDecisionProposalSince(
     if (!Number.isFinite(eventTime) || eventTime < sinceTime) return false;
     try {
       const payload = event.payload ? JSON.parse(event.payload) as Record<string, unknown> : {};
-      return payload.title === title && payload.targetTaskId === task.id;
+      const payloadTitle = typeof payload.title === 'string'
+        ? normalizeSchedulerDecisionText(payload.title)
+        : '';
+      return payloadTitle === normalizedTitle && payload.targetTaskId === task.id;
     } catch {
       return false;
     }

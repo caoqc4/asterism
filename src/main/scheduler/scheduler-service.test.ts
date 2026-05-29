@@ -1300,7 +1300,7 @@ describe('SchedulerService', () => {
           type: 'panel.scheduler_decision_proposed',
           payload: JSON.stringify({
             targetTaskId: 'task_auto',
-            title: '确认定时/事件 Agent 失败后的下一步',
+            title: '  确认定时/事件   Agent 失败后的下一步  ',
           }),
           createdAt: '2026-05-26T09:00:00.000Z',
         },

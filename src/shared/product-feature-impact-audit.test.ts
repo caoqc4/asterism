@@ -1260,6 +1260,13 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('record missing failure evidence instead of seeing only a generic failed-run recovery card');
   });
 
+  it('records normalized scheduler Decision proposal title dedupe coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('normalizes proposal titles before matching');
+    expect(decisions?.evidence.join(' ')).toContain('whitespace-varied duplicate history');
+  });
+
   it('records duplicate-free scheduler Decision option coverage', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
