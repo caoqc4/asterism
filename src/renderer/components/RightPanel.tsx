@@ -1076,6 +1076,8 @@ function agentApiDecompositionPromotionEvidenceChips(
     'sourceEvidenceChain',
     'evidenceRunIdChain',
     'confirmationBoundary',
+    'confirmationSurface',
+    'confirmationSurfaceEvidenceChain',
     'draftOnlyBeforeConfirmation',
     'runtimeMode',
     'invocationLayer',
@@ -2666,6 +2668,7 @@ export function RightPanel({
         }
       : null;
     const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      confirmationSurface: 'right_panel_decomposition_confirmation',
       evidenceRunId: taskDecompositionDraft.runId,
       nextStep: taskDecompositionDraft.nextStep,
       parentSummary: taskDecompositionDraft.parentGoal,

@@ -1092,6 +1092,7 @@ export function registerIpcHandlers(): void {
       createHash('sha256').update(result.text).digest('hex').slice(0, 12),
     ].join(':');
     const promotionApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      confirmationSurface: 'right_panel_decomposition_confirmation',
       evidenceRunId,
       nextStep: decomposition.nextStep,
       parentSummary: decomposition.parentGoal,

@@ -807,8 +807,6 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('proposalSubtaskUniqueChain, proposalSubtaskIdentityChain, proposalSubtaskTitleEvidenceChain, applyPlanSubtaskTitleEvidenceChain, parentTask, applyPlanParentTask, parentTaskEvidenceChain, subtaskCount, evidenceRunId, timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('confirmationBoundary, draftOnlyBeforeConfirmation, runtimeMode, invocationLayer');
-    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('timelineRuntimeMode, timelineInvocationLayer, timelineInvocationPhase');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('selected-runtime contract');
@@ -1747,7 +1745,15 @@ describe('product feature impact audit', () => {
     const evidence = decomposition?.evidence.join(' ');
 
     expect(evidence).toContain('service-evidence-ready=7/7 requirements');
-    expect(evidence).toContain('agent_api_decomposition source, sourceEvidenceChain, evidenceRunIdChain, and selectedRuntimeEvidenceChain ready');
+    expect(evidence).toContain('agent_api_decomposition source, sourceEvidenceChain, evidenceRunIdChain, confirmationSurfaceEvidenceChain, and selectedRuntimeEvidenceChain ready');
+  });
+
+  it('records decomposition confirmation surface evidence', () => {
+    const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
+    const evidence = decomposition?.evidence.join(' ');
+
+    expect(evidence).toContain('confirmationSurface=readiness_smoke_operator_confirmation');
+    expect(evidence).toContain('confirmationBoundary, confirmationSurface, confirmationSurfaceEvidenceChain');
   });
 
   it('records Tasks project Agent API decomposition provider identity coverage', () => {

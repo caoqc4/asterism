@@ -43,6 +43,12 @@ export type TaskplaneSubtaskCreateManyRuntimeContract = {
   runtimeMode: 'api' | 'codex' | 'claude';
 };
 
+export type TaskplaneSubtaskCreateManyConfirmationSurface =
+  | 'right_panel_decomposition_confirmation'
+  | 'tasks_project_decomposition_confirmation'
+  | 'taskplane_writeback_approval_queue'
+  | 'readiness_smoke_operator_confirmation';
+
 export type TaskplaneSubtaskCreateManyResult = {
   createdTasks: TaskListItemRecord[];
   taskRecordPath?: string | null;
@@ -140,6 +146,7 @@ export type TaskplaneWritebackApplyPlan =
   | TaskplaneStructuredWritebackApplyPlan;
 
 export function buildSubtaskCreateManyWritebackApplyPlan(params: {
+  confirmationSurface: TaskplaneSubtaskCreateManyConfirmationSurface;
   evidenceRunId?: string | null;
   nextStep?: string | null;
   parentSummary?: string | null;
@@ -176,6 +183,7 @@ export function buildSubtaskCreateManyWritebackApplyPlan(params: {
       type: 'panel.project_decomposed',
       payload: {
         confirmationBoundary: 'operator_confirmed_subtask_create_many',
+        confirmationSurface: params.confirmationSurface,
         draftOnlyBeforeConfirmation: true,
         evidenceRunId: params.evidenceRunId ?? null,
         nextStep: params.nextStep ?? null,

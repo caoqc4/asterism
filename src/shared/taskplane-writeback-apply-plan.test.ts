@@ -127,6 +127,7 @@ describe('Taskplane writeback apply plans', () => {
 
   it('keeps Agent API decomposition runtime contract in create-many timeline evidence', () => {
     const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      confirmationSurface: 'readiness_smoke_operator_confirmation',
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       runtimeContract: {
@@ -159,6 +160,7 @@ describe('Taskplane writeback apply plans', () => {
       timeline: {
         payload: {
           confirmationBoundary: 'operator_confirmed_subtask_create_many',
+          confirmationSurface: 'readiness_smoke_operator_confirmation',
           draftOnlyBeforeConfirmation: true,
           runtimeContract: {
             evidenceRunId: 'run_api_decomposition',
@@ -186,6 +188,7 @@ describe('Taskplane writeback apply plans', () => {
 
   it('does not infer Agent API decomposition runtime identity from apply-plan inputs', () => {
     const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      confirmationSurface: 'readiness_smoke_operator_confirmation',
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       runtimeContract: {
@@ -286,6 +289,7 @@ describe('Taskplane writeback apply plans', () => {
       title: '确认网站范围',
     };
     const plan = buildSubtaskCreateManyWritebackApplyPlan({
+      confirmationSurface: 'readiness_smoke_operator_confirmation',
       evidenceRunId: 'run_5',
       nextStep: '进入第一个子任务。',
       parentTaskId: 'task_project',
@@ -310,6 +314,7 @@ describe('Taskplane writeback apply plans', () => {
         type: 'panel.project_decomposed',
         payload: {
           confirmationBoundary: 'operator_confirmed_subtask_create_many',
+          confirmationSurface: 'readiness_smoke_operator_confirmation',
           draftOnlyBeforeConfirmation: true,
           evidenceRunId: 'run_5',
           subtaskCount: 2,

@@ -37,6 +37,7 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
     import(pathToFileURL(dispatchModulePath).href),
   ]);
   const cliPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    confirmationSurface: 'readiness_smoke_operator_confirmation',
     evidenceRunId: 'run_cli_decomposition',
     nextStep: 'Enter the first confirmed child task.',
     parentTaskId: 'task_project',
@@ -45,6 +46,7 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
     subtasks: [buildSubtaskDraft()],
   });
   const apiPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    confirmationSurface: 'readiness_smoke_operator_confirmation',
     evidenceRunId: 'run_api_decomposition',
     nextStep: 'Enter the first confirmed child task.',
     parentTaskId: 'task_project',
@@ -119,6 +121,7 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
   console.log(`apiDispatchTimelineRecordPath=${dispatchEvent?.payload?.recordPath ?? 'missing'}`);
   console.log(`apiDispatchTimelineSource=${dispatchEvent?.payload?.source ?? 'missing'}`);
   console.log(`apiDispatchTimelineConfirmationBoundary=${dispatchEvent?.payload?.confirmationBoundary ?? 'missing'}`);
+  console.log(`apiDispatchTimelineConfirmationSurface=${dispatchEvent?.payload?.confirmationSurface ?? 'missing'}`);
   console.log(`apiDispatchTimelineDraftOnlyBeforeConfirmation=${String(dispatchEvent?.payload?.draftOnlyBeforeConfirmation)}`);
   console.log(`missingConfirmationDispatchStatus=${blockedDispatchResult.status}`);
   console.log(`missingConfirmationDispatchAction=${blockedDispatchResult.action}`);
@@ -139,6 +142,7 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
     || dispatchEvent?.type !== 'panel.project_decomposed'
     || dispatchEvent?.payload?.source !== 'agent_api_decomposition'
     || dispatchEvent?.payload?.confirmationBoundary !== 'operator_confirmed_subtask_create_many'
+    || dispatchEvent?.payload?.confirmationSurface !== 'readiness_smoke_operator_confirmation'
     || dispatchEvent?.payload?.draftOnlyBeforeConfirmation !== true
     || dispatchEvent?.payload?.childTaskIds?.join(',') !== 'mock_child_1'
     || dispatchEvent?.payload?.recordPath !== 'Task Records/mock-project-decomposition.md'
@@ -162,6 +166,7 @@ function printPlan(prefix, plan) {
   console.log(`${prefix}SubtaskCount=${plan.input.subtasks.length}`);
   console.log(`${prefix}TimelineType=${plan.timeline.type}`);
   console.log(`${prefix}ConfirmationBoundary=${plan.timeline.payload.confirmationBoundary ?? 'missing'}`);
+  console.log(`${prefix}ConfirmationSurface=${plan.timeline.payload.confirmationSurface ?? 'missing'}`);
   console.log(`${prefix}DraftOnlyBeforeConfirmation=${String(plan.timeline.payload.draftOnlyBeforeConfirmation)}`);
 }
 
@@ -174,6 +179,7 @@ function isReadyCreateManyPlan(plan, source) {
     && plan.timeline.payload.source === source
     && plan.timeline.payload.subtaskCount === 1
     && plan.timeline.payload.confirmationBoundary === 'operator_confirmed_subtask_create_many'
+    && plan.timeline.payload.confirmationSurface === 'readiness_smoke_operator_confirmation'
     && plan.timeline.payload.draftOnlyBeforeConfirmation === true
     && plan.successMessage.includes('1');
 }

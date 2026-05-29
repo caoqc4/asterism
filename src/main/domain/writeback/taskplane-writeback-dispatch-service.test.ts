@@ -459,6 +459,7 @@ describe('TaskplaneWritebackDispatchService', () => {
         timeline: {
           payload: {
             confirmationBoundary: 'operator_confirmed_subtask_create_many',
+            confirmationSurface: 'readiness_smoke_operator_confirmation',
             draftOnlyBeforeConfirmation: true,
             evidenceRunId: 'run_5',
             source: 'agent_cli_decomposition',
@@ -511,6 +512,7 @@ describe('TaskplaneWritebackDispatchService', () => {
       payload: {
         childTaskIds: ['child_1', 'child_2'],
         confirmationBoundary: 'operator_confirmed_subtask_create_many',
+        confirmationSurface: 'readiness_smoke_operator_confirmation',
         draftOnlyBeforeConfirmation: true,
         evidenceRunId: 'run_5',
         recordPath: 'Task Records/AI 项目拆解自检.md',

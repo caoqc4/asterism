@@ -100,6 +100,13 @@ export function agentApiDecompositionPromotionRequirements(): AgentApiDecomposit
   ];
 }
 
+function isOperatorConfirmedSubtaskCreateManySurface(surface: unknown): boolean {
+  return surface === 'right_panel_decomposition_confirmation'
+    || surface === 'tasks_project_decomposition_confirmation'
+    || surface === 'taskplane_writeback_approval_queue'
+    || surface === 'readiness_smoke_operator_confirmation';
+}
+
 export type AgentApiDecompositionPromotionServiceEvidence = {
   applyPlan?: TaskplaneSubtaskWritebackApplyPlan | null;
   parentTaskId?: string | null;
@@ -372,7 +379,19 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
     missingRequirements.push('agent_api_decomposition_source');
   }
 
-  if (applyPlan?.timeline.payload.confirmationBoundary !== 'operator_confirmed_subtask_create_many') {
+  const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
+    ? applyPlan.timeline.payload.confirmationBoundary
+    : 'missing';
+  const confirmationSurface = typeof applyPlan?.timeline.payload.confirmationSurface === 'string'
+    ? applyPlan.timeline.payload.confirmationSurface
+    : 'missing';
+  const confirmationSurfaceEvidenceChainReady = isOperatorConfirmedSubtaskCreateManySurface(confirmationSurface);
+  const draftOnlyBeforeConfirmation = applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true;
+
+  if (
+    applyPlan?.timeline.payload.confirmationBoundary !== 'operator_confirmed_subtask_create_many'
+    || !confirmationSurfaceEvidenceChainReady
+  ) {
     missingRequirements.push('operator_confirmation_boundary');
   }
 
@@ -383,10 +402,6 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
   const ready = missingRequirements.length === 0;
   const missingRequirementSet = new Set(missingRequirements);
   const satisfiedRequirements = requiredRequirements.filter((requirement) => !missingRequirementSet.has(requirement));
-  const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
-    ? applyPlan.timeline.payload.confirmationBoundary
-    : 'missing';
-  const draftOnlyBeforeConfirmation = applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true;
 
   return {
     ready,
@@ -415,6 +430,8 @@ export function evaluateAgentApiDecompositionPromotionReadiness(params: {
       `timelineEvidenceRunId=${timelineEvidenceRunId || 'missing'}`,
       `evidenceRunIdChain=${evidenceRunIdChainReady ? 'ready' : 'missing'}`,
       `confirmationBoundary=${confirmationBoundary}`,
+      `confirmationSurface=${confirmationSurface}`,
+      `confirmationSurfaceEvidenceChain=${confirmationSurfaceEvidenceChainReady ? 'ready' : 'missing'}`,
       `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,
       'runtimeMode=missing',
       'invocationLayer=missing',
@@ -579,6 +596,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
     ? applyPlan.timeline.payload.confirmationBoundary
     : 'missing';
+  const confirmationSurface = typeof applyPlan?.timeline.payload.confirmationSurface === 'string'
+    ? applyPlan.timeline.payload.confirmationSurface
+    : 'missing';
+  const confirmationSurfaceEvidenceChainReady = isOperatorConfirmedSubtaskCreateManySurface(confirmationSurface);
   const draftOnlyBeforeConfirmation = applyPlan?.timeline.payload.draftOnlyBeforeConfirmation === true;
   const reversibleProposalReady = (
     evidence.reversibleProposalCard?.status === 'ready'
@@ -608,7 +629,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     satisfiedRequirements.push('agent_api_decomposition_source');
   }
 
-  if (applyPlan?.timeline.payload.confirmationBoundary === 'operator_confirmed_subtask_create_many') {
+  if (
+    applyPlan?.timeline.payload.confirmationBoundary === 'operator_confirmed_subtask_create_many'
+    && confirmationSurfaceEvidenceChainReady
+  ) {
     satisfiedRequirements.push('operator_confirmation_boundary');
   }
 
@@ -674,6 +698,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `timelineEvidenceRunId=${timelineEvidenceRunId || 'missing'}`,
       `evidenceRunIdChain=${evidenceRunIdChainReady ? 'ready' : 'missing'}`,
       `confirmationBoundary=${confirmationBoundary}`,
+      `confirmationSurface=${confirmationSurface}`,
+      `confirmationSurfaceEvidenceChain=${confirmationSurfaceEvidenceChainReady ? 'ready' : 'missing'}`,
       `draftOnlyBeforeConfirmation=${draftOnlyBeforeConfirmation ? 'true' : 'false'}`,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
       `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,

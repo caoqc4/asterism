@@ -227,6 +227,8 @@ export function projectDecompositionPromotionEvidenceChips(
     'sourceEvidenceChain',
     'evidenceRunIdChain',
     'confirmationBoundary',
+    'confirmationSurface',
+    'confirmationSurfaceEvidenceChain',
     'draftOnlyBeforeConfirmation',
     'runtimeMode',
     'invocationLayer',
@@ -265,6 +267,7 @@ export function buildProjectDecompositionConfirmationApplyPlan(
   draft: ProjectDecompositionResult,
 ): TaskplaneSubtaskWritebackApplyPlan {
   return buildSubtaskCreateManyWritebackApplyPlan({
+    confirmationSurface: 'tasks_project_decomposition_confirmation',
     evidenceRunId: draft.evidenceRunId ?? null,
     nextStep: draft.nextStep,
     parentSummary: draft.parentGoal,

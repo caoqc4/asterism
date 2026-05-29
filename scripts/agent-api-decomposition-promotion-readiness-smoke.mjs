@@ -48,6 +48,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     selectedRuntimeContractReady: false,
   });
   const partialApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    confirmationSurface: 'readiness_smoke_operator_confirmation',
     evidenceRunId: 'run_cli_decomposition_smoke',
     parentTaskId: 'task_project',
     runtimeContract: buildAgentApiDecompositionRuntimeContract('run_cli_decomposition_smoke', 'task_project'),
@@ -61,6 +62,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     selectedRuntimeContractReady: true,
   });
   const readyApplyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+    confirmationSurface: 'readiness_smoke_operator_confirmation',
     evidenceRunId: 'run_api_decomposition_smoke',
     parentTaskId: 'task_project',
     runtimeContract: buildAgentApiDecompositionRuntimeContract('run_api_decomposition_smoke', 'task_project'),
@@ -167,6 +169,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceSourceEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'sourceEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceEvidenceRunIdChain=${scalarValue(serviceEvidencePartial.summary, 'evidenceRunIdChain') ?? 'missing'}`);
   console.log(`serviceEvidenceConfirmationBoundary=${scalarValue(serviceEvidencePartial.summary, 'confirmationBoundary') ?? 'missing'}`);
+  console.log(`serviceEvidenceConfirmationSurface=${scalarValue(serviceEvidencePartial.summary, 'confirmationSurface') ?? 'missing'}`);
+  console.log(`serviceEvidenceConfirmationSurfaceEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'confirmationSurfaceEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceDraftOnlyBeforeConfirmation=${scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
@@ -242,6 +246,8 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'sourceEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'evidenceRunIdChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'confirmationBoundary') !== 'operator_confirmed_subtask_create_many'
+    || scalarValue(serviceEvidencePartial.summary, 'confirmationSurface') !== 'readiness_smoke_operator_confirmation'
+    || scalarValue(serviceEvidencePartial.summary, 'confirmationSurfaceEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'draftOnlyBeforeConfirmation') !== 'true'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'

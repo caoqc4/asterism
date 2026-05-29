@@ -6,6 +6,7 @@ import type { TaskFileRecord } from './types/task-file.js';
 import type { ArtifactRecord } from './types/artifact.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
+  TaskplaneSubtaskCreateManyConfirmationSurface,
   TaskplaneSubtaskCreateManyResult,
   TaskplaneWritebackApplyPlan,
   TaskplaneWritebackTimelineDraft,
@@ -95,6 +96,7 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   if (plan.action === 'subtask.create_many') {
     if (
       plan.timeline.payload.confirmationBoundary !== 'operator_confirmed_subtask_create_many'
+      || !isConfirmedSubtaskCreateManySurface(plan.timeline.payload.confirmationSurface)
       || plan.timeline.payload.draftOnlyBeforeConfirmation !== true
     ) {
       return blocked(plan.action, '子任务草案已暂停：缺少已确认的项目拆解写入边界。');
@@ -143,6 +145,15 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   if (!ports.createBlocker) return blocked(plan.action, '阻塞提案已暂停：当前环境不支持创建阻塞项。');
   await ports.createBlocker(plan.input);
   return completed(plan);
+}
+
+function isConfirmedSubtaskCreateManySurface(
+  surface: unknown,
+): surface is TaskplaneSubtaskCreateManyConfirmationSurface {
+  return surface === 'right_panel_decomposition_confirmation'
+    || surface === 'tasks_project_decomposition_confirmation'
+    || surface === 'taskplane_writeback_approval_queue'
+    || surface === 'readiness_smoke_operator_confirmation';
 }
 
 function completed(

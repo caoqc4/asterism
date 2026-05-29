@@ -281,6 +281,7 @@ describe('Taskplane writeback dispatch', () => {
           type: 'panel.project_decomposed',
           payload: {
             confirmationBoundary: 'operator_confirmed_subtask_create_many',
+            confirmationSurface: 'readiness_smoke_operator_confirmation',
             draftOnlyBeforeConfirmation: true,
             evidenceRunId: 'run_5',
             source: 'agent_cli_decomposition',
@@ -296,6 +297,7 @@ describe('Taskplane writeback dispatch', () => {
     expect(recordTimelineEvent).toHaveBeenCalledWith('task_project', 'panel.project_decomposed', {
       childTaskIds: ['child_1', 'child_2'],
       confirmationBoundary: 'operator_confirmed_subtask_create_many',
+      confirmationSurface: 'readiness_smoke_operator_confirmation',
       draftOnlyBeforeConfirmation: true,
       evidenceRunId: 'run_5',
       recordPath: 'Task Records/AI 项目拆解自检.md',
@@ -341,6 +343,49 @@ describe('Taskplane writeback dispatch', () => {
         timeline: {
           type: 'panel.project_decomposed',
           payload: {
+            evidenceRunId: 'run_5',
+            source: 'agent_api_decomposition',
+            subtaskCount: 1,
+          },
+        },
+      },
+    });
+
+    expect(createSubtasks).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      action: 'subtask.create_many',
+      message: '子任务草案已暂停：缺少已确认的项目拆解写入边界。',
+      status: 'blocked',
+    });
+  });
+
+  it('blocks subtask creation when the operator confirmation surface is missing', async () => {
+    const createSubtasks = vi.fn();
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_project',
+      ports: {
+        createSubtasks,
+      },
+      plan: {
+        action: 'subtask.create_many',
+        input: {
+          evidenceRunId: 'run_5',
+          parentTaskId: 'task_project',
+          source: 'agent_api_decomposition',
+          subtasks: [{
+            acceptanceCriteria: '页面范围已确认。',
+            dependency: null,
+            summary: '确认首版网站页面范围。',
+            title: '确认网站范围',
+          }],
+        },
+        successMessage: '已根据拆解草案创建 1 个子任务。',
+        timeline: {
+          type: 'panel.project_decomposed',
+          payload: {
+            confirmationBoundary: 'operator_confirmed_subtask_create_many',
+            draftOnlyBeforeConfirmation: true,
             evidenceRunId: 'run_5',
             source: 'agent_api_decomposition',
             subtaskCount: 1,

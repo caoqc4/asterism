@@ -465,6 +465,7 @@ describe('ai runtime invocation contract', () => {
 
   it('blocks Agent API decomposition promotion when selected-runtime evidence is not tied to the apply-plan timeline', () => {
     const applyPlan = buildSubtaskCreateManyWritebackApplyPlan({
+      confirmationSurface: 'readiness_smoke_operator_confirmation',
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',
       source: 'agent_api_decomposition',
@@ -575,6 +576,46 @@ describe('ai runtime invocation contract', () => {
     expect(wrongParent.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
     expect(wrongParent.summary).toContain('selectedRuntimeParentTask=task_other');
     expect(wrongParent.summary).toContain('selectedRuntimeParentTaskEvidenceChain=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when the confirmation surface is missing', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+    delete applyPlan.timeline.payload.confirmationSurface;
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        acceptanceCriteria: ['范围文档可验收'],
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        rationales: ['独立边界清楚'],
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        provider: 'openai',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['operator_confirmation_boundary'],
+    });
+    expect(mismatch.summary).toContain('confirmationSurface=missing');
+    expect(mismatch.summary).toContain('confirmationSurfaceEvidenceChain=missing');
   });
 
   it('blocks Agent API decomposition promotion when timeline runtime contract identity is stitched', () => {
@@ -2923,10 +2964,12 @@ function buildSubtaskDraft() {
 }
 
 function buildAgentApiDecompositionApplyPlan(
-  params: Parameters<typeof buildSubtaskCreateManyWritebackApplyPlan>[0],
+  params: Omit<Parameters<typeof buildSubtaskCreateManyWritebackApplyPlan>[0], 'confirmationSurface'>
+    & Partial<Pick<Parameters<typeof buildSubtaskCreateManyWritebackApplyPlan>[0], 'confirmationSurface'>>,
 ) {
   return buildSubtaskCreateManyWritebackApplyPlan({
     ...params,
+    confirmationSurface: params.confirmationSurface ?? 'readiness_smoke_operator_confirmation',
     runtimeContract: params.runtimeContract ?? {
       evidenceRunId: params.evidenceRunId ?? null,
       invocationLayer: 'api_runtime',
