@@ -1849,6 +1849,7 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('writeIntentActionIdentityChain=ready');
     expect(ready.summary).toContain('writeIntentActionBoundary=ready');
     expect(ready.summary).toContain('reviewedPatchApplyBoundary=ready');
+    expect(ready.summary).toContain('reviewedPatchBoundaryMode=applied_patch');
     expect(ready.summary).toContain('reviewedPatchExplicitApply=yes');
     expect(ready.summary).toContain('patchPromotionPreflight=ready');
     expect(ready.summary).toContain('patchPromotionStatus=applied');
@@ -2401,7 +2402,7 @@ describe('ai runtime invocation contract', () => {
 
     expect(artifactOnly).toMatchObject({
       ready: false,
-      missingRequirements: ['write_intent_extraction'],
+      missingRequirements: expect.arrayContaining(['write_intent_extraction']),
     });
     expect(artifactOnly.summary).toContain('writeIntentActions=artifact.propose');
     expect(artifactOnly.summary).toContain('writeIntentRunEvidenceChain=missing');
@@ -2422,7 +2423,7 @@ describe('ai runtime invocation contract', () => {
 
     expect(wrongRun).toMatchObject({
       ready: false,
-      missingRequirements: ['write_intent_extraction'],
+      missingRequirements: expect.arrayContaining(['write_intent_extraction']),
     });
     expect(wrongRun.summary).toContain('writeIntentRun=run_other');
     expect(wrongRun.summary).toContain('writeIntentRunEvidenceChain=missing');
@@ -2441,7 +2442,7 @@ describe('ai runtime invocation contract', () => {
 
     expect(wrongTask).toMatchObject({
       ready: false,
-      missingRequirements: ['write_intent_extraction'],
+      missingRequirements: expect.arrayContaining(['write_intent_extraction']),
     });
     expect(wrongTask.summary).toContain('writeIntentRunEvidenceChain=ready');
     expect(wrongTask.summary).toContain('writeIntentTask=task_2');
@@ -2462,7 +2463,7 @@ describe('ai runtime invocation contract', () => {
 
     expect(unsafeAction).toMatchObject({
       ready: false,
-      missingRequirements: ['write_intent_extraction'],
+      missingRequirements: expect.arrayContaining(['write_intent_extraction']),
     });
     expect(unsafeAction.summary).toContain('writeIntentActions=artifact.propose,task_file.propose,workspace.apply');
     expect(unsafeAction.summary).toContain('writeIntentSupportedActionCount=3');
@@ -2487,7 +2488,7 @@ describe('ai runtime invocation contract', () => {
 
     expect(duplicateAction).toMatchObject({
       ready: false,
-      missingRequirements: ['write_intent_extraction'],
+      missingRequirements: expect.arrayContaining(['write_intent_extraction']),
     });
     expect(duplicateAction.summary).toContain('writeIntentActions=artifact.propose,task_file.propose,task_file.propose');
     expect(duplicateAction.summary).toContain('writeIntentSupportedActionCount=3');
@@ -2595,6 +2596,7 @@ describe('ai runtime invocation contract', () => {
     expect(noWriteRun.summary).toContain('writeIntentActionIdentityChain=missing');
     expect(noWriteRun.summary).toContain('writeIntentActionBoundary=ready');
     expect(noWriteRun.summary).toContain('reviewedPatchApplyBoundary=ready');
+    expect(noWriteRun.summary).toContain('reviewedPatchBoundaryMode=no_workspace_write');
     expect(noWriteRun.summary).toContain('reviewedPatchExplicitApply=yes');
     expect(noWriteRun.summary).toContain('noWorkspaceWriteRequired=yes');
     expect(noWriteRun.summary).toContain('patchPromotionPreflight=missing');
@@ -2626,7 +2628,7 @@ describe('ai runtime invocation contract', () => {
 
     expect(invalidDeclaredIntent).toMatchObject({
       ready: false,
-      missingRequirements: ['write_intent_extraction'],
+      missingRequirements: expect.arrayContaining(['write_intent_extraction']),
     });
     expect(invalidDeclaredIntent.summary).toContain('writeIntentActions=none');
     expect(invalidDeclaredIntent.summary).toContain('writeIntentSupportedActionCount=0');
@@ -2669,8 +2671,65 @@ describe('ai runtime invocation contract', () => {
     expect(sourceContextRun.summary).toContain('writeIntentActionIdentityChain=ready');
     expect(sourceContextRun.summary).toContain('writeIntentActionBoundary=ready');
     expect(sourceContextRun.summary).toContain('reviewedPatchApplyBoundary=ready');
+    expect(sourceContextRun.summary).toContain('reviewedPatchBoundaryMode=no_workspace_write');
     expect(sourceContextRun.summary).toContain('noWorkspaceWriteRequired=yes');
     expect(sourceContextRun.summary).toContain('patchPromotionStatus=not_required');
+  });
+
+  it('blocks patch-proposal Agent API promotion when reviewed-patch apply is replaced by no-workspace-write evidence', () => {
+    const patchIntentWithoutApply = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'not_required',
+        explicitApplyOnly: true,
+        noWorkspaceWriteRequired: true,
+        promotionPreflightReady: false,
+        runId: 'run_api_execution',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(patchIntentWithoutApply).toMatchObject({
+      ready: false,
+      missingRequirements: ['reviewed_patch_apply_boundary'],
+    });
+    expect(patchIntentWithoutApply.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
+    expect(patchIntentWithoutApply.summary).toContain('writeIntentActionIdentityChain=ready');
+    expect(patchIntentWithoutApply.summary).toContain('reviewedPatchApplyBoundary=missing');
+    expect(patchIntentWithoutApply.summary).toContain('reviewedPatchBoundaryMode=no_workspace_write_mismatch');
+    expect(patchIntentWithoutApply.summary).toContain('noWorkspaceWriteRequired=yes');
+    expect(patchIntentWithoutApply.summary).toContain('patchPromotionStatus=not_required');
+  });
+
+  it('blocks no-write Agent API promotion when reviewed-patch apply evidence claims an applied patch', () => {
+    const noWriteIntentWithAppliedPatch = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'applied',
+        explicitApplyOnly: true,
+        promotionPreflightReady: true,
+        runId: 'run_api_execution',
+        taskId: 'task_1',
+      },
+      writeIntentExtraction: {
+        declaredActions: [],
+        noWriteIntentRequired: true,
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: [],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(noWriteIntentWithAppliedPatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reviewed_patch_apply_boundary'],
+    });
+    expect(noWriteIntentWithAppliedPatch.summary).toContain('writeIntentActions=none');
+    expect(noWriteIntentWithAppliedPatch.summary).toContain('noWriteIntentRequired=yes');
+    expect(noWriteIntentWithAppliedPatch.summary).toContain('reviewedPatchApplyBoundary=missing');
+    expect(noWriteIntentWithAppliedPatch.summary).toContain('reviewedPatchBoundaryMode=patch_apply_mismatch');
+    expect(noWriteIntentWithAppliedPatch.summary).toContain('patchPromotionStatus=applied');
   });
 
   it('blocks source-context-only Agent API promotion when extra unsupported write intents were declared', () => {
@@ -2695,7 +2754,7 @@ describe('ai runtime invocation contract', () => {
 
     expect(mixedDeclaredIntent).toMatchObject({
       ready: false,
-      missingRequirements: ['write_intent_extraction'],
+      missingRequirements: expect.arrayContaining(['write_intent_extraction']),
     });
     expect(mixedDeclaredIntent.summary).toContain('writeIntentActions=source_context.create');
     expect(mixedDeclaredIntent.summary).toContain('writeIntentSupportedActionCount=1');

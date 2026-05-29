@@ -1100,21 +1100,36 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && Boolean(runtimeActionTaskId)
     && Boolean(targetTaskId)
     && runtimeActionTaskId === targetTaskId;
-  const reviewedPatchApplyBoundaryReady = (
+  const reviewedPatchApplyIdentityReady = (
     evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
     && patchPromotionRunEvidenceChainReady
     && patchPromotionTaskEvidenceChainReady
-    && (
-      (
-        evidence.reviewedPatchApplyBoundary.promotionPreflightReady === true
-        && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'applied'
-      )
-      || (
-        evidence.reviewedPatchApplyBoundary.noWorkspaceWriteRequired === true
-        && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'not_required'
-      )
-    )
   );
+  const reviewedPatchAppliedBoundaryReady = (
+    reviewedPatchApplyIdentityReady
+    && patchProposalWriteIntentReady
+    && evidence.reviewedPatchApplyBoundary?.promotionPreflightReady === true
+    && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'applied'
+  );
+  const reviewedNoWorkspaceWriteBoundaryReady = (
+    reviewedPatchApplyIdentityReady
+    && (noWriteIntentRequiredReady || sourceContextWriteIntentReady)
+    && evidence.reviewedPatchApplyBoundary?.noWorkspaceWriteRequired === true
+    && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'not_required'
+  );
+  const reviewedPatchApplyBoundaryReady = (
+    reviewedPatchAppliedBoundaryReady
+    || reviewedNoWorkspaceWriteBoundaryReady
+  );
+  const reviewedPatchBoundaryMode = reviewedPatchAppliedBoundaryReady
+    ? 'applied_patch'
+    : reviewedNoWorkspaceWriteBoundaryReady
+      ? 'no_workspace_write'
+      : (
+        evidence.reviewedPatchApplyBoundary?.noWorkspaceWriteRequired === true
+          ? 'no_workspace_write_mismatch'
+          : 'patch_apply_mismatch'
+      );
   const runGoalContractReady = Boolean(
     runGoalObjective
     && evidence.runGoalContract?.completionConditionCount
@@ -1325,6 +1340,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `writeIntentActionIdentityChain=${writeIntentActionIdentityReady ? 'ready' : 'missing'}`,
       `writeIntentActionBoundary=${writeIntentActionBoundaryReady ? 'ready' : 'missing'}`,
       `reviewedPatchApplyBoundary=${reviewedPatchApplyBoundaryReady ? 'ready' : 'missing'}`,
+      `reviewedPatchBoundaryMode=${reviewedPatchBoundaryMode}`,
       `reviewedPatchExplicitApply=${evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true ? 'yes' : 'no'}`,
       `noWorkspaceWriteRequired=${evidence.reviewedPatchApplyBoundary?.noWorkspaceWriteRequired === true ? 'yes' : 'no'}`,
       `patchPromotionPreflight=${evidence.reviewedPatchApplyBoundary?.promotionPreflightReady === true ? 'ready' : 'missing'}`,

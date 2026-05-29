@@ -684,6 +684,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`patchProposalReadyWriteIntentActionIdentityChain=${scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActionIdentityChain') ?? 'missing'}`);
   console.log(`patchProposalReadyWriteIntentActionBoundary=${scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActionBoundary') ?? 'missing'}`);
   console.log(`patchProposalReadyReviewedPatchApplyBoundary=${scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
+  console.log(`patchProposalReadyReviewedPatchBoundaryMode=${scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchBoundaryMode') ?? 'missing'}`);
   console.log(`patchProposalReadyReviewedPatchExplicitApply=${scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchExplicitApply') ?? 'missing'}`);
   console.log(`patchProposalReadyPatchPromotionPreflight=${scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionPreflight') ?? 'missing'}`);
   console.log(`patchProposalReadyPatchPromotionStatus=${scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionStatus') ?? 'missing'}`);
@@ -722,6 +723,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`noWriteRequiredNoWriteIntentRequired=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWriteIntentRequired') ?? 'missing'}`);
   console.log(`noWriteRequiredWriteIntentActionBoundary=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'writeIntentActionBoundary') ?? 'missing'}`);
   console.log(`noWriteRequiredReviewedPatchApplyBoundary=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
+  console.log(`noWriteRequiredReviewedPatchBoundaryMode=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'reviewedPatchBoundaryMode') ?? 'missing'}`);
   console.log(`noWriteRequiredNoWorkspaceWriteRequired=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWorkspaceWriteRequired') ?? 'missing'}`);
   console.log(`noWriteRequiredPatchPromotionStatus=${scalarValue(serviceEvidenceNoWriteRequired.summary, 'patchPromotionStatus') ?? 'missing'}`);
   console.log(`sourceContextOnlyPromotionReady=${serviceEvidenceSourceContextOnly.ready ? 'yes' : 'no'}`);
@@ -735,6 +737,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`sourceContextOnlyWriteIntentActionIdentityChain=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentActionIdentityChain') ?? 'missing'}`);
   console.log(`sourceContextOnlyWriteIntentActionBoundary=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentActionBoundary') ?? 'missing'}`);
   console.log(`sourceContextOnlyReviewedPatchApplyBoundary=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
+  console.log(`sourceContextOnlyReviewedPatchBoundaryMode=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchBoundaryMode') ?? 'missing'}`);
   console.log(`sourceContextOnlyNoWorkspaceWriteRequired=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'noWorkspaceWriteRequired') ?? 'missing'}`);
 
   if (
@@ -845,6 +848,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActionIdentityChain') !== 'ready'
     || scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActionBoundary') !== 'ready'
     || scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchApplyBoundary') !== 'ready'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchBoundaryMode') !== 'applied_patch'
     || scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchExplicitApply') !== 'yes'
     || scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionPreflight') !== 'ready'
     || scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionStatus') !== 'applied'
@@ -883,6 +887,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWriteIntentRequired') !== 'yes'
     || scalarValue(serviceEvidenceNoWriteRequired.summary, 'writeIntentActionBoundary') !== 'ready'
     || scalarValue(serviceEvidenceNoWriteRequired.summary, 'reviewedPatchApplyBoundary') !== 'ready'
+    || scalarValue(serviceEvidenceNoWriteRequired.summary, 'reviewedPatchBoundaryMode') !== 'no_workspace_write'
     || scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWorkspaceWriteRequired') !== 'yes'
     || scalarValue(serviceEvidenceNoWriteRequired.summary, 'patchPromotionStatus') !== 'not_required'
     || !serviceEvidenceSourceContextOnly.ready
@@ -896,6 +901,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentActionIdentityChain') !== 'ready'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentActionBoundary') !== 'ready'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchApplyBoundary') !== 'ready'
+    || scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchBoundaryMode') !== 'no_workspace_write'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'noWorkspaceWriteRequired') !== 'yes'
   ) {
     console.log('status=failed');

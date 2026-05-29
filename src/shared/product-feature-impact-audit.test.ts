@@ -1399,6 +1399,10 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
     expect(rightPanel?.evidence.join(' ')).toContain('supportedActions alone no longer proves runtime-declared Write Intent identity');
     expect(rightPanel?.evidence.join(' ')).toContain('no-write promotion requires declaredActions=[] plus noWriteIntentRequired=yes');
+    expect(rightPanel?.evidence.join(' ')).toContain('binds reviewedPatchApplyBoundary to the Write Intent mode');
+    expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose plus task_file.propose must satisfy an applied reviewed-patch boundary');
+    expect(rightPanel?.evidence.join(' ')).toContain('source_context.create-only and explicit no-write runs may satisfy noWorkspaceWriteRequired');
+    expect(rightPanel?.evidence.join(' ')).toContain('reviewedPatchBoundaryMode=no_workspace_write_mismatch or patch_apply_mismatch');
   });
 
   it('records Agent API execution subtask-start gate evidence coverage', () => {
