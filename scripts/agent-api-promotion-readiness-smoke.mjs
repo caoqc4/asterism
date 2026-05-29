@@ -66,6 +66,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   const {
     agentApiExecutionPromotionRequirements,
     buildDeferredAgentApiExecutionRunInvocation,
+    deriveAgentApiDurableWritebackBoundaryFromTaskEvidence,
     evaluateAgentApiExecutionPromotionReadiness,
     evaluateAgentApiExecutionPromotionReadinessFromEvidence,
     evaluateAgentApiExecutionPromotionReadinessForInvocation,
@@ -591,6 +592,24 @@ export async function runAgentApiPromotionReadinessSmoke() {
     },
     taskId: 'task_1',
   });
+  const recoveredSourceContextBoundary = deriveAgentApiDurableWritebackBoundaryFromTaskEvidence({
+    action: 'source_context.create',
+    runId: 'run_api_execution',
+    sourceContexts: [{
+      runId: 'run_api_execution',
+      status: 'active',
+      taskId: 'task_1',
+    }],
+    taskId: 'task_1',
+    timeline: [{
+      payload: JSON.stringify({
+        confirmationSurface: 'readiness_smoke_operator_confirmation',
+        evidenceRunId: 'run_api_execution',
+        source: 'taskplane_write_intent',
+      }),
+      type: 'panel.source_updated',
+    }],
+  });
   const serviceEvidenceSourceContextApplied = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
     contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
     contextReadinessStep: {
@@ -601,6 +620,84 @@ export async function runAgentApiPromotionReadinessSmoke() {
     durableWritebackBoundary: sourceContextDispatch.status === 'completed'
       ? sourceContextDispatch.durableWritebackBoundary
       : null,
+    gates: {
+      simplicity_check: true,
+      runtime_action: true,
+      runtime_context_assembly: true,
+      context_readiness: true,
+      task_memory_coverage: true,
+      task_memory_guidance: true,
+      pre_step: true,
+      subtask_start: true,
+      post_step: true,
+    },
+    postStepVerification: {
+      runId: 'run_api_execution',
+      status: 'ready',
+      taskId: 'task_1',
+      verifier: 'taskplane.verifier.lightweight',
+    },
+    providerVisiblePreflight: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+      runId: 'run_api_execution',
+      startupProbe: 'not_called',
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    ...agentApiPilotDecisionEvidence(),
+    runEvidencePersistence: {
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+      terminalEvidenceSummary: 'output_chars=42',
+      terminalEvidenceStatus: 'present',
+      terminalRunStatus: 'completed',
+    },
+    runGoalContract: {
+      completionConditionCount: 1,
+      objective: 'Produce reviewable research evidence.',
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      provider: 'openai',
+      runId: 'run_api_execution',
+      runtimeMode: 'api',
+      taskId: 'task_1',
+    },
+    subtaskStart: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    ...taskBoundRunStartEvidence('run_api_execution'),
+    targetTaskId: 'task_1',
+    taskMemoryGuidance: {
+      guidanceCount: 1,
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    taskMemoryCoverage: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    writeIntentExtraction: {
+      declaredActions: ['source_context.create'],
+      runId: 'run_api_execution',
+      status: 'ready',
+      supportedActions: ['source_context.create'],
+      taskId: 'task_1',
+    },
+  });
+  const serviceEvidenceSourceContextRecovered = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+    contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
+    contextReadinessStep: {
+      status: 'ready',
+      stepId: 'step_context_ready',
+      taskId: 'task_1',
+    },
+    durableWritebackBoundary: recoveredSourceContextBoundary,
     gates: {
       simplicity_check: true,
       runtime_action: true,
@@ -869,6 +966,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`sourceContextAppliedDurableWritebackConfirmationSurface=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackConfirmationSurface') ?? 'missing'}`);
   console.log(`sourceContextAppliedDurableWritebackRunEvidenceChain=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackRunEvidenceChain') ?? 'missing'}`);
   console.log(`sourceContextAppliedDurableWritebackTaskEvidenceChain=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`sourceContextRecoveredPromotionReady=${serviceEvidenceSourceContextRecovered.ready ? 'yes' : 'no'}`);
+  console.log(`sourceContextRecoveredRequirements=${serviceEvidenceSourceContextRecovered.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
+  console.log(`sourceContextRecoveredReviewedPatchBoundaryMode=${scalarValue(serviceEvidenceSourceContextRecovered.summary, 'reviewedPatchBoundaryMode') ?? 'missing'}`);
+  console.log(`sourceContextRecoveredDurableWritebackConfirmationSurface=${scalarValue(serviceEvidenceSourceContextRecovered.summary, 'durableWritebackConfirmationSurface') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -1048,6 +1149,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackConfirmationSurface') !== 'readiness_smoke_operator_confirmation'
     || scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackRunEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackTaskEvidenceChain') !== 'ready'
+    || !serviceEvidenceSourceContextRecovered.ready
+    || serviceEvidenceSourceContextRecovered.satisfiedRequirements.length !== 11
+    || scalarValue(serviceEvidenceSourceContextRecovered.summary, 'reviewedPatchBoundaryMode') !== 'durable_writeback'
+    || scalarValue(serviceEvidenceSourceContextRecovered.summary, 'durableWritebackConfirmationSurface') !== 'readiness_smoke_operator_confirmation'
   ) {
     console.log('status=failed');
     return 1;

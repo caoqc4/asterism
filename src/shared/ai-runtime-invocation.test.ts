@@ -9,6 +9,7 @@ import {
   buildProductHarnessDecisionDraftInvocation,
   buildProductHarnessMemoryProposalInvocation,
   buildProductHarnessVerificationAssistInvocation,
+  deriveAgentApiDurableWritebackBoundaryFromTaskEvidence,
   evaluateAgentApiDecompositionPromotionReadiness,
   evaluateAgentApiDecompositionPromotionReadinessFromEvidence,
   evaluateAgentApiExecutionPromotionReadiness,
@@ -2815,6 +2816,91 @@ describe('ai runtime invocation contract', () => {
     expect(sourceContextRun.summary).toContain('durableWritebackConfirmationSurface=right_panel_writeback_confirmation');
     expect(sourceContextRun.summary).toContain('durableWritebackRunEvidenceChain=ready');
     expect(sourceContextRun.summary).toContain('durableWritebackTaskEvidenceChain=ready');
+  });
+
+  it('recovers source-context durable writeback promotion evidence from task detail records', () => {
+    const durableWritebackBoundary = deriveAgentApiDurableWritebackBoundaryFromTaskEvidence({
+      action: 'source_context.create',
+      runId: 'run_api_execution',
+      sourceContexts: [{
+        runId: 'run_api_execution',
+        status: 'active',
+        taskId: 'task_1',
+      }],
+      taskId: 'task_1',
+      timeline: [{
+        payload: JSON.stringify({
+          confirmationSurface: 'taskplane_writeback_approval_queue',
+          evidenceRunId: 'run_api_execution',
+          source: 'taskplane_write_intent',
+        }),
+        type: 'panel.source_updated',
+      }],
+    });
+
+    expect(durableWritebackBoundary).toEqual({
+      action: 'source_context.create',
+      confirmationSurface: 'taskplane_writeback_approval_queue',
+      runId: 'run_api_execution',
+      status: 'applied',
+      taskId: 'task_1',
+    });
+
+    const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      durableWritebackBoundary,
+      reviewedPatchApplyBoundary: null,
+      writeIntentExtraction: {
+        declaredActions: ['source_context.create'],
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: ['source_context.create'],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(readiness.ready).toBe(true);
+    expect(readiness.summary).toContain('reviewedPatchBoundaryMode=durable_writeback');
+    expect(readiness.summary).toContain('durableWritebackConfirmationSurface=taskplane_writeback_approval_queue');
+  });
+
+  it('does not recover durable writeback promotion evidence from mismatched or unconfirmed task detail records', () => {
+    const mismatched = deriveAgentApiDurableWritebackBoundaryFromTaskEvidence({
+      action: 'source_context.create',
+      runId: 'run_api_execution',
+      sourceContexts: [{
+        runId: 'run_other',
+        status: 'active',
+        taskId: 'task_1',
+      }],
+      taskId: 'task_1',
+      timeline: [{
+        payload: JSON.stringify({
+          confirmationSurface: 'taskplane_writeback_approval_queue',
+          evidenceRunId: 'run_api_execution',
+        }),
+        type: 'panel.source_updated',
+      }],
+    });
+    const unconfirmed = deriveAgentApiDurableWritebackBoundaryFromTaskEvidence({
+      action: 'source_context.create',
+      runId: 'run_api_execution',
+      sourceContexts: [{
+        runId: 'run_api_execution',
+        status: 'active',
+        taskId: 'task_1',
+      }],
+      taskId: 'task_1',
+      timeline: [{
+        payload: JSON.stringify({
+          evidenceRunId: 'run_api_execution',
+        }),
+        type: 'panel.source_updated',
+      }],
+    });
+
+    expect(mismatched).toBeNull();
+    expect(unconfirmed).toBeNull();
   });
 
   it('blocks patch-proposal Agent API promotion when reviewed-patch apply is replaced by no-workspace-write evidence', () => {

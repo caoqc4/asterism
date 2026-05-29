@@ -1401,8 +1401,11 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('source_context.create remains a durable writeback proposal until product-side confirmation evidence exists');
     expect(rightPanel?.evidence.join(' ')).toContain('sourceContextApplied=11/11 requirements with durableWritebackStatus=applied');
     expect(rightPanel?.evidence.join(' ')).toContain('durableWritebackConfirmationSurface=readiness_smoke_operator_confirmation');
+    expect(rightPanel?.evidence.join(' ')).toContain('sourceContextRecovered=11/11 requirements from persisted Source Context plus panel.source_updated timeline confirmation evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('TaskplaneWriteback source_context.create apply plans now carry confirmationSurface evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('dispatchTaskplaneWritebackApplyPlan returns durableWritebackBoundary');
+    expect(rightPanel?.evidence.join(' ')).toContain('deriveAgentApiDurableWritebackBoundaryFromTaskEvidence can recover source_context.create durableWritebackBoundary');
+    expect(rightPanel?.evidence.join(' ')).toContain('source-context promotion evidence survives page reloads');
     expect(rightPanel?.evidence.join(' ')).toContain('duplicate, missing-declaration, or non-proposal write actions still blocked');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
     expect(rightPanel?.evidence.join(' ')).toContain('supportedActions alone no longer proves runtime-declared Write Intent identity');

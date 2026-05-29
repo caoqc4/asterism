@@ -3,6 +3,8 @@ import type { AgentRuntimeVerifierResult } from './agent-runtime-verifier.js';
 import type { DecisionDraftRecord } from './types/decision.js';
 import type { PilotDecisionSnapshot } from './pilot-decision-contract.js';
 import type { RunRequestSurface, RunStatus } from './types/run.js';
+import type { SourceContextRecord } from './types/source-context.js';
+import type { TimelineEventRecord } from './types/task.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
 import type { TaskplaneSubtaskWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
@@ -284,6 +286,14 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     taskId?: string | null;
     verifier?: string | null;
   } | null;
+};
+
+export type AgentApiDurableWritebackRecoveryInput = {
+  action: 'source_context.create';
+  runId: string;
+  sourceContexts?: Array<Pick<SourceContextRecord, 'runId' | 'status' | 'taskId'>>;
+  taskId: string;
+  timeline?: Array<Pick<TimelineEventRecord, 'payload' | 'type'>>;
 };
 
 export type VerificationAssistInvocationResult = RuntimeInvocationBase & {
@@ -1411,10 +1421,63 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   };
 }
 
+export function deriveAgentApiDurableWritebackBoundaryFromTaskEvidence(
+  input: AgentApiDurableWritebackRecoveryInput,
+): AgentApiExecutionPromotionServiceEvidence['durableWritebackBoundary'] {
+  const runId = input.runId.trim();
+  const taskId = input.taskId.trim();
+  if (!runId || !taskId) return null;
+
+  const sourceContext = (input.sourceContexts ?? []).find((source) => (
+    source.status === 'active'
+    && source.taskId === taskId
+    && source.runId === runId
+  ));
+  if (!sourceContext) return null;
+
+  const confirmationSurface = (input.timeline ?? [])
+    .filter((event) => event.type === 'panel.source_updated')
+    .map((event) => parseTimelinePayload(event.payload))
+    .find((payload) => (
+      payload
+      && payload.evidenceRunId === runId
+      && isDurableWritebackConfirmationSurface(payload.confirmationSurface)
+    ))?.confirmationSurface;
+
+  if (!confirmationSurface) return null;
+
+  return {
+    action: input.action,
+    confirmationSurface,
+    runId,
+    status: 'applied',
+    taskId,
+  };
+}
+
 function scalarSummaryValue(summary: string, key: string): string | null {
   const prefix = `${key}=`;
   const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
   return part?.trim().slice(prefix.length).trim() ?? null;
+}
+
+function parseTimelinePayload(payload: string | null): Record<string, string> | null {
+  if (!payload) return null;
+  try {
+    const parsed = JSON.parse(payload) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+    );
+  } catch {
+    return null;
+  }
+}
+
+function isDurableWritebackConfirmationSurface(value: unknown): value is string {
+  return value === 'right_panel_writeback_confirmation'
+    || value === 'taskplane_writeback_approval_queue'
+    || value === 'readiness_smoke_operator_confirmation';
 }
 
 function isAgentApiExecutionRequestSurface(surface: RunRequestSurface | null): boolean {
