@@ -932,4 +932,49 @@ describe('SandboxPatchPromotionApplyService', () => {
     expect(result.auditSummary).toContain('postApplyRunEvidence=ready');
     expect(result.auditSummary).toContain('promotionMissingRequirements=selected_runtime_contract');
   });
+
+  it('keeps already applied promotion evidence fully ready when same-run runtime contract is available', async () => {
+    const promotion = buildPromotion({ status: 'applied' });
+    const service = new SandboxPatchPromotionApplyService(
+      {
+        preflight: vi.fn().mockResolvedValue({
+          promotion,
+          status: 'already_applied',
+          summary: 'Sandbox patch promotion preflight: already_applied / checkpoint=run_checkpoint_1',
+        }),
+      },
+      {
+        markApplied: vi.fn(),
+        markBlocked: vi.fn(),
+      },
+      () => '/tmp/unused',
+      async (runId, taskId) => ({
+        invocationLayer: 'selected_runtime',
+        phase: 'execution_run',
+        runId,
+        runtimeMode: 'codex',
+        taskId,
+      }),
+    );
+
+    const result = await service.apply('run_checkpoint_1', {
+      operatorConfirmed: true,
+      operatorId: 'local_operator',
+    });
+
+    expect(result).toMatchObject({
+      status: 'already_applied',
+      touchedFiles: ['notes.md'],
+    });
+    expect(result.auditSummary).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+    expect(result.auditSummary).toContain('promotionRequirements=8/8');
+    expect(result.auditSummary).toContain('selectedRuntimeContract=ready');
+    expect(result.auditSummary).toContain('selectedRuntimeRun=run_1');
+    expect(result.auditSummary).toContain('selectedRuntimeTask=task_1');
+    expect(result.auditSummary).toContain('targetTaskEvidenceChain=ready');
+    expect(result.auditSummary).toContain('operatorApplyEvidenceChain=ready');
+    expect(result.auditSummary).toContain('sameRunEvidenceChain=ready');
+    expect(result.auditSummary).toContain('postApplyFilesMatched=yes');
+    expect(result.auditSummary).toContain('promotionMissingRequirements=none');
+  });
 });

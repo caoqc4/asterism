@@ -1434,6 +1434,16 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('cannot write workspace files or mutate promotion records');
   });
 
+  it('records fully ready already-applied patch promotion routing evidence', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('already-applied patch-promotion responses can reach promotionRequirements=8/8');
+    expect(evidence).toContain('first-party same-run selected-runtime evidence is available');
+    expect(evidence).toContain('selectedRuntimeContract=ready, targetTaskEvidenceChain=ready, operatorApplyEvidenceChain=ready');
+    expect(evidence).toContain('postApplyFilesMatched=yes, and promotionMissingRequirements=none');
+  });
+
   it('records missing terminal failure evidence in scheduler recovery proposals', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
