@@ -1,11 +1,17 @@
 import type { DecisionService } from '../decision/decision-service.js';
 import type { TaskService } from '../task/task-service.js';
+import {
+  buildBusinessLineCreationDraft,
+  normalizeBusinessLineCreationLines,
+} from '../../../shared/business-line-creation-template.js';
 import { BusinessLineRepository } from '../../db/repositories/business-line-repository.js';
 import type {
   AcceptBusinessLineSkillRevisionInput,
   BusinessLine,
+  BusinessLineCreationTemplate,
   BusinessLineContextPack,
   BusinessLineListItem,
+  BusinessLineSkillRevision,
   BusinessLineTodaySuggestion,
   BusinessLineWorkspace,
   CreateBusinessLineInput,
@@ -45,7 +51,21 @@ export class BusinessLineService {
       const task = await this.taskService.getDetail(input.legacyTaskId);
       if (!task) throw new Error(`Task not found: ${input.legacyTaskId}`);
     }
-    return this.businessLineRepository.create(input);
+    const sourceBusinessLine = input.sourceBusinessLineId
+      ? await this.businessLineRepository.findById(input.sourceBusinessLineId)
+      : null;
+    if (input.sourceBusinessLineId && !sourceBusinessLine) {
+      throw new Error(`Source business line not found: ${input.sourceBusinessLineId}`);
+    }
+    const businessLine = await this.businessLineRepository.create(input);
+    if (this.shouldSeedCreatedBusinessLine(input)) {
+      await this.seedCreatedBusinessLine({
+        businessLine,
+        input,
+        sourceBusinessLine,
+      });
+    }
+    return businessLine;
   }
 
   async list(): Promise<BusinessLineListItem[]> {
@@ -308,6 +328,176 @@ export class BusinessLineService {
     const workspace = await this.getWorkspace(revision.businessLineId);
     if (!workspace) throw new Error(`Business line not found: ${revision.businessLineId}`);
     return workspace;
+  }
+
+  private shouldSeedCreatedBusinessLine(input: CreateBusinessLineInput): boolean {
+    return Boolean(
+      input.template
+      || input.desiredOutcome?.trim()
+      || input.continuousInformation?.trim()
+      || input.aiWorkAndConfirmation?.trim()
+      || input.sourceBusinessLineId?.trim()
+      || normalizeBusinessLineCreationLines(input.initialStructure).length
+      || normalizeBusinessLineCreationLines(input.initialRecords).length
+      || normalizeBusinessLineCreationLines(input.reviewPrompts).length
+      || normalizeBusinessLineCreationLines(input.proposedSops).length
+      || normalizeBusinessLineCreationLines(input.initialNextActions).length
+    );
+  }
+
+  private async seedCreatedBusinessLine(params: {
+    businessLine: BusinessLine;
+    input: CreateBusinessLineInput;
+    sourceBusinessLine: BusinessLine | null;
+  }): Promise<void> {
+    const template = params.input.template ?? 'custom';
+    const generated = buildBusinessLineCreationDraft({
+      aiWorkAndConfirmation: params.input.aiWorkAndConfirmation,
+      continuousInformation: params.input.continuousInformation,
+      desiredOutcome: params.input.desiredOutcome ?? params.input.goal,
+      template,
+      title: params.input.title,
+    });
+    const initialStructure = normalizeBusinessLineCreationLines(params.input.initialStructure).length
+      ? normalizeBusinessLineCreationLines(params.input.initialStructure)
+      : generated.initialStructure;
+    const initialRecords = normalizeBusinessLineCreationLines(params.input.initialRecords).length
+      ? normalizeBusinessLineCreationLines(params.input.initialRecords)
+      : generated.initialRecords;
+    const reviewPrompts = normalizeBusinessLineCreationLines(params.input.reviewPrompts).length
+      ? normalizeBusinessLineCreationLines(params.input.reviewPrompts)
+      : generated.reviewPrompts;
+    const proposedSops = normalizeBusinessLineCreationLines(params.input.proposedSops).length
+      ? normalizeBusinessLineCreationLines(params.input.proposedSops)
+      : generated.proposedSops;
+    const initialNextActions = normalizeBusinessLineCreationLines(params.input.initialNextActions).length
+      ? normalizeBusinessLineCreationLines(params.input.initialNextActions)
+      : generated.initialNextActions;
+    const inheritedStructure = params.sourceBusinessLine
+      ? await this.inheritedStructureRecords(params.sourceBusinessLine)
+      : [];
+    const inheritedActiveSops = params.sourceBusinessLine
+      ? await this.inheritedActiveSops(params.sourceBusinessLine)
+      : [];
+    const inheritedSopTexts = inheritedActiveSops.map((revision) => revision.nextContent);
+
+    const review = await this.businessLineRepository.createReview({
+      businessLineId: params.businessLine.id,
+      resultSummary: `Business line created from ${this.templateLabel(template)} creation flow.`,
+      evidenceItems: [
+        `What this business line is: ${params.input.title.trim()}`,
+        params.input.desiredOutcome ? `Outcome: ${params.input.desiredOutcome.trim()}` : null,
+        params.input.continuousInformation ? `Continuous records: ${params.input.continuousInformation.trim()}` : null,
+        params.input.aiWorkAndConfirmation ? `AI and confirmation: ${params.input.aiWorkAndConfirmation.trim()}` : null,
+        params.sourceBusinessLine ? `Based on existing business line: ${params.sourceBusinessLine.title}` : null,
+      ].filter((item): item is string => Boolean(item)),
+      hypothesisChange: params.input.desiredOutcome ?? params.input.goal ?? null,
+      skillUpdateSuggestions: [...proposedSops, ...inheritedSopTexts],
+      nextActionSuggestions: initialNextActions,
+      confidence: 75,
+      requiresDecision: false,
+    });
+
+    for (const item of initialStructure) {
+      await this.businessLineRepository.createRecord({
+        businessLineId: params.businessLine.id,
+        type: 'signal',
+        source: `template:${template}:structure`,
+        summary: `Structure: ${item}`,
+        confidence: 75,
+        shouldAffectFutureContext: true,
+      });
+    }
+    for (const item of inheritedStructure) {
+      await this.businessLineRepository.createRecord({
+        businessLineId: params.businessLine.id,
+        type: 'signal',
+        source: `business_line:${params.sourceBusinessLine!.id}:structure`,
+        summary: item.summary,
+        confidence: item.confidence,
+        shouldAffectFutureContext: true,
+      });
+    }
+    for (const item of initialRecords) {
+      await this.businessLineRepository.createRecord({
+        businessLineId: params.businessLine.id,
+        type: 'signal',
+        source: `template:${template}:record`,
+        summary: item,
+        confidence: 75,
+        shouldAffectFutureContext: true,
+      });
+    }
+    for (const prompt of reviewPrompts) {
+      await this.businessLineRepository.createRecord({
+        businessLineId: params.businessLine.id,
+        type: 'review',
+        source: `template:${template}:review_prompt`,
+        summary: `Review prompt: ${prompt}`,
+        confidence: 75,
+        shouldAffectFutureContext: false,
+      });
+    }
+    for (const suggestion of proposedSops) {
+      await this.businessLineRepository.createSkillRevision({
+        businessLineId: params.businessLine.id,
+        sourceReviewId: review.id,
+        nextContent: suggestion,
+        changeReason: `Proposed by ${this.templateLabel(template)} creation flow.`,
+      });
+    }
+    for (const revision of inheritedActiveSops) {
+      await this.businessLineRepository.createSkillRevision({
+        businessLineId: params.businessLine.id,
+        sourceReviewId: review.id,
+        nextContent: revision.nextContent,
+        previousContent: null,
+        scopePath: revision.scopePath,
+        changeReason: `Inherited from ${params.sourceBusinessLine!.title}; explicit acceptance required before active use.`,
+      });
+    }
+    for (const suggestion of initialNextActions) {
+      const createdTask = await this.taskService.create({
+        title: suggestion,
+        summary: `Initial business-line next action from ${this.templateLabel(template)} creation flow.`,
+        taskType: 'simple',
+        taskFacets: ['simple'],
+        parentTaskId: params.businessLine.legacyTaskId,
+        businessLineId: params.businessLine.id,
+      });
+      await this.taskService.update({
+        id: createdTask.id,
+        nextStep: suggestion,
+      });
+      const actionRecord = await this.businessLineRepository.createRecord({
+        businessLineId: params.businessLine.id,
+        type: 'action',
+        source: `creation:${review.id}`,
+        summary: suggestion,
+        confidence: 75,
+        linkedActionId: createdTask.id,
+      });
+      await this.businessLineRepository.createActionLink({
+        businessLineId: params.businessLine.id,
+        taskId: createdTask.id,
+        sourceReviewId: review.id,
+        sourceRecordId: actionRecord.id,
+      });
+    }
+  }
+
+  private async inheritedStructureRecords(businessLine: BusinessLine): Promise<Awaited<ReturnType<BusinessLineRepository['listRecords']>>> {
+    const records = await this.businessLineRepository.listRecords(businessLine.id, 100);
+    return records.filter((record) => record.source.includes(':structure'));
+  }
+
+  private async inheritedActiveSops(businessLine: BusinessLine): Promise<BusinessLineSkillRevision[]> {
+    return (await this.businessLineRepository.listSkillRevisions(businessLine.id))
+      .filter((revision) => revision.status === 'active');
+  }
+
+  private templateLabel(template: BusinessLineCreationTemplate): string {
+    return template === 'web_product' ? 'Web Product / Software Product' : 'Custom';
   }
 
   private async ensureLegacyBusinessLines(): Promise<void> {

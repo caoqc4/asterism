@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+  buildBusinessLineCreationDraft,
+  normalizeBusinessLineCreationLines,
+} from '@shared/business-line-creation-template';
 import type {
+  BusinessLineCreationTemplate,
   BusinessLineListItem,
   BusinessLineRecord,
   BusinessLineWorkspace,
+  CreateBusinessLineInput,
 } from '@shared/types/business-line';
 
 type Tab = 'overview' | 'records' | 'next-actions' | 'learning';
@@ -25,24 +31,28 @@ export function BusinessLinesPage({ onOpenBusinessLinePanel, onOpenTask, focusBu
   const [workspace, setWorkspace] = useState<BusinessLineWorkspace | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  async function loadBusinessLines(selectId?: string | null) {
+    if (!window.api?.listBusinessLines) {
+      setLoading(false);
+      return;
+    }
+    const lines = await window.api.listBusinessLines();
+    setBusinessLines(lines);
+    setSelectedId((current) => selectId ?? focusBusinessLineId ?? current ?? lines[0]?.id ?? null);
+    setLoading(false);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      if (!window.api?.listBusinessLines) {
-        setLoading(false);
-        return;
-      }
-      const lines = await window.api.listBusinessLines();
-      if (cancelled) return;
-      setBusinessLines(lines);
-      setSelectedId((current) => focusBusinessLineId ?? current ?? lines[0]?.id ?? null);
-      setLoading(false);
-    }
-    load().catch(() => setLoading(false));
+    loadBusinessLines().catch(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusBusinessLineId]);
 
   useEffect(() => {
@@ -74,6 +84,9 @@ export function BusinessLinesPage({ onOpenBusinessLinePanel, onOpenTask, focusBu
             <div className="page-kicker">Business Lines</div>
             <h2>业务线</h2>
           </div>
+          <button className="btn sm primary" onClick={() => setCreating(true)}>
+            新建
+          </button>
         </div>
         {loading && <div className="muted small">加载中…</div>}
         <div className="business-line-list">
@@ -104,6 +117,20 @@ export function BusinessLinesPage({ onOpenBusinessLinePanel, onOpenTask, focusBu
       </div>
 
       <div className="business-workspace">
+        {creating && (
+          <BusinessLineCreationPanel
+            existingLines={businessLines}
+            onCancel={() => setCreating(false)}
+            onCreated={async (nextWorkspace) => {
+              setCreating(false);
+              setWorkspace(nextWorkspace);
+              setSelectedId(nextWorkspace.businessLine.id);
+              setTab('overview');
+              await loadBusinessLines(nextWorkspace.businessLine.id);
+            }}
+          />
+        )}
+
         {!workspace && (
           <div className="business-workspace-empty">
             <h2>{selected?.title ?? '暂无业务线'}</h2>
@@ -149,6 +176,148 @@ export function BusinessLinesPage({ onOpenBusinessLinePanel, onOpenTask, focusBu
         )}
       </div>
     </div>
+  );
+}
+
+function BusinessLineCreationPanel({ existingLines, onCancel, onCreated }: {
+  existingLines: BusinessLineListItem[];
+  onCancel: () => void;
+  onCreated: (workspace: BusinessLineWorkspace) => void | Promise<void>;
+}) {
+  const [template, setTemplate] = useState<BusinessLineCreationTemplate>('web_product');
+  const [title, setTitle] = useState('');
+  const [desiredOutcome, setDesiredOutcome] = useState('');
+  const [continuousInformation, setContinuousInformation] = useState('');
+  const [aiWorkAndConfirmation, setAiWorkAndConfirmation] = useState('');
+  const [sourceBusinessLineId, setSourceBusinessLineId] = useState('');
+  const [initialStructure, setInitialStructure] = useState('');
+  const [initialRecords, setInitialRecords] = useState('');
+  const [reviewPrompts, setReviewPrompts] = useState('');
+  const [proposedSops, setProposedSops] = useState('');
+  const [initialNextActions, setInitialNextActions] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  function generateDraft() {
+    const draft = buildBusinessLineCreationDraft({
+      aiWorkAndConfirmation,
+      continuousInformation,
+      desiredOutcome,
+      template,
+      title,
+    });
+    setInitialStructure(draft.initialStructure.join('\n'));
+    setInitialRecords(draft.initialRecords.join('\n'));
+    setReviewPrompts(draft.reviewPrompts.join('\n'));
+    setProposedSops(draft.proposedSops.join('\n'));
+    setInitialNextActions(draft.initialNextActions.join('\n'));
+  }
+
+  async function submit() {
+    if (!window.api?.createBusinessLine || !title.trim()) return;
+    setSubmitting(true);
+    try {
+      const draft = buildBusinessLineCreationDraft({
+        aiWorkAndConfirmation,
+        continuousInformation,
+        desiredOutcome,
+        template,
+        title,
+      });
+      const input: CreateBusinessLineInput = {
+        title: title.trim(),
+        summary: continuousInformation.trim() || null,
+        goal: desiredOutcome.trim() || null,
+        kind: template === 'web_product' ? 'software_product' : 'general',
+        template,
+        desiredOutcome,
+        continuousInformation,
+        aiWorkAndConfirmation,
+        sourceBusinessLineId: sourceBusinessLineId || null,
+        initialStructure: normalizeBusinessLineCreationLines(initialStructure ? initialStructure.split('\n') : draft.initialStructure),
+        initialRecords: normalizeBusinessLineCreationLines(initialRecords ? initialRecords.split('\n') : draft.initialRecords),
+        reviewPrompts: normalizeBusinessLineCreationLines(reviewPrompts ? reviewPrompts.split('\n') : draft.reviewPrompts),
+        proposedSops: normalizeBusinessLineCreationLines(proposedSops ? proposedSops.split('\n') : draft.proposedSops),
+        initialNextActions: normalizeBusinessLineCreationLines(initialNextActions ? initialNextActions.split('\n') : draft.initialNextActions),
+      };
+      const workspace = await window.api.createBusinessLine(input);
+      await onCreated(workspace);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="business-section business-create-panel">
+      <div className="business-create-head">
+        <div>
+          <div className="page-kicker">Create Business Line</div>
+          <h3>新建业务线</h3>
+        </div>
+        <button className="btn sm" onClick={onCancel}>取消</button>
+      </div>
+      <div className="business-create-grid">
+        <label>
+          Template
+          <select value={template} onChange={(event) => setTemplate(event.target.value as BusinessLineCreationTemplate)}>
+            <option value="web_product">Web Product / Software Product</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+        <label>
+          What is this business line?
+          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="GoalPilot onboarding web app" />
+        </label>
+        <label>
+          What outcome would make it better?
+          <textarea value={desiredOutcome} onChange={(event) => setDesiredOutcome(event.target.value)} placeholder="Activation improves from trial to first completed workflow." />
+        </label>
+        <label>
+          What information must be recorded continuously?
+          <textarea value={continuousInformation} onChange={(event) => setContinuousInformation(event.target.value)} placeholder="Customer signals, experiments, releases, metrics, risks." />
+        </label>
+        <label>
+          What work can AI do, and what needs confirmation?
+          <textarea value={aiWorkAndConfirmation} onChange={(event) => setAiWorkAndConfirmation(event.target.value)} placeholder="AI drafts specs and summaries; publishing/deploy/pricing needs approval." />
+        </label>
+        <label>
+          Is this based on an existing business line's structure or experience?
+          <select value={sourceBusinessLineId} onChange={(event) => setSourceBusinessLineId(event.target.value)}>
+            <option value="">No existing business line</option>
+            {existingLines.map((line) => (
+              <option key={line.id} value={line.id}>{line.title}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="business-create-actions">
+        <button className="btn sm" onClick={generateDraft}>生成初始结构</button>
+        <button className="btn sm primary" disabled={!title.trim() || submitting} onClick={submit}>
+          创建业务线
+        </button>
+      </div>
+      <div className="business-create-generated">
+        <label>
+          Initial structure
+          <textarea value={initialStructure} onChange={(event) => setInitialStructure(event.target.value)} placeholder="One structure item per line" />
+        </label>
+        <label>
+          Initial records
+          <textarea value={initialRecords} onChange={(event) => setInitialRecords(event.target.value)} placeholder="One initial record per line" />
+        </label>
+        <label>
+          Review prompts
+          <textarea value={reviewPrompts} onChange={(event) => setReviewPrompts(event.target.value)} placeholder="One review prompt per line" />
+        </label>
+        <label>
+          Proposed SOPs
+          <textarea value={proposedSops} onChange={(event) => setProposedSops(event.target.value)} placeholder="One proposed SOP per line" />
+        </label>
+        <label>
+          Initial Next Actions
+          <textarea value={initialNextActions} onChange={(event) => setInitialNextActions(event.target.value)} placeholder="One initial next action per line" />
+        </label>
+      </div>
+    </section>
   );
 }
 

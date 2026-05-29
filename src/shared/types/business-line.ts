@@ -5,6 +5,8 @@ import type { TaskListItemRecord, TaskRecord, TaskRiskLevel } from './task.js';
 
 export type BusinessLineKind = 'software_product' | 'project' | 'routine' | 'general';
 
+export type BusinessLineCreationTemplate = 'web_product' | 'custom';
+
 export type BusinessLineRecordType =
   | 'signal'
   | 'hypothesis'
@@ -144,6 +146,16 @@ export type CreateBusinessLineInput = {
   goal?: string | null;
   kind?: BusinessLineKind;
   legacyTaskId?: string | null;
+  template?: BusinessLineCreationTemplate;
+  desiredOutcome?: string | null;
+  continuousInformation?: string | null;
+  aiWorkAndConfirmation?: string | null;
+  sourceBusinessLineId?: string | null;
+  initialStructure?: string[];
+  initialRecords?: string[];
+  reviewPrompts?: string[];
+  proposedSops?: string[];
+  initialNextActions?: string[];
 };
 
 export type RecordBusinessLineReviewInput = {

@@ -5,6 +5,11 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import userEvent from '@testing-library/user-event';
 
 import type { HomeBriefData } from '@shared/types/brief';
+import type {
+  BusinessLineListItem,
+  BusinessLineRecord,
+  BusinessLineWorkspace,
+} from '@shared/types/business-line';
 import type { BlockerRecord } from '@shared/types/blocker';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { AppEvent } from '@shared/types/events';
@@ -62,6 +67,110 @@ function buildTask(partial: Partial<TaskListItemRecord> = {}): TaskListItemRecor
     childTaskIds: partial.childTaskIds,
     createdAt: partial.createdAt ?? now,
     updatedAt: partial.updatedAt ?? now,
+  };
+}
+
+function buildBusinessLineListItem(partial: Partial<BusinessLineListItem> = {}): BusinessLineListItem {
+  return {
+    id: partial.id ?? 'business_line_created',
+    title: partial.title ?? 'Activation web product',
+    summary: partial.summary ?? 'Customer signals, experiments, releases, and activation metrics.',
+    goal: partial.goal ?? 'Trial users reach first completed workflow faster.',
+    kind: partial.kind ?? 'software_product',
+    legacyTaskId: partial.legacyTaskId ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+    nextActionCount: partial.nextActionCount ?? 1,
+    latestRecordSummary: partial.latestRecordSummary ?? 'Template: Web Product / Software Product',
+    activeSkillCount: partial.activeSkillCount ?? 0,
+  };
+}
+
+function buildBusinessLineWorkspace(partial: Partial<BusinessLineWorkspace> = {}): BusinessLineWorkspace {
+  const line = partial.businessLine ?? buildBusinessLineListItem();
+  const records = partial.records ?? [{
+    id: 'business_line_record_structure',
+    type: 'signal',
+    businessLineId: line.id,
+    source: 'template:web_product:structure',
+    summary: 'Structure: Customer/problem signals',
+    confidence: 75,
+    linkedActionId: null,
+    linkedDecisionId: null,
+    shouldAffectFutureContext: true,
+    createdAt: now,
+  } satisfies BusinessLineRecord];
+  const nextActions = partial.nextActions ?? [buildTask({
+    id: 'task_business_line_initial_action',
+    title: 'Capture the current user problem, product surface, and one success metric.',
+    businessLineId: line.id,
+    nextStep: 'Capture the current user problem, product surface, and one success metric.',
+  })];
+  return {
+    businessLine: {
+      id: line.id,
+      title: line.title,
+      summary: line.summary,
+      goal: line.goal,
+      kind: line.kind,
+      legacyTaskId: line.legacyTaskId,
+      createdAt: line.createdAt,
+      updatedAt: line.updatedAt,
+    },
+    overview: {
+      nextSuggestion: {
+        id: `business-line-progress:${line.id}:${nextActions[0]!.id}`,
+        type: 'progress',
+        businessLineId: line.id,
+        businessLineTitle: line.title,
+        whyNow: 'Template creation generated the first next action.',
+        nextStep: nextActions[0]!.nextStep ?? nextActions[0]!.title,
+        sourceRecords: records.map((record) => record.summary),
+        risk: { level: 'low', note: null },
+        requiresDecision: false,
+        taskId: nextActions[0]!.id,
+      },
+      recentChanges: records.map((record) => record.summary),
+      blockedDecisions: [],
+      missingContext: [],
+      latestResult: null,
+      latestImprovement: null,
+    },
+    records,
+    sourceRecords: partial.sourceRecords ?? [],
+    nextActions,
+    learning: partial.learning ?? {
+      reviews: [],
+      skillRevisions: [{
+        id: 'business_line_skill_revision_created',
+        skillId: 'business_line_skill_created',
+        businessLineId: line.id,
+        scopePath: 'Learning / SOP',
+        previousContent: null,
+        nextContent: 'Before suggesting product work, check the current outcome and latest customer signal.',
+        changeReason: 'Proposed by Web Product / Software Product creation flow.',
+        sourceReviewId: 'business_line_review_created',
+        approvedBy: null,
+        status: 'proposed',
+        effectiveAt: null,
+        rollbackTargetRevisionId: null,
+        createdAt: now,
+        updatedAt: now,
+      }],
+      acceptedSkills: [],
+    },
+    contextPack: partial.contextPack ?? {
+      businessSummary: line.summary,
+      currentGoal: line.goal,
+      recentChanges: records.map((record) => record.summary),
+      activeDecisions: [],
+      openNextActions: nextActions,
+      latestRecords: records,
+      acceptedSkills: [],
+      knownConstraints: [],
+      permissionBoundaries: [],
+      missingContext: [],
+    },
   };
 }
 
@@ -977,6 +1086,15 @@ function createMockApi() {
     })),
     getHomeBrief: vi.fn().mockResolvedValue(buildBriefData(tasks, decisions)),
     listBusinessLines: vi.fn().mockResolvedValue([]),
+    createBusinessLine: vi.fn().mockImplementation(async (input) => buildBusinessLineWorkspace({
+      businessLine: buildBusinessLineListItem({
+        id: 'business_line_created',
+        title: input.title,
+        summary: input.summary ?? null,
+        goal: input.goal ?? null,
+        kind: input.kind ?? 'general',
+      }),
+    })),
     getBusinessLineWorkspace: vi.fn().mockResolvedValue(null),
     recordBusinessLineReview: vi.fn(),
     acceptBusinessLineSkillRevision: vi.fn(),
@@ -1469,6 +1587,75 @@ describe('App redesign v1', () => {
     expect(screen.getByText('review: navigation model changed')).toBeTruthy();
     expect(screen.getByText('medium')).toBeTruthy();
     expect(screen.getByText('Decision')).toBeTruthy();
+  });
+
+  it('creates a Web Product business line from the creation template and opens it in the list workspace', async () => {
+    const user = userEvent.setup();
+    const createdLine = buildBusinessLineListItem({
+      id: 'business_line_activation',
+      title: 'Activation web product',
+      latestRecordSummary: 'Custom launch record',
+    });
+    const createdWorkspace = buildBusinessLineWorkspace({
+      businessLine: createdLine,
+      records: [{
+        id: 'business_line_record_created_custom',
+        type: 'signal',
+        businessLineId: createdLine.id,
+        source: 'template:web_product:record',
+        summary: 'Custom launch record',
+        confidence: 75,
+        linkedActionId: null,
+        linkedDecisionId: null,
+        shouldAffectFutureContext: true,
+        createdAt: now,
+      }],
+    });
+    vi.mocked(harness.api.listBusinessLines!)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([createdLine]);
+    vi.mocked(harness.api.createBusinessLine!).mockResolvedValueOnce(createdWorkspace);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(createdWorkspace);
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '新建' }));
+    await user.type(screen.getByLabelText('What is this business line?'), 'Activation web product');
+    await user.type(
+      screen.getByLabelText('What outcome would make it better?'),
+      'Trial users reach first completed workflow faster.',
+    );
+    await user.type(
+      screen.getByLabelText('What information must be recorded continuously?'),
+      'Customer signals, experiments, releases, and activation metrics.',
+    );
+    await user.type(
+      screen.getByLabelText('What work can AI do, and what needs confirmation?'),
+      'AI drafts specs and release notes; publish, deploy, and pricing require approval.',
+    );
+    await user.click(screen.getByRole('button', { name: '生成初始结构' }));
+    await user.clear(screen.getByLabelText('Initial records'));
+    await user.type(screen.getByLabelText('Initial records'), 'Custom launch record');
+    await user.click(screen.getByRole('button', { name: '创建业务线' }));
+
+    await waitFor(() => {
+      expect(harness.api.createBusinessLine).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Activation web product',
+        template: 'web_product',
+        kind: 'software_product',
+        desiredOutcome: 'Trial users reach first completed workflow faster.',
+        continuousInformation: 'Customer signals, experiments, releases, and activation metrics.',
+        aiWorkAndConfirmation: 'AI drafts specs and release notes; publish, deploy, and pricing require approval.',
+        initialRecords: ['Custom launch record'],
+        proposedSops: expect.arrayContaining([
+          expect.stringContaining('Before suggesting product work'),
+        ]),
+      }));
+    });
+    expect((await screen.findAllByText('Custom launch record')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Activation web product').length).toBeGreaterThan(0);
+    expect(screen.getByText('Capture the current user problem, product surface, and one success metric.')).toBeTruthy();
   });
 
   it('opens business line context from a Today suggestion and sends business-line chat', async () => {

@@ -198,6 +198,134 @@ describe('BusinessLineService', () => {
     expect(accepted.learning.skillRevisions[0]?.status).toBe('active');
   });
 
+  it('creates a Web Product template business line with initial structure, review prompts, proposed SOPs, and actions', async () => {
+    const created = await service.create({
+      title: 'Activation web product',
+      goal: 'Improve trial activation.',
+      kind: 'software_product',
+      template: 'web_product',
+      desiredOutcome: 'Trial users reach first completed workflow faster.',
+      continuousInformation: 'Customer signals, experiments, releases, and activation metrics.',
+      aiWorkAndConfirmation: 'AI drafts specs and release notes; publish, deploy, and pricing require approval.',
+    });
+
+    const workspace = await service.getWorkspace(created.id);
+    expect(workspace?.businessLine).toMatchObject({
+      title: 'Activation web product',
+      kind: 'software_product',
+    });
+    expect(workspace?.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        source: 'template:web_product:structure',
+        summary: expect.stringContaining('Customer/problem signals'),
+      }),
+      expect.objectContaining({
+        source: 'template:web_product:record',
+        summary: expect.stringContaining('Trial users reach first completed workflow faster.'),
+      }),
+      expect.objectContaining({
+        source: 'template:web_product:review_prompt',
+        summary: expect.stringContaining('Review prompt: What user, market, or product signal changed?'),
+        shouldAffectFutureContext: false,
+      }),
+    ]));
+    expect(workspace?.learning.skillRevisions.length).toBeGreaterThanOrEqual(3);
+    expect(workspace?.learning.skillRevisions.every((revision) => revision.status === 'proposed')).toBe(true);
+    expect(workspace?.learning.acceptedSkills).toHaveLength(0);
+    expect(workspace?.nextActions[0]).toMatchObject({
+      businessLineId: created.id,
+      nextStep: 'Capture the current user problem, product surface, and one success metric.',
+    });
+    await expect(service.list()).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: created.id,
+        title: 'Activation web product',
+        nextActionCount: 1,
+      }),
+    ]));
+  });
+
+  it('creates a Custom business line from editable creation inputs', async () => {
+    const created = await service.create({
+      title: 'Custom partner motion',
+      template: 'custom',
+      desiredOutcome: 'Partner handoffs become predictable.',
+      continuousInformation: 'Lead source, owner, next checkpoint.',
+      aiWorkAndConfirmation: 'AI drafts summaries; partner commitments need confirmation.',
+      initialStructure: ['Partner source log', 'Commitment review lane'],
+      initialRecords: ['Initial custom record'],
+      reviewPrompts: ['Did the partner commitment change?'],
+      proposedSops: ['Confirm owner and next checkpoint before suggesting partner work.'],
+      initialNextActions: ['Capture the first partner handoff.'],
+    });
+
+    const workspace = await service.getWorkspace(created.id);
+    expect(workspace?.businessLine.kind).toBe('general');
+    expect(workspace?.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        source: 'template:custom:structure',
+        summary: 'Structure: Partner source log',
+      }),
+      expect.objectContaining({
+        source: 'template:custom:record',
+        summary: 'Initial custom record',
+      }),
+      expect.objectContaining({
+        source: 'template:custom:review_prompt',
+        summary: 'Review prompt: Did the partner commitment change?',
+      }),
+    ]));
+    expect(workspace?.learning.skillRevisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        nextContent: 'Confirm owner and next checkpoint before suggesting partner work.',
+        status: 'proposed',
+      }),
+    ]));
+    expect(workspace?.nextActions[0]?.nextStep).toBe('Capture the first partner handoff.');
+  });
+
+  it('copies inherited creation structure and accepted SOPs as proposed learning, not active rules', async () => {
+    const source = await service.create({
+      title: 'Source web product',
+      template: 'web_product',
+      desiredOutcome: 'Learn reusable product habits.',
+    });
+    const sourceWorkspace = await service.getWorkspace(source.id);
+    const sourceRevision = sourceWorkspace!.learning.skillRevisions[0]!;
+    const acceptedSource = await service.acceptSkillRevision({
+      revisionId: sourceRevision.id,
+      approvedBy: 'tester',
+    });
+    expect(acceptedSource.learning.acceptedSkills).toHaveLength(1);
+
+    const inherited = await service.create({
+      title: 'Inherited web product',
+      template: 'custom',
+      desiredOutcome: 'Reuse structure safely.',
+      sourceBusinessLineId: source.id,
+      proposedSops: ['Local proposed SOP only.'],
+      initialNextActions: ['Capture inherited setup notes.'],
+    });
+
+    const workspace = await service.getWorkspace(inherited.id);
+    expect(workspace?.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        source: `business_line:${source.id}:structure`,
+        summary: expect.stringContaining('Structure:'),
+      }),
+    ]));
+    expect(workspace?.learning.acceptedSkills).toHaveLength(0);
+    expect(workspace?.contextPack.acceptedSkills).toHaveLength(0);
+    expect(workspace?.records.some((record) => record.type === 'rule')).toBe(false);
+    expect(workspace?.learning.skillRevisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        nextContent: acceptedSource.learning.acceptedSkills[0]?.nextContent,
+        status: 'proposed',
+        changeReason: 'Inherited from Source web product; explicit acceptance required before active use.',
+      }),
+    ]));
+  });
+
   it('routes risky canonical business-line learning through a global Decision', async () => {
     const created = await service.create({
       title: 'Canonical business line',
