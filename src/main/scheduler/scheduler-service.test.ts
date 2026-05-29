@@ -4002,6 +4002,95 @@ describe('SchedulerService', () => {
     }));
   });
 
+  it('keeps terminal trigger evidence pending when completed output has no source provenance', async () => {
+    const now = new Date('2026-05-26T11:18:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      failureReason: null,
+      id: 'run_scheduled_output_without_source',
+      output: 'Completed but provenance is missing.',
+      outputSource: null,
+      status: 'completed',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'started',
+      run: {
+        id: 'run_scheduled_output_without_source',
+        taskId: 'task_auto',
+      },
+      terminalRunEvidenceStatus: 'pending',
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(result.summary).toContain('terminalRunEvidence=pending');
+    expect(result.summary).toContain('terminalEvidenceDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_output_without_source',
+        runOutputSource: null,
+        terminalRunEvidenceStatus: 'pending',
+        triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+      }),
+    }));
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        evidenceRunId: 'run_scheduled_output_without_source',
+        rationale: expect.stringContaining('outputSource provenance'),
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 终态证据缺失后的下一步',
+      }),
+    }));
+  });
+
   it('does not duplicate same-day terminal-evidence Decision proposals', async () => {
     const now = new Date('2026-05-26T11:20:00.000Z');
     const task = buildAutomationTaskDetail({

@@ -1286,7 +1286,10 @@ export class SchedulerService {
       ],
       proposedOutcome: '人工复核 Run 并补录终态证据',
       rationale: [
-        `Scheduled/event Agent run ${run.id} reached completed without reviewable output or failure reason.`,
+        `Scheduled/event Agent run ${run.id} reached completed without reviewable terminal evidence.`,
+        run.output?.trim() && !run.outputSource
+          ? 'Run output was recorded without outputSource provenance.'
+          : 'Neither reviewable output nor failure reason was recorded.',
         'Taskplane should confirm whether to recover evidence, rerun, or pause automation before treating the trigger as reviewable.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
@@ -1710,7 +1713,9 @@ function isTerminalScheduledEventRunStatus(status: RunRecord['status']): boolean
 
 function scheduledEventRunTerminalEvidenceStatus(run: RunRecord): ScheduledEventAgentTriggerResult['terminalRunEvidenceStatus'] {
   if (!isTerminalScheduledEventRunStatus(run.status)) return 'pending';
-  return run.output?.trim() || run.failureReason?.trim() ? 'present' : 'pending';
+  if (run.failureReason?.trim()) return 'present';
+  if (!run.output?.trim()) return 'pending';
+  return run.outputSource ? 'present' : 'pending';
 }
 
 function shouldProposeScheduledEventTerminalEvidenceDecision(run: RunRecord): boolean {

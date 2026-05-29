@@ -1279,6 +1279,15 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('record missing failure evidence instead of seeing only a generic failed-run recovery card');
   });
 
+  it('records missing terminal output provenance in scheduler review proposals', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+    const evidence = decisions?.evidence.join(' ');
+
+    expect(evidence).toContain('completed runs with output text but missing outputSource provenance');
+    expect(evidence).toContain('terminalRunEvidenceStatus=pending');
+    expect(evidence).toContain('does not silently treat unowned terminal output as review-ready evidence');
+  });
+
   it('records normalized scheduler Decision proposal title dedupe coverage', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
