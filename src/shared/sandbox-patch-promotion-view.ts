@@ -7,6 +7,7 @@ export type SandboxPatchPromotionViewTone = 'blocked' | 'completed' | 'pending' 
 
 export type SandboxPatchPromotionView = {
   artifactId: string;
+  auditSummary: string | null;
   checkpointId: string;
   checkpointStatus: RunCheckpointStatus;
   decisionId: string | null;
@@ -15,6 +16,7 @@ export type SandboxPatchPromotionView = {
   expectedFiles: string[];
   label: string;
   promotionStatus: SandboxPatchPromotionRecord['status'] | null;
+  routingEvidenceRecorded: boolean;
   title: string;
   tone: SandboxPatchPromotionViewTone;
 };
@@ -88,14 +90,17 @@ function buildSandboxPatchPromotionView(params: {
     decisionId: params.decision?.id ?? null,
     decisionStatus: params.decision?.status ?? null,
     expectedFiles: params.expectedFiles,
+    auditSummary: params.promotion?.auditSummary ?? null,
     promotionStatus: params.promotion?.status ?? null,
+    routingEvidenceRecorded: Boolean(params.promotion?.auditSummary?.includes('Runtime patch promotion routing readiness')),
     title: params.title,
   };
 
   if (params.promotion?.status === 'applied') {
+    const routingEvidence = base.routingEvidenceRecorded ? '；runtime patch promotion routing evidence 已记录' : '';
     return {
       ...base,
-      detail: `${fileLabel}；已通过 promotion apply 服务写入工作区${params.promotion.appliedAt ? `（${params.promotion.appliedAt}）` : ''}；请在 Run 证据中复核 touched files 和后续验证结果。`,
+      detail: `${fileLabel}；已通过 promotion apply 服务写入工作区${params.promotion.appliedAt ? `（${params.promotion.appliedAt}）` : ''}${routingEvidence}；请在 Run 证据中复核 touched files 和后续验证结果。`,
       label: 'promotion 已应用',
       tone: 'completed',
     };
@@ -103,9 +108,10 @@ function buildSandboxPatchPromotionView(params: {
 
   if (params.promotion?.status === 'blocked') {
     const reason = params.promotion.blockedReasons.join(' ') || params.promotion.auditSummary || 'apply 服务阻塞。';
+    const routingEvidence = base.routingEvidenceRecorded ? '；runtime patch promotion routing evidence 已记录' : '';
     return {
       ...base,
-      detail: `${fileLabel}；promotion apply 被阻塞：${reason}；工作区未写入，需要复核 Run 证据后重新 review 或重新生成 patch。`,
+      detail: `${fileLabel}；promotion apply 被阻塞：${reason}${routingEvidence}；工作区未写入，需要复核 Run 证据后重新 review 或重新生成 patch。`,
       label: 'promotion apply 被阻塞',
       tone: 'blocked',
     };

@@ -100,6 +100,7 @@ describe('projectSandboxPatchPromotionViews', () => {
     });
 
     expect(view).toMatchObject({
+      auditSummary: null,
       artifactId: 'artifact_patch_review_1',
       checkpointId: 'run_checkpoint_patch_1',
       decisionId: 'decision_patch_1',
@@ -209,17 +210,21 @@ describe('projectSandboxPatchPromotionViews', () => {
         ],
         sandboxPatchPromotions: [buildPromotion({
           appliedAt: '2026-01-01T00:02:00.000Z',
+          auditSummary: 'Sandbox patch promotion applied / Runtime patch promotion routing readiness / promotionReady=yes',
           status: 'applied',
         })],
       })],
     });
 
     expect(view).toMatchObject({
+      auditSummary: 'Sandbox patch promotion applied / Runtime patch promotion routing readiness / promotionReady=yes',
       label: 'promotion 已应用',
       promotionStatus: 'applied',
+      routingEvidenceRecorded: true,
       tone: 'completed',
     });
     expect(view?.detail).toContain('已通过 promotion apply 服务写入工作区');
+    expect(view?.detail).toContain('runtime patch promotion routing evidence 已记录');
     expect(view?.detail).toContain('复核 touched files');
     expect(view?.detail).toContain('后续验证结果');
   });
@@ -229,6 +234,7 @@ describe('projectSandboxPatchPromotionViews', () => {
       decisions: [buildDecision({ status: 'approved' })],
       runDetails: [buildRunDetail({
         sandboxPatchPromotions: [buildPromotion({
+          auditSummary: 'Sandbox patch promotion apply blocked / Runtime patch promotion routing readiness / promotionReady=no',
           blockedReasons: ['Patch promotion workspace content does not match reviewed base: notes.md'],
           status: 'blocked',
         })],
@@ -236,11 +242,14 @@ describe('projectSandboxPatchPromotionViews', () => {
     });
 
     expect(view).toMatchObject({
+      auditSummary: 'Sandbox patch promotion apply blocked / Runtime patch promotion routing readiness / promotionReady=no',
       label: 'promotion apply 被阻塞',
       promotionStatus: 'blocked',
+      routingEvidenceRecorded: true,
       tone: 'blocked',
     });
     expect(view?.detail).toContain('workspace content does not match reviewed base');
+    expect(view?.detail).toContain('runtime patch promotion routing evidence 已记录');
     expect(view?.detail).toContain('工作区未写入');
     expect(view?.detail).toContain('复核 Run 证据');
     expect(view?.detail).toContain('重新 review 或重新生成 patch');

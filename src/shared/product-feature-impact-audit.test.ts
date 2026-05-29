@@ -1383,6 +1383,15 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('touched files match the reviewed patch file set');
   });
 
+  it('records operator-facing reviewed patch apply audit summary evidence', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('preserve durable promotion auditSummary');
+    expect(evidence).toContain('routingEvidenceRecorded');
+    expect(evidence).toContain('workspace apply evidence is backed by routing diagnostics');
+  });
+
   it('records post-apply file-set match evidence for runtime patch promotion routing', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
     const evidence = taskFiles?.evidence.join(' ');
