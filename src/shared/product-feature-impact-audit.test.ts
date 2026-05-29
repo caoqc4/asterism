@@ -1299,4 +1299,12 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('no-Run scheduler proposals');
     expect(decisions?.evidence.join(' ')).toContain('sourceType=system');
   });
+
+  it('records system-sourced scheduler Decision approval dedupe coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('system-sourced scheduler Decision approval items now use target task plus normalized title');
+    expect(decisions?.evidence.join(' ')).toContain('when evidenceRunId is absent');
+    expect(decisions?.evidence.join(' ')).toContain('repeated no-Run policy-review timeline events');
+  });
 });

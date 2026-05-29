@@ -264,6 +264,7 @@ function buildSchedulerDecisionApprovalItem(params: {
   }
 
   const evidenceRunId = payload.evidenceRunId?.trim() || params.event.id;
+  const approvalSourceId = payload.evidenceRunId?.trim() || schedulerDecisionSystemApprovalSourceId(params.taskId, decisionPayload.title);
   const intent: TaskplaneDecisionCreateIntent = {
     evidenceRunId,
     options: decisionPayload.options,
@@ -293,7 +294,7 @@ function buildSchedulerDecisionApprovalItem(params: {
       intent.rationale,
       readiness.summary,
     ].filter(Boolean).join('\n'),
-    id: approvalId(evidenceRunId, 'scheduler_decision', intent.title),
+    id: approvalId(approvalSourceId, 'scheduler_decision', intent.title),
     kind: 'scheduler_decision',
     plan,
     runId: evidenceRunId,
@@ -312,6 +313,10 @@ function parseSchedulerDecisionPayload(payload: string | null): SchedulerDecisio
   } catch {
     return null;
   }
+}
+
+function schedulerDecisionSystemApprovalSourceId(taskId: string, title: string): string {
+  return `scheduler:${taskId}:${title}`;
 }
 
 type NormalizedSchedulerDecisionApprovalPayload = {
