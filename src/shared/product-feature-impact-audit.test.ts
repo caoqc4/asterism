@@ -1213,4 +1213,12 @@ describe('product feature impact audit', () => {
 
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract stays missing when the selected runtime run id or target task identity diverges');
   });
+
+  it('records blocked apply evidence for malformed patch promotion metadata', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+
+    expect(taskFiles?.evidence.join(' ')).toContain('blocks unsafe or duplicate expected-file promotion metadata');
+    expect(taskFiles?.evidence.join(' ')).toContain('malformed reviewed patch diffs before writing workspace files');
+    expect(taskFiles?.evidence.join(' ')).toContain('instead of throwing out of the operator-facing apply path');
+  });
 });

@@ -81,7 +81,21 @@ export class SandboxPatchPromotionApplyService {
       );
     }
 
-    const parsedPatch = parseSandboxPatchDiff(content.artifact.diff);
+    let parsedPatch: ParsedSandboxPatchFile[];
+    try {
+      parsedPatch = parseSandboxPatchDiff(content.artifact.diff);
+    } catch (error) {
+      return this.blocked(
+        [error instanceof Error ? error.message : 'Sandbox patch promotion diff is not in the supported review format.'],
+        preflight.promotion,
+        buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight({
+          operatorConfirmed: options.operatorConfirmed === true,
+          operatorId: options.operatorId,
+          preflight,
+        }),
+      );
+    }
+
     const validation = await validateSandboxPatchApplication({
       expectedFiles: preflight.promotion.expectedFiles,
       parsedPatch,
@@ -402,7 +416,19 @@ async function validateSandboxPatchApplication(params: {
   const touchedFiles = params.parsedPatch.map((item) => item.file);
   const pendingWrites: Array<{ content: string; filePath: string }> = [];
   let alreadyApplied = true;
+  const seenExpectedFiles = new Set<string>();
   const seenTouchedFiles = new Set<string>();
+
+  for (const file of params.expectedFiles) {
+    if (seenExpectedFiles.has(file)) {
+      blockedReasons.push(`Patch promotion expected duplicate file: ${file}`);
+    }
+    seenExpectedFiles.add(file);
+
+    if (!isSafeWorkspaceRelativePath(file)) {
+      blockedReasons.push(`Patch promotion expected unsafe file: ${file}`);
+    }
+  }
 
   for (const file of touchedFiles) {
     if (seenTouchedFiles.has(file)) {

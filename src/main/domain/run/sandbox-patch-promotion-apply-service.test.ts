@@ -282,6 +282,8 @@ describe('SandboxPatchPromotionApplyService', () => {
 
       expect(result).toMatchObject({
         blockedReasons: [
+          'Patch promotion expected unsafe file: src/./app.ts',
+          'Patch promotion expected unsafe file: C:\\secrets\\token.txt',
           'Patch promotion touched unsafe file: src/./app.ts',
           'Patch promotion touched unsafe file: C:\\secrets\\token.txt',
         ],
@@ -293,12 +295,99 @@ describe('SandboxPatchPromotionApplyService', () => {
       expect(markBlocked).toHaveBeenCalledWith(
         'sandbox_patch_promotion_1',
         [
+          'Patch promotion expected unsafe file: src/./app.ts',
+          'Patch promotion expected unsafe file: C:\\secrets\\token.txt',
           'Patch promotion touched unsafe file: src/./app.ts',
           'Patch promotion touched unsafe file: C:\\secrets\\token.txt',
         ],
-        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion touched unsafe file: src/./app.ts Patch promotion touched unsafe file: C:\\secrets\\token.txt'),
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion expected unsafe file: src/./app.ts Patch promotion expected unsafe file: C:\\secrets\\token.txt Patch promotion touched unsafe file: src/./app.ts Patch promotion touched unsafe file: C:\\secrets\\token.txt'),
       );
       expect(markBlocked.mock.calls[0]?.[2]).toContain('filePathSafetyChain=missing');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks unsafe or duplicate expected patch files before writing workspace files', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-expected-file-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const diff = [
+        '--- a/notes.md',
+        '+++ b/notes.md',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const promotion = buildPromotion({ expectedFiles: ['notes.md', 'notes.md', '.env.local'] });
+      const { markBlocked, service } = buildService({
+        artifact: buildArtifact(diff),
+        promotion,
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: [
+          'Patch promotion expected duplicate file: notes.md',
+          'Patch promotion expected unsafe file: .env.local',
+          'Patch promotion touched files do not match expected files.',
+        ],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(markBlocked).toHaveBeenCalledWith(
+        'sandbox_patch_promotion_1',
+        [
+          'Patch promotion expected duplicate file: notes.md',
+          'Patch promotion expected unsafe file: .env.local',
+          'Patch promotion touched files do not match expected files.',
+        ],
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion expected duplicate file: notes.md Patch promotion expected unsafe file: .env.local Patch promotion touched files do not match expected files.'),
+      );
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('expectedFileEvidenceChain=missing');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('postApplyRunEvidence=missing');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks malformed reviewed patch diffs instead of throwing out of apply', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-malformed-diff-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const { markBlocked, service } = buildService({
+        artifact: buildArtifact('--- a/notes.md\n@@\n-alpha\n+beta'),
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: ['Sandbox patch promotion diff is not in the supported review format.'],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(markBlocked).toHaveBeenCalledWith(
+        'sandbox_patch_promotion_1',
+        ['Sandbox patch promotion diff is not in the supported review format.'],
+        expect.stringContaining('Sandbox patch promotion apply blocked: Sandbox patch promotion diff is not in the supported review format.'),
+      );
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionSatisfiedRequirements=patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionMissingRequirements=selected_runtime_contract,target_task_identity,same_run_evidence_chain,post_apply_run_evidence');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
