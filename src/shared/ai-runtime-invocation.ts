@@ -953,6 +953,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const selectedRuntimeProviderEvidenceChainReady = Boolean(selectedRuntimeProvider)
     && Boolean(configuredProvider)
     && selectedRuntimeProvider === configuredProvider;
+  const configuredProviderEvidenceChainReady = Boolean(configuredProvider)
+    && selectedRuntimeProviderEvidenceChainReady;
   const writeIntentRunEvidenceChainReady = Boolean(writeIntentRunId)
     && Boolean(runEvidenceId)
     && writeIntentRunId === runEvidenceId;
@@ -1172,6 +1174,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `providerPreflightStatus=${evidence.providerVisiblePreflight?.status ?? 'missing'}`,
       `providerConfigured=${evidence.providerVisiblePreflight?.providerConfigured === true ? 'ready' : 'missing'}`,
       `configuredProvider=${configuredProvider || 'missing'}`,
+      `configuredProviderEvidenceChain=${configuredProviderEvidenceChainReady ? 'ready' : 'missing'}`,
       `providerStartupProbe=${evidence.providerVisiblePreflight?.startupProbe ?? 'missing'}`,
       `providerPreflightRun=${providerPreflightRunId || 'missing'}`,
       `providerPreflightRunEvidenceChain=${providerPreflightRunEvidenceChainReady ? 'ready' : 'missing'}`,

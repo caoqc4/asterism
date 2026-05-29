@@ -1327,6 +1327,15 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('subtaskStartGateEvidenceChain=ready');
   });
 
+  it('records Agent API execution configured provider evidence-chain coverage', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    const evidence = rightPanel?.evidence.join(' ');
+
+    expect(evidence).toContain('configuredProviderEvidenceChain');
+    expect(evidence).toContain('providerConfigured=true is visible as configuration evidence only');
+    expect(evidence).toContain('provider-visible preflight still requires matching selected-runtime provider identity');
+  });
+
   it('records real no-write API RunService promotion evidence', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const evidence = rightPanel?.evidence.join(' ');

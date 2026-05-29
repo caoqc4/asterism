@@ -1565,6 +1565,7 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('providerPreflightStatus=ready');
     expect(partial.summary).toContain('providerConfigured=ready');
     expect(partial.summary).toContain('configuredProvider=openai');
+    expect(partial.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(partial.summary).toContain('providerStartupProbe=not_called');
     expect(partial.summary).toContain('providerPreflightRun=run_api_execution_partial');
     expect(partial.summary).toContain('providerPreflightRunEvidenceChain=missing');
@@ -1612,6 +1613,7 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('providerPreflightStatus=ready');
     expect(ready.summary).toContain('providerConfigured=ready');
     expect(ready.summary).toContain('configuredProvider=openai');
+    expect(ready.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(ready.summary).toContain('providerStartupProbe=not_called');
     expect(ready.summary).toContain('providerPreflightRun=run_api_execution');
     expect(ready.summary).toContain('providerPreflightRunEvidenceChain=ready');
@@ -1750,6 +1752,7 @@ describe('ai runtime invocation contract', () => {
     expect(wrongProvider.summary).toContain('selectedRuntimeProvider=anthropic');
     expect(wrongProvider.summary).toContain('configuredProvider=openai');
     expect(wrongProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+    expect(wrongProvider.summary).toContain('configuredProviderEvidenceChain=missing');
 
     const missingProvider = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
@@ -1768,6 +1771,7 @@ describe('ai runtime invocation contract', () => {
     });
     expect(missingProvider.summary).toContain('selectedRuntimeProvider=missing');
     expect(missingProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+    expect(missingProvider.summary).toContain('configuredProviderEvidenceChain=missing');
   });
 
   it('requires runtime context manifest evidence to belong to the target task', () => {
@@ -2384,6 +2388,7 @@ describe('ai runtime invocation contract', () => {
     });
     expect(missingProvider.summary).toContain('providerConfigured=ready');
     expect(missingProvider.summary).toContain('configuredProvider=missing');
+    expect(missingProvider.summary).toContain('configuredProviderEvidenceChain=missing');
     expect(missingProvider.summary).toContain('providerStartupProbe=not_called');
   });
 
