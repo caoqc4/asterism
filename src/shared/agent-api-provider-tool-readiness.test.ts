@@ -346,6 +346,39 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('explicitToolDeclaration=ready');
   });
 
+  it('normalizes slash-namespaced provider web/search declarations before matching and dedupe', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
+      explicitToolDeclarations: {
+        declaredTools: ['openai/web_search', 'openai.web_search', 'anthropic/web_search', 'web/search'],
+        packageName: '@openai/agents',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@openai/agents',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'declared',
+      toolReadiness: 'declared',
+      missingRequirements: [],
+    });
+    expect(readiness.summary).toContain('declaredToolCount=3');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=2');
+    expect(readiness.summary).toContain('declaredWebSearchTools=openai/web_search,web/search');
+    expect(readiness.summary).toContain('trustedWebSearchToolCount=2');
+    expect(readiness.summary).toContain('trustedWebSearchTools=openai/web_search,web/search');
+  });
+
   it('does not accept dot-namespaced web/search declarations from another provider', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       configuredProvider: 'openai',

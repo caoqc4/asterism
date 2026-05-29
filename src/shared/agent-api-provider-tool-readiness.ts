@@ -114,14 +114,14 @@ function normalizeDeclaredTools(tools: string[] | undefined): string[] {
 }
 
 function declaredToolIdentityKey(tool: string): string {
-  return tool.toLowerCase().replace(/[.:-]+/g, '_').replace(/_+/g, '_');
+  return tool.toLowerCase().replace(/[./:-]+/g, '_').replace(/_+/g, '_');
 }
 
 function declaredWebSearchTools(tools: string[] | undefined, configuredProvider?: string | null): string[] {
   const providerNamespace = normalizeProvider(configuredProvider);
   return normalizeDeclaredTools(tools).filter((tool) => {
     const loweredTool = tool.toLowerCase();
-    const namespaceSeparatorIndex = [loweredTool.indexOf(':'), loweredTool.indexOf('.')]
+    const namespaceSeparatorIndex = [loweredTool.indexOf(':'), loweredTool.indexOf('.'), loweredTool.indexOf('/')]
       .filter((index) => index >= 0)
       .sort((left, right) => left - right)[0];
     const namespace = namespaceSeparatorIndex !== undefined

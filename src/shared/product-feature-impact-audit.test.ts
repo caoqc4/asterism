@@ -1205,11 +1205,11 @@ describe('product feature impact audit', () => {
     expect(decomposition?.evidence.join(' ')).toContain('near-duplicate subtask titles cannot satisfy duplicate-free promotion readiness');
   });
 
-  it('records Agent API provider dot-namespace tool readiness coverage', () => {
+  it('records Agent API provider namespaced tool readiness coverage', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
-    expect(capabilities?.evidence.join(' ')).toContain('colon/dot provider-namespaced web_search/web_fetch declarations');
-    expect(capabilities?.evidence.join(' ')).toContain('colon or dot provider-namespace mismatches');
+    expect(capabilities?.evidence.join(' ')).toContain('colon/dot/slash provider-namespaced web_search/web_fetch declarations');
+    expect(capabilities?.evidence.join(' ')).toContain('colon, dot, or slash provider-namespace mismatches');
   });
 
   it('records deduplicated Agent API provider tool declaration evidence', () => {
@@ -1217,7 +1217,7 @@ describe('product feature impact audit', () => {
 
     expect(capabilities?.evidence.join(' ')).toContain('case-insensitive and separator-normalized deduplication');
     expect(capabilities?.evidence.join(' ')).toContain('without overstating duplicate tool evidence');
-    expect(capabilities?.evidence.join(' ')).toContain('colon/dot provider namespace aliases');
+    expect(capabilities?.evidence.join(' ')).toContain('colon/dot/slash provider namespace aliases');
   });
 
   it('records Agent API provider generic helper negative readiness coverage', () => {
