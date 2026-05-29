@@ -172,7 +172,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_cli_decomposition',
@@ -237,7 +239,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -264,6 +268,14 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('proposalSubtaskEvidenceChain=ready');
     expect(ready.summary).toContain('proposalSubtaskTitles=需求与范围确认');
     expect(ready.summary).toContain('applyPlanSubtaskTitles=需求与范围确认');
+    expect(ready.summary).toContain('proposalSubtaskSummaries=确认范围');
+    expect(ready.summary).toContain('applyPlanSubtaskSummaries=确认范围');
+    expect(ready.summary).toContain('proposalSubtaskSummaryEvidenceChain=ready');
+    expect(ready.summary).toContain('applyPlanSubtaskSummaryEvidenceChain=ready');
+    expect(ready.summary).toContain('proposalAcceptanceCriteria=范围文档可验收');
+    expect(ready.summary).toContain('applyPlanAcceptanceCriteria=范围文档可验收');
+    expect(ready.summary).toContain('proposalAcceptanceCriteriaEvidenceChain=ready');
+    expect(ready.summary).toContain('applyPlanAcceptanceCriteriaEvidenceChain=ready');
     expect(ready.summary).toContain('proposalSubtaskUniqueChain=ready');
     expect(ready.summary).toContain('proposalSubtaskIdentityChain=ready');
     expect(ready.summary).toContain('parentTask=task_project');
@@ -304,7 +316,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -346,7 +360,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -385,7 +401,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_other',
@@ -412,7 +430,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -455,7 +475,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -492,7 +514,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -529,7 +553,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project_b',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -565,7 +591,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -600,7 +628,9 @@ describe('ai runtime invocation contract', () => {
         parentTaskId: 'task_project_b',
         proposalId: 'project_decomposition:task_project_b',
         status: 'ready',
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -637,7 +667,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 2,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -676,7 +708,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'proposal_1',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -731,6 +765,86 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('proposalSubtaskEvidenceChain=ready');
     expect(mismatch.summary).toContain('proposalSubtaskTitles=Different child task');
     expect(mismatch.summary).toContain('applyPlanSubtaskTitles=需求与范围确认');
+    expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
+    expect(mismatch.summary).toContain('proposalCard=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when proposal subtask summaries do not match the apply plan', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        acceptanceCriteria: ['范围文档可验收'],
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskSummaries: ['Different summary'],
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalSubtaskSummaries=Different summary');
+    expect(mismatch.summary).toContain('applyPlanSubtaskSummaries=确认范围');
+    expect(mismatch.summary).toContain('proposalSubtaskSummaryEvidenceChain=ready');
+    expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
+    expect(mismatch.summary).toContain('proposalCard=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when proposal acceptance criteria do not match the apply plan', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        acceptanceCriteria: ['Different criteria'],
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalAcceptanceCriteria=Different criteria');
+    expect(mismatch.summary).toContain('applyPlanAcceptanceCriteria=范围文档可验收');
+    expect(mismatch.summary).toContain('proposalAcceptanceCriteriaEvidenceChain=ready');
     expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
     expect(mismatch.summary).toContain('proposalCard=missing');
   });
@@ -957,7 +1071,9 @@ describe('ai runtime invocation contract', () => {
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
         subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
+        acceptanceCriteria: ['范围文档可验收'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',

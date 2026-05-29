@@ -2982,10 +2982,12 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         applyPlan: plan,
         parentTaskId: project.id,
         reversibleProposalCard: {
+          acceptanceCriteria: draft.subtasks.map((subtask) => subtask.acceptanceCriteria),
           parentTaskId: project.id,
           proposalId: `project_decomposition:${project.id}`,
           status: 'ready',
           subtaskCount: draft.subtasks.length,
+          subtaskSummaries: draft.subtasks.map((subtask) => subtask.summary),
           subtaskTitles: draft.subtasks.map((subtask) => subtask.title),
         },
         selectedRuntimeContract: draft.invocation

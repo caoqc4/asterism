@@ -81,7 +81,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
       proposalId: 'project_decomposition:task_project',
       status: 'ready',
       subtaskCount: 1,
+      subtaskSummaries: ['Prepare one reversible child task draft for promotion-readiness evidence.'],
       subtaskTitles: ['Review Agent API decomposition promotion boundary'],
+      acceptanceCriteria: ['The reversible child-task draft can be reviewed before persistence.'],
     },
     selectedRuntimeContract: {
       evidenceRunId: 'run_cli_decomposition_smoke',
@@ -116,6 +118,14 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceApplyPlanSubtaskTitles=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitles') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskTitleEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitleEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanSubtaskTitleEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitleEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalSubtaskSummaries=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskSummaries') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanSubtaskSummaries=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskSummaries') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalSubtaskSummaryEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskSummaryEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanSubtaskSummaryEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskSummaryEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalAcceptanceCriteria=${scalarValue(serviceEvidencePartial.summary, 'proposalAcceptanceCriteria') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanAcceptanceCriteria=${scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteria') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalAcceptanceCriteriaEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalAcceptanceCriteriaEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanAcceptanceCriteriaEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteriaEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskUniqueChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskUniqueChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTask=${scalarValue(serviceEvidencePartial.summary, 'parentTask') ?? 'missing'}`);
@@ -161,6 +171,14 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitles') !== 'Review Agent API decomposition promotion boundary'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskTitleEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskTitleEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskSummaries') !== 'Prepare one reversible child task draft for promotion-readiness evidence.'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskSummaries') !== 'Prepare one reversible child task draft for promotion-readiness evidence.'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskSummaryEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanSubtaskSummaryEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalAcceptanceCriteria') !== 'The reversible child-task draft can be reviewed before persistence.'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteria') !== 'The reversible child-task draft can be reviewed before persistence.'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalAcceptanceCriteriaEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteriaEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskUniqueChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'parentTask') !== 'task_project'

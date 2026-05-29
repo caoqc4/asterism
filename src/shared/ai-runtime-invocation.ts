@@ -103,10 +103,12 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
   applyPlan?: TaskplaneSubtaskWritebackApplyPlan | null;
   parentTaskId?: string | null;
   reversibleProposalCard?: {
+    acceptanceCriteria?: string[] | null;
     parentTaskId?: string | null;
     proposalId?: string | null;
     status: 'missing' | 'ready';
     subtaskCount?: number | null;
+    subtaskSummaries?: string[] | null;
     subtaskTitles?: string[] | null;
   } | null;
   selectedRuntimeContract?: {
@@ -439,7 +441,13 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && proposalId === expectedProposalId;
   const applyPlanSubtaskCount = applyPlan?.input.subtasks.length ?? 0;
   const applyPlanSubtaskTitles = normalizedSubtaskTitles(applyPlan?.input.subtasks.map((subtask) => subtask.title) ?? []);
+  const applyPlanSubtaskSummaries = normalizedSubtaskTextList(applyPlan?.input.subtasks.map((subtask) => subtask.summary) ?? []);
+  const applyPlanAcceptanceCriteria = normalizedSubtaskTextList(
+    applyPlan?.input.subtasks.map((subtask) => subtask.acceptanceCriteria) ?? [],
+  );
   const proposalSubtaskTitles = normalizedSubtaskTitles(evidence.reversibleProposalCard?.subtaskTitles ?? []);
+  const proposalSubtaskSummaries = normalizedSubtaskTextList(evidence.reversibleProposalCard?.subtaskSummaries ?? []);
+  const proposalAcceptanceCriteria = normalizedSubtaskTextList(evidence.reversibleProposalCard?.acceptanceCriteria ?? []);
   const proposalSubtaskCount = typeof evidence.reversibleProposalCard?.subtaskCount === 'number'
     && Number.isFinite(evidence.reversibleProposalCard.subtaskCount)
     ? evidence.reversibleProposalCard.subtaskCount
@@ -449,6 +457,16 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const proposalSubtaskTitleEvidenceChainReady = proposalSubtaskCount !== null
     && proposalSubtaskCount > 0
     && proposalSubtaskTitles.length === proposalSubtaskCount;
+  const applyPlanSubtaskSummaryEvidenceChainReady = applyPlanSubtaskCount > 0
+    && applyPlanSubtaskSummaries.length === applyPlanSubtaskCount;
+  const proposalSubtaskSummaryEvidenceChainReady = proposalSubtaskCount !== null
+    && proposalSubtaskCount > 0
+    && proposalSubtaskSummaries.length === proposalSubtaskCount;
+  const applyPlanAcceptanceCriteriaEvidenceChainReady = applyPlanSubtaskCount > 0
+    && applyPlanAcceptanceCriteria.length === applyPlanSubtaskCount;
+  const proposalAcceptanceCriteriaEvidenceChainReady = proposalSubtaskCount !== null
+    && proposalSubtaskCount > 0
+    && proposalAcceptanceCriteria.length === proposalSubtaskCount;
   const proposalTaskEvidenceChainReady = Boolean(proposalParentTaskId)
     && Boolean(parentTaskId)
     && proposalParentTaskId === parentTaskId
@@ -466,8 +484,16 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const proposalSubtaskIdentityChainReady = applyPlanSubtaskTitles.length > 0
     && applyPlanSubtaskTitleEvidenceChainReady
     && proposalSubtaskTitleEvidenceChainReady
+    && applyPlanSubtaskSummaryEvidenceChainReady
+    && proposalSubtaskSummaryEvidenceChainReady
+    && applyPlanAcceptanceCriteriaEvidenceChainReady
+    && proposalAcceptanceCriteriaEvidenceChainReady
     && proposalSubtaskTitles.length === applyPlanSubtaskTitles.length
     && proposalSubtaskTitles.every((title, index) => title === applyPlanSubtaskTitles[index])
+    && proposalSubtaskSummaries.length === applyPlanSubtaskSummaries.length
+    && proposalSubtaskSummaries.every((summary, index) => summary === applyPlanSubtaskSummaries[index])
+    && proposalAcceptanceCriteria.length === applyPlanAcceptanceCriteria.length
+    && proposalAcceptanceCriteria.every((criteria, index) => criteria === applyPlanAcceptanceCriteria[index])
     && proposalSubtaskUniqueChainReady;
   const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
     ? applyPlan.timeline.payload.confirmationBoundary
@@ -544,6 +570,14 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `applyPlanSubtaskTitles=${applyPlanSubtaskTitles.length ? applyPlanSubtaskTitles.join('|') : 'missing'}`,
       `proposalSubtaskTitleEvidenceChain=${proposalSubtaskTitleEvidenceChainReady ? 'ready' : 'missing'}`,
       `applyPlanSubtaskTitleEvidenceChain=${applyPlanSubtaskTitleEvidenceChainReady ? 'ready' : 'missing'}`,
+      `proposalSubtaskSummaries=${proposalSubtaskSummaries.length ? proposalSubtaskSummaries.join('|') : 'missing'}`,
+      `applyPlanSubtaskSummaries=${applyPlanSubtaskSummaries.length ? applyPlanSubtaskSummaries.join('|') : 'missing'}`,
+      `proposalSubtaskSummaryEvidenceChain=${proposalSubtaskSummaryEvidenceChainReady ? 'ready' : 'missing'}`,
+      `applyPlanSubtaskSummaryEvidenceChain=${applyPlanSubtaskSummaryEvidenceChainReady ? 'ready' : 'missing'}`,
+      `proposalAcceptanceCriteria=${proposalAcceptanceCriteria.length ? proposalAcceptanceCriteria.join('|') : 'missing'}`,
+      `applyPlanAcceptanceCriteria=${applyPlanAcceptanceCriteria.length ? applyPlanAcceptanceCriteria.join('|') : 'missing'}`,
+      `proposalAcceptanceCriteriaEvidenceChain=${proposalAcceptanceCriteriaEvidenceChainReady ? 'ready' : 'missing'}`,
+      `applyPlanAcceptanceCriteriaEvidenceChain=${applyPlanAcceptanceCriteriaEvidenceChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskUniqueChain=${proposalSubtaskUniqueChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskIdentityChain=${proposalSubtaskIdentityChainReady ? 'ready' : 'missing'}`,
       `subtaskCount=${applyPlanSubtaskCount}`,
@@ -609,6 +643,12 @@ function isDecompositionRuntimeMode(value: unknown): value is TaskplaneSubtaskCr
 function normalizedSubtaskTitles(titles: readonly (string | null | undefined)[]): string[] {
   return titles
     .map((title) => title?.trim().replace(/\s+/g, ' ') ?? '')
+    .filter(Boolean);
+}
+
+function normalizedSubtaskTextList(values: readonly (string | null | undefined)[]): string[] {
+  return values
+    .map((value) => value?.trim().replace(/\s+/g, ' ') ?? '')
     .filter(Boolean);
 }
 
