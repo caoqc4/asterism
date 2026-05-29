@@ -1502,6 +1502,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('runGoalRunEvidenceChain=ready');
     expect(ready.summary).toContain('runGoalTask=task_1');
     expect(ready.summary).toContain('runGoalTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('subtaskStart=ready');
+    expect(ready.summary).toContain('subtaskStartTask=task_1');
+    expect(ready.summary).toContain('subtaskStartEvidenceChain=ready');
+    expect(ready.summary).toContain('subtaskStartGateEvidenceChain=ready');
     expect(ready.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
     expect(ready.summary).toContain('writeIntentActionIdentityChain=ready');
     expect(ready.summary).toContain('writeIntentActionBoundary=ready');
@@ -1779,6 +1783,41 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('taskMemoryGuidanceCount=1');
     expect(wrongTask.summary).toContain('taskMemoryGuidanceTask=task_2');
     expect(wrongTask.summary).toContain('taskMemoryGuidanceTaskEvidenceChain=missing');
+  });
+
+  it('does not satisfy the subtask-start gate without target-task readiness evidence', () => {
+    const missingEvidence = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      subtaskStart: null,
+    });
+
+    expect(missingEvidence).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['subtask_start'],
+    });
+    expect(missingEvidence.summary).toContain('subtaskStart=missing');
+    expect(missingEvidence.summary).toContain('subtaskStartTask=missing');
+    expect(missingEvidence.summary).toContain('subtaskStartEvidenceChain=missing');
+    expect(missingEvidence.summary).toContain('subtaskStartGateEvidenceChain=missing');
+
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      subtaskStart: {
+        status: 'ready',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['subtask_start'],
+    });
+    expect(wrongTask.summary).toContain('subtaskStart=ready');
+    expect(wrongTask.summary).toContain('subtaskStartTask=task_2');
+    expect(wrongTask.summary).toContain('subtaskStartEvidenceChain=missing');
+    expect(wrongTask.summary).toContain('subtaskStartGateEvidenceChain=missing');
   });
 
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
@@ -2345,6 +2384,10 @@ function completeAgentApiExecutionPromotionEvidence() {
       phase: 'execution_run' as const,
       runId: 'run_api_execution',
       runtimeMode: 'api' as const,
+      taskId: 'task_1',
+    },
+    subtaskStart: {
+      status: 'ready' as const,
       taskId: 'task_1',
     },
     targetTaskId: 'task_1',

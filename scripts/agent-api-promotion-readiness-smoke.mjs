@@ -82,6 +82,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       runtimeMode: 'api',
       taskId: 'task_1',
     },
+    subtaskStart: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 0,
@@ -153,6 +157,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       runtimeMode: 'api',
       taskId: 'task_1',
     },
+    subtaskStart: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
@@ -215,6 +223,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       phase: 'execution_run',
       runId: 'run_api_execution',
       runtimeMode: 'api',
+      taskId: 'task_1',
+    },
+    subtaskStart: {
+      status: 'ready',
       taskId: 'task_1',
     },
     targetTaskId: 'task_1',
@@ -281,6 +293,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       phase: 'execution_run',
       runId: 'run_api_execution',
       runtimeMode: 'api',
+      taskId: 'task_1',
+    },
+    subtaskStart: {
+      status: 'ready',
       taskId: 'task_1',
     },
     targetTaskId: 'task_1',
@@ -356,6 +372,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       runtimeMode: 'api',
       taskId: 'task_1',
     },
+    subtaskStart: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
@@ -428,6 +448,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceRunGoalTask=${scalarValue(serviceEvidencePartial.summary, 'runGoalTask') ?? 'missing'}`);
   console.log(`serviceEvidenceRunGoalTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runGoalTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidencePreStepGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'preStepGateEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceSubtaskStart=${scalarValue(serviceEvidencePartial.summary, 'subtaskStart') ?? 'missing'}`);
+  console.log(`serviceEvidenceSubtaskStartTask=${scalarValue(serviceEvidencePartial.summary, 'subtaskStartTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceSubtaskStartEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'subtaskStartEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceSubtaskStartGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'subtaskStartGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActionIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActionIdentityChain') ?? 'missing'}`);
   console.log(`serviceEvidenceReviewedPatchExplicitApply=${scalarValue(serviceEvidencePartial.summary, 'reviewedPatchExplicitApply') ?? 'missing'}`);
@@ -530,6 +554,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'runGoalTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'preStepGateEvidenceChain') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'subtaskStart') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'subtaskStartTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'subtaskStartEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'subtaskStartGateEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActionIdentityChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'reviewedPatchExplicitApply') !== 'no'

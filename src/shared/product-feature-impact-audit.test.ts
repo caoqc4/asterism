@@ -1273,6 +1273,16 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
   });
 
+  it('records Agent API execution subtask-start gate evidence coverage', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    const evidence = rightPanel?.evidence.join(' ');
+
+    expect(evidence).toContain('requires subtask_start to carry target-task readiness evidence instead of a naked gate boolean');
+    expect(evidence).toContain('pre_step, subtask_start, and post_step gates to their matching service-evidence chains');
+    expect(evidence).toContain('subtaskStart, subtaskStartTask, subtaskStartEvidenceChain, subtaskStartGateEvidenceChain');
+    expect(evidence).toContain('subtaskStartGateEvidenceChain=ready');
+  });
+
   it('records real no-write API RunService promotion evidence', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const evidence = rightPanel?.evidence.join(' ');

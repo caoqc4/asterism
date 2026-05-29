@@ -519,6 +519,10 @@ export class RunService {
             taskId: params.task.id,
           }
         : null,
+      subtaskStart: {
+        status: 'ready',
+        taskId: params.task.id,
+      },
       targetTaskId: params.task.id,
       taskMemoryGuidance: {
         guidanceCount: params.taskMemoryGuidance.targets.length,

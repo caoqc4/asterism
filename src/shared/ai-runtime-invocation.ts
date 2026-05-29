@@ -213,6 +213,10 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     runtimeMode: AiRuntimeMode | 'local_rule' | 'product_harness';
     taskId?: string | null;
   } | null;
+  subtaskStart?: {
+    status: 'blocked' | 'ready';
+    taskId?: string | null;
+  } | null;
   targetTaskId?: string | null;
   taskMemoryGuidance?: {
     guidanceCount: number;
@@ -865,6 +869,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const writeIntentTaskId = evidence.writeIntentExtraction?.taskId?.trim() || '';
   const postStepRunId = evidence.postStepVerification?.runId?.trim() || '';
   const postStepTaskId = evidence.postStepVerification?.taskId?.trim() || '';
+  const subtaskStartTaskId = evidence.subtaskStart?.taskId?.trim() || '';
   const runEvidenceTaskEvidenceChainReady = Boolean(runEvidenceId)
     && Boolean(runEvidenceTaskId)
     && Boolean(targetTaskId)
@@ -918,6 +923,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const contextStepTaskEvidenceChainReady = Boolean(contextStepTaskId)
     && Boolean(targetTaskId)
     && contextStepTaskId === targetTaskId;
+  const subtaskStartEvidenceChainReady = evidence.subtaskStart?.status === 'ready'
+    && Boolean(subtaskStartTaskId)
+    && Boolean(targetTaskId)
+    && subtaskStartTaskId === targetTaskId;
   const reviewedPatchApplyBoundaryReady = (
     evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
     && patchPromotionRunEvidenceChainReady
@@ -1040,6 +1049,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     if (gate === 'task_memory_guidance') return taskMemoryGuidanceReady;
     if (gate === 'pre_step') return runGoalContractReady;
     if (gate === 'post_step') return postStepVerificationReady;
+    if (gate === 'subtask_start') return subtaskStartEvidenceChainReady;
     return true;
   };
   const satisfiedGates = requiredGates.filter((gate) => gateEvidenceReady(gate));
@@ -1093,6 +1103,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `runGoalTask=${runGoalTaskId || 'missing'}`,
       `runGoalTaskEvidenceChain=${runGoalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `preStepGateEvidenceChain=${gateEvidenceReady('pre_step') ? 'ready' : 'missing'}`,
+      `subtaskStart=${evidence.subtaskStart?.status ?? 'missing'}`,
+      `subtaskStartTask=${subtaskStartTaskId || 'missing'}`,
+      `subtaskStartEvidenceChain=${subtaskStartEvidenceChainReady ? 'ready' : 'missing'}`,
+      `subtaskStartGateEvidenceChain=${gateEvidenceReady('subtask_start') ? 'ready' : 'missing'}`,
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
       `declaredWriteIntentActions=${declaredWriteActions.length ? declaredWriteActions.join(',') : 'none'}`,
       `writeIntentDeclaredActionChain=${declaredWriteActionsMatchSupportedActions ? 'ready' : 'missing'}`,
