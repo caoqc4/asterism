@@ -72,6 +72,13 @@ export function evaluateProviderNativeSessionGate(
     };
   }
 
+  if (params.normalization.plan.provider !== params.provider) {
+    return {
+      allowed: false,
+      reason: 'Provider-native normalized plan provider does not match the selected runtime provider.',
+    };
+  }
+
   return {
     allowed: true,
   };

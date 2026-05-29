@@ -133,6 +133,19 @@ describe('evaluateProviderNativeSessionGate', () => {
       },
       reason: 'Provider-native payload normalization failed.',
     },
+    {
+      label: 'normalized plan identity mismatch',
+      overrides: {
+        normalization: {
+          status: 'normalized',
+          plan: {
+            ...normalized.plan,
+            provider: 'anthropic',
+          },
+        },
+      },
+      reason: 'Provider-native normalized plan provider does not match the selected runtime provider.',
+    },
   ])('blocks $label', ({ overrides, reason }) => {
     expect(evaluateProviderNativeSessionGate(buildGateInput(overrides as never))).toEqual({
       allowed: false,

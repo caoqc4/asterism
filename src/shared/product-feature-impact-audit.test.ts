@@ -1259,8 +1259,8 @@ describe('product feature impact audit', () => {
   it('records provider-native session payload identity gating', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
-    expect(capabilities?.evidence.join(' ')).toContain('Provider-native agent session gates now require the provider-native payload provider identity');
-    expect(capabilities?.evidence.join(' ')).toContain('different configured runtime cannot cross the provider-native session boundary');
+    expect(capabilities?.evidence.join(' ')).toContain('Provider-native agent session gates now require both provider-native payload provider identity and normalized plan provider identity');
+    expect(capabilities?.evidence.join(' ')).toContain('provider payload or normalized plan from a different configured runtime cannot cross the provider-native session boundary');
   });
 
   it('records exact Agent API execution Write Intent action identity coverage', () => {
