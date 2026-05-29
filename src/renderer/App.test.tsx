@@ -5379,7 +5379,7 @@ describe('App redesign v1', () => {
             id: 'sandbox.patch_promotion',
             state: 'approval_required',
             reason: 'Sandbox patch promotion apply is enabled for explicit operator actions only; a ready workspace.staged_patch Decision still writes only after reviewed patch evidence, operator confirmation, and promotion preflight.',
-            diagnosticSummary: 'Runtime patch promotion routing readiness / promotionReady=no / promotionRequirements=7/8 / promotionSatisfiedRequirements=target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence / promotionMissingRequirements=selected_runtime_contract / missingRequirements=selected_runtime_contract / selectedRuntimeContract=missing / targetTaskIdentity=ready / targetTaskEvidenceChain=ready / checkpointEvidenceChain=ready / sameRunEvidenceChain=ready / explicitOperatorApply=ready / postApplyRunEvidence=ready / operatorId=local_operator / operatorApplyTask=task_1 / operatorApplyRun=run_patch_1 / operatorApplyCheckpoint=checkpoint_patch_1 / operatorApplyEvidenceChain=ready / patchArtifactId=artifact_patch_1 / decisionArtifactId=artifact_patch_1 / preflightArtifactId=artifact_patch_1 / artifactEvidenceChain=ready / promotionDecisionId=decision_patch_1 / promotionCheckpointId=checkpoint_patch_1 / preflightCheckpointId=checkpoint_patch_1 / patchArtifactTask=task_1 / promotionDecisionTask=task_1 / promotionPreflightTask=task_1 / postApplyTask=task_1 / patchRunId=run_patch_1 / decisionRunId=run_patch_1 / preflightRunId=run_patch_1 / postApplyRunId=run_patch_1 / sameRunId=run_patch_1 / expectedFileCount=1 / expectedFiles=notes.md / touchedFileCount=1 / touchedFiles=notes.md / filePathSafetyChain=ready / touchedFileEvidenceChain=ready',
+            diagnosticSummary: 'Runtime patch promotion routing readiness / promotionReady=no / promotionRequirements=7/8 / promotionSatisfiedRequirements=target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence / promotionMissingRequirements=selected_runtime_contract / missingRequirements=selected_runtime_contract / selectedRuntimeContract=missing / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / providerConfigured=ready / configuredProvider=openai / configuredProviderEvidenceChain=ready / targetTaskIdentity=ready / targetTaskEvidenceChain=ready / checkpointEvidenceChain=ready / sameRunEvidenceChain=ready / explicitOperatorApply=ready / postApplyRunEvidence=ready / operatorId=local_operator / operatorApplyTask=task_1 / operatorApplyRun=run_patch_1 / operatorApplyCheckpoint=checkpoint_patch_1 / operatorApplyEvidenceChain=ready / patchArtifactId=artifact_patch_1 / decisionArtifactId=artifact_patch_1 / preflightArtifactId=artifact_patch_1 / decisionArtifactEvidenceChain=ready / artifactEvidenceChain=ready / promotionDecisionId=decision_patch_1 / promotionCheckpointId=checkpoint_patch_1 / preflightCheckpointId=checkpoint_patch_1 / patchArtifactTask=task_1 / promotionDecisionTask=task_1 / promotionPreflightTask=task_1 / postApplyTask=task_1 / patchRunId=run_patch_1 / decisionRunId=run_patch_1 / preflightRunId=run_patch_1 / postApplyRunId=run_patch_1 / sameRunId=run_patch_1 / expectedFileCount=1 / expectedFiles=notes.md / touchedFileCount=1 / touchedFiles=notes.md / postApplyFilesMatched=yes / filePathSafetyChain=ready / touchedFileEvidenceChain=ready',
             requiresApproval: true,
             startupProbePolicy: 'manual_only',
             exposesSecretValue: false,
@@ -5434,6 +5434,11 @@ describe('App redesign v1', () => {
     expect(within(patchPromotionEvidence).getByText('promotionMissingRequirements=selected_runtime_contract')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('missingRequirements=selected_runtime_contract')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('selectedRuntimeContract=missing')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('selectedRuntimeProvider=openai')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('selectedRuntimeProviderEvidenceChain=ready')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('providerConfigured=ready')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('configuredProvider=openai')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('configuredProviderEvidenceChain=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('targetTaskIdentity=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('targetTaskEvidenceChain=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('checkpointEvidenceChain=ready')).toBeTruthy();
@@ -5448,6 +5453,7 @@ describe('App redesign v1', () => {
     expect(within(patchPromotionEvidence).getByText('patchArtifactId=artifact_patch_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('decisionArtifactId=artifact_patch_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('preflightArtifactId=artifact_patch_1')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('decisionArtifactEvidenceChain=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('artifactEvidenceChain=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('promotionDecisionId=decision_patch_1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('promotionCheckpointId=checkpoint_patch_1')).toBeTruthy();
@@ -5465,6 +5471,7 @@ describe('App redesign v1', () => {
     expect(within(patchPromotionEvidence).getByText('expectedFiles=notes.md')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('touchedFileCount=1')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('touchedFiles=notes.md')).toBeTruthy();
+    expect(within(patchPromotionEvidence).getByText('postApplyFilesMatched=yes')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('filePathSafetyChain=ready')).toBeTruthy();
     expect(within(patchPromotionEvidence).getByText('touchedFileEvidenceChain=ready')).toBeTruthy();
     const schedulerEvidence = screen.getByLabelText('runtime.scheduler evidence');
