@@ -1658,6 +1658,73 @@ describe('App redesign v1', () => {
     expect(screen.getByText('Capture the current user problem, product surface, and one success metric.')).toBeTruthy();
   });
 
+  it('renders business Records as a provenance-backed memory surface', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_memory_surface',
+      title: 'Memory surface product',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      records: [
+        {
+          id: 'source_context:source_key_signal',
+          type: 'signal',
+          businessLineId: line.id,
+          source: 'source_context:source_key_signal',
+          summary: 'Verified signal: Customer success asked for faster onboarding.',
+          confidence: 90,
+          linkedActionId: 'task_memory_action',
+          linkedDecisionId: null,
+          shouldAffectFutureContext: true,
+          futureContextReason: 'Source context is active and marked key, so it is included in default future context.',
+          provenance: {
+            sourceType: 'source_context',
+            sourceId: 'source_key_signal',
+            sourceLabel: 'Verified signal',
+            taskId: 'task_memory_action',
+          },
+          createdAt: now,
+        },
+        {
+          id: 'artifact:artifact_run_output',
+          type: 'result',
+          businessLineId: line.id,
+          source: 'artifact:artifact_run_output',
+          summary: 'draft output: Run output stays visible but not in default context.',
+          confidence: 70,
+          linkedActionId: 'task_memory_action',
+          linkedDecisionId: null,
+          shouldAffectFutureContext: false,
+          futureContextReason: 'Artifacts are projected into Records but excluded from default future context until promoted.',
+          provenance: {
+            sourceType: 'artifact',
+            sourceId: 'artifact_run_output',
+            sourceLabel: 'draft output',
+            taskId: 'task_memory_action',
+          },
+          createdAt: now,
+        },
+      ],
+    });
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'Records' }));
+
+    expect(screen.getByText('Verified signal: Customer success asked for faster onboarding.')).toBeTruthy();
+    expect(screen.getByText(/Verified signal · source_context · confidence 90/)).toBeTruthy();
+    expect(screen.getByText('future context')).toBeTruthy();
+    expect(screen.getByText(/included in default future context/)).toBeTruthy();
+    expect(screen.getByText('draft output: Run output stays visible but not in default context.')).toBeTruthy();
+    expect(screen.getByText(/draft output · artifact · confidence 70/)).toBeTruthy();
+    expect(screen.getByText('memory only')).toBeTruthy();
+    expect(screen.getByText(/excluded from default future context/)).toBeTruthy();
+  });
+
   it('opens business line context from a Today suggestion and sends business-line chat', async () => {
     const user = userEvent.setup();
     const homeBrief = buildBriefData(harness.tasks, harness.decisions);
@@ -7375,7 +7442,7 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText('明确网站目标与范围').length).toBeGreaterThan(0);
   });
 
-  it('prefills child task advancement from recent task records when available', async () => {
+  it('prefills child task advancement from recent task memory entries when available', async () => {
     const project = buildTask({
       id: 'task_project_record_prefill',
       title: '开发一个网站',
@@ -8440,7 +8507,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByDisplayValue(/预算页是否需要 CFO 再确认/)).toBeTruthy();
   });
 
-  it('persists task-file artifact edits through the main artifact API', async () => {
+  it('persists task-file output edits through the main output API', async () => {
     const user = userEvent.setup();
     const promptSpy = vi.spyOn(window, 'prompt').mockReturnValueOnce('notes.md');
     render(<App />);
@@ -8610,7 +8677,7 @@ describe('App redesign v1', () => {
     await expectOpenFileKind('AI 产出');
   });
 
-  it('projects phase closeout records into Task Records', async () => {
+  it('projects phase closeout notes into Task memory files', async () => {
     const user = userEvent.setup();
     const sourceOnlyTask = {
       ...buildTask({ id: 'task_phase_closeout', title: '阶段收尾任务' }),

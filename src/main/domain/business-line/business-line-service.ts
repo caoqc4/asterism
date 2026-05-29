@@ -11,13 +11,18 @@ import type {
   BusinessLineCreationTemplate,
   BusinessLineContextPack,
   BusinessLineListItem,
+  BusinessLineRecord,
   BusinessLineSkillRevision,
   BusinessLineTodaySuggestion,
   BusinessLineWorkspace,
+  BusinessLineReview,
   CreateBusinessLineInput,
   RecordBusinessLineReviewInput,
 } from '../../../shared/types/business-line.js';
+import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
+import type { SourceContextRecord } from '../../../shared/types/source-context.js';
+import type { TaskFileRecord } from '../../../shared/types/task-file.js';
 import type { TaskListItemRecord } from '../../../shared/types/task.js';
 
 function isBusinessLineLegacyTask(task: TaskListItemRecord): boolean {
@@ -37,6 +42,11 @@ function newestFirst<T extends { updatedAt?: string; createdAt: string }>(items:
 
 function decisionForReview(reviewId: string, decisions: DecisionRecord[]): DecisionRecord | null {
   return decisions.find((decision) => decision.sourceId === reviewId) ?? null;
+}
+
+function compactRecordSummary(text: string): string {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  return normalized.length > 180 ? `${normalized.slice(0, 177)}...` : normalized;
 }
 
 export class BusinessLineService {
@@ -105,6 +115,12 @@ export class BusinessLineService {
       ? await this.taskService.getDetail(businessLine.legacyTaskId)
       : null;
     const sourceRecords = legacyDetail?.sourceContexts ?? [];
+    const memoryRecords = await this.memoryRecordsForBusinessLine({
+      businessLine,
+      nativeRecords: records,
+      reviews,
+      decisions,
+    });
     const reviewIds = new Set(reviews.map((review) => review.id));
     const reviewDecisions = decisions.filter((decision) => decision.sourceId && reviewIds.has(decision.sourceId));
     const blockedDecisions = [
@@ -124,16 +140,16 @@ export class BusinessLineService {
       };
     });
     const acceptedSkills = enrichedSkillRevisions.filter((revision) => revision.status === 'active');
-    const latestRecords = records.filter((record) => record.shouldAffectFutureContext).slice(0, 10);
+    const latestRecords = memoryRecords.filter((record) => record.shouldAffectFutureContext).slice(0, 10);
     const missingContext = this.deriveMissingContext({
       businessLine,
       nextActions,
-      recordCount: records.length + sourceRecords.length,
+      recordCount: memoryRecords.length,
     });
     const contextPack: BusinessLineContextPack = {
       businessSummary: businessLine.summary,
       currentGoal: businessLine.goal,
-      recentChanges: this.recentChangesForBusinessLine(businessLine, nextActions, records),
+      recentChanges: this.recentChangesForBusinessLine(businessLine, nextActions, latestRecords),
       activeDecisions,
       openNextActions: nextActions,
       latestRecords,
@@ -151,14 +167,14 @@ export class BusinessLineService {
     return {
       businessLine,
       overview: {
-        nextSuggestion: this.suggestionForBusinessLine(businessLine, nextActions, records, sourceRecords.length, blockedDecisions.length),
+        nextSuggestion: this.suggestionForBusinessLine(businessLine, nextActions, memoryRecords, sourceRecords.length, blockedDecisions.length),
         recentChanges: contextPack.recentChanges,
         blockedDecisions,
         missingContext,
-        latestResult: records.find((record) => record.type === 'result' || record.type === 'review') ?? null,
+        latestResult: memoryRecords.find((record) => record.type === 'result' || record.type === 'review') ?? null,
         latestImprovement: enrichedSkillRevisions.find((revision) => revision.status === 'active' || revision.status === 'proposed') ?? null,
       },
-      records,
+      records: memoryRecords,
       sourceRecords,
       nextActions,
       learning: {
@@ -500,6 +516,166 @@ export class BusinessLineService {
     return template === 'web_product' ? 'Web Product / Software Product' : 'Custom';
   }
 
+  private async memoryRecordsForBusinessLine(params: {
+    businessLine: BusinessLine;
+    nativeRecords: BusinessLineRecord[];
+    reviews: BusinessLineReview[];
+    decisions: DecisionRecord[];
+  }): Promise<BusinessLineRecord[]> {
+    const [sourceContexts, artifacts, taskFiles] = await Promise.all([
+      this.businessLineRepository.listSourceContextsForBusinessLine(params.businessLine.id),
+      this.businessLineRepository.listArtifactsForBusinessLine(params.businessLine.id),
+      this.businessLineRepository.listTaskFilesForBusinessLine(params.businessLine.id),
+    ]);
+    const reviewIds = new Set(params.reviews.map((review) => review.id));
+    const decisionRecords: BusinessLineRecord[] = [];
+    for (const decision of params.decisions) {
+      if (await this.decisionBelongsToBusinessLine(decision, params.businessLine, reviewIds)) {
+        decisionRecords.push(this.projectDecisionRecord(params.businessLine.id, decision));
+      }
+    }
+
+    return newestFirst([
+      ...params.nativeRecords,
+      ...sourceContexts.map((source) => this.projectSourceContextRecord(params.businessLine.id, source)),
+      ...artifacts.map((artifact) => this.projectArtifactRecord(params.businessLine.id, artifact)),
+      ...taskFiles.map((file) => this.projectTaskFileRecord(params.businessLine.id, file)),
+      ...decisionRecords,
+      ...params.reviews.map((review) => this.projectReviewRecord(params.businessLine.id, review)),
+    ]);
+  }
+
+  private async decisionBelongsToBusinessLine(
+    decision: DecisionRecord,
+    businessLine: BusinessLine,
+    reviewIds: Set<string>,
+  ): Promise<boolean> {
+    if (decision.businessLineId) return decision.businessLineId === businessLine.id;
+    if (decision.sourceId && reviewIds.has(decision.sourceId)) return true;
+    if (!decision.taskId) return false;
+    return (await this.businessLineRepository.resolveBusinessLineForTask(decision.taskId)) === businessLine.id;
+  }
+
+  private projectSourceContextRecord(businessLineId: string, source: SourceContextRecord): BusinessLineRecord {
+    const summary = source.note ?? source.content ?? source.uri ?? source.title;
+    const shouldAffectFutureContext = source.status === 'active' && source.isKey;
+    return {
+      id: `source_context:${source.id}`,
+      type: 'signal',
+      businessLineId,
+      source: `source_context:${source.id}`,
+      summary: compactRecordSummary(`${source.title}: ${summary}`),
+      confidence: source.credibility === 'verified' ? 90 : source.credibility === 'low' ? 40 : 60,
+      linkedActionId: source.taskId,
+      linkedDecisionId: null,
+      shouldAffectFutureContext,
+      futureContextReason: shouldAffectFutureContext
+        ? 'Source context is active and marked key, so it is included in default future context.'
+        : 'Source context is visible memory but is not marked key for default future context.',
+      provenance: {
+        sourceType: 'source_context',
+        sourceId: source.id,
+        sourceLabel: source.uri ?? source.title,
+        taskId: source.taskId,
+        runId: source.runId ?? null,
+        uri: source.uri,
+      },
+      createdAt: source.createdAt,
+    };
+  }
+
+  private projectArtifactRecord(businessLineId: string, artifact: ArtifactRecord): BusinessLineRecord {
+    return {
+      id: `artifact:${artifact.id}`,
+      type: artifact.kind === 'run_output' ? 'result' : 'artifact',
+      businessLineId,
+      source: `artifact:${artifact.id}`,
+      summary: compactRecordSummary(`${artifact.title}: ${artifact.content}`),
+      confidence: 70,
+      linkedActionId: artifact.taskId,
+      linkedDecisionId: null,
+      shouldAffectFutureContext: false,
+      futureContextReason: 'Artifacts are projected into Records but excluded from default future context until promoted.',
+      provenance: {
+        sourceType: 'artifact',
+        sourceId: artifact.id,
+        sourceLabel: artifact.title,
+        taskId: artifact.taskId,
+        runId: artifact.sourceType === 'run' ? artifact.sourceId : null,
+      },
+      createdAt: artifact.createdAt,
+    };
+  }
+
+  private projectTaskFileRecord(businessLineId: string, file: TaskFileRecord): BusinessLineRecord {
+    return {
+      id: `task_file:${file.id}`,
+      type: 'artifact',
+      businessLineId,
+      source: `task_file:${file.id}`,
+      summary: compactRecordSummary(`${file.path}: ${file.content || file.name}`),
+      confidence: 65,
+      linkedActionId: file.taskId,
+      linkedDecisionId: null,
+      shouldAffectFutureContext: false,
+      futureContextReason: 'Task files are visible business memory but excluded from default future context until promoted.',
+      provenance: {
+        sourceType: 'task_file',
+        sourceId: file.id,
+        sourceLabel: file.path,
+        taskId: file.taskId,
+      },
+      createdAt: file.createdAt,
+    };
+  }
+
+  private projectDecisionRecord(businessLineId: string, decision: DecisionRecord): BusinessLineRecord {
+    const shouldAffectFutureContext = decision.status === 'pending' || decision.status === 'approved';
+    return {
+      id: `decision:${decision.id}`,
+      type: 'decision',
+      businessLineId,
+      source: `decision:${decision.id}`,
+      summary: compactRecordSummary(`${decision.title} (${decision.status})`),
+      confidence: decision.status === 'approved' ? 85 : decision.status === 'pending' ? 70 : 50,
+      linkedActionId: decision.taskId,
+      linkedDecisionId: decision.id,
+      shouldAffectFutureContext,
+      futureContextReason: shouldAffectFutureContext
+        ? 'Pending or approved Decisions remain in default future context.'
+        : 'Closed Decision is retained as memory but excluded from default future context.',
+      provenance: {
+        sourceType: 'decision',
+        sourceId: decision.id,
+        sourceLabel: decision.sourceLabel ?? decision.title,
+        taskId: decision.taskId,
+      },
+      createdAt: decision.createdAt,
+    };
+  }
+
+  private projectReviewRecord(businessLineId: string, review: BusinessLineReview): BusinessLineRecord {
+    return {
+      id: `review:${review.id}`,
+      type: 'review',
+      businessLineId,
+      source: `review:${review.id}`,
+      summary: compactRecordSummary(review.resultSummary),
+      confidence: review.confidence,
+      linkedActionId: review.sourceActionId,
+      linkedDecisionId: null,
+      shouldAffectFutureContext: true,
+      futureContextReason: 'Structured post-action review is included in default future context.',
+      provenance: {
+        sourceType: 'review',
+        sourceId: review.id,
+        sourceLabel: 'post-action review',
+        taskId: review.sourceActionId,
+      },
+      createdAt: review.createdAt,
+    };
+  }
+
   private async ensureLegacyBusinessLines(): Promise<void> {
     const tasks = await this.taskService.list();
     for (const task of tasks.filter(isBusinessLineLegacyTask)) {
@@ -537,7 +713,7 @@ export class BusinessLineService {
   private recentChangesForBusinessLine(
     businessLine: BusinessLine,
     nextActions: TaskListItemRecord[],
-    records: Awaited<ReturnType<BusinessLineRepository['listRecords']>>,
+    records: BusinessLineRecord[],
   ): string[] {
     return [
       records[0]?.summary ?? null,
@@ -549,7 +725,7 @@ export class BusinessLineService {
   private suggestionForBusinessLine(
     businessLine: BusinessLine,
     nextActions: TaskListItemRecord[],
-    records: Awaited<ReturnType<BusinessLineRepository['listRecords']>>,
+    records: BusinessLineRecord[],
     sourceRecordCount: number,
     pendingDecisionCount: number,
   ): BusinessLineTodaySuggestion | null {

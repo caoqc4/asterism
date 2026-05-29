@@ -435,6 +435,174 @@ describe('BusinessLineService', () => {
     await expect(businessLineRepository.resolveBusinessLineForTaskFile(taskFile.id)).resolves.toBe(created.id);
   });
 
+  it('projects business memory records with provenance and only includes marked records in context', async () => {
+    const created = await service.create({
+      title: 'Projected memory line',
+      goal: 'Use records as business memory',
+      kind: 'software_product',
+    });
+    const other = await service.create({
+      title: 'Other memory line',
+      goal: 'Stay excluded',
+      kind: 'software_product',
+    });
+    const ownedTask = await taskService.create({
+      title: 'Projection action',
+      businessLineId: created.id,
+    });
+    const run = await new RunRepository().create({
+      taskId: ownedTask.id,
+      businessLineId: created.id,
+      type: 'draft',
+    });
+    const keySource = await new SourceContextRepository().create({
+      taskId: ownedTask.id,
+      businessLineId: created.id,
+      title: 'Verified signal',
+      kind: 'note',
+      note: 'Customer success asked for faster onboarding.',
+      isKey: true,
+      credibility: 'verified',
+      runId: run.id,
+    });
+    const crossBusinessSource = await new SourceContextRepository().create({
+      taskId: ownedTask.id,
+      businessLineId: other.id,
+      title: 'Foreign signal',
+      kind: 'note',
+      note: 'This should stay out of the current business line.',
+      isKey: true,
+    });
+    const artifact = await new ArtifactRepository().createFromRun({
+      taskId: ownedTask.id,
+      businessLineId: created.id,
+      runId: run.id,
+      runType: 'draft',
+      content: 'Draft artifact output',
+    });
+    const crossBusinessArtifact = await new ArtifactRepository().createFromRun({
+      taskId: ownedTask.id,
+      businessLineId: other.id,
+      runId: run.id,
+      runType: 'draft',
+      content: 'Foreign artifact output',
+    });
+    const taskFile = await new TaskFileRepository().create({
+      taskId: ownedTask.id,
+      businessLineId: created.id,
+      name: 'Memory note.md',
+      kind: 'file',
+      content: 'Business memory file',
+    });
+    const crossBusinessFile = await new TaskFileRepository().create({
+      taskId: ownedTask.id,
+      businessLineId: other.id,
+      name: 'Foreign note.md',
+      kind: 'file',
+      content: 'Foreign business memory file',
+    });
+    decisionStore.push({
+      id: 'decision_projected_memory',
+      taskId: ownedTask.id,
+      businessLineId: created.id,
+      title: 'Approve projected memory policy',
+      status: 'pending',
+      scope: 'business_line',
+      kind: 'policy_change',
+      sourceType: 'system',
+      sourceId: null,
+      sourceLabel: 'Projected memory policy',
+      createdAt: '2026-05-29T00:00:00.000Z',
+      updatedAt: '2026-05-29T00:00:00.000Z',
+    });
+    decisionStore.push({
+      id: 'decision_foreign_memory',
+      taskId: ownedTask.id,
+      businessLineId: other.id,
+      title: 'Foreign decision',
+      status: 'pending',
+      scope: 'business_line',
+      kind: 'policy_change',
+      sourceType: 'system',
+      sourceId: null,
+      sourceLabel: 'Foreign policy',
+      createdAt: '2026-05-29T00:00:00.000Z',
+      updatedAt: '2026-05-29T00:00:00.000Z',
+    });
+    await service.recordReview({
+      businessLineId: created.id,
+      sourceActionId: ownedTask.id,
+      resultSummary: 'Review confirmed projected memory should guide the next action.',
+      confidence: 82,
+    });
+
+    const workspace = await service.getWorkspace(created.id);
+    const recordSourceIds = workspace!.records.map((record) => record.provenance?.sourceId);
+
+    expect(workspace?.records.every((record) => record.provenance)).toBe(true);
+    expect(workspace?.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: `source_context:${keySource.id}`,
+        type: 'signal',
+        shouldAffectFutureContext: true,
+        futureContextReason: expect.stringContaining('marked key'),
+        provenance: expect.objectContaining({
+          sourceType: 'source_context',
+          sourceId: keySource.id,
+          taskId: ownedTask.id,
+          runId: run.id,
+        }),
+      }),
+      expect.objectContaining({
+        id: `artifact:${artifact.id}`,
+        type: 'result',
+        shouldAffectFutureContext: false,
+        provenance: expect.objectContaining({
+          sourceType: 'artifact',
+          sourceId: artifact.id,
+        }),
+      }),
+      expect.objectContaining({
+        id: `task_file:${taskFile.id}`,
+        type: 'artifact',
+        shouldAffectFutureContext: false,
+        provenance: expect.objectContaining({
+          sourceType: 'task_file',
+          sourceId: taskFile.id,
+        }),
+      }),
+      expect.objectContaining({
+        id: 'decision:decision_projected_memory',
+        type: 'decision',
+        shouldAffectFutureContext: true,
+        provenance: expect.objectContaining({
+          sourceType: 'decision',
+          sourceId: 'decision_projected_memory',
+        }),
+      }),
+      expect.objectContaining({
+        type: 'review',
+        shouldAffectFutureContext: true,
+        provenance: expect.objectContaining({
+          sourceType: 'review',
+        }),
+      }),
+    ]));
+    expect(recordSourceIds).not.toContain(crossBusinessSource.id);
+    expect(recordSourceIds).not.toContain(crossBusinessArtifact.id);
+    expect(recordSourceIds).not.toContain(crossBusinessFile.id);
+    expect(recordSourceIds).not.toContain('decision_foreign_memory');
+
+    const contextRecordIds = workspace!.contextPack.latestRecords.map((record) => record.id);
+    expect(contextRecordIds).toContain(`source_context:${keySource.id}`);
+    expect(contextRecordIds).toContain('decision:decision_projected_memory');
+    expect(contextRecordIds).not.toContain(`artifact:${artifact.id}`);
+    expect(contextRecordIds).not.toContain(`task_file:${taskFile.id}`);
+    const promptContext = formatBusinessLineContextPackForPrompt(workspace!);
+    expect(promptContext).toContain('Verified signal');
+    expect(promptContext).not.toContain('Draft artifact output');
+  });
+
   it('resolves legacy project child durable objects through the parent business line', async () => {
     const project = await taskService.create({
       title: 'Legacy project business line',

@@ -13,6 +13,13 @@ import type {
   CreateBusinessLineInput,
   RecordBusinessLineReviewInput,
 } from '../../../shared/types/business-line.js';
+import type { ArtifactKind, ArtifactRecord } from '../../../shared/types/artifact.js';
+import type {
+  SourceContextCredibility,
+  SourceContextRecord,
+  SourceContextRole,
+} from '../../../shared/types/source-context.js';
+import type { TaskFileKind, TaskFileRecord } from '../../../shared/types/task-file.js';
 import {
   businessLineIdForLegacyTask,
   inferBusinessLineKindFromTask,
@@ -39,6 +46,9 @@ type BusinessLineActionRow = typeof businessLineActions.$inferSelect;
 type BusinessLineRecordRow = typeof businessLineRecords.$inferSelect;
 type BusinessLineReviewRow = typeof businessLineReviews.$inferSelect;
 type BusinessLineSkillRevisionRow = typeof businessLineSkillRevisions.$inferSelect;
+type SourceContextRow = typeof sourceContexts.$inferSelect;
+type ArtifactRow = typeof artifacts.$inferSelect;
+type TaskFileRow = typeof taskFiles.$inferSelect;
 
 function parseJsonArray(value: string | null | undefined): string[] {
   try {
@@ -100,6 +110,7 @@ function businessLineFromRow(row: BusinessLineRow): BusinessLine {
 }
 
 function businessLineRecordFromRow(row: BusinessLineRecordRow): BusinessLineRecord {
+  const shouldAffectFutureContext = row.shouldAffectFutureContext === 'true';
   return {
     id: row.id,
     type: normalizeRecordType(row.type),
@@ -109,8 +120,73 @@ function businessLineRecordFromRow(row: BusinessLineRecordRow): BusinessLineReco
     confidence: row.confidence,
     linkedActionId: row.linkedActionId,
     linkedDecisionId: row.linkedDecisionId,
-    shouldAffectFutureContext: row.shouldAffectFutureContext === 'true',
+    shouldAffectFutureContext,
+    futureContextReason: shouldAffectFutureContext
+      ? 'Native business-line record marked should_affect_future_context.'
+      : 'Native business-line record kept as memory but excluded from default future context.',
+    provenance: {
+      sourceType: 'business_line_record',
+      sourceId: row.id,
+      sourceLabel: row.source,
+      taskId: row.linkedActionId,
+    },
     createdAt: row.createdAt,
+  };
+}
+
+function sourceContextFromRow(row: SourceContextRow): SourceContextRecord {
+  const sourceRole = row.sourceRole as SourceContextRole | null;
+  const credibility = row.credibility as SourceContextCredibility | null;
+  return {
+    id: row.id,
+    taskId: row.taskId,
+    businessLineId: row.businessLineId,
+    title: row.title,
+    kind: row.kind as SourceContextRecord['kind'],
+    isKey: row.isKey === 'true',
+    uri: row.uri,
+    content: row.content,
+    note: row.note,
+    status: row.status as SourceContextRecord['status'],
+    capturedAt: row.capturedAt ?? row.createdAt,
+    runId: row.runId,
+    batchId: row.batchId,
+    sourceRole: sourceRole ?? 'raw',
+    credibility: credibility ?? null,
+    isDuplicate: row.isDuplicate === 'true',
+    containsSensitiveData: row.containsSensitiveData === 'true',
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    archivedAt: row.archivedAt,
+  };
+}
+
+function artifactFromRow(row: ArtifactRow): ArtifactRecord {
+  return {
+    id: row.id,
+    taskId: row.taskId,
+    businessLineId: row.businessLineId,
+    sourceType: row.sourceType as ArtifactRecord['sourceType'],
+    sourceId: row.sourceId,
+    kind: row.kind as ArtifactKind,
+    title: row.title,
+    content: row.content,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function taskFileFromRow(row: TaskFileRow): TaskFileRecord {
+  return {
+    id: row.id,
+    taskId: row.taskId,
+    businessLineId: row.businessLineId,
+    name: row.name,
+    path: row.path,
+    kind: row.kind as TaskFileKind,
+    content: row.content,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }
 
@@ -227,6 +303,55 @@ export class BusinessLineRepository {
       .orderBy(desc(businessLineRecords.createdAt))
       .limit(limit);
     return rows.map(businessLineRecordFromRow);
+  }
+
+  async listSourceContextsForBusinessLine(businessLineId: string): Promise<SourceContextRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(sourceContexts)
+      .orderBy(desc(sourceContexts.updatedAt));
+    const records: SourceContextRecord[] = [];
+    for (const row of rows) {
+      if (row.status !== 'active') continue;
+      const resolvedBusinessLineId = await this.resolveBusinessLineForSource(row.id);
+      if (resolvedBusinessLineId === businessLineId) {
+        records.push(sourceContextFromRow(row));
+      }
+    }
+    return records;
+  }
+
+  async listArtifactsForBusinessLine(businessLineId: string): Promise<ArtifactRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(artifacts)
+      .orderBy(desc(artifacts.updatedAt));
+    const records: ArtifactRecord[] = [];
+    for (const row of rows) {
+      const resolvedBusinessLineId = await this.resolveBusinessLineForArtifact(row.id);
+      if (resolvedBusinessLineId === businessLineId) {
+        records.push(artifactFromRow(row));
+      }
+    }
+    return records;
+  }
+
+  async listTaskFilesForBusinessLine(businessLineId: string): Promise<TaskFileRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(taskFiles)
+      .orderBy(desc(taskFiles.updatedAt));
+    const records: TaskFileRecord[] = [];
+    for (const row of rows) {
+      const resolvedBusinessLineId = await this.resolveBusinessLineForTaskFile(row.id);
+      if (resolvedBusinessLineId === businessLineId) {
+        records.push(taskFileFromRow(row));
+      }
+    }
+    return records;
   }
 
   async listActionTaskIds(businessLineId: string): Promise<string[]> {

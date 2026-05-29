@@ -19,6 +19,23 @@ export type BusinessLineRecordType =
 
 export type BusinessLineSkillRevisionStatus = 'proposed' | 'active' | 'disabled' | 'superseded';
 
+export type BusinessLineRecordProvenanceSource =
+  | 'business_line_record'
+  | 'source_context'
+  | 'artifact'
+  | 'task_file'
+  | 'decision'
+  | 'review';
+
+export type BusinessLineRecordProvenance = {
+  sourceType: BusinessLineRecordProvenanceSource;
+  sourceId: string;
+  sourceLabel: string;
+  taskId?: string | null;
+  runId?: string | null;
+  uri?: string | null;
+};
+
 export type BusinessLine = {
   id: string;
   title: string;
@@ -40,6 +57,8 @@ export type BusinessLineRecord = {
   linkedActionId: string | null;
   linkedDecisionId: string | null;
   shouldAffectFutureContext: boolean;
+  futureContextReason?: string | null;
+  provenance?: BusinessLineRecordProvenance | null;
   createdAt: string;
 };
 

@@ -951,6 +951,8 @@ a { color: inherit; text-decoration: none; }
 .tag.waiting   { background: var(--amber-soft); color: oklch(0.45 0.13 75); border-color: var(--amber-line); }
 .tag.running   { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); }
 .tag.completed { background: var(--green-soft); color: var(--green); border-color: var(--green-line); }
+.tag.success   { background: var(--green-soft); color: var(--green); border-color: var(--green-line); }
+.tag.muted-tag { background: var(--bg-sunk); color: var(--ink-3); border-color: var(--line); }
 .tag.decision  { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); font-weight: 600; }
 .tag.captured  { background: var(--bg-sunk); color: var(--ink-3); border-style: dashed; }
 
@@ -6494,6 +6496,11 @@ a { color: inherit; text-decoration: none; }
   border-radius: var(--radius);
   padding: 12px;
   background: var(--bg-sunk);
+}
+.business-record-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .business-action {
   display: flex;

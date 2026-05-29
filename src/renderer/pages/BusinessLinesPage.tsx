@@ -388,30 +388,28 @@ function OverviewTab({ workspace, onOpenBusinessLinePanel }: {
 }
 
 function RecordsTab({ workspace }: { workspace: BusinessLineWorkspace }) {
-  const records: BusinessLineRecord[] = [
-    ...workspace.records,
-    ...workspace.sourceRecords.map((source) => ({
-      id: source.id,
-      type: 'signal' as const,
-      businessLineId: workspace.businessLine.id,
-      source: source.uri ?? source.kind,
-      summary: source.note ?? source.content ?? source.title,
-      confidence: source.credibility === 'verified' ? 90 : 60,
-      linkedActionId: null,
-      linkedDecisionId: null,
-      shouldAffectFutureContext: source.isKey,
-      createdAt: source.createdAt,
-    })),
-  ];
+  const records: BusinessLineRecord[] = workspace.records;
   return (
     <div className="business-section">
       <h3>Records</h3>
       <div className="business-record-list">
         {records.map((record) => (
           <div key={`${record.type}:${record.id}`} className="business-record">
-            <span className="tag">{record.type}</span>
+            <div className="business-record-header">
+              <span className="tag">{record.type}</span>
+              <span className={record.shouldAffectFutureContext ? 'tag success' : 'tag muted-tag'}>
+                {record.shouldAffectFutureContext ? 'future context' : 'memory only'}
+              </span>
+            </div>
             <p>{record.summary}</p>
-            <small>{record.source} · confidence {record.confidence}</small>
+            <small>
+              {record.provenance?.sourceLabel ?? record.source}
+              {' · '}
+              {record.provenance?.sourceType ?? 'record'}
+              {' · confidence '}
+              {record.confidence}
+            </small>
+            {record.futureContextReason && <small>{record.futureContextReason}</small>}
           </div>
         ))}
         {records.length === 0 && <p className="muted">还没有业务线记录。</p>}
