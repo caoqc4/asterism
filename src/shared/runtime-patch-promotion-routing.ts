@@ -371,10 +371,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
 
 function isExplicitOperatorApplySurface(
   value: string,
-): value is 'decision_checkpoint_resume' | 'ipc_explicit_apply' | 'service_explicit_apply' {
+): value is 'decision_checkpoint_resume' | 'ipc_explicit_apply' {
   return value === 'decision_checkpoint_resume'
-    || value === 'ipc_explicit_apply'
-    || value === 'service_explicit_apply';
+    || value === 'ipc_explicit_apply';
 }
 
 function sameStringSet(left: string[], right: string[]): boolean {

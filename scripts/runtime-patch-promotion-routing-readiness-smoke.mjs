@@ -93,7 +93,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
       checkpointId: 'checkpoint_patch_1',
       confirmed: true,
       operatorId: 'local_operator',
-      surface: 'service_explicit_apply',
+      surface: 'ipc_explicit_apply',
       runId: 'run_patch_1',
       taskId: 'task_1',
     },
@@ -145,7 +145,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
       checkpointId: 'checkpoint_patch_1',
       confirmed: true,
       operatorId: 'local_operator',
-      surface: 'service_explicit_apply',
+      surface: 'ipc_explicit_apply',
       runId: 'run_patch_1',
       taskId: 'task_1',
     },
@@ -290,7 +290,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || scalarValue(serviceEvidenceReady.summary, 'selectedRuntimeContract') !== 'ready'
     || scalarValue(serviceEvidenceReady.summary, 'targetTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceReady.summary, 'operatorApplyEvidenceChain') !== 'ready'
-    || scalarValue(serviceEvidenceReady.summary, 'operatorApplySurface') !== 'service_explicit_apply'
+    || scalarValue(serviceEvidenceReady.summary, 'operatorApplySurface') !== 'ipc_explicit_apply'
     || scalarValue(serviceEvidenceReady.summary, 'operatorApplySurfaceEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceReady.summary, 'sameRunId') !== 'run_patch_1'
     || scalarValue(serviceEvidenceReady.summary, 'postApplyFilesMatched') !== 'yes'

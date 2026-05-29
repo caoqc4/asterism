@@ -220,7 +220,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -285,7 +285,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('artifactEvidenceChain=ready');
     expect(ready.summary).toContain('sameRunEvidenceChain=ready');
     expect(ready.summary).toContain('operatorId=operator_1');
-    expect(ready.summary).toContain('operatorApplySurface=service_explicit_apply');
+    expect(ready.summary).toContain('operatorApplySurface=ipc_explicit_apply');
     expect(ready.summary).toContain('operatorApplySurfaceEvidenceChain=ready');
     expect(ready.summary).toContain('operatorApplyTask=task_1');
     expect(ready.summary).toContain('operatorApplyRun=run_patch_1');
@@ -364,12 +364,71 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('operatorApplyEvidenceChain=ready');
   });
 
+  it('does not treat service-internal apply as an operator-facing patch promotion surface', () => {
+    const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        surface: 'service_explicit_apply',
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'selected_runtime',
+        phase: 'execution_run',
+        runId: 'run_patch_1',
+        runtimeMode: 'codex',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: ['explicit_operator_apply', 'same_run_evidence_chain'],
+    });
+    expect(readiness.summary).toContain('operatorApplySurface=service_explicit_apply');
+    expect(readiness.summary).toContain('operatorApplySurfaceEvidenceChain=missing');
+    expect(readiness.summary).toContain('operatorApplyEvidenceChain=ready');
+    expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
+  });
+
   it('requires API selected-runtime provider identity before patch promotion can be ready', () => {
     const missingProvider = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -430,7 +489,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -496,7 +555,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -562,7 +621,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -629,7 +688,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -689,7 +748,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -751,7 +810,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -818,7 +877,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -885,7 +944,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -951,7 +1010,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_other',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1018,7 +1077,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1086,7 +1145,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1153,7 +1212,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1219,7 +1278,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1281,7 +1340,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1347,7 +1406,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1414,7 +1473,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1479,7 +1538,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1544,7 +1603,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1609,7 +1668,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1674,7 +1733,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1737,7 +1796,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',
@@ -1795,7 +1854,7 @@ describe('runtime patch promotion routing readiness', () => {
       explicitOperatorApply: {
         checkpointId: 'checkpoint_patch_1',
         confirmed: true,
-        surface: 'service_explicit_apply',
+        surface: 'ipc_explicit_apply',
         operatorId: 'operator_1',
         runId: 'run_patch_1',
         taskId: 'task_1',

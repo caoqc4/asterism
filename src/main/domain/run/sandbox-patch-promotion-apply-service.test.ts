@@ -169,7 +169,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: false,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -231,7 +231,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -280,7 +280,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -434,7 +434,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -494,7 +494,7 @@ describe('SandboxPatchPromotionApplyService', () => {
     const result = await service.apply('run_checkpoint_1', {
       operatorConfirmed: true,
       operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
     });
 
     expect(result).toMatchObject({
@@ -540,7 +540,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -591,7 +591,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -644,7 +644,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -691,7 +691,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -745,7 +745,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -786,7 +786,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -827,7 +827,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -858,7 +858,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -896,7 +896,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -942,7 +942,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const result = await service.apply('run_checkpoint_1', {
         operatorConfirmed: true,
         operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
       });
 
       expect(result).toMatchObject({
@@ -980,7 +980,7 @@ describe('SandboxPatchPromotionApplyService', () => {
     const result = await service.apply('run_checkpoint_1', {
       operatorConfirmed: true,
       operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
     });
 
     expect(result).toMatchObject({
@@ -1026,7 +1026,7 @@ describe('SandboxPatchPromotionApplyService', () => {
     const result = await service.apply('run_checkpoint_1', {
       operatorConfirmed: true,
       operatorId: 'local_operator',
-        operatorSurface: 'service_explicit_apply',
+        operatorSurface: 'ipc_explicit_apply',
     });
 
     expect(result).toMatchObject({

@@ -1482,6 +1482,15 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('touched files match the reviewed patch file set');
   });
 
+  it('records service-internal apply surface closure for runtime patch promotion routing', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('service_explicit_apply outside the ready operatorApplySurfaceEvidenceChain');
+    expect(evidence).toContain('service-internal apply calls can record evidence but cannot prove the future API/runtime workspace mutation route');
+    expect(evidence).toContain('operator-facing surface such as ipc_explicit_apply or decision_checkpoint_resume');
+  });
+
   it('records operator-facing reviewed patch apply audit summary evidence', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
     const evidence = taskFiles?.evidence.join(' ');
