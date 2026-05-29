@@ -193,7 +193,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, reviewedPatchExplicitApply, noWorkspaceWriteRequired, patchPromotionPreflight, patchPromotionStatus, patchPromotionRun');
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionRunEvidenceChain, patchPromotionTask, patchPromotionTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('postStepRun, postStepRunEvidenceChain, postStepTask, postStepTaskEvidenceChain, postStepVerifier');
-    expect(rightPanel?.evidence.join(' ')).toContain('terminalRunStatus, terminalRunStatusEvidenceChain, terminalEvidence, runtimeMode, and invocationLayer identity chips');
+    expect(rightPanel?.evidence.join(' ')).toContain('terminalRunStatus, terminalRunStatusEvidenceChain, terminalEvidence');
     expect(rightPanel?.evidence.join(' ')).toContain('hand-filled requirement arrays');
     expect(rightPanel?.evidence.join(' ')).toContain('matching service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('Retained API Runtime / Agent API-like RunService runs now persist an Agent API execution promotion readiness Run step');
@@ -1506,6 +1506,16 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion');
     expect(rightPanel?.gaps.join(' ')).toContain('explicit right-panel execution requests can enter RunService');
     expect(rightPanel?.nextActions.join(' ')).toContain('expanding from explicit right-panel execution requests');
+  });
+
+  it('records Agent API execution terminal evidence summary coverage', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    const evidence = rightPanel?.evidence.join(' ');
+
+    expect(evidence).toContain('terminalEvidenceSummary, terminalEvidenceSummaryChain');
+    expect(evidence).toContain('terminalEvidenceSummary in post-run Agent API execution promotion evidence as output_chars or failure_reason_chars');
+    expect(evidence).toContain('run_evidence_persistence remains missing when terminal evidence is marked present without that reviewable evidence summary');
+    expect(evidence).toContain('postRunNoWriteback=9/11 requirements and 9/9 gates with terminalEvidenceSummary=output_chars=42');
   });
 
   it('records right-panel Agent API decomposition routing coverage', () => {

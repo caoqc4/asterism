@@ -1741,12 +1741,15 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('terminalRunStatus=completed');
     expect(ready.summary).toContain('terminalRunStatusEvidenceChain=ready');
     expect(ready.summary).toContain('terminalEvidence=present');
+    expect(ready.summary).toContain('terminalEvidenceSummary=output_chars=42');
+    expect(ready.summary).toContain('terminalEvidenceSummaryChain=ready');
 
     const mismatch = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       runEvidencePersistence: {
         runId: 'run_api_execution',
         taskId: 'task_2',
+        terminalEvidenceSummary: 'output_chars=42',
         terminalEvidenceStatus: 'present',
         terminalRunStatus: 'completed',
       },
@@ -1768,6 +1771,7 @@ describe('ai runtime invocation contract', () => {
       runEvidencePersistence: {
         runId: 'run_api_execution',
         taskId: 'task_1',
+        terminalEvidenceSummary: 'output_chars=42',
         terminalEvidenceStatus: 'present',
         terminalRunStatus: 'running',
       },
@@ -1785,6 +1789,7 @@ describe('ai runtime invocation contract', () => {
       runEvidencePersistence: {
         runId: 'run_api_execution',
         taskId: 'task_1',
+        terminalEvidenceSummary: 'failure_reason_chars=18',
         terminalEvidenceStatus: 'present',
         terminalRunStatus: 'failed',
       },
@@ -1796,6 +1801,26 @@ describe('ai runtime invocation contract', () => {
     });
     expect(failed.summary).toContain('terminalRunStatus=failed');
     expect(failed.summary).toContain('terminalRunStatusEvidenceChain=ready');
+  });
+
+  it('requires persisted Run evidence to include reviewable terminal evidence summary', () => {
+    const missingSummary = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runEvidencePersistence: {
+        runId: 'run_api_execution',
+        taskId: 'task_1',
+        terminalEvidenceStatus: 'present',
+        terminalRunStatus: 'completed',
+      },
+    });
+
+    expect(missingSummary).toMatchObject({
+      ready: false,
+      missingRequirements: ['run_evidence_persistence'],
+    });
+    expect(missingSummary.summary).toContain('terminalEvidence=present');
+    expect(missingSummary.summary).toContain('terminalEvidenceSummary=missing');
+    expect(missingSummary.summary).toContain('terminalEvidenceSummaryChain=missing');
   });
 
   it('requires Agent API execution selected runtime provider identity to match provider preflight', () => {
@@ -2712,6 +2737,7 @@ function completeAgentApiExecutionPromotionEvidence() {
     runEvidencePersistence: {
       runId: 'run_api_execution',
       taskId: 'task_1',
+      terminalEvidenceSummary: 'output_chars=42',
       terminalEvidenceStatus: 'present' as const,
       terminalRunStatus: 'completed' as const,
     },

@@ -201,6 +201,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   runEvidencePersistence?: {
     runId?: string | null;
     taskId?: string | null;
+    terminalEvidenceSummary?: string | null;
     terminalEvidenceStatus: 'missing' | 'pending' | 'present';
     terminalRunStatus?: RunStatus | null;
   } | null;
@@ -943,6 +944,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
   const runEvidenceId = evidence.runEvidencePersistence?.runId?.trim() || '';
   const runEvidenceTaskId = evidence.runEvidencePersistence?.taskId?.trim() || '';
+  const terminalEvidenceSummary = evidence.runEvidencePersistence?.terminalEvidenceSummary?.trim() || '';
   const terminalRunStatus = evidence.runEvidencePersistence?.terminalRunStatus ?? null;
   const patchPromotionRunId = evidence.reviewedPatchApplyBoundary?.runId?.trim() || '';
   const patchPromotionTaskId = evidence.reviewedPatchApplyBoundary?.taskId?.trim() || '';
@@ -960,6 +962,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && Boolean(targetTaskId)
     && runEvidenceTaskId === targetTaskId;
   const terminalRunStatusReady = terminalRunStatus === 'completed' || terminalRunStatus === 'failed';
+  const terminalEvidenceSummaryReady = Boolean(terminalEvidenceSummary);
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && runEvidenceTaskEvidenceChainReady;
   const selectedRuntimeRunEvidenceChainReady = Boolean(selectedRuntimeRunId)
@@ -1147,6 +1150,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && runEvidenceTaskEvidenceChainReady
     && terminalRunStatusReady
     && evidence.runEvidencePersistence?.terminalEvidenceStatus === 'present'
+    && terminalEvidenceSummaryReady
   ) {
     satisfiedRequirements.push('run_evidence_persistence');
   }
@@ -1267,6 +1271,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `terminalRunStatus=${terminalRunStatus ?? 'missing'}`,
       `terminalRunStatusEvidenceChain=${terminalRunStatusReady ? 'ready' : 'missing'}`,
       `terminalEvidence=${evidence.runEvidencePersistence?.terminalEvidenceStatus ?? 'missing'}`,
+      `terminalEvidenceSummary=${terminalEvidenceSummary || 'missing'}`,
+      `terminalEvidenceSummaryChain=${terminalEvidenceSummaryReady ? 'ready' : 'missing'}`,
       `runtimeMode=${selectedRuntime?.runtimeMode ?? 'missing'}`,
       `invocationLayer=${selectedRuntime?.invocationLayer ?? 'missing'}`,
     ].join(' / '),

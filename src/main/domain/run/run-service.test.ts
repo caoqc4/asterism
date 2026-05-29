@@ -897,6 +897,12 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('terminalEvidenceSummary=output_chars=16'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
         output: expect.not.stringContaining('missingRequirements=selected_runtime_contract,provider_visible_preflight,run_goal_contract,write_intent_extraction,reviewed_patch_apply_boundary,post_step_verification,run_evidence_persistence'),
       }),
     );
@@ -2099,6 +2105,12 @@ describe('RunService', () => {
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
         output: expect.stringContaining('terminalEvidence=present'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('terminalEvidenceSummary=failure_reason_chars=17'),
       }),
     );
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();

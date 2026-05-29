@@ -93,6 +93,14 @@ function formatAgentApiExecutionPromotionReadinessInput(params: {
   return parts.length > 0 ? parts.join('\n') : null;
 }
 
+function summarizeTerminalRunEvidence(run: Pick<RunRecord, 'failureReason' | 'output' | 'status'>): string | null {
+  const outputLength = run.output?.trim().length ?? 0;
+  if (outputLength > 0) return `output_chars=${outputLength}`;
+  const failureReasonLength = run.failureReason?.trim().length ?? 0;
+  if (run.status === 'failed' && failureReasonLength > 0) return `failure_reason_chars=${failureReasonLength}`;
+  return null;
+}
+
 export class RunService {
   constructor(
     private readonly runRepository: RunRepository,
@@ -539,6 +547,7 @@ export class RunService {
         ? {
             runId: params.run.id,
             taskId: params.run.taskId,
+            terminalEvidenceSummary: summarizeTerminalRunEvidence(params.run),
             terminalEvidenceStatus: params.run.output?.trim() || params.run.failureReason?.trim() ? 'present' : 'missing',
             terminalRunStatus: params.run.status,
           }

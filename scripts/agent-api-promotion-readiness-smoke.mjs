@@ -165,6 +165,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     runEvidencePersistence: {
       runId: 'run_api_execution',
       taskId: 'task_1',
+      terminalEvidenceSummary: 'output_chars=42',
       terminalEvidenceStatus: 'present',
       terminalRunStatus: 'completed',
     },
@@ -239,6 +240,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     runEvidencePersistence: {
       runId: 'run_api_execution',
       taskId: 'task_1',
+      terminalEvidenceSummary: 'output_chars=42',
       terminalEvidenceStatus: 'present',
       terminalRunStatus: 'completed',
     },
@@ -315,6 +317,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     runEvidencePersistence: {
       runId: 'run_api_execution',
       taskId: 'task_1',
+      terminalEvidenceSummary: 'output_chars=42',
       terminalEvidenceStatus: 'present',
       terminalRunStatus: 'completed',
     },
@@ -398,6 +401,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     runEvidencePersistence: {
       runId: 'run_api_execution',
       taskId: 'task_1',
+      terminalEvidenceSummary: 'output_chars=42',
       terminalEvidenceStatus: 'present',
       terminalRunStatus: 'completed',
     },
@@ -537,6 +541,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`artifactOnlyPostStepTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepTaskEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyTerminalRunStatus=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatus') ?? 'missing'}`);
   console.log(`artifactOnlyTerminalRunStatusEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatusEvidenceChain') ?? 'missing'}`);
+  console.log(`artifactOnlyTerminalEvidenceSummary=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalEvidenceSummary') ?? 'missing'}`);
+  console.log(`artifactOnlyTerminalEvidenceSummaryChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalEvidenceSummaryChain') ?? 'missing'}`);
   console.log(`postRunNoWritebackPromotionReady=${serviceEvidencePostRunNoWriteback.ready ? 'yes' : 'no'}`);
   console.log(`postRunNoWritebackRequirements=${serviceEvidencePostRunNoWriteback.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
   console.log(`postRunNoWritebackGates=${serviceEvidencePostRunNoWriteback.satisfiedGates.length}/${deferredInvocation.requiredGates.length}`);
@@ -545,6 +551,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`postRunNoWritebackRunId=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'runId') ?? 'missing'}`);
   console.log(`postRunNoWritebackTerminalRunStatus=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalRunStatus') ?? 'missing'}`);
   console.log(`postRunNoWritebackTerminalEvidence=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalEvidence') ?? 'missing'}`);
+  console.log(`postRunNoWritebackTerminalEvidenceSummary=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalEvidenceSummary') ?? 'missing'}`);
+  console.log(`postRunNoWritebackTerminalEvidenceSummaryChain=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalEvidenceSummaryChain') ?? 'missing'}`);
   console.log(`postRunNoWritebackPostStepRunEvidenceChain=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepRunEvidenceChain') ?? 'missing'}`);
   console.log(`postRunNoWritebackPostStepTaskEvidenceChain=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepTaskEvidenceChain') ?? 'missing'}`);
   console.log(`postRunNoWritebackWriteIntentActions=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'writeIntentActions') ?? 'missing'}`);
@@ -661,6 +669,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'postStepTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatus') !== 'completed'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatusEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalEvidenceSummary') !== 'output_chars=42'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalEvidenceSummaryChain') !== 'ready'
     || serviceEvidencePostRunNoWriteback.ready
     || serviceEvidencePostRunNoWriteback.satisfiedRequirements.length !== 9
     || serviceEvidencePostRunNoWriteback.satisfiedGates.length !== 9
@@ -669,6 +679,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'runId') !== 'run_api_execution'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalRunStatus') !== 'completed'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalEvidence') !== 'present'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalEvidenceSummary') !== 'output_chars=42'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'terminalEvidenceSummaryChain') !== 'ready'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepRunEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'writeIntentActions') !== 'none'
