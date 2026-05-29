@@ -241,6 +241,9 @@ describe('SandboxPatchPromotionApplyService', () => {
         'sandbox_patch_promotion_1',
         expect.stringContaining('Sandbox patch promotion applied / checkpoint=run_checkpoint_1 / files=notes.md'),
       );
+      expect(markApplied.mock.calls[0]?.[1]).toContain('expectedFileCount=1');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('touchedFileCount=1');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('filesMatched=yes');
       expect(markApplied.mock.calls[0]?.[1]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
       expect(markApplied.mock.calls[0]?.[1]).toContain('promotionRequirements=8/8');
       expect(markApplied.mock.calls[0]?.[1]).toContain('selectedRuntimeContract=ready');
@@ -919,6 +922,9 @@ describe('SandboxPatchPromotionApplyService', () => {
       touchedFiles: ['notes.md'],
     });
     expect(result.auditSummary).toContain('Sandbox patch promotion already applied / checkpoint=run_checkpoint_1 / files=notes.md');
+    expect(result.auditSummary).toContain('expectedFileCount=1');
+    expect(result.auditSummary).toContain('touchedFileCount=1');
+    expect(result.auditSummary).toContain('filesMatched=yes');
     expect(result.auditSummary).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
     expect(result.auditSummary).toContain('promotionRequirements=7/8');
     expect(result.auditSummary).toContain('explicitOperatorApply=ready');

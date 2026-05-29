@@ -80,6 +80,10 @@ export class SandboxPatchPromotionApplyService {
         'Sandbox patch promotion already applied',
         `checkpoint=${preflight.promotion.checkpointId}`,
         `files=${preflight.promotion.expectedFiles.join(', ')}`,
+        formatPatchApplyFileEvidence({
+          expectedFiles: preflight.promotion.expectedFiles,
+          touchedFiles: preflight.promotion.expectedFiles,
+        }),
         buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion({
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
@@ -160,6 +164,10 @@ export class SandboxPatchPromotionApplyService {
         'Sandbox patch promotion already applied',
         `checkpoint=${preflight.promotion.checkpointId}`,
         `files=${validation.touchedFiles.join(', ')}`,
+        formatPatchApplyFileEvidence({
+          expectedFiles: preflight.promotion.expectedFiles,
+          touchedFiles: validation.touchedFiles,
+        }),
         buildRuntimePatchPromotionRoutingReadinessSummary({
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
@@ -186,6 +194,10 @@ export class SandboxPatchPromotionApplyService {
       'Sandbox patch promotion applied',
       `checkpoint=${preflight.promotion.checkpointId}`,
       `files=${validation.touchedFiles.join(', ')}`,
+      formatPatchApplyFileEvidence({
+        expectedFiles: preflight.promotion.expectedFiles,
+        touchedFiles: validation.touchedFiles,
+      }),
       buildRuntimePatchPromotionRoutingReadinessSummary({
         operatorConfirmed: options.operatorConfirmed === true,
         operatorId: options.operatorId,
@@ -234,6 +246,19 @@ export class SandboxPatchPromotionApplyService {
       touchedFiles: [],
     };
   }
+}
+
+function formatPatchApplyFileEvidence(params: {
+  expectedFiles: string[];
+  touchedFiles: string[];
+}): string {
+  const expectedFiles = params.expectedFiles.map((file) => file.trim()).filter(Boolean);
+  const touchedFiles = params.touchedFiles.map((file) => file.trim()).filter(Boolean);
+  return [
+    `expectedFileCount=${expectedFiles.length}`,
+    `touchedFileCount=${touchedFiles.length}`,
+    `filesMatched=${sameStringSet(expectedFiles, touchedFiles) ? 'yes' : 'no'}`,
+  ].join(' / ');
 }
 
 function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(params: {

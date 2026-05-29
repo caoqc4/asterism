@@ -1357,6 +1357,15 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('only when the step belongs to the promotion run');
   });
 
+  it('records operator-facing reviewed patch apply file-count evidence', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('expectedFileCount, touchedFileCount, and filesMatched');
+    expect(evidence).toContain('applied and already-applied audit summaries');
+    expect(evidence).toContain('touched files match the reviewed patch file set');
+  });
+
   it('records structured unsaved web research evidence coverage', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
     const evidence = capabilities?.evidence.join(' ');
