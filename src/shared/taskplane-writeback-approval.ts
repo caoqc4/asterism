@@ -312,6 +312,7 @@ function buildSchedulerDecisionApprovalItem(params: {
   const confirmedPlan = {
     ...plan,
     confirmationBoundary: 'task_dynamics_scheduler_decision_confirmed' as const,
+    confirmationSurface: 'task_dynamics_scheduler_decision_approval_queue' as const,
     draftOnlyBeforeConfirmation: true as const,
   };
 

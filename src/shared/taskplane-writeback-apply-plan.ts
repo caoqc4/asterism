@@ -49,6 +49,10 @@ export type TaskplaneSubtaskCreateManyConfirmationSurface =
   | 'taskplane_writeback_approval_queue'
   | 'readiness_smoke_operator_confirmation';
 
+export type TaskplaneSchedulerDecisionConfirmationSurface =
+  | 'task_dynamics_scheduler_decision_approval_queue'
+  | 'readiness_smoke_task_dynamics_scheduler_decision_approval_queue';
+
 export type TaskplaneSubtaskCreateManyResult = {
   createdTasks: TaskListItemRecord[];
   taskRecordPath?: string | null;
@@ -112,6 +116,7 @@ export type TaskplaneStructuredWritebackApplyPlan =
   | {
       action: 'decision.create';
       confirmationBoundary?: 'task_dynamics_scheduler_decision_confirmed';
+      confirmationSurface?: TaskplaneSchedulerDecisionConfirmationSurface;
       draftOnlyBeforeConfirmation?: true;
       input: CreateDecisionInput;
       requiredApi: 'createDecision';

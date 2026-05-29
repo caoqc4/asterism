@@ -421,6 +421,29 @@ describe('Taskplane writeback dispatch', () => {
     });
   });
 
+  it('blocks scheduler Decision writes when the Task Dynamics confirmation surface is missing', async () => {
+    const createDecision = vi.fn();
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createDecision,
+      },
+      plan: {
+        ...schedulerDecisionPlan(),
+        confirmationBoundary: 'task_dynamics_scheduler_decision_confirmed',
+        draftOnlyBeforeConfirmation: true,
+      },
+    });
+
+    expect(createDecision).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      action: 'decision.create',
+      message: '调度决策提案已暂停：缺少 Task Dynamics 已确认写入边界。',
+      status: 'blocked',
+    });
+  });
+
   it('dispatches scheduler Decision writes only after Task Dynamics confirmation', async () => {
     const createDecision = vi.fn().mockResolvedValue({});
 
@@ -432,6 +455,7 @@ describe('Taskplane writeback dispatch', () => {
       plan: {
         ...schedulerDecisionPlan(),
         confirmationBoundary: 'task_dynamics_scheduler_decision_confirmed',
+        confirmationSurface: 'task_dynamics_scheduler_decision_approval_queue',
         draftOnlyBeforeConfirmation: true,
       },
     });

@@ -139,6 +139,7 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('approvalPlanOptionCount=2');
     expect(evidence).toContain('approvalPlanRecommended=Approve');
     expect(evidence).toContain('approvalPlanConfirmationBoundary=task_dynamics_scheduler_decision_confirmed');
+    expect(evidence).toContain('approvalPlanConfirmationSurface=task_dynamics_scheduler_decision_approval_queue');
     expect(evidence).toContain('approvalPlanDraftOnlyBeforeConfirmation=yes');
   });
 

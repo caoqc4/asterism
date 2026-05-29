@@ -6,6 +6,7 @@ import type { TaskFileRecord } from './types/task-file.js';
 import type { ArtifactRecord } from './types/artifact.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
+  TaskplaneSchedulerDecisionConfirmationSurface,
   TaskplaneSubtaskCreateManyConfirmationSurface,
   TaskplaneSubtaskCreateManyResult,
   TaskplaneWritebackApplyPlan,
@@ -119,6 +120,7 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
       plan.input.sourceLabel === 'Scheduler/background Decision proposal'
       && (
         plan.confirmationBoundary !== 'task_dynamics_scheduler_decision_confirmed'
+        || !isConfirmedSchedulerDecisionSurface(plan.confirmationSurface)
         || plan.draftOnlyBeforeConfirmation !== true
       )
     ) {
@@ -154,6 +156,13 @@ function isConfirmedSubtaskCreateManySurface(
     || surface === 'tasks_project_decomposition_confirmation'
     || surface === 'taskplane_writeback_approval_queue'
     || surface === 'readiness_smoke_operator_confirmation';
+}
+
+function isConfirmedSchedulerDecisionSurface(
+  surface: unknown,
+): surface is TaskplaneSchedulerDecisionConfirmationSurface {
+  return surface === 'task_dynamics_scheduler_decision_approval_queue'
+    || surface === 'readiness_smoke_task_dynamics_scheduler_decision_approval_queue';
 }
 
 function completed(
