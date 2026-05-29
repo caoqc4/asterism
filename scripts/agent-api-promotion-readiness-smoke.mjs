@@ -247,6 +247,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceTargetTask=${scalarValue(serviceEvidencePartial.summary, 'targetTask') ?? 'missing'}`);
   console.log(`serviceEvidenceTargetTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRunEvidenceTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runEvidenceTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderPreflightStatus=${scalarValue(serviceEvidencePartial.summary, 'providerPreflightStatus') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderConfigured=${scalarValue(serviceEvidencePartial.summary, 'providerConfigured') ?? 'missing'}`);
   console.log(`serviceEvidenceConfiguredProvider=${scalarValue(serviceEvidencePartial.summary, 'configuredProvider') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderStartupProbe=${scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') ?? 'missing'}`);
@@ -263,6 +264,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceWriteIntentRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentTask=${scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceWriteIntentExtraction=${scalarValue(serviceEvidencePartial.summary, 'writeIntentExtraction') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStep=${scalarValue(serviceEvidencePartial.summary, 'contextStep') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStepTask=${scalarValue(serviceEvidencePartial.summary, 'contextStepTask') ?? 'missing'}`);
   console.log(`serviceEvidenceContextStepTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'contextStepTaskEvidenceChain') ?? 'missing'}`);
@@ -283,11 +285,14 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidencePreStepGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'preStepGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActionIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActionIdentityChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceReviewedPatchExplicitApply=${scalarValue(serviceEvidencePartial.summary, 'reviewedPatchExplicitApply') ?? 'missing'}`);
+  console.log(`serviceEvidencePatchPromotionPreflight=${scalarValue(serviceEvidencePartial.summary, 'patchPromotionPreflight') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
   console.log(`artifactOnlyPromotionReady=${serviceEvidenceArtifactOnly.ready ? 'yes' : 'no'}`);
   console.log(`artifactOnlyMissingRequirements=${serviceEvidenceArtifactOnly.missingRequirements.join(',') || 'none'}`);
   console.log(`artifactOnlyWriteIntentActions=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`artifactOnlyWriteIntentExtraction=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentExtraction') ?? 'missing'}`);
   console.log(`artifactOnlyWriteIntentActionIdentityChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActionIdentityChain') ?? 'missing'}`);
   console.log(`artifactOnlyWriteIntentRunEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyWriteIntentTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentTaskEvidenceChain') ?? 'missing'}`);
@@ -308,7 +313,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`postRunNoWritebackPostStepRunEvidenceChain=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepRunEvidenceChain') ?? 'missing'}`);
   console.log(`postRunNoWritebackPostStepTaskEvidenceChain=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepTaskEvidenceChain') ?? 'missing'}`);
   console.log(`postRunNoWritebackWriteIntentActions=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`postRunNoWritebackWriteIntentExtraction=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'writeIntentExtraction') ?? 'missing'}`);
   console.log(`postRunNoWritebackReviewedPatchApplyBoundary=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
+  console.log(`postRunNoWritebackReviewedPatchExplicitApply=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchExplicitApply') ?? 'missing'}`);
+  console.log(`postRunNoWritebackPatchPromotionPreflight=${scalarValue(serviceEvidencePostRunNoWriteback.summary, 'patchPromotionPreflight') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -321,6 +329,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'targetTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'runEvidenceTaskEvidenceChain') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'providerPreflightStatus') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'providerConfigured') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'configuredProvider') !== 'openai'
     || scalarValue(serviceEvidencePartial.summary, 'providerStartupProbe') !== 'not_called'
@@ -337,6 +346,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentTaskEvidenceChain') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'writeIntentExtraction') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'contextStep') !== 'step_context_ready'
     || scalarValue(serviceEvidencePartial.summary, 'contextStepTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'contextStepTaskEvidenceChain') !== 'ready'
@@ -357,11 +367,14 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'preStepGateEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActionIdentityChain') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'reviewedPatchExplicitApply') !== 'no'
+    || scalarValue(serviceEvidencePartial.summary, 'patchPromotionPreflight') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'
     || serviceEvidenceArtifactOnly.ready
     || !serviceEvidenceArtifactOnly.missingRequirements.includes('write_intent_extraction')
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') !== 'artifact.propose'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentExtraction') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActionIdentityChain') !== 'missing'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentRunEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentTaskEvidenceChain') !== 'ready'
@@ -382,7 +395,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepRunEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'postStepTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'writeIntentActions') !== 'none'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'writeIntentExtraction') !== 'missing'
     || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchApplyBoundary') !== 'missing'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'reviewedPatchExplicitApply') !== 'no'
+    || scalarValue(serviceEvidencePostRunNoWriteback.summary, 'patchPromotionPreflight') !== 'missing'
   ) {
     console.log('status=failed');
     return 1;

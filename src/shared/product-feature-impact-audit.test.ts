@@ -186,11 +186,11 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
-    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain');
+    expect(rightPanel?.evidence.join(' ')).toContain('providerPreflightStatus, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, writeIntentExtraction');
     expect(rightPanel?.evidence.join(' ')).toContain('contextStep, contextStepTask, contextStepTaskEvidenceChain, contextManifest, contextManifestTask, contextManifestEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('taskMemoryGuidance, taskMemoryGuidanceCount, taskMemoryGuidanceTask, taskMemoryGuidanceTaskEvidenceChain, runGoalConditions');
     expect(rightPanel?.evidence.join(' ')).toContain('runGoalRun, runGoalRunEvidenceChain, runGoalTask, runGoalTaskEvidenceChain');
-    expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, patchPromotionStatus, patchPromotionRun');
+    expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, reviewedPatchExplicitApply, patchPromotionPreflight, patchPromotionStatus, patchPromotionRun');
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionRunEvidenceChain, patchPromotionTask, patchPromotionTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('postStepRun, postStepRunEvidenceChain, postStepTask, postStepTaskEvidenceChain, postStepVerifier');
     expect(rightPanel?.evidence.join(' ')).toContain('terminalRunStatus, terminalRunStatusEvidenceChain, terminalEvidence, runtimeMode, and invocationLayer identity chips');

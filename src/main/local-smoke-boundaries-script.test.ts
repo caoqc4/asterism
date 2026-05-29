@@ -802,6 +802,7 @@ describe('local smoke script default boundaries', () => {
       return;
     }
     expect(result.output).toContain('serviceEvidenceProviderConfigured=ready');
+    expect(result.output).toContain('serviceEvidenceProviderPreflightStatus=ready');
     expect(result.output).toContain('serviceEvidenceConfiguredProvider=openai');
     expect(result.output).toContain('serviceEvidenceProviderStartupProbe=not_called');
     expect(result.output).toContain('serviceEvidenceRunEvidenceTaskEvidenceChain=missing');
@@ -828,10 +829,14 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceRunGoalTaskEvidenceChain=ready');
     expect(result.output).toContain('serviceEvidenceWriteIntentRunEvidenceChain=missing');
     expect(result.output).toContain('serviceEvidenceWriteIntentTaskEvidenceChain=missing');
+    expect(result.output).toContain('serviceEvidenceWriteIntentExtraction=missing');
     expect(result.output).toContain('serviceEvidenceWriteIntentActionIdentityChain=missing');
+    expect(result.output).toContain('serviceEvidenceReviewedPatchExplicitApply=no');
+    expect(result.output).toContain('serviceEvidencePatchPromotionPreflight=missing');
     expect(result.output).toContain('artifactOnlyPromotionReady=no');
     expect(result.output).toContain('artifactOnlyMissingRequirements=write_intent_extraction');
     expect(result.output).toContain('artifactOnlyWriteIntentActions=artifact.propose');
+    expect(result.output).toContain('artifactOnlyWriteIntentExtraction=ready');
     expect(result.output).toContain('artifactOnlyWriteIntentActionIdentityChain=missing');
     expect(result.output).toContain('artifactOnlyWriteIntentRunEvidenceChain=ready');
     expect(result.output).toContain('artifactOnlyWriteIntentTaskEvidenceChain=ready');
@@ -839,6 +844,9 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('artifactOnlyTaskMemoryGuidanceTaskEvidenceChain=ready');
     expect(result.output).toContain('artifactOnlyTerminalRunStatus=completed');
     expect(result.output).toContain('artifactOnlyTerminalRunStatusEvidenceChain=ready');
+    expect(result.output).toContain('postRunNoWritebackWriteIntentExtraction=missing');
+    expect(result.output).toContain('postRunNoWritebackReviewedPatchExplicitApply=no');
+    expect(result.output).toContain('postRunNoWritebackPatchPromotionPreflight=missing');
   });
 
   it('keeps Agent API decomposition promotion readiness smoke read-only and build-gated by default', () => {
