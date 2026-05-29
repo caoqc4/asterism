@@ -815,6 +815,46 @@ describe('SandboxPatchPromotionApplyService', () => {
     }
   });
 
+  it('records routing readiness evidence when reviewed patch artifact JSON is invalid', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-invalid-json-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const { markBlocked, service } = buildService({
+        artifact: buildArtifact('', {
+          content: '{"artifact":',
+        }),
+        selectedRuntime: 'codex',
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: ['Patch promotion artifact content is not valid sandbox patch review JSON.'],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(markBlocked).toHaveBeenCalledWith(
+        'sandbox_patch_promotion_1',
+        ['Patch promotion artifact content is not valid sandbox patch review JSON.'],
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion artifact content is not valid sandbox patch review JSON.'),
+      );
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('selectedRuntimeContract=ready');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionPreflight=ready');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('explicitOperatorApply=ready');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('postApplyRunEvidence=missing');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionMissingRequirements=target_task_identity,same_run_evidence_chain,post_apply_run_evidence');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('treats already-promoted workspace content as idempotently applied', async () => {
     const tempRoot = makeTempDir('taskplane-sandbox-promotion-idempotent-');
 

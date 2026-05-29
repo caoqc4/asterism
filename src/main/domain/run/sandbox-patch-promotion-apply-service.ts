@@ -111,6 +111,12 @@ export class SandboxPatchPromotionApplyService {
       return this.blocked(
         ['Patch promotion artifact content is not valid sandbox patch review JSON.'],
         preflight.promotion,
+        buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight({
+          operatorConfirmed: options.operatorConfirmed === true,
+          operatorId: options.operatorId,
+          preflight,
+          selectedRuntimeContract,
+        }),
       );
     }
 
