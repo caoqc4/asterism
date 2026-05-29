@@ -2365,6 +2365,30 @@ describe('ai runtime invocation contract', () => {
     expect(missingRequestSurface.summary).toContain('runtimeActionGateEvidenceChain=missing');
   });
 
+  it('keeps scheduled Agent API execution promotion closed until scheduled approval gates are promoted', () => {
+    const scheduledSurface = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runtimeAction: {
+        action: 'run_start',
+        allowed: true,
+        requestSurface: 'scheduled_event_agent_trigger',
+        runId: 'run_api_execution',
+        status: 'ready',
+        surface: 'run',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(scheduledSurface).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['runtime_action'],
+    });
+    expect(scheduledSurface.summary).toContain('runtimeActionRequestSurface=scheduled_event_agent_trigger');
+    expect(scheduledSurface.summary).toContain('runtimeActionRequestSurfaceEvidenceChain=missing');
+    expect(scheduledSurface.summary).toContain('runtimeActionGateEvidenceChain=missing');
+  });
+
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
     const artifactOnly = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),

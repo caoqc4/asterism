@@ -1420,6 +1420,8 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('runtimeAction, runtimeActionStatus, runtimeActionSurface, runtimeActionRun, runtimeActionRunIdentityChain, runtimeActionTask, runtimeActionGateEvidenceChain');
     expect(evidence).toContain('runtimeActionRequestSurface=readiness_smoke_operator_request');
     expect(evidence).toContain('runtimeActionRequestSurfaceEvidenceChain=ready');
+    expect(evidence).toContain('scheduled_event_agent_trigger outside the ready request-surface evidence chain');
+    expect(evidence).toContain('future API-backed scheduled/event execution cannot satisfy runtime_action');
     expect(evidence).toContain('providerConfigured=ready, configuredProvider=openai, selectedRuntimeProvider=openai, selectedRuntimeProviderEvidenceChain=ready, providerStartupProbe=not_called');
     expect(evidence).toContain('simplicityCheckGateEvidenceChain=ready');
     expect(evidence).toContain('runtimeActionGateEvidenceChain=ready');

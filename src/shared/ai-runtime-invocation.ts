@@ -1360,7 +1360,6 @@ function isAgentApiExecutionRequestSurface(surface: RunRequestSurface | null): b
   return surface === 'right_panel_agent_execution'
     || surface === 'right_panel_task_progress_intent'
     || surface === 'ipc_run_trigger'
-    || surface === 'scheduled_event_agent_trigger'
     || surface === 'readiness_smoke_operator_request';
 }
 
