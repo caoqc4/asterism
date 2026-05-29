@@ -106,7 +106,12 @@ function declaredWebSearchTools(tools: string[] | undefined, configuredProvider?
   const providerNamespace = normalizeProvider(configuredProvider);
   return normalizeDeclaredTools(tools).filter((tool) => {
     const loweredTool = tool.toLowerCase();
-    const namespace = loweredTool.includes(':') ? loweredTool.split(':')[0]?.trim() ?? '' : '';
+    const namespaceSeparatorIndex = [loweredTool.indexOf(':'), loweredTool.indexOf('.')]
+      .filter((index) => index >= 0)
+      .sort((left, right) => left - right)[0];
+    const namespace = namespaceSeparatorIndex !== undefined
+      ? loweredTool.slice(0, namespaceSeparatorIndex).trim()
+      : '';
     if (namespace && namespace !== providerNamespace && namespace !== 'web') return false;
 
     const normalizedTool = loweredTool.replace(/[.:-]+/g, '_').replace(/_+/g, '_');

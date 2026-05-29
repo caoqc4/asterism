@@ -1200,4 +1200,11 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('automation-readiness gaps');
     expect(decisions?.evidence.join(' ')).toContain('missing/invalid run-limit accounting evidence');
   });
+
+  it('records Agent API provider dot-namespace tool readiness coverage', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+
+    expect(capabilities?.evidence.join(' ')).toContain('colon/dot provider-namespaced web_search/web_fetch declarations');
+    expect(capabilities?.evidence.join(' ')).toContain('colon or dot provider-namespace mismatches');
+  });
 });

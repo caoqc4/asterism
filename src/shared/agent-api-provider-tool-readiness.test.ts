@@ -250,7 +250,39 @@ describe('Agent API provider tool readiness', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       configuredProvider: 'openai',
       explicitToolDeclarations: {
-        declaredTools: ['anthropic:web_search'],
+        declaredTools: ['anthropic:web_search', 'anthropic.web_search', 'openai.web_search'],
+        packageName: '@openai/agents',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@openai/agents',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'declared',
+      toolReadiness: 'declared',
+      missingRequirements: [],
+    });
+    expect(readiness.summary).toContain('declaredToolCount=3');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+    expect(readiness.summary).toContain('declaredWebSearchTools=openai.web_search');
+    expect(readiness.summary).toContain('explicitToolDeclaration=ready');
+  });
+
+  it('does not accept dot-namespaced web/search declarations from another provider', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
+      explicitToolDeclarations: {
+        declaredTools: ['anthropic.web_search'],
         packageName: '@openai/agents',
         source: 'provider_owned_metadata',
       },
