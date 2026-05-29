@@ -60,6 +60,7 @@ export type AgentApiProviderToolReadinessServiceEvidence = {
 export type AgentApiProviderNativeSessionReadinessEvidence = {
   featureFlagEnabled?: boolean;
   normalizedPlanProvider?: string | null;
+  providerCallSource?: 'normalized_plan' | 'provider_payload' | 'runtime_projection' | 'unknown';
   payloadProvider?: string | null;
   providerCallIds?: string[] | null;
   selectedRuntimeProvider?: string | null;
@@ -350,6 +351,7 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
   const providerCallIds = (evidence.providerCallIds ?? [])
     .map((id) => id.trim())
     .filter(Boolean);
+  const providerCallSource = evidence.providerCallSource ?? 'unknown';
   const payloadProviderMatchesSelected = Boolean(selectedRuntimeProvider)
     && Boolean(payloadProvider)
     && payloadProvider === selectedRuntimeProvider;
@@ -362,7 +364,9 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
   if (selectedRuntimeProvider) satisfiedRequirements.push('selected_runtime_provider');
   if (payloadProviderMatchesSelected) satisfiedRequirements.push('provider_payload_identity');
   if (normalizedPlanProviderMatchesSelected) satisfiedRequirements.push('normalized_plan_identity');
-  if (providerCallIds.length > 0) satisfiedRequirements.push('provider_call_ids');
+  if (providerCallIds.length > 0 && providerCallSource === 'provider_payload') {
+    satisfiedRequirements.push('provider_call_ids');
+  }
 
   const satisfiedRequirementSet = new Set(satisfiedRequirements);
   const missingRequirements = requiredRequirements.filter((requirement) => !satisfiedRequirementSet.has(requirement));
@@ -385,6 +389,7 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
       `providerNativePlanProvider=${normalizedPlanProvider || 'missing'}`,
       `providerNativePlanProviderMatchesSelected=${normalizedPlanProviderMatchesSelected ? 'yes' : 'no'}`,
       `providerNativeProviderCallIds=${providerCallIds.length ? providerCallIds.join(',') : 'missing'}`,
+      `providerNativeProviderCallSource=${providerCallSource}`,
       `providerNativeProviderCallIdCount=${providerCallIds.length}`,
     ].join(' / '),
   };

@@ -40,6 +40,7 @@ describe('Agent API provider tool readiness', () => {
       featureFlagEnabled: true,
       normalizedPlanProvider: 'openai',
       payloadProvider: 'anthropic',
+      providerCallSource: 'provider_payload',
       providerCallIds: ['call_1'],
       selectedRuntimeProvider: 'openai',
     });
@@ -55,6 +56,7 @@ describe('Agent API provider tool readiness', () => {
       featureFlagEnabled: true,
       normalizedPlanProvider: 'openai',
       payloadProvider: 'openai',
+      providerCallSource: 'provider_payload',
       providerCallIds: ['call_1', '  call_2  '],
       selectedRuntimeProvider: 'openai',
     });
@@ -68,7 +70,26 @@ describe('Agent API provider tool readiness', () => {
     expect(ready.summary).toContain('providerNativePayloadProviderMatchesSelected=yes');
     expect(ready.summary).toContain('providerNativePlanProviderMatchesSelected=yes');
     expect(ready.summary).toContain('providerNativeProviderCallIds=call_1,call_2');
+    expect(ready.summary).toContain('providerNativeProviderCallSource=provider_payload');
     expect(ready.summary).toContain('providerNativeProviderCallIdCount=2');
+  });
+
+  it('requires provider call ids to come from provider payload evidence before declaring a native session ready', () => {
+    const readiness = evaluateAgentApiProviderNativeSessionReadinessFromEvidence({
+      featureFlagEnabled: true,
+      normalizedPlanProvider: 'openai',
+      payloadProvider: 'openai',
+      providerCallIds: ['call_1'],
+      selectedRuntimeProvider: 'openai',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: ['provider_call_ids'],
+    });
+    expect(readiness.summary).toContain('providerNativeProviderCallIds=call_1');
+    expect(readiness.summary).toContain('providerNativeProviderCallSource=unknown');
+    expect(readiness.summary).toContain('providerNativeProviderCallIdCount=1');
   });
 
   it('does not infer provider tools from API runtime selection and provider config alone', () => {

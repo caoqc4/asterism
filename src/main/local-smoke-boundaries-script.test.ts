@@ -1000,6 +1000,7 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('providerNativeReadyPayloadProviderMatchesSelected=yes');
     expect(result.output).toContain('providerNativeReadyPlanProvider=openai');
     expect(result.output).toContain('providerNativeReadyPlanProviderMatchesSelected=yes');
+    expect(result.output).toContain('providerNativeReadyProviderCallSource=provider_payload');
     expect(result.output).toContain('providerNativeReadyProviderCallIdCount=1');
     expect(result.output).toContain('selectedApiRuntime=ready');
     expect(result.output).toContain('providerConfiguredStatus=ready');
