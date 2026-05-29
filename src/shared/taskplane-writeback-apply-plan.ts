@@ -1,5 +1,5 @@
 import type { CreateBlockerInput } from './types/blocker.js';
-import type { CreateDecisionInput } from './types/decision.js';
+import type { CreateDecisionInput, DecisionSourceType } from './types/decision.js';
 import type { CreateSourceContextInput } from './types/source-context.js';
 import type { TaskListItemRecord, UpdateTaskInput } from './types/task.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from './types/task-file.js';
@@ -312,6 +312,7 @@ export function buildArtifactWritebackApplyPlan(params: {
 export function buildStructuredWritebackApplyPlan(params: {
   proposal: TaskplaneStructuredWritebackProposal;
   sourceLabel?: string;
+  sourceType?: DecisionSourceType;
   taskId: string;
 }): TaskplaneStructuredWritebackApplyPlan {
   const { intent } = params.proposal;
@@ -337,7 +338,7 @@ export function buildStructuredWritebackApplyPlan(params: {
         scope: 'task',
         sourceId: intent.evidenceRunId,
         sourceLabel: params.sourceLabel ?? 'Agent CLI Write Intent',
-        sourceType: 'run',
+        sourceType: params.sourceType ?? 'run',
         taskId: params.taskId,
         title: intent.title,
       },

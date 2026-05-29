@@ -284,6 +284,7 @@ function buildSchedulerDecisionApprovalItem(params: {
   const plan = buildStructuredWritebackApplyPlan({
     proposal,
     sourceLabel: 'Scheduler/background Decision proposal',
+    sourceType: payload.evidenceRunId?.trim() ? 'run' : 'system',
     taskId: params.taskId,
   });
 

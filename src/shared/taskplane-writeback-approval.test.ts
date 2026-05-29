@@ -259,6 +259,42 @@ describe('Taskplane writeback approval items', () => {
     });
   });
 
+  it('marks scheduler Decision proposals without Run evidence as system-sourced decisions', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_run_limit',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['等待下一次运行窗口', '调整 Standing Approval 每日运行上限'],
+          proposedOutcome: '等待下一次运行窗口',
+          rationale: '定时任务达到每日运行上限，需要确认下一步。',
+          targetTaskId: 'task_1',
+          title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      plan: {
+        action: 'decision.create',
+        input: {
+          sourceId: 'timeline_scheduler_run_limit',
+          sourceLabel: 'Scheduler/background Decision proposal',
+          sourceType: 'system',
+        },
+      },
+      runId: 'timeline_scheduler_run_limit',
+    });
+  });
+
   it('turns local-recovery scheduler Decision proposal events into the same approval queue', () => {
     const items = buildTaskplaneWritebackApprovalItems({
       runDetails: [],

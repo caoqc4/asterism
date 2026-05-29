@@ -70,6 +70,7 @@ describe('Taskplane writeback apply plans', () => {
       input: {
         kind: 'direction_choice',
         sourceId: 'run_2',
+        sourceType: 'run',
         taskId: 'task_1',
         title: '确认首版范围',
       },

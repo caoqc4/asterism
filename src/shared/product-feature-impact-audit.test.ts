@@ -1290,4 +1290,13 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('collapse into one operator confirmation card');
     expect(decisions?.evidence.join(' ')).toContain('duplicating approval queue work');
   });
+
+  it('records scheduler Decision source semantics coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('approval plans now preserve evidence source semantics');
+    expect(decisions?.evidence.join(' ')).toContain('proposals with evidenceRunId remain sourceType=run');
+    expect(decisions?.evidence.join(' ')).toContain('no-Run scheduler proposals');
+    expect(decisions?.evidence.join(' ')).toContain('sourceType=system');
+  });
 });
