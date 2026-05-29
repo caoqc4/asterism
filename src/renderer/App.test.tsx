@@ -5069,7 +5069,7 @@ describe('App redesign v1', () => {
           {
             id: 'runtime.scheduler',
             state: 'approval_required',
-            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3 / proposalRequirements=0/3 / proposalSatisfiedRequirements=none / proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization / missingRequirements=approval_queue_surface,target_task_identity,authorization / approvalQueueSurface=missing / authorization=missing / operatorId=missing / localRecoveryRunId=missing / localRecoveryTask=missing / localRecoveryCompleted=no / localRecoveryTaskMatched=no / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
+            reason: 'Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/4 / proposalRequirements=0/4 / proposalSatisfiedRequirements=none / proposalMissingRequirements=approval_queue,decision_payload,target_task_identity,authorization / missingRequirements=approval_queue,decision_payload,target_task_identity,authorization / approvalQueueSurface=missing / decisionPayload=missing / decisionTitle=missing / decisionRationale=missing / decisionOptions=missing / decisionOptionIdentity=duplicate_or_missing / decisionProposedOutcome=missing / decisionProposedOutcomeMatchesOption=no / authorization=missing / operatorId=missing / localRecoveryRunId=missing / localRecoveryTask=missing / localRecoveryCompleted=no / localRecoveryTaskMatched=no / standingApprovalPolicyId=missing / standingApprovalScopeTask=missing / standingApprovalActive=no / standingApprovalScopeMatched=no / decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false',
             diagnosticSummary: 'Scheduled/event trigger plan / status=blocked / triggerPlanReady=no / runtimeStartAllowed=false / runtimeStartReady=no / runtimeStartRequirements=1/4 / runtimeStartSatisfiedRequirements=scheduler_trigger_service / runtimeStartMissingRequirements=trigger_plan_ready,selected_runtime_identity,run_limit_count / schedulerTriggerServiceConnected=true / selectedRuntimeIdentity=missing',
             requiresApproval: true,
             startupProbePolicy: 'never',
@@ -5151,11 +5151,14 @@ describe('App redesign v1', () => {
     expect(within(patchPromotionEvidence).getByText('touchedFileEvidenceChain=ready')).toBeTruthy();
     const schedulerEvidence = screen.getByLabelText('runtime.scheduler evidence');
     expect(within(schedulerEvidence).getByText('proposalReady=no')).toBeTruthy();
-    expect(within(schedulerEvidence).getByText('proposalRequirements=0/3')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('proposalRequirements=0/4')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('proposalSatisfiedRequirements=none')).toBeTruthy();
-    expect(within(schedulerEvidence).getByText('proposalMissingRequirements=approval_queue_surface,target_task_identity,authorization')).toBeTruthy();
-    expect(within(schedulerEvidence).getByText('missingRequirements=approval_queue_surface,target_task_identity,authorization')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('proposalMissingRequirements=approval_queue,decision_payload,target_task_identity,authorization')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('missingRequirements=approval_queue,decision_payload,target_task_identity,authorization')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('approvalQueueSurface=missing')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('decisionPayload=missing')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('decisionOptionIdentity=duplicate_or_missing')).toBeTruthy();
+    expect(within(schedulerEvidence).getByText('decisionProposedOutcomeMatchesOption=no')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('authorization=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('operatorId=missing')).toBeTruthy();
     expect(within(schedulerEvidence).getByText('localRecoveryRunId=missing')).toBeTruthy();

@@ -37,7 +37,7 @@ describe('configuration safety report', () => {
 
     expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')).toMatchObject({
       state: 'approval_required',
-      reason: expect.stringContaining('Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3'),
+      reason: expect.stringContaining('Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/4'),
       diagnosticSummary: expect.stringContaining('decisionPersistenceAllowed=false / writebackDispatchAllowed=false / schedulerTriggerAllowed=false'),
       requiresApproval: true,
       startupProbePolicy: 'never',
@@ -81,7 +81,7 @@ describe('configuration safety report', () => {
     });
     expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')).toMatchObject({
       state: 'disabled_by_flag',
-      diagnosticSummary: expect.stringContaining('Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/3'),
+      diagnosticSummary: expect.stringContaining('Scheduler Decision proposal contract / status=blocked / proposalReady=no / requirements=0/4'),
     });
     expect(report.surfaces.find((surface) => surface.id === 'runtime.scheduler')?.diagnosticSummary)
       .toContain('runtimeStartMissingRequirements=trigger_plan_ready,scheduler_trigger_service,selected_runtime_identity,run_limit_count');

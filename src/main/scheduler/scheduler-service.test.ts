@@ -508,7 +508,9 @@ describe('SchedulerService', () => {
     });
 
     expect(result.status).toBe('blocked');
-    expect(result.summary).toContain('proposalReady=yes');
+    expect(result.summary).toContain('proposalReady=no');
+    expect(result.summary).toContain('decisionPayload=missing');
+    expect(result.summary).toContain('proposalMissingRequirements=decision_payload');
     expect(result.summary).toContain('options=missing');
     expect(result.summary).toContain('proposedOutcome=missing');
     expect(result.summary).toContain('schedulerDecisionProposal=blocked');
@@ -562,7 +564,9 @@ describe('SchedulerService', () => {
     });
 
     expect(result.status).toBe('blocked');
-    expect(result.summary).toContain('proposalReady=yes');
+    expect(result.summary).toContain('proposalReady=no');
+    expect(result.summary).toContain('decisionPayload=missing');
+    expect(result.summary).toContain('proposalMissingRequirements=decision_payload');
     expect(result.summary).toContain('options=2');
     expect(result.summary).toContain('proposedOutcome=present');
     expect(result.summary).toContain('proposedOutcomeMatchesOption=no');
@@ -617,7 +621,9 @@ describe('SchedulerService', () => {
     });
 
     expect(result.status).toBe('blocked');
-    expect(result.summary).toContain('proposalReady=yes');
+    expect(result.summary).toContain('proposalReady=no');
+    expect(result.summary).toContain('decisionPayload=missing');
+    expect(result.summary).toContain('proposalMissingRequirements=decision_payload');
     expect(result.summary).toContain('options=3');
     expect(result.summary).toContain('optionIdentity=duplicate_or_missing');
     expect(result.summary).toContain('proposedOutcomeMatchesOption=yes');
@@ -672,7 +678,9 @@ describe('SchedulerService', () => {
     });
 
     expect(result.status).toBe('blocked');
-    expect(result.summary).toContain('proposalReady=yes');
+    expect(result.summary).toContain('proposalReady=no');
+    expect(result.summary).toContain('decisionPayload=missing');
+    expect(result.summary).toContain('proposalMissingRequirements=decision_payload');
     expect(result.summary).toContain('options=2');
     expect(result.summary).toContain('optionIdentity=duplicate_or_missing');
     expect(result.summary).toContain('proposedOutcomeMatchesOption=yes');

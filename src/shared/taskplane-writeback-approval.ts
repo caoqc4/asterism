@@ -251,6 +251,12 @@ function buildSchedulerDecisionApprovalItem(params: {
       taskId: payload.localRecoveryTaskId ?? null,
       status: payload.localRecoveryCompleted === true ? 'completed' : 'missing',
     },
+    proposal: {
+      options: Array.isArray(payload.options) ? payload.options.filter((option): option is string => typeof option === 'string') : null,
+      proposedOutcome: payload.proposedOutcome ?? null,
+      rationale: payload.rationale ?? null,
+      title: payload.title ?? null,
+    },
     standingApproval: {
       active: payload.standingApprovalActive === true,
       policyId: payload.standingApprovalPolicyId ?? null,

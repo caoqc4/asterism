@@ -23,6 +23,7 @@ export type SchedulerDecisionProposalPlan = {
 
 export type SchedulerDecisionProposalRequirement =
   | 'approval_queue'
+  | 'decision_payload'
   | 'target_task_identity'
   | 'authorization';
 
@@ -40,6 +41,12 @@ export type SchedulerDecisionProposalServiceEvidence = {
     taskId?: string | null;
     status: 'completed' | 'missing';
   } | null;
+  proposal?: {
+    options?: string[] | null;
+    proposedOutcome?: string | null;
+    rationale?: string | null;
+    title?: string | null;
+  } | null;
   standingApproval?: {
     active: boolean;
     policyId?: string | null;
@@ -51,6 +58,7 @@ export type SchedulerDecisionProposalServiceEvidence = {
 export function schedulerDecisionProposalRequirements(): SchedulerDecisionProposalRequirement[] {
   return [
     'approval_queue',
+    'decision_payload',
     'target_task_identity',
     'authorization',
   ];
@@ -67,9 +75,24 @@ export function planSchedulerDecisionProposal(params: {
   localRecoveryRunId?: string | null;
   localRecoveryTaskId?: string | null;
   localRecoveryCompleted?: boolean;
+  options?: string[] | null;
+  proposedOutcome?: string | null;
+  rationale?: string | null;
   targetTaskId?: string | null;
+  title?: string | null;
 } = {}): SchedulerDecisionProposalPlan {
   const targetTaskId = params.targetTaskId?.trim() || null;
+  const title = normalizeDecisionProposalText(params.title);
+  const rationale = normalizeDecisionProposalText(params.rationale);
+  const options = (params.options ?? []).map(normalizeDecisionProposalText).filter(Boolean);
+  const optionIdentityKeys = options.map((option) => option.toLocaleLowerCase());
+  const optionIdentityReady = options.length > 0 && new Set(optionIdentityKeys).size === optionIdentityKeys.length;
+  const proposedOutcomeInput = normalizeDecisionProposalText(params.proposedOutcome);
+  const proposedOutcomeMatched = Boolean(
+    proposedOutcomeInput
+    && options.some((option) => option.toLocaleLowerCase() === proposedOutcomeInput.toLocaleLowerCase()),
+  );
+  const decisionPayloadReady = Boolean(title && rationale && optionIdentityReady && proposedOutcomeMatched);
   const operatorId = params.operatorId?.trim() || null;
   const standingApprovalPolicyId = params.standingApprovalPolicyId?.trim() || null;
   const standingApprovalScopeTaskId = params.standingApprovalScopeTaskId?.trim() || null;
@@ -110,6 +133,11 @@ export function planSchedulerDecisionProposal(params: {
   if (!approvalQueueReady) {
     missingRequirements.push('approval_queue');
     blockedReasons.push('Task Dynamics writeback approval queue is not connected.');
+  }
+
+  if (!decisionPayloadReady) {
+    missingRequirements.push('decision_payload');
+    blockedReasons.push('Scheduler/background Decision proposal requires a valid title, rationale, duplicate-free options, and proposed outcome matching one option.');
   }
 
   if (!targetTaskId) {
@@ -153,6 +181,13 @@ export function planSchedulerDecisionProposal(params: {
       `approvalQueueConnected=${params.approvalQueueConnected ? 'yes' : 'no'}`,
       `approvalQueueSurface=${approvalQueueSurface ?? 'missing'}`,
       `approvalQueueSurfaceReady=${approvalQueueReady ? 'yes' : 'no'}`,
+      `decisionPayload=${decisionPayloadReady ? 'ready' : 'missing'}`,
+      `decisionTitle=${title ? 'present' : 'missing'}`,
+      `decisionRationale=${rationale ? 'present' : 'missing'}`,
+      `decisionOptions=${options.length ? options.length : 'missing'}`,
+      `decisionOptionIdentity=${optionIdentityReady ? 'ready' : 'duplicate_or_missing'}`,
+      `decisionProposedOutcome=${proposedOutcomeInput ? 'present' : 'missing'}`,
+      `decisionProposedOutcomeMatchesOption=${proposedOutcomeMatched ? 'yes' : 'no'}`,
       `targetTask=${targetTaskId ?? 'missing'}`,
       'decisionPersistenceAllowed=false',
       'writebackDispatchAllowed=false',
@@ -203,9 +238,17 @@ export function planSchedulerDecisionProposalFromEvidence(
     localRecoveryCompleted,
     localRecoveryRunId: evidence.localRecovery?.recoveredRunId ?? null,
     localRecoveryTaskId: evidence.localRecovery?.taskId ?? null,
+    options: evidence.proposal?.options ?? null,
+    proposedOutcome: evidence.proposal?.proposedOutcome ?? null,
+    rationale: evidence.proposal?.rationale ?? null,
     standingApprovalActive,
     standingApprovalPolicyId: evidence.standingApproval?.policyId ?? null,
     standingApprovalScopeTaskId: evidence.standingApproval?.scopeTaskId ?? null,
     targetTaskId,
+    title: evidence.proposal?.title ?? null,
   });
+}
+
+function normalizeDecisionProposalText(value: string | null | undefined): string {
+  return value?.replace(/\s+/g, ' ').trim() ?? '';
 }

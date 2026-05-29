@@ -982,6 +982,12 @@ export class SchedulerService {
         taskId: input.localRecoveryTaskId ?? null,
         status: input.localRecoveryCompleted === true ? 'completed' : 'missing',
       },
+      proposal: {
+        options,
+        proposedOutcome,
+        rationale,
+        title,
+      },
       standingApproval: {
         active: input.standingApprovalActive === true,
         policyId: input.standingApprovalPolicyId ?? null,

@@ -35,7 +35,11 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     approvalQueueSurface: 'task_dynamics',
     operatorId: 'operator_scheduler_decision_smoke',
     operatorConfirmed: true,
+    options: ['Approve', 'Hold'],
+    proposedOutcome: 'Approve',
+    rationale: 'Review scheduler proposal.',
     targetTaskId: 'task_scheduler_decision_operator_smoke',
+    title: 'Confirm scheduler action',
   });
   const standingApproval = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
@@ -43,7 +47,11 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     standingApprovalActive: true,
     standingApprovalPolicyId: 'standing_policy_smoke',
     standingApprovalScopeTaskId: 'task_scheduler_decision_standing_smoke',
+    options: ['Approve', 'Hold'],
+    proposedOutcome: 'Approve',
+    rationale: 'Review scheduler proposal.',
     targetTaskId: 'task_scheduler_decision_standing_smoke',
+    title: 'Confirm scheduler action',
   });
   const localRecovery = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
@@ -51,7 +59,11 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     localRecoveryCompleted: true,
     localRecoveryRunId: 'run_scheduler_recovery_smoke',
     localRecoveryTaskId: 'task_scheduler_decision_recovery_smoke',
+    options: ['Approve', 'Hold'],
+    proposedOutcome: 'Approve',
+    rationale: 'Review scheduler proposal.',
     targetTaskId: 'task_scheduler_decision_recovery_smoke',
+    title: 'Confirm scheduler action',
   });
   const scopeMismatch = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
@@ -59,7 +71,11 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     standingApprovalActive: true,
     standingApprovalPolicyId: 'standing_policy_scope_mismatch_smoke',
     standingApprovalScopeTaskId: 'task_scheduler_decision_other',
+    options: ['Approve', 'Hold'],
+    proposedOutcome: 'Approve',
+    rationale: 'Review scheduler proposal.',
     targetTaskId: 'task_scheduler_decision_scope_mismatch_smoke',
+    title: 'Confirm scheduler action',
   });
   const serviceEvidencePartial = planSchedulerDecisionProposalFromEvidence({
     approvalQueue: {
@@ -71,17 +87,24 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
       policyId: 'standing_policy_1',
       scopeTaskId: 'task_scheduler_decision_other',
     },
+    proposal: {
+      options: ['Approve', 'Hold'],
+      proposedOutcome: 'Approve',
+      rationale: 'Review scheduler proposal.',
+      title: 'Confirm scheduler action',
+    },
     targetTaskId: 'task_scheduler_decision_service_smoke',
   });
 
   console.log(`blockedStatus=${blocked.status}`);
   console.log(`blockedProposalReady=${blocked.approvalItemAllowed ? 'yes' : 'no'}`);
-  console.log(`blockedRequirements=${blocked.satisfiedRequirements.length}/3`);
+  console.log(`blockedRequirements=${blocked.satisfiedRequirements.length}/4`);
   console.log(`blockedMissingRequirements=${blocked.missingRequirements.join(',') || 'none'}`);
   console.log(`blockedApprovalQueueSurface=${blocked.approvalQueueSurface ?? 'missing'}`);
   console.log(`operatorConfirmedStatus=${operatorConfirmed.status}`);
   console.log(`operatorConfirmedProposalReady=${operatorConfirmed.approvalItemAllowed ? 'yes' : 'no'}`);
-  console.log(`operatorConfirmedRequirements=${operatorConfirmed.satisfiedRequirements.length}/3`);
+  console.log(`operatorConfirmedRequirements=${operatorConfirmed.satisfiedRequirements.length}/4`);
+  console.log(`operatorConfirmedDecisionPayload=${scalarValue(operatorConfirmed.summary, 'decisionPayload') ?? 'missing'}`);
   console.log(`operatorConfirmedApprovalQueueSurface=${operatorConfirmed.approvalQueueSurface ?? 'missing'}`);
   console.log(`operatorConfirmedAuthorization=${operatorConfirmed.authorizations.join(',') || 'none'}`);
   console.log(`operatorConfirmedOperatorId=${operatorConfirmed.operatorId ?? 'missing'}`);
@@ -90,7 +113,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`operatorConfirmedSchedulerTriggerAllowed=${String(operatorConfirmed.schedulerTriggerAllowed)}`);
   console.log(`standingApprovalStatus=${standingApproval.status}`);
   console.log(`standingApprovalProposalReady=${standingApproval.approvalItemAllowed ? 'yes' : 'no'}`);
-  console.log(`standingApprovalRequirements=${standingApproval.satisfiedRequirements.length}/3`);
+  console.log(`standingApprovalRequirements=${standingApproval.satisfiedRequirements.length}/4`);
   console.log(`standingApprovalApprovalQueueSurface=${standingApproval.approvalQueueSurface ?? 'missing'}`);
   console.log(`standingApprovalAuthorization=${standingApproval.authorizations.join(',') || 'none'}`);
   console.log(`standingApprovalPolicyId=${standingApproval.standingApprovalPolicyId ?? 'missing'}`);
@@ -101,7 +124,8 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`standingApprovalSchedulerTriggerAllowed=${String(standingApproval.schedulerTriggerAllowed)}`);
   console.log(`localRecoveryStatus=${localRecovery.status}`);
   console.log(`localRecoveryProposalReady=${localRecovery.approvalItemAllowed ? 'yes' : 'no'}`);
-  console.log(`localRecoveryRequirements=${localRecovery.satisfiedRequirements.length}/3`);
+  console.log(`localRecoveryRequirements=${localRecovery.satisfiedRequirements.length}/4`);
+  console.log(`localRecoveryDecisionPayload=${scalarValue(localRecovery.summary, 'decisionPayload') ?? 'missing'}`);
   console.log(`localRecoveryAuthorization=${localRecovery.authorizations.join(',') || 'none'}`);
   console.log(`localRecoveryRunId=${scalarValue(localRecovery.summary, 'localRecoveryRunId') ?? 'missing'}`);
   console.log(`localRecoveryTask=${scalarValue(localRecovery.summary, 'localRecoveryTask') ?? 'missing'}`);
@@ -112,7 +136,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`localRecoverySchedulerTriggerAllowed=${String(localRecovery.schedulerTriggerAllowed)}`);
   console.log(`scopeMismatchStatus=${scopeMismatch.status}`);
   console.log(`scopeMismatchProposalReady=${scopeMismatch.approvalItemAllowed ? 'yes' : 'no'}`);
-  console.log(`scopeMismatchRequirements=${scopeMismatch.satisfiedRequirements.length}/3`);
+  console.log(`scopeMismatchRequirements=${scopeMismatch.satisfiedRequirements.length}/4`);
   console.log(`scopeMismatchAuthorization=${scopeMismatch.authorizations.join(',') || 'missing'}`);
   console.log(`scopeMismatchStandingApprovalScopeMatched=${scalarValue(scopeMismatch.summary, 'standingApprovalScopeMatched') ?? 'missing'}`);
   console.log(`decisionPersistenceAllowed=${String(operatorConfirmed.decisionPersistenceAllowed || standingApproval.decisionPersistenceAllowed)}`);
@@ -120,7 +144,8 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`schedulerTriggerAllowed=${String(operatorConfirmed.schedulerTriggerAllowed || standingApproval.schedulerTriggerAllowed)}`);
   console.log(`serviceEvidenceStatus=${serviceEvidencePartial.status}`);
   console.log(`serviceEvidenceProposalReady=${serviceEvidencePartial.approvalItemAllowed ? 'yes' : 'no'}`);
-  console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/3`);
+  console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/4`);
+  console.log(`serviceEvidenceDecisionPayload=${scalarValue(serviceEvidencePartial.summary, 'decisionPayload') ?? 'missing'}`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceApprovalQueueSurface=${serviceEvidencePartial.approvalQueueSurface ?? 'missing'}`);
   console.log(`serviceEvidenceStandingApprovalPolicyId=${serviceEvidencePartial.standingApprovalPolicyId ?? 'missing'}`);
@@ -140,12 +165,14 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || standingApproval.standingApprovalScopeTaskId !== 'task_scheduler_decision_standing_smoke'
     || scalarValue(standingApproval.summary, 'standingApprovalScopeMatched') !== 'yes'
     || localRecovery.authorizations.join(',') !== 'local_recovery'
+    || scalarValue(operatorConfirmed.summary, 'decisionPayload') !== 'ready'
+    || scalarValue(localRecovery.summary, 'decisionPayload') !== 'ready'
     || scalarValue(localRecovery.summary, 'localRecoveryRunId') !== 'run_scheduler_recovery_smoke'
     || scalarValue(localRecovery.summary, 'localRecoveryTask') !== 'task_scheduler_decision_recovery_smoke'
     || scalarValue(localRecovery.summary, 'localRecoveryCompleted') !== 'yes'
     || scalarValue(localRecovery.summary, 'localRecoveryTaskMatched') !== 'yes'
     || scopeMismatch.approvalItemAllowed
-    || scopeMismatch.satisfiedRequirements.length !== 2
+    || scopeMismatch.satisfiedRequirements.length !== 3
     || !scopeMismatch.missingRequirements.includes('authorization')
     || scalarValue(scopeMismatch.summary, 'standingApprovalScopeMatched') !== 'no'
     || operatorConfirmed.decisionPersistenceAllowed
@@ -162,7 +189,8 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || serviceEvidencePartial.standingApprovalPolicyId !== 'standing_policy_1'
     || serviceEvidencePartial.standingApprovalScopeTaskId !== 'task_scheduler_decision_other'
     || scalarValue(serviceEvidencePartial.summary, 'standingApprovalScopeMatched') !== 'no'
-    || serviceEvidencePartial.satisfiedRequirements.length !== 2
+    || serviceEvidencePartial.satisfiedRequirements.length !== 3
+    || scalarValue(serviceEvidencePartial.summary, 'decisionPayload') !== 'ready'
     || !serviceEvidencePartial.missingRequirements.includes('authorization')
     || serviceEvidencePartial.decisionPersistenceAllowed
     || serviceEvidencePartial.writebackDispatchAllowed

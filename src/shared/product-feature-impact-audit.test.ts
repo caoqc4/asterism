@@ -272,8 +272,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerAllowed=false');
     expect(decisions?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
     expect(decisions?.evidence.join(' ')).toContain('proposalReady');
-    expect(decisions?.evidence.join(' ')).toContain('requirements=x/3');
-    expect(decisions?.evidence.join(' ')).toContain('proposalRequirements=x/3');
+    expect(decisions?.evidence.join(' ')).toContain('requirements=x/4');
+    expect(decisions?.evidence.join(' ')).toContain('proposalRequirements=x/4');
     expect(decisions?.evidence.join(' ')).toContain('proposalSatisfiedRequirements=...');
     expect(decisions?.evidence.join(' ')).toContain('approvalQueueSurface');
     expect(decisions?.evidence.join(' ')).toContain('localRecoveryRunId');
@@ -293,19 +293,13 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('decisionPersistenceAllowed, writebackDispatchAllowed, schedulerTriggerAllowed');
     expect(decisions?.evidence.join(' ')).toContain('triggerPlanReady, runtimeStartAllowed, runtimeStartReady');
     expect(decisions?.evidence.join(' ')).toContain('schedulerTriggerServiceConnected');
-    expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal gaps');
+    expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal payload gaps');
     expect(decisions?.evidence.join(' ')).toContain('closed persistence/writeback/trigger gates');
     expect(decisions?.evidence.join(' ')).toContain('scheduled/event runtime-start state');
     expect(decisions?.evidence.join(' ')).toContain('runtimeStartRequirements');
     expect(decisions?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements');
     expect(decisions?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
     expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');
-    expect(decisions?.evidence.join(' ')).toContain('blocked=0/3 requirements');
-    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=3/3 requirements with operatorId evidence');
-    expect(decisions?.evidence.join(' ')).toContain('local-recovery=3/3 requirements with localRecoveryRunId');
-    expect(decisions?.evidence.join(' ')).toContain('standing-approval=3/3 requirements with standingApprovalPolicyId, standingApprovalScopeTask, and standingApprovalScopeMatched=yes evidence');
-    expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=2/3 requirements with authorization missing');
-    expect(decisions?.evidence.join(' ')).toContain('service-evidence=2/3 requirements');
     expect(decisions?.evidence.join(' ')).toContain('approvalQueueSurface=task_dynamics');
     expect(decisions?.evidence.join(' ')).toContain('authorization missing when Standing Approval scope does not match the target task');
     expect(decisions?.evidence.join(' ')).toContain('panel.scheduler_decision_proposed timeline events');
@@ -1401,7 +1395,16 @@ describe('product feature impact audit', () => {
   it('records scheduler Decision approval queue payload validation coverage', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
-    expect(decisions?.evidence.join(' ')).toContain('Task Dynamics scheduler Decision proposal consumption now revalidates timeline payload shape');
+    expect(decisions?.evidence.join(' ')).toContain('valid Decision payload');
+    expect(decisions?.evidence.join(' ')).toContain('decisionPayload, decisionTitle, decisionRationale, decisionOptions, decisionOptionIdentity, decisionProposedOutcome, decisionProposedOutcomeMatchesOption');
+    expect(decisions?.evidence.join(' ')).toContain('blocked=0/4 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=4/4 requirements with operatorId and decisionPayload=ready evidence');
+    expect(decisions?.evidence.join(' ')).toContain('local-recovery=4/4 requirements with decisionPayload=ready, localRecoveryRunId');
+    expect(decisions?.evidence.join(' ')).toContain('standing-approval=4/4 requirements with standingApprovalPolicyId, standingApprovalScopeTask, and standingApprovalScopeMatched=yes evidence');
+    expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=3/4 requirements with authorization missing');
+    expect(decisions?.evidence.join(' ')).toContain('service-evidence=3/4 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('decisionPayload=ready');
+    expect(decisions?.evidence.join(' ')).toContain('Task Dynamics scheduler Decision proposal consumption now reuses shared decision_payload readiness');
     expect(decisions?.evidence.join(' ')).toContain('duplicate-free option labels');
     expect(decisions?.evidence.join(' ')).toContain('cannot bypass the SchedulerService producer validation');
   });
