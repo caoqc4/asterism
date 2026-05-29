@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
-import type { ChatMessage } from '@shared/types/ipc';
+import type {
+  ChatMessage,
+  ProjectDecompositionInvocationSummary,
+  ProjectDecompositionPromotionReadinessSummary,
+} from '@shared/types/ipc';
 import type { CompletionCriteriaRecord } from '@shared/types/completion-criteria';
 import {
   buildDefaultAgentCliRuntimeCapabilities,
@@ -204,9 +208,13 @@ type ArtifactWriteProposal = TaskplaneArtifactWritebackProposal;
 type StructuredWritebackProposal = TaskplaneStructuredWritebackProposal;
 
 interface TaskDecompositionDraft {
+  invocation?: ProjectDecompositionInvocationSummary | null;
   nextStep: string;
+  parentGoal?: string | null;
+  promotionReadiness?: ProjectDecompositionPromotionReadinessSummary | null;
   review: string;
   runId: string;
+  source?: 'agent_api_decomposition' | 'agent_cli_decomposition';
   subtasks: Array<{
     acceptanceCriteria: string;
     dependency?: string | null;
@@ -946,6 +954,13 @@ function readStepKeyValue(output: string | null, key: string): string | null {
   return match?.[1]?.trim() || null;
 }
 
+function readSlashSummaryValue(summary: string | null | undefined, key: string): string | null {
+  if (!summary) return null;
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() || null;
+}
+
 function compactStepDetailForChat(output: string | null): string | null {
   const firstLine = output
     ?.split(/\r?\n/)
@@ -1114,6 +1129,11 @@ function isChildTaskAdvancementText(value: string): boolean {
 function isExplicitDecompositionRequest(value: string): boolean {
   const normalized = value.replace(/\s+/g, ' ').trim();
   return /拆解|拆细|分解|拆成|子任务|前后端|前端|后端|模块|里程碑|break\s*down|split/i.test(normalized);
+}
+
+function isExplicitAgentApiDecompositionRequest(value: string): boolean {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  return /(?:拆解|拆细|分解|拆成|拆分).{0,16}(?:子任务|任务草案|执行步骤|模块|里程碑)|生成.{0,12}子任务|创建.{0,12}子任务|子任务.{0,12}草案|break\s*down.{0,24}(?:subtasks?|tasks?|steps?)|split.{0,24}(?:subtasks?|tasks?|steps?)/i.test(normalized);
 }
 
 function buildChildTaskConversationPrompt(params: {
@@ -2456,12 +2476,31 @@ export function RightPanel({
       return;
     }
     setCreatingDecompositionChildren(true);
+    if (taskDecompositionDraft.promotionReadiness && !taskDecompositionDraft.promotionReadiness.ready) {
+      appendSysMsg(taskDecompositionDraft.promotionReadiness.summary);
+      setCreatingDecompositionChildren(false);
+      return;
+    }
+    const draftSource = taskDecompositionDraft.source ?? 'agent_cli_decomposition';
+    const runtimeContract = draftSource === 'agent_api_decomposition' && taskDecompositionDraft.invocation
+      ? {
+          evidenceRunId: taskDecompositionDraft.runId,
+          invocationLayer: taskDecompositionDraft.invocation.layer,
+          parentTaskId: activeTaskId,
+          phase: taskDecompositionDraft.invocation.phase,
+          provider: readSlashSummaryValue(taskDecompositionDraft.promotionReadiness?.summary, 'selectedRuntimeProvider'),
+          runtimeLabel: taskDecompositionDraft.invocation.runtime.label,
+          runtimeMode: taskDecompositionDraft.invocation.runtime.mode,
+        }
+      : null;
     const plan = buildSubtaskCreateManyWritebackApplyPlan({
       evidenceRunId: taskDecompositionDraft.runId,
       nextStep: taskDecompositionDraft.nextStep,
+      parentSummary: taskDecompositionDraft.parentGoal,
       parentTaskId: activeTaskId,
       review: taskDecompositionDraft.review,
-      source: 'agent_cli_decomposition',
+      runtimeContract,
+      source: draftSource,
       subtasks: taskDecompositionDraft.subtasks,
     });
     try {
@@ -3076,7 +3115,35 @@ export function RightPanel({
         });
       } else if (
         isAgentApiRuntimeMode
-        && (!activeTaskId || (pilotDecision.shouldStartExecutor && pilotDecision.executor === 'agent_api'))
+        && activeTaskId
+        && allowDecompositionDraft
+        && isExplicitAgentApiDecompositionRequest(text)
+        && pilotDecision.shouldStartExecutor
+        && pilotDecision.executor === 'agent_api'
+        && window.api?.decomposeProject
+      ) {
+        const result = await window.api.decomposeProject({
+          instructions: taskplaneConversationPrompt,
+          taskId: activeTaskId,
+        });
+        setTaskDecompositionDraft({
+          invocation: result.invocation ?? null,
+          nextStep: result.nextStep,
+          parentGoal: result.parentGoal,
+          promotionReadiness: result.promotionReadiness ?? null,
+          review: result.review,
+          runId: result.evidenceRunId ?? `agent_api_decomposition:${activeTaskId}`,
+          source: 'agent_api_decomposition',
+          subtasks: result.subtasks.map((subtask) => ({
+            acceptanceCriteria: subtask.acceptanceCriteria,
+            dependency: subtask.dependency,
+            summary: subtask.summary,
+            title: subtask.title,
+          })),
+        });
+        replyText = '已生成子任务草案。你确认后，我会通过统一写回入口把它们创建到当前项目下。';
+      } else if (
+        isAgentApiRuntimeMode
         && window.api?.chatWithAI
       ) {
         const habitParams = {

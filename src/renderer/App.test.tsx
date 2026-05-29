@@ -2693,6 +2693,101 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/已完成，结果已记录到任务动态/)).toBeTruthy();
   });
 
+  it('routes right-panel Agent API decomposition requests through the task-bound decomposition adapter', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    vi.mocked(harness.api.decomposeProject!).mockResolvedValueOnce({
+      parentGoal: '完成董事会材料修订',
+      subtasks: [
+        {
+          title: '确认材料边界',
+          summary: '梳理董事会材料范围、截止时间和关键输入。',
+          acceptanceCriteria: '范围和输入已确认。',
+          dependency: null,
+          rationale: '这是可独立验收的第一步。',
+        },
+        {
+          title: '完成初稿修订',
+          summary: '根据已确认边界完成第一版修订。',
+          acceptanceCriteria: '初稿可供审阅。',
+          dependency: '确认材料边界',
+          rationale: '这是可审阅的交付块。',
+        },
+      ],
+      review: '按交付阶段拆解，确认后创建子任务。',
+      nextStep: '确认后进入第一个子任务。',
+      evidenceRunId: 'agent_api_decomposition:task_risk:abc123def456',
+      invocation: {
+        phase: 'decomposition_draft',
+        layer: 'api_runtime',
+        runtime: {
+          mode: 'api',
+          label: 'Agent API Runtime · openai / gpt-test',
+        },
+        status: 'completed',
+        summary: '已生成 2 个项目子任务草稿。',
+      },
+      promotionReadiness: {
+        ready: true,
+        summary: 'Agent API decomposition promotion readiness / ready=yes / selectedRuntimeProvider=openai / promotionMissingRequirements=none',
+        satisfiedRequirements: [
+          'selected_runtime_contract',
+          'parent_task_identity',
+          'reversible_proposal_card',
+          'subtask_create_many_apply_plan',
+          'agent_api_decomposition_source',
+          'operator_confirmation_boundary',
+          'draft_only_timeline_evidence',
+        ],
+        missingRequirements: [],
+      },
+    });
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请拆解成子任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.decomposeProject).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+        instructions: expect.stringContaining('请拆解成子任务'),
+      }));
+    });
+    expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_risk',
+      messages: expect.arrayContaining([
+        expect.objectContaining({ content: expect.stringContaining('请拆解成子任务') }),
+      ]),
+    }));
+    expect(await screen.findByText('子任务草案')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '确认创建子任务' }));
+    await waitFor(() => {
+      expect(harness.api.applyTaskplaneWriteback).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+        plan: expect.objectContaining({
+          action: 'subtask.create_many',
+          input: expect.objectContaining({
+            evidenceRunId: 'agent_api_decomposition:task_risk:abc123def456',
+            source: 'agent_api_decomposition',
+          }),
+          timeline: expect.objectContaining({
+            payload: expect.objectContaining({
+              runtimeContract: expect.objectContaining({
+                invocationLayer: 'api_runtime',
+                parentTaskId: 'task_risk',
+                provider: 'openai',
+                runtimeMode: 'api',
+              }),
+              source: 'agent_api_decomposition',
+            }),
+          }),
+        }),
+      }));
+    });
+  });
+
   it('keeps /goal product-owned in task chat and persists it as the Taskplane task goal', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));

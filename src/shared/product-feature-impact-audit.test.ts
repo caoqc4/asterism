@@ -825,7 +825,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('synthetic-ready=7/7 requirements');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.gaps.join(' '))
-      .toContain('prove the selected-runtime contract');
+      .toContain('proves selected-runtime contract');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.gaps.join(' '))
       .toContain('parent-task identity');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.nextActions.join(' '))
@@ -1468,5 +1468,18 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion');
     expect(rightPanel?.gaps.join(' ')).toContain('explicit right-panel execution requests can enter RunService');
     expect(rightPanel?.nextActions.join(' ')).toContain('expanding from explicit right-panel execution requests');
+  });
+
+  it('records right-panel Agent API decomposition routing coverage', () => {
+    const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
+
+    expect(decomposition?.evidence.join(' '))
+      .toContain('Right-panel Agent API decomposition requests now call the task-bound ai:decomposeProject adapter');
+    expect(decomposition?.evidence.join(' '))
+      .toContain('confirm through subtask.create_many TaskplaneWritebackApplyPlan with agent_api_decomposition source plus runtimeContract evidence');
+    expect(decomposition?.gaps.join(' '))
+      .toContain('right-panel explicit decomposition request and Tasks project action');
+    expect(decomposition?.nextActions.join(' '))
+      .toContain('right-panel and Tasks confirmation on TaskplaneWritebackApplyPlan');
   });
 });
