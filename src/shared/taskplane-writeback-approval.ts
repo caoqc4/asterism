@@ -242,17 +242,16 @@ function buildSchedulerDecisionApprovalItem(params: {
   const proposalReadinessSummary = payload.proposalReadinessSummary?.trim() || '';
   const payloadEvidenceRunId = payload.evidenceRunId?.trim() || '';
   if (
-    !proposalReadinessSummary.includes('Scheduler Decision proposal contract')
-    || !proposalReadinessSummary.includes('proposalReady=yes')
-    || !proposalReadinessSummary.includes('approvalQueueSurface=task_dynamics')
-    || !proposalReadinessSummary.includes(`targetTask=${targetTaskId}`)
+    schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'proposalReady') !== 'yes'
+    || schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'approvalQueueSurface') !== 'task_dynamics'
+    || schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'targetTask') !== targetTaskId
     || !schedulerDecisionProducerSourceEvidenceMatches({
       evidenceRunId: payloadEvidenceRunId,
       summary: proposalReadinessSummary,
     })
-    || !proposalReadinessSummary.includes('decisionPersistenceAllowed=false')
-    || !proposalReadinessSummary.includes('writebackDispatchAllowed=false')
-    || !proposalReadinessSummary.includes('schedulerTriggerAllowed=false')
+    || schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'decisionPersistenceAllowed') !== 'false'
+    || schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'writebackDispatchAllowed') !== 'false'
+    || schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'schedulerTriggerAllowed') !== 'false'
   ) {
     return null;
   }
@@ -343,13 +342,23 @@ function schedulerDecisionProducerSourceEvidenceMatches(params: {
   evidenceRunId: string;
   summary: string;
 }): boolean {
-  if (!params.summary.includes('evidenceSourceIdentityChain=ready')) return false;
+  if (schedulerDecisionReadinessSummaryValue(params.summary, 'evidenceSourceIdentityChain') !== 'ready') return false;
   if (params.evidenceRunId) {
-    return params.summary.includes('evidenceSourceType=run')
-      && params.summary.includes(`evidenceRunId=${params.evidenceRunId}`);
+    return schedulerDecisionReadinessSummaryValue(params.summary, 'evidenceSourceType') === 'run'
+      && schedulerDecisionReadinessSummaryValue(params.summary, 'evidenceRunId') === params.evidenceRunId;
   }
-  return params.summary.includes('evidenceSourceType=system')
-    && params.summary.includes('evidenceRunId=missing');
+  return schedulerDecisionReadinessSummaryValue(params.summary, 'evidenceSourceType') === 'system'
+    && schedulerDecisionReadinessSummaryValue(params.summary, 'evidenceRunId') === 'missing';
+}
+
+function schedulerDecisionReadinessSummaryValue(summary: string, key: string): string | null {
+  const prefix = `${key}=`;
+  return summary
+    .split(' / ')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix))
+    ?.slice(prefix.length)
+    .trim() ?? null;
 }
 
 function parseSchedulerDecisionPayload(payload: string | null): SchedulerDecisionProposalTimelinePayload | null {

@@ -190,6 +190,15 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('proposalEvidenceRunId and proposalEvidenceRunChain are ready from the first draft response');
   });
 
+  it('records exact scheduler Decision proposal producer identity matching', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+    const evidence = decisions?.evidence.join(' ') ?? '';
+
+    expect(evidence).toContain('exact slash-separated key/value fields');
+    expect(evidence).toContain('task_1 versus task_10');
+    expect(evidence).toContain('run_1 versus run_10');
+  });
+
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');

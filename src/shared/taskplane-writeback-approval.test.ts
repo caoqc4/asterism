@@ -560,6 +560,32 @@ describe('Taskplane writeback approval items', () => {
     expect(items).toEqual([]);
   });
 
+  it('blocks scheduler Decision proposal timeline events when producer target only prefix-matches', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_prefix_target',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_10'),
+          rationale: 'producer summary 里的目标任务必须精确匹配，不能只匹配前缀。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
   it('blocks scheduler Decision proposal timeline events without no-direct-side-effect readiness evidence', () => {
     const items = buildTaskplaneWritebackApprovalItems({
       runDetails: [],
@@ -608,6 +634,33 @@ describe('Taskplane writeback approval items', () => {
           proposedOutcome: '继续自动巡检',
           proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1', 'run_other'),
           rationale: 'producer summary 的 Run 来源身份必须和 payload 证据一致。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
+  it('blocks scheduler Decision proposal timeline events when producer Run evidence only prefix-matches', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_prefix_source',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          evidenceRunId: 'run_scheduler_1',
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1', 'run_scheduler_10'),
+          rationale: 'producer summary 的 Run 来源身份必须精确匹配，不能只匹配前缀。',
           targetTaskId: 'task_1',
           title: '确认自动巡检策略',
         }),
