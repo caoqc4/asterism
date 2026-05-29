@@ -1597,5 +1597,7 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('preserve selectedRuntimeProvider identity in the runtime contract');
     expect(evidence).toContain('selectedRuntimeProviderEvidenceChain is not lost between draft generation and operator-confirmed subtask.create_many apply');
     expect(evidence).toContain('Tasks project decomposition draft readiness now projects selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, and timelineRuntimeProvider evidence chips');
+    expect(evidence).toContain('Tasks project decomposition draft readiness now also projects proposalSubtaskTitleEvidenceChain, applyPlanSubtaskTitleEvidenceChain, and proposalSubtaskUniqueChain evidence chips');
+    expect(evidence).toContain('blank, duplicated, near-duplicated, or apply-plan-mismatched child titles are visible before durable child creation');
   });
 });
