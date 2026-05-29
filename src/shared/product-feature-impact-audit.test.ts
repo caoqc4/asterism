@@ -1620,6 +1620,9 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('preserve selectedRuntimeProvider identity in the runtime contract');
     expect(evidence).toContain('selectedRuntimeProviderEvidenceChain is not lost between draft generation and operator-confirmed subtask.create_many apply');
     expect(evidence).toContain('Tasks project decomposition draft readiness now projects selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, and timelineRuntimeProvider evidence chips');
+    expect(evidence).toContain('Tasks project decomposition draft readiness now also projects selectedRuntimeEvidenceRunId');
+    expect(evidence).toContain('selectedRuntimeParentTaskEvidenceChain, providerConfigured, configuredProvider, configuredProviderEvidenceChain');
+    expect(evidence).toContain('same selected-runtime/run/task/provider identity chain as the right-panel decomposition draft');
     expect(evidence).toContain('Tasks project decomposition draft readiness now also projects proposalSubtaskTitleEvidenceChain, applyPlanSubtaskTitleEvidenceChain, and proposalSubtaskUniqueChain evidence chips');
     expect(evidence).toContain('blank, duplicated, near-duplicated, or apply-plan-mismatched child titles are visible before durable child creation');
     expect(evidence).toContain('Right-panel AI decomposition draft readiness now projects promotionReadiness identity chips');

@@ -1211,7 +1211,7 @@ describe('App redesign v1', () => {
   it('projects decomposition promotion parent-chain evidence chips', () => {
     const chips = projectDecompositionPromotionEvidenceChips({
       ready: true,
-      summary: 'Agent API decomposition promotion readiness / ready=yes / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalSubtaskTitleEvidenceChain=ready / applyPlanSubtaskTitleEvidenceChain=ready / proposalSubtaskUniqueChain=ready / proposalSubtaskSummaries=确认用户目标|验收交互原型 / applyPlanSubtaskSummaries=确认用户目标|验收交互原型 / proposalSubtaskSummaryEvidenceChain=ready / applyPlanSubtaskSummaryEvidenceChain=ready / proposalAcceptanceCriteria=目标已记录|原型可验收 / applyPlanAcceptanceCriteria=目标已记录|原型可验收 / proposalAcceptanceCriteriaEvidenceChain=ready / applyPlanAcceptanceCriteriaEvidenceChain=ready / proposalDependencies=none|需求确认 / applyPlanDependencies=none|需求确认 / proposalDependencyEvidenceChain=ready / applyPlanDependencyEvidenceChain=ready / proposalSubtaskIdentityChain=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / sourceEvidenceChain=ready / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / timelineRuntimeMode=api / timelineInvocationLayer=api_runtime / timelineInvocationPhase=decomposition_draft / timelineRuntimeProvider=openai / selectedRuntimeEvidenceChain=ready',
+      summary: 'Agent API decomposition promotion readiness / ready=yes / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalSubtaskTitleEvidenceChain=ready / applyPlanSubtaskTitleEvidenceChain=ready / proposalSubtaskUniqueChain=ready / proposalSubtaskSummaries=确认用户目标|验收交互原型 / applyPlanSubtaskSummaries=确认用户目标|验收交互原型 / proposalSubtaskSummaryEvidenceChain=ready / applyPlanSubtaskSummaryEvidenceChain=ready / proposalAcceptanceCriteria=目标已记录|原型可验收 / applyPlanAcceptanceCriteria=目标已记录|原型可验收 / proposalAcceptanceCriteriaEvidenceChain=ready / applyPlanAcceptanceCriteriaEvidenceChain=ready / proposalDependencies=none|需求确认 / applyPlanDependencies=none|需求确认 / proposalDependencyEvidenceChain=ready / applyPlanDependencyEvidenceChain=ready / proposalSubtaskIdentityChain=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / sourceEvidenceChain=ready / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / selectedRuntimeEvidenceRunId=agent_api_decomposition:task_project / selectedRuntimeEvidenceRunChain=ready / selectedRuntimeParentTask=task_project / selectedRuntimeParentTaskEvidenceChain=ready / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / providerConfigured=ready / configuredProvider=openai / configuredProviderEvidenceChain=ready / timelineRuntimeMode=api / timelineInvocationLayer=api_runtime / timelineInvocationPhase=decomposition_draft / timelineRuntimeEvidenceRunId=agent_api_decomposition:task_project / timelineRuntimeParentTask=task_project / timelineRuntimeProvider=openai / selectedRuntimeEvidenceChain=ready',
       satisfiedRequirements: [
         'selected_runtime_contract',
         'parent_task_identity',
@@ -1256,9 +1256,18 @@ describe('App redesign v1', () => {
     expect(chips).toContain('evidenceRunIdChain=ready');
     expect(chips).toContain('selectedRuntimeProvider=openai');
     expect(chips).toContain('selectedRuntimeProviderEvidenceChain=ready');
+    expect(chips).toContain('selectedRuntimeEvidenceRunId=agent_api_decomposition:task_project');
+    expect(chips).toContain('selectedRuntimeEvidenceRunChain=ready');
+    expect(chips).toContain('selectedRuntimeParentTask=task_project');
+    expect(chips).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
+    expect(chips).toContain('providerConfigured=ready');
+    expect(chips).toContain('configuredProvider=openai');
+    expect(chips).toContain('configuredProviderEvidenceChain=ready');
     expect(chips).toContain('timelineRuntimeMode=api');
     expect(chips).toContain('timelineInvocationLayer=api_runtime');
     expect(chips).toContain('timelineInvocationPhase=decomposition_draft');
+    expect(chips).toContain('timelineRuntimeEvidenceRunId=agent_api_decomposition:task_project');
+    expect(chips).toContain('timelineRuntimeParentTask=task_project');
     expect(chips).toContain('timelineRuntimeProvider=openai');
     expect(chips).toContain('selectedRuntimeEvidenceChain=ready');
   });
@@ -3007,7 +3016,7 @@ describe('App redesign v1', () => {
       },
       promotionReadiness: {
         ready: true,
-        summary: 'Agent API decomposition promotion readiness / ready=yes / requirements=7/7 / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / proposalSubtaskTitles=确认材料边界|完成初稿修订 / applyPlanSubtaskTitles=确认材料边界|完成初稿修订 / proposalSubtaskTitleEvidenceChain=ready / applyPlanSubtaskTitleEvidenceChain=ready / proposalSubtaskSummaries=梳理董事会材料范围、截止时间和关键输入。|根据已确认边界完成第一版修订。 / applyPlanSubtaskSummaries=梳理董事会材料范围、截止时间和关键输入。|根据已确认边界完成第一版修订。 / proposalSubtaskSummaryEvidenceChain=ready / applyPlanSubtaskSummaryEvidenceChain=ready / proposalAcceptanceCriteria=范围和输入已确认。|初稿可供审阅。 / applyPlanAcceptanceCriteria=范围和输入已确认。|初稿可供审阅。 / proposalAcceptanceCriteriaEvidenceChain=ready / applyPlanAcceptanceCriteriaEvidenceChain=ready / proposalRationales=这是可独立验收的第一步。|这是可审阅的交付块。 / applyPlanRationales=这是可独立验收的第一步。|这是可审阅的交付块。 / proposalRationaleEvidenceChain=ready / applyPlanRationaleEvidenceChain=ready / proposalDependencies=none|确认材料边界 / applyPlanDependencies=none|确认材料边界 / proposalDependencyEvidenceChain=ready / applyPlanDependencyEvidenceChain=ready / proposalSubtaskUniqueChain=ready / promotionMissingRequirements=none',
+        summary: 'Agent API decomposition promotion readiness / ready=yes / requirements=7/7 / selectedRuntimeEvidenceRunId=agent_api_decomposition:task_risk:abc123def456 / selectedRuntimeEvidenceRunChain=ready / selectedRuntimeParentTask=task_risk / selectedRuntimeParentTaskEvidenceChain=ready / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / providerConfigured=ready / configuredProvider=openai / configuredProviderEvidenceChain=ready / timelineRuntimeEvidenceRunId=agent_api_decomposition:task_risk:abc123def456 / timelineRuntimeParentTask=task_risk / proposalSubtaskTitles=确认材料边界|完成初稿修订 / applyPlanSubtaskTitles=确认材料边界|完成初稿修订 / proposalSubtaskTitleEvidenceChain=ready / applyPlanSubtaskTitleEvidenceChain=ready / proposalSubtaskSummaries=梳理董事会材料范围、截止时间和关键输入。|根据已确认边界完成第一版修订。 / applyPlanSubtaskSummaries=梳理董事会材料范围、截止时间和关键输入。|根据已确认边界完成第一版修订。 / proposalSubtaskSummaryEvidenceChain=ready / applyPlanSubtaskSummaryEvidenceChain=ready / proposalAcceptanceCriteria=范围和输入已确认。|初稿可供审阅。 / applyPlanAcceptanceCriteria=范围和输入已确认。|初稿可供审阅。 / proposalAcceptanceCriteriaEvidenceChain=ready / applyPlanAcceptanceCriteriaEvidenceChain=ready / proposalRationales=这是可独立验收的第一步。|这是可审阅的交付块。 / applyPlanRationales=这是可独立验收的第一步。|这是可审阅的交付块。 / proposalRationaleEvidenceChain=ready / applyPlanRationaleEvidenceChain=ready / proposalDependencies=none|确认材料边界 / applyPlanDependencies=none|确认材料边界 / proposalDependencyEvidenceChain=ready / applyPlanDependencyEvidenceChain=ready / proposalSubtaskUniqueChain=ready / promotionMissingRequirements=none',
         satisfiedRequirements: [
           'selected_runtime_contract',
           'parent_task_identity',
@@ -3043,6 +3052,15 @@ describe('App redesign v1', () => {
     expect(within(decompositionReadiness).getByText('promotionReady=yes')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('requirements=7/7')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('selectedRuntimeProvider=openai')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('selectedRuntimeEvidenceRunId=agent_api_decomposition:task_risk:abc123def456')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('selectedRuntimeEvidenceRunChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('selectedRuntimeParentTask=task_risk')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('selectedRuntimeParentTaskEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('providerConfigured=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('configuredProvider=openai')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('configuredProviderEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('timelineRuntimeEvidenceRunId=agent_api_decomposition:task_risk:abc123def456')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('timelineRuntimeParentTask=task_risk')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('proposalSubtaskTitles=确认材料边界|完成初稿修订')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('applyPlanSubtaskTitles=确认材料边界|完成初稿修订')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('proposalSubtaskTitleEvidenceChain=ready')).toBeTruthy();
