@@ -903,8 +903,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('expected patch files and post-apply touched files as one filePathSafetyChain');
     expect(taskFiles?.evidence.join(' ')).toContain('unsafe workspace paths');
     expect(taskFiles?.evidence.join(' ')).toContain('normalize workspace-relative path separators before duplicate checks, touched-file matching, and workspace writes');
-    expect(taskFiles?.evidence.join(' ')).toContain('equivalent slash/backslash paths cannot satisfy duplicate-free evidence as separate files');
-    expect(taskFiles?.evidence.join(' ')).toContain('cannot write a separate backslash-named file on POSIX');
+    expect(taskFiles?.evidence.join(' ')).toContain('equivalent slash/backslash paths and repeated-separator aliases cannot satisfy duplicate-free evidence as separate files');
+    expect(taskFiles?.evidence.join(' ')).toContain('cannot write a separate alias-named file on POSIX');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract to carry the same run id and target task id');
     expect(taskFiles?.evidence.join(' ')).toContain('cannot be promoted from mode/layer/phase metadata alone');
     expect(taskFiles?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
@@ -1259,6 +1259,15 @@ describe('product feature impact audit', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
 
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract stays missing when the selected runtime run id or target task identity diverges');
+  });
+
+  it('records repeated-separator alias protection for runtime patch promotion routing', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('slash/backslash paths and repeated-separator aliases');
+    expect(evidence).toContain('cannot satisfy duplicate-free evidence as separate files');
+    expect(evidence).toContain('cannot write a separate alias-named file on POSIX');
   });
 
   it('records blocked apply evidence for malformed patch promotion metadata', () => {

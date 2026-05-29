@@ -335,7 +335,7 @@ function sameStringSet(left: string[], right: string[]): boolean {
 }
 
 function normalizeWorkspaceRelativePath(value: string): string {
-  return value.replaceAll('\\', '/').trim();
+  return value.replaceAll('\\', '/').replace(/\/+/g, '/').trim();
 }
 
 function isSafeWorkspaceRelativePath(value: string): boolean {

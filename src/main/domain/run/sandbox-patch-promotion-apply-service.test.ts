@@ -579,6 +579,46 @@ describe('SandboxPatchPromotionApplyService', () => {
     }
   });
 
+  it('blocks repeated-separator expected file aliases before workspace writes', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-repeated-separator-');
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, 'src', 'app.ts'), 'alpha\n');
+      const diff = [
+        '--- a/src/app.ts',
+        '+++ b/src/app.ts',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const promotion = buildPromotion({ expectedFiles: ['src/app.ts', 'src//app.ts'] });
+      const { markBlocked, service } = buildService({
+        artifact: buildArtifact(diff),
+        promotion,
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: [
+          'Patch promotion expected duplicate file: src/app.ts',
+        ],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'src', 'app.ts'), 'utf8')).toBe('alpha\n');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('expectedFiles=src/app.ts,src/app.ts');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('expectedFileEvidenceChain=missing');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('blocks malformed reviewed patch diffs instead of throwing out of apply', async () => {
     const tempRoot = makeTempDir('taskplane-sandbox-promotion-malformed-diff-');
 
