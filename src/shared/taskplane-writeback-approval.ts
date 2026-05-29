@@ -258,18 +258,19 @@ function buildSchedulerDecisionApprovalItem(params: {
     },
     targetTaskId,
   });
-  if (readiness.status !== 'ready' || !payload.title?.trim() || !payload.rationale?.trim()) {
+  const decisionPayload = normalizeSchedulerDecisionApprovalPayload(payload);
+  if (readiness.status !== 'ready' || !decisionPayload) {
     return null;
   }
 
   const evidenceRunId = payload.evidenceRunId?.trim() || params.event.id;
   const intent: TaskplaneDecisionCreateIntent = {
     evidenceRunId,
-    options: parseStringList(payload.options),
-    proposedOutcome: payload.proposedOutcome?.trim() || undefined,
-    rationale: payload.rationale.trim(),
+    options: decisionPayload.options,
+    proposedOutcome: decisionPayload.proposedOutcome,
+    rationale: decisionPayload.rationale,
     taskId: params.taskId,
-    title: payload.title.trim(),
+    title: decisionPayload.title,
     type: 'decision.create',
   };
   const proposal: TaskplaneStructuredWritebackProposal = {
@@ -312,10 +313,56 @@ function parseSchedulerDecisionPayload(payload: string | null): SchedulerDecisio
   }
 }
 
+type NormalizedSchedulerDecisionApprovalPayload = {
+  options: string[];
+  proposedOutcome: string;
+  rationale: string;
+  title: string;
+};
+
+function normalizeSchedulerDecisionApprovalPayload(
+  payload: SchedulerDecisionProposalTimelinePayload,
+): NormalizedSchedulerDecisionApprovalPayload | null {
+  const title = normalizeSchedulerDecisionText(payload.title);
+  const rationale = normalizeSchedulerDecisionText(payload.rationale);
+  const options = parseStringList(payload.options);
+  const proposedOutcome = normalizeSchedulerDecisionText(payload.proposedOutcome);
+  if (!title || !rationale || !options?.length || !proposedOutcome) return null;
+
+  const optionIdentities = new Set<string>();
+  for (const option of options) {
+    const identity = normalizeSchedulerDecisionIdentity(option);
+    if (optionIdentities.has(identity)) return null;
+    optionIdentities.add(identity);
+  }
+
+  const matchedOutcome = options.find((option) => (
+    normalizeSchedulerDecisionIdentity(option) === normalizeSchedulerDecisionIdentity(proposedOutcome)
+  ));
+  if (!matchedOutcome) return null;
+
+  return {
+    options,
+    proposedOutcome: matchedOutcome,
+    rationale,
+    title,
+  };
+}
+
 function parseStringList(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
-  const items = value.map((item) => typeof item === 'string' ? item.trim() : '').filter(Boolean);
+  const items = value
+    .map((item) => typeof item === 'string' ? normalizeSchedulerDecisionText(item) : '')
+    .filter(Boolean);
   return items.length ? items : undefined;
+}
+
+function normalizeSchedulerDecisionText(value: string | null | undefined): string {
+  return value?.replace(/\s+/g, ' ').trim() ?? '';
+}
+
+function normalizeSchedulerDecisionIdentity(value: string): string {
+  return normalizeSchedulerDecisionText(value).toLocaleLowerCase();
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

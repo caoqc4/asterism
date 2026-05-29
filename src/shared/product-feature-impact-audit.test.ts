@@ -1274,4 +1274,12 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('repeated choices');
     expect(decisions?.evidence.join(' ')).toContain('whitespace/case-equivalent duplicate choices');
   });
+
+  it('records scheduler Decision approval queue payload validation coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('Task Dynamics scheduler Decision proposal consumption now revalidates timeline payload shape');
+    expect(decisions?.evidence.join(' ')).toContain('duplicate-free option labels');
+    expect(decisions?.evidence.join(' ')).toContain('cannot bypass the SchedulerService producer validation');
+  });
 });

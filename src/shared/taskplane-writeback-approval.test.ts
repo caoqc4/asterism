@@ -171,6 +171,52 @@ describe('Taskplane writeback approval items', () => {
     expect(items[0]?.detail).toContain('approvalQueueSurface=task_dynamics');
   });
 
+  it('normalizes scheduler Decision proposal payloads before approval queue creation', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_decision',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          evidenceRunId: 'run_scheduler_1',
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['  继续   自动巡检  ', '暂停自动巡检'],
+          proposedOutcome: '继续 自动巡检',
+          rationale: '  最近一次自动巡检   已经生成可审核证据，需要确认后续策略。 ',
+          targetTaskId: 'task_1',
+          title: '  确认   自动巡检策略 ',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      plan: {
+        action: 'decision.create',
+        input: {
+          context: {
+            whyNow: '最近一次自动巡检 已经生成可审核证据，需要确认后续策略。',
+          },
+          options: [
+            { id: 'option_1', label: '继续 自动巡检' },
+            { id: 'option_2', label: '暂停自动巡检' },
+          ],
+          recommendation: {
+            label: '继续 自动巡检',
+            reason: '最近一次自动巡检 已经生成可审核证据，需要确认后续策略。',
+          },
+          title: '确认 自动巡检策略',
+        },
+      },
+      title: '调度决策提案：确认 自动巡检策略',
+    });
+  });
+
   it('turns local-recovery scheduler Decision proposal events into the same approval queue', () => {
     const items = buildTaskplaneWritebackApprovalItems({
       runDetails: [],
@@ -284,6 +330,58 @@ describe('Taskplane writeback approval items', () => {
           rationale: 'Scheduler recovered a stale run but omitted explicit recovered run identity.',
           targetTaskId: 'task_1',
           title: '确认 stale run 自动恢复后的下一步',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
+  it('blocks scheduler Decision proposal timeline events with duplicate normalized options', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_duplicate_options',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          evidenceRunId: 'run_scheduler_1',
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '  继续自动巡检  '],
+          proposedOutcome: '继续自动巡检',
+          rationale: '重复选项不应进入审批队列。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
+  it('blocks scheduler Decision proposal timeline events when proposed outcome is outside options', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_outcome_mismatch',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          evidenceRunId: 'run_scheduler_1',
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '转人工处理',
+          rationale: '推荐结果必须来自候选项。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
         }),
         createdAt: '2026-05-25T00:01:00.000Z',
       }],
