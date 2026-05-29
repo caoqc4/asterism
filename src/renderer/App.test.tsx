@@ -2764,6 +2764,59 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入/)).toBeTruthy();
   });
 
+  it('prefers post-run Agent API execution readiness over pre-run readiness in the right panel summary', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    vi.mocked(harness.api.triggerRun).mockImplementationOnce(async (input) => {
+      const run = buildRun({
+        id: 'run_api_post_run_ready',
+        output: 'No workspace changes were needed after execution.',
+        outputSource: 'ai',
+        status: 'completed',
+        taskId: input.taskId,
+        type: input.type,
+      }) as RunRecord & { steps: RunStepRecord[] };
+      run.steps = [
+        {
+          id: 'step_api_pre_run_promotion',
+          runId: run.id,
+          index: 0,
+          kind: 'plan',
+          status: 'completed',
+          title: 'Agent API execution promotion readiness',
+          input: 'pilotDecision={"executor":"agent_api"}',
+          output: 'Agent API execution promotion readiness / ready=no / requirements=7/11 / missingRequirements=post_step,run_evidence_persistence',
+          error: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: 'step_api_post_run_promotion',
+          runId: run.id,
+          index: 1,
+          kind: 'plan',
+          status: 'completed',
+          title: 'Agent API execution post-run promotion readiness',
+          input: 'pilotDecision={"executor":"agent_api"}',
+          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / reviewedPatchApplyBoundary=ready',
+          error: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ];
+      harness.runs.push(run);
+      return run;
+    });
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '开始执行当前任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入/)).toBeTruthy();
+    expect(screen.queryByText(/post_step,run_evidence_persistence/)).toBeNull();
+  });
+
   it('routes right-panel Agent API decomposition requests through the task-bound decomposition adapter', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));

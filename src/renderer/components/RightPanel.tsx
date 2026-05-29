@@ -891,7 +891,13 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
     }
   }
 
-  const agentApiPromotionStep = orderedSteps.find((step) => /Agent API execution(?: post-run)? promotion readiness/i.test(step.title));
+  const agentApiPromotionSteps = orderedSteps.filter((step) => (
+    /Agent API execution(?: post-run)? promotion readiness/i.test(step.title)
+  ));
+  const agentApiPromotionStep = [...agentApiPromotionSteps]
+    .reverse()
+    .find((step) => /Agent API execution post-run promotion readiness/i.test(step.title))
+    ?? agentApiPromotionSteps.at(-1);
   if (agentApiPromotionStep) {
     const ready = readStepKeyValue(agentApiPromotionStep.output, 'ready')
       ?? readSlashSummaryValue(agentApiPromotionStep.output, 'ready')
