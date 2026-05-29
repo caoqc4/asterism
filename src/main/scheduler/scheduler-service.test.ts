@@ -1204,6 +1204,83 @@ describe('SchedulerService', () => {
     }));
   });
 
+  it('makes failed-run Decision proposals explicit when terminal failure evidence is missing', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: null,
+        id: 'run_scheduled_failed_without_evidence',
+        output: null,
+        outputSource: null,
+        status: 'failed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('failureDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_failed_without_evidence');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        evidenceRunId: 'run_scheduled_failed_without_evidence',
+        options: expect.arrayContaining(['补录失败原因或终态输出证据']),
+        rationale: expect.stringContaining('Terminal failure evidence is incomplete'),
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 失败后的下一步',
+      }),
+    }));
+  });
+
   it('does not let title-only scheduler Decision proposal history suppress target-scoped proposals', async () => {
     const task = buildAutomationTaskDetail({
       sourceContexts: [buildSourceContext()],

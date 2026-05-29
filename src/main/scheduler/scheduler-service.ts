@@ -1068,16 +1068,23 @@ export class SchedulerService {
       };
     }
 
+    const terminalEvidenceStatus = scheduledEventRunTerminalEvidenceStatus(run);
+    const terminalEvidenceMissing = terminalEvidenceStatus !== 'present';
+
     return this.proposeSchedulerDecision({
       evidenceRunId: run.id,
       options: [
         '暂停自动巡检并等待人工处理',
         '保留自动巡检但先修复失败原因',
+        ...(terminalEvidenceMissing ? ['补录失败原因或终态输出证据'] : []),
       ],
       proposedOutcome: '暂停自动巡检并等待人工处理',
       rationale: [
         `Scheduled/event Agent run ${run.id} failed.`,
         run.failureReason ? `Failure reason: ${run.failureReason}` : null,
+        terminalEvidenceMissing
+          ? 'Terminal failure evidence is incomplete: neither reviewable output nor failureReason was recorded.'
+          : null,
         'Taskplane should confirm the next recovery step before more background work continues.',
       ].filter(Boolean).join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),

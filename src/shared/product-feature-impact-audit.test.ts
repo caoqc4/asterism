@@ -1221,4 +1221,12 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('malformed reviewed patch diffs before writing workspace files');
     expect(taskFiles?.evidence.join(' ')).toContain('instead of throwing out of the operator-facing apply path');
   });
+
+  it('records missing terminal failure evidence in scheduler recovery proposals', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('failed terminal runs without reviewable output or failureReason');
+    expect(decisions?.evidence.join(' ')).toContain('missing terminal failure evidence explicit');
+    expect(decisions?.evidence.join(' ')).toContain('record missing failure evidence instead of seeing only a generic failed-run recovery card');
+  });
 });
