@@ -128,6 +128,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Confirmed run-backed patch artifacts can be normalized into imported_patch_artifact sandbox draft sources and previewed through the existing sandbox patch review planner before any workspace promotion Decision.',
       'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI capability-tagged web/search events.',
       'Right-panel progress and completion summaries include the Taskplane web research query when Source Context is captured, so operators can connect saved sources back to the triggering research request.',
+      'Right-panel completed-run summaries also surface persisted source_context_ids or the Source Context batch id for captured web research, so saved sources are traceable from the chat summary back to durable evidence.',
       'Pre-run web research trigger conditions ignore bare runtime names and generic current-task wording, so selecting Codex CLI or Claude Code does not itself request external research.',
       'Pre-run web research trigger conditions now recognize fresh external requests such as latest/current pricing, current API status, and recent release changes without treating current-task wording as research.',
       'The non-live Agent CLI web research bridge smoke exercises fresh/current trigger detection, mocked OpenAI web_search output, Source Context persistence, the preparation Run step, and renderer progress mapping without calling external networks.',

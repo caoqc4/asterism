@@ -124,7 +124,7 @@ describe('product feature impact audit', () => {
 
     expect(rightPanel?.evidence.join(' ')).toContain('decisions, next-step updates, blockers, completion proposals');
     expect(rightPanel?.evidence.join(' ')).toContain('web research capture and native CLI capability-tagged web/search events');
-    expect(rightPanel?.evidence.join(' ')).toContain('web research query');
+    expect(rightPanel?.evidence.join(' ')).toMatch(/web research query[\s\S]*persisted source_context_ids/);
     expect(rightPanel?.evidence.join(' ')).toContain('ignore bare runtime names');
     expect(rightPanel?.evidence.join(' ')).toContain('web research bridge smoke');
     expect(rightPanel?.evidence.join(' ')).toContain('mocked OpenAI web_search output');

@@ -3430,6 +3430,8 @@ describe('App redesign v1', () => {
             'status=captured',
             'capability_mode=native',
             'sources=3',
+            'batch_id=web-research:task_1:2026-05-19T00:00:00.000Z',
+            'source_context_ids=source_context_1,source_context_2,source_context_3',
             'query=Codex CLI 教程',
             'reason=Taskplane captured web research into Source Context before handing the task to the selected Agent CLI.',
           ].join('\n'),
@@ -3445,7 +3447,7 @@ describe('App redesign v1', () => {
     });
     harness.emit('run.changed', 'run_agent_cli_created');
 
-    expect(await screen.findByText(/联网调研：已保存 3 个来源到来源上下文.*查询：Codex CLI 教程/)).toBeTruthy();
+    expect(await screen.findByText(/联网调研：已保存 3 个来源到来源上下文.*查询：Codex CLI 教程.*证据：source_context_1,source_context_2,source_context_3/)).toBeTruthy();
     expect(screen.getByText(/原生 CLI 联网动作：.*web_search/)).toBeTruthy();
   });
 

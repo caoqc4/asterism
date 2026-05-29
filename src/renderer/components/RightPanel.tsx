@@ -856,11 +856,18 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
     const status = readStepKeyValue(webPreparationStep.output, 'status');
     const sources = readStepKeyValue(webPreparationStep.output, 'sources');
     const query = readStepKeyValue(webPreparationStep.output, 'query');
+    const sourceContextIds = readStepKeyValue(webPreparationStep.output, 'source_context_ids');
+    const batchId = readStepKeyValue(webPreparationStep.output, 'batch_id');
     const reason = readStepKeyValue(webPreparationStep.output, 'reason');
     if (status === 'captured') {
       const partial = reason ? /\bcaptured\s+\d+\s*\/\s*\d+\b/i.test(reason) : false;
       const queryLabel = query ? `；查询：${truncateAgentCliChatLine(query, 48)}` : '';
-      lines.push(`联网调研：已保存 ${sources ?? '若干'} 个来源到来源上下文${partial ? '，部分来源保存失败' : ''}${queryLabel}。`);
+      const evidenceLabel = sourceContextIds
+        ? `；证据：${truncateAgentCliChatLine(sourceContextIds, 72)}`
+        : batchId
+          ? `；批次：${truncateAgentCliChatLine(batchId, 72)}`
+          : '';
+      lines.push(`联网调研：已保存 ${sources ?? '若干'} 个来源到来源上下文${partial ? '，部分来源保存失败' : ''}${queryLabel}${evidenceLabel}。`);
     } else if (status === 'skipped' && reason) {
       const saveFailed = /none could be saved|could not be saved|source context.*unavailable/i.test(reason);
       lines.push(
