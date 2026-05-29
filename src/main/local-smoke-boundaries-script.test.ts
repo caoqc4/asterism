@@ -939,12 +939,26 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('mode=read-only');
     expect(result.output).toContain('provider=not-called');
     expect(result.output).toContain('subtasks=not-created');
-    expect(result.output).toContain('dispatch=not-called');
+    expect(result.output).toContain('dispatch=mocked-port-only');
     expect(result.output).toContain('workspace=unchanged');
     if (result.output.includes('status=skip')) {
       expect(result.output).toContain('skipReason=build_required');
       return;
     }
+    expect(result.output).toContain('apiDispatchStatus=completed');
+    expect(result.output).toContain('apiDispatchAction=subtask.create_many');
+    expect(result.output).toContain('apiDispatchCreatedTaskCount=1');
+    expect(result.output).toContain('apiDispatchCreatedTaskIds=mock_child_1');
+    expect(result.output).toContain('apiDispatchUpdatedTask=task_project');
+    expect(result.output).toContain('apiDispatchTaskRecordPath=Task Records/mock-project-decomposition.md');
+    expect(result.output).toContain('apiDispatchTimelineEventCount=1');
+    expect(result.output).toContain('apiDispatchTimelineTask=task_project');
+    expect(result.output).toContain('apiDispatchTimelineType=panel.project_decomposed');
+    expect(result.output).toContain('apiDispatchTimelineChildTaskIds=mock_child_1');
+    expect(result.output).toContain('apiDispatchTimelineRecordPath=Task Records/mock-project-decomposition.md');
+    expect(result.output).toContain('apiDispatchTimelineSource=agent_api_decomposition');
+    expect(result.output).toContain('apiDispatchTimelineConfirmationBoundary=operator_confirmed_subtask_create_many');
+    expect(result.output).toContain('apiDispatchTimelineDraftOnlyBeforeConfirmation=true');
   });
 
   it('keeps Agent API provider tool readiness smoke read-only and build-gated by default', () => {

@@ -6,26 +6,36 @@ import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'taskplane-writeback-apply-plan.js');
+const dispatchModulePath = path.join(root, 'dist-electron', 'shared', 'taskplane-writeback-dispatch.js');
 const sourceModulePath = path.join(root, 'src', 'shared', 'taskplane-writeback-apply-plan.ts');
+const dispatchSourceModulePath = path.join(root, 'src', 'shared', 'taskplane-writeback-dispatch.ts');
 
 export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
   console.log('Subtask create-many apply plan readiness smoke');
   console.log('mode=read-only');
   console.log('provider=not-called');
   console.log('subtasks=not-created');
-  console.log('dispatch=not-called');
+  console.log('dispatch=mocked-port-only');
   console.log('workspace=unchanged');
 
-  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
+  if (!fs.existsSync(modulePath) || !fs.existsSync(dispatchModulePath) || sourceIsNewerThanBuild()) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
     return 0;
   }
 
-  const {
-    buildSubtaskCreateManyWritebackApplyPlan,
-  } = await import(pathToFileURL(modulePath).href);
+  const [
+    {
+      buildSubtaskCreateManyWritebackApplyPlan,
+    },
+    {
+      dispatchTaskplaneWritebackApplyPlan,
+    },
+  ] = await Promise.all([
+    import(pathToFileURL(modulePath).href),
+    import(pathToFileURL(dispatchModulePath).href),
+  ]);
   const cliPlan = buildSubtaskCreateManyWritebackApplyPlan({
     evidenceRunId: 'run_cli_decomposition',
     nextStep: 'Enter the first confirmed child task.',
@@ -45,10 +55,63 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
 
   printPlan('cli', cliPlan);
   printPlan('api', apiPlan);
+  const dispatchEvents = [];
+  const apiDispatchResult = await dispatchTaskplaneWritebackApplyPlan({
+    plan: apiPlan,
+    ports: {
+      createSubtasks: async (input) => ({
+        createdTasks: input.subtasks.map((subtask, index) => ({
+          id: `mock_child_${index + 1}`,
+          parentId: input.parentTaskId,
+          status: 'todo',
+          title: subtask.title,
+        })),
+        taskRecordPath: 'Task Records/mock-project-decomposition.md',
+        updatedTask: {
+          id: input.parentTaskId,
+          nextStep: input.nextStep,
+        },
+      }),
+      recordTimelineEvent: async (taskId, type, payload) => {
+        dispatchEvents.push({ taskId, type, payload });
+      },
+    },
+    taskId: 'task_project',
+  });
+  const dispatchEvent = dispatchEvents[0] ?? null;
+
+  console.log(`apiDispatchStatus=${apiDispatchResult.status}`);
+  console.log(`apiDispatchAction=${apiDispatchResult.action}`);
+  console.log(`apiDispatchCreatedTaskCount=${apiDispatchResult.createdTasks?.length ?? 0}`);
+  console.log(`apiDispatchCreatedTaskIds=${apiDispatchResult.createdTasks?.map((task) => task.id).join(',') || 'none'}`);
+  console.log(`apiDispatchUpdatedTask=${apiDispatchResult.updatedTask?.id ?? 'missing'}`);
+  console.log(`apiDispatchTaskRecordPath=${apiDispatchResult.taskRecordPath ?? 'missing'}`);
+  console.log(`apiDispatchTimelineEventCount=${dispatchEvents.length}`);
+  console.log(`apiDispatchTimelineTask=${dispatchEvent?.taskId ?? 'missing'}`);
+  console.log(`apiDispatchTimelineType=${dispatchEvent?.type ?? 'missing'}`);
+  console.log(`apiDispatchTimelineChildTaskIds=${dispatchEvent?.payload?.childTaskIds?.join(',') || 'none'}`);
+  console.log(`apiDispatchTimelineRecordPath=${dispatchEvent?.payload?.recordPath ?? 'missing'}`);
+  console.log(`apiDispatchTimelineSource=${dispatchEvent?.payload?.source ?? 'missing'}`);
+  console.log(`apiDispatchTimelineConfirmationBoundary=${dispatchEvent?.payload?.confirmationBoundary ?? 'missing'}`);
+  console.log(`apiDispatchTimelineDraftOnlyBeforeConfirmation=${String(dispatchEvent?.payload?.draftOnlyBeforeConfirmation)}`);
 
   if (
     !isReadyCreateManyPlan(cliPlan, 'agent_cli_decomposition')
     || !isReadyCreateManyPlan(apiPlan, 'agent_api_decomposition')
+    || apiDispatchResult.status !== 'completed'
+    || apiDispatchResult.action !== 'subtask.create_many'
+    || apiDispatchResult.createdTasks?.length !== 1
+    || apiDispatchResult.createdTasks[0]?.id !== 'mock_child_1'
+    || apiDispatchResult.updatedTask?.id !== 'task_project'
+    || apiDispatchResult.taskRecordPath !== 'Task Records/mock-project-decomposition.md'
+    || dispatchEvents.length !== 1
+    || dispatchEvent?.taskId !== 'task_project'
+    || dispatchEvent?.type !== 'panel.project_decomposed'
+    || dispatchEvent?.payload?.source !== 'agent_api_decomposition'
+    || dispatchEvent?.payload?.confirmationBoundary !== 'operator_confirmed_subtask_create_many'
+    || dispatchEvent?.payload?.draftOnlyBeforeConfirmation !== true
+    || dispatchEvent?.payload?.childTaskIds?.join(',') !== 'mock_child_1'
+    || dispatchEvent?.payload?.recordPath !== 'Task Records/mock-project-decomposition.md'
   ) {
     console.log('status=failed');
     return 1;
@@ -91,8 +154,15 @@ function buildSubtaskDraft() {
 }
 
 function sourceIsNewerThanBuild() {
-  if (!fs.existsSync(modulePath) || !fs.existsSync(sourceModulePath)) return false;
-  return fs.statSync(sourceModulePath).mtimeMs > fs.statSync(modulePath).mtimeMs;
+  const pairs = [
+    [sourceModulePath, modulePath],
+    [dispatchSourceModulePath, dispatchModulePath],
+  ];
+  return pairs.some(([source, build]) => (
+    fs.existsSync(source)
+    && fs.existsSync(build)
+    && fs.statSync(source).mtimeMs > fs.statSync(build).mtimeMs
+  ));
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

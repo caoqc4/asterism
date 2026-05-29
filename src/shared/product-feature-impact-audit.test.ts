@@ -140,6 +140,18 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('approvalPlanRecommended=Approve');
   });
 
+  it('records subtask create-many dispatcher readiness evidence', () => {
+    const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
+    const evidence = decomposition?.evidence.join(' ') ?? '';
+
+    expect(evidence).toContain('subtask create-many apply plan readiness smoke');
+    expect(evidence).toContain('dispatchTaskplaneWritebackApplyPlan');
+    expect(evidence).toContain('apiDispatchStatus=completed');
+    expect(evidence).toContain('apiDispatchAction=subtask.create_many');
+    expect(evidence).toContain('apiDispatchTimelineChildTaskIds=mock_child_1');
+    expect(evidence).toContain('apiDispatchTimelineRecordPath=Task Records/mock-project-decomposition.md');
+  });
+
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');
