@@ -1119,6 +1119,10 @@ export function registerIpcHandlers(): void {
     const promotionReadiness = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
       applyPlan: promotionApplyPlan,
       parentTaskId: input.taskId,
+      providerConfiguration: {
+        configuredProvider: config.provider,
+        providerConfigured: true,
+      },
       reversibleProposalCard: {
         acceptanceCriteria: decomposition.subtasks.map((subtask) => subtask.acceptanceCriteria),
         dependencies: decomposition.subtasks.map((subtask) => subtask.dependency),

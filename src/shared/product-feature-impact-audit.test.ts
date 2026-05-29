@@ -874,6 +874,8 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('Agent API project decomposition drafts now return a task-scoped, response-hashed evidenceRunId plus promotionReadiness');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('generated decomposition drafts prove providerConfigured=ready, configuredProvider, and configuredProviderEvidenceChain=ready from service-side config evidence');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('before the operator confirms child creation');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('draft generation and renderer confirmation now pass the task-scoped evidenceRunId and parentTaskId into selectedRuntimeContract');

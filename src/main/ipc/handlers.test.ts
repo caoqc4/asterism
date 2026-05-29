@@ -1015,6 +1015,9 @@ describe('registerIpcHandlers', () => {
     expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
     expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('selectedRuntimeParentTask=task_1');
     expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
+    expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('providerConfigured=ready');
+    expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('configuredProvider=openai');
+    expect((result as { promotionReadiness?: { summary?: string } }).promotionReadiness?.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(system).toContain('Taskplane Agent Operating Principles');
     expect(system).toContain('## Task Creation Protocol');
     expect(system).toContain('Subtasks remain drafts until the user confirms creation.');
