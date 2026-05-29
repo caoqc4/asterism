@@ -2786,7 +2786,7 @@ describe('App redesign v1', () => {
           status: 'completed',
           title: 'Agent API execution promotion readiness',
           input: 'pilotDecision={"executor":"agent_api"}',
-          output: 'Agent API execution promotion readiness / ready=no / requirements=5/11 / missingRequirements=write_intent_extraction,reviewed_patch_apply_boundary / writeIntentDeclaredActionEvidenceChain=missing',
+          output: 'Agent API execution promotion readiness / ready=no / requirements=5/11 / missingRequirements=write_intent_extraction,reviewed_patch_apply_boundary / targetTaskEvidenceChain=ready / selectedRuntimeRunEvidenceChain=ready / selectedRuntimeTaskEvidenceChain=ready / selectedRuntimeProviderEvidenceChain=ready / providerPreflightStatus=ready / providerPreflightRunEvidenceChain=ready / providerPreflightTaskEvidenceChain=ready / contextReadinessGateEvidenceChain=ready / runtimeActionGateEvidenceChain=ready / preStepGateEvidenceChain=ready / postStepGateEvidenceChain=missing / writeIntentDeclaredActionEvidenceChain=missing / writeIntentActionBoundary=missing',
           error: null,
           createdAt: now,
           updatedAt: now,
@@ -2821,7 +2821,7 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/已完成，结果已记录到任务动态/)).toBeTruthy();
-    expect(await screen.findByText(/Agent API 执行证据：promotion readiness missing write_intent_extraction,reviewed_patch_apply_boundary（5\/11）；Write Intent 声明证据 missing/)).toBeTruthy();
+    expect(await screen.findByText(/Agent API 执行证据：promotion readiness missing write_intent_extraction,reviewed_patch_apply_boundary（5\/11）；身份链 target=ready runtimeRun=ready runtimeTask=ready provider=ready；Provider preflight ready run=ready task=ready；门禁 context=ready runtime=ready pre=ready post=missing；Write Intent 声明证据 missing；Write Intent 边界 missing/)).toBeTruthy();
   });
 
   it('surfaces Agent API execution no-write promotion readiness in the right panel summary', async () => {
@@ -2845,7 +2845,7 @@ describe('App redesign v1', () => {
           status: 'completed',
           title: 'Agent API execution post-run promotion readiness',
           input: 'pilotDecision={"executor":"agent_api"}',
-          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / reviewedPatchApplyBoundary=ready / patchPromotionStatus=not_required / writeIntentDeclaredActionEvidenceChain=ready / terminalRunStatus=completed / terminalEvidenceSummary=output_chars=33 / terminalEvidenceSummaryChain=ready',
+          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / targetTaskEvidenceChain=ready / selectedRuntimeRunEvidenceChain=ready / selectedRuntimeTaskEvidenceChain=ready / selectedRuntimeProviderEvidenceChain=ready / providerPreflightStatus=ready / providerPreflightRunEvidenceChain=ready / providerPreflightTaskEvidenceChain=ready / contextReadinessGateEvidenceChain=ready / runtimeActionGateEvidenceChain=ready / preStepGateEvidenceChain=ready / taskMemoryCoverageGateEvidenceChain=ready / taskMemoryGuidanceGateEvidenceChain=ready / subtaskStartGateEvidenceChain=ready / postStepGateEvidenceChain=ready / reviewedPatchApplyBoundary=ready / patchPromotionStatus=not_required / writeIntentDeclaredActionEvidenceChain=ready / writeIntentActionBoundary=ready / terminalRunStatus=completed / terminalEvidenceSummary=output_chars=33 / terminalEvidenceSummaryChain=ready',
           error: null,
           createdAt: now,
           updatedAt: now,
@@ -2860,7 +2860,7 @@ describe('App redesign v1', () => {
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '开始执行当前任务');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
-    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）；Write Intent 声明证据 ready；Patch 边界 ready\/not_required；终端证据 completed\/output_chars=33/)).toBeTruthy();
+    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）；身份链 target=ready runtimeRun=ready runtimeTask=ready provider=ready；Provider preflight ready run=ready task=ready；门禁 context=ready runtime=ready pre=ready memory=ready guidance=ready subtask=ready post=ready；Write Intent 声明证据 ready；Write Intent 边界 ready；Patch 边界 ready\/not_required；终端证据 completed\/output_chars=33/)).toBeTruthy();
   });
 
   it('prefers post-run Agent API execution readiness over pre-run readiness in the right panel summary', async () => {
@@ -2897,7 +2897,7 @@ describe('App redesign v1', () => {
           status: 'completed',
           title: 'Agent API execution post-run promotion readiness',
           input: 'pilotDecision={"executor":"agent_api"}',
-          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / reviewedPatchApplyBoundary=ready / patchPromotionStatus=not_required / writeIntentDeclaredActionEvidenceChain=ready / terminalRunStatus=completed / terminalEvidenceSummary=output_chars=47 / terminalEvidenceSummaryChain=ready',
+          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / targetTaskEvidenceChain=ready / selectedRuntimeRunEvidenceChain=ready / selectedRuntimeTaskEvidenceChain=ready / selectedRuntimeProviderEvidenceChain=ready / providerPreflightStatus=ready / providerPreflightRunEvidenceChain=ready / providerPreflightTaskEvidenceChain=ready / contextReadinessGateEvidenceChain=ready / runtimeActionGateEvidenceChain=ready / preStepGateEvidenceChain=ready / taskMemoryCoverageGateEvidenceChain=ready / taskMemoryGuidanceGateEvidenceChain=ready / subtaskStartGateEvidenceChain=ready / postStepGateEvidenceChain=ready / reviewedPatchApplyBoundary=ready / patchPromotionStatus=not_required / writeIntentDeclaredActionEvidenceChain=ready / writeIntentActionBoundary=ready / terminalRunStatus=completed / terminalEvidenceSummary=output_chars=47 / terminalEvidenceSummaryChain=ready',
           error: null,
           createdAt: now,
           updatedAt: now,
@@ -2912,7 +2912,7 @@ describe('App redesign v1', () => {
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '开始执行当前任务');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
-    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）；Write Intent 声明证据 ready；Patch 边界 ready\/not_required；终端证据 completed\/output_chars=47/)).toBeTruthy();
+    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）；身份链 target=ready runtimeRun=ready runtimeTask=ready provider=ready；Provider preflight ready run=ready task=ready；门禁 context=ready runtime=ready pre=ready memory=ready guidance=ready subtask=ready post=ready；Write Intent 声明证据 ready；Write Intent 边界 ready；Patch 边界 ready\/not_required；终端证据 completed\/output_chars=47/)).toBeTruthy();
     expect(screen.queryByText(/post_step,run_evidence_persistence/)).toBeNull();
   });
 

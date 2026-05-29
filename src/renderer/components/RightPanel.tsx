@@ -900,64 +900,79 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
     .find((step) => /Agent API execution post-run promotion readiness/i.test(step.title))
     ?? agentApiPromotionSteps.at(-1);
   if (agentApiPromotionStep) {
-    const ready = readStepKeyValue(agentApiPromotionStep.output, 'ready')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'ready')
-      ?? readStepKeyValue(agentApiPromotionStep.output, 'promotionReady')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'promotionReady');
-    const requirements = readStepKeyValue(agentApiPromotionStep.output, 'requirements')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'requirements')
-      ?? readStepKeyValue(agentApiPromotionStep.output, 'promotionRequirements')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'promotionRequirements');
-    const missingRequirements = readStepKeyValue(agentApiPromotionStep.output, 'missingRequirements')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'missingRequirements')
-      ?? readStepKeyValue(agentApiPromotionStep.output, 'promotionMissingRequirements')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'promotionMissingRequirements')
-      ?? readStepKeyValue(agentApiPromotionStep.output, 'missing');
+    const readPromotionValue = (key: string) => (
+      readStepKeyValue(agentApiPromotionStep.output, key)
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, key)
+    );
+    const ready = readPromotionValue('ready')
+      ?? readPromotionValue('promotionReady');
+    const requirements = readPromotionValue('requirements')
+      ?? readPromotionValue('promotionRequirements');
+    const missingRequirements = readPromotionValue('missingRequirements')
+      ?? readPromotionValue('promotionMissingRequirements')
+      ?? readPromotionValue('missing');
     const noWorkspaceWriteRequired = (
-      readStepKeyValue(agentApiPromotionStep.output, 'noWorkspaceWriteRequired')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'noWorkspaceWriteRequired')
+      readPromotionValue('noWorkspaceWriteRequired')
     ) === 'yes';
-    const declaredActionEvidence = (
-      readStepKeyValue(agentApiPromotionStep.output, 'writeIntentDeclaredActionEvidenceChain')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'writeIntentDeclaredActionEvidenceChain')
-    );
-    const reviewedPatchApplyBoundary = (
-      readStepKeyValue(agentApiPromotionStep.output, 'reviewedPatchApplyBoundary')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'reviewedPatchApplyBoundary')
-    );
-    const patchPromotionStatus = (
-      readStepKeyValue(agentApiPromotionStep.output, 'patchPromotionStatus')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'patchPromotionStatus')
-    );
-    const terminalRunStatus = (
-      readStepKeyValue(agentApiPromotionStep.output, 'terminalRunStatus')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'terminalRunStatus')
-    );
-    const terminalEvidenceSummary = (
-      readStepKeyValue(agentApiPromotionStep.output, 'terminalEvidenceSummary')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'terminalEvidenceSummary')
-    );
-    const terminalEvidenceSummaryChain = (
-      readStepKeyValue(agentApiPromotionStep.output, 'terminalEvidenceSummaryChain')
-      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'terminalEvidenceSummaryChain')
-    );
+    const declaredActionEvidence = readPromotionValue('writeIntentDeclaredActionEvidenceChain');
+    const reviewedPatchApplyBoundary = readPromotionValue('reviewedPatchApplyBoundary');
+    const patchPromotionStatus = readPromotionValue('patchPromotionStatus');
+    const terminalRunStatus = readPromotionValue('terminalRunStatus');
+    const terminalEvidenceSummary = readPromotionValue('terminalEvidenceSummary');
+    const terminalEvidenceSummaryChain = readPromotionValue('terminalEvidenceSummaryChain');
     const label = ready === 'yes'
       ? noWorkspaceWriteRequired ? 'ready，无需工作区写入' : 'ready'
       : missingRequirements && missingRequirements !== 'none'
         ? `missing ${truncateAgentCliChatLine(missingRequirements, 72)}`
         : 'recorded';
+    const identityEvidence = [
+      ['target', readPromotionValue('targetTaskEvidenceChain')],
+      ['runtimeRun', readPromotionValue('selectedRuntimeRunEvidenceChain')],
+      ['runtimeTask', readPromotionValue('selectedRuntimeTaskEvidenceChain')],
+      ['provider', readPromotionValue('selectedRuntimeProviderEvidenceChain')],
+    ].filter((item): item is [string, string] => Boolean(item[1]));
+    const gateEvidence = [
+      ['context', readPromotionValue('contextReadinessGateEvidenceChain')],
+      ['runtime', readPromotionValue('runtimeActionGateEvidenceChain')],
+      ['pre', readPromotionValue('preStepGateEvidenceChain')],
+      ['memory', readPromotionValue('taskMemoryCoverageGateEvidenceChain')],
+      ['guidance', readPromotionValue('taskMemoryGuidanceGateEvidenceChain')],
+      ['subtask', readPromotionValue('subtaskStartGateEvidenceChain')],
+      ['post', readPromotionValue('postStepGateEvidenceChain')],
+    ].filter((item): item is [string, string] => Boolean(item[1]));
+    const providerPreflightStatus = readPromotionValue('providerPreflightStatus');
+    const providerPreflightEvidence = [
+      ['run', readPromotionValue('providerPreflightRunEvidenceChain')],
+      ['task', readPromotionValue('providerPreflightTaskEvidenceChain')],
+    ].filter((item): item is [string, string] => Boolean(item[1]));
+    const writeIntentActionBoundary = readPromotionValue('writeIntentActionBoundary');
+    const identityLabel = identityEvidence.length
+      ? `；身份链 ${identityEvidence.map(([key, value]) => `${key}=${value}`).join(' ')}`
+      : '';
+    const gateLabel = gateEvidence.length
+      ? `；门禁 ${gateEvidence.map(([key, value]) => `${key}=${value}`).join(' ')}`
+      : '';
+    const providerPreflightLabel = providerPreflightStatus || providerPreflightEvidence.length
+      ? `；Provider preflight ${[
+        providerPreflightStatus,
+        ...providerPreflightEvidence.map(([key, value]) => `${key}=${value}`),
+      ].filter(Boolean).join(' ')}`
+      : '';
     const declaredActionLabel = declaredActionEvidence === 'ready'
       ? '；Write Intent 声明证据 ready'
       : declaredActionEvidence === 'missing'
         ? '；Write Intent 声明证据 missing'
         : '';
+    const writeIntentBoundaryLabel = writeIntentActionBoundary
+      ? `；Write Intent 边界 ${writeIntentActionBoundary}`
+      : '';
     const patchBoundaryLabel = reviewedPatchApplyBoundary
       ? `；Patch 边界 ${reviewedPatchApplyBoundary}${patchPromotionStatus ? `/${patchPromotionStatus}` : ''}`
       : '';
     const terminalEvidenceLabel = terminalEvidenceSummaryChain === 'ready' && terminalEvidenceSummary
       ? `；终端证据 ${terminalRunStatus && terminalRunStatus !== 'missing' ? `${terminalRunStatus}/` : ''}${truncateAgentCliChatLine(terminalEvidenceSummary, 48)}`
       : '';
-    lines.push(`Agent API 执行证据：promotion readiness ${label}${requirements ? `（${requirements}）` : ''}${declaredActionLabel}${patchBoundaryLabel}${terminalEvidenceLabel}。`);
+    lines.push(`Agent API 执行证据：promotion readiness ${label}${requirements ? `（${requirements}）` : ''}${identityLabel}${providerPreflightLabel}${gateLabel}${declaredActionLabel}${writeIntentBoundaryLabel}${patchBoundaryLabel}${terminalEvidenceLabel}。`);
   }
 
   const nativeWorkspaceWriteStep = orderedSteps.find((step) => (
