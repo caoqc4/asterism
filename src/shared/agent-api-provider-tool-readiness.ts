@@ -44,6 +44,7 @@ export type AgentApiProviderToolReadinessServiceEvidence = {
   } | null;
   selectedRuntime?: {
     mode: 'api' | 'codex' | 'claude' | 'none';
+    provider?: string | null;
     runtimeKind: 'agent_api' | 'agent_cli' | 'none';
   } | null;
   startupProbe?: 'called' | 'never' | 'not_attempted';
@@ -199,6 +200,10 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const declarations = evidence.explicitToolDeclarations;
   const declarationPackageName = declarations?.packageName?.trim().toLowerCase() ?? '';
   const normalizedDeclaredTools = normalizeDeclaredTools(declarations?.declaredTools);
+  const selectedRuntimeProvider = normalizeProvider(evidence.selectedRuntime?.provider);
+  const configuredProvider = normalizeProvider(evidence.configuredProvider);
+  const selectedRuntimeProviderEvidenceChainReady = !selectedRuntimeProvider
+    || (Boolean(configuredProvider) && selectedRuntimeProvider === configuredProvider);
   const webSearchDeclaredTools = declaredWebSearchTools(
     declarations?.declaredTools,
     evidence.configuredProvider,
@@ -223,11 +228,15 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const untrustedWebSearchDeclaredTools = webSearchDeclaredTools.filter((tool) =>
     !trustedWebSearchToolIdentityKeys.has(declaredToolIdentityKey(tool)));
 
-  if (evidence.selectedRuntime?.runtimeKind === 'agent_api' && evidence.selectedRuntime.mode === 'api') {
+  if (
+    evidence.selectedRuntime?.runtimeKind === 'agent_api'
+    && evidence.selectedRuntime.mode === 'api'
+    && selectedRuntimeProviderEvidenceChainReady
+  ) {
     satisfiedRequirements.push('selected_api_runtime');
   }
 
-  if (evidence.providerConfigured === true && normalizeProvider(evidence.configuredProvider)) {
+  if (evidence.providerConfigured === true && configuredProvider) {
     satisfiedRequirements.push('provider_configured');
   }
 
@@ -272,7 +281,9 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
       `providerToolRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `selectedApiRuntime=${satisfiedRequirementSet.has('selected_api_runtime') ? 'ready' : 'missing'}`,
       `providerConfigured=${satisfiedRequirementSet.has('provider_configured') ? 'ready' : 'missing'}`,
-      `configuredProvider=${normalizeProvider(evidence.configuredProvider) || 'missing'}`,
+      `configuredProvider=${configuredProvider || 'missing'}`,
+      `selectedRuntimeProvider=${selectedRuntimeProvider || 'missing'}`,
+      `selectedRuntimeProviderEvidenceChain=${selectedRuntimeProviderEvidenceChainReady ? 'ready' : 'missing'}`,
       `startupProbe=${evidence.startupProbe ?? 'missing'}`,
       `providerOwnedMetadata=${satisfiedRequirementSet.has('provider_owned_metadata') ? 'ready' : 'missing'}`,
       `providerMetadataMatchesSelected=${metadataMatchesConfiguredProvider ? 'yes' : 'no'}`,

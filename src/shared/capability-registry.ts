@@ -571,6 +571,7 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
     providerOwnedMetadata: providerToolMetadata.providerOwnedMetadata,
     selectedRuntime: {
       mode: selected ? 'api' : 'none',
+      provider: selected ? configuredProvider || null : null,
       runtimeKind: selected ? 'agent_api' : 'none',
     },
     startupProbe: 'never',
@@ -608,6 +609,12 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
         : null,
       scalarSummaryValue(providerToolReadiness.summary, 'configuredProvider')
         ? `configuredProvider=${scalarSummaryValue(providerToolReadiness.summary, 'configuredProvider')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'selectedRuntimeProvider')
+        ? `selectedRuntimeProvider=${scalarSummaryValue(providerToolReadiness.summary, 'selectedRuntimeProvider')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'selectedRuntimeProviderEvidenceChain')
+        ? `selectedRuntimeProviderEvidenceChain=${scalarSummaryValue(providerToolReadiness.summary, 'selectedRuntimeProviderEvidenceChain')}`
         : null,
       scalarSummaryValue(providerToolReadiness.summary, 'providerOwnedMetadata')
         ? `providerOwnedMetadata=${scalarSummaryValue(providerToolReadiness.summary, 'providerOwnedMetadata')}`
