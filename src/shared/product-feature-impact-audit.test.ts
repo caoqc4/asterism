@@ -1307,4 +1307,12 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('when evidenceRunId is absent');
     expect(decisions?.evidence.join(' ')).toContain('repeated no-Run policy-review timeline events');
   });
+
+  it('records stable no-Run scheduler Decision durable source identity coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('system-sourced scheduler Decision approval plans now use that same stable target-task-plus-title identity');
+    expect(decisions?.evidence.join(' ')).toContain('durable Decision sourceId');
+    expect(decisions?.evidence.join(' ')).toContain('suppresses later duplicate timeline proposals after refresh');
+  });
 });

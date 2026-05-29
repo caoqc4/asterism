@@ -286,7 +286,7 @@ describe('Taskplane writeback approval items', () => {
       plan: {
         action: 'decision.create',
         input: {
-          sourceId: 'timeline_scheduler_run_limit',
+          sourceId: 'scheduler:task_1:确认定时/事件 Agent 达到每日运行上限后的下一步',
           sourceLabel: 'Scheduler/background Decision proposal',
           sourceType: 'system',
         },
@@ -333,6 +333,38 @@ describe('Taskplane writeback approval items', () => {
       id: 'writeback:scheduler-task_1-确认定时-事件-agent-达到每日运行上限后的下一步:scheduler_decision:确认定时-事件-agent-达到每日运行上限后的下一步',
       runId: 'timeline_scheduler_run_limit_1',
     });
+  });
+
+  it('filters scheduler Decision proposals already persisted with stable no-Run source identity', () => {
+    const title = '确认定时/事件 Agent 达到每日运行上限后的下一步';
+    const items = buildTaskplaneWritebackApprovalItems({
+      existing: {
+        decisions: [{
+          sourceId: `scheduler:task_1:${title}`,
+          title,
+        }],
+      },
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_run_limit_again',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['等待下一次运行窗口', '调整 Standing Approval 每日运行上限'],
+          proposedOutcome: '等待下一次运行窗口',
+          rationale: '定时任务达到每日运行上限，需要确认下一步。',
+          targetTaskId: 'task_1',
+          title,
+        }),
+        createdAt: '2026-05-25T00:03:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
   });
 
   it('turns local-recovery scheduler Decision proposal events into the same approval queue', () => {

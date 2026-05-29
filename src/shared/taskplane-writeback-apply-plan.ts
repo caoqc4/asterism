@@ -311,6 +311,7 @@ export function buildArtifactWritebackApplyPlan(params: {
 
 export function buildStructuredWritebackApplyPlan(params: {
   proposal: TaskplaneStructuredWritebackProposal;
+  sourceId?: string;
   sourceLabel?: string;
   sourceType?: DecisionSourceType;
   taskId: string;
@@ -336,7 +337,7 @@ export function buildStructuredWritebackApplyPlan(params: {
             }
           : null,
         scope: 'task',
-        sourceId: intent.evidenceRunId,
+        sourceId: params.sourceId ?? intent.evidenceRunId,
         sourceLabel: params.sourceLabel ?? 'Agent CLI Write Intent',
         sourceType: params.sourceType ?? 'run',
         taskId: params.taskId,

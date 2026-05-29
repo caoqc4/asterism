@@ -280,10 +280,11 @@ function buildSchedulerDecisionApprovalItem(params: {
     intent,
     title: `调度决策提案：${intent.title}`,
   };
-  if (hasStructuredWriteback(params.existing, evidenceRunId, proposal)) return null;
+  if (hasStructuredWriteback(params.existing, approvalSourceId, proposal)) return null;
 
   const plan = buildStructuredWritebackApplyPlan({
     proposal,
+    sourceId: approvalSourceId,
     sourceLabel: 'Scheduler/background Decision proposal',
     sourceType: payload.evidenceRunId?.trim() ? 'run' : 'system',
     taskId: params.taskId,
