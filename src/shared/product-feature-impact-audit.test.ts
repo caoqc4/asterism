@@ -1477,6 +1477,10 @@ describe('product feature impact audit', () => {
       .toContain('Right-panel Agent API decomposition requests now call the task-bound ai:decomposeProject adapter');
     expect(decomposition?.evidence.join(' '))
       .toContain('confirm through subtask.create_many TaskplaneWritebackApplyPlan with agent_api_decomposition source plus runtimeContract evidence');
+    expect(decomposition?.evidence.join(' '))
+      .toContain('Right-panel Agent API decomposition confirmation now re-evaluates evaluateAgentApiDecompositionPromotionReadinessFromEvidence');
+    expect(decomposition?.evidence.join(' '))
+      .toContain('missing runtime identity evidence blocks apply');
     expect(decomposition?.gaps.join(' '))
       .toContain('right-panel explicit decomposition request and Tasks project action');
     expect(decomposition?.nextActions.join(' '))

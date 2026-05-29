@@ -90,6 +90,7 @@ import {
   parseProductGoalDraft,
   type AgentRuntimeAdapterCapabilities,
 } from '@shared/agent-runtime-goal';
+import { evaluateAgentApiDecompositionPromotionReadinessFromEvidence } from '@shared/ai-runtime-invocation';
 import {
   buildNativeGoalAuditReadinessEvidence,
   evaluateNativeGoalForwardingReadiness,
@@ -2503,6 +2504,37 @@ export function RightPanel({
       source: draftSource,
       subtasks: taskDecompositionDraft.subtasks,
     });
+    if (draftSource === 'agent_api_decomposition') {
+      const promotionReadiness = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+        applyPlan: plan,
+        parentTaskId: activeTaskId,
+        reversibleProposalCard: {
+          acceptanceCriteria: taskDecompositionDraft.subtasks.map((subtask) => subtask.acceptanceCriteria),
+          dependencies: taskDecompositionDraft.subtasks.map((subtask) => subtask.dependency ?? null),
+          parentTaskId: activeTaskId,
+          proposalId: `project_decomposition:${activeTaskId}`,
+          status: 'ready',
+          subtaskCount: taskDecompositionDraft.subtasks.length,
+          subtaskSummaries: taskDecompositionDraft.subtasks.map((subtask) => subtask.summary),
+          subtaskTitles: taskDecompositionDraft.subtasks.map((subtask) => subtask.title),
+        },
+        selectedRuntimeContract: taskDecompositionDraft.invocation
+          ? {
+              evidenceRunId: taskDecompositionDraft.runId,
+              invocationLayer: taskDecompositionDraft.invocation.layer,
+              parentTaskId: activeTaskId,
+              phase: taskDecompositionDraft.invocation.phase,
+              provider: readSlashSummaryValue(taskDecompositionDraft.promotionReadiness?.summary, 'selectedRuntimeProvider'),
+              runtimeMode: taskDecompositionDraft.invocation.runtime.mode,
+            }
+          : null,
+      });
+      if (!promotionReadiness.ready) {
+        appendSysMsg(promotionReadiness.summary);
+        setCreatingDecompositionChildren(false);
+        return;
+      }
+    }
     try {
       const result = window.api?.applyTaskplaneWriteback
         ? await window.api.applyTaskplaneWriteback({ plan, taskId: activeTaskId })

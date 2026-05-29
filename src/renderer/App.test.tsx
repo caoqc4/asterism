@@ -2788,6 +2788,51 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('blocks right-panel Agent API decomposition confirmation when runtime identity evidence is missing', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    vi.mocked(harness.api.decomposeProject!).mockResolvedValueOnce({
+      parentGoal: '完成董事会材料修订',
+      subtasks: [
+        {
+          title: '确认材料边界',
+          summary: '梳理董事会材料范围、截止时间和关键输入。',
+          acceptanceCriteria: '范围和输入已确认。',
+          dependency: null,
+          rationale: '这是可独立验收的第一步。',
+        },
+      ],
+      review: '按交付阶段拆解，确认后创建子任务。',
+      nextStep: '确认后进入第一个子任务。',
+      evidenceRunId: 'agent_api_decomposition:task_risk:missing_runtime',
+      promotionReadiness: {
+        ready: true,
+        summary: 'Agent API decomposition promotion readiness / ready=yes / selectedRuntimeProvider=openai / promotionMissingRequirements=none',
+        satisfiedRequirements: [
+          'selected_runtime_contract',
+          'parent_task_identity',
+          'reversible_proposal_card',
+          'subtask_create_many_apply_plan',
+          'agent_api_decomposition_source',
+          'operator_confirmation_boundary',
+          'draft_only_timeline_evidence',
+        ],
+        missingRequirements: [],
+      },
+    });
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '请拆解成子任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(await screen.findByText('子任务草案')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认创建子任务' }));
+
+    expect(await screen.findByText(/selected_runtime_contract/)).toBeTruthy();
+    expect(harness.api.applyTaskplaneWriteback).not.toHaveBeenCalled();
+  });
+
   it('keeps /goal product-owned in task chat and persists it as the Taskplane task goal', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
