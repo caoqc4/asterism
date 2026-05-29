@@ -12,6 +12,7 @@ describe('Agent API provider tool readiness', () => {
       providerConfigured: true,
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -61,6 +62,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -70,10 +72,10 @@ describe('Agent API provider tool readiness', () => {
       status: 'blocked',
       toolReadiness: 'not_declared',
       satisfiedRequirements: [
-        'selected_api_runtime',
         'no_startup_probe',
       ],
       missingRequirements: [
+        'selected_api_runtime',
         'provider_configured',
         'provider_owned_metadata',
         'explicit_tool_declaration',
@@ -81,6 +83,8 @@ describe('Agent API provider tool readiness', () => {
     });
     expect(readiness.summary).toContain('providerConfigured=missing');
     expect(readiness.summary).toContain('configuredProvider=missing');
+    expect(readiness.summary).toContain('selectedRuntimeProvider=openai');
+    expect(readiness.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
     expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
     expect(readiness.summary).toContain('explicitToolDeclarationPackage=@openai/agents');
     expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
@@ -120,6 +124,38 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
   });
 
+  it('requires selected API runtime provider identity before satisfying runtime selection', () => {
+    const metadata = deriveAgentApiProviderToolMetadata('openai');
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      ...metadata,
+      configuredProvider: 'openai',
+      providerConfigured: true,
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'blocked',
+      toolReadiness: 'not_declared',
+      satisfiedRequirements: [
+        'provider_configured',
+        'no_startup_probe',
+        'provider_owned_metadata',
+      ],
+      missingRequirements: [
+        'selected_api_runtime',
+        'explicit_tool_declaration',
+      ],
+    });
+    expect(readiness.summary).toContain('selectedApiRuntime=missing');
+    expect(readiness.summary).toContain('configuredProvider=openai');
+    expect(readiness.summary).toContain('selectedRuntimeProvider=missing');
+    expect(readiness.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+  });
+
   it('derives packaged provider metadata without declaring web/search tools', () => {
     const metadata = deriveAgentApiProviderToolMetadata('openai');
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
@@ -128,6 +164,7 @@ describe('Agent API provider tool readiness', () => {
       providerConfigured: true,
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -173,6 +210,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -220,6 +258,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -251,6 +290,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -290,6 +330,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -332,6 +373,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -363,6 +405,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -395,6 +438,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -428,6 +472,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -470,6 +515,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -505,6 +551,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -543,6 +590,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -583,6 +631,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -619,6 +668,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -654,6 +704,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'fal-openrouter',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -691,6 +742,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'fal-openrouter',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -710,6 +762,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'fal-openrouter',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -745,6 +798,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'router',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -781,6 +835,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'ai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'never',
@@ -815,6 +870,7 @@ describe('Agent API provider tool readiness', () => {
       },
       selectedRuntime: {
         mode: 'api',
+        provider: 'openai',
         runtimeKind: 'agent_api',
       },
       startupProbe: 'called',

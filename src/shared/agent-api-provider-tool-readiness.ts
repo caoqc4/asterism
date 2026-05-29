@@ -202,8 +202,9 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const normalizedDeclaredTools = normalizeDeclaredTools(declarations?.declaredTools);
   const selectedRuntimeProvider = normalizeProvider(evidence.selectedRuntime?.provider);
   const configuredProvider = normalizeProvider(evidence.configuredProvider);
-  const selectedRuntimeProviderEvidenceChainReady = !selectedRuntimeProvider
-    || (Boolean(configuredProvider) && selectedRuntimeProvider === configuredProvider);
+  const selectedRuntimeProviderEvidenceChainReady = Boolean(selectedRuntimeProvider)
+    && Boolean(configuredProvider)
+    && selectedRuntimeProvider === configuredProvider;
   const webSearchDeclaredTools = declaredWebSearchTools(
     declarations?.declaredTools,
     evidence.configuredProvider,

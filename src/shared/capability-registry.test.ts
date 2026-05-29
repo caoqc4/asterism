@@ -312,7 +312,7 @@ describe('capability registry', () => {
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
       status: 'disabled',
       configured: false,
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=blocked / providerToolRequirements=2/5 / providerToolMissingRequirements=provider_configured,provider_owned_metadata,explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=missing / configuredProvider=missing'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=blocked / providerToolRequirements=1/5 / providerToolMissingRequirements=selected_api_runtime,provider_configured,provider_owned_metadata,explicit_tool_declaration / selectedApiRuntime=missing / providerConfigured=missing / configuredProvider=missing / selectedRuntimeProvider=missing / selectedRuntimeProviderEvidenceChain=missing'),
     });
   });
 

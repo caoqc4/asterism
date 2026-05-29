@@ -1248,6 +1248,14 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('colon, dot, or slash provider-namespace mismatches');
   });
 
+  it('records mandatory Agent API selected-runtime provider identity evidence', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+    const evidence = capabilities?.evidence.join(' ');
+
+    expect(evidence).toContain('requires nonempty selected-runtime provider identity to match configured provider identity before satisfying selected_api_runtime');
+    expect(evidence).toContain('missing or mismatched selected-runtime provider identity');
+  });
+
   it('records deduplicated Agent API provider tool declaration evidence', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
