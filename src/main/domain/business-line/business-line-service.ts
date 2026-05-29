@@ -225,15 +225,6 @@ export class BusinessLineService {
     const businessLine = await this.businessLineRepository.findById(input.businessLineId);
     if (!businessLine) throw new Error(`Business line not found: ${input.businessLineId}`);
     const review = await this.businessLineRepository.createReview(input);
-    await this.businessLineRepository.createRecord({
-      businessLineId: input.businessLineId,
-      type: 'review',
-      source: input.sourceActionId ? `next_action:${input.sourceActionId}` : 'post_action_review',
-      summary: input.resultSummary,
-      confidence: input.confidence ?? 70,
-      linkedActionId: input.sourceActionId ?? null,
-      shouldAffectFutureContext: true,
-    });
     for (const suggestion of input.skillUpdateSuggestions ?? []) {
       if (!suggestion.trim()) continue;
       await this.businessLineRepository.createSkillRevision({
@@ -534,15 +525,34 @@ export class BusinessLineService {
         decisionRecords.push(this.projectDecisionRecord(params.businessLine.id, decision));
       }
     }
+    const nativeRecords = this.nativeRecordsWithoutProjectedReviewDuplicates(
+      params.nativeRecords,
+      params.reviews,
+    );
 
     return newestFirst([
-      ...params.nativeRecords,
+      ...nativeRecords,
       ...sourceContexts.map((source) => this.projectSourceContextRecord(params.businessLine.id, source)),
       ...artifacts.map((artifact) => this.projectArtifactRecord(params.businessLine.id, artifact)),
       ...taskFiles.map((file) => this.projectTaskFileRecord(params.businessLine.id, file)),
       ...decisionRecords,
       ...params.reviews.map((review) => this.projectReviewRecord(params.businessLine.id, review)),
     ]);
+  }
+
+  private nativeRecordsWithoutProjectedReviewDuplicates(
+    nativeRecords: BusinessLineRecord[],
+    reviews: BusinessLineReview[],
+  ): BusinessLineRecord[] {
+    return nativeRecords.filter((record) =>
+      !reviews.some((review) => this.isStructuredReviewMirrorRecord(record, review)));
+  }
+
+  private isStructuredReviewMirrorRecord(record: BusinessLineRecord, review: BusinessLineReview): boolean {
+    if (record.type !== 'review') return false;
+    if (record.source !== 'post_action_review' && !record.source.startsWith('next_action:')) return false;
+    return record.summary.trim() === review.resultSummary.trim()
+      && (record.linkedActionId ?? null) === (review.sourceActionId ?? null);
   }
 
   private async decisionBelongsToBusinessLine(

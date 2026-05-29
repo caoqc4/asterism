@@ -121,6 +121,8 @@ describe('BusinessLineService', () => {
     });
 
     expect(reviewed.records.some((record) => record.type === 'review')).toBe(true);
+    expect(reviewed.records.filter((record) => record.type === 'review')).toHaveLength(1);
+    expect(reviewed.contextPack.latestRecords.filter((record) => record.type === 'review')).toHaveLength(1);
     expect(reviewed.learning.skillRevisions).toHaveLength(1);
     expect(reviewed.learning.skillRevisions[0]?.status).toBe('proposed');
     expect(decisionService.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -172,6 +174,68 @@ describe('BusinessLineService', () => {
         type: 'progress',
       }),
     ]));
+  });
+
+  it('uses structured reviews as canonical review memory and hides legacy native mirrors', async () => {
+    const created = await service.create({
+      title: 'Review memory line',
+      goal: 'Keep one review memory entry',
+      kind: 'software_product',
+    });
+
+    const reviewed = await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'Structured review should appear once.',
+      confidence: 78,
+    });
+    const sourceReview = reviewed.learning.reviews[0]!;
+
+    expect(reviewed.records.filter((record) => record.type === 'review')).toEqual([
+      expect.objectContaining({
+        id: `review:${sourceReview.id}`,
+        provenance: expect.objectContaining({
+          sourceType: 'review',
+          sourceId: sourceReview.id,
+        }),
+      }),
+    ]);
+    expect(reviewed.contextPack.latestRecords.filter((record) => record.type === 'review')).toHaveLength(1);
+
+    await businessLineRepository.createRecord({
+      businessLineId: created.id,
+      type: 'review',
+      source: 'post_action_review',
+      summary: 'Structured review should appear once.',
+      confidence: 78,
+      linkedActionId: null,
+      shouldAffectFutureContext: true,
+    });
+    await businessLineRepository.createRecord({
+      businessLineId: created.id,
+      type: 'review',
+      source: 'template:custom:review_prompt',
+      summary: 'Review prompt: This native prompt should remain visible.',
+      confidence: 75,
+      linkedActionId: null,
+      shouldAffectFutureContext: false,
+    });
+
+    const workspace = await service.getWorkspace(created.id);
+    expect(workspace?.records.filter((record) => record.type === 'review')).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: `review:${sourceReview.id}`,
+        provenance: expect.objectContaining({ sourceType: 'review' }),
+      }),
+      expect.objectContaining({
+        source: 'template:custom:review_prompt',
+        provenance: expect.objectContaining({ sourceType: 'business_line_record' }),
+      }),
+    ]));
+    expect(workspace?.records.some((record) =>
+      record.type === 'review'
+      && record.source === 'post_action_review'
+      && record.provenance?.sourceType === 'business_line_record')).toBe(false);
+    expect(workspace?.contextPack.latestRecords.filter((record) => record.type === 'review')).toHaveLength(1);
   });
 
   it('accepts non-risky skill revisions inline', async () => {
