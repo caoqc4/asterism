@@ -1615,6 +1615,7 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blocked=1');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 1/1.');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runLimitDecisionProposals=proposed');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runLimitDecisionProposalTasks=task_auto');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('automationMissingRequirements=none');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=not_started');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
@@ -1759,6 +1760,7 @@ describe('SchedulerService', () => {
     });
     expect(sweepResult.runtimeStartMissingRequirements).toContain('run_limit_count');
     expect(sweepResult.summary).toContain('runLimitAccountingDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('runLimitAccountingDecisionProposalTasks=task_auto');
     expect(sweepResult.summary).toContain('runLimitDecisionProposals=none');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
@@ -1905,6 +1907,7 @@ describe('SchedulerService', () => {
     });
     expect(sweepResult.automationMissingRequirements).toContain('inputs');
     expect(sweepResult.summary).toContain('readinessDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('readinessDecisionProposalTasks=task_auto');
     expect(sweepResult.summary).toContain('automationMissingRequirements=inputs');
     expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
@@ -2077,6 +2080,7 @@ describe('SchedulerService', () => {
     expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=none');
     expect(sweepResult.summary).toContain('duplicateCandidateTaskIds=task_auto');
     expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposalTasks=task_auto');
     expect(sweepResult.summary).toContain('runLimitDecisionProposals=none');
     expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
@@ -2167,6 +2171,7 @@ describe('SchedulerService', () => {
     });
     expect(sweepResult.summary).toContain('duplicateCandidateTaskIds=task_auto,task_beta');
     expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposals=proposed,proposed');
+    expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposalTasks=task_auto,task_beta');
     const proposalPayloads = timelinePort.recordTimelineEvent.mock.calls
       .map((call) => call[0])
       .filter((event) => event.type === 'panel.scheduler_decision_proposed')

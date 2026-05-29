@@ -333,8 +333,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('operator-started runs return blocked recovery evidence instead of throwing to IPC');
     expect(decisions?.evidence.join(' ')).toContain('completed runs without reviewable output or failureReason');
     expect(decisions?.evidence.join(' ')).toContain('terminalEvidenceDecisionProposals summary evidence');
-    expect(decisions?.evidence.join(' ')).toContain('duplicate task-source candidates now skip duplicate runtime starts');
-    expect(decisions?.evidence.join(' ')).toContain('duplicateCandidateDecisionProposals summary evidence');
+    expect(decisions?.evidence.join(' ')).toMatch(/duplicate task-source candidates now skip duplicate runtime starts[\s\S]*duplicateCandidateDecisionProposals summary evidence[\s\S]*task-id evidence for run-limit, run-limit accounting, readiness, and duplicate-candidate scheduler Decision proposals/);
     expect(decisions?.evidence.join(' ')).toContain('stale-run recovery now routes each recovered run');
     expect(decisions?.evidence.join(' ')).toContain('staleRunRecoveryDecisionProposals summary evidence');
     expect(decisions?.evidence.join(' ')).toContain('DecisionService.draft is registered as a task-bound decision_draft entrypoint');

@@ -505,9 +505,13 @@ export class SchedulerService {
       const results: ScheduledEventAgentTriggerResult[] = [];
       const plansByTaskId = new Map<string, AgentScheduledEventTriggerPlan>();
       const runLimitDecisionProposalStatuses: string[] = [];
+      const runLimitDecisionProposalTaskIds: string[] = [];
       const runLimitAccountingDecisionProposalStatuses: string[] = [];
+      const runLimitAccountingDecisionProposalTaskIds: string[] = [];
       const readinessDecisionProposalStatuses: string[] = [];
+      const readinessDecisionProposalTaskIds: string[] = [];
       const duplicateCandidateDecisionProposalStatuses: string[] = [];
+      const duplicateCandidateDecisionProposalTaskIds: string[] = [];
 
       for (const task of uniqueTasks) {
         activeSweepTask = task;
@@ -522,8 +526,9 @@ export class SchedulerService {
             .catch((error: unknown) => ({
               status: 'failed' as const,
               summary: `runLimitDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
-            }));
+          }));
           runLimitDecisionProposalStatuses.push(proposal.status);
+          runLimitDecisionProposalTaskIds.push(task.id);
         } else if (isScheduledEventAutomationReadinessBlocked(result)) {
           const proposal = await this.proposeScheduledEventReadinessBlockedDecision(task, result.plan, now)
             .catch((error: unknown) => ({
@@ -531,6 +536,7 @@ export class SchedulerService {
               summary: `readinessDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
             }));
           readinessDecisionProposalStatuses.push(proposal.status);
+          readinessDecisionProposalTaskIds.push(task.id);
         } else if (isScheduledEventRunLimitAccountingBlocked(result)) {
           const proposal = await this.proposeScheduledEventRunLimitAccountingDecision(task, result.plan, now)
             .catch((error: unknown) => ({
@@ -538,6 +544,7 @@ export class SchedulerService {
               summary: `runLimitAccountingDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
             }));
           runLimitAccountingDecisionProposalStatuses.push(proposal.status);
+          runLimitAccountingDecisionProposalTaskIds.push(task.id);
         }
       }
 
@@ -555,6 +562,7 @@ export class SchedulerService {
             summary: `duplicateCandidateDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
           }));
         duplicateCandidateDecisionProposalStatuses.push(proposal.status);
+        duplicateCandidateDecisionProposalTaskIds.push(task.id);
       }
 
       const startedRunCount = results.filter((result) => result.status === 'started').length;
@@ -623,10 +631,14 @@ export class SchedulerService {
         `failureDecisionProposals=${failureDecisionProposals.length ? failureDecisionProposals.join(',') : 'none'}`,
         `terminalEvidenceDecisionProposals=${terminalEvidenceDecisionProposals.length ? terminalEvidenceDecisionProposals.join(',') : 'none'}`,
         `runLimitDecisionProposals=${runLimitDecisionProposalStatuses.length ? runLimitDecisionProposalStatuses.join(',') : 'none'}`,
+        `runLimitDecisionProposalTasks=${runLimitDecisionProposalTaskIds.length ? runLimitDecisionProposalTaskIds.join(',') : 'none'}`,
         `runLimitAccountingDecisionProposals=${runLimitAccountingDecisionProposalStatuses.length ? runLimitAccountingDecisionProposalStatuses.join(',') : 'none'}`,
+        `runLimitAccountingDecisionProposalTasks=${runLimitAccountingDecisionProposalTaskIds.length ? runLimitAccountingDecisionProposalTaskIds.join(',') : 'none'}`,
         `readinessDecisionProposals=${readinessDecisionProposalStatuses.length ? readinessDecisionProposalStatuses.join(',') : 'none'}`,
+        `readinessDecisionProposalTasks=${readinessDecisionProposalTaskIds.length ? readinessDecisionProposalTaskIds.join(',') : 'none'}`,
         `duplicateCandidateTaskIds=${duplicateTaskIds.length ? duplicateTaskIds.join(',') : 'none'}`,
         `duplicateCandidateDecisionProposals=${duplicateCandidateDecisionProposalStatuses.length ? duplicateCandidateDecisionProposalStatuses.join(',') : 'none'}`,
+        `duplicateCandidateDecisionProposalTasks=${duplicateCandidateDecisionProposalTaskIds.length ? duplicateCandidateDecisionProposalTaskIds.join(',') : 'none'}`,
         `automationMissingRequirements=${automationMissingRequirements.length ? automationMissingRequirements.join(',') : 'none'}`,
         `automationSatisfiedRequirements=${automationSatisfiedRequirements.length ? automationSatisfiedRequirements.join(',') : 'none'}`,
         `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
