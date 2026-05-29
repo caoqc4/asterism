@@ -2045,7 +2045,7 @@ describe('ai runtime invocation contract', () => {
     expect(wrongProvider.summary).toContain('selectedRuntimeProvider=anthropic');
     expect(wrongProvider.summary).toContain('configuredProvider=openai');
     expect(wrongProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
-    expect(wrongProvider.summary).toContain('configuredProviderEvidenceChain=missing');
+    expect(wrongProvider.summary).toContain('configuredProviderEvidenceChain=ready');
 
     const missingProvider = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
@@ -2064,7 +2064,30 @@ describe('ai runtime invocation contract', () => {
     });
     expect(missingProvider.summary).toContain('selectedRuntimeProvider=missing');
     expect(missingProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
-    expect(missingProvider.summary).toContain('configuredProviderEvidenceChain=missing');
+    expect(missingProvider.summary).toContain('configuredProviderEvidenceChain=ready');
+  });
+
+  it('requires Agent API execution provider configuration evidence before selected runtime provider identity can pass', () => {
+    const notConfigured = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      providerVisiblePreflight: {
+        ...completeAgentApiExecutionPromotionEvidence().providerVisiblePreflight,
+        providerConfigured: false,
+      },
+    });
+
+    expect(notConfigured).toMatchObject({
+      ready: false,
+      missingRequirements: expect.arrayContaining([
+        'selected_runtime_contract',
+        'provider_visible_preflight',
+      ]),
+    });
+    expect(notConfigured.summary).toContain('providerConfigured=missing');
+    expect(notConfigured.summary).toContain('configuredProvider=openai');
+    expect(notConfigured.summary).toContain('configuredProviderEvidenceChain=missing');
+    expect(notConfigured.summary).toContain('selectedRuntimeProvider=openai');
+    expect(notConfigured.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
   });
 
   it('requires Agent API execution selected runtime evidence to include the Pilot executor decision', () => {

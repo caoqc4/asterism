@@ -1480,8 +1480,8 @@ describe('product feature impact audit', () => {
     const evidence = rightPanel?.evidence.join(' ');
 
     expect(evidence).toContain('configuredProviderEvidenceChain');
-    expect(evidence).toContain('providerConfigured=true is visible as configuration evidence only');
-    expect(evidence).toContain('provider-visible preflight still requires matching selected-runtime provider identity');
+    expect(evidence).toContain('selected-runtime provider identity now requires providerConfigured=true plus a matching configured provider');
+    expect(evidence).toContain('provider-visible preflight still requires same-run and target-task identity plus no-startup-probe evidence');
   });
 
   it('records real no-write API RunService promotion evidence', () => {

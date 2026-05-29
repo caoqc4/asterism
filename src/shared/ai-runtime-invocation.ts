@@ -1056,11 +1056,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const selectedRuntimeTaskEvidenceChainReady = Boolean(selectedRuntimeTaskId)
     && Boolean(targetTaskId)
     && selectedRuntimeTaskId === targetTaskId;
+  const configuredProviderEvidenceChainReady = evidence.providerVisiblePreflight?.providerConfigured === true
+    && Boolean(configuredProvider);
   const selectedRuntimeProviderEvidenceChainReady = Boolean(selectedRuntimeProvider)
-    && Boolean(configuredProvider)
+    && configuredProviderEvidenceChainReady
     && selectedRuntimeProvider === configuredProvider;
-  const configuredProviderEvidenceChainReady = Boolean(configuredProvider)
-    && selectedRuntimeProviderEvidenceChainReady;
   const writeIntentRunEvidenceChainReady = Boolean(writeIntentRunId)
     && Boolean(runEvidenceId)
     && writeIntentRunId === runEvidenceId;
