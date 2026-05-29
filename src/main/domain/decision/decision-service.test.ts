@@ -2086,6 +2086,7 @@ describe('DecisionService', () => {
     expect(sandboxPatchPromotionApplyService.apply).toHaveBeenCalledWith('run_checkpoint_patch_1', {
       operatorConfirmed: true,
       operatorId: 'local_operator',
+      operatorSurface: 'decision_checkpoint_resume',
     });
     expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
       'run_checkpoint_patch_1',

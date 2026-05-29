@@ -93,6 +93,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
       checkpointId: 'checkpoint_patch_1',
       confirmed: true,
       operatorId: 'local_operator',
+      surface: 'service_explicit_apply',
       runId: 'run_patch_1',
       taskId: 'task_1',
     },
@@ -166,6 +167,8 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceReadySelectedRuntimeContract=${scalarValue(serviceEvidenceReady.summary, 'selectedRuntimeContract') ?? 'missing'}`);
   console.log(`serviceEvidenceReadyTargetTaskEvidenceChain=${scalarValue(serviceEvidenceReady.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceReadyOperatorApplyEvidenceChain=${scalarValue(serviceEvidenceReady.summary, 'operatorApplyEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyOperatorApplySurface=${scalarValue(serviceEvidenceReady.summary, 'operatorApplySurface') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyOperatorApplySurfaceEvidenceChain=${scalarValue(serviceEvidenceReady.summary, 'operatorApplySurfaceEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceReadySameRunId=${scalarValue(serviceEvidenceReady.summary, 'sameRunId') ?? 'missing'}`);
   console.log(`serviceEvidenceReadyPostApplyFilesMatched=${scalarValue(serviceEvidenceReady.summary, 'postApplyFilesMatched') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeRun=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') ?? 'missing'}`);
@@ -186,6 +189,8 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceTargetTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceCheckpointEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'checkpointEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceOperatorId=${scalarValue(serviceEvidencePartial.summary, 'operatorId') ?? 'missing'}`);
+  console.log(`serviceEvidenceOperatorApplySurface=${scalarValue(serviceEvidencePartial.summary, 'operatorApplySurface') ?? 'missing'}`);
+  console.log(`serviceEvidenceOperatorApplySurfaceEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'operatorApplySurfaceEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceOperatorApplyTask=${scalarValue(serviceEvidencePartial.summary, 'operatorApplyTask') ?? 'missing'}`);
   console.log(`serviceEvidenceOperatorApplyRun=${scalarValue(serviceEvidencePartial.summary, 'operatorApplyRun') ?? 'missing'}`);
   console.log(`serviceEvidenceOperatorApplyCheckpoint=${scalarValue(serviceEvidencePartial.summary, 'operatorApplyCheckpoint') ?? 'missing'}`);
@@ -226,6 +231,8 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || scalarValue(serviceEvidenceReady.summary, 'selectedRuntimeContract') !== 'ready'
     || scalarValue(serviceEvidenceReady.summary, 'targetTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceReady.summary, 'operatorApplyEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceReady.summary, 'operatorApplySurface') !== 'service_explicit_apply'
+    || scalarValue(serviceEvidenceReady.summary, 'operatorApplySurfaceEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceReady.summary, 'sameRunId') !== 'run_patch_1'
     || scalarValue(serviceEvidenceReady.summary, 'postApplyFilesMatched') !== 'yes'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') !== 'missing'
@@ -246,6 +253,8 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || (scalarValue(serviceEvidencePartial.summary, 'targetTaskEvidenceChain') ?? 'missing') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'checkpointEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'operatorId') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'operatorApplySurface') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'operatorApplySurfaceEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'operatorApplyTask') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'operatorApplyRun') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'operatorApplyCheckpoint') !== 'missing'

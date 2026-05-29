@@ -668,6 +668,7 @@ export function registerIpcHandlers(): void {
     const result = await services.sandboxPatchPromotionApplyService.apply(input.checkpointId, {
       operatorConfirmed: true,
       operatorId: 'local_operator',
+      operatorSurface: 'ipc_explicit_apply',
     });
     const promotion = result.promotion;
     if (promotion) {

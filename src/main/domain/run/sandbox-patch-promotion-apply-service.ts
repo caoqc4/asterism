@@ -34,6 +34,11 @@ type RuntimePatchPromotionSelectedRuntimeContractResolver = (
   taskId: string,
 ) => Promise<RuntimePatchPromotionSelectedRuntimeContract | null>;
 
+export type SandboxPatchPromotionApplySurface =
+  | 'decision_checkpoint_resume'
+  | 'ipc_explicit_apply'
+  | 'service_explicit_apply';
+
 export class SandboxPatchPromotionApplyService {
   constructor(
     private readonly preflightService: Pick<SandboxPatchPromotionPreflightService, 'preflight'>,
@@ -47,6 +52,7 @@ export class SandboxPatchPromotionApplyService {
     options: {
       operatorConfirmed?: boolean;
       operatorId?: string | null;
+      operatorSurface?: SandboxPatchPromotionApplySurface | null;
     } = {},
   ): Promise<SandboxPatchPromotionApplyResult> {
     if (options.operatorConfirmed !== true || !options.operatorId?.trim()) {
@@ -68,6 +74,7 @@ export class SandboxPatchPromotionApplyService {
         buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPromotion({
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
+          operatorSurface: options.operatorSurface ?? null,
           promotion: preflight.promotion,
           selectedRuntimeContract,
         }),
@@ -87,6 +94,7 @@ export class SandboxPatchPromotionApplyService {
         buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion({
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
+          operatorSurface: options.operatorSurface ?? null,
           promotion: preflight.promotion,
           selectedRuntimeContract,
         }),
@@ -107,6 +115,7 @@ export class SandboxPatchPromotionApplyService {
     options: {
       operatorConfirmed?: boolean;
       operatorId?: string | null;
+      operatorSurface?: SandboxPatchPromotionApplySurface | null;
     },
   ): Promise<SandboxPatchPromotionApplyResult> {
     const selectedRuntimeContract = await this.resolveSelectedRuntimeContract(preflight.promotion);
@@ -118,6 +127,7 @@ export class SandboxPatchPromotionApplyService {
         buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight({
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
+          operatorSurface: options.operatorSurface ?? null,
           preflight,
           selectedRuntimeContract,
         }),
@@ -134,6 +144,7 @@ export class SandboxPatchPromotionApplyService {
         buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight({
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
+          operatorSurface: options.operatorSurface ?? null,
           preflight,
           selectedRuntimeContract,
         }),
@@ -153,6 +164,7 @@ export class SandboxPatchPromotionApplyService {
         buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight({
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
+          operatorSurface: options.operatorSurface ?? null,
           preflight,
           selectedRuntimeContract,
         }),
@@ -171,6 +183,7 @@ export class SandboxPatchPromotionApplyService {
         buildRuntimePatchPromotionRoutingReadinessSummary({
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
+          operatorSurface: options.operatorSurface ?? null,
           preflight,
           selectedRuntimeContract,
           touchedFiles: validation.touchedFiles,
@@ -201,6 +214,7 @@ export class SandboxPatchPromotionApplyService {
       buildRuntimePatchPromotionRoutingReadinessSummary({
         operatorConfirmed: options.operatorConfirmed === true,
         operatorId: options.operatorId,
+        operatorSurface: options.operatorSurface ?? null,
         preflight,
         selectedRuntimeContract,
         touchedFiles: validation.touchedFiles,
@@ -264,6 +278,7 @@ function formatPatchApplyFileEvidence(params: {
 function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(params: {
   operatorConfirmed: boolean;
   operatorId?: string | null;
+  operatorSurface?: SandboxPatchPromotionApplySurface | null;
   preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>;
   selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
 }): string {
@@ -272,6 +287,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(p
       checkpointId: params.preflight.checkpoint.id,
       confirmed: params.operatorConfirmed,
       operatorId: params.operatorId ?? null,
+      surface: params.operatorSurface ?? null,
       runId: params.preflight.checkpoint.runId,
       taskId: params.preflight.promotion.taskId,
     },
@@ -379,6 +395,7 @@ function parseSandboxPatchDiff(diff: string): ParsedSandboxPatchFile[] {
 function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
   operatorConfirmed: boolean;
   operatorId?: string | null;
+  operatorSurface?: SandboxPatchPromotionApplySurface | null;
   preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>;
   selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
   touchedFiles: string[];
@@ -388,6 +405,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
       checkpointId: params.preflight.checkpoint.id,
       confirmed: params.operatorConfirmed,
       operatorId: params.operatorId ?? null,
+      surface: params.operatorSurface ?? null,
       runId: params.preflight.promotion.runId,
       taskId: params.preflight.promotion.taskId,
     },
@@ -430,6 +448,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
 function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(params: {
   operatorConfirmed: boolean;
   operatorId?: string | null;
+  operatorSurface?: SandboxPatchPromotionApplySurface | null;
   promotion: SandboxPatchPromotionRecord;
   selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
 }): string {
@@ -438,6 +457,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
       checkpointId: params.promotion.checkpointId,
       confirmed: params.operatorConfirmed,
       operatorId: params.operatorId ?? null,
+      surface: params.operatorSurface ?? null,
       runId: params.promotion.runId,
       taskId: params.promotion.taskId,
     },
@@ -480,6 +500,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
 function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPromotion(params: {
   operatorConfirmed: boolean;
   operatorId?: string | null;
+  operatorSurface?: SandboxPatchPromotionApplySurface | null;
   promotion?: SandboxPatchPromotionRecord;
   selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
 }): string | undefined {
@@ -490,6 +511,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPromotion(p
       checkpointId: params.promotion.checkpointId,
       confirmed: params.operatorConfirmed,
       operatorId: params.operatorId ?? null,
+      surface: params.operatorSurface ?? null,
       runId: params.promotion.runId,
       taskId: params.promotion.taskId,
     },

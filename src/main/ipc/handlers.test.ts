@@ -1642,6 +1642,7 @@ describe('registerIpcHandlers', () => {
       {
         operatorConfirmed: true,
         operatorId: 'local_operator',
+        operatorSurface: 'ipc_explicit_apply',
       },
     );
     expect(servicesMock.runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({

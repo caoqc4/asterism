@@ -1018,7 +1018,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskIdentity, targetTaskEvidenceChain, checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain');
-    expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyTask, operatorApplyRun, operatorApplyCheckpoint, operatorApplyEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('operatorApplySurface, operatorApplySurfaceEvidenceChain, operatorApplyTask, operatorApplyRun, operatorApplyCheckpoint, operatorApplyEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionCheckpointId, preflightCheckpointId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, postApplyTask');
     expect(taskFiles?.evidence.join(' ')).toContain('patchRunId, decisionRunId, preflightRunId, postApplyRunId');
@@ -1033,7 +1033,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProvider=openai');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain, promotionDecisionId');
-    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, targetTaskEvidenceChain, checkpointEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, targetTaskEvidenceChain, checkpointEvidenceChain, operatorApplySurface=missing');
     expect(taskFiles?.evidence.join(' ')).toContain('selected_runtime_contract, target_task_identity, explicit_operator_apply, same_run_evidence_chain, and post_apply_run_evidence missing');
     expect(taskFiles?.evidence.join(' ')).toContain('synthetic-ready=8/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService now appends evaluateRuntimePatchPromotionRoutingReadinessFromEvidence output');
@@ -1045,7 +1045,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('Agent API promotion readiness steps become api_runtime execution_run evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProviderEvidenceChain is ready with a concrete provider');
     expect(taskFiles?.evidence.join(' ')).toContain('instead of accepting renderer-supplied runtime identity');
-    expect(taskFiles?.evidence.join(' ')).toContain('Decision-driven apply and explicit IPC apply both satisfy the operatorApplyEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('Decision-driven apply and explicit IPC apply both satisfy the operatorApplyEvidenceChain and operatorApplySurfaceEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('preflight reports an already_applied promotion');
     expect(taskFiles?.evidence.join(' ')).toContain('idempotent apply responses aligned with applied audit evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('blocked by workspace drift or validation failure');
@@ -1535,6 +1535,7 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('already-applied patch-promotion responses can reach promotionRequirements=8/8');
     expect(evidence).toContain('first-party same-run selected-runtime evidence is available');
     expect(evidence).toContain('selectedRuntimeContract=ready, targetTaskEvidenceChain=ready, operatorApplyEvidenceChain=ready');
+    expect(evidence).toContain('operatorApplySurfaceEvidenceChain');
     expect(evidence).toContain('postApplyFilesMatched=yes, and promotionMissingRequirements=none');
   });
 
@@ -1543,7 +1544,7 @@ describe('product feature impact audit', () => {
     const evidence = taskFiles?.evidence.join(' ');
 
     expect(evidence).toContain('service-evidence-ready=8/8 requirements');
-    expect(evidence).toContain('selectedRuntimeContract, targetTaskEvidenceChain, operatorApplyEvidenceChain, sameRunId, and postApplyFilesMatched ready');
+    expect(evidence).toContain('selectedRuntimeContract, targetTaskEvidenceChain, operatorApplyEvidenceChain, operatorApplySurfaceEvidenceChain, sameRunId, and postApplyFilesMatched ready');
   });
 
   it('records missing terminal failure evidence in scheduler recovery proposals', () => {

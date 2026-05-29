@@ -34,6 +34,7 @@ export type RuntimePatchPromotionRoutingServiceEvidence = {
     confirmed: boolean;
     operatorId?: string | null;
     runId?: string | null;
+    surface?: 'decision_checkpoint_resume' | 'ipc_explicit_apply' | 'service_explicit_apply' | null;
     taskId?: string | null;
   } | null;
   patchArtifact?: {
@@ -159,6 +160,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const operatorApplyTaskId = evidence.explicitOperatorApply?.taskId?.trim() || '';
   const operatorApplyRunId = evidence.explicitOperatorApply?.runId?.trim() || '';
   const operatorApplyCheckpointId = evidence.explicitOperatorApply?.checkpointId?.trim() || '';
+  const operatorApplySurface = evidence.explicitOperatorApply?.surface?.trim() || '';
   const expectedFiles = evidence.patchArtifact?.expectedFiles
     ?.map(normalizeWorkspaceRelativePath)
     ?? [];
@@ -276,6 +278,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const explicitOperatorApply = (
     evidence.explicitOperatorApply?.confirmed === true
     && Boolean(evidence.explicitOperatorApply.operatorId?.trim())
+    && isExplicitOperatorApplySurface(operatorApplySurface)
     && operatorApplyEvidenceChainReady
   );
   const postApplyRunEvidenceReady = (
@@ -342,6 +345,8 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `preflightCheckpointId=${preflightCheckpointId || 'missing'}`,
       `checkpointEvidenceChain=${checkpointEvidenceChainReady ? 'ready' : 'missing'}`,
       `operatorId=${explicitOperatorApply ? (evidence.explicitOperatorApply?.operatorId?.trim() ?? 'missing') : 'missing'}`,
+      `operatorApplySurface=${operatorApplySurface || 'missing'}`,
+      `operatorApplySurfaceEvidenceChain=${isExplicitOperatorApplySurface(operatorApplySurface) ? 'ready' : 'missing'}`,
       `operatorApplyTask=${operatorApplyTaskId || 'missing'}`,
       `operatorApplyRun=${operatorApplyRunId || 'missing'}`,
       `operatorApplyCheckpoint=${operatorApplyCheckpointId || 'missing'}`,
@@ -361,6 +366,14 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `touchedFileEvidenceChain=${touchedFileEvidenceChainReady ? 'ready' : 'missing'}`,
     ].join(' / '),
   };
+}
+
+function isExplicitOperatorApplySurface(
+  value: string,
+): value is 'decision_checkpoint_resume' | 'ipc_explicit_apply' | 'service_explicit_apply' {
+  return value === 'decision_checkpoint_resume'
+    || value === 'ipc_explicit_apply'
+    || value === 'service_explicit_apply';
 }
 
 function sameStringSet(left: string[], right: string[]): boolean {
