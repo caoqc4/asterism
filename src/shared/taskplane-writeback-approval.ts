@@ -218,6 +218,7 @@ type SchedulerDecisionProposalTimelinePayload = {
   operatorId?: string | null;
   options?: unknown;
   proposedOutcome?: string | null;
+  proposalReadinessSummary?: string | null;
   rationale?: string | null;
   standingApprovalActive?: boolean;
   standingApprovalPolicyId?: string | null;
@@ -237,6 +238,15 @@ function buildSchedulerDecisionApprovalItem(params: {
   const eventTaskId = params.event.taskId.trim();
   const targetTaskId = payload.targetTaskId?.trim() || '';
   if (eventTaskId !== params.taskId || targetTaskId !== params.taskId) return null;
+  const proposalReadinessSummary = payload.proposalReadinessSummary?.trim() || '';
+  if (
+    !proposalReadinessSummary.includes('Scheduler Decision proposal contract')
+    || !proposalReadinessSummary.includes('proposalReady=yes')
+    || !proposalReadinessSummary.includes('approvalQueueSurface=task_dynamics')
+    || !proposalReadinessSummary.includes(`targetTask=${targetTaskId}`)
+  ) {
+    return null;
+  }
 
   const readiness = planSchedulerDecisionProposalFromEvidence({
     approvalQueue: {

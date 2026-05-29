@@ -144,6 +144,7 @@ describe('Taskplane writeback approval items', () => {
           operatorId: 'operator_1',
           options: ['继续自动巡检', '暂停自动巡检'],
           proposedOutcome: '继续自动巡检',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: '最近一次自动巡检已经生成可审核证据，需要确认后续策略。',
           targetTaskId: 'task_1',
           title: '确认自动巡检策略',
@@ -186,6 +187,7 @@ describe('Taskplane writeback approval items', () => {
           operatorId: 'operator_1',
           options: ['  继续   自动巡检  ', '暂停自动巡检'],
           proposedOutcome: '继续 自动巡检',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: '  最近一次自动巡检   已经生成可审核证据，需要确认后续策略。 ',
           targetTaskId: 'task_1',
           title: '  确认   自动巡检策略 ',
@@ -224,6 +226,7 @@ describe('Taskplane writeback approval items', () => {
       operatorId: 'operator_1',
       options: ['继续自动巡检', '暂停自动巡检'],
       proposedOutcome: '继续自动巡检',
+      proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
       rationale: '最近一次自动巡检已经生成可审核证据，需要确认后续策略。',
       targetTaskId: 'task_1',
       title: '确认自动巡检策略',
@@ -273,6 +276,7 @@ describe('Taskplane writeback approval items', () => {
           operatorId: 'operator_1',
           options: ['等待下一次运行窗口', '调整 Standing Approval 每日运行上限'],
           proposedOutcome: '等待下一次运行窗口',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: '定时任务达到每日运行上限，需要确认下一步。',
           targetTaskId: 'task_1',
           title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
@@ -301,6 +305,7 @@ describe('Taskplane writeback approval items', () => {
       operatorId: 'operator_1',
       options: ['等待下一次运行窗口', '调整 Standing Approval 每日运行上限'],
       proposedOutcome: '等待下一次运行窗口',
+      proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
       rationale: '定时任务达到每日运行上限，需要确认下一步。',
       targetTaskId: 'task_1',
       title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
@@ -356,6 +361,7 @@ describe('Taskplane writeback approval items', () => {
           operatorId: 'operator_1',
           options: ['等待下一次运行窗口', '调整 Standing Approval 每日运行上限'],
           proposedOutcome: '等待下一次运行窗口',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: '定时任务达到每日运行上限，需要确认下一步。',
           targetTaskId: 'task_1',
           title,
@@ -384,6 +390,7 @@ describe('Taskplane writeback approval items', () => {
           localRecoveryTaskId: 'task_1',
           options: ['复核失败证据后手动重跑', '保持 failed 并补充 Task 记忆'],
           proposedOutcome: '复核失败证据后手动重跑',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: 'Scheduler recovered a stale run and needs an operator-confirmed next step.',
           targetTaskId: 'task_1',
           title: '确认 stale run 自动恢复后的下一步',
@@ -458,6 +465,57 @@ describe('Taskplane writeback approval items', () => {
     expect(items).toEqual([]);
   });
 
+  it('blocks scheduler Decision proposal timeline events without producer readiness evidence', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_missing_readiness',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          rationale: '缺少 SchedulerService readiness summary 的历史事件不能进入审批队列。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
+  it('blocks scheduler Decision proposal timeline events when producer readiness target diverges', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_wrong_readiness_target',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_other'),
+          rationale: 'readiness summary 里的目标任务也必须匹配。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
   it('blocks scheduler Decision proposal timeline events when event and payload task identity diverge', () => {
     const items = buildTaskplaneWritebackApprovalItems({
       runDetails: [],
@@ -499,6 +557,7 @@ describe('Taskplane writeback approval items', () => {
           localRecoveryRunId: 'run_recovered_1',
           options: ['复核失败证据后手动重跑'],
           proposedOutcome: '复核失败证据后手动重跑',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: 'Scheduler recovered a stale run but omitted recovered run task identity.',
           targetTaskId: 'task_1',
           title: '确认 stale run 自动恢复后的下一步',
@@ -526,6 +585,7 @@ describe('Taskplane writeback approval items', () => {
           localRecoveryTaskId: 'task_1',
           options: ['复核失败证据后手动重跑'],
           proposedOutcome: '复核失败证据后手动重跑',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: 'Scheduler recovered a stale run but omitted explicit recovered run identity.',
           targetTaskId: 'task_1',
           title: '确认 stale run 自动恢复后的下一步',
@@ -552,6 +612,7 @@ describe('Taskplane writeback approval items', () => {
           operatorId: 'operator_1',
           options: ['继续自动巡检', '  继续自动巡检  '],
           proposedOutcome: '继续自动巡检',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: '重复选项不应进入审批队列。',
           targetTaskId: 'task_1',
           title: '确认自动巡检策略',
@@ -578,6 +639,7 @@ describe('Taskplane writeback approval items', () => {
           operatorId: 'operator_1',
           options: ['继续自动巡检', '暂停自动巡检'],
           proposedOutcome: '转人工处理',
+          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1'),
           rationale: '推荐结果必须来自候选项。',
           targetTaskId: 'task_1',
           title: '确认自动巡检策略',
@@ -589,6 +651,15 @@ describe('Taskplane writeback approval items', () => {
     expect(items).toEqual([]);
   });
 });
+
+function schedulerDecisionReadinessSummary(targetTaskId: string): string {
+  return [
+    'Scheduler Decision proposal contract',
+    'proposalReady=yes',
+    'approvalQueueSurface=task_dynamics',
+    `targetTask=${targetTaskId}`,
+  ].join(' / ');
+}
 
 function buildRunDetail(partial: Partial<RunDetailRecord> = {}): RunDetailRecord {
   return {
