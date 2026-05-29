@@ -65,6 +65,10 @@ export type RuntimePatchPromotionRoutingServiceEvidence = {
     status: 'blocked' | 'missing' | 'ready';
     taskId?: string | null;
   } | null;
+  providerConfiguration?: {
+    configuredProvider?: string | null;
+    providerConfigured: boolean;
+  } | null;
   selectedRuntimeContract?: {
     invocationLayer: 'api_runtime' | 'selected_runtime';
     phase: 'execution_run';
@@ -139,6 +143,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
   const selectedRuntimeRunId = selectedRuntime?.runId?.trim() || '';
   const selectedRuntimeTaskId = selectedRuntime?.taskId?.trim() || '';
   const selectedRuntimeProvider = selectedRuntime?.provider?.trim() || '';
+  const configuredProvider = evidence.providerConfiguration?.configuredProvider?.trim() || '';
   const targetTaskId = evidence.targetTaskId?.trim() || '';
   const patchTaskId = evidence.patchArtifact?.taskId?.trim() || '';
   const decisionTaskId = evidence.promotionDecision?.taskId?.trim() || '';
@@ -178,12 +183,21 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && preflightTaskId === targetTaskId
     && postApplyTaskId === targetTaskId;
 
+  const configuredProviderEvidenceChainReady = (
+    selectedRuntime?.invocationLayer === 'api_runtime'
+    && selectedRuntime.runtimeMode === 'api'
+    && evidence.providerConfiguration?.providerConfigured === true
+    && Boolean(configuredProvider)
+    && Boolean(selectedRuntimeProvider)
+    && configuredProvider === selectedRuntimeProvider
+  );
   const selectedRuntimeProviderEvidenceChainReady = (
     selectedRuntime?.invocationLayer === 'selected_runtime'
     || (
       selectedRuntime?.invocationLayer === 'api_runtime'
       && selectedRuntime.runtimeMode === 'api'
       && Boolean(selectedRuntimeProvider)
+      && (!evidence.providerConfiguration || configuredProviderEvidenceChainReady)
     )
   );
   const selectedRuntimeContractReady = (
@@ -307,6 +321,9 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `selectedRuntimeTaskEvidenceChain=${selectedRuntimeTaskId && targetTaskId && selectedRuntimeTaskId === targetTaskId ? 'ready' : 'missing'}`,
       `selectedRuntimeProvider=${selectedRuntimeProvider || 'missing'}`,
       `selectedRuntimeProviderEvidenceChain=${selectedRuntimeProviderEvidenceChainReady ? 'ready' : 'missing'}`,
+      `providerConfigured=${evidence.providerConfiguration?.providerConfigured === true ? 'ready' : 'missing'}`,
+      `configuredProvider=${configuredProvider || 'missing'}`,
+      `configuredProviderEvidenceChain=${configuredProviderEvidenceChainReady ? 'ready' : 'missing'}`,
       `targetTask=${targetTaskId || 'missing'}`,
       `patchArtifactTask=${patchTaskId || 'missing'}`,
       `promotionDecisionTask=${decisionTaskId || 'missing'}`,

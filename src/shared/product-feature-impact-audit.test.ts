@@ -1353,11 +1353,14 @@ describe('product feature impact audit', () => {
 
   it('records selected-runtime identity evidence for runtime patch promotion routing', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
 
-    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract stays missing when the selected runtime run id, target task identity, or API provider identity diverges');
-    expect(taskFiles?.evidence.join(' ')).toContain('API provider identity diverges or is absent');
-    expect(taskFiles?.evidence.join(' ')).toContain('first-party completed same-run RunStep evidence');
-    expect(taskFiles?.evidence.join(' ')).toContain('only when the step belongs to the promotion run');
+    expect(evidence).toContain('selectedRuntimeContract stays missing when the selected runtime run id, target task identity, API provider identity, or configured provider identity diverges');
+    expect(evidence).toContain('configuredProviderEvidenceChain');
+    expect(evidence).toContain('stitched configured-provider evidence');
+    expect(evidence).toContain('providerConfigured=ready, configuredProvider=openai, configuredProviderEvidenceChain=ready');
+    expect(evidence).toContain('first-party completed same-run RunStep evidence');
+    expect(evidence).toContain('only when the step belongs to the promotion run');
   });
 
   it('records operator-facing reviewed patch apply file-count evidence', () => {

@@ -137,6 +137,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -170,6 +174,9 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('selectedRuntimeTaskEvidenceChain=missing');
     expect(partial.summary).toContain('selectedRuntimeProvider=openai');
     expect(partial.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
+    expect(partial.summary).toContain('providerConfigured=ready');
+    expect(partial.summary).toContain('configuredProvider=openai');
+    expect(partial.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(partial.summary).toContain('targetTaskIdentity=missing');
     expect(partial.summary).toContain('promotionPreflight=missing');
     expect(partial.summary).toContain('sameRunEvidenceChain=missing');
@@ -242,6 +249,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -262,6 +273,9 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
     expect(ready.summary).toContain('selectedRuntimeProvider=openai');
     expect(ready.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
+    expect(ready.summary).toContain('providerConfigured=ready');
+    expect(ready.summary).toContain('configuredProvider=openai');
+    expect(ready.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(ready.summary).toContain('decisionArtifactEvidenceChain=ready');
     expect(ready.summary).toContain('artifactEvidenceChain=ready');
     expect(ready.summary).toContain('sameRunEvidenceChain=ready');
@@ -343,6 +357,70 @@ describe('runtime patch promotion routing readiness', () => {
     expect(missingProvider.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
     expect(missingProvider.summary).toContain('selectedRuntimeProvider=missing');
     expect(missingProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+  });
+
+  it('blocks API patch promotion when configured provider evidence is stitched', () => {
+    const mismatch = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'anthropic',
+        providerConfigured: true,
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        provider: 'openai',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(mismatch.summary).toContain('selectedRuntimeProvider=openai');
+    expect(mismatch.summary).toContain('providerConfigured=ready');
+    expect(mismatch.summary).toContain('configuredProvider=anthropic');
+    expect(mismatch.summary).toContain('configuredProviderEvidenceChain=missing');
+    expect(mismatch.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
   });
 
   it('requires patch, decision, preflight, and post-apply evidence to match the target task', () => {
