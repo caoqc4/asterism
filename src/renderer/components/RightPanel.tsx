@@ -825,8 +825,15 @@ function taskFileProposalConfirmLabel(proposal: TaskFileWriteProposal): string {
   return isDecompositionMemoryProposal(proposal) ? '保存拆解记录' : '确认补写记忆';
 }
 
-function isExplicitAgentApiExecutionRequest(text: string): boolean {
-  return /启动(?:任务)?\s*(?:agent\s*)?run|开始执行|执行(?:这个|当前)?任务|跑(?:一下)?(?:任务|agent)|agent\s*run|run\s*(?:this|task|agent)/i.test(text);
+function isAgentApiExecutionIntent(text: string): boolean {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  const lower = normalized.toLowerCase();
+  if (/收尾|阶段记录|后续任务|验收任务|拆出/i.test(normalized)) return false;
+  const asksForAdvice = /怎么|如何|怎样|what\s+next|\?|？/.test(normalized);
+  const strongExecutionSignal = /启动(?:任务)?\s*(?:agent\s*)?run|开始执行|执行(?:这个|当前)?任务|跑(?:一下)?(?:任务|agent)|agent\s*run|run\s*(?:this|task|agent)|继续(?:推进|完善|执行|处理|做)|按.+继续|实现|修复|检查/i.test(lower);
+  const terseContinuation = /^(继续|推进|完善|执行|run)$/i.test(normalized);
+  if (asksForAdvice && !strongExecutionSignal && !terseContinuation) return false;
+  return strongExecutionSignal || terseContinuation;
 }
 
 function formatAgentCliRunMessage(params: {
@@ -3220,7 +3227,7 @@ export function RightPanel({
         && activeTaskId
         && pilotDecision.shouldStartExecutor
         && pilotDecision.executor === 'agent_api'
-        && isExplicitAgentApiExecutionRequest(text)
+        && isAgentApiExecutionIntent(text)
         && window.api?.triggerRun
       ) {
         const runtimeLabel = 'Agent API Runtime';

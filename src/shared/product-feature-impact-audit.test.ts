@@ -1554,12 +1554,14 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('suppresses later duplicate timeline proposals after refresh');
   });
 
-  it('records explicit right-panel Agent API execution routing coverage', () => {
+  it('records right-panel Agent API execution intent routing coverage', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
 
     expect(rightPanel?.evidence.join(' ')).toContain('explicit selected Agent API execution requests');
+    expect(rightPanel?.evidence.join(' ')).toContain('task-bound progress intents such as "继续完善当前任务"');
     expect(rightPanel?.evidence.join(' ')).toContain('through Taskplane RunService triggerRun');
-    expect(rightPanel?.evidence.join(' ')).toContain('pass the bounded Pilot decision snapshot into RunService');
+    expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion or phase closeout handoff messages');
+    expect(rightPanel?.evidence.join(' ')).toContain('execution requests and progress intents now pass the bounded Pilot decision snapshot into RunService');
     expect(rightPanel?.evidence.join(' ')).toContain('persist it in the Agent API execution promotion readiness step input');
     expect(rightPanel?.evidence.join(' ')).toContain('completed Agent API execution summaries now surface Agent API execution promotion readiness Run-step evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('missing requirement lists from slash-separated readiness summaries');
@@ -1570,9 +1572,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('blocked by missing runtime-declared Write Intent evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('completed Agent API execution summaries now also surface reviewedPatchApplyBoundary, patchPromotionStatus, terminalRunStatus, and terminalEvidenceSummary');
     expect(rightPanel?.evidence.join(' ')).toContain('post-run evidence and workspace boundary without opening Run detail');
-    expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion');
-    expect(rightPanel?.gaps.join(' ')).toContain('explicit right-panel execution requests can enter RunService');
-    expect(rightPanel?.nextActions.join(' ')).toContain('expanding from explicit right-panel execution requests');
+    expect(rightPanel?.gaps.join(' ')).toContain('explicit right-panel execution requests and task-bound progress intents can enter RunService');
+    expect(rightPanel?.nextActions.join(' ')).toContain('expanding from right-panel execution/progress intents');
   });
 
   it('records Agent API execution terminal evidence summary coverage', () => {

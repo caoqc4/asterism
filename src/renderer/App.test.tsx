@@ -2824,6 +2824,61 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Agent API 执行证据：promotion readiness missing write_intent_extraction,reviewed_patch_apply_boundary（5\/11）；身份链 target=ready runtimeRun=ready runtimeTask=ready provider=ready；Provider preflight ready run=ready task=ready；门禁 context=ready runtime=ready pre=ready post=missing；Write Intent 声明证据 missing；Write Intent 边界 missing/)).toBeTruthy();
   });
 
+  it('routes task-bound Agent API progress intent through RunService without explicit run wording', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    vi.mocked(harness.api.triggerRun).mockImplementationOnce(async (input) => {
+      const run = buildRun({
+        id: 'run_api_progress_intent',
+        output: 'Agent API continued the task.',
+        outputSource: 'ai',
+        status: 'completed',
+        taskId: input.taskId,
+        type: input.type,
+      }) as RunRecord & { steps: RunStepRecord[] };
+      run.steps = [
+        {
+          id: 'step_api_progress_intent_promotion',
+          runId: run.id,
+          index: 0,
+          kind: 'plan',
+          status: 'completed',
+          title: 'Agent API execution post-run promotion readiness',
+          input: 'pilotDecision={"executor":"agent_api"}',
+          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / targetTaskEvidenceChain=ready / selectedRuntimeRunEvidenceChain=ready / selectedRuntimeTaskEvidenceChain=ready / selectedRuntimeProviderEvidenceChain=ready / providerPreflightStatus=ready / providerPreflightRunEvidenceChain=ready / providerPreflightTaskEvidenceChain=ready / contextReadinessGateEvidenceChain=ready / runtimeActionGateEvidenceChain=ready / preStepGateEvidenceChain=ready / taskMemoryCoverageGateEvidenceChain=ready / taskMemoryGuidanceGateEvidenceChain=ready / subtaskStartGateEvidenceChain=ready / postStepGateEvidenceChain=ready / reviewedPatchApplyBoundary=ready / patchPromotionStatus=not_required / writeIntentDeclaredActionEvidenceChain=ready / writeIntentActionBoundary=ready / terminalRunStatus=completed / terminalEvidenceSummary=output_chars=29 / terminalEvidenceSummaryChain=ready',
+          error: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ];
+      harness.runs.push(run);
+      return run;
+    });
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '继续完善当前任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerRun).toHaveBeenCalledWith(expect.objectContaining({
+        instructions: expect.stringContaining('继续完善当前任务'),
+        pilotDecision: expect.objectContaining({
+          executor: 'agent_api',
+          operationMode: 'product_control_layer',
+        }),
+        taskId: 'task_risk',
+        type: 'agent',
+      }));
+    });
+    expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
+      messages: expect.arrayContaining([
+        expect.objectContaining({ content: expect.stringContaining('继续完善当前任务') }),
+      ]),
+    }));
+    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）/)).toBeTruthy();
+  });
+
   it('surfaces Agent API execution no-write promotion readiness in the right panel summary', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
