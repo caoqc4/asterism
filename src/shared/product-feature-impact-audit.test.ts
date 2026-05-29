@@ -1634,6 +1634,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('explicit payload targetTaskId plus timeline event taskId to both match the current task');
     expect(decisions?.evidence.join(' ')).toContain('SchedulerService proposalReadinessSummary evidence with proposalReady=yes');
     expect(decisions?.evidence.join(' ')).toContain('matching targetTask');
+    expect(decisions?.evidence.join(' ')).toContain('producer proposalReadinessSummary evidenceSourceType, evidenceRunId, and evidenceSourceIdentityChain');
+    expect(decisions?.evidence.join(' ')).toContain('cannot be silently reclassified as system-sourced approval work');
     expect(decisions?.evidence.join(' ')).toContain('duplicate-free option labels');
     expect(decisions?.evidence.join(' ')).toContain('cannot bypass the SchedulerService producer validation');
   });

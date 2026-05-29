@@ -239,11 +239,16 @@ function buildSchedulerDecisionApprovalItem(params: {
   const targetTaskId = payload.targetTaskId?.trim() || '';
   if (eventTaskId !== params.taskId || targetTaskId !== params.taskId) return null;
   const proposalReadinessSummary = payload.proposalReadinessSummary?.trim() || '';
+  const payloadEvidenceRunId = payload.evidenceRunId?.trim() || '';
   if (
     !proposalReadinessSummary.includes('Scheduler Decision proposal contract')
     || !proposalReadinessSummary.includes('proposalReady=yes')
     || !proposalReadinessSummary.includes('approvalQueueSurface=task_dynamics')
     || !proposalReadinessSummary.includes(`targetTask=${targetTaskId}`)
+    || !schedulerDecisionProducerSourceEvidenceMatches({
+      evidenceRunId: payloadEvidenceRunId,
+      summary: proposalReadinessSummary,
+    })
     || !proposalReadinessSummary.includes('decisionPersistenceAllowed=false')
     || !proposalReadinessSummary.includes('writebackDispatchAllowed=false')
     || !proposalReadinessSummary.includes('schedulerTriggerAllowed=false')
@@ -256,6 +261,7 @@ function buildSchedulerDecisionApprovalItem(params: {
       connected: true,
       surface: 'task_dynamics',
     },
+    evidenceRunId: payloadEvidenceRunId || null,
     operatorConfirmation: {
       confirmed: payload.operatorConfirmed === true,
       operatorId: payload.operatorId ?? null,
@@ -330,6 +336,19 @@ function buildSchedulerDecisionApprovalItem(params: {
     taskId: params.taskId,
     title: proposal.title,
   };
+}
+
+function schedulerDecisionProducerSourceEvidenceMatches(params: {
+  evidenceRunId: string;
+  summary: string;
+}): boolean {
+  if (!params.summary.includes('evidenceSourceIdentityChain=ready')) return false;
+  if (params.evidenceRunId) {
+    return params.summary.includes('evidenceSourceType=run')
+      && params.summary.includes(`evidenceRunId=${params.evidenceRunId}`);
+  }
+  return params.summary.includes('evidenceSourceType=system')
+    && params.summary.includes('evidenceRunId=missing');
 }
 
 function parseSchedulerDecisionPayload(payload: string | null): SchedulerDecisionProposalTimelinePayload | null {
