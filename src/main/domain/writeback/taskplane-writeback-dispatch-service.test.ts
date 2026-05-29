@@ -458,6 +458,8 @@ describe('TaskplaneWritebackDispatchService', () => {
         successMessage: '已根据拆解草案创建 2 个子任务。',
         timeline: {
           payload: {
+            confirmationBoundary: 'operator_confirmed_subtask_create_many',
+            draftOnlyBeforeConfirmation: true,
             evidenceRunId: 'run_5',
             source: 'agent_cli_decomposition',
             subtaskCount: 2,
@@ -508,6 +510,8 @@ describe('TaskplaneWritebackDispatchService', () => {
     expect(taskService.recordTimelineEvent).toHaveBeenCalledWith({
       payload: {
         childTaskIds: ['child_1', 'child_2'],
+        confirmationBoundary: 'operator_confirmed_subtask_create_many',
+        draftOnlyBeforeConfirmation: true,
         evidenceRunId: 'run_5',
         recordPath: 'Task Records/AI 项目拆解自检.md',
         source: 'agent_cli_decomposition',

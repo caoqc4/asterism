@@ -150,6 +150,8 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('apiDispatchAction=subtask.create_many');
     expect(evidence).toContain('apiDispatchTimelineChildTaskIds=mock_child_1');
     expect(evidence).toContain('apiDispatchTimelineRecordPath=Task Records/mock-project-decomposition.md');
+    expect(evidence).toContain('missingConfirmationDispatchStatus=blocked');
+    expect(evidence).toContain('missingConfirmationCreateSubtasksCalled=no');
   });
 
   it('records patch promotion apply smoke routing evidence chips', () => {

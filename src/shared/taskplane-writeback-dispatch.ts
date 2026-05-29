@@ -93,6 +93,12 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   }
 
   if (plan.action === 'subtask.create_many') {
+    if (
+      plan.timeline.payload.confirmationBoundary !== 'operator_confirmed_subtask_create_many'
+      || plan.timeline.payload.draftOnlyBeforeConfirmation !== true
+    ) {
+      return blocked(plan.action, '子任务草案已暂停：缺少已确认的项目拆解写入边界。');
+    }
     if (!ports.createSubtasks) return blocked(plan.action, '子任务草案已暂停：当前环境不支持创建项目子任务。');
     const result = await ports.createSubtasks(plan.input);
     await recordTimeline(ports, taskId, {

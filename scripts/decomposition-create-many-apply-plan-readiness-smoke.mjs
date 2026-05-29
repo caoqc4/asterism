@@ -79,6 +79,32 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
     taskId: 'task_project',
   });
   const dispatchEvent = dispatchEvents[0] ?? null;
+  const blockedCreateSubtasksCalls = [];
+  const missingConfirmationPlan = {
+    ...apiPlan,
+    timeline: {
+      ...apiPlan.timeline,
+      payload: {
+        evidenceRunId: apiPlan.timeline.payload.evidenceRunId,
+        source: apiPlan.timeline.payload.source,
+        subtaskCount: apiPlan.timeline.payload.subtaskCount,
+      },
+    },
+  };
+  const blockedDispatchResult = await dispatchTaskplaneWritebackApplyPlan({
+    plan: missingConfirmationPlan,
+    ports: {
+      createSubtasks: async (input) => {
+        blockedCreateSubtasksCalls.push(input);
+        return {
+          createdTasks: [],
+          taskRecordPath: null,
+          updatedTask: null,
+        };
+      },
+    },
+    taskId: 'task_project',
+  });
 
   console.log(`apiDispatchStatus=${apiDispatchResult.status}`);
   console.log(`apiDispatchAction=${apiDispatchResult.action}`);
@@ -94,6 +120,10 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
   console.log(`apiDispatchTimelineSource=${dispatchEvent?.payload?.source ?? 'missing'}`);
   console.log(`apiDispatchTimelineConfirmationBoundary=${dispatchEvent?.payload?.confirmationBoundary ?? 'missing'}`);
   console.log(`apiDispatchTimelineDraftOnlyBeforeConfirmation=${String(dispatchEvent?.payload?.draftOnlyBeforeConfirmation)}`);
+  console.log(`missingConfirmationDispatchStatus=${blockedDispatchResult.status}`);
+  console.log(`missingConfirmationDispatchAction=${blockedDispatchResult.action}`);
+  console.log(`missingConfirmationDispatchMessage=${blockedDispatchResult.message ?? 'missing'}`);
+  console.log(`missingConfirmationCreateSubtasksCalled=${blockedCreateSubtasksCalls.length > 0 ? 'yes' : 'no'}`);
 
   if (
     !isReadyCreateManyPlan(cliPlan, 'agent_cli_decomposition')
@@ -112,6 +142,10 @@ export async function runSubtaskCreateManyApplyPlanReadinessSmoke() {
     || dispatchEvent?.payload?.draftOnlyBeforeConfirmation !== true
     || dispatchEvent?.payload?.childTaskIds?.join(',') !== 'mock_child_1'
     || dispatchEvent?.payload?.recordPath !== 'Task Records/mock-project-decomposition.md'
+    || blockedDispatchResult.status !== 'blocked'
+    || blockedDispatchResult.action !== 'subtask.create_many'
+    || blockedDispatchResult.message !== '子任务草案已暂停：缺少已确认的项目拆解写入边界。'
+    || blockedCreateSubtasksCalls.length !== 0
   ) {
     console.log('status=failed');
     return 1;

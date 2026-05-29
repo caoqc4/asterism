@@ -970,6 +970,10 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('apiDispatchTimelineSource=agent_api_decomposition');
     expect(result.output).toContain('apiDispatchTimelineConfirmationBoundary=operator_confirmed_subtask_create_many');
     expect(result.output).toContain('apiDispatchTimelineDraftOnlyBeforeConfirmation=true');
+    expect(result.output).toContain('missingConfirmationDispatchStatus=blocked');
+    expect(result.output).toContain('missingConfirmationDispatchAction=subtask.create_many');
+    expect(result.output).toContain('missingConfirmationDispatchMessage=子任务草案已暂停：缺少已确认的项目拆解写入边界。');
+    expect(result.output).toContain('missingConfirmationCreateSubtasksCalled=no');
   });
 
   it('keeps Agent API provider tool readiness smoke read-only and build-gated by default', () => {
