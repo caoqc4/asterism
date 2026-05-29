@@ -928,6 +928,13 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceExplicitToolDeclarationPackageMatchesMetadata=yes');
     expect(result.output).toContain('serviceEvidenceDeclaredWebSearchToolCount=0');
     expect(result.output).toContain('serviceEvidenceDeclaredWebSearchTools=none');
+    expect(result.output).toContain('genericHelperProviderToolStatus=not_declared');
+    expect(result.output).toContain('genericHelperProviderToolReadiness=not_declared');
+    expect(result.output).toContain('genericHelperProviderToolRequirements=4/5');
+    expect(result.output).toContain('genericHelperProviderToolMissingRequirements=explicit_tool_declaration');
+    expect(result.output).toContain('genericHelperDeclaredToolCount=5');
+    expect(result.output).toContain('genericHelperDeclaredWebSearchToolCount=0');
+    expect(result.output).toContain('genericHelperDeclaredWebSearchTools=none');
     expect(result.output).toContain('workspace=unchanged');
   });
 

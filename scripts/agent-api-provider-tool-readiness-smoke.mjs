@@ -86,6 +86,27 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     },
     startupProbe: 'never',
   });
+  const genericHelperReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+    configuredProvider: snapshot.model.provider,
+    explicitToolDeclarations: {
+      declaredTools: [
+        'browser.search',
+        'search.web_fetch',
+        'task_browser',
+        'vendor:browse',
+        'web_search_cache',
+      ],
+      packageName: '@ai-sdk/openai',
+      source: 'provider_owned_metadata',
+    },
+    providerConfigured: snapshot.model.configured,
+    providerOwnedMetadata: providerToolMetadata.providerOwnedMetadata,
+    selectedRuntime: {
+      mode: snapshot.executionRuntime.mode,
+      runtimeKind: snapshot.executionRuntime.kind,
+    },
+    startupProbe: 'never',
+  });
   const providerToolStatus = scalarValue(agentApiRuntime.summary, 'providerToolStatus') ?? serviceEvidenceReadiness.status;
 
   console.log(`runtimeKind=${snapshot.executionRuntime.kind}`);
@@ -137,6 +158,13 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`serviceEvidenceDeclaredToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
   console.log(`serviceEvidenceDeclaredWebSearchToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchToolCount') ?? '0'}`);
   console.log(`serviceEvidenceDeclaredWebSearchTools=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
+  console.log(`genericHelperProviderToolStatus=${genericHelperReadiness.status}`);
+  console.log(`genericHelperProviderToolReadiness=${genericHelperReadiness.toolReadiness}`);
+  console.log(`genericHelperProviderToolRequirements=${genericHelperReadiness.satisfiedRequirements.length}/5`);
+  console.log(`genericHelperProviderToolMissingRequirements=${genericHelperReadiness.missingRequirements.join(',') || 'none'}`);
+  console.log(`genericHelperDeclaredToolCount=${serviceScalarValue(genericHelperReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
+  console.log(`genericHelperDeclaredWebSearchToolCount=${serviceScalarValue(genericHelperReadiness.summary, 'declaredWebSearchToolCount') ?? '0'}`);
+  console.log(`genericHelperDeclaredWebSearchTools=${serviceScalarValue(genericHelperReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
 
   const failureReasons = [
     snapshot.executionRuntime.kind !== 'agent_api' ? 'runtime_kind' : null,
@@ -174,6 +202,13 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     serviceEvidenceReadiness.satisfiedRequirements.length !== 4 ? 'service_requirement_count' : null,
     serviceEvidenceReadiness.missingRequirements.includes('provider_owned_metadata') ? 'service_provider_owned_metadata_missing' : null,
     !serviceEvidenceReadiness.missingRequirements.includes('explicit_tool_declaration') ? 'service_explicit_tool_declaration_missing' : null,
+    genericHelperReadiness.status !== 'not_declared' ? 'generic_helper_status' : null,
+    genericHelperReadiness.toolReadiness !== 'not_declared' ? 'generic_helper_tool_readiness' : null,
+    genericHelperReadiness.satisfiedRequirements.length !== 4 ? 'generic_helper_requirement_count' : null,
+    !genericHelperReadiness.missingRequirements.includes('explicit_tool_declaration') ? 'generic_helper_explicit_tool_declaration_missing' : null,
+    serviceScalarValue(genericHelperReadiness.summary, 'declaredToolCount') !== '5' ? 'generic_helper_declared_tool_count' : null,
+    (serviceScalarValue(genericHelperReadiness.summary, 'declaredWebSearchToolCount') ?? '0') !== '0' ? 'generic_helper_declared_web_search_tool_count' : null,
+    (serviceScalarValue(genericHelperReadiness.summary, 'declaredWebSearchTools') ?? 'none') !== 'none' ? 'generic_helper_declared_web_search_tools' : null,
   ].filter(Boolean);
 
   if (failureReasons.length > 0) {

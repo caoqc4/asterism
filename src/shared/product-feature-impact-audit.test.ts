@@ -1208,6 +1208,14 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('colon or dot provider-namespace mismatches');
   });
 
+  it('records Agent API provider generic helper negative readiness coverage', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+
+    expect(capabilities?.evidence.join(' ')).toContain('generic-helper service evidence remains genericHelperProviderToolStatus=not_declared');
+    expect(capabilities?.evidence.join(' ')).toContain('genericHelperDeclaredWebSearchToolCount=0');
+    expect(capabilities?.evidence.join(' ')).toContain('browser.search/search.web_fetch/task_browser/vendor:browse/web_search_cache-style helpers');
+  });
+
   it('records selected-runtime identity evidence for runtime patch promotion routing', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
 
