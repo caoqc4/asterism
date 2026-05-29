@@ -889,9 +889,12 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceSelectedRuntimeEvidenceRunChain=ready');
     expect(result.output).toContain('serviceEvidenceSelectedRuntimeParentTask=task_project');
     expect(result.output).toContain('serviceEvidenceSelectedRuntimeParentTaskEvidenceChain=ready');
+    expect(result.output).toContain('serviceEvidenceSelectedRuntimeProvider=openai');
+    expect(result.output).toContain('serviceEvidenceSelectedRuntimeProviderEvidenceChain=ready');
     expect(result.output).toContain('serviceEvidenceTimelineRuntimeMode=api');
     expect(result.output).toContain('serviceEvidenceTimelineInvocationLayer=api_runtime');
     expect(result.output).toContain('serviceEvidenceTimelineInvocationPhase=decomposition_draft');
+    expect(result.output).toContain('serviceEvidenceTimelineRuntimeProvider=openai');
     expect(result.output).toContain('serviceEvidenceSelectedRuntimeEvidenceChain=ready');
   });
 

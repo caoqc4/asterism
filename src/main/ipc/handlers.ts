@@ -1100,6 +1100,7 @@ export function registerIpcHandlers(): void {
         invocationLayer: 'api_runtime',
         parentTaskId: input.taskId,
         phase: invocation.phase,
+        provider: config.provider,
         runtimeLabel: invocation.runtime.label,
         runtimeMode: 'api',
       },
@@ -1129,6 +1130,7 @@ export function registerIpcHandlers(): void {
         invocationLayer: 'api_runtime',
         parentTaskId: input.taskId,
         phase: invocation.phase,
+        provider: config.provider,
         runtimeMode: 'api',
       },
     });

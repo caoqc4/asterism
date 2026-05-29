@@ -180,6 +180,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_cli_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -222,8 +223,11 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
     expect(partial.summary).toContain('selectedRuntimeParentTask=task_project');
     expect(partial.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
+    expect(partial.summary).toContain('selectedRuntimeProvider=openai');
+    expect(partial.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(partial.summary).toContain('timelineRuntimeEvidenceRunId=run_cli_decomposition');
     expect(partial.summary).toContain('timelineRuntimeParentTask=task_project');
+    expect(partial.summary).toContain('timelineRuntimeProvider=openai');
 
     const readyApplyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
@@ -247,6 +251,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -298,8 +303,49 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('selectedRuntimeEvidenceRunChain=ready');
     expect(ready.summary).toContain('selectedRuntimeParentTask=task_project');
     expect(ready.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('selectedRuntimeProvider=openai');
+    expect(ready.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(ready.summary).toContain('timelineRuntimeEvidenceRunId=run_api_decomposition');
     expect(ready.summary).toContain('timelineRuntimeParentTask=task_project');
+    expect(ready.summary).toContain('timelineRuntimeProvider=openai');
+  });
+
+  it('blocks Agent API decomposition promotion when selected runtime provider is stitched', () => {
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan: buildAgentApiDecompositionApplyPlan({
+        evidenceRunId: 'run_api_decomposition',
+        parentTaskId: 'task_project',
+        source: 'agent_api_decomposition',
+        subtasks: [buildSubtaskDraft()],
+      }),
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        acceptanceCriteria: ['范围文档可验收'],
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        provider: 'anthropic',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(mismatch.summary).toContain('selectedRuntimeProvider=anthropic');
+    expect(mismatch.summary).toContain('timelineRuntimeProvider=openai');
+    expect(mismatch.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+    expect(mismatch.summary).toContain('selectedRuntimeEvidenceChain=missing');
   });
 
   it('blocks Agent API decomposition promotion when apply-plan source and timeline evidence are stitched', () => {
@@ -328,6 +374,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -372,6 +419,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -413,6 +461,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_other',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -442,6 +491,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_other',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -467,6 +517,7 @@ describe('ai runtime invocation contract', () => {
       evidenceRunId: 'run_other',
       invocationLayer: 'api_runtime',
       parentTaskId: 'task_other',
+      provider: 'openai',
       phase: 'decomposition_draft',
       runtimeMode: 'api',
     };
@@ -487,6 +538,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -526,6 +578,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -565,6 +618,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project_a',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -603,6 +657,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -640,6 +695,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project_a',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -679,6 +735,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -720,6 +777,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -757,6 +815,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -797,6 +856,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -837,6 +897,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -881,6 +942,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -924,6 +986,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -976,6 +1039,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -1023,6 +1087,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -1084,6 +1149,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -1128,6 +1194,7 @@ describe('ai runtime invocation contract', () => {
         evidenceRunId: 'run_api_decomposition',
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },
@@ -2646,6 +2713,7 @@ function buildAgentApiDecompositionApplyPlan(
       evidenceRunId: params.evidenceRunId ?? null,
       invocationLayer: 'api_runtime',
       parentTaskId: params.parentTaskId,
+      provider: 'openai',
       phase: 'decomposition_draft',
       runtimeMode: 'api',
     },

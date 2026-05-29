@@ -176,6 +176,7 @@ describe('Taskplane writeback apply plans', () => {
       parentTaskId: 'task_project',
       runtimeContract: {
         invocationLayer: 'api_runtime',
+        provider: 'openai',
         phase: 'decomposition_draft',
         runtimeMode: 'api',
       },

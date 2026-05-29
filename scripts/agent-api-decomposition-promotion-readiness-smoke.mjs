@@ -90,6 +90,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
       evidenceRunId: 'run_cli_decomposition_smoke',
       invocationLayer: 'api_runtime',
       parentTaskId: 'task_project',
+      provider: 'openai',
       phase: 'decomposition_draft',
       runtimeMode: 'api',
     },
@@ -149,11 +150,14 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceSelectedRuntimeEvidenceRunChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceRunChain') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeParentTask=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTask') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeParentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeProvider=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProvider') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeProviderEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProviderEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineInvocationPhase=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineRuntimeEvidenceRunId=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeEvidenceRunId') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineRuntimeParentTask=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeParentTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceTimelineRuntimeProvider=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeProvider') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceChain') ?? 'missing'}`);
 
   if (
@@ -206,11 +210,14 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceRunChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTask') !== 'task_project'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProvider') !== 'openai'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProviderEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') !== 'api_runtime'
     || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') !== 'decomposition_draft'
     || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeEvidenceRunId') !== 'run_cli_decomposition_smoke'
     || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeParentTask') !== 'task_project'
+    || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeProvider') !== 'openai'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeEvidenceChain') !== 'ready'
   ) {
     console.log('status=failed');
@@ -252,6 +259,7 @@ function buildAgentApiDecompositionRuntimeContract(evidenceRunId, parentTaskId) 
     evidenceRunId,
     invocationLayer: 'api_runtime',
     parentTaskId,
+    provider: 'openai',
     phase: 'decomposition_draft',
     runtimeMode: 'api',
   };

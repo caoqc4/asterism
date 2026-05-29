@@ -117,6 +117,7 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
     invocationLayer: RuntimeInvocationLayer;
     parentTaskId?: string | null;
     phase: RuntimeInvocationPhase;
+    provider?: string | null;
     runtimeMode: AiRuntimeMode | 'local_rule' | 'product_harness';
   } | null;
 };
@@ -420,6 +421,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const selectedRuntime = evidence.selectedRuntimeContract;
   const selectedRuntimeEvidenceRunId = selectedRuntime?.evidenceRunId?.trim() || '';
   const selectedRuntimeParentTaskId = selectedRuntime?.parentTaskId?.trim() || '';
+  const selectedRuntimeProvider = selectedRuntime?.provider?.trim() || '';
   const evidenceParentTaskId = evidence.parentTaskId?.trim() || '';
   const applyPlanParentTaskId = applyPlan?.input.parentTaskId?.trim() || '';
   const applyPlanEvidenceRunId = applyPlan?.input.evidenceRunId?.trim() || '';
@@ -429,6 +431,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const timelineRuntimeContract = parseDecompositionTimelineRuntimeContract(applyPlan?.timeline.payload.runtimeContract);
   const timelineRuntimeEvidenceRunId = timelineRuntimeContract?.evidenceRunId?.trim() || '';
   const timelineRuntimeParentTaskId = timelineRuntimeContract?.parentTaskId?.trim() || '';
+  const timelineRuntimeProvider = timelineRuntimeContract?.provider?.trim() || '';
   const sourceEvidenceChainReady = applyPlan?.input.source === applyPlan?.timeline.payload.source;
   const evidenceRunIdChainReady = Boolean(applyPlanEvidenceRunId)
     && applyPlanEvidenceRunId === timelineEvidenceRunId;
@@ -438,11 +441,15 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const selectedRuntimeParentTaskEvidenceChainReady = Boolean(selectedRuntimeParentTaskId)
     && Boolean(applyPlanParentTaskId)
     && selectedRuntimeParentTaskId === applyPlanParentTaskId;
+  const selectedRuntimeProviderEvidenceChainReady = Boolean(selectedRuntimeProvider)
+    && Boolean(timelineRuntimeProvider)
+    && selectedRuntimeProvider === timelineRuntimeProvider;
   const selectedRuntimeContractReady = selectedRuntime?.runtimeMode === 'api'
     && selectedRuntime.invocationLayer === 'api_runtime'
     && selectedRuntime.phase === 'decomposition_draft'
     && selectedRuntimeEvidenceRunChainReady
     && selectedRuntimeParentTaskEvidenceChainReady
+    && selectedRuntimeProviderEvidenceChainReady
     && timelineRuntimeContract?.runtimeMode === selectedRuntime.runtimeMode
     && timelineRuntimeContract.invocationLayer === selectedRuntime.invocationLayer
     && timelineRuntimeContract.phase === selectedRuntime.phase
@@ -451,7 +458,8 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && timelineRuntimeEvidenceRunId === applyPlanEvidenceRunId
     && Boolean(timelineRuntimeParentTaskId)
     && timelineRuntimeParentTaskId === selectedRuntimeParentTaskId
-    && timelineRuntimeParentTaskId === applyPlanParentTaskId;
+    && timelineRuntimeParentTaskId === applyPlanParentTaskId
+    && timelineRuntimeProvider === selectedRuntimeProvider;
   const parentTaskId = evidenceParentTaskId || applyPlanParentTaskId;
   const parentTaskIdentityReady = Boolean(evidenceParentTaskId)
     && Boolean(applyPlanParentTaskId)
@@ -635,11 +643,14 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `selectedRuntimeEvidenceRunChain=${selectedRuntimeEvidenceRunChainReady ? 'ready' : 'missing'}`,
       `selectedRuntimeParentTask=${selectedRuntimeParentTaskId || 'missing'}`,
       `selectedRuntimeParentTaskEvidenceChain=${selectedRuntimeParentTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `selectedRuntimeProvider=${selectedRuntimeProvider || 'missing'}`,
+      `selectedRuntimeProviderEvidenceChain=${selectedRuntimeProviderEvidenceChainReady ? 'ready' : 'missing'}`,
       `timelineRuntimeMode=${timelineRuntimeContract?.runtimeMode ?? 'missing'}`,
       `timelineInvocationLayer=${timelineRuntimeContract?.invocationLayer ?? 'missing'}`,
       `timelineInvocationPhase=${timelineRuntimeContract?.phase ?? 'missing'}`,
       `timelineRuntimeEvidenceRunId=${timelineRuntimeEvidenceRunId || 'missing'}`,
       `timelineRuntimeParentTask=${timelineRuntimeParentTaskId || 'missing'}`,
+      `timelineRuntimeProvider=${timelineRuntimeProvider || 'missing'}`,
       `selectedRuntimeEvidenceChain=${selectedRuntimeContractReady ? 'ready' : 'missing'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `promotionMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
@@ -663,6 +674,7 @@ function parseDecompositionTimelineRuntimeContract(value: unknown): TaskplaneSub
     invocationLayer: contract.invocationLayer,
     parentTaskId: typeof contract.parentTaskId === 'string' ? contract.parentTaskId : null,
     phase: contract.phase,
+    provider: typeof contract.provider === 'string' ? contract.provider : null,
     runtimeMode: contract.runtimeMode,
   };
 }
@@ -672,6 +684,7 @@ type TaskplaneSubtaskCreateManyRuntimeContractEvidence = {
   invocationLayer: 'api_runtime' | 'selected_runtime';
   parentTaskId?: string | null;
   phase: 'decomposition_draft';
+  provider?: string | null;
   runtimeMode: 'api' | 'codex' | 'claude';
 };
 

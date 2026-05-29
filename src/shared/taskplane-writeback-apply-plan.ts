@@ -37,6 +37,7 @@ export type TaskplaneSubtaskCreateManyRuntimeContract = {
   invocationLayer: 'api_runtime' | 'selected_runtime';
   parentTaskId?: string | null;
   phase: 'decomposition_draft';
+  provider?: string | null;
   runtimeLabel?: string | null;
   runtimeMode: 'api' | 'codex' | 'claude';
 };
@@ -151,6 +152,7 @@ export function buildSubtaskCreateManyWritebackApplyPlan(params: {
         invocationLayer: params.runtimeContract.invocationLayer,
         parentTaskId: params.runtimeContract.parentTaskId ?? null,
         phase: params.runtimeContract.phase,
+        provider: params.runtimeContract.provider ?? null,
         runtimeLabel: params.runtimeContract.runtimeLabel,
         runtimeMode: params.runtimeContract.runtimeMode,
       }
