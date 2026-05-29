@@ -102,9 +102,14 @@ function normalizeDeclaredTools(tools: string[] | undefined): string[] {
   return (tools ?? []).map((tool) => tool.trim()).filter(Boolean);
 }
 
-function declaredWebSearchTools(tools: string[] | undefined): string[] {
+function declaredWebSearchTools(tools: string[] | undefined, configuredProvider?: string | null): string[] {
+  const providerNamespace = normalizeProvider(configuredProvider);
   return normalizeDeclaredTools(tools).filter((tool) => {
-    const normalizedTool = tool.toLowerCase().replace(/[.:-]+/g, '_').replace(/_+/g, '_');
+    const loweredTool = tool.toLowerCase();
+    const namespace = loweredTool.includes(':') ? loweredTool.split(':')[0]?.trim() ?? '' : '';
+    if (namespace && namespace !== providerNamespace && namespace !== 'web') return false;
+
+    const normalizedTool = loweredTool.replace(/[.:-]+/g, '_').replace(/_+/g, '_');
     if (EXPLICIT_WEB_SEARCH_TOOL_NAMES.has(normalizedTool)) return true;
 
     const segments = normalizedTool.split('_').filter(Boolean);
@@ -174,7 +179,10 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const declarations = evidence.explicitToolDeclarations;
   const declarationPackageName = declarations?.packageName?.trim().toLowerCase() ?? '';
   const normalizedDeclaredTools = normalizeDeclaredTools(declarations?.declaredTools);
-  const webSearchDeclaredTools = declaredWebSearchTools(declarations?.declaredTools);
+  const webSearchDeclaredTools = declaredWebSearchTools(
+    declarations?.declaredTools,
+    evidence.configuredProvider,
+  );
   const metadataMatchesConfiguredProvider = providerMetadataMatchesConfiguredProvider({
     configuredProvider: evidence.configuredProvider,
     metadata,
