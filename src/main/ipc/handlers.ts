@@ -97,6 +97,7 @@ import { normalizeCreateManualArtifactInput } from '../../shared/runtime-surface
 import { evaluateRuntimeSubtaskDraft } from '../../shared/runtime-subtask-evaluator.js';
 import { evaluateRuntimeAction } from '../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../shared/runtime-verification.js';
+import { formatBusinessLineContextPackForPrompt } from '../../shared/business-line-context-pack.js';
 import { buildSubtaskCreateManyWritebackApplyPlan } from '../../shared/taskplane-writeback-apply-plan.js';
 import {
   extractJsonObjectFromText,
@@ -949,6 +950,12 @@ export function registerIpcHandlers(): void {
     if (input.taskId && !task) {
       throw new Error(`Task not found: ${input.taskId}`);
     }
+    const businessLineWorkspace = input.businessLineId
+      ? await getServices().businessLineService.getWorkspace(input.businessLineId)
+      : null;
+    if (input.businessLineId && !businessLineWorkspace) {
+      throw new Error(`Business line not found: ${input.businessLineId}`);
+    }
     const keySources = task ? selectPromptKeySources(task.sourceContexts) : [];
     const completionCriteria = task?.completionCriteria?.slice(0, 5)
       .map((criterion) => `${criterion.status}: ${criterion.text}`)
@@ -989,9 +996,14 @@ export function registerIpcHandlers(): void {
     const workHabitContext = input.workHabits?.length
       ? `\n\nApplicable confirmed work habits:\n${input.workHabits.slice(0, 5).map((habit) => `- ${habit}`).join('\n')}`
       : '';
+    const businessLineContext = businessLineWorkspace
+      ? `\n\nUse this service-built business-line context pack as the business source of truth:\n${formatBusinessLineContextPackForPrompt(businessLineWorkspace)}`
+      : '';
 
     const behaviorContext = formatAiBehaviorPreferences(config.featureFlags);
-    const systemPrompt = input.taskId
+    const systemPrompt = businessLineWorkspace
+      ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking inside a business-line context. Use the persisted business-line context pack below as the source of truth for business goals, accepted SOPs, decisions, missing context, and open next actions. If a task context is also present, treat it as the target Next Action inside that business line. Help them understand status, next steps, and risks. Reply in the same language as the user's message (Chinese or English).${behaviorContext}\n\n${taskContext ?? `Core Agent context:\n${TASKPLANE_CORE_AGENT_CONTEXT}`}${businessLineContext}${workHabitContext}`
+      : input.taskId
       ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking about a specific task. Use the persisted task context below as the source of truth. Treat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help them understand status, next steps, and risks. Reply in the same language as the user's message (Chinese or English).${behaviorContext}\n\n${taskContext ?? `Core Agent context:\n${TASKPLANE_CORE_AGENT_CONTEXT}\n\nTask ID: ${input.taskId}`}${workHabitContext}`
       : `You are a helpful AI assistant inside Taskplane, a task management tool. You have a global view of all tasks. Follow this read-only core Agent context when task work becomes durable:\n${TASKPLANE_CORE_AGENT_CONTEXT}\n\nTreat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help the user prioritize, plan, and think through their work. Reply in the same language as the user's message (Chinese or English).${behaviorContext}${workHabitContext}`;
 
@@ -1005,7 +1017,7 @@ export function registerIpcHandlers(): void {
     });
 
     const invocation = buildApiRuntimeChatAssistantInvocation({
-      phase: input.taskId ? 'task_assistant' : 'global_assistant',
+      phase: businessLineWorkspace ? 'business_line_assistant' : input.taskId ? 'task_assistant' : 'global_assistant',
       pilotDecision: input.pilotDecision ?? null,
       runtimeLabel: `Agent API Runtime · ${config.provider} / ${config.model}`,
       text: result.text,

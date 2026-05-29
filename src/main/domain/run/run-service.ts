@@ -35,7 +35,9 @@ import {
   buildTaskMemoryWriteProposals,
   type TaskMemoryWriteProposal,
 } from '../../../shared/task-memory-write-proposal.js';
+import { appendBusinessLineContextPackToPrompt } from '../../../shared/business-line-context-pack.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
+import type { BusinessLineWorkspace } from '../../../shared/types/business-line.js';
 import type {
   CreateRunInput,
   RunDetailRecord,
@@ -74,6 +76,10 @@ import type { WorkHabitService } from '../context/work-habit-service.js';
 type ApplicableWorkHabits = {
   ids: string[];
   summaries: string[];
+};
+
+type BusinessLineContextProvider = {
+  getWorkspace(businessLineId: string): Promise<BusinessLineWorkspace | null>;
 };
 
 function formatAgentApiExecutionPromotionReadinessInput(params: {
@@ -128,6 +134,7 @@ export class RunService {
     ),
     private readonly workHabitService: WorkHabitService | null = null,
     private readonly sandboxPatchPromotionRepository: Pick<SandboxPatchPromotionRepository, 'listForRun'> | null = null,
+    private readonly businessLineContextProvider: BusinessLineContextProvider | null = null,
   ) {}
 
   list(): Promise<RunRecord[]> {
@@ -238,13 +245,18 @@ export class RunService {
       }
     }
 
+    const businessLineId = input.businessLineId ?? taskForExecution.businessLineId ?? null;
+    const businessLineWorkspace = businessLineId && this.businessLineContextProvider
+      ? await this.businessLineContextProvider.getWorkspace(businessLineId)
+      : null;
     const runInput: CreateRunInput = {
       ...input,
-      businessLineId: input.businessLineId ?? taskForExecution.businessLineId ?? null,
+      businessLineId,
+      instructions: appendBusinessLineContextPackToPrompt(input.instructions, businessLineWorkspace),
     };
     const created = await this.runRepository.create(runInput);
     const contextReadiness = evaluateRuntimeContextReadiness({
-      prompt: input.instructions ?? '',
+      prompt: runInput.instructions ?? '',
       task: taskForExecution,
     });
     await this.runStepRepository.create({
@@ -252,7 +264,7 @@ export class RunService {
       kind: 'plan',
       status: 'completed',
       title: 'Agent API 上下文就绪判断',
-      input: input.instructions ?? null,
+      input: runInput.instructions ?? null,
       output: formatRuntimeContextReadinessForStep(contextReadiness),
     });
     await this.recordAgentApiExecutionPromotionReadiness({
@@ -311,7 +323,7 @@ export class RunService {
       await this.recordAgentApiExecutionPromotionReadiness({
         capabilities,
         contextReadiness,
-        input,
+        input: runInput,
         phase: 'post_run',
         run: completed,
         runtimeAction: actionEvaluation,
@@ -355,7 +367,7 @@ export class RunService {
     await this.recordAgentApiExecutionPromotionReadiness({
       capabilities,
       contextReadiness,
-      input,
+      input: runInput,
       phase: 'post_run',
       run: failed,
       runtimeAction: actionEvaluation,

@@ -14,6 +14,7 @@ export type ChatInput = {
   messages: ChatMessage[];
   pilotDecision?: PilotDecisionSnapshot | null;
   taskId?: string | null;
+  businessLineId?: string | null;
   workHabits?: string[];
   selectedFile?: {
     path: string;
@@ -26,7 +27,7 @@ export type ChatInput = {
 export type ChatResponse = {
   text: string;
   invocation?: {
-    phase: 'global_assistant' | 'task_assistant';
+    phase: 'global_assistant' | 'task_assistant' | 'business_line_assistant';
     layer: 'api_runtime';
     runtime: {
       mode: 'api';

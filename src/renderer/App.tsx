@@ -34,6 +34,8 @@ export function App() {
   const [panelSuspended, setPanelSuspended] = useState(false);
   const [panelTaskId, setPanelTaskId] = useState<string | null>(null);
   const [panelTaskTitle, setPanelTaskTitle] = useState<string | null>(null);
+  const [panelBusinessLineId, setPanelBusinessLineId] = useState<string | null>(null);
+  const [panelBusinessLineTitle, setPanelBusinessLineTitle] = useState<string | null>(null);
   const [panelDraftPrompt, setPanelDraftPrompt] = useState<string | null>(null);
   const [panelAutoSendDraftPrompt, setPanelAutoSendDraftPrompt] = useState(false);
   const [panelSessionKey, setPanelSessionKey] = useState(0);
@@ -85,10 +87,32 @@ export function App() {
   const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt = false, forceTaskBinding = false, prefillDraftPrompt = false) => {
     setPanelTaskId(taskId);
     setPanelTaskTitle(taskTitle ?? null);
+    setPanelBusinessLineId(null);
+    setPanelBusinessLineTitle(null);
     setPanelDraftPrompt(autoSendDraftPrompt || prefillDraftPrompt ? draftPrompt ?? null : null);
     setPanelAutoSendDraftPrompt(autoSendDraftPrompt);
     setPanelSelectedFile(workspaceSelection.taskId === taskId ? workspaceSelection.selectedFile : null);
     if (forceTaskBinding) setPanelSessionKey((current) => current + 1);
+    setPanelOpen(true);
+    setPanelSuspended(false);
+  }, [workspaceSelection]);
+
+  const openPanelForBusinessLine = useCallback((
+    businessLineId: string,
+    businessLineTitle: string,
+    draftPrompt?: string,
+    taskId?: string | null,
+    taskTitle?: string | null,
+    prefillDraftPrompt = true,
+  ) => {
+    setPanelBusinessLineId(businessLineId);
+    setPanelBusinessLineTitle(businessLineTitle);
+    setPanelTaskId(taskId ?? null);
+    setPanelTaskTitle(taskTitle ?? null);
+    setPanelDraftPrompt(prefillDraftPrompt ? draftPrompt ?? null : null);
+    setPanelAutoSendDraftPrompt(false);
+    setPanelSelectedFile(taskId && workspaceSelection.taskId === taskId ? workspaceSelection.selectedFile : null);
+    setPanelSessionKey((current) => current + 1);
     setPanelOpen(true);
     setPanelSuspended(false);
   }, [workspaceSelection]);
@@ -101,6 +125,8 @@ export function App() {
     }
     setPanelTaskId(workspaceSelection.taskId);
     setPanelTaskTitle(workspaceSelection.taskTitle);
+    setPanelBusinessLineId(null);
+    setPanelBusinessLineTitle(null);
     setPanelDraftPrompt(null);
     setPanelAutoSendDraftPrompt(false);
     setPanelSelectedFile(workspaceSelection.selectedFile);
@@ -175,11 +201,12 @@ export function App() {
               onOpenBusinessLine={openBusinessLine}
               onOpenDecision={() => navigate('decisions')}
               onOpenPanel={openPanelForTask}
+              onOpenBusinessLinePanel={openPanelForBusinessLine}
             />
           )}
           {route === 'business' && (
             <BusinessLinesPage
-              onOpenPanel={openPanelForTask}
+              onOpenBusinessLinePanel={openPanelForBusinessLine}
               onOpenTask={openTaskInTasks}
               focusBusinessLineId={businessFocusId}
             />
@@ -211,6 +238,8 @@ export function App() {
           key={panelSessionKey}
           taskId={panelTaskId}
           taskTitleHint={panelTaskTitle}
+          businessLineId={panelBusinessLineId}
+          businessLineTitleHint={panelBusinessLineTitle}
           draftPrompt={panelDraftPrompt}
           autoSendDraftPrompt={panelAutoSendDraftPrompt}
           selectedFile={panelSelectedFile}

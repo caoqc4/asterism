@@ -1596,6 +1596,8 @@ async function recordPanelTimelineEvent(
 interface RightPanelProps {
   taskId: string | null;
   taskTitleHint?: string | null;
+  businessLineId?: string | null;
+  businessLineTitleHint?: string | null;
   draftPrompt?: string | null;
   autoSendDraftPrompt?: boolean;
   selectedFile?: {
@@ -1614,6 +1616,8 @@ interface RightPanelProps {
 export function RightPanel({
   taskId,
   taskTitleHint = null,
+  businessLineId = null,
+  businessLineTitleHint = null,
   draftPrompt = null,
   autoSendDraftPrompt = false,
   selectedFile = null,
@@ -1675,6 +1679,8 @@ export function RightPanel({
     structuredWritebackProposal,
     taskFileProposal,
   } = sessionState;
+  const activeBusinessLineId = businessLineId ?? activeTaskDetail?.businessLineId ?? null;
+  const activeBusinessLineTitle = businessLineTitleHint ?? (activeBusinessLineId ? activeBusinessLineId : null);
   const activeTaskIdRef = useRef(activeTaskId);
   const activeAgentCliRunRef = useRef(activeAgentCliRun);
   const refreshAiRuntimeStatus = useCallback(() => {
@@ -2122,7 +2128,7 @@ export function RightPanel({
   async function refreshTaskSessionWithPreservation() {
     const advancement = evaluateTaskAdvancement({
       entrypoint: 'context_refresh',
-      hasTaskContext: Boolean(activeTaskId),
+      hasTaskContext: Boolean(activeTaskId || activeBusinessLineId),
       prompt: 'context_refresh',
       task: activeTaskDetail,
     });
@@ -3097,7 +3103,7 @@ export function RightPanel({
         cliRuntimeId: activeAgentCliRuntimeMode,
       }),
       entrypoint: isChildTask ? 'child_advance' : 'right_panel_chat',
-      hasTaskContext: Boolean(activeTaskId),
+      hasTaskContext: Boolean(activeTaskId || activeBusinessLineId),
       isChildTask,
       prompt: text,
       runtime: runtimeAvailability,
@@ -3274,6 +3280,7 @@ export function RightPanel({
         setAgentCliLaunchNotice(formatPilotDecisionLaunchNotice(pilotDecision, runtimeLabel));
         const run = await window.api.triggerRun({
           instructions: taskplaneConversationPrompt,
+          businessLineId: activeBusinessLineId,
           pilotDecision: buildPilotDecisionSnapshot(pilotDecision),
           requestSurface: isTaskProgressIntent(text)
             ? 'right_panel_task_progress_intent'
@@ -3376,6 +3383,7 @@ export function RightPanel({
         const appliedHabits = summarizeWorkHabitMatchesForPrompt(selectedHabitMatches);
         const res = await window.api.chatWithAI({
           messages: historyForAI,
+          businessLineId: activeBusinessLineId,
           pilotDecision: buildPilotDecisionSnapshot(pilotDecision),
           taskId: activeTaskId,
           workHabits: appliedHabits,
@@ -3836,7 +3844,14 @@ export function RightPanel({
       : isAgentApiRuntimeMode
         ? 'Agent API'
         : 'Runtime 未选择';
-  const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
+  const contextLabel = activeBusinessLineId
+    ? activeTaskId
+      ? `Context: Business / ${activeBusinessLineTitle ?? activeBusinessLineId} / Next Action / ${title ?? activeTaskId}`
+      : `Context: Business / ${activeBusinessLineTitle ?? activeBusinessLineId}`
+    : activeTaskId
+    ? `Context: Task / ${title ?? activeTaskId}`
+    : 'Context: Global';
+  const hasSessionActivity = Boolean(activeBusinessLineId || activeTaskId || messages.length > 0 || input.trim());
   const pendingMemoryGuidanceLookupKey = activeTaskId
     && sessionRefreshSuggestion
     && !taskFileProposal
@@ -3866,13 +3881,18 @@ export function RightPanel({
           {activeTaskId ? (
             <button className="panel-ctx-tag" onClick={() => void leaveTaskContext()} title="离开任务上下文">
               <IconTask />
-              <span>{title ?? activeTaskId}</span>
+              <span>{contextLabel}</span>
               <span className="ctx-tag-x">×</span>
             </button>
+          ) : activeBusinessLineId ? (
+            <span className="panel-ctx-global">
+              <IconTask />
+              {contextLabel}
+            </span>
           ) : (
             <span className="panel-ctx-global">
               <IconGlobe />
-              全局
+              {contextLabel}
             </span>
           )}
         </div>
@@ -3899,7 +3919,7 @@ export function RightPanel({
               <div className="panel-history-title">当前会话</div>
               <div className="panel-history-row">
                 <span>上下文</span>
-                <strong>{title ?? '全局'}</strong>
+                <strong>{contextLabel}</strong>
               </div>
               <div className="panel-history-row">
                 <span>消息</span>
@@ -4276,7 +4296,11 @@ export function RightPanel({
         <textarea
           ref={textareaRef}
           className="panel-input"
-          placeholder={activeTaskId ? `关于「${title ?? activeTaskId}」…` : '搜索、提问或捕获任务想法…'}
+          placeholder={activeTaskId
+            ? `关于「${title ?? activeTaskId}」…`
+            : activeBusinessLineId
+            ? `关于「${activeBusinessLineTitle ?? activeBusinessLineId}」…`
+            : '搜索、提问或捕获任务想法…'}
           value={input}
           rows={1}
           onChange={(e) => { setSessionInput(e.target.value); autoResize(); }}

@@ -1468,6 +1468,45 @@ describe('App redesign v1', () => {
     expect(screen.getByText('Decision')).toBeTruthy();
   });
 
+  it('opens business line context from a Today suggestion and sends business-line chat', async () => {
+    const user = userEvent.setup();
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    homeBrief.businessLineSuggestions = [{
+      id: 'business-line-progress:business_line_task_product:task_risk',
+      type: 'progress',
+      businessLineId: 'business_line_task_product',
+      businessLineTitle: 'GoalPilot product',
+      whyNow: 'Accepted learning changed the next recommendation.',
+      nextStep: 'Update Today suggestion trust layer.',
+      sourceRecords: ['review: navigation model changed'],
+      risk: {
+        level: 'medium',
+        note: null,
+      },
+      requiresDecision: false,
+      taskId: 'task_risk',
+    }];
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+    vi.mocked(harness.api.chatWithAI!).mockResolvedValueOnce({ text: '已按业务线上下文推进。' });
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+
+    expect(await screen.findByText(/Context: Business \/ GoalPilot product \/ Next Action/)).toBeTruthy();
+    const input = screen.getByRole('textbox');
+    await user.clear(input);
+    await user.type(input, '下一步怎么推进？');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
+        businessLineId: 'business_line_task_product',
+        taskId: 'task_risk',
+      }));
+    });
+  });
+
   it('shows scheduled/event sweep status in Brief when scheduler is enabled', async () => {
     const homeBrief = buildBriefData(harness.tasks, harness.decisions);
     const sweepSummary = 'scheduledEventAgentSweep=cron / status=completed / checked=2 / started=1 / blocked=1 / blockedReasons=Scheduled/event trigger daily run limit reached: 3/3. / blockedTaskSummaries=task_routine_auto: Scheduled/event trigger daily run limit reached: 3/3. / runFailureReasons=run_scheduled_callback_1: Model failed safely. / terminalRunEvidenceMissingRunIds=run_scheduled_callback_1 / triggerRunEvidenceStatus=pending_terminal_run_evidence';

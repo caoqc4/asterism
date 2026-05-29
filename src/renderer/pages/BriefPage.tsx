@@ -46,6 +46,12 @@ interface BriefPageProps {
   onOpenBusinessLine: (id: string) => void;
   onOpenDecision: () => void;
   onOpenPanel: (taskId: string, draftPrompt?: string) => void;
+  onOpenBusinessLinePanel: (
+    businessLineId: string,
+    businessLineTitle: string,
+    draftPrompt?: string,
+    taskId?: string | null,
+  ) => void;
 }
 
 function actionPromptFromTask(task: FocusTask): string | undefined {
@@ -202,7 +208,7 @@ function focusAttentionLabel(task: FocusTask): string {
   return '这是共享优先队列中的下一项可行动任务。';
 }
 
-export function BriefPage({ onOpenTask, onOpenBusinessLine, onOpenDecision, onOpenPanel }: BriefPageProps) {
+export function BriefPage({ onOpenTask, onOpenBusinessLine, onOpenDecision, onOpenPanel, onOpenBusinessLinePanel }: BriefPageProps) {
   const [tasks, setTasks] = useState<FocusTask[]>([]);
   const [signals, setSignals] = useState<ExternalSignal[]>([]);
   const [briefData, setBriefData] = useState<HomeBriefData | null>(null);
@@ -425,11 +431,17 @@ export function BriefPage({ onOpenTask, onOpenBusinessLine, onOpenDecision, onOp
                   <button className="btn sm" onClick={() => onOpenBusinessLine(suggestion.businessLineId)}>
                     查看业务线
                   </button>
-                  {suggestion.taskId && (
-                    <button className="btn sm primary" onClick={() => onOpenPanel(suggestion.taskId!, `请围绕这个业务线建议推进下一步。\n\n业务线：${suggestion.businessLineTitle}\n为什么现在：${suggestion.whyNow}\n来源：${suggestion.sourceRecords.join(' / ') || 'missing context'}\n风险：${suggestion.risk.level}${suggestion.risk.note ? ` - ${suggestion.risk.note}` : ''}`)}>
-                      AI 协助
-                    </button>
-                  )}
+                  <button
+                    className="btn sm primary"
+                    onClick={() => onOpenBusinessLinePanel(
+                      suggestion.businessLineId,
+                      suggestion.businessLineTitle,
+                      `请围绕这个业务线建议推进下一步。\n\n业务线：${suggestion.businessLineTitle}\n为什么现在：${suggestion.whyNow}\n来源：${suggestion.sourceRecords.join(' / ') || 'missing context'}\n风险：${suggestion.risk.level}${suggestion.risk.note ? ` - ${suggestion.risk.note}` : ''}`,
+                      suggestion.taskId,
+                    )}
+                  >
+                    AI 协助
+                  </button>
                 </div>
               </div>
             ))}

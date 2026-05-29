@@ -316,6 +316,166 @@ function buildPausedRunServiceWithPayload(payload: unknown) {
 }
 
 describe('RunService', () => {
+  it('injects business line context pack into run instructions', async () => {
+    const createdRun = {
+      ...buildRunRecord('running'),
+      businessLineId: 'business_line_product',
+    };
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(createdRun),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        businessLineId: 'business_line_product',
+        output: 'Generated output',
+        outputSource: 'ai',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const artifactRepository = buildArtifactRepositoryMock({
+      createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
+    });
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Generated output'),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No matching template.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const businessLineContextProvider = {
+      getWorkspace: vi.fn().mockResolvedValue({
+        businessLine: {
+          id: 'business_line_product',
+          title: 'GoalPilot product',
+          summary: 'Business-line centered workbench',
+          goal: 'Close the learning loop',
+          kind: 'software_product',
+          legacyTaskId: null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        overview: {
+          nextSuggestion: null,
+          recentChanges: [],
+          blockedDecisions: [],
+          missingContext: [],
+          latestResult: null,
+          latestImprovement: null,
+        },
+        records: [],
+        sourceRecords: [],
+        nextActions: [],
+        learning: {
+          reviews: [],
+          skillRevisions: [],
+          acceptedSkills: [],
+        },
+        contextPack: {
+          businessSummary: 'Business-line centered workbench',
+          currentGoal: 'Close the learning loop',
+          recentChanges: ['Review changed the recommendation.'],
+          activeDecisions: [],
+          openNextActions: [{
+            id: 'task_next_action',
+            title: 'Update Today trust layer',
+            summary: null,
+            state: 'planned',
+            nextStep: 'Ship the business-line context indicator.',
+            waitingReason: null,
+            activeWaitingItem: null,
+            activeBlocker: null,
+            riskLevel: 'medium',
+            riskNote: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          }],
+          latestRecords: [],
+          acceptedSkills: [{
+            id: 'revision_1',
+            skillId: 'skill_1',
+            businessLineId: 'business_line_product',
+            scopePath: 'business-line/GoalPilot product',
+            previousContent: null,
+            nextContent: 'Anchor suggestions to accepted business-line learning.',
+            changeReason: 'Post-action review',
+            sourceReviewId: 'review_1',
+            approvedBy: 'tester',
+            status: 'active',
+            effectiveAt: '2026-01-01T00:00:00.000Z',
+            rollbackTargetRevisionId: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          }],
+          knownConstraints: [],
+          permissionBoundaries: ['Decision-gated risky SOP updates.'],
+          missingContext: [],
+        },
+      }),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      null,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      null,
+      null,
+      businessLineContextProvider as never,
+    );
+
+    await service.trigger({
+      taskId: 'task_1',
+      businessLineId: 'business_line_product',
+      type: 'draft',
+      instructions: 'Please draft this',
+    });
+
+    const createInput = vi.mocked(runRepository.create).mock.calls[0]![0];
+    expect(createInput.instructions).toContain('BusinessLineContextPack');
+    expect(createInput.instructions).toContain('Update Today trust layer');
+    expect(createInput.instructions).toContain('Anchor suggestions to accepted business-line learning.');
+    expect(textExecutor.execute).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        businessLineId: 'business_line_product',
+        instructions: expect.stringContaining('Ship the business-line context indicator.'),
+      }),
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('BusinessLineContextPack'),
+    }));
+  });
+
   it('returns run detail with execution steps, checkpoints, and agent sessions', async () => {
     const runRepository = {
       list: vi.fn(),

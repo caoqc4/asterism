@@ -15,6 +15,7 @@ import { TaskFileRepository } from '../../db/repositories/task-file-repository.j
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
+import { formatBusinessLineContextPackForPrompt } from '../../../shared/business-line-context-pack.js';
 import { makeTempDir } from '../../test-utils.js';
 import { TaskService } from '../task/task-service.js';
 import { BusinessLineService } from './business-line-service.js';
@@ -159,6 +160,10 @@ describe('BusinessLineService', () => {
     expect(accepted.overview.nextSuggestion?.nextStep).toBe('Update Today suggestion trust layer.');
     expect(accepted.overview.nextSuggestion?.sourceRecords.join(' ')).toContain('business-line learning loop');
     expect(accepted.overview.nextSuggestion?.businessLineId).toBe(line!.id);
+    const promptContext = formatBusinessLineContextPackForPrompt(accepted);
+    expect(promptContext).toContain('BusinessLineContextPack');
+    expect(promptContext).toContain('Update Today suggestion trust layer.');
+    expect(promptContext).toContain('business-line learning loop');
     await expect(service.listTodaySuggestions()).resolves.toEqual(expect.arrayContaining([
       expect.objectContaining({
         businessLineId: line!.id,

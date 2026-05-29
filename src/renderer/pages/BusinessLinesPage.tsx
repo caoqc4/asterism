@@ -8,12 +8,18 @@ import type {
 type Tab = 'overview' | 'records' | 'next-actions' | 'learning';
 
 interface BusinessLinesPageProps {
-  onOpenPanel: (taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt?: boolean, forceTaskBinding?: boolean, prefillDraftPrompt?: boolean) => void;
+  onOpenBusinessLinePanel: (
+    businessLineId: string,
+    businessLineTitle: string,
+    draftPrompt?: string,
+    taskId?: string | null,
+    taskTitle?: string | null,
+  ) => void;
   onOpenTask: (taskId: string) => void;
   focusBusinessLineId?: string | null;
 }
 
-export function BusinessLinesPage({ onOpenPanel, onOpenTask, focusBusinessLineId }: BusinessLinesPageProps) {
+export function BusinessLinesPage({ onOpenBusinessLinePanel, onOpenTask, focusBusinessLineId }: BusinessLinesPageProps) {
   const [businessLines, setBusinessLines] = useState<BusinessLineListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(focusBusinessLineId ?? null);
   const [workspace, setWorkspace] = useState<BusinessLineWorkspace | null>(null);
@@ -128,13 +134,13 @@ export function BusinessLinesPage({ onOpenPanel, onOpenTask, focusBusinessLineId
             </div>
 
             {tab === 'overview' && (
-              <OverviewTab workspace={workspace} onOpenPanel={onOpenPanel} />
+              <OverviewTab workspace={workspace} onOpenBusinessLinePanel={onOpenBusinessLinePanel} />
             )}
             {tab === 'records' && (
               <RecordsTab workspace={workspace} />
             )}
             {tab === 'next-actions' && (
-              <NextActionsTab workspace={workspace} onOpenPanel={onOpenPanel} onOpenTask={onOpenTask} />
+              <NextActionsTab workspace={workspace} onOpenBusinessLinePanel={onOpenBusinessLinePanel} onOpenTask={onOpenTask} />
             )}
             {tab === 'learning' && (
               <LearningTab workspace={workspace} onWorkspace={setWorkspace} />
@@ -159,9 +165,9 @@ function TabButton({ id, label, active, onClick }: {
   );
 }
 
-function OverviewTab({ workspace, onOpenPanel }: {
+function OverviewTab({ workspace, onOpenBusinessLinePanel }: {
   workspace: BusinessLineWorkspace;
-  onOpenPanel: BusinessLinesPageProps['onOpenPanel'];
+  onOpenBusinessLinePanel: BusinessLinesPageProps['onOpenBusinessLinePanel'];
 }) {
   const suggestion = workspace.overview.nextSuggestion;
   return (
@@ -182,14 +188,17 @@ function OverviewTab({ workspace, onOpenPanel }: {
                 <span key={source}>{source}</span>
               ))}
             </div>
-            {suggestion.taskId && (
-              <button
-                className="btn sm primary"
-                onClick={() => onOpenPanel(suggestion.taskId!, `请推进这个业务线 Next Action，并在完成后准备 post-action review。\n\n业务线：${workspace.businessLine.title}\n为什么现在：${suggestion.whyNow}\n下一步：${suggestion.nextStep}`, undefined, false, true, true)}
-              >
-                推进
-              </button>
-            )}
+            <button
+              className="btn sm primary"
+              onClick={() => onOpenBusinessLinePanel(
+                workspace.businessLine.id,
+                workspace.businessLine.title,
+                `请推进这个业务线 Next Action，并在完成后准备 post-action review。\n\n业务线：${workspace.businessLine.title}\n为什么现在：${suggestion.whyNow}\n下一步：${suggestion.nextStep}`,
+                suggestion.taskId,
+              )}
+            >
+              推进
+            </button>
           </div>
         ) : (
           <p className="muted">暂无建议。</p>
@@ -242,9 +251,9 @@ function RecordsTab({ workspace }: { workspace: BusinessLineWorkspace }) {
   );
 }
 
-function NextActionsTab({ workspace, onOpenPanel, onOpenTask }: {
+function NextActionsTab({ workspace, onOpenBusinessLinePanel, onOpenTask }: {
   workspace: BusinessLineWorkspace;
-  onOpenPanel: BusinessLinesPageProps['onOpenPanel'];
+  onOpenBusinessLinePanel: BusinessLinesPageProps['onOpenBusinessLinePanel'];
   onOpenTask: BusinessLinesPageProps['onOpenTask'];
 }) {
   return (
@@ -260,7 +269,16 @@ function NextActionsTab({ workspace, onOpenPanel, onOpenTask }: {
             </div>
             <div className="business-action-buttons">
               <button className="btn sm" onClick={() => onOpenTask(task.id)}>详情</button>
-              <button className="btn sm primary" onClick={() => onOpenPanel(task.id, undefined, task.title, false, true)}>
+              <button
+                className="btn sm primary"
+                onClick={() => onOpenBusinessLinePanel(
+                  workspace.businessLine.id,
+                  workspace.businessLine.title,
+                  undefined,
+                  task.id,
+                  task.title,
+                )}
+              >
                 AI 协助
               </button>
             </div>

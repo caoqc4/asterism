@@ -22,6 +22,7 @@ import {
 export type RuntimeInvocationPhase =
   | 'global_assistant'
   | 'task_assistant'
+  | 'business_line_assistant'
   | 'task_type_review'
   | 'decomposition_draft'
   | 'decision_draft'
@@ -145,7 +146,7 @@ export type DecisionDraftInvocationResult = RuntimeInvocationBase & {
 };
 
 export type ChatAssistantInvocationResult = RuntimeInvocationBase & {
-  phase: 'global_assistant' | 'task_assistant';
+  phase: 'global_assistant' | 'task_assistant' | 'business_line_assistant';
   layer: 'api_runtime';
   pilotDecision?: PilotDecisionSnapshot | null;
   text: string;
@@ -858,7 +859,7 @@ export function buildProductHarnessDecisionDraftInvocation(params: {
 }
 
 export function buildApiRuntimeChatAssistantInvocation(params: {
-  phase: 'global_assistant' | 'task_assistant';
+  phase: 'global_assistant' | 'task_assistant' | 'business_line_assistant';
   pilotDecision?: PilotDecisionSnapshot | null;
   text: string;
   runtimeLabel?: string;
@@ -873,7 +874,9 @@ export function buildApiRuntimeChatAssistantInvocation(params: {
     },
     status: 'completed',
     summary: params.summary ?? (
-      params.phase === 'task_assistant'
+      params.phase === 'business_line_assistant'
+        ? '已生成业务线上下文 API Runtime 回答。'
+        : params.phase === 'task_assistant'
         ? '已生成任务上下文 API Runtime 回答。'
         : '已生成全局 API Runtime 回答。'
     ),

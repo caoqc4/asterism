@@ -189,6 +189,7 @@ const runService = new RunService(
   undefined,
   workHabitService,
   sandboxPatchPromotionRepository,
+  businessLineService,
 );
 const browserEvidencePersister = new BrowserEvidencePersister(
   artifactRepository,
