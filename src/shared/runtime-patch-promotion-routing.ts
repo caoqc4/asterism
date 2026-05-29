@@ -125,6 +125,8 @@ export function evaluateRuntimePatchPromotionRoutingReadiness(params: {
       `explicitOperatorApply=${params.explicitOperatorApply ? 'ready' : 'missing'}`,
       `sameRunEvidenceChain=${params.sameRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `postApplyRunEvidence=${params.postApplyRunEvidenceReady ? 'ready' : 'missing'}`,
+      'directRuntimeWorkspaceWrite=blocked',
+      'workspaceMutationPath=explicit_operator_apply_only',
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `promotionMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `missing=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,

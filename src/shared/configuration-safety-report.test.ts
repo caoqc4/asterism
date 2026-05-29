@@ -199,10 +199,14 @@ describe('configuration safety report', () => {
 
     expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
       state: 'approval_required',
-      reason: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / configuredProvider=anthropic / configuredProviderEvidenceChain=ready / selectedRuntimeProvider=anthropic / selectedRuntimeProviderEvidenceChain=ready / providerOwnedMetadata=ready / providerMetadataMatchesSelected=yes / providerMetadataOwner=provider / providerMetadataPackage=@ai-sdk/anthropic / explicitToolDeclaration=missing / explicitToolDeclarationSource=provider_owned_metadata / explicitToolDeclarationPackage=@ai-sdk/anthropic / explicitToolDeclarationPackageMatchesMetadata=yes / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / trustedWebSearchToolCount=0 / trustedWebSearchTools=none / untrustedWebSearchToolCount=0 / untrustedWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
+      reason: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
       requiresApproval: true,
       startupProbePolicy: 'never',
     });
+    expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')?.reason)
+      .toContain('providerNativeSessionReady=no');
+    expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')?.reason)
+      .toContain('providerNativeSessionMissingRequirements=feature_flag,provider_payload_identity,normalized_plan_identity,provider_call_ids');
   });
 
   it('treats pending or errored External Access connectors as missing configuration, not disabled flags', () => {

@@ -1417,6 +1417,15 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('postApplyFilesMatched=no');
   });
 
+  it('records direct runtime workspace write closure for patch promotion routing', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('directRuntimeWorkspaceWrite=blocked');
+    expect(evidence).toContain('workspaceMutationPath=explicit_operator_apply_only');
+    expect(evidence).toContain('future API/runtime patch promotion cannot look complete merely because a runtime claims it wrote files directly');
+  });
+
   it('records structured unsaved web research evidence coverage', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
     const evidence = capabilities?.evidence.join(' ');

@@ -37,6 +37,8 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('patchArtifact=ready');
     expect(readiness.summary).toContain('promotionDecision=ready');
     expect(readiness.summary).toContain('promotionPreflight=missing');
+    expect(readiness.summary).toContain('directRuntimeWorkspaceWrite=blocked');
+    expect(readiness.summary).toContain('workspaceMutationPath=explicit_operator_apply_only');
     expect(readiness.summary).toContain('missingRequirements=selected_runtime_contract,target_task_identity,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
     expect(readiness.summary).toContain('promotionMissingRequirements=selected_runtime_contract,target_task_identity,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
   });
@@ -77,6 +79,8 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('explicitOperatorApply=ready');
     expect(readiness.summary).toContain('sameRunEvidenceChain=ready');
     expect(readiness.summary).toContain('postApplyRunEvidence=ready');
+    expect(readiness.summary).toContain('directRuntimeWorkspaceWrite=blocked');
+    expect(readiness.summary).toContain('workspaceMutationPath=explicit_operator_apply_only');
     expect(readiness.summary).toContain('missingRequirements=none');
     expect(readiness.summary).toContain('promotionMissingRequirements=none');
     expect(readiness.summary).toContain('missing=none');

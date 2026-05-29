@@ -92,15 +92,21 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`blockedPromotionReady=${blocked.ready ? 'yes' : 'no'}`);
   console.log(`blockedRequirements=${blocked.satisfiedRequirements.length}/8`);
   console.log(`blockedMissingRequirements=${blocked.missingRequirements.join(',') || 'none'}`);
+  console.log(`blockedDirectRuntimeWorkspaceWrite=${scalarValue(blocked.summary, 'directRuntimeWorkspaceWrite') ?? 'missing'}`);
+  console.log(`blockedWorkspaceMutationPath=${scalarValue(blocked.summary, 'workspaceMutationPath') ?? 'missing'}`);
   console.log(`sameRunBlockedPromotionReady=${sameRunBlocked.ready ? 'yes' : 'no'}`);
   console.log(`sameRunBlockedRequirements=${sameRunBlocked.satisfiedRequirements.length}/8`);
   console.log(`sameRunBlockedMissingRequirements=${sameRunBlocked.missingRequirements.join(',') || 'none'}`);
   console.log(`syntheticPromotionReady=${syntheticReady.ready ? 'yes' : 'no'}`);
   console.log(`syntheticRequirements=${syntheticReady.satisfiedRequirements.length}/8`);
   console.log(`syntheticMissingRequirements=${syntheticReady.missingRequirements.join(',') || 'none'}`);
+  console.log(`syntheticDirectRuntimeWorkspaceWrite=${scalarValue(syntheticReady.summary, 'directRuntimeWorkspaceWrite') ?? 'missing'}`);
+  console.log(`syntheticWorkspaceMutationPath=${scalarValue(syntheticReady.summary, 'workspaceMutationPath') ?? 'missing'}`);
   console.log(`serviceEvidencePromotionReady=${serviceEvidencePartial.ready ? 'yes' : 'no'}`);
   console.log(`serviceEvidenceRequirements=${serviceEvidencePartial.satisfiedRequirements.length}/8`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceDirectRuntimeWorkspaceWrite=${scalarValue(serviceEvidencePartial.summary, 'directRuntimeWorkspaceWrite') ?? 'missing'}`);
+  console.log(`serviceEvidenceWorkspaceMutationPath=${scalarValue(serviceEvidencePartial.summary, 'workspaceMutationPath') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeRun=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeTask=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') ?? 'missing'}`);
@@ -140,11 +146,17 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || sameRunBlocked.ready
     || !sameRunBlocked.missingRequirements.includes('same_run_evidence_chain')
     || !syntheticReady.ready
+    || scalarValue(blocked.summary, 'directRuntimeWorkspaceWrite') !== 'blocked'
+    || scalarValue(blocked.summary, 'workspaceMutationPath') !== 'explicit_operator_apply_only'
+    || scalarValue(syntheticReady.summary, 'directRuntimeWorkspaceWrite') !== 'blocked'
+    || scalarValue(syntheticReady.summary, 'workspaceMutationPath') !== 'explicit_operator_apply_only'
     || serviceEvidencePartial.ready
     || serviceEvidencePartial.satisfiedRequirements.length !== 2
     || !serviceEvidencePartial.missingRequirements.includes('selected_runtime_contract')
     || !serviceEvidencePartial.missingRequirements.includes('promotion_preflight')
     || !serviceEvidencePartial.missingRequirements.includes('same_run_evidence_chain')
+    || scalarValue(serviceEvidencePartial.summary, 'directRuntimeWorkspaceWrite') !== 'blocked'
+    || scalarValue(serviceEvidencePartial.summary, 'workspaceMutationPath') !== 'explicit_operator_apply_only'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRun') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') !== 'missing'
