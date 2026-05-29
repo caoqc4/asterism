@@ -979,7 +979,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('real workspace apply evidence records target-task identity across patch artifact, promotion Decision, preflight, and post-apply evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('explicit operator apply with same task/run/checkpoint evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('remaining selected-runtime-contract gap only when first-party run-step evidence is unavailable');
-    expect(taskFiles?.evidence.join(' ')).toContain('resolves selectedRuntimeContract from first-party RunStep evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('resolves selectedRuntimeContract from first-party completed same-run RunStep evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('runtime=codex/claude steps become selected_runtime execution_run evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('Agent API promotion readiness steps become api_runtime execution_run evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('instead of accepting renderer-supplied runtime identity');
@@ -1314,6 +1314,8 @@ describe('product feature impact audit', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
 
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract stays missing when the selected runtime run id or target task identity diverges');
+    expect(taskFiles?.evidence.join(' ')).toContain('first-party completed same-run RunStep evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('only when the step belongs to the promotion run');
   });
 
   it('records repeated-separator alias protection for runtime patch promotion routing', () => {

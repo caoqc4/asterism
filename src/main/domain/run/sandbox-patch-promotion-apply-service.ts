@@ -507,7 +507,11 @@ export function inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps(pa
   const taskId = params.taskId.trim();
   if (!runId || !taskId) return null;
 
-  const apiReadinessStep = params.steps.find((step) => {
+  const evidenceSteps = params.steps.filter((step) =>
+    step.runId === runId
+    && step.status === 'completed',
+  );
+  const apiReadinessStep = evidenceSteps.find((step) => {
     const output = step.output ?? '';
     return output.includes('Agent API execution')
       && output.includes('selectedRuntimeContract=ready')
@@ -526,7 +530,7 @@ export function inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps(pa
     };
   }
 
-  const cliRuntimeId = params.steps
+  const cliRuntimeId = evidenceSteps
     .map((step) => step.output ?? '')
     .flatMap((output) => output.split(/\r?\n/))
     .map((line) => /^runtime=(codex|claude)$/.exec(line.trim())?.[1] ?? null)

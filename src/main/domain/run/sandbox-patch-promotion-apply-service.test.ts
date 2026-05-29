@@ -278,6 +278,7 @@ describe('SandboxPatchPromotionApplyService', () => {
 
     const apiSteps: RunStepRecord[] = [
       buildStep({
+        runId: 'run_api_1',
         output: [
           'Agent API execution promotion readiness',
           'selectedRuntimeContract=ready',
@@ -303,6 +304,28 @@ describe('SandboxPatchPromotionApplyService', () => {
       runId: 'run_api_1',
       steps: apiSteps,
       taskId: 'task_other',
+    })).toBeNull();
+
+    expect(inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+      runId: 'run_1',
+      steps: [
+        buildStep({
+          output: 'runtime=codex',
+          runId: 'run_other',
+        }),
+      ],
+      taskId: 'task_1',
+    })).toBeNull();
+
+    expect(inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+      runId: 'run_1',
+      steps: [
+        buildStep({
+          output: 'runtime=codex',
+          status: 'running',
+        }),
+      ],
+      taskId: 'task_1',
     })).toBeNull();
   });
 
