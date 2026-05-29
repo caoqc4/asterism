@@ -1302,6 +1302,9 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids');
     expect(evidence).toContain('providerNativeFlag=enabled');
     expect(evidence).toContain('providerNativeProviderCallIdCount=0');
+    expect(evidence).toContain('providerNativeReadySessionReady=yes');
+    expect(evidence).toContain('providerNativeReadySessionRequirements=5/5');
+    expect(evidence).toContain('payload provider identity, normalized plan provider identity, and providerCallIds all match the selected runtime provider');
   });
 
   it('records exact Agent API execution Write Intent action identity coverage', () => {
