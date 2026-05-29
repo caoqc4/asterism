@@ -1193,9 +1193,11 @@ describe('product feature impact audit', () => {
     expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
 
-  it('records operator-started scheduled/event run-limit Decision proposal coverage', () => {
+  it('records operator-started scheduled/event runtime-start blocked Decision proposal coverage', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
-    expect(decisions?.evidence.join(' ')).toContain('Operator-started scheduled/event Agent triggers now reuse the scheduler run-limit review policy');
+    expect(decisions?.evidence.join(' ')).toContain('Operator-started scheduled/event Agent triggers now reuse scheduler runtime-start blocked review policies');
+    expect(decisions?.evidence.join(' ')).toContain('automation-readiness gaps');
+    expect(decisions?.evidence.join(' ')).toContain('missing/invalid run-limit accounting evidence');
   });
 });
