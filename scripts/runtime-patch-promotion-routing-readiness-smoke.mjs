@@ -124,6 +124,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceExpectedFiles=${scalarValue(serviceEvidencePartial.summary, 'expectedFiles') ?? 'missing'}`);
   console.log(`serviceEvidenceExpectedFileEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'expectedFileEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTouchedFileCount=${scalarValue(serviceEvidencePartial.summary, 'touchedFileCount') ?? 'missing'}`);
+  console.log(`serviceEvidencePostApplyFilesMatched=${scalarValue(serviceEvidencePartial.summary, 'postApplyFilesMatched') ?? 'missing'}`);
   console.log(`serviceEvidenceFilePathSafetyChain=${scalarValue(serviceEvidencePartial.summary, 'filePathSafetyChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTouchedFileEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'touchedFileEvidenceChain') ?? 'missing'}`);
 
@@ -164,6 +165,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'expectedFiles') !== 'src/app.ts'
     || scalarValue(serviceEvidencePartial.summary, 'expectedFileEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'touchedFileCount') !== '0'
+    || scalarValue(serviceEvidencePartial.summary, 'postApplyFilesMatched') !== 'no'
     || scalarValue(serviceEvidencePartial.summary, 'filePathSafetyChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'touchedFileEvidenceChain') !== 'missing'
   ) {

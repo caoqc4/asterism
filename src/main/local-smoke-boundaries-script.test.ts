@@ -1021,6 +1021,7 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceExpectedFiles=src/app.ts');
     expect(result.output).toContain('serviceEvidenceExpectedFileEvidenceChain=ready');
     expect(result.output).toContain('serviceEvidenceOperatorApplyEvidenceChain=missing');
+    expect(result.output).toContain('serviceEvidencePostApplyFilesMatched=no');
     expect(result.output).toContain('serviceEvidenceFilePathSafetyChain=missing');
     expect(result.output).toContain('serviceEvidenceTouchedFileEvidenceChain=missing');
   });

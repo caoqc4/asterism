@@ -958,7 +958,6 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('promotionCheckpointId, preflightCheckpointId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, postApplyTask');
     expect(taskFiles?.evidence.join(' ')).toContain('patchRunId, decisionRunId, preflightRunId, postApplyRunId');
-    expect(taskFiles?.evidence.join(' ')).toContain('expectedFileCount, expectedFiles, expectedFileEvidenceChain, touchedFileCount, touchedFiles, filePathSafetyChain, and touchedFileEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('patch promotion routing gaps and identity');
     expect(taskFiles?.evidence.join(' ')).toContain('runtime patch promotion routing readiness smoke');
     expect(taskFiles?.evidence.join(' ')).toContain('stale-build detection');
@@ -971,7 +970,6 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain, promotionDecisionId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, targetTaskEvidenceChain, checkpointEvidenceChain');
-    expect(taskFiles?.evidence.join(' ')).toContain('expectedFileCount, expectedFiles, expectedFileEvidenceChain, touchedFileCount, filePathSafetyChain, and touchedFileEvidenceChain identity evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('selected_runtime_contract, target_task_identity, explicit_operator_apply, same_run_evidence_chain, and post_apply_run_evidence missing');
     expect(taskFiles?.evidence.join(' ')).toContain('synthetic-ready=8/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService now appends evaluateRuntimePatchPromotionRoutingReadinessFromEvidence output');
@@ -1363,6 +1361,16 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('expectedFileCount, touchedFileCount, and filesMatched');
     expect(evidence).toContain('applied and already-applied audit summaries');
     expect(evidence).toContain('touched files match the reviewed patch file set');
+  });
+
+  it('records post-apply file-set match evidence for runtime patch promotion routing', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('postApplyFilesMatched=yes/no');
+    expect(evidence).toContain('post-apply file-set match directly');
+    expect(evidence).toContain('postApplyFilesMatched, filePathSafetyChain');
+    expect(evidence).toContain('postApplyFilesMatched=no');
   });
 
   it('records structured unsaved web research evidence coverage', () => {

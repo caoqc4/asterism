@@ -165,10 +165,13 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && touchedFiles.length > 0
     && expectedFiles.every(isSafeWorkspaceRelativePath)
     && touchedFiles.every(isSafeWorkspaceRelativePath);
+  const postApplyFilesMatched = expectedFiles.length > 0
+    && touchedFiles.length > 0
+    && sameStringSet(expectedFiles, touchedFiles);
   const touchedFileEvidenceChainReady = expectedFiles.length > 0
     && touchedFiles.length > 0
     && filePathSafetyChainReady
-    && sameStringSet(expectedFiles, touchedFiles);
+    && postApplyFilesMatched;
   const targetTaskIdentityReady = Boolean(targetTaskId)
     && patchTaskId === targetTaskId
     && decisionTaskId === targetTaskId
@@ -334,6 +337,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       `expectedFileEvidenceChain=${expectedFileEvidenceChainReady ? 'ready' : 'missing'}`,
       `touchedFileCount=${touchedFiles.length}`,
       `touchedFiles=${touchedFiles.length ? touchedFiles.join(',') : 'none'}`,
+      `postApplyFilesMatched=${postApplyFilesMatched ? 'yes' : 'no'}`,
       `filePathSafetyChain=${filePathSafetyChainReady ? 'ready' : 'missing'}`,
       `touchedFileEvidenceChain=${touchedFileEvidenceChainReady ? 'ready' : 'missing'}`,
     ].join(' / '),

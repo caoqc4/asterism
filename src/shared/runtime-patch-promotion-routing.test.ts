@@ -201,6 +201,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('expectedFileEvidenceChain=ready');
     expect(partial.summary).toContain('touchedFileCount=0');
     expect(partial.summary).toContain('touchedFiles=none');
+    expect(partial.summary).toContain('postApplyFilesMatched=no');
     expect(partial.summary).toContain('filePathSafetyChain=missing');
     expect(partial.summary).toContain('touchedFileEvidenceChain=missing');
 
@@ -280,6 +281,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('expectedFileEvidenceChain=ready');
     expect(ready.summary).toContain('touchedFileCount=1');
     expect(ready.summary).toContain('touchedFiles=src/app.ts');
+    expect(ready.summary).toContain('postApplyFilesMatched=yes');
     expect(ready.summary).toContain('filePathSafetyChain=ready');
     expect(ready.summary).toContain('touchedFileEvidenceChain=ready');
   });
@@ -1048,6 +1050,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('expectedFiles=src/app.ts,src/util.ts');
     expect(readiness.summary).toContain('touchedFileCount=1');
     expect(readiness.summary).toContain('touchedFiles=src/app.ts');
+    expect(readiness.summary).toContain('postApplyFilesMatched=no');
     expect(readiness.summary).toContain('touchedFileEvidenceChain=missing');
     expect(readiness.summary).toContain('postApplyRunEvidence=missing');
   });
@@ -1111,6 +1114,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(wrongRun.summary).toContain('postApplyRunId=run_other');
     expect(wrongRun.summary).toContain('postApplyTask=task_1');
     expect(wrongRun.summary).toContain('postApplyRunEvidence=missing');
+    expect(wrongRun.summary).toContain('postApplyFilesMatched=yes');
     expect(wrongRun.summary).toContain('touchedFileEvidenceChain=ready');
 
     const wrongTask = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
@@ -1173,6 +1177,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(wrongTask.summary).toContain('postApplyTask=task_other');
     expect(wrongTask.summary).toContain('targetTaskEvidenceChain=missing');
     expect(wrongTask.summary).toContain('postApplyRunEvidence=missing');
+    expect(wrongTask.summary).toContain('postApplyFilesMatched=yes');
     expect(wrongTask.summary).toContain('touchedFileEvidenceChain=ready');
   });
 
@@ -1558,6 +1563,7 @@ describe('runtime patch promotion routing readiness', () => {
     expect(duplicateAfterNormalization.summary).toContain('expectedFiles=src/app.ts,src/app.ts');
     expect(duplicateAfterNormalization.summary).toContain('touchedFiles=src/app.ts,src/app.ts');
     expect(duplicateAfterNormalization.summary).toContain('expectedFileEvidenceChain=missing');
+    expect(duplicateAfterNormalization.summary).toContain('postApplyFilesMatched=no');
     expect(duplicateAfterNormalization.summary).toContain('touchedFileEvidenceChain=missing');
 
     const slashEquivalent = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
@@ -1614,6 +1620,7 @@ describe('runtime patch promotion routing readiness', () => {
     });
     expect(slashEquivalent.summary).toContain('expectedFiles=src/app.ts');
     expect(slashEquivalent.summary).toContain('touchedFiles=src/app.ts');
+    expect(slashEquivalent.summary).toContain('postApplyFilesMatched=yes');
     expect(slashEquivalent.summary).toContain('touchedFileEvidenceChain=ready');
 
     const duplicateAfterRepeatedSeparators = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
