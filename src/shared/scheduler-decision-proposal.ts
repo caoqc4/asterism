@@ -128,7 +128,8 @@ export function planSchedulerDecisionProposal(params: {
   );
   const explicitEvidenceRunId = params.evidenceRunId?.trim() || null;
   const evidenceRunId = explicitEvidenceRunId || (localRecoveryCompleted ? localRecoveryRunId : null);
-  const systemSourceIdentityReady = Boolean(targetTaskId && titleIdentityKey);
+  const decisionPayloadIdentityChainReady = decisionPayloadReady;
+  const systemSourceIdentityReady = Boolean(targetTaskId && titleIdentityKey && decisionPayloadIdentityChainReady);
   const evidenceSourceType = evidenceRunId
     ? 'run'
     : systemSourceIdentityReady
@@ -201,6 +202,7 @@ export function planSchedulerDecisionProposal(params: {
       `approvalQueueSurface=${approvalQueueSurface ?? 'missing'}`,
       `approvalQueueSurfaceReady=${approvalQueueReady ? 'yes' : 'no'}`,
       `decisionPayload=${decisionPayloadReady ? 'ready' : 'missing'}`,
+      `decisionPayloadIdentityChain=${decisionPayloadIdentityChainReady ? 'ready' : 'missing'}`,
       `decisionTitle=${title ? 'present' : 'missing'}`,
       `decisionTitleKey=${titleIdentityKey || 'missing'}`,
       `decisionRationale=${rationale ? 'present' : 'missing'}`,

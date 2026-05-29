@@ -1631,14 +1631,15 @@ describe('product feature impact audit', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
     expect(decisions?.evidence.join(' ')).toContain('valid Decision payload');
-    expect(decisions?.evidence.join(' ')).toContain('decisionPayload, decisionTitle, decisionTitleKey, decisionRationale, decisionOptions, decisionOptionKeys');
+    expect(decisions?.evidence.join(' ')).toContain('decisionPayload, decisionPayloadIdentityChain, decisionTitle, decisionTitleKey, decisionRationale, decisionOptions, decisionOptionKeys');
+    expect(decisions?.evidence.join(' ')).toContain('system-source identity now requires the complete duplicate-free Decision payload identity chain');
     expect(decisions?.evidence.join(' ')).toContain('decisionProposedOutcome, decisionProposedOutcomeKey, decisionProposedOutcomeMatchesOption');
     expect(decisions?.evidence.join(' ')).toContain('evidenceSourceType=run');
     expect(decisions?.evidence.join(' ')).toContain('evidenceSourceIdentityChain=ready');
     expect(decisions?.evidence.join(' ')).toContain('evidenceSourceType=system');
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/4 requirements');
-    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=4/4 requirements with operatorId, decisionPayload=ready, decisionTitleKey=confirm_scheduler_action');
-    expect(decisions?.evidence.join(' ')).toContain('local-recovery=4/4 requirements with decisionPayload=ready, decisionTitleKey=confirm_scheduler_action');
+    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=4/4 requirements with operatorId, decisionPayload=ready, decisionPayloadIdentityChain=ready, decisionTitleKey=confirm_scheduler_action');
+    expect(decisions?.evidence.join(' ')).toContain('local-recovery=4/4 requirements with decisionPayload=ready, decisionPayloadIdentityChain=ready, decisionTitleKey=confirm_scheduler_action');
     expect(decisions?.evidence.join(' ')).toContain('decisionOptionKeys=approve,hold');
     expect(decisions?.evidence.join(' ')).toContain('decisionProposedOutcomeKey=approve');
     expect(decisions?.evidence.join(' ')).toContain('standing-approval=4/4 requirements with evidenceSourceType=system');
@@ -1647,6 +1648,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('service-evidence-ready=4/4 requirements');
     expect(decisions?.evidence.join(' ')).toContain('run evidence source identity and operator_confirmation authorization from structured service evidence');
     expect(decisions?.evidence.join(' ')).toContain('decisionPayload=ready');
+    expect(decisions?.evidence.join(' ')).toContain('decisionPayloadIdentityChain=ready');
     expect(decisions?.evidence.join(' ')).toContain('Task Dynamics scheduler Decision proposal consumption now reuses shared decision_payload readiness');
     expect(decisions?.evidence.join(' ')).toContain('explicit payload targetTaskId plus timeline event taskId to both match the current task');
     expect(decisions?.evidence.join(' ')).toContain('SchedulerService proposalReadinessSummary evidence with proposalReady=yes');
