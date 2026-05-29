@@ -271,15 +271,24 @@ export class BusinessLineRepository {
 
   async resolveBusinessLineForTask(taskId: string): Promise<string | null> {
     const db = initDatabase();
-    const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
-    if (!task) return null;
-    if (task.businessLineId) return task.businessLineId;
-    const [legacyLine] = await db
-      .select()
-      .from(businessLines)
-      .where(eq(businessLines.legacyTaskId, taskId))
-      .limit(1);
-    return legacyLine?.id ?? null;
+    let currentTaskId: string | null = taskId;
+    const visited = new Set<string>();
+
+    while (currentTaskId && !visited.has(currentTaskId)) {
+      visited.add(currentTaskId);
+      const [task] = await db.select().from(tasks).where(eq(tasks.id, currentTaskId)).limit(1);
+      if (!task) return null;
+      if (task.businessLineId) return task.businessLineId;
+      const [legacyLine] = await db
+        .select()
+        .from(businessLines)
+        .where(eq(businessLines.legacyTaskId, currentTaskId))
+        .limit(1);
+      if (legacyLine) return legacyLine.id;
+      currentTaskId = task.parentTaskId;
+    }
+
+    return null;
   }
 
   async resolveBusinessLineForRun(runId: string): Promise<string | null> {

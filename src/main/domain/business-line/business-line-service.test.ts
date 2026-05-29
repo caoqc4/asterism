@@ -302,6 +302,55 @@ describe('BusinessLineService', () => {
     await expect(businessLineRepository.resolveBusinessLineForTaskFile(taskFile.id)).resolves.toBe(created.id);
   });
 
+  it('resolves legacy project child durable objects through the parent business line', async () => {
+    const project = await taskService.create({
+      title: 'Legacy project business line',
+      summary: 'Existing task-only project',
+      taskType: 'project',
+      taskFacets: ['project'],
+    });
+    const [line] = await service.list();
+    expect(line).toMatchObject({
+      legacyTaskId: project.id,
+    });
+    const childTask = await taskService.create({
+      title: 'Legacy child execution task',
+      parentTaskId: project.id,
+    });
+
+    await expect(businessLineRepository.resolveBusinessLineForTask(childTask.id)).resolves.toBe(line!.id);
+
+    const run = await new RunRepository().create({
+      taskId: childTask.id,
+      type: 'draft',
+    });
+    await expect(businessLineRepository.resolveBusinessLineForRun(run.id)).resolves.toBe(line!.id);
+
+    const source = await new SourceContextRepository().create({
+      taskId: childTask.id,
+      title: 'Legacy child source',
+      kind: 'note',
+      runId: run.id,
+    });
+    await expect(businessLineRepository.resolveBusinessLineForSource(source.id)).resolves.toBe(line!.id);
+
+    const artifact = await new ArtifactRepository().createFromRun({
+      taskId: childTask.id,
+      runId: run.id,
+      runType: 'draft',
+      content: 'Legacy child artifact',
+    });
+    await expect(businessLineRepository.resolveBusinessLineForArtifact(artifact.id)).resolves.toBe(line!.id);
+
+    const taskFile = await new TaskFileRepository().create({
+      taskId: childTask.id,
+      name: 'Legacy child note.md',
+      kind: 'file',
+      content: 'Legacy child file',
+    });
+    await expect(businessLineRepository.resolveBusinessLineForTaskFile(taskFile.id)).resolves.toBe(line!.id);
+  });
+
   it('keeps canonical linked actions after the action record falls out of display windows', async () => {
     const created = await service.create({
       title: 'Canonical long-lived business line',
