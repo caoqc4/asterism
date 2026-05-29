@@ -19,7 +19,11 @@ import {
 } from '../../../shared/runtime-event-record.js';
 import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '../../../shared/runtime-handoff.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
-import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
+import {
+  buildTaskMemoryCoverageInputForTask,
+  evaluateTaskMemoryCoverage,
+  type TaskMemoryCoverageEvaluation,
+} from '../../../shared/task-memory-coverage.js';
 import {
   buildTaskMemoryGuidanceStateForTaskFiles,
   type TaskMemoryGuidanceState,
@@ -159,13 +163,14 @@ export class RunService {
     });
     const capabilities = await this.readRuntimeCapabilitySnapshot();
     const taskMemoryGuidance = await this.buildTaskMemoryGuidanceForTask(task);
+    const taskMemoryCoverage = evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
+      hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || input.instructions?.trim()),
+    }));
     const preStepVerification = evaluateRuntimeVerification({
       mode: 'pre_step',
       action: actionEvaluation,
       capabilities,
-      taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
-        hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || input.instructions?.trim()),
-      })),
+      taskMemoryCoverage,
       taskMemoryGuidance,
       requiresModelExecution: true,
     });
@@ -221,6 +226,7 @@ export class RunService {
       input,
       runId: created.id,
       task: taskForExecution,
+      taskMemoryCoverage,
       taskMemoryGuidance,
     });
     const applicableWorkHabits = await this.buildApplicableWorkHabits(taskForExecution);
@@ -273,6 +279,7 @@ export class RunService {
         phase: 'post_run',
         run: completed,
         task: taskForExecution,
+        taskMemoryCoverage,
         taskMemoryGuidance,
       });
       return completed;
@@ -315,6 +322,7 @@ export class RunService {
       phase: 'post_run',
       run: failed,
       task: taskForExecution,
+      taskMemoryCoverage,
       taskMemoryGuidance,
     });
     return failed;
@@ -397,6 +405,7 @@ export class RunService {
     run?: RunRecord;
     runId?: string;
     task: TaskDetail;
+    taskMemoryCoverage: TaskMemoryCoverageEvaluation;
     taskMemoryGuidance: TaskMemoryGuidanceState;
   }): Promise<void> {
     const phase = params.phase ?? 'pre_execution';
@@ -457,7 +466,7 @@ export class RunService {
         pre_step: true,
         runtime_context_assembly: Boolean(params.capabilities?.model.configured),
         subtask_start: true,
-        task_memory_coverage: taskMemoryGuidanceReady,
+        task_memory_coverage: params.taskMemoryCoverage.canStartExecution,
         task_memory_guidance: taskMemoryGuidanceReady,
       },
       providerVisiblePreflight: params.capabilities?.model.configured
@@ -521,6 +530,10 @@ export class RunService {
         : null,
       subtaskStart: {
         status: 'ready',
+        taskId: params.task.id,
+      },
+      taskMemoryCoverage: {
+        status: params.taskMemoryCoverage.canStartExecution ? 'ready' : 'blocked',
         taskId: params.task.id,
       },
       targetTaskId: params.task.id,

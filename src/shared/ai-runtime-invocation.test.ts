@@ -1497,6 +1497,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('taskMemoryGuidanceCount=1');
     expect(ready.summary).toContain('taskMemoryGuidanceTask=task_1');
     expect(ready.summary).toContain('taskMemoryGuidanceTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('taskMemoryCoverage=ready');
+    expect(ready.summary).toContain('taskMemoryCoverageTask=task_1');
+    expect(ready.summary).toContain('taskMemoryCoverageEvidenceChain=ready');
+    expect(ready.summary).toContain('taskMemoryCoverageGateEvidenceChain=ready');
     expect(ready.summary).toContain('runGoalConditions=1');
     expect(ready.summary).toContain('runGoalRun=run_api_execution');
     expect(ready.summary).toContain('runGoalRunEvidenceChain=ready');
@@ -1818,6 +1822,41 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('subtaskStartTask=task_2');
     expect(wrongTask.summary).toContain('subtaskStartEvidenceChain=missing');
     expect(wrongTask.summary).toContain('subtaskStartGateEvidenceChain=missing');
+  });
+
+  it('does not satisfy the task-memory-coverage gate without target-task coverage evidence', () => {
+    const missingEvidence = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      taskMemoryCoverage: null,
+    });
+
+    expect(missingEvidence).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['task_memory_coverage'],
+    });
+    expect(missingEvidence.summary).toContain('taskMemoryCoverage=missing');
+    expect(missingEvidence.summary).toContain('taskMemoryCoverageTask=missing');
+    expect(missingEvidence.summary).toContain('taskMemoryCoverageEvidenceChain=missing');
+    expect(missingEvidence.summary).toContain('taskMemoryCoverageGateEvidenceChain=missing');
+
+    const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      taskMemoryCoverage: {
+        status: 'ready',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['task_memory_coverage'],
+    });
+    expect(wrongTask.summary).toContain('taskMemoryCoverage=ready');
+    expect(wrongTask.summary).toContain('taskMemoryCoverageTask=task_2');
+    expect(wrongTask.summary).toContain('taskMemoryCoverageEvidenceChain=missing');
+    expect(wrongTask.summary).toContain('taskMemoryCoverageGateEvidenceChain=missing');
   });
 
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
@@ -2393,6 +2432,10 @@ function completeAgentApiExecutionPromotionEvidence() {
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
+      status: 'ready' as const,
+      taskId: 'task_1',
+    },
+    taskMemoryCoverage: {
       status: 'ready' as const,
       taskId: 'task_1',
     },

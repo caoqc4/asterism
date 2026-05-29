@@ -188,7 +188,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('providerPreflightStatus, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, writeIntentExtraction, writeIntentMode, noWriteIntentRequired');
     expect(rightPanel?.evidence.join(' ')).toContain('contextStep, contextStepTask, contextStepTaskEvidenceChain, contextManifest, contextManifestTask, contextManifestEvidenceChain');
-    expect(rightPanel?.evidence.join(' ')).toContain('taskMemoryGuidance, taskMemoryGuidanceCount, taskMemoryGuidanceTask, taskMemoryGuidanceTaskEvidenceChain, runGoalConditions');
+    expect(rightPanel?.evidence.join(' ')).toContain('taskMemoryGuidance, taskMemoryGuidanceCount, taskMemoryGuidanceTask, taskMemoryGuidanceTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('runGoalRun, runGoalRunEvidenceChain, runGoalTask, runGoalTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActions, reviewedPatchApplyBoundary, reviewedPatchExplicitApply, noWorkspaceWriteRequired, patchPromotionPreflight, patchPromotionStatus, patchPromotionRun');
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionRunEvidenceChain, patchPromotionTask, patchPromotionTaskEvidenceChain');
@@ -222,7 +222,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('deferred=0/11 requirements and 0/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('partial=5/11 requirements and 3/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=3/11 requirements and 7/9 gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called, taskMemoryGuidance=ready, taskMemoryGuidanceCount=0, runGoalConditions=1');
+    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called, taskMemoryGuidance=ready, taskMemoryGuidanceCount=0');
     expect(rightPanel?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain=missing, providerPreflightRunEvidenceChain=missing, and providerPreflightTaskEvidenceChain=ready');
     expect(rightPanel?.evidence.join(' ')).toContain('until persisted same-run Run evidence exists');
     expect(rightPanel?.evidence.join(' ')).toContain('synthetic-ready=11/11 requirements and 9/9 gates');
@@ -1277,8 +1277,13 @@ describe('product feature impact audit', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const evidence = rightPanel?.evidence.join(' ');
 
+    expect(evidence).toContain('requires task_memory_coverage to carry target-task memory coverage evidence instead of a naked gate boolean');
     expect(evidence).toContain('requires subtask_start to carry target-task readiness evidence instead of a naked gate boolean');
-    expect(evidence).toContain('pre_step, subtask_start, and post_step gates to their matching service-evidence chains');
+    expect(evidence).toContain('task_memory_coverage, task_memory_guidance, pre_step, subtask_start');
+    expect(evidence).toContain('post_step gates to their matching service-evidence chains');
+    expect(evidence).toContain('taskMemoryCoverage, taskMemoryCoverageTask, taskMemoryCoverageEvidenceChain, taskMemoryCoverageGateEvidenceChain');
+    expect(evidence).toContain('taskMemoryCoverageGateEvidenceChain=ready');
+    expect(evidence).toContain('runGoalConditions=1');
     expect(evidence).toContain('subtaskStart, subtaskStartTask, subtaskStartEvidenceChain, subtaskStartGateEvidenceChain');
     expect(evidence).toContain('subtaskStartGateEvidenceChain=ready');
   });

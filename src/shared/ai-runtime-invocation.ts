@@ -217,6 +217,10 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     status: 'blocked' | 'ready';
     taskId?: string | null;
   } | null;
+  taskMemoryCoverage?: {
+    status: 'blocked' | 'ready';
+    taskId?: string | null;
+  } | null;
   targetTaskId?: string | null;
   taskMemoryGuidance?: {
     guidanceCount: number;
@@ -870,6 +874,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const postStepRunId = evidence.postStepVerification?.runId?.trim() || '';
   const postStepTaskId = evidence.postStepVerification?.taskId?.trim() || '';
   const subtaskStartTaskId = evidence.subtaskStart?.taskId?.trim() || '';
+  const taskMemoryCoverageTaskId = evidence.taskMemoryCoverage?.taskId?.trim() || '';
   const runEvidenceTaskEvidenceChainReady = Boolean(runEvidenceId)
     && Boolean(runEvidenceTaskId)
     && Boolean(targetTaskId)
@@ -927,6 +932,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && Boolean(subtaskStartTaskId)
     && Boolean(targetTaskId)
     && subtaskStartTaskId === targetTaskId;
+  const taskMemoryCoverageEvidenceChainReady = evidence.taskMemoryCoverage?.status === 'ready'
+    && Boolean(taskMemoryCoverageTaskId)
+    && Boolean(targetTaskId)
+    && taskMemoryCoverageTaskId === targetTaskId;
   const reviewedPatchApplyBoundaryReady = (
     evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
     && patchPromotionRunEvidenceChainReady
@@ -1046,6 +1055,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
         && Boolean(contextStepId)
         && contextStepTaskEvidenceChainReady;
     }
+    if (gate === 'task_memory_coverage') return taskMemoryCoverageEvidenceChainReady;
     if (gate === 'task_memory_guidance') return taskMemoryGuidanceReady;
     if (gate === 'pre_step') return runGoalContractReady;
     if (gate === 'post_step') return postStepVerificationReady;
@@ -1096,6 +1106,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `taskMemoryGuidanceCount=${evidence.taskMemoryGuidance?.guidanceCount ?? 0}`,
       `taskMemoryGuidanceTask=${taskMemoryGuidanceTaskId || 'missing'}`,
       `taskMemoryGuidanceTaskEvidenceChain=${taskMemoryGuidanceTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `taskMemoryCoverage=${evidence.taskMemoryCoverage?.status ?? 'missing'}`,
+      `taskMemoryCoverageTask=${taskMemoryCoverageTaskId || 'missing'}`,
+      `taskMemoryCoverageEvidenceChain=${taskMemoryCoverageEvidenceChainReady ? 'ready' : 'missing'}`,
+      `taskMemoryCoverageGateEvidenceChain=${gateEvidenceReady('task_memory_coverage') ? 'ready' : 'missing'}`,
       `taskMemoryGuidanceGateEvidenceChain=${gateEvidenceReady('task_memory_guidance') ? 'ready' : 'missing'}`,
       `runGoalConditions=${evidence.runGoalContract?.completionConditionCount ?? 0}`,
       `runGoalRun=${runGoalRunId || 'missing'}`,

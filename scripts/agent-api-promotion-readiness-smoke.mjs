@@ -92,6 +92,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    taskMemoryCoverage: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
     runGoalContract: {
       completionConditionCount: 1,
       objective: 'Produce reviewable task evidence.',
@@ -167,6 +171,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    taskMemoryCoverage: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
     writeIntentExtraction: {
       runId: 'run_api_execution',
       status: 'ready',
@@ -232,6 +240,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    taskMemoryCoverage: {
       status: 'ready',
       taskId: 'task_1',
     },
@@ -302,6 +314,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    taskMemoryCoverage: {
       status: 'ready',
       taskId: 'task_1',
     },
@@ -382,6 +398,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    taskMemoryCoverage: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
     writeIntentExtraction: {
       runId: 'run_api_execution',
       status: 'ready',
@@ -441,6 +461,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceTaskMemoryGuidanceCount=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceCount') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidanceTask=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTask') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidanceTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceTaskMemoryCoverage=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryCoverage') ?? 'missing'}`);
+  console.log(`serviceEvidenceTaskMemoryCoverageTask=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryCoverageTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceTaskMemoryCoverageEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryCoverageEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceTaskMemoryCoverageGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryCoverageGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidanceGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRunGoalConditions=${scalarValue(serviceEvidencePartial.summary, 'runGoalConditions') ?? 'missing'}`);
   console.log(`serviceEvidenceRunGoalRun=${scalarValue(serviceEvidencePartial.summary, 'runGoalRun') ?? 'missing'}`);
@@ -547,6 +571,10 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceCount') !== '0'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'taskMemoryCoverage') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'taskMemoryCoverageTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'taskMemoryCoverageEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'taskMemoryCoverageGateEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceGateEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalConditions') !== '1'
     || scalarValue(serviceEvidencePartial.summary, 'runGoalRun') !== 'run_api_execution_partial'
