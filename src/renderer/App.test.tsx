@@ -2860,7 +2860,7 @@ describe('App redesign v1', () => {
       },
       promotionReadiness: {
         ready: true,
-        summary: 'Agent API decomposition promotion readiness / ready=yes / selectedRuntimeProvider=openai / promotionMissingRequirements=none',
+        summary: 'Agent API decomposition promotion readiness / ready=yes / requirements=7/7 / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / proposalSubtaskTitleEvidenceChain=ready / applyPlanSubtaskTitleEvidenceChain=ready / proposalSubtaskUniqueChain=ready / promotionMissingRequirements=none',
         satisfiedRequirements: [
           'selected_runtime_contract',
           'parent_task_identity',
@@ -2892,6 +2892,13 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText('子任务草案')).toBeTruthy();
+    const decompositionReadiness = screen.getByLabelText('Agent API decomposition promotion readiness');
+    expect(within(decompositionReadiness).getByText('promotionReady=yes')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('requirements=7/7')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('selectedRuntimeProvider=openai')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('proposalSubtaskTitleEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('applyPlanSubtaskTitleEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('proposalSubtaskUniqueChain=ready')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '确认创建子任务' }));
     await waitFor(() => {

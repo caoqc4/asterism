@@ -982,6 +982,34 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
   return lines.slice(0, 2).join('\n') || null;
 }
 
+function agentApiDecompositionPromotionEvidenceChips(
+  readiness: ProjectDecompositionPromotionReadinessSummary | null | undefined,
+): string[] {
+  if (!readiness) return [];
+  const summaryKeys = [
+    'selectedRuntimeProvider',
+    'selectedRuntimeProviderEvidenceChain',
+    'proposalSubtaskTitleEvidenceChain',
+    'applyPlanSubtaskTitleEvidenceChain',
+    'proposalSubtaskUniqueChain',
+    'proposalSubtaskIdentityChain',
+    'parentTaskEvidenceChain',
+    'sourceEvidenceChain',
+    'evidenceRunIdChain',
+  ];
+  return [
+    `promotionReady=${readiness.ready ? 'yes' : 'no'}`,
+    `requirements=${readiness.satisfiedRequirements.length}/${readiness.satisfiedRequirements.length + readiness.missingRequirements.length}`,
+    `missing=${readiness.missingRequirements.join(',') || 'none'}`,
+    ...summaryKeys
+      .map((key) => {
+        const value = readSlashSummaryValue(readiness.summary, key);
+        return value ? `${key}=${value}` : null;
+      })
+      .filter((chip): chip is string => Boolean(chip)),
+  ];
+}
+
 function isNativeWebResearchStep(step: RunStepRecord): boolean {
   const output = step.output ?? '';
   const haystack = `${step.title}\n${output}`;
@@ -4059,6 +4087,13 @@ export function RightPanel({
               <strong>子任务草案</strong>
               <span>确认后创建为当前项目的子任务</span>
             </div>
+            {taskDecompositionDraft.promotionReadiness && (
+              <div className="panel-decomposition-readiness" aria-label="Agent API decomposition promotion readiness">
+                {agentApiDecompositionPromotionEvidenceChips(taskDecompositionDraft.promotionReadiness).map((chip) => (
+                  <span key={chip}>{chip}</span>
+                ))}
+              </div>
+            )}
             <div className="panel-decomposition-list">
               {taskDecompositionDraft.subtasks.map((subtask, index) => (
                 <div className="panel-decomposition-item" key={`${subtask.title}-${index}`}>
