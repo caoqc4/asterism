@@ -59,6 +59,7 @@ describe('scheduler decision proposal contract', () => {
   it('allows only a proposal approval item after operator confirmation', () => {
     const plan = planSchedulerDecisionProposal({
       approvalQueueConnected: true,
+      approvalQueueSurface: 'task_dynamics',
       operatorId: 'operator_1',
       operatorConfirmed: true,
       targetTaskId: 'task_decision_1',
@@ -67,7 +68,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan).toMatchObject({
       status: 'ready',
       approvalItemAllowed: true,
-      approvalQueueSurface: 'unknown',
+      approvalQueueSurface: 'task_dynamics',
       decisionPersistenceAllowed: false,
       operatorId: 'operator_1',
       schedulerTriggerAllowed: false,
@@ -88,7 +89,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('proposalReady=yes');
     expect(plan.summary).toContain('proposalRequirements=3/3');
     expect(plan.summary).toContain('proposalSatisfiedRequirements=approval_queue,target_task_identity,authorization');
-    expect(plan.summary).toContain('approvalQueueSurface=unknown');
+    expect(plan.summary).toContain('approvalQueueSurface=task_dynamics');
     expect(plan.summary).toContain('authorization=operator_confirmation');
     expect(plan.summary).toContain('operatorId=operator_1');
     expect(plan.summary).toContain('standingApprovalPolicyId=missing');
@@ -101,6 +102,7 @@ describe('scheduler decision proposal contract', () => {
   it('allows only a proposal approval item under active Standing Approval', () => {
     const plan = planSchedulerDecisionProposal({
       approvalQueueConnected: true,
+      approvalQueueSurface: 'task_dynamics',
       standingApprovalActive: true,
       standingApprovalPolicyId: 'policy_2',
       standingApprovalScopeTaskId: 'task_decision_2',
@@ -110,7 +112,7 @@ describe('scheduler decision proposal contract', () => {
     expect(plan).toMatchObject({
       status: 'ready',
       approvalItemAllowed: true,
-      approvalQueueSurface: 'unknown',
+      approvalQueueSurface: 'task_dynamics',
       decisionPersistenceAllowed: false,
       operatorId: null,
       schedulerTriggerAllowed: false,
@@ -139,6 +141,7 @@ describe('scheduler decision proposal contract', () => {
   it('allows only a proposal approval item from completed local recovery evidence', () => {
     const plan = planSchedulerDecisionProposal({
       approvalQueueConnected: true,
+      approvalQueueSurface: 'task_dynamics',
       localRecoveryCompleted: true,
       localRecoveryRunId: 'run_recovered_1',
       localRecoveryTaskId: 'task_recovered_1',
@@ -170,6 +173,7 @@ describe('scheduler decision proposal contract', () => {
   it('requires concrete operator identity or target-scoped Standing Approval for direct plans', () => {
     const missingOperator = planSchedulerDecisionProposal({
       approvalQueueConnected: true,
+      approvalQueueSurface: 'task_dynamics',
       operatorConfirmed: true,
       targetTaskId: 'task_decision_2',
     });
@@ -186,6 +190,7 @@ describe('scheduler decision proposal contract', () => {
 
     const scopeMismatch = planSchedulerDecisionProposal({
       approvalQueueConnected: true,
+      approvalQueueSurface: 'task_dynamics',
       standingApprovalActive: true,
       standingApprovalPolicyId: 'policy_2',
       standingApprovalScopeTaskId: 'task_other',
@@ -203,6 +208,42 @@ describe('scheduler decision proposal contract', () => {
     expect(scopeMismatch.summary).toContain('standingApprovalActive=no');
     expect(scopeMismatch.summary).toContain('standingApprovalScopeMatched=no');
     expect(scopeMismatch.summary).toContain('authorization=missing');
+  });
+
+  it('requires the Task Dynamics approval queue surface before scheduler proposals can become approval items', () => {
+    const unknownSurface = planSchedulerDecisionProposal({
+      approvalQueueConnected: true,
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      targetTaskId: 'task_decision_approval_surface',
+    });
+
+    expect(unknownSurface).toMatchObject({
+      status: 'blocked',
+      approvalItemAllowed: false,
+      approvalQueueSurface: 'unknown',
+      missingRequirements: ['approval_queue'],
+    });
+    expect(unknownSurface.summary).toContain('approvalQueueConnected=yes');
+    expect(unknownSurface.summary).toContain('approvalQueueSurface=unknown');
+    expect(unknownSurface.summary).toContain('approvalQueueSurfaceReady=no');
+
+    const rightPanelSurface = planSchedulerDecisionProposal({
+      approvalQueueConnected: true,
+      approvalQueueSurface: 'right_panel',
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      targetTaskId: 'task_decision_approval_surface',
+    });
+
+    expect(rightPanelSurface).toMatchObject({
+      status: 'blocked',
+      approvalItemAllowed: false,
+      approvalQueueSurface: 'right_panel',
+      missingRequirements: ['approval_queue'],
+    });
+    expect(rightPanelSurface.summary).toContain('approvalQueueSurface=right_panel');
+    expect(rightPanelSurface.summary).toContain('approvalQueueSurfaceReady=no');
   });
 
   it('derives scheduler Decision proposal readiness from structured service evidence', () => {

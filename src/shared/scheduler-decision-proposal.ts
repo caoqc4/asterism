@@ -104,8 +104,10 @@ export function planSchedulerDecisionProposal(params: {
   const requiredRequirements = schedulerDecisionProposalRequirements();
   const blockedReasons = [];
   const missingRequirements: SchedulerDecisionProposalRequirement[] = [];
+  const approvalQueueSurface = params.approvalQueueConnected ? (params.approvalQueueSurface ?? 'unknown') : null;
+  const approvalQueueReady = approvalQueueSurface === 'task_dynamics';
 
-  if (!params.approvalQueueConnected) {
+  if (!approvalQueueReady) {
     missingRequirements.push('approval_queue');
     blockedReasons.push('Task Dynamics writeback approval queue is not connected.');
   }
@@ -128,7 +130,7 @@ export function planSchedulerDecisionProposal(params: {
   return {
     status,
     approvalItemAllowed,
-    approvalQueueSurface: params.approvalQueueConnected ? (params.approvalQueueSurface ?? 'unknown') : null,
+    approvalQueueSurface,
     decisionPersistenceAllowed: false,
     operatorId: operatorConfirmed ? operatorId : null,
     schedulerTriggerAllowed: false,
@@ -148,7 +150,9 @@ export function planSchedulerDecisionProposal(params: {
       `proposalRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
       `proposalSatisfiedRequirements=${satisfiedRequirements.length ? satisfiedRequirements.join(',') : 'none'}`,
       `approvalItemAllowed=${approvalItemAllowed ? 'true' : 'false'}`,
-      `approvalQueueSurface=${params.approvalQueueConnected ? (params.approvalQueueSurface ?? 'unknown') : 'missing'}`,
+      `approvalQueueConnected=${params.approvalQueueConnected ? 'yes' : 'no'}`,
+      `approvalQueueSurface=${approvalQueueSurface ?? 'missing'}`,
+      `approvalQueueSurfaceReady=${approvalQueueReady ? 'yes' : 'no'}`,
       `targetTask=${targetTaskId ?? 'missing'}`,
       'decisionPersistenceAllowed=false',
       'writebackDispatchAllowed=false',

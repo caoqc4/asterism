@@ -32,12 +32,14 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   const blocked = planSchedulerDecisionProposal();
   const operatorConfirmed = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
+    approvalQueueSurface: 'task_dynamics',
     operatorId: 'operator_scheduler_decision_smoke',
     operatorConfirmed: true,
     targetTaskId: 'task_scheduler_decision_operator_smoke',
   });
   const standingApproval = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
+    approvalQueueSurface: 'task_dynamics',
     standingApprovalActive: true,
     standingApprovalPolicyId: 'standing_policy_smoke',
     standingApprovalScopeTaskId: 'task_scheduler_decision_standing_smoke',
@@ -45,6 +47,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   });
   const localRecovery = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
+    approvalQueueSurface: 'task_dynamics',
     localRecoveryCompleted: true,
     localRecoveryRunId: 'run_scheduler_recovery_smoke',
     localRecoveryTaskId: 'task_scheduler_decision_recovery_smoke',
@@ -52,6 +55,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   });
   const scopeMismatch = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
+    approvalQueueSurface: 'task_dynamics',
     standingApprovalActive: true,
     standingApprovalPolicyId: 'standing_policy_scope_mismatch_smoke',
     standingApprovalScopeTaskId: 'task_scheduler_decision_other',
