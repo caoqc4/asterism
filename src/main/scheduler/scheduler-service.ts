@@ -911,13 +911,19 @@ export class SchedulerService {
     }
 
     if (!plan.runtimeStartAllowed) {
+      const runtimeStartBlockedDecisionProposal = triggerKind === 'manual'
+        ? await this.proposeScheduledEventRuntimeStartBlockedDecision(task, plan, now)
+        : null;
       return {
         status: 'blocked',
         plan,
         run: null,
         terminalRunEvidenceStatus: 'not_started',
         triggerRunEvidenceStatus: 'not_started',
-        summary: `${plan.summary} / trigger=blocked / triggerRunEvidenceStatus=not_started`,
+        summary: [
+          `${plan.summary} / trigger=blocked / triggerRunEvidenceStatus=not_started`,
+          runtimeStartBlockedDecisionProposal ?? 'runtimeStartBlockedDecisionProposal=not_required',
+        ].join(' / '),
       };
     }
 
@@ -1080,6 +1086,50 @@ export class SchedulerService {
       targetTaskId: task.id,
       title,
     });
+  }
+
+  private async proposeScheduledEventRuntimeStartBlockedDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    now: Date,
+  ): Promise<string | null> {
+    const blockedResult: ScheduledEventAgentTriggerResult = {
+      status: 'blocked',
+      plan,
+      run: null,
+      terminalRunEvidenceStatus: 'not_started',
+      triggerRunEvidenceStatus: 'not_started',
+      summary: plan.summary,
+    };
+
+    if (isScheduledEventDailyRunLimitBlocked(blockedResult)) {
+      const proposal = await this.proposeScheduledEventRunLimitDecision(task, plan, now)
+        .catch((error: unknown) => ({
+          status: 'failed' as const,
+          summary: `runLimitDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+        }));
+      return `runLimitDecisionProposal=${proposal.status} / runLimitDecisionSummary=${proposal.summary}`;
+    }
+
+    if (isScheduledEventAutomationReadinessBlocked(blockedResult)) {
+      const proposal = await this.proposeScheduledEventReadinessBlockedDecision(task, plan, now)
+        .catch((error: unknown) => ({
+          status: 'failed' as const,
+          summary: `readinessDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+        }));
+      return `readinessDecisionProposal=${proposal.status} / readinessDecisionSummary=${proposal.summary}`;
+    }
+
+    if (isScheduledEventRunLimitAccountingBlocked(blockedResult)) {
+      const proposal = await this.proposeScheduledEventRunLimitAccountingDecision(task, plan, now)
+        .catch((error: unknown) => ({
+          status: 'failed' as const,
+          summary: `runLimitAccountingDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+        }));
+      return `runLimitAccountingDecisionProposal=${proposal.status} / runLimitAccountingDecisionSummary=${proposal.summary}`;
+    }
+
+    return null;
   }
 
   private async proposeScheduledEventRunLimitDecision(

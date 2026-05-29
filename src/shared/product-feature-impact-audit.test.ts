@@ -1192,4 +1192,10 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('401 authentication_failed');
     expect(smoke?.gaps.join(' ')).toContain('manual opt-in packaged harness');
   });
+
+  it('records operator-started scheduled/event run-limit Decision proposal coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('Operator-started scheduled/event Agent triggers now reuse the scheduler run-limit review policy');
+  });
 });
