@@ -900,8 +900,9 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('expected patch files and post-apply touched files as one touchedFileEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('expected patch files and post-apply touched files as one filePathSafetyChain');
     expect(taskFiles?.evidence.join(' ')).toContain('unsafe workspace paths');
-    expect(taskFiles?.evidence.join(' ')).toContain('normalizes workspace-relative path separators before duplicate checks and touched-file matching');
+    expect(taskFiles?.evidence.join(' ')).toContain('normalize workspace-relative path separators before duplicate checks, touched-file matching, and workspace writes');
     expect(taskFiles?.evidence.join(' ')).toContain('equivalent slash/backslash paths cannot satisfy duplicate-free evidence as separate files');
+    expect(taskFiles?.evidence.join(' ')).toContain('cannot write a separate backslash-named file on POSIX');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract to carry the same run id and target task id');
     expect(taskFiles?.evidence.join(' ')).toContain('cannot be promoted from mode/layer/phase metadata alone');
     expect(taskFiles?.evidence.join(' ')).toContain('satisfied and missing requirement lists');

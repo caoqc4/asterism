@@ -411,15 +411,16 @@ async function validateSandboxPatchApplication(params: {
     }
 > {
   const workspaceRoot = path.resolve(params.workspaceRoot);
-  const expectedFiles = new Set(params.expectedFiles);
+  const normalizedExpectedFiles = params.expectedFiles.map(normalizeWorkspaceRelativePath);
+  const expectedFiles = new Set(normalizedExpectedFiles);
   const blockedReasons: string[] = [];
-  const touchedFiles = params.parsedPatch.map((item) => item.file);
+  const touchedFiles = params.parsedPatch.map((item) => normalizeWorkspaceRelativePath(item.file));
   const pendingWrites: Array<{ content: string; filePath: string }> = [];
   let alreadyApplied = true;
   const seenExpectedFiles = new Set<string>();
   const seenTouchedFiles = new Set<string>();
 
-  for (const file of params.expectedFiles) {
+  for (const file of normalizedExpectedFiles) {
     if (seenExpectedFiles.has(file)) {
       blockedReasons.push(`Patch promotion expected duplicate file: ${file}`);
     }
@@ -445,7 +446,7 @@ async function validateSandboxPatchApplication(params: {
     }
   }
 
-  if (!sameStringSet(touchedFiles, params.expectedFiles)) {
+  if (!sameStringSet(touchedFiles, normalizedExpectedFiles)) {
     blockedReasons.push('Patch promotion touched files do not match expected files.');
   }
 
@@ -454,7 +455,8 @@ async function validateSandboxPatchApplication(params: {
   }
 
   for (const operation of params.parsedPatch) {
-    const filePath = resolveWorkspacePath(workspaceRoot, operation.file);
+    const file = normalizeWorkspaceRelativePath(operation.file);
+    const filePath = resolveWorkspacePath(workspaceRoot, file);
     const currentContent = await readWorkspaceText(filePath);
 
     if (currentContent === operation.newContent) {
@@ -464,7 +466,7 @@ async function validateSandboxPatchApplication(params: {
     alreadyApplied = false;
 
     if (currentContent !== operation.oldContent) {
-      blockedReasons.push(`Patch promotion workspace content does not match reviewed base: ${operation.file}`);
+      blockedReasons.push(`Patch promotion workspace content does not match reviewed base: ${file}`);
       continue;
     }
 
@@ -511,7 +513,7 @@ function resolveWorkspacePath(workspaceRoot: string, requestedPath: string): str
 }
 
 function normalizeDiffFilePath(filePath: string): string {
-  return filePath.replace(/^a\//, '').replace(/^b\//, '').trim();
+  return normalizeWorkspaceRelativePath(filePath).replace(/^a\//, '').replace(/^b\//, '');
 }
 
 function joinDiffContent(lines: string[]): string {
@@ -524,8 +526,12 @@ function sameStringSet(left: string[], right: string[]): boolean {
   return leftSet.size === rightSet.size && [...leftSet].every((value) => rightSet.has(value));
 }
 
+function normalizeWorkspaceRelativePath(value: string): string {
+  return value.replaceAll('\\', '/').trim();
+}
+
 function isSafeWorkspaceRelativePath(value: string): boolean {
-  const normalized = value.replaceAll('\\', '/').trim();
+  const normalized = normalizeWorkspaceRelativePath(value);
   if (!normalized
     || normalized.startsWith('/')
     || /^[a-z]:\//i.test(normalized)

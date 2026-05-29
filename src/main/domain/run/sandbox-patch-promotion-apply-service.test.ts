@@ -283,9 +283,9 @@ describe('SandboxPatchPromotionApplyService', () => {
       expect(result).toMatchObject({
         blockedReasons: [
           'Patch promotion expected unsafe file: src/./app.ts',
-          'Patch promotion expected unsafe file: C:\\secrets\\token.txt',
+          'Patch promotion expected unsafe file: C:/secrets/token.txt',
           'Patch promotion touched unsafe file: src/./app.ts',
-          'Patch promotion touched unsafe file: C:\\secrets\\token.txt',
+          'Patch promotion touched unsafe file: C:/secrets/token.txt',
         ],
         status: 'blocked',
         touchedFiles: [],
@@ -296,11 +296,11 @@ describe('SandboxPatchPromotionApplyService', () => {
         'sandbox_patch_promotion_1',
         [
           'Patch promotion expected unsafe file: src/./app.ts',
-          'Patch promotion expected unsafe file: C:\\secrets\\token.txt',
+          'Patch promotion expected unsafe file: C:/secrets/token.txt',
           'Patch promotion touched unsafe file: src/./app.ts',
-          'Patch promotion touched unsafe file: C:\\secrets\\token.txt',
+          'Patch promotion touched unsafe file: C:/secrets/token.txt',
         ],
-        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion expected unsafe file: src/./app.ts Patch promotion expected unsafe file: C:\\secrets\\token.txt Patch promotion touched unsafe file: src/./app.ts Patch promotion touched unsafe file: C:\\secrets\\token.txt'),
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion expected unsafe file: src/./app.ts Patch promotion expected unsafe file: C:/secrets/token.txt Patch promotion touched unsafe file: src/./app.ts Patch promotion touched unsafe file: C:/secrets/token.txt'),
       );
       expect(markBlocked.mock.calls[0]?.[2]).toContain('filePathSafetyChain=missing');
     } finally {
@@ -354,6 +354,86 @@ describe('SandboxPatchPromotionApplyService', () => {
       expect(markBlocked.mock.calls[0]?.[2]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
       expect(markBlocked.mock.calls[0]?.[2]).toContain('expectedFileEvidenceChain=missing');
       expect(markBlocked.mock.calls[0]?.[2]).toContain('postApplyRunEvidence=missing');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('normalizes slash and backslash aliases before applying reviewed patches', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-path-alias-');
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, 'src', 'app.ts'), 'alpha\n');
+      const diff = [
+        '--- a/src\\app.ts',
+        '+++ b/src\\app.ts',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const promotion = buildPromotion({ expectedFiles: ['src/app.ts'] });
+      const { markApplied, service } = buildService({
+        artifact: buildArtifact(diff),
+        promotion,
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        status: 'applied',
+        touchedFiles: ['src/app.ts'],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'src', 'app.ts'), 'utf8')).toBe('beta\n');
+      expect(fs.existsSync(path.join(tempRoot, 'src\\app.ts'))).toBe(false);
+      expect(markApplied.mock.calls[0]?.[1]).toContain('files=src/app.ts');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('touchedFiles=src/app.ts');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('filePathSafetyChain=ready');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('touchedFileEvidenceChain=ready');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks expected file aliases that duplicate after path normalization', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-expected-alias-');
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, 'src', 'app.ts'), 'alpha\n');
+      const diff = [
+        '--- a/src/app.ts',
+        '+++ b/src/app.ts',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const promotion = buildPromotion({ expectedFiles: ['src/app.ts', 'src\\app.ts'] });
+      const { markBlocked, service } = buildService({
+        artifact: buildArtifact(diff),
+        promotion,
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: [
+          'Patch promotion expected duplicate file: src/app.ts',
+        ],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'src', 'app.ts'), 'utf8')).toBe('alpha\n');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('expectedFiles=src/app.ts,src/app.ts');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('expectedFileEvidenceChain=missing');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
