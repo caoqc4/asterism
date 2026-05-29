@@ -1420,6 +1420,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('service-evidence=3/4 requirements');
     expect(decisions?.evidence.join(' ')).toContain('decisionPayload=ready');
     expect(decisions?.evidence.join(' ')).toContain('Task Dynamics scheduler Decision proposal consumption now reuses shared decision_payload readiness');
+    expect(decisions?.evidence.join(' ')).toContain('explicit payload targetTaskId plus timeline event taskId to both match the current task');
     expect(decisions?.evidence.join(' ')).toContain('duplicate-free option labels');
     expect(decisions?.evidence.join(' ')).toContain('cannot bypass the SchedulerService producer validation');
   });

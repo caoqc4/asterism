@@ -434,6 +434,55 @@ describe('Taskplane writeback approval items', () => {
     expect(items).toEqual([]);
   });
 
+  it('blocks scheduler Decision proposal timeline events without explicit payload target-task identity', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_missing_payload_task',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          rationale: '缺少 payload targetTaskId 的历史事件不能进入审批队列。',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
+  it('blocks scheduler Decision proposal timeline events when event and payload task identity diverge', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_cross_task',
+        taskId: 'task_other',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          rationale: '跨任务 timeline event 不能为当前任务创建审批项。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
   it('blocks local-recovery scheduler Decision proposal timeline events without recovered-run task identity', () => {
     const items = buildTaskplaneWritebackApprovalItems({
       runDetails: [],

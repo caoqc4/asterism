@@ -234,8 +234,9 @@ function buildSchedulerDecisionApprovalItem(params: {
   if (params.event.type !== 'panel.scheduler_decision_proposed') return null;
   const payload = parseSchedulerDecisionPayload(params.event.payload);
   if (!payload) return null;
-  const targetTaskId = payload.targetTaskId?.trim() || params.event.taskId;
-  if (targetTaskId !== params.taskId) return null;
+  const eventTaskId = params.event.taskId.trim();
+  const targetTaskId = payload.targetTaskId?.trim() || '';
+  if (eventTaskId !== params.taskId || targetTaskId !== params.taskId) return null;
 
   const readiness = planSchedulerDecisionProposalFromEvidence({
     approvalQueue: {
