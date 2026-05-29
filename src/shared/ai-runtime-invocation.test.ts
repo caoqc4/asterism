@@ -1648,7 +1648,9 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('contextManifest=task=task_1 / files=2');
     expect(partial.summary).toContain('contextManifestTask=task_1');
     expect(partial.summary).toContain('contextManifestEvidenceChain=ready');
+    expect(partial.summary).toContain('writeIntentSupportedActionCount=0');
     expect(partial.summary).toContain('writeIntentActions=none');
+    expect(partial.summary).toContain('writeIntentDeclaredActionCount=0');
     expect(partial.summary).toContain('reviewedPatchExplicitApply=no');
     expect(partial.summary).toContain('patchPromotionPreflight=missing');
     expect(partial.summary).toContain('runtimeMode=api');
@@ -1722,7 +1724,9 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('subtaskStartTask=task_1');
     expect(ready.summary).toContain('subtaskStartEvidenceChain=ready');
     expect(ready.summary).toContain('subtaskStartGateEvidenceChain=ready');
+    expect(ready.summary).toContain('writeIntentSupportedActionCount=2');
     expect(ready.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
+    expect(ready.summary).toContain('writeIntentDeclaredActionCount=2');
     expect(ready.summary).toContain('writeIntentActionIdentityChain=ready');
     expect(ready.summary).toContain('writeIntentActionBoundary=ready');
     expect(ready.summary).toContain('reviewedPatchApplyBoundary=ready');
@@ -2255,6 +2259,8 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: ['write_intent_extraction'],
     });
     expect(unsafeAction.summary).toContain('writeIntentActions=artifact.propose,task_file.propose,workspace.apply');
+    expect(unsafeAction.summary).toContain('writeIntentSupportedActionCount=3');
+    expect(unsafeAction.summary).toContain('writeIntentDeclaredActionCount=3');
     expect(unsafeAction.summary).toContain('writeIntentActionIdentityChain=missing');
     expect(unsafeAction.summary).toContain('writeIntentActionBoundary=missing');
     expect(unsafeAction.summary).toContain('writeIntentRunEvidenceChain=ready');
@@ -2277,6 +2283,8 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: ['write_intent_extraction'],
     });
     expect(duplicateAction.summary).toContain('writeIntentActions=artifact.propose,task_file.propose,task_file.propose');
+    expect(duplicateAction.summary).toContain('writeIntentSupportedActionCount=3');
+    expect(duplicateAction.summary).toContain('writeIntentDeclaredActionCount=3');
     expect(duplicateAction.summary).toContain('declaredWriteIntentActions=artifact.propose,task_file.propose,task_file.propose');
     expect(duplicateAction.summary).toContain('writeIntentDeclaredActionChain=missing');
     expect(duplicateAction.summary).toContain('writeIntentActionIdentityChain=missing');
@@ -2318,7 +2326,9 @@ describe('ai runtime invocation contract', () => {
     expect(postRunNoWriteback.summary).toContain('terminalEvidence=present');
     expect(postRunNoWriteback.summary).toContain('postStepRunEvidenceChain=ready');
     expect(postRunNoWriteback.summary).toContain('postStepTaskEvidenceChain=ready');
+    expect(postRunNoWriteback.summary).toContain('writeIntentSupportedActionCount=0');
     expect(postRunNoWriteback.summary).toContain('writeIntentActions=none');
+    expect(postRunNoWriteback.summary).toContain('writeIntentDeclaredActionCount=0');
     expect(postRunNoWriteback.summary).toContain('writeIntentMode=proposal_boundary');
     expect(postRunNoWriteback.summary).toContain('noWriteIntentRequired=no');
     expect(postRunNoWriteback.summary).toContain('reviewedPatchApplyBoundary=missing');
@@ -2350,6 +2360,8 @@ describe('ai runtime invocation contract', () => {
       missingGates: [],
     });
     expect(noWriteRun.summary).toContain('writeIntentActions=none');
+    expect(noWriteRun.summary).toContain('writeIntentSupportedActionCount=0');
+    expect(noWriteRun.summary).toContain('writeIntentDeclaredActionCount=0');
     expect(noWriteRun.summary).toContain('writeIntentMode=no_write_intents_required');
     expect(noWriteRun.summary).toContain('noWriteIntentRequired=yes');
     expect(noWriteRun.summary).toContain('writeIntentActionIdentityChain=missing');
@@ -2389,6 +2401,8 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: ['write_intent_extraction'],
     });
     expect(invalidDeclaredIntent.summary).toContain('writeIntentActions=none');
+    expect(invalidDeclaredIntent.summary).toContain('writeIntentSupportedActionCount=0');
+    expect(invalidDeclaredIntent.summary).toContain('writeIntentDeclaredActionCount=1');
     expect(invalidDeclaredIntent.summary).toContain('declaredWriteIntentActions=source_context.create');
     expect(invalidDeclaredIntent.summary).toContain('writeIntentDeclaredActionChain=missing');
     expect(invalidDeclaredIntent.summary).toContain('noWriteIntentRequired=yes');
@@ -2420,6 +2434,8 @@ describe('ai runtime invocation contract', () => {
       missingGates: [],
     });
     expect(sourceContextRun.summary).toContain('writeIntentActions=source_context.create');
+    expect(sourceContextRun.summary).toContain('writeIntentSupportedActionCount=1');
+    expect(sourceContextRun.summary).toContain('writeIntentDeclaredActionCount=1');
     expect(sourceContextRun.summary).toContain('writeIntentMode=proposal_boundary');
     expect(sourceContextRun.summary).toContain('writeIntentActionIdentityChain=ready');
     expect(sourceContextRun.summary).toContain('writeIntentActionBoundary=ready');
@@ -2453,6 +2469,8 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: ['write_intent_extraction'],
     });
     expect(mixedDeclaredIntent.summary).toContain('writeIntentActions=source_context.create');
+    expect(mixedDeclaredIntent.summary).toContain('writeIntentSupportedActionCount=1');
+    expect(mixedDeclaredIntent.summary).toContain('writeIntentDeclaredActionCount=2');
     expect(mixedDeclaredIntent.summary).toContain('declaredWriteIntentActions=source_context.create,workspace.apply');
     expect(mixedDeclaredIntent.summary).toContain('writeIntentDeclaredActionChain=missing');
     expect(mixedDeclaredIntent.summary).toContain('writeIntentActionIdentityChain=missing');
