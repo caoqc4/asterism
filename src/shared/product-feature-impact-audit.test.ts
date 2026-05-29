@@ -1242,6 +1242,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('blocks unsafe or duplicate expected-file promotion metadata');
     expect(taskFiles?.evidence.join(' ')).toContain('malformed reviewed patch diffs before writing workspace files');
     expect(taskFiles?.evidence.join(' ')).toContain('instead of throwing out of the operator-facing apply path');
+    expect(taskFiles?.evidence.join(' ')).toContain('marks durable promotion records blocked and appends runtime patch promotion routing readiness when promotion preflight itself fails before workspace validation');
+    expect(taskFiles?.evidence.join(' ')).toContain('metadata divergence leaves selected-runtime and explicit-operator evidence plus missing target-task, preflight, same-run, and post-apply evidence');
   });
 
   it('records missing terminal failure evidence in scheduler recovery proposals', () => {

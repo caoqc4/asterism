@@ -52,7 +52,17 @@ export class SandboxPatchPromotionApplyService {
     const preflight = await this.preflightService.preflight(checkpointId);
 
     if (preflight.status === 'blocked') {
-      return this.blocked(preflight.blockedReasons, undefined);
+      const selectedRuntimeContract = await this.resolveSelectedRuntimeContract(preflight.promotion);
+      return this.blocked(
+        preflight.blockedReasons,
+        preflight.promotion,
+        buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPromotion({
+          operatorConfirmed: options.operatorConfirmed === true,
+          operatorId: options.operatorId,
+          promotion: preflight.promotion,
+          selectedRuntimeContract,
+        }),
+      );
     }
 
     if (preflight.status === 'already_applied') {
@@ -180,8 +190,9 @@ export class SandboxPatchPromotionApplyService {
   }
 
   private async resolveSelectedRuntimeContract(
-    promotion: SandboxPatchPromotionRecord,
+    promotion: SandboxPatchPromotionRecord | undefined,
   ): Promise<RuntimePatchPromotionSelectedRuntimeContract | null> {
+    if (!promotion) return null;
     if (!this.selectedRuntimeContractResolver) return null;
 
     return this.selectedRuntimeContractResolver(promotion.runId, promotion.taskId).catch(() => null);
@@ -417,6 +428,58 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
       checkpointId: params.promotion.checkpointId,
       runId: params.promotion.runId,
       status: 'ready',
+      taskId: params.promotion.taskId,
+    },
+    selectedRuntimeContract: params.selectedRuntimeContract ?? null,
+    targetTaskId: params.promotion.taskId,
+  };
+  const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
+  return `futureRuntimeRouting=${readiness.summary}`;
+}
+
+function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPromotion(params: {
+  operatorConfirmed: boolean;
+  operatorId?: string | null;
+  promotion?: SandboxPatchPromotionRecord;
+  selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
+}): string | undefined {
+  if (!params.promotion) return undefined;
+
+  const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
+    explicitOperatorApply: {
+      checkpointId: params.promotion.checkpointId,
+      confirmed: params.operatorConfirmed,
+      operatorId: params.operatorId ?? null,
+      runId: params.promotion.runId,
+      taskId: params.promotion.taskId,
+    },
+    patchArtifact: {
+      artifactId: params.promotion.artifactId,
+      expectedFiles: params.promotion.expectedFiles,
+      kind: 'patch',
+      runId: params.promotion.runId,
+      status: 'ready',
+      taskId: params.promotion.taskId,
+    },
+    postApplyRunEvidence: {
+      runId: null,
+      status: 'missing',
+      taskId: null,
+      touchedFiles: [],
+    },
+    promotionDecision: {
+      artifactId: params.promotion.artifactId,
+      checkpointId: params.promotion.checkpointId,
+      decisionId: params.promotion.decisionId,
+      runId: params.promotion.runId,
+      status: 'approved',
+      taskId: params.promotion.taskId,
+    },
+    promotionPreflight: {
+      artifactId: params.promotion.artifactId,
+      checkpointId: params.promotion.checkpointId,
+      runId: params.promotion.runId,
+      status: 'blocked',
       taskId: params.promotion.taskId,
     },
     selectedRuntimeContract: params.selectedRuntimeContract ?? null,

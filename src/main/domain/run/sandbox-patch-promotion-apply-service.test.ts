@@ -287,6 +287,62 @@ describe('SandboxPatchPromotionApplyService', () => {
     }
   });
 
+  it('marks durable promotion records blocked when preflight fails before workspace validation', async () => {
+    const promotion = buildPromotion();
+    const markBlocked = vi.fn().mockImplementation(
+      async (_id: string, blockedReasons: string[], auditSummary: string) => ({
+        ...promotion,
+        auditSummary,
+        blockedReasons,
+        status: 'blocked',
+      }),
+    );
+    const service = new SandboxPatchPromotionApplyService(
+      {
+        preflight: vi.fn().mockResolvedValue({
+          blockedReasons: ['Patch promotion artifact digest does not match promotion record.'],
+          promotion,
+          status: 'blocked',
+          summary: 'Sandbox patch promotion preflight blocked: Patch promotion artifact digest does not match promotion record.',
+        }),
+      },
+      {
+        markApplied: vi.fn(),
+        markBlocked,
+      },
+      () => '/tmp/unused',
+      async (runId, taskId) => ({
+        invocationLayer: 'selected_runtime',
+        phase: 'execution_run',
+        runId,
+        runtimeMode: 'codex',
+        taskId,
+      }),
+    );
+
+    const result = await service.apply('run_checkpoint_1', {
+      operatorConfirmed: true,
+      operatorId: 'local_operator',
+    });
+
+    expect(result).toMatchObject({
+      blockedReasons: ['Patch promotion artifact digest does not match promotion record.'],
+      status: 'blocked',
+      touchedFiles: [],
+    });
+    expect(markBlocked).toHaveBeenCalledWith(
+      'sandbox_patch_promotion_1',
+      ['Patch promotion artifact digest does not match promotion record.'],
+      expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion artifact digest does not match promotion record.'),
+    );
+    expect(markBlocked.mock.calls[0]?.[2]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
+    expect(markBlocked.mock.calls[0]?.[2]).toContain('selectedRuntimeContract=ready');
+    expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionPreflight=missing');
+    expect(markBlocked.mock.calls[0]?.[2]).toContain('explicitOperatorApply=ready');
+    expect(markBlocked.mock.calls[0]?.[2]).toContain('postApplyRunEvidence=missing');
+    expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionMissingRequirements=target_task_identity,promotion_preflight,same_run_evidence_chain,post_apply_run_evidence');
+  });
+
   it('blocks duplicate patch file entries before writing workspace files', async () => {
     const tempRoot = makeTempDir('taskplane-sandbox-promotion-duplicate-file-');
 

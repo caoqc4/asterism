@@ -22,6 +22,7 @@ export type SandboxPatchPromotionPreflightResult =
     }
   | {
       blockedReasons: string[];
+      promotion?: SandboxPatchPromotionRecord;
       status: 'blocked';
       summary: string;
     }
@@ -59,17 +60,18 @@ export class SandboxPatchPromotionPreflightService {
         promotion.blockedReasons.length
           ? promotion.blockedReasons
           : ['Sandbox patch promotion record is already blocked.'],
+        promotion,
       );
     }
 
     const checkpoint = await this.checkpointRepository.findById(promotion.checkpointId);
     if (!checkpoint) {
-      return blocked(['Patch promotion checkpoint was not found.']);
+      return blocked(['Patch promotion checkpoint was not found.'], promotion);
     }
 
     const artifact = await this.artifactRepository.findById(promotion.artifactId);
     if (!artifact) {
-      return blocked(['Patch promotion artifact was not found.']);
+      return blocked(['Patch promotion artifact was not found.'], promotion);
     }
 
     const allowSettledApprovedApply = await this.canApplySettledApprovedPromotion(checkpoint, promotion);
@@ -79,7 +81,7 @@ export class SandboxPatchPromotionPreflightService {
     ];
 
     if (blockedReasons.length) {
-      return blocked(blockedReasons);
+      return blocked(blockedReasons, promotion);
     }
 
     return {
@@ -274,9 +276,13 @@ function parseArtifactContent(value: string): SandboxPatchReviewArtifactContent 
   }
 }
 
-function blocked(blockedReasons: string[]): SandboxPatchPromotionPreflightResult {
+function blocked(
+  blockedReasons: string[],
+  promotion?: SandboxPatchPromotionRecord,
+): SandboxPatchPromotionPreflightResult {
   return {
     blockedReasons,
+    promotion,
     status: 'blocked',
     summary: `Sandbox patch promotion preflight blocked: ${blockedReasons.join(' ')}`,
   };
