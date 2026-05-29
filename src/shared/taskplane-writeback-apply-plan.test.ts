@@ -23,6 +23,7 @@ describe('Taskplane writeback apply plans', () => {
       taskId: 'task_1',
     });
 
+    expect(plan.confirmationSurface).toBe('right_panel_writeback_confirmation');
     expect(plan.input).toMatchObject({
       capturedAt: '2026-05-24T00:00:00.000Z',
       content: 'Source: https://example.com/codex\n\n官方文档入口。',
@@ -36,6 +37,7 @@ describe('Taskplane writeback apply plans', () => {
     expect(plan.timeline).toMatchObject({
       type: 'panel.source_updated',
       payload: {
+        confirmationSurface: 'right_panel_writeback_confirmation',
         evidenceRunId: 'run_1',
         source: 'taskplane_write_intent',
       },

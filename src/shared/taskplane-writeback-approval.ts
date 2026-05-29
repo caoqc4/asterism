@@ -99,6 +99,7 @@ export function buildTaskplaneWritebackApprovalItems(params: {
         && !hasSourceContext(params.existing, detail.id, proposalSet.sourceContext.title, proposalSet.sourceContext.uri)
       ) {
         const plan = buildSourceContextWritebackApplyPlan({
+          confirmationSurface: 'taskplane_writeback_approval_queue',
           proposal: proposalSet.sourceContext,
           taskId: params.taskId,
         });

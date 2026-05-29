@@ -96,6 +96,45 @@ describe('Taskplane writeback approval items', () => {
     })).toEqual([]);
   });
 
+  it('marks source context approval items with writeback approval queue confirmation evidence', () => {
+    const run = buildRunDetail({
+      output: [
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'source_context.create',
+            title: 'Codex docs',
+            uri: 'https://example.com/codex',
+            note: '官方文档。',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+    });
+
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [run],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      kind: 'source_context',
+      plan: {
+        action: 'source_context.create',
+        confirmationSurface: 'taskplane_writeback_approval_queue',
+        timeline: {
+          payload: {
+            confirmationSurface: 'taskplane_writeback_approval_queue',
+            evidenceRunId: 'run_1',
+          },
+        },
+      },
+    });
+  });
+
   it('turns pending task memory guidance into the same writeback approval queue', () => {
     const run = buildRunDetail({
       taskMemoryWriteProposals: [{

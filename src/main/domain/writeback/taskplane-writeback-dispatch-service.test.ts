@@ -78,7 +78,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     const taskFiles = taskFileRepository();
     const service = new TaskplaneWritebackDispatchService(taskService, decisionService, taskFiles, artifactRepository());
 
-    await service.dispatch({
+    const sourceResult = await service.dispatch({
       taskId: 'task_1',
       plan: sourceContextPlan(),
     });
@@ -102,6 +102,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     });
     expect(taskService.recordTimelineEvent).toHaveBeenCalledWith({
       payload: {
+        confirmationSurface: 'right_panel_writeback_confirmation',
         evidenceRunId: 'run_1',
         source: 'taskplane_write_intent',
         title: 'Codex docs',
@@ -109,6 +110,17 @@ describe('TaskplaneWritebackDispatchService', () => {
       },
       taskId: 'task_1',
       type: 'panel.source_updated',
+    });
+    expect(sourceResult).toMatchObject({
+      action: 'source_context.create',
+      durableWritebackBoundary: {
+        action: 'source_context.create',
+        confirmationSurface: 'right_panel_writeback_confirmation',
+        runId: 'run_1',
+        status: 'applied',
+        taskId: 'task_1',
+      },
+      status: 'completed',
     });
     expect(decisionService.create).toHaveBeenCalledWith({
       context: {
@@ -563,6 +575,7 @@ function artifactRepository() {
 function sourceContextPlan(): TaskplaneSourceContextWritebackApplyPlan {
   return {
     action: 'source_context.create',
+    confirmationSurface: 'right_panel_writeback_confirmation',
     input: {
       capturedAt: '2026-05-24T00:00:00.000Z',
       content: 'Source: https://example.com/codex\n\n官方文档入口。',
@@ -579,6 +592,7 @@ function sourceContextPlan(): TaskplaneSourceContextWritebackApplyPlan {
     successMessage: '已确认并保存来源上下文：Codex docs。',
     timeline: {
       payload: {
+        confirmationSurface: 'right_panel_writeback_confirmation',
         evidenceRunId: 'run_1',
         source: 'taskplane_write_intent',
         title: 'Codex docs',

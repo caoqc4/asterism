@@ -16,8 +16,10 @@ describe('Taskplane writeback dispatch', () => {
       },
       plan: {
         action: 'source_context.create',
+        confirmationSurface: 'readiness_smoke_operator_confirmation',
         input: {
           kind: 'link',
+          runId: 'run_1',
           taskId: 'task_1',
           title: 'Codex docs',
           uri: 'https://example.com/codex',
@@ -35,6 +37,13 @@ describe('Taskplane writeback dispatch', () => {
 
     expect(result).toMatchObject({
       action: 'source_context.create',
+      durableWritebackBoundary: {
+        action: 'source_context.create',
+        confirmationSurface: 'readiness_smoke_operator_confirmation',
+        runId: 'run_1',
+        status: 'applied',
+        taskId: 'task_1',
+      },
       status: 'completed',
       successMessage: '已确认并保存来源上下文：Codex docs。',
     });

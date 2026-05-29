@@ -53,6 +53,11 @@ export type TaskplaneSchedulerDecisionConfirmationSurface =
   | 'task_dynamics_scheduler_decision_approval_queue'
   | 'readiness_smoke_task_dynamics_scheduler_decision_approval_queue';
 
+export type TaskplaneDurableWritebackConfirmationSurface =
+  | 'right_panel_writeback_confirmation'
+  | 'taskplane_writeback_approval_queue'
+  | 'readiness_smoke_operator_confirmation';
+
 export type TaskplaneSubtaskCreateManyResult = {
   createdTasks: TaskListItemRecord[];
   taskRecordPath?: string | null;
@@ -61,6 +66,7 @@ export type TaskplaneSubtaskCreateManyResult = {
 
 export type TaskplaneSourceContextWritebackApplyPlan = {
   action: 'source_context.create';
+  confirmationSurface: TaskplaneDurableWritebackConfirmationSurface;
   input: CreateSourceContextInput;
   successMessage: string;
   timeline: TaskplaneWritebackTimelineDraft;
@@ -268,12 +274,15 @@ export function buildTaskFileUpdateWritebackApplyPlan(params: {
 
 export function buildSourceContextWritebackApplyPlan(params: {
   capturedAt?: string;
+  confirmationSurface?: TaskplaneDurableWritebackConfirmationSurface;
   proposal: TaskplaneSourceContextWritebackProposal;
   taskId: string;
 }): TaskplaneSourceContextWritebackApplyPlan {
   const { proposal } = params;
+  const confirmationSurface = params.confirmationSurface ?? 'right_panel_writeback_confirmation';
   return {
     action: 'source_context.create',
+    confirmationSurface,
     input: {
       content: proposal.uri
         ? `Source: ${proposal.uri}\n\n${proposal.note}`
@@ -293,6 +302,7 @@ export function buildSourceContextWritebackApplyPlan(params: {
     timeline: {
       type: 'panel.source_updated',
       payload: {
+        confirmationSurface,
         evidenceRunId: proposal.evidenceRunId,
         source: 'taskplane_write_intent',
         title: proposal.title,

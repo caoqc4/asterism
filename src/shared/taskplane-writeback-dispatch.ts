@@ -6,12 +6,18 @@ import type { TaskFileRecord } from './types/task-file.js';
 import type { ArtifactRecord } from './types/artifact.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
+  TaskplaneDurableWritebackConfirmationSurface,
   TaskplaneSchedulerDecisionConfirmationSurface,
   TaskplaneSubtaskCreateManyConfirmationSurface,
   TaskplaneSubtaskCreateManyResult,
   TaskplaneWritebackApplyPlan,
   TaskplaneWritebackTimelineDraft,
 } from './taskplane-writeback-apply-plan.js';
+import type { AgentApiExecutionPromotionServiceEvidence } from './ai-runtime-invocation.js';
+
+export type TaskplaneDurableWritebackBoundaryEvidence = NonNullable<
+  AgentApiExecutionPromotionServiceEvidence['durableWritebackBoundary']
+>;
 
 export type TaskplaneWritebackDispatchPorts = {
   createArtifact?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'artifact.create_note_from_run' }>, ArtifactRecord>;
@@ -47,6 +53,7 @@ export type TaskplaneWritebackDispatchResult =
       action: TaskplaneWritebackApplyPlan['action'];
       status: 'completed';
       createdTasks?: TaskListItemRecord[];
+      durableWritebackBoundary?: TaskplaneDurableWritebackBoundaryEvidence;
       successMessage: string;
       taskRecordPath?: string | null;
       updatedTask?: TaskListItemRecord | null;
@@ -174,11 +181,41 @@ function completed(
   return {
     action: plan.action,
     ...(createdTasks ? { createdTasks } : {}),
+    ...durableWritebackBoundaryForPlan(plan),
     status: 'completed',
     successMessage: plan.successMessage,
     ...(taskRecordPath ? { taskRecordPath } : {}),
     updatedTask,
   };
+}
+
+function durableWritebackBoundaryForPlan(
+  plan: TaskplaneWritebackApplyPlan,
+): { durableWritebackBoundary: TaskplaneDurableWritebackBoundaryEvidence } | Record<string, never> {
+  if (plan.action !== 'source_context.create') return {};
+  const sourceContextPlan = plan as Extract<TaskplaneWritebackApplyPlan, { action: 'source_context.create' }>;
+  const confirmationSurface = sourceContextPlan.confirmationSurface
+    || readConfirmationSurface(sourceContextPlan.timeline.payload);
+  return {
+    durableWritebackBoundary: {
+      action: 'source_context.create',
+      confirmationSurface,
+      runId: sourceContextPlan.input.runId ?? null,
+      status: 'applied',
+      taskId: sourceContextPlan.input.taskId,
+    },
+  };
+}
+
+function readConfirmationSurface(
+  payload: Record<string, unknown>,
+): TaskplaneDurableWritebackConfirmationSurface | null {
+  const surface = payload.confirmationSurface;
+  return surface === 'right_panel_writeback_confirmation'
+    || surface === 'taskplane_writeback_approval_queue'
+    || surface === 'readiness_smoke_operator_confirmation'
+    ? surface
+    : null;
 }
 
 function blocked(

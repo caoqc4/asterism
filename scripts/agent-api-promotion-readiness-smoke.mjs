@@ -7,6 +7,10 @@ import { pathToFileURL } from 'node:url';
 const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'ai-runtime-invocation.js');
 const sourceModulePath = path.join(root, 'src', 'shared', 'ai-runtime-invocation.ts');
+const writebackApplyPlanModulePath = path.join(root, 'dist-electron', 'shared', 'taskplane-writeback-apply-plan.js');
+const writebackApplyPlanSourcePath = path.join(root, 'src', 'shared', 'taskplane-writeback-apply-plan.ts');
+const writebackDispatchModulePath = path.join(root, 'dist-electron', 'shared', 'taskplane-writeback-dispatch.js');
+const writebackDispatchSourcePath = path.join(root, 'src', 'shared', 'taskplane-writeback-dispatch.ts');
 
 function taskBoundRunStartEvidence(runId, taskId = 'task_1') {
   return {
@@ -47,7 +51,12 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log('workspace=unchanged');
   console.log('promotionInProduct=deferred');
 
-  if (!fs.existsSync(modulePath) || sourceIsNewerThanBuild()) {
+  if (
+    !fs.existsSync(modulePath)
+    || !fs.existsSync(writebackApplyPlanModulePath)
+    || !fs.existsSync(writebackDispatchModulePath)
+    || sourceIsNewerThanBuild()
+  ) {
     console.log('status=skip');
     console.log('skipReason=build_required');
     console.log('run npm run build:main before this smoke');
@@ -61,6 +70,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     evaluateAgentApiExecutionPromotionReadinessFromEvidence,
     evaluateAgentApiExecutionPromotionReadinessForInvocation,
   } = await import(pathToFileURL(modulePath).href);
+  const { buildSourceContextWritebackApplyPlan } = await import(pathToFileURL(writebackApplyPlanModulePath).href);
+  const { dispatchTaskplaneWritebackApplyPlan } = await import(pathToFileURL(writebackDispatchModulePath).href);
 
   const deferredInvocation = buildDeferredAgentApiExecutionRunInvocation();
   const deferredReadiness = evaluateAgentApiExecutionPromotionReadinessForInvocation(deferredInvocation);
@@ -555,6 +566,111 @@ export async function runAgentApiPromotionReadinessSmoke() {
       taskId: 'task_1',
     },
   });
+  const sourceContextApplyPlan = buildSourceContextWritebackApplyPlan({
+    capturedAt: '2026-05-29T00:00:00.000Z',
+    confirmationSurface: 'readiness_smoke_operator_confirmation',
+    proposal: {
+      evidenceRunId: 'run_api_execution',
+      note: 'Reviewable source context evidence.',
+      title: 'Agent API source context',
+      uri: 'https://example.com/docs',
+    },
+    taskId: 'task_1',
+  });
+  const sourceContextDispatch = await dispatchTaskplaneWritebackApplyPlan({
+    plan: sourceContextApplyPlan,
+    ports: {
+      createSourceContext: async (input) => ({
+        ...input,
+        id: 'source_context_smoke_1',
+        createdAt: '2026-05-29T00:00:00.000Z',
+        updatedAt: '2026-05-29T00:00:00.000Z',
+        status: 'active',
+      }),
+      recordTimelineEvent: async () => undefined,
+    },
+    taskId: 'task_1',
+  });
+  const serviceEvidenceSourceContextApplied = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+    contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
+    contextReadinessStep: {
+      status: 'ready',
+      stepId: 'step_context_ready',
+      taskId: 'task_1',
+    },
+    durableWritebackBoundary: sourceContextDispatch.status === 'completed'
+      ? sourceContextDispatch.durableWritebackBoundary
+      : null,
+    gates: {
+      simplicity_check: true,
+      runtime_action: true,
+      runtime_context_assembly: true,
+      context_readiness: true,
+      task_memory_coverage: true,
+      task_memory_guidance: true,
+      pre_step: true,
+      subtask_start: true,
+      post_step: true,
+    },
+    postStepVerification: {
+      runId: 'run_api_execution',
+      status: 'ready',
+      taskId: 'task_1',
+      verifier: 'taskplane.verifier.lightweight',
+    },
+    providerVisiblePreflight: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+      runId: 'run_api_execution',
+      startupProbe: 'not_called',
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    ...agentApiPilotDecisionEvidence(),
+    runEvidencePersistence: {
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+      terminalEvidenceSummary: 'output_chars=42',
+      terminalEvidenceStatus: 'present',
+      terminalRunStatus: 'completed',
+    },
+    runGoalContract: {
+      completionConditionCount: 1,
+      objective: 'Produce reviewable research evidence.',
+      runId: 'run_api_execution',
+      taskId: 'task_1',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      provider: 'openai',
+      runId: 'run_api_execution',
+      runtimeMode: 'api',
+      taskId: 'task_1',
+    },
+    subtaskStart: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    ...taskBoundRunStartEvidence('run_api_execution'),
+    targetTaskId: 'task_1',
+    taskMemoryGuidance: {
+      guidanceCount: 1,
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    taskMemoryCoverage: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    writeIntentExtraction: {
+      declaredActions: ['source_context.create'],
+      runId: 'run_api_execution',
+      status: 'ready',
+      supportedActions: ['source_context.create'],
+      taskId: 'task_1',
+    },
+  });
 
   console.log(`deferredInvocationStatus=${deferredInvocation.status}`);
   console.log(`deferredPromotionReady=${deferredReadiness.ready ? 'yes' : 'no'}`);
@@ -742,6 +858,17 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`sourceContextOnlyDurableWritebackStatus=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackStatus') ?? 'missing'}`);
   console.log(`sourceContextOnlyDurableWritebackRunEvidenceChain=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackRunEvidenceChain') ?? 'missing'}`);
   console.log(`sourceContextOnlyDurableWritebackTaskEvidenceChain=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`sourceContextAppliedDispatchStatus=${sourceContextDispatch.status}`);
+  console.log(`sourceContextAppliedDispatchAction=${sourceContextDispatch.action}`);
+  console.log(`sourceContextAppliedPromotionReady=${serviceEvidenceSourceContextApplied.ready ? 'yes' : 'no'}`);
+  console.log(`sourceContextAppliedRequirements=${serviceEvidenceSourceContextApplied.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
+  console.log(`sourceContextAppliedMissingRequirements=${serviceEvidenceSourceContextApplied.missingRequirements.join(',') || 'none'}`);
+  console.log(`sourceContextAppliedReviewedPatchApplyBoundary=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
+  console.log(`sourceContextAppliedReviewedPatchBoundaryMode=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'reviewedPatchBoundaryMode') ?? 'missing'}`);
+  console.log(`sourceContextAppliedDurableWritebackStatus=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackStatus') ?? 'missing'}`);
+  console.log(`sourceContextAppliedDurableWritebackConfirmationSurface=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackConfirmationSurface') ?? 'missing'}`);
+  console.log(`sourceContextAppliedDurableWritebackRunEvidenceChain=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackRunEvidenceChain') ?? 'missing'}`);
+  console.log(`sourceContextAppliedDurableWritebackTaskEvidenceChain=${scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackTaskEvidenceChain') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -910,6 +1037,17 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackStatus') !== 'missing'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackTaskEvidenceChain') !== 'missing'
+    || sourceContextDispatch.status !== 'completed'
+    || sourceContextDispatch.action !== 'source_context.create'
+    || !serviceEvidenceSourceContextApplied.ready
+    || serviceEvidenceSourceContextApplied.satisfiedRequirements.length !== 11
+    || serviceEvidenceSourceContextApplied.missingRequirements.length !== 0
+    || scalarValue(serviceEvidenceSourceContextApplied.summary, 'reviewedPatchApplyBoundary') !== 'ready'
+    || scalarValue(serviceEvidenceSourceContextApplied.summary, 'reviewedPatchBoundaryMode') !== 'durable_writeback'
+    || scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackStatus') !== 'applied'
+    || scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackConfirmationSurface') !== 'readiness_smoke_operator_confirmation'
+    || scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidenceSourceContextApplied.summary, 'durableWritebackTaskEvidenceChain') !== 'ready'
   ) {
     console.log('status=failed');
     return 1;
@@ -926,10 +1064,15 @@ function scalarValue(summary, key) {
 }
 
 function sourceIsNewerThanBuild() {
-  if (!fs.existsSync(sourceModulePath)) return false;
-  const sourceStat = fs.statSync(sourceModulePath);
-  const buildStat = fs.statSync(modulePath);
-  return sourceStat.mtimeMs > buildStat.mtimeMs;
+  const pairs = [
+    [sourceModulePath, modulePath],
+    [writebackApplyPlanSourcePath, writebackApplyPlanModulePath],
+    [writebackDispatchSourcePath, writebackDispatchModulePath],
+  ];
+  return pairs.some(([sourcePath, builtPath]) => {
+    if (!fs.existsSync(sourcePath) || !fs.existsSync(builtPath)) return false;
+    return fs.statSync(sourcePath).mtimeMs > fs.statSync(builtPath).mtimeMs;
+  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

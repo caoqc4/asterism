@@ -253,7 +253,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('treats task_memory_guidance as ready when there is no pending guidance or when completed guidance exists');
     expect(rightPanel?.evidence.join(' ')).toContain('while still requiring target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('run_goal_contract to carry persisted same-run and target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry either applied patch promotion status plus same-run and target-task identity evidence or explicit noWorkspaceWriteRequired/not_required evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status, applied durable source-context writeback status, or explicit noWorkspaceWriteRequired/not_required evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('providerPreflightStatus, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, pilotDecisionEvidenceChain, pilotDecisionExecutor, pilotDecisionMovement, pilotDecisionOperationMode, pilotDecisionBackend, pilotDecisionMessagePriority, pilotDecisionPriorityLane, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, writeIntentExtraction, writeIntentSupportedActionCount, writeIntentActions, writeIntentDeclaredActionCount, declaredWriteIntentActions, writeIntentDeclaredActionEvidenceChain, writeIntentMode, noWriteIntentRequired');
@@ -1383,10 +1383,10 @@ describe('product feature impact audit', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
 
     expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to either include exactly one explicitly declared artifact.propose and exactly one explicitly declared task_file.propose with persisted same-run and target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('explicit noWorkspaceWriteRequired/not_required evidence for no-patch runs');
-    expect(rightPanel?.evidence.join(' ')).toContain('source_context.create as a reviewable non-workspace Write Intent');
+    expect(rightPanel?.evidence.join(' ')).toContain('explicit noWorkspaceWriteRequired/not_required evidence for true no-patch/no-write runs');
+    expect(rightPanel?.evidence.join(' ')).toContain('source_context.create as a reviewable durable Write Intent');
     expect(rightPanel?.evidence.join(' ')).toContain('source-context-only runs can satisfy write_intent_extraction');
-    expect(rightPanel?.evidence.join(' ')).toContain('noWorkspaceWriteRequired=yes plus patchPromotionStatus=not_required');
+    expect(rightPanel?.evidence.join(' ')).toContain('reviewed_patch_apply_boundary remains missing until product-side durableWritebackBoundary evidence proves the same run and target task');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentMode');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentSupportedActionCount');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentDeclaredActionCount');
@@ -1399,14 +1399,18 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionStatus=not_required');
     expect(rightPanel?.evidence.join(' ')).toContain('sourceContextOnly=10/11 requirements with durableWritebackStatus=missing');
     expect(rightPanel?.evidence.join(' ')).toContain('source_context.create remains a durable writeback proposal until product-side confirmation evidence exists');
+    expect(rightPanel?.evidence.join(' ')).toContain('sourceContextApplied=11/11 requirements with durableWritebackStatus=applied');
+    expect(rightPanel?.evidence.join(' ')).toContain('durableWritebackConfirmationSurface=readiness_smoke_operator_confirmation');
+    expect(rightPanel?.evidence.join(' ')).toContain('TaskplaneWriteback source_context.create apply plans now carry confirmationSurface evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('dispatchTaskplaneWritebackApplyPlan returns durableWritebackBoundary');
     expect(rightPanel?.evidence.join(' ')).toContain('duplicate, missing-declaration, or non-proposal write actions still blocked');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
     expect(rightPanel?.evidence.join(' ')).toContain('supportedActions alone no longer proves runtime-declared Write Intent identity');
     expect(rightPanel?.evidence.join(' ')).toContain('no-write promotion requires declaredActions=[] plus noWriteIntentRequired=yes');
     expect(rightPanel?.evidence.join(' ')).toContain('binds reviewedPatchApplyBoundary to the Write Intent mode');
     expect(rightPanel?.evidence.join(' ')).toContain('artifact.propose plus task_file.propose must satisfy an applied reviewed-patch boundary');
-    expect(rightPanel?.evidence.join(' ')).toContain('source_context.create-only and explicit no-write runs may satisfy noWorkspaceWriteRequired');
-    expect(rightPanel?.evidence.join(' ')).toContain('reviewedPatchBoundaryMode=no_workspace_write_mismatch or patch_apply_mismatch');
+    expect(rightPanel?.evidence.join(' ')).toContain('source_context.create-only must satisfy durable_writeback evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('reviewedPatchBoundaryMode=no_workspace_write_mismatch, durable_writeback_mismatch, or patch_apply_mismatch');
   });
 
   it('records Agent API execution subtask-start gate evidence coverage', () => {
