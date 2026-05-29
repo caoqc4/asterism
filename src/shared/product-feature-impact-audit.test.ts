@@ -183,6 +183,13 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('sameRunEvidenceChain=missing');
   });
 
+  it('records draft-time proposal evidence-run continuity for Agent API decomposition', () => {
+    const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
+    const evidence = decomposition?.evidence.join(' ') ?? '';
+
+    expect(evidence).toContain('proposalEvidenceRunId and proposalEvidenceRunChain are ready from the first draft response');
+  });
+
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');
