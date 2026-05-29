@@ -443,8 +443,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && Number.isFinite(evidence.reversibleProposalCard.subtaskCount)
     ? evidence.reversibleProposalCard.subtaskCount
     : null;
-  const applyPlanSubtaskTitleEvidenceChainReady = applyPlanSubtaskTitles.length === applyPlanSubtaskCount;
+  const applyPlanSubtaskTitleEvidenceChainReady = applyPlanSubtaskCount > 0
+    && applyPlanSubtaskTitles.length === applyPlanSubtaskCount;
   const proposalSubtaskTitleEvidenceChainReady = proposalSubtaskCount !== null
+    && proposalSubtaskCount > 0
     && proposalSubtaskTitles.length === proposalSubtaskCount;
   const proposalTaskEvidenceChainReady = Boolean(proposalParentTaskId)
     && Boolean(parentTaskId)

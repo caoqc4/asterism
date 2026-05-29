@@ -907,6 +907,38 @@ describe('ai runtime invocation contract', () => {
     expect(generic.summary).toContain('applyPlanSubtaskTitles=missing');
     expect(generic.summary).toContain('applyPlanSubtaskTitleEvidenceChain=missing');
 
+    const emptyServiceEvidence = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan: emptyApplyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 0,
+        subtaskTitles: [],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(emptyServiceEvidence).toMatchObject({
+      ready: false,
+      missingRequirements: [
+        'reversible_proposal_card',
+        'subtask_create_many_apply_plan',
+      ],
+    });
+    expect(emptyServiceEvidence.summary).toContain('applyPlanSubtaskCount=0');
+    expect(emptyServiceEvidence.summary).toContain('proposalSubtaskCount=0');
+    expect(emptyServiceEvidence.summary).toContain('applyPlanSubtaskTitles=missing');
+    expect(emptyServiceEvidence.summary).toContain('proposalSubtaskTitleEvidenceChain=missing');
+    expect(emptyServiceEvidence.summary).toContain('applyPlanSubtaskTitleEvidenceChain=missing');
+
     const blankTitleApplyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
       parentTaskId: 'task_project',

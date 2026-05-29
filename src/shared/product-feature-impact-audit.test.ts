@@ -1209,7 +1209,8 @@ describe('product feature impact audit', () => {
     const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
     const evidence = decomposition?.evidence.join(' ');
 
-    expect(evidence).toContain('applyPlanSubtaskTitleEvidenceChain missing for empty create-many apply plans');
+    expect(evidence).toContain('applyPlanSubtaskTitleEvidenceChain and proposalSubtaskTitleEvidenceChain missing for empty create-many apply plans');
+    expect(evidence).toContain('generic and service-evidence evaluators');
     expect(evidence).toContain('zero-subtask draft cannot report title evidence as ready');
   });
 
