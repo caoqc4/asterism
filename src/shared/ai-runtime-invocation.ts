@@ -163,6 +163,7 @@ export type AgentApiExecutionPromotionReadiness = {
 
 const AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS = new Set([
   'artifact.propose',
+  'source_context.create',
   'task_file.propose',
 ]);
 
@@ -784,10 +785,13 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const supportedWriteActionSet = new Set(supportedWriteActions);
   const noWriteIntentRequiredReady = evidence.writeIntentExtraction?.noWriteIntentRequired === true
     && supportedWriteActions.length === 0;
-  const writeIntentActionIdentityReady = supportedWriteActions.length === AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.size
+  const patchProposalWriteIntentReady = supportedWriteActions.length === 2
     && supportedWriteActionSet.size === supportedWriteActions.length
-    && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action))
-    && [...AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS].every((action) => supportedWriteActionSet.has(action));
+    && supportedWriteActionSet.has('artifact.propose')
+    && supportedWriteActionSet.has('task_file.propose');
+  const sourceContextWriteIntentReady = supportedWriteActions.length === 1
+    && supportedWriteActionSet.has('source_context.create');
+  const writeIntentActionIdentityReady = patchProposalWriteIntentReady || sourceContextWriteIntentReady;
   const writeIntentActionBoundaryReady = noWriteIntentRequiredReady
     || (
       supportedWriteActions.length > 0

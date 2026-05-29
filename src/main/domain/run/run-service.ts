@@ -419,8 +419,14 @@ export class RunService {
       && supportedWriteActions.length === 0
       && !reviewedPatchApplyBoundaryEvidence,
     );
+    const onlySourceContextWriteIntentRequired = Boolean(
+      terminalRunHasReviewableEvidence
+      && supportedWriteActions.length === 1
+      && supportedWriteActions[0] === 'source_context.create'
+      && !reviewedPatchApplyBoundaryEvidence,
+    );
     const noWorkspaceWriteRequired = Boolean(
-      noStructuredWriteIntentRequired,
+      noStructuredWriteIntentRequired || onlySourceContextWriteIntentRequired,
     );
     const taskMemoryGuidanceReady = params.taskMemoryGuidance.outcome !== 'pending';
     const runGoalObjective = params.input.instructions ?? params.task.nextStep ?? params.task.summary;

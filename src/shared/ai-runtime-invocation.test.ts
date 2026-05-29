@@ -1811,6 +1811,39 @@ describe('ai runtime invocation contract', () => {
     expect(noWriteRun.summary).toContain('patchPromotionTaskEvidenceChain=ready');
   });
 
+  it('allows Agent API execution promotion for source-context-only write intents without workspace patch evidence', () => {
+    const sourceContextRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'not_required',
+        explicitApplyOnly: true,
+        noWorkspaceWriteRequired: true,
+        promotionPreflightReady: false,
+        runId: 'run_api_execution',
+        taskId: 'task_1',
+      },
+      writeIntentExtraction: {
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: ['source_context.create'],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(sourceContextRun).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+      missingGates: [],
+    });
+    expect(sourceContextRun.summary).toContain('writeIntentActions=source_context.create');
+    expect(sourceContextRun.summary).toContain('writeIntentMode=proposal_boundary');
+    expect(sourceContextRun.summary).toContain('writeIntentActionIdentityChain=ready');
+    expect(sourceContextRun.summary).toContain('writeIntentActionBoundary=ready');
+    expect(sourceContextRun.summary).toContain('reviewedPatchApplyBoundary=ready');
+    expect(sourceContextRun.summary).toContain('noWorkspaceWriteRequired=yes');
+    expect(sourceContextRun.summary).toContain('patchPromotionStatus=not_required');
+  });
+
   it('requires provider-visible preflight to carry the configured provider identity', () => {
     const missingProvider = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),

@@ -1239,8 +1239,11 @@ describe('product feature impact audit', () => {
   it('records exact Agent API execution Write Intent action identity coverage', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
 
-    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to either include exactly one artifact.propose and exactly one task_file.propose with persisted same-run and target-task identity evidence or carry explicit noWriteIntentRequired evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to either include exactly one artifact.propose and exactly one task_file.propose with persisted same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('explicit noWorkspaceWriteRequired/not_required evidence for no-patch runs');
+    expect(rightPanel?.evidence.join(' ')).toContain('source_context.create as a reviewable non-workspace Write Intent');
+    expect(rightPanel?.evidence.join(' ')).toContain('source-context-only runs can satisfy write_intent_extraction');
+    expect(rightPanel?.evidence.join(' ')).toContain('noWorkspaceWriteRequired=yes plus patchPromotionStatus=not_required');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentMode');
     expect(rightPanel?.evidence.join(' ')).toContain('noWriteIntentRequired');
     expect(rightPanel?.evidence.join(' ')).toContain('noWorkspaceWriteRequired');
