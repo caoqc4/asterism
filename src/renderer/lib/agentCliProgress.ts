@@ -182,7 +182,12 @@ function compactWebResearchPreparationDetail(
     return '当前任务没有识别到需要新鲜外部资料。';
   }
   const reason = readStepKeyValueRaw(output, 'reason');
-  return reason ? compactLine(reason) : undefined;
+  const attemptedSources = readStepKeyValueRaw(output, 'attempted_sources');
+  const failedSources = readStepKeyValueRaw(output, 'failed_sources');
+  const sourceEvidence = attemptedSources
+    ? `；尝试来源：${attemptedSources}${failedSources ? `，失败：${failedSources}` : ''}`
+    : '';
+  return reason ? `${compactLine(reason)}${sourceEvidence}` : sourceEvidence.slice(1) || undefined;
 }
 
 function isWebResearchPersistenceFailure(output: string): boolean {

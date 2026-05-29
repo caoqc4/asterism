@@ -126,6 +126,8 @@ describe('deriveAgentCliProgress', () => {
             'status=skipped',
             'capability_mode=native',
             'sources=0',
+            'attempted_sources=2',
+            'failed_sources=2',
             'query=Codex CLI docs',
             'reason=Taskplane web research produced 2 source context item(s), but none could be saved. Selected native CLI web/search is unverified by the current probe; Taskplane will only project native web/search when visible events appear.',
           ].join('\n'),
@@ -136,6 +138,7 @@ describe('deriveAgentCliProgress', () => {
     expect(progress.state).toBe('preparing');
     expect(progress.label).toContain('来源未能保存');
     expect(progress.detail).toContain('none could be saved');
+    expect(progress.detail).toContain('尝试来源：2，失败：2');
   });
 
   it('does not mistake workspace search for web research', () => {

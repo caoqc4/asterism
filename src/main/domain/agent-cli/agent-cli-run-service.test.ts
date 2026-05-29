@@ -748,6 +748,14 @@ describe('AgentCliRunService', () => {
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('attempted_sources=2'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('failed_sources=0'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
       output: expect.stringContaining('source_context_ids=source_context_1,source_context_2'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
@@ -962,6 +970,18 @@ describe('AgentCliRunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Agent CLI 联网调研准备',
       output: expect.stringContaining('sources=0'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('attempted_sources=2'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('failed_sources=2'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 联网调研准备',
+      output: expect.stringContaining('batch_id=web-research:task_1:'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Agent CLI 联网调研准备',

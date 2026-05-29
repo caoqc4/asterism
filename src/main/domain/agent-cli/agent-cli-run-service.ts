@@ -630,7 +630,10 @@ export class AgentCliRunService {
     if (persistedSourceCount === 0) {
       return {
         preparation: {
+          attemptedSourceCount: createdInputs.length,
+          batchId,
           capabilityMode: params.capabilityMode,
+          failedSourceCount: createdInputs.length,
           query,
           reason: `Taskplane web research produced ${createdInputs.length} source context item(s), but none could be saved. ${nativeWebSearchFallbackReason(params.runtimeCapabilities)}`,
           sourceCount: 0,
@@ -644,8 +647,10 @@ export class AgentCliRunService {
 
     return {
       preparation: {
+        attemptedSourceCount: createdInputs.length,
         batchId,
         capabilityMode: params.capabilityMode,
+        failedSourceCount,
         persistedSourceIds,
         query,
         reason: failedSourceCount > 0
@@ -1206,8 +1211,10 @@ type WebResearchResult = {
 };
 
 type AgentCliWebResearchPreparation = {
+  attemptedSourceCount?: number;
   batchId?: string | null;
   capabilityMode: AgentCliCapabilityMode;
+  failedSourceCount?: number;
   persistedSourceIds?: string[];
   query: string | null;
   reason: string;
@@ -1233,6 +1240,8 @@ function formatAgentCliWebResearchPreparation(preparation: AgentCliWebResearchPr
     `status=${preparation.status}`,
     `capability_mode=${preparation.capabilityMode}`,
     `sources=${preparation.sourceCount}`,
+    typeof preparation.attemptedSourceCount === 'number' ? `attempted_sources=${preparation.attemptedSourceCount}` : null,
+    typeof preparation.failedSourceCount === 'number' ? `failed_sources=${preparation.failedSourceCount}` : null,
     preparation.batchId ? `batch_id=${preparation.batchId}` : null,
     preparation.persistedSourceIds?.length ? `source_context_ids=${preparation.persistedSourceIds.join(',')}` : null,
     preparation.query ? `query=${truncateAgentCliContextLine(preparation.query, 600)}` : null,

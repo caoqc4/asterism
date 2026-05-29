@@ -1348,6 +1348,15 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('only when the step belongs to the promotion run');
   });
 
+  it('records structured unsaved web research evidence coverage', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+    const evidence = capabilities?.evidence.join(' ');
+
+    expect(evidence).toContain('attempted_sources, failed_sources, and the Source Context batch id');
+    expect(evidence).toContain('renderer progress surfaces the attempted/failed counts');
+    expect(evidence).toContain('unsaved research evidence remains structured and auditable');
+  });
+
   it('records repeated-separator alias protection for runtime patch promotion routing', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
     const evidence = taskFiles?.evidence.join(' ');
