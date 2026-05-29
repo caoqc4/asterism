@@ -858,7 +858,10 @@ export class DecisionService {
       return;
     }
 
-    const result = await this.sandboxPatchPromotionApplyService.apply(checkpointId);
+    const result = await this.sandboxPatchPromotionApplyService.apply(checkpointId, {
+      operatorConfirmed: true,
+      operatorId: 'local_operator',
+    });
 
     if (result.status === 'blocked') {
       await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');

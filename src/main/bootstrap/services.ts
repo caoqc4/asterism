@@ -34,7 +34,10 @@ import { runBrowserEvidenceSmokeForOperatorStartedRun } from '../domain/run/brow
 import { CodeAgentRunService } from '../domain/run/code-agent-run-service.js';
 import { OperatorStartedRunService } from '../domain/run/operator-started-run-service.js';
 import { RunService } from '../domain/run/run-service.js';
-import { SandboxPatchPromotionApplyService } from '../domain/run/sandbox-patch-promotion-apply-service.js';
+import {
+  inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps,
+  SandboxPatchPromotionApplyService,
+} from '../domain/run/sandbox-patch-promotion-apply-service.js';
 import { SandboxPatchPromotionPreflightService } from '../domain/run/sandbox-patch-promotion-preflight-service.js';
 import { PatchArtifactSandboxReviewRunService } from '../domain/run/patch-artifact-sandbox-review-run-service.js';
 import { TaskService } from '../domain/task/task-service.js';
@@ -127,6 +130,11 @@ const sandboxPatchPromotionApplyService = new SandboxPatchPromotionApplyService(
   sandboxPatchPromotionPreflightService,
   sandboxPatchPromotionRepository,
   () => appConfigService.read().workspaceRoot ?? process.cwd(),
+  async (runId, taskId) => inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+    runId,
+    steps: await runStepRepository.listForRun(runId),
+    taskId,
+  }),
 );
 const decisionService = new DecisionService(
   decisionRepository,

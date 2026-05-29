@@ -9,6 +9,7 @@ import {
   evaluateRuntimePatchPromotionRoutingReadinessFromEvidence,
   type RuntimePatchPromotionRoutingServiceEvidence,
 } from '../../../shared/runtime-patch-promotion-routing.js';
+import type { RunStepRecord } from '../../../shared/types/run.js';
 import type { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import type {
   SandboxPatchPromotionPreflightResult,
@@ -24,11 +25,21 @@ type ParsedSandboxPatchFile = {
   oldContent: string;
 };
 
+type RuntimePatchPromotionSelectedRuntimeContract = NonNullable<
+  RuntimePatchPromotionRoutingServiceEvidence['selectedRuntimeContract']
+>;
+
+type RuntimePatchPromotionSelectedRuntimeContractResolver = (
+  runId: string,
+  taskId: string,
+) => Promise<RuntimePatchPromotionSelectedRuntimeContract | null>;
+
 export class SandboxPatchPromotionApplyService {
   constructor(
     private readonly preflightService: Pick<SandboxPatchPromotionPreflightService, 'preflight'>,
     private readonly promotionRepository: Pick<SandboxPatchPromotionRepository, 'markApplied' | 'markBlocked'>,
     private readonly workspaceRootResolver: () => string,
+    private readonly selectedRuntimeContractResolver: RuntimePatchPromotionSelectedRuntimeContractResolver | null = null,
   ) {}
 
   async apply(
@@ -45,6 +56,7 @@ export class SandboxPatchPromotionApplyService {
     }
 
     if (preflight.status === 'already_applied') {
+      const selectedRuntimeContract = await this.resolveSelectedRuntimeContract(preflight.promotion);
       const auditSummary = [
         'Sandbox patch promotion already applied',
         `checkpoint=${preflight.promotion.checkpointId}`,
@@ -53,6 +65,7 @@ export class SandboxPatchPromotionApplyService {
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
           promotion: preflight.promotion,
+          selectedRuntimeContract,
         }),
       ].join(' / ');
       return {
@@ -73,6 +86,7 @@ export class SandboxPatchPromotionApplyService {
       operatorId?: string | null;
     },
   ): Promise<SandboxPatchPromotionApplyResult> {
+    const selectedRuntimeContract = await this.resolveSelectedRuntimeContract(preflight.promotion);
     const content = parseArtifactContent(preflight.artifact.content);
     if (!content) {
       return this.blocked(
@@ -92,6 +106,7 @@ export class SandboxPatchPromotionApplyService {
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
           preflight,
+          selectedRuntimeContract,
         }),
       );
     }
@@ -110,6 +125,7 @@ export class SandboxPatchPromotionApplyService {
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
           preflight,
+          selectedRuntimeContract,
         }),
       );
     }
@@ -123,6 +139,7 @@ export class SandboxPatchPromotionApplyService {
           operatorConfirmed: options.operatorConfirmed === true,
           operatorId: options.operatorId,
           preflight,
+          selectedRuntimeContract,
           touchedFiles: validation.touchedFiles,
         }),
       ].join(' / ');
@@ -148,6 +165,7 @@ export class SandboxPatchPromotionApplyService {
         operatorConfirmed: options.operatorConfirmed === true,
         operatorId: options.operatorId,
         preflight,
+        selectedRuntimeContract,
         touchedFiles: validation.touchedFiles,
       }),
     ].join(' / ');
@@ -159,6 +177,14 @@ export class SandboxPatchPromotionApplyService {
       status: 'applied',
       touchedFiles: validation.touchedFiles,
     };
+  }
+
+  private async resolveSelectedRuntimeContract(
+    promotion: SandboxPatchPromotionRecord,
+  ): Promise<RuntimePatchPromotionSelectedRuntimeContract | null> {
+    if (!this.selectedRuntimeContractResolver) return null;
+
+    return this.selectedRuntimeContractResolver(promotion.runId, promotion.taskId).catch(() => null);
   }
 
   private async blocked(
@@ -188,6 +214,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(p
   operatorConfirmed: boolean;
   operatorId?: string | null;
   preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>;
+  selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
 }): string {
   const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
     explicitOperatorApply: {
@@ -226,6 +253,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromBlockedPreflight(p
       status: 'ready',
       taskId: params.preflight.promotion.taskId,
     },
+    selectedRuntimeContract: params.selectedRuntimeContract ?? null,
     targetTaskId: params.preflight.promotion.taskId,
   };
   const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
@@ -301,6 +329,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
   operatorConfirmed: boolean;
   operatorId?: string | null;
   preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>;
+  selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
   touchedFiles: string[];
 }): string {
   const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
@@ -340,6 +369,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
       status: 'ready',
       taskId: params.preflight.promotion.taskId,
     },
+    selectedRuntimeContract: params.selectedRuntimeContract ?? null,
     targetTaskId: params.preflight.promotion.taskId,
   };
   const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
@@ -350,6 +380,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
   operatorConfirmed: boolean;
   operatorId?: string | null;
   promotion: SandboxPatchPromotionRecord;
+  selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
 }): string {
   const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
     explicitOperatorApply: {
@@ -388,10 +419,55 @@ function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(p
       status: 'ready',
       taskId: params.promotion.taskId,
     },
+    selectedRuntimeContract: params.selectedRuntimeContract ?? null,
     targetTaskId: params.promotion.taskId,
   };
   const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
   return `futureRuntimeRouting=${readiness.summary}`;
+}
+
+export function inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps(params: {
+  runId: string;
+  steps: RunStepRecord[];
+  taskId: string;
+}): RuntimePatchPromotionSelectedRuntimeContract | null {
+  const runId = params.runId.trim();
+  const taskId = params.taskId.trim();
+  if (!runId || !taskId) return null;
+
+  const apiReadinessStep = params.steps.find((step) => {
+    const output = step.output ?? '';
+    return output.includes('Agent API execution')
+      && output.includes('selectedRuntimeContract=ready')
+      && output.includes('runtimeMode=api')
+      && output.includes('invocationLayer=api_runtime')
+      && output.includes(`selectedRuntimeRun=${runId}`)
+      && output.includes(`selectedRuntimeTask=${taskId}`);
+  });
+  if (apiReadinessStep) {
+    return {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      runId,
+      runtimeMode: 'api',
+      taskId,
+    };
+  }
+
+  const cliRuntimeId = params.steps
+    .map((step) => step.output ?? '')
+    .flatMap((output) => output.split(/\r?\n/))
+    .map((line) => /^runtime=(codex|claude)$/.exec(line.trim())?.[1] ?? null)
+    .find((runtimeId): runtimeId is 'codex' | 'claude' => runtimeId === 'codex' || runtimeId === 'claude');
+  if (!cliRuntimeId) return null;
+
+  return {
+    invocationLayer: 'selected_runtime',
+    phase: 'execution_run',
+    runId,
+    runtimeMode: cliRuntimeId,
+    taskId,
+  };
 }
 
 async function validateSandboxPatchApplication(params: {

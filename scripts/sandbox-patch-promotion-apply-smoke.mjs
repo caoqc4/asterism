@@ -34,7 +34,10 @@ const [
   { buildDefaultAgentToolExecutionPolicy },
   { createPatchPromotionCheckpointPayload },
   { AgentToolRegistry },
-  { SandboxPatchPromotionApplyService },
+  {
+    inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps,
+    SandboxPatchPromotionApplyService,
+  },
   { SandboxPatchPromotionPreflightService },
   { buildSandboxPatchDigest },
   { TaskService },
@@ -140,6 +143,10 @@ async function runScenario({ driftContent, enabled, id, nextContent, originalCon
     assert(resolvedCheckpoint?.status === 'cancelled', 'blocked promotion did not cancel the checkpoint');
     assert(promotion?.status === 'blocked', 'blocked promotion record was not marked blocked');
     assert(
+      promotion?.auditSummary?.includes('selectedRuntimeContract=ready'),
+      'blocked promotion did not preserve selected runtime routing evidence',
+    );
+    assert(
       steps.some((step) =>
         step.status === 'failed' &&
         step.output?.includes('No workspace files were written.') &&
@@ -154,6 +161,11 @@ async function runScenario({ driftContent, enabled, id, nextContent, originalCon
     assert(content === nextContent, 'enabled promotion did not update the workspace file');
     assert(resolvedCheckpoint?.status === 'resolved', 'enabled promotion did not resolve the checkpoint');
     assert(promotion?.status === 'applied', 'enabled promotion record was not marked applied');
+    assert(
+      promotion?.auditSummary?.includes('promotionRequirements=8/8') &&
+        promotion.auditSummary.includes('selectedRuntimeContract=ready'),
+      'enabled promotion did not record selected runtime routing readiness',
+    );
     assert(steps.some((step) => step.output?.includes(`Touched files: ${id}.md`)), 'enabled promotion did not record touched files');
     return 'applied';
   }
@@ -177,6 +189,16 @@ async function createPromotionCheckpoint({ filePath, patchDiff, sourceId }) {
     instructions: 'Promote a reviewed sandbox patch after confirmation.',
     taskId: task.id,
     type: 'agent',
+  });
+  await services.runStepRepository.create({
+    runId: run.id,
+    kind: 'plan',
+    status: 'completed',
+    title: 'agent cli run accepted',
+    output: [
+      'runtime=codex',
+      'sandbox=read-only',
+    ].join('\n'),
   });
   const artifact = await services.artifactRepository.createPatchFromRun({
     content: JSON.stringify({
@@ -305,6 +327,11 @@ function createServices({ enableSandboxPatchPromotionApply }) {
     preflightService,
     sandboxPatchPromotionRepository,
     () => workspaceRoot,
+    async (runId, taskId) => inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+      runId,
+      steps: await runStepRepository.listForRun(runId),
+      taskId,
+    }),
   );
   const decisionService = new DecisionService(
     decisionRepository,

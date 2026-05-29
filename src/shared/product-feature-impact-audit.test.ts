@@ -972,7 +972,12 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('SandboxPatchPromotionApplyService now appends evaluateRuntimePatchPromotionRoutingReadinessFromEvidence output');
     expect(taskFiles?.evidence.join(' ')).toContain('real workspace apply evidence records target-task identity across patch artifact, promotion Decision, preflight, and post-apply evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('explicit operator apply with same task/run/checkpoint evidence');
-    expect(taskFiles?.evidence.join(' ')).toContain('remaining selected-runtime-contract gap');
+    expect(taskFiles?.evidence.join(' ')).toContain('remaining selected-runtime-contract gap only when first-party run-step evidence is unavailable');
+    expect(taskFiles?.evidence.join(' ')).toContain('resolves selectedRuntimeContract from first-party RunStep evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('runtime=codex/claude steps become selected_runtime execution_run evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('Agent API promotion readiness steps become api_runtime execution_run evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('instead of accepting renderer-supplied runtime identity');
+    expect(taskFiles?.evidence.join(' ')).toContain('Decision-driven apply and explicit IPC apply both satisfy the operatorApplyEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('preflight reports an already_applied promotion');
     expect(taskFiles?.evidence.join(' ')).toContain('idempotent apply responses aligned with applied audit evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('blocked by workspace drift or validation failure');

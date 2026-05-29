@@ -4,10 +4,13 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
-import type { RunCheckpointRecord } from '../../../shared/types/run.js';
+import type { RunCheckpointRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { SandboxPatchPromotionRecord } from '../../../shared/types/sandbox-patch-promotion.js';
 import { makeTempDir } from '../../test-utils.js';
-import { SandboxPatchPromotionApplyService } from './sandbox-patch-promotion-apply-service.js';
+import {
+  inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps,
+  SandboxPatchPromotionApplyService,
+} from './sandbox-patch-promotion-apply-service.js';
 
 function buildPromotion(partial: Partial<SandboxPatchPromotionRecord> = {}): SandboxPatchPromotionRecord {
   return {
@@ -42,6 +45,22 @@ function buildCheckpoint(partial: Partial<RunCheckpointRecord> = {}): RunCheckpo
   };
 }
 
+function buildStep(partial: Partial<RunStepRecord> = {}): RunStepRecord {
+  return {
+    id: partial.id ?? 'run_step_1',
+    runId: partial.runId ?? 'run_1',
+    index: partial.index ?? 0,
+    kind: partial.kind ?? 'plan',
+    status: partial.status ?? 'completed',
+    title: partial.title ?? 'Agent CLI run accepted',
+    input: partial.input ?? null,
+    output: partial.output ?? null,
+    error: partial.error ?? null,
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
 function buildArtifact(diff: string, partial: Partial<ArtifactRecord> = {}): ArtifactRecord {
   return {
     id: partial.id ?? 'artifact_1',
@@ -73,6 +92,7 @@ function buildArtifact(diff: string, partial: Partial<ArtifactRecord> = {}): Art
 function buildService(params: {
   artifact: ArtifactRecord;
   promotion?: SandboxPatchPromotionRecord;
+  selectedRuntime?: 'codex' | 'none';
   workspaceRoot: string;
 }) {
   const promotion = params.promotion ?? buildPromotion();
@@ -104,6 +124,15 @@ function buildService(params: {
     },
     { markApplied, markBlocked },
     () => params.workspaceRoot,
+    params.selectedRuntime === 'codex'
+      ? async (runId, taskId) => ({
+          invocationLayer: 'selected_runtime',
+          phase: 'execution_run',
+          runId,
+          runtimeMode: 'codex',
+          taskId,
+        })
+      : null,
   );
 
   return { markApplied, markBlocked, service };
@@ -124,6 +153,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       ].join('\n');
       const { markApplied, service } = buildService({
         artifact: buildArtifact(diff),
+        selectedRuntime: 'codex',
         workspaceRoot: tempRoot,
       });
 
@@ -142,14 +172,68 @@ describe('SandboxPatchPromotionApplyService', () => {
         expect.stringContaining('Sandbox patch promotion applied / checkpoint=run_checkpoint_1 / files=notes.md'),
       );
       expect(markApplied.mock.calls[0]?.[1]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
-      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionRequirements=7/8');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionRequirements=8/8');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('selectedRuntimeContract=ready');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('selectedRuntimeRun=run_1');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('selectedRuntimeTask=task_1');
       expect(markApplied.mock.calls[0]?.[1]).toContain('explicitOperatorApply=ready');
       expect(markApplied.mock.calls[0]?.[1]).toContain('sameRunEvidenceChain=ready');
       expect(markApplied.mock.calls[0]?.[1]).toContain('postApplyRunEvidence=ready');
-      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionMissingRequirements=selected_runtime_contract');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionMissingRequirements=none');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
+  });
+
+  it('infers selected runtime contract from first-party run step evidence', () => {
+    const cliSteps: RunStepRecord[] = [
+      buildStep({
+        output: [
+          'runtime=codex',
+          'sandbox=read-only',
+        ].join('\n'),
+      }),
+    ];
+    expect(inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+      runId: 'run_1',
+      steps: cliSteps,
+      taskId: 'task_1',
+    })).toMatchObject({
+      invocationLayer: 'selected_runtime',
+      phase: 'execution_run',
+      runId: 'run_1',
+      runtimeMode: 'codex',
+      taskId: 'task_1',
+    });
+
+    const apiSteps: RunStepRecord[] = [
+      buildStep({
+        output: [
+          'Agent API execution promotion readiness',
+          'selectedRuntimeContract=ready',
+          'runtimeMode=api',
+          'invocationLayer=api_runtime',
+          'selectedRuntimeRun=run_api_1',
+          'selectedRuntimeTask=task_api_1',
+        ].join(' / '),
+      }),
+    ];
+    expect(inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+      runId: 'run_api_1',
+      steps: apiSteps,
+      taskId: 'task_api_1',
+    })).toMatchObject({
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      runId: 'run_api_1',
+      runtimeMode: 'api',
+      taskId: 'task_api_1',
+    });
+    expect(inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+      runId: 'run_api_1',
+      steps: apiSteps,
+      taskId: 'task_other',
+    })).toBeNull();
   });
 
   it('blocks without partial writes when a workspace base file diverges', async () => {

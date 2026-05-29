@@ -2083,7 +2083,10 @@ describe('DecisionService', () => {
     });
 
     expect(sandboxPatchPromotionPreflightService.preflight).not.toHaveBeenCalled();
-    expect(sandboxPatchPromotionApplyService.apply).toHaveBeenCalledWith('run_checkpoint_patch_1');
+    expect(sandboxPatchPromotionApplyService.apply).toHaveBeenCalledWith('run_checkpoint_patch_1', {
+      operatorConfirmed: true,
+      operatorId: 'local_operator',
+    });
     expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
       'run_checkpoint_patch_1',
       'resolved',
