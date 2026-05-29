@@ -167,6 +167,37 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredWebSearchTools=web_search');
   });
 
+  it('deduplicates provider tool declarations before reporting web/search evidence counts', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
+      explicitToolDeclarations: {
+        declaredTools: ['web_search', ' WEB_SEARCH ', 'openai:web_search', 'OPENAI:WEB_SEARCH'],
+        packageName: '@openai/agents',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@openai/agents',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'declared',
+      toolReadiness: 'declared',
+      missingRequirements: [],
+    });
+    expect(readiness.summary).toContain('declaredToolCount=2');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=2');
+    expect(readiness.summary).toContain('declaredWebSearchTools=web_search,openai:web_search');
+  });
+
   it('does not treat unrelated provider-owned function tools as web/search declarations', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       configuredProvider: 'openai',

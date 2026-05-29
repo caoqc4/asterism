@@ -1214,6 +1214,13 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('colon or dot provider-namespace mismatches');
   });
 
+  it('records deduplicated Agent API provider tool declaration evidence', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+
+    expect(capabilities?.evidence.join(' ')).toContain('case-insensitive deduplication');
+    expect(capabilities?.evidence.join(' ')).toContain('without overstating duplicate tool evidence');
+  });
+
   it('records Agent API provider generic helper negative readiness coverage', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 

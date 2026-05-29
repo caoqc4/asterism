@@ -99,7 +99,17 @@ export function agentApiProviderToolReadinessRequirements(): AgentApiProviderToo
 }
 
 function normalizeDeclaredTools(tools: string[] | undefined): string[] {
-  return (tools ?? []).map((tool) => tool.trim()).filter(Boolean);
+  const seen = new Set<string>();
+  const normalizedTools: string[] = [];
+  for (const tool of tools ?? []) {
+    const normalizedTool = tool.trim();
+    if (!normalizedTool) continue;
+    const identityKey = normalizedTool.toLowerCase();
+    if (seen.has(identityKey)) continue;
+    seen.add(identityKey);
+    normalizedTools.push(normalizedTool);
+  }
+  return normalizedTools;
 }
 
 function declaredWebSearchTools(tools: string[] | undefined, configuredProvider?: string | null): string[] {
