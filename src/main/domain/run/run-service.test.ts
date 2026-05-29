@@ -717,6 +717,24 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Please draft this',
+      pilotDecision: {
+        backend: 'agent_api',
+        backendPlan: {
+          backend: 'agent_api',
+          maxTurns: 1,
+          outputContract: 'pilot_decision_summary',
+          reason: 'Explicit execution request.',
+          status: 'requested',
+          triggers: ['user_steer'],
+        },
+        confidence: 'rule',
+        executor: 'agent_api',
+        messagePriority: 'steer',
+        movement: 'execute',
+        operationMode: 'product_control_layer',
+        priorityLane: 'continue_or_review',
+        reason: 'Operator requested an Agent API run.',
+      },
     });
 
     expect(taskService.getDetail).toHaveBeenCalledWith('task_1');
@@ -725,6 +743,10 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Please draft this',
+      pilotDecision: expect.objectContaining({
+        executor: 'agent_api',
+        movement: 'execute',
+      }),
     });
     expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalled();
     expect(processTemplateSelector.select).toHaveBeenCalled();
@@ -748,6 +770,10 @@ describe('RunService', () => {
         taskId: 'task_1',
         type: 'draft',
         instructions: 'Please draft this',
+        pilotDecision: expect.objectContaining({
+          executor: 'agent_api',
+          movement: 'execute',
+        }),
       },
       {
         provider: 'anthropic',
@@ -807,7 +833,14 @@ describe('RunService', () => {
         kind: 'plan',
         status: 'completed',
         title: 'Agent API execution promotion readiness',
+        input: expect.stringContaining('pilotDecision='),
         output: expect.stringContaining('ready=no'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
+        input: expect.stringContaining('"executor":"agent_api"'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(

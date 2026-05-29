@@ -73,6 +73,26 @@ type ApplicableWorkHabits = {
   summaries: string[];
 };
 
+function formatAgentApiExecutionPromotionReadinessInput(params: {
+  capabilitySummary?: string | null;
+  pilotDecision?: CreateRunInput['pilotDecision'];
+}): string | null {
+  const parts = [
+    params.capabilitySummary?.trim() || null,
+    params.pilotDecision
+      ? `pilotDecision=${JSON.stringify({
+          backend: params.pilotDecision.backend,
+          executor: params.pilotDecision.executor,
+          messagePriority: params.pilotDecision.messagePriority,
+          movement: params.pilotDecision.movement,
+          operationMode: params.pilotDecision.operationMode,
+          priorityLane: params.pilotDecision.priorityLane,
+        })}`
+      : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join('\n') : null;
+}
+
 export class RunService {
   constructor(
     private readonly runRepository: RunRepository,
@@ -587,7 +607,10 @@ export class RunService {
       title: phase === 'post_run'
         ? 'Agent API execution post-run promotion readiness'
         : 'Agent API execution promotion readiness',
-      input: params.capabilities?.summary ?? null,
+      input: formatAgentApiExecutionPromotionReadinessInput({
+        capabilitySummary: params.capabilities?.summary ?? null,
+        pilotDecision: params.input.pilotDecision ?? null,
+      }),
       output: readiness.summary,
     });
   }

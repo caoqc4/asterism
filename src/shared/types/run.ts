@@ -89,6 +89,7 @@ export type CreateRunInput = {
   instructions?: string;
   allowLocalWorkspaceRead?: boolean;
   allowTaskMutationTools?: boolean;
+  pilotDecision?: PilotDecisionSnapshot | null;
 };
 
 export type CodeAgentAllowedCheck = 'test' | 'lint';

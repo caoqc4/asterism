@@ -3093,6 +3093,7 @@ export function RightPanel({
         setAgentCliLaunchNotice(formatPilotDecisionLaunchNotice(pilotDecision, runtimeLabel));
         const run = await window.api.triggerRun({
           instructions: taskplaneConversationPrompt,
+          pilotDecision: buildPilotDecisionSnapshot(pilotDecision),
           taskId: activeTaskId,
           type: 'agent',
         });

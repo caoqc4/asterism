@@ -2680,6 +2680,10 @@ describe('App redesign v1', () => {
     await waitFor(() => {
       expect(harness.api.triggerRun).toHaveBeenCalledWith(expect.objectContaining({
         instructions: expect.stringContaining('开始执行当前任务'),
+        pilotDecision: expect.objectContaining({
+          executor: 'agent_api',
+          operationMode: 'product_control_layer',
+        }),
         taskId: 'task_risk',
         type: 'agent',
       }));
