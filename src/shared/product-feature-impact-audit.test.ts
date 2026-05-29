@@ -1355,6 +1355,9 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('slash/backslash paths and repeated-separator aliases');
     expect(evidence).toContain('cannot satisfy duplicate-free evidence as separate files');
     expect(evidence).toContain('cannot write a separate alias-named file on POSIX');
+    expect(evidence).toContain('blocks symlink-backed workspace patch targets');
+    expect(evidence).toContain('cannot follow a workspace symlink outside the configured workspace root');
+    expect(evidence).toContain('recording blocked routing evidence instead of post-apply evidence');
   });
 
   it('records blocked apply evidence for malformed patch promotion metadata', () => {

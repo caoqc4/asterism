@@ -620,6 +620,12 @@ async function validateSandboxPatchApplication(params: {
   for (const operation of params.parsedPatch) {
     const file = normalizeWorkspaceRelativePath(operation.file);
     const filePath = resolveWorkspacePath(workspaceRoot, file);
+    const symlinkEscapeReason = await validateWorkspacePathHasNoSymlinkEscape(workspaceRoot, filePath, file);
+    if (symlinkEscapeReason) {
+      blockedReasons.push(symlinkEscapeReason);
+      continue;
+    }
+
     const currentContent = await readWorkspaceText(filePath);
 
     if (currentContent === operation.newContent) {
@@ -673,6 +679,37 @@ function resolveWorkspacePath(workspaceRoot: string, requestedPath: string): str
   }
 
   return resolved;
+}
+
+async function validateWorkspacePathHasNoSymlinkEscape(
+  workspaceRoot: string,
+  filePath: string,
+  displayPath: string,
+): Promise<string | null> {
+  const root = path.resolve(workspaceRoot);
+  const relative = path.relative(root, filePath);
+  const segments = relative.split(path.sep).filter(Boolean);
+  let current = root;
+
+  for (const segment of segments) {
+    current = path.join(current, segment);
+    let stats: Awaited<ReturnType<typeof fs.lstat>>;
+    try {
+      stats = await fs.lstat(current);
+    } catch (error) {
+      if (isNodeError(error) && error.code === 'ENOENT') {
+        break;
+      }
+
+      throw error;
+    }
+
+    if (stats.isSymbolicLink()) {
+      return `Patch promotion workspace path uses symlink: ${displayPath}`;
+    }
+  }
+
+  return null;
 }
 
 function normalizeDiffFilePath(filePath: string): string {

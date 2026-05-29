@@ -564,6 +564,52 @@ describe('SandboxPatchPromotionApplyService', () => {
     }
   });
 
+  it('blocks symlink-backed workspace patch targets before writing files', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-symlink-file-');
+    const outsideRoot = makeTempDir('taskplane-sandbox-promotion-symlink-outside-');
+
+    try {
+      fs.writeFileSync(path.join(outsideRoot, 'outside.md'), 'alpha\n');
+      fs.symlinkSync(path.join(outsideRoot, 'outside.md'), path.join(tempRoot, 'notes.md'));
+      const diff = [
+        '--- a/notes.md',
+        '+++ b/notes.md',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const { markBlocked, service } = buildService({
+        artifact: buildArtifact(diff),
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: [
+          'Patch promotion workspace path uses symlink: notes.md',
+        ],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(outsideRoot, 'outside.md'), 'utf8')).toBe('alpha\n');
+      expect(markBlocked).toHaveBeenCalledWith(
+        'sandbox_patch_promotion_1',
+        [
+          'Patch promotion workspace path uses symlink: notes.md',
+        ],
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion workspace path uses symlink: notes.md'),
+      );
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('postApplyRunEvidence=missing');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+      fs.rmSync(outsideRoot, { recursive: true, force: true });
+    }
+  });
+
   it('blocks unsafe or duplicate expected patch files before writing workspace files', async () => {
     const tempRoot = makeTempDir('taskplane-sandbox-promotion-expected-file-');
 
