@@ -767,10 +767,14 @@ describe('runtime patch promotion routing readiness', () => {
 
     expect(readiness).toMatchObject({
       ready: false,
-      missingRequirements: ['explicit_operator_apply'],
+      missingRequirements: [
+        'explicit_operator_apply',
+        'same_run_evidence_chain',
+      ],
     });
-    expect(readiness.summary).toContain('requirements=7/8');
+    expect(readiness.summary).toContain('requirements=6/8');
     expect(readiness.summary).toContain('explicitOperatorApply=missing');
+    expect(readiness.summary).toContain('sameRunEvidenceChain=missing');
     expect(readiness.summary).toContain('operatorId=missing');
     expect(readiness.summary).toContain('operatorApplyTask=task_1');
     expect(readiness.summary).toContain('operatorApplyRun=run_patch_1');

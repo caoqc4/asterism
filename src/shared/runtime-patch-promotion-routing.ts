@@ -262,9 +262,11 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     patchArtifactReady
     && promotionDecisionReady
     && promotionPreflightReady
+    && explicitOperatorApply
     && postApplyRunEvidenceReady
     && patchRunId === decisionRunId
     && patchRunId === preflightRunId
+    && patchRunId === operatorApplyRunId
     && patchRunId === postApplyRunId
   );
 

@@ -899,6 +899,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('cannot appear as a satisfied promotion Decision');
     expect(taskFiles?.evidence.join(' ')).toContain('explicit operator apply as an operatorApplyEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('same target task, same run, and same checkpoint');
+    expect(taskFiles?.evidence.join(' ')).toContain('same_run_evidence_chain missing when explicit operator apply is absent or diverges');
     expect(taskFiles?.evidence.join(' ')).toContain('expected patch files and post-apply touched files as one touchedFileEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('expected patch files and post-apply touched files as one filePathSafetyChain');
     expect(taskFiles?.evidence.join(' ')).toContain('unsafe workspace paths');
