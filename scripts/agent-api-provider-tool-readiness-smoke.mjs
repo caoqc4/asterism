@@ -107,6 +107,24 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     },
     startupProbe: 'never',
   });
+  const legacyWebSearchPreviewReadiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+    configuredProvider: snapshot.model.provider,
+    explicitToolDeclarations: {
+      declaredTools: [
+        'web_search_preview',
+        'web_search_cache',
+      ],
+      packageName: '@ai-sdk/openai',
+      source: 'provider_owned_metadata',
+    },
+    providerConfigured: snapshot.model.configured,
+    providerOwnedMetadata: providerToolMetadata.providerOwnedMetadata,
+    selectedRuntime: {
+      mode: snapshot.executionRuntime.mode,
+      runtimeKind: snapshot.executionRuntime.kind,
+    },
+    startupProbe: 'never',
+  });
   const providerToolStatus = scalarValue(agentApiRuntime.summary, 'providerToolStatus') ?? serviceEvidenceReadiness.status;
 
   console.log(`runtimeKind=${snapshot.executionRuntime.kind}`);
@@ -171,6 +189,15 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`genericHelperDeclaredWebSearchTools=${serviceScalarValue(genericHelperReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
   console.log(`genericHelperTrustedWebSearchToolCount=${serviceScalarValue(genericHelperReadiness.summary, 'trustedWebSearchToolCount') ?? '0'}`);
   console.log(`genericHelperTrustedWebSearchTools=${serviceScalarValue(genericHelperReadiness.summary, 'trustedWebSearchTools') ?? 'none'}`);
+  console.log(`legacyPreviewProviderToolStatus=${legacyWebSearchPreviewReadiness.status}`);
+  console.log(`legacyPreviewProviderToolReadiness=${legacyWebSearchPreviewReadiness.toolReadiness}`);
+  console.log(`legacyPreviewProviderToolRequirements=${legacyWebSearchPreviewReadiness.satisfiedRequirements.length}/5`);
+  console.log(`legacyPreviewProviderToolMissingRequirements=${legacyWebSearchPreviewReadiness.missingRequirements.join(',') || 'none'}`);
+  console.log(`legacyPreviewDeclaredToolCount=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'declaredToolCount') ?? 'missing'}`);
+  console.log(`legacyPreviewDeclaredWebSearchToolCount=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'declaredWebSearchToolCount') ?? '0'}`);
+  console.log(`legacyPreviewDeclaredWebSearchTools=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
+  console.log(`legacyPreviewTrustedWebSearchToolCount=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'trustedWebSearchToolCount') ?? '0'}`);
+  console.log(`legacyPreviewTrustedWebSearchTools=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'trustedWebSearchTools') ?? 'none'}`);
 
   const failureReasons = [
     snapshot.executionRuntime.kind !== 'agent_api' ? 'runtime_kind' : null,
@@ -219,6 +246,15 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     (serviceScalarValue(genericHelperReadiness.summary, 'declaredWebSearchTools') ?? 'none') !== 'none' ? 'generic_helper_declared_web_search_tools' : null,
     (serviceScalarValue(genericHelperReadiness.summary, 'trustedWebSearchToolCount') ?? '0') !== '0' ? 'generic_helper_trusted_web_search_tool_count' : null,
     (serviceScalarValue(genericHelperReadiness.summary, 'trustedWebSearchTools') ?? 'none') !== 'none' ? 'generic_helper_trusted_web_search_tools' : null,
+    legacyWebSearchPreviewReadiness.status !== 'declared' ? 'legacy_preview_status' : null,
+    legacyWebSearchPreviewReadiness.toolReadiness !== 'declared' ? 'legacy_preview_tool_readiness' : null,
+    legacyWebSearchPreviewReadiness.satisfiedRequirements.length !== 5 ? 'legacy_preview_requirement_count' : null,
+    legacyWebSearchPreviewReadiness.missingRequirements.length !== 0 ? 'legacy_preview_missing_requirements' : null,
+    serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'declaredToolCount') !== '2' ? 'legacy_preview_declared_tool_count' : null,
+    serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'declaredWebSearchToolCount') !== '1' ? 'legacy_preview_declared_web_search_tool_count' : null,
+    serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'declaredWebSearchTools') !== 'web_search_preview' ? 'legacy_preview_declared_web_search_tools' : null,
+    serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'trustedWebSearchToolCount') !== '1' ? 'legacy_preview_trusted_web_search_tool_count' : null,
+    serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'trustedWebSearchTools') !== 'web_search_preview' ? 'legacy_preview_trusted_web_search_tools' : null,
   ].filter(Boolean);
 
   if (failureReasons.length > 0) {

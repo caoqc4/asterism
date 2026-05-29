@@ -1085,6 +1085,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
     expect(capabilities?.evidence.join(' ')).toContain('requiring unknown-provider metadata to identify the configured provider by exact owner, package scope, package basename, or package basename prefix rather than a loose substring match');
+    expect(capabilities?.evidence.join(' ')).toContain('OpenAI Responses web_search_preview legacy tool declarations');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now derives Agent API Runtime providerToolReadiness');
     expect(capabilities?.evidence.join(' ')).toContain('keeps selected Agent API Runtime disabled when provider identity is missing');
     expect(capabilities?.evidence.join(' ')).toContain('no-start local provider package metadata for @ai-sdk/openai and @ai-sdk/anthropic');
@@ -1105,6 +1106,9 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('service-evidence=4/5 requirements');
     expect(capabilities?.evidence.join(' ')).toContain('explicit_tool_declaration missing');
     expect(capabilities?.evidence.join(' ')).toContain('genericHelperTrustedWebSearchToolCount=0');
+    expect(capabilities?.evidence.join(' ')).toContain('legacyPreviewProviderToolStatus=declared');
+    expect(capabilities?.evidence.join(' ')).toContain('legacyPreviewDeclaredWebSearchTools=web_search_preview');
+    expect(capabilities?.evidence.join(' ')).toContain('web_search_cache remains excluded');
     expect(capabilities?.evidence.join(' ')).toContain('runtimeExecutable=no');
     expect(capabilities?.evidence.join(' ')).toContain('provider=not-called');
     expect(capabilities?.evidence.join(' ')).toContain('network=not-called');

@@ -951,6 +951,15 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('genericHelperDeclaredWebSearchTools=none');
     expect(result.output).toContain('genericHelperTrustedWebSearchToolCount=0');
     expect(result.output).toContain('genericHelperTrustedWebSearchTools=none');
+    expect(result.output).toContain('legacyPreviewProviderToolStatus=declared');
+    expect(result.output).toContain('legacyPreviewProviderToolReadiness=declared');
+    expect(result.output).toContain('legacyPreviewProviderToolRequirements=5/5');
+    expect(result.output).toContain('legacyPreviewProviderToolMissingRequirements=none');
+    expect(result.output).toContain('legacyPreviewDeclaredToolCount=2');
+    expect(result.output).toContain('legacyPreviewDeclaredWebSearchToolCount=1');
+    expect(result.output).toContain('legacyPreviewDeclaredWebSearchTools=web_search_preview');
+    expect(result.output).toContain('legacyPreviewTrustedWebSearchToolCount=1');
+    expect(result.output).toContain('legacyPreviewTrustedWebSearchTools=web_search_preview');
     expect(result.output).toContain('workspace=unchanged');
   });
 

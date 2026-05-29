@@ -25,6 +25,7 @@ const EXPLICIT_WEB_SEARCH_TOOL_NAMES = new Set([
   'web_browser',
   'web_fetch',
   'web_search',
+  'web_search_preview',
   'websearch',
 ]);
 

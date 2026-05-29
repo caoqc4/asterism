@@ -241,6 +241,39 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
   });
 
+  it('accepts the OpenAI legacy web_search_preview tool without accepting cache helpers', () => {
+    const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
+      configuredProvider: 'openai',
+      explicitToolDeclarations: {
+        declaredTools: ['web_search_preview', 'web_search_cache'],
+        packageName: '@openai/agents',
+        source: 'provider_owned_metadata',
+      },
+      providerConfigured: true,
+      providerOwnedMetadata: {
+        owner: 'openai',
+        packageName: '@openai/agents',
+        present: true,
+      },
+      selectedRuntime: {
+        mode: 'api',
+        runtimeKind: 'agent_api',
+      },
+      startupProbe: 'never',
+    });
+
+    expect(readiness).toMatchObject({
+      status: 'declared',
+      toolReadiness: 'declared',
+      missingRequirements: [],
+    });
+    expect(readiness.summary).toContain('declaredToolCount=2');
+    expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+    expect(readiness.summary).toContain('declaredWebSearchTools=web_search_preview');
+    expect(readiness.summary).toContain('trustedWebSearchToolCount=1');
+    expect(readiness.summary).toContain('trustedWebSearchTools=web_search_preview');
+  });
+
   it('accepts only explicit web/browse/browser/fetch tool declarations as provider web search readiness evidence', () => {
     const readiness = evaluateAgentApiProviderToolReadinessFromEvidence({
       configuredProvider: 'openai',
