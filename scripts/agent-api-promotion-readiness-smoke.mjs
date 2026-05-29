@@ -27,6 +27,19 @@ function taskBoundRunStartEvidence(runId, taskId = 'task_1') {
   };
 }
 
+function agentApiPilotDecisionEvidence() {
+  return {
+    pilotDecision: {
+      backend: 'agent_api',
+      executor: 'agent_api',
+      messagePriority: 'steer',
+      movement: 'execute',
+      operationMode: 'product_control_layer',
+      priorityLane: 'continue_or_review',
+    },
+  };
+}
+
 export async function runAgentApiPromotionReadinessSmoke() {
   console.log('Agent API promotion readiness smoke');
   console.log('mode=read-only');
@@ -164,6 +177,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    ...agentApiPilotDecisionEvidence(),
     reviewedPatchApplyBoundary: {
       appliedPromotionStatus: 'applied',
       explicitApplyOnly: true,
@@ -247,6 +261,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    ...agentApiPilotDecisionEvidence(),
     reviewedPatchApplyBoundary: {
       appliedPromotionStatus: 'applied',
       explicitApplyOnly: true,
@@ -254,6 +269,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       runId: 'run_api_execution_patch',
       taskId: 'task_1',
     },
+    ...agentApiPilotDecisionEvidence(),
     runEvidencePersistence: {
       runId: 'run_api_execution_patch',
       taskId: 'task_1',
@@ -330,6 +346,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    ...agentApiPilotDecisionEvidence(),
     runEvidencePersistence: {
       runId: 'run_api_execution',
       taskId: 'task_1',
@@ -407,6 +424,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       runId: 'run_api_execution',
       taskId: 'task_1',
     },
+    ...agentApiPilotDecisionEvidence(),
     runEvidencePersistence: {
       runId: 'run_api_execution',
       taskId: 'task_1',
@@ -492,6 +510,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       runId: 'run_api_execution',
       taskId: 'task_1',
     },
+    ...agentApiPilotDecisionEvidence(),
     runEvidencePersistence: {
       runId: 'run_api_execution',
       taskId: 'task_1',

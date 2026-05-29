@@ -1142,6 +1142,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && selectedRuntimeRunEvidenceChainReady
     && selectedRuntimeTaskEvidenceChainReady
     && selectedRuntimeProviderEvidenceChainReady
+    && pilotDecisionEvidenceChainReady
   ) {
     satisfiedRequirements.push('selected_runtime_contract');
   }

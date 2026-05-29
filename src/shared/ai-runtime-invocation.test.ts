@@ -1987,6 +1987,42 @@ describe('ai runtime invocation contract', () => {
     expect(missingProvider.summary).toContain('configuredProviderEvidenceChain=missing');
   });
 
+  it('requires Agent API execution selected runtime evidence to include the Pilot executor decision', () => {
+    const missingPilotDecision = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      pilotDecision: null,
+    });
+
+    expect(missingPilotDecision).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(missingPilotDecision.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
+    expect(missingPilotDecision.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
+    expect(missingPilotDecision.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
+    expect(missingPilotDecision.summary).toContain('pilotDecisionEvidenceChain=missing');
+    expect(missingPilotDecision.summary).toContain('pilotDecisionExecutor=missing');
+
+    const wrongExecutor = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      pilotDecision: {
+        backend: 'codex_cli',
+        executor: 'codex_cli',
+        messagePriority: 'steer',
+        movement: 'execute',
+        operationMode: 'product_control_layer',
+        priorityLane: 'continue_or_review',
+      },
+    });
+
+    expect(wrongExecutor).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(wrongExecutor.summary).toContain('pilotDecisionEvidenceChain=missing');
+    expect(wrongExecutor.summary).toContain('pilotDecisionExecutor=codex_cli');
+  });
+
   it('requires runtime context manifest evidence to belong to the target task', () => {
     const mismatch = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
@@ -2913,6 +2949,14 @@ function completeAgentApiExecutionPromotionEvidence() {
       startupProbe: 'not_called' as const,
       status: 'ready' as const,
       taskId: 'task_1',
+    },
+    pilotDecision: {
+      backend: 'agent_api' as const,
+      executor: 'agent_api' as const,
+      messagePriority: 'steer' as const,
+      movement: 'execute' as const,
+      operationMode: 'product_control_layer' as const,
+      priorityLane: 'continue_or_review' as const,
     },
     reviewedPatchApplyBoundary: {
       appliedPromotionStatus: 'applied' as const,

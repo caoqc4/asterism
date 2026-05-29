@@ -1406,7 +1406,7 @@ describe('product feature impact audit', () => {
     const evidence = rightPanel?.evidence.join(' ');
 
     expect(evidence).toContain('requires task_memory_coverage to carry target-task memory coverage evidence instead of a naked gate boolean');
-    expect(evidence).toContain('selected_runtime_contract to carry same-run, target-task, and selected-provider identity evidence');
+    expect(evidence).toContain('selected_runtime_contract to carry same-run, target-task, selected-provider, and product-control-layer Pilot executor decision evidence');
     expect(evidence).toContain('provider_visible_preflight configured provider identity to match the selected runtime provider');
     expect(evidence).toContain('requires simplicity_check to carry the target-task smallest movement evidence');
     expect(evidence).toContain('requires runtime_action to carry run_start/run service evidence tied to the selected run and target task');
@@ -1691,6 +1691,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('execution requests and progress intents now pass the bounded Pilot decision snapshot into RunService');
     expect(rightPanel?.evidence.join(' ')).toContain('persist it in the Agent API execution promotion readiness step input');
     expect(rightPanel?.evidence.join(' ')).toContain('readiness summary, including pilotDecisionEvidenceChain');
+    expect(rightPanel?.evidence.join(' ')).toContain('product-control-layer Pilot executor decision evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('pilotDecisionExecutor');
     expect(rightPanel?.evidence.join(' ')).toContain('pilotDecisionMovement');
     expect(rightPanel?.evidence.join(' ')).toContain('pilotDecisionOperationMode');
