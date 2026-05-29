@@ -206,6 +206,89 @@ export async function runAgentApiPromotionReadinessSmoke() {
       taskId: 'task_1',
     },
   });
+  const serviceEvidencePatchProposalReady = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+    contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
+    contextReadinessStep: {
+      status: 'ready',
+      stepId: 'step_context_ready',
+      taskId: 'task_1',
+    },
+    gates: {
+      simplicity_check: true,
+      runtime_action: true,
+      runtime_context_assembly: true,
+      context_readiness: true,
+      task_memory_coverage: true,
+      task_memory_guidance: true,
+      pre_step: true,
+      subtask_start: true,
+      post_step: true,
+    },
+    postStepVerification: {
+      runId: 'run_api_execution_patch',
+      status: 'ready',
+      taskId: 'task_1',
+      verifier: 'taskplane.verifier.lightweight',
+    },
+    providerVisiblePreflight: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+      runId: 'run_api_execution_patch',
+      startupProbe: 'not_called',
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    reviewedPatchApplyBoundary: {
+      appliedPromotionStatus: 'applied',
+      explicitApplyOnly: true,
+      promotionPreflightReady: true,
+      runId: 'run_api_execution_patch',
+      taskId: 'task_1',
+    },
+    runEvidencePersistence: {
+      runId: 'run_api_execution_patch',
+      taskId: 'task_1',
+      terminalEvidenceSummary: 'output_chars=128',
+      terminalEvidenceStatus: 'present',
+      terminalRunStatus: 'completed',
+    },
+    runGoalContract: {
+      completionConditionCount: 1,
+      objective: 'Produce reviewable patch and task file proposals.',
+      runId: 'run_api_execution_patch',
+      taskId: 'task_1',
+    },
+    selectedRuntimeContract: {
+      invocationLayer: 'api_runtime',
+      phase: 'execution_run',
+      provider: 'openai',
+      runId: 'run_api_execution_patch',
+      runtimeMode: 'api',
+      taskId: 'task_1',
+    },
+    subtaskStart: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    ...taskBoundRunStartEvidence('run_api_execution_patch'),
+    targetTaskId: 'task_1',
+    taskMemoryGuidance: {
+      guidanceCount: 1,
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    taskMemoryCoverage: {
+      status: 'ready',
+      taskId: 'task_1',
+    },
+    writeIntentExtraction: {
+      declaredActions: ['artifact.propose', 'task_file.propose'],
+      runId: 'run_api_execution_patch',
+      status: 'ready',
+      supportedActions: ['artifact.propose', 'task_file.propose'],
+      taskId: 'task_1',
+    },
+  });
   const serviceEvidencePostRunNoWriteback = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
     contextManifestSummary: 'task=task_1 / files=2 / sourceContexts=1',
     contextReadinessStep: {
@@ -552,6 +635,24 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`artifactOnlyTerminalRunStatusEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatusEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyTerminalEvidenceSummary=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalEvidenceSummary') ?? 'missing'}`);
   console.log(`artifactOnlyTerminalEvidenceSummaryChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalEvidenceSummaryChain') ?? 'missing'}`);
+  console.log(`patchProposalReadyPromotionReady=${serviceEvidencePatchProposalReady.ready ? 'yes' : 'no'}`);
+  console.log(`patchProposalReadyRequirements=${serviceEvidencePatchProposalReady.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
+  console.log(`patchProposalReadyGates=${serviceEvidencePatchProposalReady.satisfiedGates.length}/${deferredInvocation.requiredGates.length}`);
+  console.log(`patchProposalReadyMissingRequirements=${serviceEvidencePatchProposalReady.missingRequirements.join(',') || 'none'}`);
+  console.log(`patchProposalReadyWriteIntentSupportedActionCount=${scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentSupportedActionCount') ?? 'missing'}`);
+  console.log(`patchProposalReadyWriteIntentActions=${scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`patchProposalReadyWriteIntentDeclaredActionCount=${scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentDeclaredActionCount') ?? 'missing'}`);
+  console.log(`patchProposalReadyDeclaredWriteIntentActions=${scalarValue(serviceEvidencePatchProposalReady.summary, 'declaredWriteIntentActions') ?? 'missing'}`);
+  console.log(`patchProposalReadyWriteIntentDeclaredActionEvidenceChain=${scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentDeclaredActionEvidenceChain') ?? 'missing'}`);
+  console.log(`patchProposalReadyWriteIntentActionIdentityChain=${scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActionIdentityChain') ?? 'missing'}`);
+  console.log(`patchProposalReadyWriteIntentActionBoundary=${scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActionBoundary') ?? 'missing'}`);
+  console.log(`patchProposalReadyReviewedPatchApplyBoundary=${scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
+  console.log(`patchProposalReadyReviewedPatchExplicitApply=${scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchExplicitApply') ?? 'missing'}`);
+  console.log(`patchProposalReadyPatchPromotionPreflight=${scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionPreflight') ?? 'missing'}`);
+  console.log(`patchProposalReadyPatchPromotionStatus=${scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionStatus') ?? 'missing'}`);
+  console.log(`patchProposalReadyPatchPromotionRunEvidenceChain=${scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionRunEvidenceChain') ?? 'missing'}`);
+  console.log(`patchProposalReadyPatchPromotionTaskEvidenceChain=${scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`patchProposalReadyTerminalEvidenceSummary=${scalarValue(serviceEvidencePatchProposalReady.summary, 'terminalEvidenceSummary') ?? 'missing'}`);
   console.log(`postRunNoWritebackPromotionReady=${serviceEvidencePostRunNoWriteback.ready ? 'yes' : 'no'}`);
   console.log(`postRunNoWritebackRequirements=${serviceEvidencePostRunNoWriteback.satisfiedRequirements.length}/${deferredInvocation.promotionRequirements.length}`);
   console.log(`postRunNoWritebackGates=${serviceEvidencePostRunNoWriteback.satisfiedGates.length}/${deferredInvocation.requiredGates.length}`);
@@ -693,6 +794,24 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalRunStatusEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalEvidenceSummary') !== 'output_chars=42'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'terminalEvidenceSummaryChain') !== 'ready'
+    || !serviceEvidencePatchProposalReady.ready
+    || serviceEvidencePatchProposalReady.satisfiedRequirements.length !== 11
+    || serviceEvidencePatchProposalReady.satisfiedGates.length !== 9
+    || serviceEvidencePatchProposalReady.missingRequirements.length !== 0
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentSupportedActionCount') !== '2'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActions') !== 'artifact.propose,task_file.propose'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentDeclaredActionCount') !== '2'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'declaredWriteIntentActions') !== 'artifact.propose,task_file.propose'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentDeclaredActionEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActionIdentityChain') !== 'ready'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'writeIntentActionBoundary') !== 'ready'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchApplyBoundary') !== 'ready'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'reviewedPatchExplicitApply') !== 'yes'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionPreflight') !== 'ready'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionStatus') !== 'applied'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionRunEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'patchPromotionTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePatchProposalReady.summary, 'terminalEvidenceSummary') !== 'output_chars=128'
     || serviceEvidencePostRunNoWriteback.ready
     || serviceEvidencePostRunNoWriteback.satisfiedRequirements.length !== 9
     || serviceEvidencePostRunNoWriteback.satisfiedGates.length !== 9

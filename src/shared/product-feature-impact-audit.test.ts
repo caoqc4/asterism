@@ -113,6 +113,19 @@ describe('product feature impact audit', () => {
     ]);
   });
 
+  it('records patch proposal service evidence for Agent API execution promotion', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    const evidence = rightPanel?.evidence.join(' ') ?? '';
+
+    expect(evidence).toContain('patchProposalReady=11/11 requirements and 9/9 gates');
+    expect(evidence).toContain('artifact.propose plus task_file.propose declared Write Intents');
+    expect(evidence).toContain('reviewedPatchApplyBoundary=ready');
+    expect(evidence).toContain('reviewedPatchExplicitApply=yes');
+    expect(evidence).toContain('patchPromotionStatus=applied');
+    expect(evidence).toContain('patchPromotionRunEvidenceChain=ready');
+    expect(evidence).toContain('patchPromotionTaskEvidenceChain=ready');
+  });
+
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');
