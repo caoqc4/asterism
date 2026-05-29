@@ -260,6 +260,55 @@ describe('SandboxPatchPromotionApplyService', () => {
     }
   });
 
+  it('blocks reviewed patch workspace apply when selected-runtime evidence is missing', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-missing-runtime-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const diff = [
+        '--- a/notes.md',
+        '+++ b/notes.md',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const { markApplied, markBlocked, service } = buildService({
+        artifact: buildArtifact(diff),
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+        operatorSurface: 'service_explicit_apply',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: [
+          'Patch promotion apply requires complete runtime patch promotion routing evidence before workspace files can be written.',
+        ],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(markApplied).not.toHaveBeenCalled();
+      expect(markBlocked).toHaveBeenCalledWith(
+        'sandbox_patch_promotion_1',
+        [
+          'Patch promotion apply requires complete runtime patch promotion routing evidence before workspace files can be written.',
+        ],
+        expect.stringContaining('Sandbox patch promotion apply blocked: Patch promotion apply requires complete runtime patch promotion routing evidence before workspace files can be written.'),
+      );
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionRequirements=6/8');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('selectedRuntimeContract=missing');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('sameRunEvidenceChain=missing');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('postApplyRunEvidence=ready');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionMissingRequirements=selected_runtime_contract,same_run_evidence_chain');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('infers selected runtime contract from first-party run step evidence', () => {
     const cliSteps: RunStepRecord[] = [
       buildStep({
@@ -689,6 +738,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       const { markApplied, service } = buildService({
         artifact: buildArtifact(diff),
         promotion,
+        selectedRuntime: 'codex',
         workspaceRoot: tempRoot,
       });
 
@@ -885,6 +935,7 @@ describe('SandboxPatchPromotionApplyService', () => {
       ].join('\n');
       const { markApplied, service } = buildService({
         artifact: buildArtifact(diff),
+        selectedRuntime: 'codex',
         workspaceRoot: tempRoot,
       });
 
@@ -903,7 +954,7 @@ describe('SandboxPatchPromotionApplyService', () => {
         expect.stringContaining('Sandbox patch promotion already applied / checkpoint=run_checkpoint_1 / files=notes.md'),
       );
       expect(markApplied.mock.calls[0]?.[1]).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
-      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionRequirements=7/8');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionRequirements=8/8');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -941,11 +992,11 @@ describe('SandboxPatchPromotionApplyService', () => {
     expect(result.auditSummary).toContain('touchedFileCount=1');
     expect(result.auditSummary).toContain('filesMatched=yes');
     expect(result.auditSummary).toContain('futureRuntimeRouting=Runtime patch promotion routing readiness');
-    expect(result.auditSummary).toContain('promotionRequirements=7/8');
+    expect(result.auditSummary).toContain('promotionRequirements=6/8');
     expect(result.auditSummary).toContain('explicitOperatorApply=ready');
-    expect(result.auditSummary).toContain('sameRunEvidenceChain=ready');
+    expect(result.auditSummary).toContain('sameRunEvidenceChain=missing');
     expect(result.auditSummary).toContain('postApplyRunEvidence=ready');
-    expect(result.auditSummary).toContain('promotionMissingRequirements=selected_runtime_contract');
+    expect(result.auditSummary).toContain('promotionMissingRequirements=selected_runtime_contract,same_run_evidence_chain');
   });
 
   it('keeps already applied promotion evidence fully ready when same-run runtime contract is available', async () => {

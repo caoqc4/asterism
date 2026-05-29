@@ -171,6 +171,23 @@ export class SandboxPatchPromotionApplyService {
       );
     }
 
+    const routingReadiness = evaluateRuntimePatchPromotionRoutingReadinessForReadyPreflight({
+      operatorConfirmed: options.operatorConfirmed === true,
+      operatorId: options.operatorId,
+      operatorSurface: options.operatorSurface ?? null,
+      preflight,
+      selectedRuntimeContract,
+      touchedFiles: validation.touchedFiles,
+    });
+
+    if (!routingReadiness.ready) {
+      return this.blocked(
+        ['Patch promotion apply requires complete runtime patch promotion routing evidence before workspace files can be written.'],
+        preflight.promotion,
+        `futureRuntimeRouting=${routingReadiness.summary}`,
+      );
+    }
+
     if (validation.alreadyApplied) {
       const auditSummary = [
         'Sandbox patch promotion already applied',
@@ -180,14 +197,7 @@ export class SandboxPatchPromotionApplyService {
           expectedFiles: preflight.promotion.expectedFiles,
           touchedFiles: validation.touchedFiles,
         }),
-        buildRuntimePatchPromotionRoutingReadinessSummary({
-          operatorConfirmed: options.operatorConfirmed === true,
-          operatorId: options.operatorId,
-          operatorSurface: options.operatorSurface ?? null,
-          preflight,
-          selectedRuntimeContract,
-          touchedFiles: validation.touchedFiles,
-        }),
+        `futureRuntimeRouting=${routingReadiness.summary}`,
       ].join(' / ');
       const applied = await this.promotionRepository.markApplied(preflight.promotion.id, auditSummary);
       return {
@@ -211,14 +221,7 @@ export class SandboxPatchPromotionApplyService {
         expectedFiles: preflight.promotion.expectedFiles,
         touchedFiles: validation.touchedFiles,
       }),
-      buildRuntimePatchPromotionRoutingReadinessSummary({
-        operatorConfirmed: options.operatorConfirmed === true,
-        operatorId: options.operatorId,
-        operatorSurface: options.operatorSurface ?? null,
-        preflight,
-        selectedRuntimeContract,
-        touchedFiles: validation.touchedFiles,
-      }),
+      `futureRuntimeRouting=${routingReadiness.summary}`,
     ].join(' / ');
     const applied = await this.promotionRepository.markApplied(preflight.promotion.id, auditSummary);
 
@@ -400,6 +403,18 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
   selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
   touchedFiles: string[];
 }): string {
+  const readiness = evaluateRuntimePatchPromotionRoutingReadinessForReadyPreflight(params);
+  return `futureRuntimeRouting=${readiness.summary}`;
+}
+
+function evaluateRuntimePatchPromotionRoutingReadinessForReadyPreflight(params: {
+  operatorConfirmed: boolean;
+  operatorId?: string | null;
+  operatorSurface?: SandboxPatchPromotionApplySurface | null;
+  preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>;
+  selectedRuntimeContract?: RuntimePatchPromotionSelectedRuntimeContract | null;
+  touchedFiles: string[];
+}): ReturnType<typeof evaluateRuntimePatchPromotionRoutingReadinessFromEvidence> {
   const evidence: RuntimePatchPromotionRoutingServiceEvidence = {
     explicitOperatorApply: {
       checkpointId: params.preflight.checkpoint.id,
@@ -441,8 +456,7 @@ function buildRuntimePatchPromotionRoutingReadinessSummary(params: {
     selectedRuntimeContract: params.selectedRuntimeContract ?? null,
     targetTaskId: params.preflight.promotion.taskId,
   };
-  const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
-  return `futureRuntimeRouting=${readiness.summary}`;
+  return evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(evidence);
 }
 
 function buildRuntimePatchPromotionRoutingReadinessSummaryFromAppliedPromotion(params: {

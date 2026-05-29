@@ -1544,6 +1544,17 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('cannot write workspace files or mutate promotion records');
   });
 
+  it('records pre-write selected-runtime evidence gating for patch-promotion apply', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('blocks after promotion preflight but before any markApplied call or workspace write when runtime patch promotion routing evidence is incomplete');
+    expect(evidence).toContain('missing selected-runtime evidence leaves selectedRuntimeContract=missing');
+    expect(evidence).toContain('sameRunEvidenceChain=missing');
+    expect(evidence).toContain('promotionMissingRequirements=selected_runtime_contract,same_run_evidence_chain');
+    expect(evidence).toContain('instead of allowing a 6/8 or 7/8 apply to touch the workspace');
+  });
+
   it('records fully ready already-applied patch promotion routing evidence', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
     const evidence = taskFiles?.evidence.join(' ');
