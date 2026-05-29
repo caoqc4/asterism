@@ -610,6 +610,9 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       scalarSummaryValue(providerToolReadiness.summary, 'configuredProvider')
         ? `configuredProvider=${scalarSummaryValue(providerToolReadiness.summary, 'configuredProvider')}`
         : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'configuredProviderEvidenceChain')
+        ? `configuredProviderEvidenceChain=${scalarSummaryValue(providerToolReadiness.summary, 'configuredProviderEvidenceChain')}`
+        : null,
       scalarSummaryValue(providerToolReadiness.summary, 'selectedRuntimeProvider')
         ? `selectedRuntimeProvider=${scalarSummaryValue(providerToolReadiness.summary, 'selectedRuntimeProvider')}`
         : null,

@@ -34,6 +34,7 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerToolReadiness=not_declared');
     expect(readiness.summary).toContain('requirements=3/5');
     expect(readiness.summary).toContain('configuredProvider=openai');
+    expect(readiness.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
     expect(readiness.summary).toContain('startupProbe=never');
     expect(readiness.summary).toContain('providerMetadataOwner=missing');
@@ -83,6 +84,7 @@ describe('Agent API provider tool readiness', () => {
     });
     expect(readiness.summary).toContain('providerConfigured=missing');
     expect(readiness.summary).toContain('configuredProvider=missing');
+    expect(readiness.summary).toContain('configuredProviderEvidenceChain=missing');
     expect(readiness.summary).toContain('selectedRuntimeProvider=openai');
     expect(readiness.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
     expect(readiness.summary).toContain('providerMetadataMatchesSelected=no');
@@ -120,6 +122,7 @@ describe('Agent API provider tool readiness', () => {
     });
     expect(readiness.summary).toContain('selectedApiRuntime=missing');
     expect(readiness.summary).toContain('configuredProvider=openai');
+    expect(readiness.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(readiness.summary).toContain('selectedRuntimeProvider=anthropic');
     expect(readiness.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
   });
@@ -152,6 +155,7 @@ describe('Agent API provider tool readiness', () => {
     });
     expect(readiness.summary).toContain('selectedApiRuntime=missing');
     expect(readiness.summary).toContain('configuredProvider=openai');
+    expect(readiness.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(readiness.summary).toContain('selectedRuntimeProvider=missing');
     expect(readiness.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
   });
@@ -183,6 +187,7 @@ describe('Agent API provider tool readiness', () => {
     });
     expect(readiness.summary).toContain('providerOwnedMetadata=ready');
     expect(readiness.summary).toContain('configuredProvider=openai');
+    expect(readiness.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(readiness.summary).toContain('providerMetadataMatchesSelected=yes');
     expect(readiness.summary).toContain('providerMetadataOwner=provider');
     expect(readiness.summary).toContain('providerMetadataPackage=@ai-sdk/openai');

@@ -202,6 +202,7 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
   const normalizedDeclaredTools = normalizeDeclaredTools(declarations?.declaredTools);
   const selectedRuntimeProvider = normalizeProvider(evidence.selectedRuntime?.provider);
   const configuredProvider = normalizeProvider(evidence.configuredProvider);
+  const configuredProviderEvidenceChainReady = evidence.providerConfigured === true && Boolean(configuredProvider);
   const selectedRuntimeProviderEvidenceChainReady = Boolean(selectedRuntimeProvider)
     && Boolean(configuredProvider)
     && selectedRuntimeProvider === configuredProvider;
@@ -237,7 +238,7 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
     satisfiedRequirements.push('selected_api_runtime');
   }
 
-  if (evidence.providerConfigured === true && configuredProvider) {
+  if (configuredProviderEvidenceChainReady) {
     satisfiedRequirements.push('provider_configured');
   }
 
@@ -283,6 +284,7 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
       `selectedApiRuntime=${satisfiedRequirementSet.has('selected_api_runtime') ? 'ready' : 'missing'}`,
       `providerConfigured=${satisfiedRequirementSet.has('provider_configured') ? 'ready' : 'missing'}`,
       `configuredProvider=${configuredProvider || 'missing'}`,
+      `configuredProviderEvidenceChain=${configuredProviderEvidenceChainReady ? 'ready' : 'missing'}`,
       `selectedRuntimeProvider=${selectedRuntimeProvider || 'missing'}`,
       `selectedRuntimeProviderEvidenceChain=${selectedRuntimeProviderEvidenceChainReady ? 'ready' : 'missing'}`,
       `startupProbe=${evidence.startupProbe ?? 'missing'}`,

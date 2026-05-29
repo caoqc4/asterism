@@ -1083,7 +1083,6 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');
-    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, configuredProvider, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, startupProbe, providerOwnedMetadata, providerMetadataMatchesSelected, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, explicitToolDeclarationPackage, explicitToolDeclarationPackageMatchesMetadata, declaredToolCount, declaredWebSearchToolCount, declaredWebSearchTools, trustedWebSearchToolCount, trustedWebSearchTools, untrustedWebSearchToolCount, and untrustedWebSearchTools chips');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
@@ -1525,6 +1524,16 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('terminalEvidenceSummary in post-run Agent API execution promotion evidence as output_chars or failure_reason_chars');
     expect(evidence).toContain('run_evidence_persistence remains missing when terminal evidence is marked present without that reviewable evidence summary');
     expect(evidence).toContain('postRunNoWriteback=9/11 requirements and 9/9 gates with terminalEvidenceSummary=output_chars=42');
+  });
+
+  it('records Agent API provider configured identity evidence-chain coverage', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+    const evidence = capabilities?.evidence.join(' ');
+
+    expect(evidence).toContain('configuredProviderEvidenceChain');
+    expect(evidence).toContain('mismatched configured-provider identity evidence');
+    expect(evidence).toContain('configured provider identity evidence');
+    expect(evidence).toContain('configuredProviderEvidenceChain=ready');
   });
 
   it('records right-panel Agent API decomposition routing coverage', () => {
