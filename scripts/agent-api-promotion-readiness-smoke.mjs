@@ -96,6 +96,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      provider: 'openai',
       runId: 'run_api_execution_partial',
       runtimeMode: 'api',
       taskId: 'task_1',
@@ -176,6 +177,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      provider: 'openai',
       runId: 'run_api_execution',
       runtimeMode: 'api',
       taskId: 'task_1',
@@ -249,6 +251,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      provider: 'openai',
       runId: 'run_api_execution',
       runtimeMode: 'api',
       taskId: 'task_1',
@@ -324,6 +327,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      provider: 'openai',
       runId: 'run_api_execution',
       runtimeMode: 'api',
       taskId: 'task_1',
@@ -406,6 +410,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      provider: 'openai',
       runId: 'run_api_execution',
       runtimeMode: 'api',
       taskId: 'task_1',
@@ -468,6 +473,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceSelectedRuntimeRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeTask=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeProvider=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProvider') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeProviderEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProviderEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentRun=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentTask=${scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') ?? 'missing'}`);
@@ -589,6 +596,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTaskEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProvider') !== 'openai'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProviderEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentRun') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentTask') !== 'missing'

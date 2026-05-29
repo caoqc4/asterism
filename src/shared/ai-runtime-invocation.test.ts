@@ -1442,6 +1442,7 @@ describe('ai runtime invocation contract', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        provider: 'openai',
         runId: 'run_api_execution_partial',
         runtimeMode: 'api',
         taskId: 'task_1',
@@ -1492,6 +1493,8 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
     expect(partial.summary).toContain('selectedRuntimeTask=task_1');
     expect(partial.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
+    expect(partial.summary).toContain('selectedRuntimeProvider=openai');
+    expect(partial.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(partial.summary).toContain('providerPreflightStatus=ready');
     expect(partial.summary).toContain('providerConfigured=ready');
     expect(partial.summary).toContain('configuredProvider=openai');
@@ -1537,6 +1540,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
     expect(ready.summary).toContain('selectedRuntimeTask=task_1');
     expect(ready.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('selectedRuntimeProvider=openai');
+    expect(ready.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(ready.summary).toContain('providerPreflightStatus=ready');
     expect(ready.summary).toContain('providerConfigured=ready');
     expect(ready.summary).toContain('configuredProvider=openai');
@@ -1659,6 +1664,45 @@ describe('ai runtime invocation contract', () => {
     expect(failed.summary).toContain('terminalRunStatusEvidenceChain=ready');
   });
 
+  it('requires Agent API execution selected runtime provider identity to match provider preflight', () => {
+    const wrongProvider = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      selectedRuntimeContract: {
+        ...completeAgentApiExecutionPromotionEvidence().selectedRuntimeContract,
+        provider: 'anthropic',
+      },
+    });
+
+    expect(wrongProvider).toMatchObject({
+      ready: false,
+      missingRequirements: expect.arrayContaining([
+        'selected_runtime_contract',
+        'provider_visible_preflight',
+      ]),
+    });
+    expect(wrongProvider.summary).toContain('selectedRuntimeProvider=anthropic');
+    expect(wrongProvider.summary).toContain('configuredProvider=openai');
+    expect(wrongProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+
+    const missingProvider = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      selectedRuntimeContract: {
+        ...completeAgentApiExecutionPromotionEvidence().selectedRuntimeContract,
+        provider: null,
+      },
+    });
+
+    expect(missingProvider).toMatchObject({
+      ready: false,
+      missingRequirements: expect.arrayContaining([
+        'selected_runtime_contract',
+        'provider_visible_preflight',
+      ]),
+    });
+    expect(missingProvider.summary).toContain('selectedRuntimeProvider=missing');
+    expect(missingProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+  });
+
   it('requires runtime context manifest evidence to belong to the target task', () => {
     const mismatch = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
@@ -1695,6 +1739,7 @@ describe('ai runtime invocation contract', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        provider: 'openai',
         runId: 'run_other',
         runtimeMode: 'api',
         taskId: 'task_1',
@@ -1714,6 +1759,7 @@ describe('ai runtime invocation contract', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        provider: 'openai',
         runId: 'run_api_execution',
         runtimeMode: 'api',
         taskId: 'task_2',
@@ -2264,7 +2310,10 @@ describe('ai runtime invocation contract', () => {
 
     expect(missingProvider).toMatchObject({
       ready: false,
-      missingRequirements: ['provider_visible_preflight'],
+      missingRequirements: expect.arrayContaining([
+        'selected_runtime_contract',
+        'provider_visible_preflight',
+      ]),
     });
     expect(missingProvider.summary).toContain('providerConfigured=ready');
     expect(missingProvider.summary).toContain('configuredProvider=missing');
@@ -2538,6 +2587,7 @@ function completeAgentApiExecutionPromotionEvidence() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime' as const,
       phase: 'execution_run' as const,
+      provider: 'openai',
       runId: 'run_api_execution',
       runtimeMode: 'api' as const,
       taskId: 'task_1',

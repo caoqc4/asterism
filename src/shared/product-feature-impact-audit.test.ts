@@ -176,8 +176,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('persisted post-run Run evidence task identity to match targetTaskId');
     expect(rightPanel?.evidence.join(' ')).toContain('run_evidence_persistence can stay ready');
     expect(rightPanel?.evidence.join(' ')).toContain('run_evidence_persistence to carry a terminal run status');
-    expect(rightPanel?.evidence.join(' ')).toContain('selected_runtime_contract to carry same-run and target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight to carry configured provider identity plus same-run and target-task identity evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('selected_runtime_contract to carry same-run, target-task');
+    expect(rightPanel?.evidence.join(' ')).toContain('provider_visible_preflight');
     expect(rightPanel?.evidence.join(' ')).toContain('runtime_context_manifest to carry the target task identity');
     expect(rightPanel?.evidence.join(' ')).toContain('context_readiness_step to carry target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('treats task_memory_guidance as ready when there is no pending guidance or when completed guidance exists');
@@ -1287,6 +1287,8 @@ describe('product feature impact audit', () => {
     const evidence = rightPanel?.evidence.join(' ');
 
     expect(evidence).toContain('requires task_memory_coverage to carry target-task memory coverage evidence instead of a naked gate boolean');
+    expect(evidence).toContain('selected_runtime_contract to carry same-run, target-task, and selected-provider identity evidence');
+    expect(evidence).toContain('provider_visible_preflight configured provider identity to match the selected runtime provider');
     expect(evidence).toContain('requires simplicity_check to carry the target-task smallest movement evidence');
     expect(evidence).toContain('requires runtime_action to carry run_start/run service evidence tied to the selected run and target task');
     expect(evidence).toContain('requires subtask_start to carry target-task readiness evidence instead of a naked gate boolean');
@@ -1294,8 +1296,9 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('task_memory_coverage, task_memory_guidance, pre_step, subtask_start');
     expect(evidence).toContain('post_step gates to their matching service-evidence chains');
     expect(evidence).toContain('simplicityCheck, simplicityCheckTask, simplicityCheckSmallestMovement, simplicityCheckGateEvidenceChain');
+    expect(evidence).toContain('selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain');
     expect(evidence).toContain('runtimeAction, runtimeActionStatus, runtimeActionSurface, runtimeActionRun, runtimeActionRunIdentityChain, runtimeActionTask, runtimeActionGateEvidenceChain');
-    expect(evidence).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called');
+    expect(evidence).toContain('providerConfigured=ready, configuredProvider=openai, selectedRuntimeProvider=openai, selectedRuntimeProviderEvidenceChain=ready, providerStartupProbe=not_called');
     expect(evidence).toContain('simplicityCheckGateEvidenceChain=ready');
     expect(evidence).toContain('runtimeActionGateEvidenceChain=ready');
     expect(evidence).toContain('taskMemoryGuidance=ready, taskMemoryGuidanceCount=0');

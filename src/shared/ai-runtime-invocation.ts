@@ -210,6 +210,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   selectedRuntimeContract?: {
     invocationLayer: RuntimeInvocationLayer;
     phase: RuntimeInvocationPhase;
+    provider?: string | null;
     runId?: string | null;
     runtimeMode: AiRuntimeMode | 'local_rule' | 'product_harness';
     taskId?: string | null;
@@ -861,6 +862,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const targetTaskId = evidence.targetTaskId?.trim() || '';
   const selectedRuntimeRunId = selectedRuntime?.runId?.trim() || '';
   const selectedRuntimeTaskId = selectedRuntime?.taskId?.trim() || '';
+  const selectedRuntimeProvider = selectedRuntime?.provider?.trim() || '';
   const contextManifest = evidence.contextManifestSummary?.trim() || '';
   const contextManifestTaskId = evidence.contextManifestTaskId?.trim()
     || scalarSummaryValue(contextManifest, 'task')
@@ -932,6 +934,9 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const selectedRuntimeTaskEvidenceChainReady = Boolean(selectedRuntimeTaskId)
     && Boolean(targetTaskId)
     && selectedRuntimeTaskId === targetTaskId;
+  const selectedRuntimeProviderEvidenceChainReady = Boolean(selectedRuntimeProvider)
+    && Boolean(configuredProvider)
+    && selectedRuntimeProvider === configuredProvider;
   const writeIntentRunEvidenceChainReady = Boolean(writeIntentRunId)
     && Boolean(runEvidenceId)
     && writeIntentRunId === runEvidenceId;
@@ -1039,6 +1044,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && selectedRuntime.phase === 'execution_run'
     && selectedRuntimeRunEvidenceChainReady
     && selectedRuntimeTaskEvidenceChainReady
+    && selectedRuntimeProviderEvidenceChainReady
   ) {
     satisfiedRequirements.push('selected_runtime_contract');
   }
@@ -1055,6 +1061,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       evidence.providerVisiblePreflight.startupProbe === 'never'
       || evidence.providerVisiblePreflight.startupProbe === 'not_called'
     )
+    && selectedRuntimeProviderEvidenceChainReady
     && providerPreflightRunEvidenceChainReady
     && providerPreflightTaskEvidenceChainReady
   ) {
@@ -1144,6 +1151,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `selectedRuntimeRunEvidenceChain=${selectedRuntimeRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `selectedRuntimeTask=${selectedRuntimeTaskId || 'missing'}`,
       `selectedRuntimeTaskEvidenceChain=${selectedRuntimeTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `selectedRuntimeProvider=${selectedRuntimeProvider || 'missing'}`,
+      `selectedRuntimeProviderEvidenceChain=${selectedRuntimeProviderEvidenceChainReady ? 'ready' : 'missing'}`,
       `providerPreflightStatus=${evidence.providerVisiblePreflight?.status ?? 'missing'}`,
       `providerConfigured=${evidence.providerVisiblePreflight?.providerConfigured === true ? 'ready' : 'missing'}`,
       `configuredProvider=${configuredProvider || 'missing'}`,

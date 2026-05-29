@@ -527,6 +527,7 @@ export class RunService {
         ? {
             invocationLayer: 'api_runtime',
             phase: 'execution_run',
+            provider: params.capabilities.model.provider,
             runId,
             runtimeMode: 'api',
             taskId: params.task.id,
