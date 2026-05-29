@@ -1085,13 +1085,14 @@ function createMockApi() {
         runtime: {
           mode: 'api',
           label: 'Agent API Runtime 规划',
+          provider: 'openai',
         },
         status: 'completed',
         summary: '已生成 2 个项目子任务草稿。',
       },
       promotionReadiness: {
         ready: true,
-        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / selectedRuntimeContract=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / proposalCard=ready / applyPlan=subtask.create_many / source=agent_api_decomposition / sourceEvidenceChain=ready / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalSubtaskIdentityChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / timelineRuntimeMode=api / timelineInvocationLayer=api_runtime / timelineInvocationPhase=decomposition_draft / selectedRuntimeEvidenceChain=ready / missingRequirements=none / promotionMissingRequirements=none / missing=none',
+        summary: 'Agent API decomposition promotion readiness / ready=yes / promotionReady=yes / requirements=7/7 / promotionRequirements=7/7 / selectedRuntimeContract=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / proposalCard=ready / applyPlan=subtask.create_many / source=agent_api_decomposition / sourceEvidenceChain=ready / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalSubtaskIdentityChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / timelineRuntimeMode=api / timelineInvocationLayer=api_runtime / timelineInvocationPhase=decomposition_draft / timelineRuntimeProvider=openai / selectedRuntimeEvidenceChain=ready / missingRequirements=none / promotionMissingRequirements=none / missing=none',
         satisfiedRequirements: [
           'selected_runtime_contract',
           'parent_task_identity',
@@ -1209,7 +1210,7 @@ describe('App redesign v1', () => {
   it('projects decomposition promotion parent-chain evidence chips', () => {
     const chips = projectDecompositionPromotionEvidenceChips({
       ready: true,
-      summary: 'Agent API decomposition promotion readiness / ready=yes / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalDependencies=none|需求确认 / applyPlanDependencies=none|需求确认 / proposalDependencyEvidenceChain=ready / applyPlanDependencyEvidenceChain=ready / proposalSubtaskIdentityChain=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / sourceEvidenceChain=ready / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / timelineRuntimeMode=api / timelineInvocationLayer=api_runtime / timelineInvocationPhase=decomposition_draft / selectedRuntimeEvidenceChain=ready',
+      summary: 'Agent API decomposition promotion readiness / ready=yes / proposalId=project_decomposition:task_project / expectedProposalId=project_decomposition:task_project / proposalIdEvidenceChain=ready / proposalParentTask=task_project / proposalTaskEvidenceChain=ready / proposalSubtaskCount=2 / applyPlanSubtaskCount=2 / proposalSubtaskEvidenceChain=ready / proposalSubtaskTitles=需求确认|原型验收 / applyPlanSubtaskTitles=需求确认|原型验收 / proposalDependencies=none|需求确认 / applyPlanDependencies=none|需求确认 / proposalDependencyEvidenceChain=ready / applyPlanDependencyEvidenceChain=ready / proposalSubtaskIdentityChain=ready / parentTask=task_project / applyPlanParentTask=task_project / parentTaskEvidenceChain=ready / subtaskCount=2 / evidenceRunId=agent_api_decomposition:task_project / timelineEvidenceRunId=agent_api_decomposition:task_project / sourceEvidenceChain=ready / evidenceRunIdChain=ready / confirmationBoundary=operator_confirmed_subtask_create_many / draftOnlyBeforeConfirmation=true / runtimeMode=api / invocationLayer=api_runtime / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / timelineRuntimeMode=api / timelineInvocationLayer=api_runtime / timelineInvocationPhase=decomposition_draft / timelineRuntimeProvider=openai / selectedRuntimeEvidenceChain=ready',
       satisfiedRequirements: [
         'selected_runtime_contract',
         'parent_task_identity',
@@ -1241,9 +1242,12 @@ describe('App redesign v1', () => {
     expect(chips).toContain('timelineEvidenceRunId=agent_api_decomposition:task_project');
     expect(chips).toContain('sourceEvidenceChain=ready');
     expect(chips).toContain('evidenceRunIdChain=ready');
+    expect(chips).toContain('selectedRuntimeProvider=openai');
+    expect(chips).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(chips).toContain('timelineRuntimeMode=api');
     expect(chips).toContain('timelineInvocationLayer=api_runtime');
     expect(chips).toContain('timelineInvocationPhase=decomposition_draft');
+    expect(chips).toContain('timelineRuntimeProvider=openai');
     expect(chips).toContain('selectedRuntimeEvidenceChain=ready');
   });
 
@@ -6705,6 +6709,7 @@ describe('App redesign v1', () => {
         runtime: {
           mode: 'api',
           label: 'Agent API Runtime 规划',
+          provider: 'openai',
         },
         status: 'completed',
         summary: '已生成 1 个项目子任务草稿。',
@@ -6723,9 +6728,56 @@ describe('App redesign v1', () => {
         invocationLayer: 'api_runtime',
         parentTaskId: 'task_project',
         phase: 'decomposition_draft',
+        provider: 'openai',
         runtimeLabel: 'Agent API Runtime 规划',
         runtimeMode: 'api',
       }),
+    }));
+  });
+
+  it('recovers Agent API decomposition provider identity from promotion readiness when the invocation is compact', () => {
+    const project = buildTask({
+      id: 'task_project',
+      title: '官网改版',
+      state: 'planned',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: [],
+      nextStep: '拆解项目结构',
+    });
+
+    const plan = buildProjectDecompositionConfirmationApplyPlan(project, {
+      parentGoal: '完成官网改版并上线。',
+      subtasks: [{
+        title: '确认官网改版范围',
+        summary: '明确页面范围、目标用户和上线边界。',
+        acceptanceCriteria: '范围清单被确认。',
+        dependency: null,
+        rationale: '这是后续执行的独立输入。',
+      }],
+      review: '子任务边界清楚。',
+      nextStep: '确认是否创建这些子任务。',
+      evidenceRunId: 'agent_api_decomposition:task_project',
+      invocation: {
+        phase: 'decomposition_draft',
+        layer: 'api_runtime',
+        runtime: {
+          mode: 'api',
+          label: 'Agent API Runtime 规划',
+        },
+        status: 'completed',
+        summary: '已生成 1 个项目子任务草稿。',
+      },
+      promotionReadiness: {
+        ready: true,
+        summary: 'Agent API decomposition promotion readiness / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready',
+        satisfiedRequirements: [],
+        missingRequirements: [],
+      },
+    });
+
+    expect(plan.timeline.payload.runtimeContract).toEqual(expect.objectContaining({
+      provider: 'openai',
     }));
   });
 

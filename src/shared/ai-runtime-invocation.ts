@@ -38,6 +38,7 @@ export type RuntimeInvocationStatus = 'completed' | 'failed' | 'skipped';
 export type RuntimeInvocationRuntimeRef = {
   mode: AiRuntimeMode | 'local_rule' | 'product_harness';
   label: string;
+  provider?: string | null;
 };
 
 export type RuntimeInvocationBase = {
@@ -294,6 +295,7 @@ export function buildLocalTaskTypeReviewInvocation(
 
 export function buildApiRuntimeDecompositionDraftInvocation(params: {
   draft: ProjectDecompositionResult;
+  provider?: string | null;
   runtimeLabel?: string;
   summary?: string;
 }): DecompositionDraftInvocationResult {
@@ -303,6 +305,7 @@ export function buildApiRuntimeDecompositionDraftInvocation(params: {
     runtime: {
       mode: 'api',
       label: params.runtimeLabel ?? 'Agent API Runtime 规划',
+      provider: params.provider ?? null,
     },
     status: 'completed',
     summary: params.summary ?? `已生成 ${params.draft.subtasks.length} 个项目子任务草稿。`,

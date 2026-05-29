@@ -175,9 +175,12 @@ export function projectDecompositionPromotionEvidenceChips(
     'draftOnlyBeforeConfirmation',
     'runtimeMode',
     'invocationLayer',
+    'selectedRuntimeProvider',
+    'selectedRuntimeProviderEvidenceChain',
     'timelineRuntimeMode',
     'timelineInvocationLayer',
     'timelineInvocationPhase',
+    'timelineRuntimeProvider',
     'selectedRuntimeEvidenceChain',
   ];
   return [
@@ -209,6 +212,8 @@ export function buildProjectDecompositionConfirmationApplyPlan(
           invocationLayer: draft.invocation.layer,
           parentTaskId: project.id,
           phase: draft.invocation.phase,
+          provider: draft.invocation.runtime.provider
+            ?? scalarSummaryValue(draft.promotionReadiness?.summary, 'selectedRuntimeProvider'),
           runtimeLabel: draft.invocation.runtime.label,
           runtimeMode: draft.invocation.runtime.mode,
         }
@@ -3001,6 +3006,8 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
               invocationLayer: draft.invocation.layer,
               parentTaskId: project.id,
               phase: draft.invocation.phase,
+              provider: draft.invocation.runtime.provider
+                ?? scalarSummaryValue(draft.promotionReadiness?.summary, 'selectedRuntimeProvider'),
               runtimeMode: draft.invocation.runtime.mode,
             }
           : null,

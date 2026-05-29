@@ -1496,4 +1496,13 @@ describe('product feature impact audit', () => {
     expect(decomposition?.nextActions.join(' '))
       .toContain('right-panel and Tasks confirmation on TaskplaneWritebackApplyPlan');
   });
+
+  it('records Tasks project Agent API decomposition provider identity coverage', () => {
+    const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
+    const evidence = decomposition?.evidence.join(' ');
+
+    expect(evidence).toContain('preserve selectedRuntimeProvider identity in the runtime contract');
+    expect(evidence).toContain('selectedRuntimeProviderEvidenceChain is not lost between draft generation and operator-confirmed subtask.create_many apply');
+    expect(evidence).toContain('Tasks project decomposition draft readiness now projects selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, and timelineRuntimeProvider evidence chips');
+  });
 });

@@ -49,6 +49,7 @@ export type ProjectDecompositionInvocationSummary = {
   runtime: {
     mode: 'api' | 'codex' | 'claude';
     label: string;
+    provider?: string | null;
   };
   status: 'completed' | 'failed' | 'skipped';
   summary: string;

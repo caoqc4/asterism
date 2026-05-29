@@ -1082,6 +1082,7 @@ export function registerIpcHandlers(): void {
     }
     const invocation = buildApiRuntimeDecompositionDraftInvocation({
       draft: decomposition,
+      provider: config.provider,
       runtimeLabel: `Agent API Runtime · ${config.provider} / ${config.model}`,
     });
     const evidenceRunId = [

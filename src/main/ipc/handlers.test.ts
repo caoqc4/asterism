@@ -981,6 +981,7 @@ describe('registerIpcHandlers', () => {
         runtime: {
           mode: 'api',
           label: 'Agent API Runtime · openai / gpt-test',
+          provider: 'openai',
         },
         status: 'completed',
       },
