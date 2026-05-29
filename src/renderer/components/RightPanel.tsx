@@ -906,8 +906,12 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
       ?? readStepKeyValue(agentApiPromotionStep.output, 'promotionMissingRequirements')
       ?? readSlashSummaryValue(agentApiPromotionStep.output, 'promotionMissingRequirements')
       ?? readStepKeyValue(agentApiPromotionStep.output, 'missing');
+    const noWorkspaceWriteRequired = (
+      readStepKeyValue(agentApiPromotionStep.output, 'noWorkspaceWriteRequired')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'noWorkspaceWriteRequired')
+    ) === 'yes';
     const label = ready === 'yes'
-      ? 'ready'
+      ? noWorkspaceWriteRequired ? 'ready，无需工作区写入' : 'ready'
       : missingRequirements && missingRequirements !== 'none'
         ? `missing ${truncateAgentCliChatLine(missingRequirements, 72)}`
         : 'recorded';

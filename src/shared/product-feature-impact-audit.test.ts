@@ -1469,6 +1469,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('persist it in the Agent API execution promotion readiness step input');
     expect(rightPanel?.evidence.join(' ')).toContain('completed Agent API execution summaries now surface Agent API execution promotion readiness Run-step evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('missing requirement lists from slash-separated readiness summaries');
+    expect(rightPanel?.evidence.join(' ')).toContain('noWorkspaceWriteRequired=yes readiness as an operator-visible no-workspace-write completion signal');
     expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion');
     expect(rightPanel?.gaps.join(' ')).toContain('explicit right-panel execution requests can enter RunService');
     expect(rightPanel?.nextActions.join(' ')).toContain('expanding from explicit right-panel execution requests');
