@@ -1286,6 +1286,8 @@ describe('SchedulerService', () => {
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runFailureReasons=run_scheduled_callback_1: Model failed safely.');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('failureDecisionProposals=proposed');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('failureDecisionProposalTasks=task_auto');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('terminalEvidenceDecisionProposalTasks=none');
     expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
   });
 
@@ -1362,6 +1364,7 @@ describe('SchedulerService', () => {
     );
 
     expect(sweepResult.summary).toContain('failureDecisionProposals=skipped_existing');
+    expect(sweepResult.summary).toContain('failureDecisionProposalTasks=task_auto');
     expect(sweepResult.runFailureReasons).toEqual(['run_scheduled_callback_2: Model failed safely again.']);
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
@@ -1438,6 +1441,7 @@ describe('SchedulerService', () => {
     );
 
     expect(sweepResult.summary).toContain('failureDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('failureDecisionProposalTasks=task_auto');
     expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_failed_without_evidence');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_auto',
@@ -1448,6 +1452,81 @@ describe('SchedulerService', () => {
         rationale: expect.stringContaining('Terminal failure evidence is incomplete'),
         targetTaskId: 'task_auto',
         title: '确认定时/事件 Agent 失败后的下一步',
+      }),
+    }));
+  });
+
+  it('records task evidence for terminal-evidence Decision proposals in sweep summaries', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: null,
+        id: 'run_scheduled_empty_terminal_sweep',
+        output: null,
+        outputSource: null,
+        status: 'completed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:05:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('terminalEvidenceDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('terminalEvidenceDecisionProposalTasks=task_auto');
+    expect(sweepResult.summary).toContain('failureDecisionProposalTasks=none');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        evidenceRunId: 'run_scheduled_empty_terminal_sweep',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 终态证据缺失后的下一步',
       }),
     }));
   });
@@ -1524,6 +1603,7 @@ describe('SchedulerService', () => {
     );
 
     expect(sweepResult.summary).toContain('failureDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('failureDecisionProposalTasks=task_auto');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_auto',
@@ -2361,6 +2441,9 @@ describe('SchedulerService', () => {
     expect(failedSweep.summary).toContain('checkedTaskIds=task_auto');
     expect(failedSweep.summary).toContain('error=Trigger port failed - safely');
     expect(failedSweep.summary).toContain('sweepFailureDecisionProposals=proposed');
+    expect(failedSweep.summary).toContain('sweepFailureDecisionProposalTasks=task_auto');
+    expect(failedSweep.summary).toContain('runIdentityDecisionProposalTasks=none');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposalTasks=none');
     expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
@@ -2547,6 +2630,8 @@ describe('SchedulerService', () => {
     expect(failedSweep.summary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
     expect(failedSweep.summary).toContain('error=Timeline evidence failed: Timeline write failed - safely');
     expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=proposed');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposalTasks=task_auto');
+    expect(failedSweep.summary).toContain('runIdentityDecisionProposalTasks=none');
     expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
     expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
@@ -2638,7 +2723,9 @@ describe('SchedulerService', () => {
     });
     expect(failedSweep.summary).toContain('error=Run target task mismatch: expected task_auto but received task_other.');
     expect(failedSweep.summary).toContain('runIdentityDecisionProposals=proposed');
+    expect(failedSweep.summary).toContain('runIdentityDecisionProposalTasks=task_auto');
     expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=not_required');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposalTasks=none');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_auto',

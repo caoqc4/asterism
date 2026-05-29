@@ -591,9 +591,17 @@ export class SchedulerService {
         const match = /failureDecisionProposal=([^/\s]+)/.exec(result.summary);
         return match?.[1] && match[1] !== 'not_required' ? [match[1]] : [];
       });
+      const failureDecisionProposalTaskIds = results.flatMap((result) => {
+        const match = /failureDecisionProposal=([^/\s]+)/.exec(result.summary);
+        return match?.[1] && match[1] !== 'not_required' && result.run?.taskId ? [result.run.taskId] : [];
+      });
       const terminalEvidenceDecisionProposals = results.flatMap((result) => {
         const match = /terminalEvidenceDecisionProposal=([^/\s]+)/.exec(result.summary);
         return match?.[1] && match[1] !== 'not_required' ? [match[1]] : [];
+      });
+      const terminalEvidenceDecisionProposalTaskIds = results.flatMap((result) => {
+        const match = /terminalEvidenceDecisionProposal=([^/\s]+)/.exec(result.summary);
+        return match?.[1] && match[1] !== 'not_required' && result.run?.taskId ? [result.run.taskId] : [];
       });
       const runtimeStartMissingRequirements = Array.from(new Set(
         results.flatMap((result) => result.plan.runtimeStartMissingRequirements),
@@ -629,7 +637,9 @@ export class SchedulerService {
         `blockedTaskSummaries=${blockedTaskSummaries.length ? blockedTaskSummaries.join('; ') : 'none'}`,
         `runFailureReasons=${runFailureReasons.length ? runFailureReasons.join('; ') : 'none'}`,
         `failureDecisionProposals=${failureDecisionProposals.length ? failureDecisionProposals.join(',') : 'none'}`,
+        `failureDecisionProposalTasks=${failureDecisionProposalTaskIds.length ? failureDecisionProposalTaskIds.join(',') : 'none'}`,
         `terminalEvidenceDecisionProposals=${terminalEvidenceDecisionProposals.length ? terminalEvidenceDecisionProposals.join(',') : 'none'}`,
+        `terminalEvidenceDecisionProposalTasks=${terminalEvidenceDecisionProposalTaskIds.length ? terminalEvidenceDecisionProposalTaskIds.join(',') : 'none'}`,
         `runLimitDecisionProposals=${runLimitDecisionProposalStatuses.length ? runLimitDecisionProposalStatuses.join(',') : 'none'}`,
         `runLimitDecisionProposalTasks=${runLimitDecisionProposalTaskIds.length ? runLimitDecisionProposalTaskIds.join(',') : 'none'}`,
         `runLimitAccountingDecisionProposals=${runLimitAccountingDecisionProposalStatuses.length ? runLimitAccountingDecisionProposalStatuses.join(',') : 'none'}`,
@@ -729,13 +739,22 @@ export class SchedulerService {
         sweepFailureDecisionProposal
           ? `sweepFailureDecisionProposals=${sweepFailureDecisionProposal.status}`
           : 'sweepFailureDecisionProposals=not_required',
+        sweepFailureDecisionProposal && failedTask
+          ? `sweepFailureDecisionProposalTasks=${failedTask.id}`
+          : 'sweepFailureDecisionProposalTasks=none',
         `taskSourceFailureDecisionProposals=${taskSourceFailureDecisionProposalStatus}`,
         runIdentityDecisionProposal
           ? `runIdentityDecisionProposals=${runIdentityDecisionProposal.status}`
           : 'runIdentityDecisionProposals=not_required',
+        runIdentityDecisionProposal && failedTask
+          ? `runIdentityDecisionProposalTasks=${failedTask.id}`
+          : 'runIdentityDecisionProposalTasks=none',
         timelineFailureDecisionProposal
           ? `timelineFailureDecisionProposals=${timelineFailureDecisionProposal.status}`
           : 'timelineFailureDecisionProposals=not_required',
+        timelineFailureDecisionProposal && failedTask
+          ? `timelineFailureDecisionProposalTasks=${failedTask.id}`
+          : 'timelineFailureDecisionProposalTasks=none',
         `triggerRunEvidenceStatus=${startedRunIds.length ? 'pending_terminal_run_evidence' : 'not_started'}`,
       ].join(' / ');
       this.lastScheduledEventAgentSweepAt = now.toISOString();
