@@ -512,6 +512,7 @@ export class RunService {
     try {
       const promotions = await this.sandboxPatchPromotionRepository.listForRun(runId);
       return promotions.find((promotion) => promotion.status === 'applied')
+        ?? promotions.find((promotion) => promotion.status === 'blocked')
         ?? promotions.find((promotion) => promotion.status === 'pending')
         ?? null;
     } catch {

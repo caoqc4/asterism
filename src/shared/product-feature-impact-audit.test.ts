@@ -210,7 +210,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('SandboxPatchPromotionRepository.listForRun');
     expect(rightPanel?.evidence.join(' ')).toContain('real applied promotion evidence exists');
     expect(rightPanel?.evidence.join(' ')).toContain('belongs to the same run and target task');
-    expect(rightPanel?.evidence.join(' ')).toContain('pending patch promotion evidence remains missing until explicit apply completes');
+    expect(rightPanel?.evidence.join(' ')).toContain('blocked and pending patch promotion evidence remains visible as patchPromotionStatus');
+    expect(rightPanel?.evidence.join(' ')).toContain('missing for reviewedPatchApplyBoundary until explicit apply completes successfully');
     expect(rightPanel?.evidence.join(' ')).toContain('parsed TASKPLANE_WRITE_INTENTS artifact.propose plus task_file.propose output and same-run patch promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('without hand-filled readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run promotion requirements and missing lists through evaluateAgentApiExecutionPromotionReadinessFromEvidence');
