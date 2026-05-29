@@ -3373,6 +3373,9 @@ describe('SchedulerService', () => {
       timeline: [buildStandingApprovalTimeline()],
     });
     const aiConfigService = buildReadyAutomationAiConfigService();
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
     const { SchedulerService } = await import('./scheduler-service.js');
     const service = new SchedulerService(
       {
@@ -3400,6 +3403,8 @@ describe('SchedulerService', () => {
       {
         select: vi.fn(),
       } as never,
+      null,
+      timelinePort,
     );
 
     const result = await service.triggerScheduledEventAgentRun(task, now);
@@ -3416,7 +3421,79 @@ describe('SchedulerService', () => {
     });
     expect(result.summary).toContain('Scheduled event Agent trigger service is not connected');
     expect(result.summary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(result.summary).toContain('triggerServiceDecisionProposal=proposed');
+    expect(result.summary).toContain('durableDecisionCreation=approval_required');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动触发并修复触发服务',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 触发服务未连接后的下一步',
+      }),
+    }));
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+  });
+
+  it('does not duplicate same-day trigger-service disconnected Decision proposals', async () => {
+    const now = new Date('2026-05-26T11:02:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_trigger_service_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent 触发服务未连接后的下一步',
+          }),
+          createdAt: '2026-05-26T10:30:00.000Z',
+        },
+      ],
+    });
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      buildReadyAutomationAiConfigService() as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.summary).toContain('triggerServiceDecisionProposal=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
   });
 
   it('blocks scheduled/event agent trigger starts when timeline evidence service is not connected', async () => {

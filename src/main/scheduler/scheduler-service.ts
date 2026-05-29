@@ -924,13 +924,25 @@ export class SchedulerService {
         now,
         runCountsStartedTodayByTaskId,
       );
+      const triggerServiceDecisionProposal = triggerKind === 'manual' && this.scheduledEventAgentTimelinePort
+        ? await this.proposeScheduledEventTriggerServiceDisconnectedDecision(task, plan, now)
+          .catch((error: unknown) => ({
+            status: 'failed' as const,
+            summary: `triggerServiceDecisionProposal=failed / reason=${formatScheduledEventAgentSweepError(error)}`,
+          }))
+        : null;
       return {
         status: 'blocked',
         plan,
         run: null,
         terminalRunEvidenceStatus: 'not_started',
         triggerRunEvidenceStatus: 'not_started',
-        summary: `${plan.summary} / trigger=blocked / triggerRunEvidenceStatus=not_started / reason=Scheduled event Agent trigger service is not connected.`,
+        summary: [
+          `${plan.summary} / trigger=blocked / triggerRunEvidenceStatus=not_started / reason=Scheduled event Agent trigger service is not connected.`,
+          triggerServiceDecisionProposal
+            ? `triggerServiceDecisionProposal=${triggerServiceDecisionProposal.status} / triggerServiceDecisionSummary=${triggerServiceDecisionProposal.summary}`
+            : 'triggerServiceDecisionProposal=not_required',
+        ].join(' / '),
       };
     }
 
@@ -1209,6 +1221,39 @@ export class SchedulerService {
         `Scheduled/event Agent daily run limit reached for task ${task.id}.`,
         `Current limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
         'Taskplane should confirm whether to wait, adjust the Standing Approval limit, or pause automation.',
+      ].join(' '),
+      standingApprovalActive: Boolean(plan.policy?.id),
+      standingApprovalPolicyId: plan.policy?.id ?? null,
+      standingApprovalScopeTaskId: task.id,
+      targetTaskId: task.id,
+      title,
+    });
+  }
+
+  private async proposeScheduledEventTriggerServiceDisconnectedDecision(
+    task: ScheduledEventAgentTaskInput,
+    plan: AgentScheduledEventTriggerPlan,
+    now: Date,
+  ): Promise<SchedulerDecisionProposalResult | { status: 'skipped_existing'; summary: string }> {
+    const title = '确认定时/事件 Agent 触发服务未连接后的下一步';
+    if (hasSchedulerDecisionProposalSince(task, title, startOfUtcDay(now))) {
+      return {
+        status: 'skipped_existing',
+        summary: 'triggerServiceDecisionProposal=skipped_existing',
+      };
+    }
+
+    return this.proposeSchedulerDecision({
+      options: [
+        '暂停自动触发并修复触发服务',
+        '人工启动一次受控 Agent run',
+        '保留 Standing Approval 但跳过本次触发',
+      ],
+      proposedOutcome: '暂停自动触发并修复触发服务',
+      rationale: [
+        `Scheduled/event Agent trigger service is not connected for task ${task.id}.`,
+        'Taskplane could not start the bounded background run even though the task and Standing Approval were otherwise evaluated.',
+        'Taskplane should confirm whether to repair the trigger service, run manually, or skip this trigger window.',
       ].join(' '),
       standingApprovalActive: Boolean(plan.policy?.id),
       standingApprovalPolicyId: plan.policy?.id ?? null,

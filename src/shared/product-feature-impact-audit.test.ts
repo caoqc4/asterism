@@ -1191,6 +1191,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('Operator-started scheduled/event Agent triggers now reuse scheduler runtime-start blocked review policies');
     expect(decisions?.evidence.join(' ')).toContain('automation-readiness gaps');
     expect(decisions?.evidence.join(' ')).toContain('missing/invalid run-limit accounting evidence');
+    expect(decisions?.evidence.join(' ')).toContain('disconnected trigger-service blocks through SchedulerService.proposeSchedulerDecision');
+    expect(decisions?.evidence.join(' ')).toContain('deduplicated Standing Approval authorized triggerServiceDecisionProposal');
   });
 
   it('records near-duplicate subtask title blocking for decomposition promotion readiness', () => {
