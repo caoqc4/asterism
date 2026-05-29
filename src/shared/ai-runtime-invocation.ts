@@ -2,7 +2,7 @@ import type { AiRuntimeMode } from './types/settings.js';
 import type { AgentRuntimeVerifierResult } from './agent-runtime-verifier.js';
 import type { DecisionDraftRecord } from './types/decision.js';
 import type { PilotDecisionSnapshot } from './pilot-decision-contract.js';
-import type { RunStatus } from './types/run.js';
+import type { RunRequestSurface, RunStatus } from './types/run.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
 import type { TaskplaneSubtaskWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
@@ -246,6 +246,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   runtimeAction?: {
     action?: string | null;
     allowed: boolean;
+    requestSurface?: RunRequestSurface | null;
     runId?: string | null;
     status: 'blocked' | 'ready';
     surface?: string | null;
@@ -1004,6 +1005,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const postStepTaskId = evidence.postStepVerification?.taskId?.trim() || '';
   const runtimeActionRunId = evidence.runtimeAction?.runId?.trim() || '';
   const runtimeActionTaskId = evidence.runtimeAction?.taskId?.trim() || '';
+  const runtimeActionRequestSurface = evidence.runtimeAction?.requestSurface ?? null;
   const simplicityCheckTaskId = evidence.simplicityCheck?.taskId?.trim() || '';
   const subtaskStartTaskId = evidence.subtaskStart?.taskId?.trim() || '';
   const taskMemoryCoverageTaskId = evidence.taskMemoryCoverage?.taskId?.trim() || '';
@@ -1088,10 +1090,12 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       (Boolean(runEvidenceId) && runtimeActionRunId === runEvidenceId)
       || (Boolean(selectedRuntimeRunId) && runtimeActionRunId === selectedRuntimeRunId)
     );
+  const runtimeActionRequestSurfaceEvidenceChainReady = isAgentApiExecutionRequestSurface(runtimeActionRequestSurface);
   const runtimeActionEvidenceChainReady = evidence.runtimeAction?.status === 'ready'
     && evidence.runtimeAction.allowed === true
     && evidence.runtimeAction.action === 'run_start'
     && evidence.runtimeAction.surface === 'run'
+    && runtimeActionRequestSurfaceEvidenceChainReady
     && runtimeActionRunIdentityChainReady
     && Boolean(runtimeActionTaskId)
     && Boolean(targetTaskId)
@@ -1284,6 +1288,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `runtimeAction=${evidence.runtimeAction?.action ?? 'missing'}`,
       `runtimeActionStatus=${evidence.runtimeAction?.status ?? 'missing'}`,
       `runtimeActionSurface=${evidence.runtimeAction?.surface ?? 'missing'}`,
+      `runtimeActionRequestSurface=${runtimeActionRequestSurface ?? 'missing'}`,
+      `runtimeActionRequestSurfaceEvidenceChain=${runtimeActionRequestSurfaceEvidenceChainReady ? 'ready' : 'missing'}`,
       `runtimeActionRun=${runtimeActionRunId || 'missing'}`,
       `runtimeActionRunIdentityChain=${runtimeActionRunIdentityChainReady ? 'ready' : 'missing'}`,
       `runtimeActionTask=${runtimeActionTaskId || 'missing'}`,
@@ -1347,6 +1353,14 @@ function scalarSummaryValue(summary: string, key: string): string | null {
   const prefix = `${key}=`;
   const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
   return part?.trim().slice(prefix.length).trim() ?? null;
+}
+
+function isAgentApiExecutionRequestSurface(surface: RunRequestSurface | null): boolean {
+  return surface === 'right_panel_agent_execution'
+    || surface === 'right_panel_task_progress_intent'
+    || surface === 'ipc_run_trigger'
+    || surface === 'scheduled_event_agent_trigger'
+    || surface === 'readiness_smoke_operator_request';
 }
 
 export function evaluateAgentApiExecutionPromotionReadinessForInvocation(

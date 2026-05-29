@@ -13,6 +13,7 @@ function taskBoundRunStartEvidence(runId, taskId = 'task_1') {
     runtimeAction: {
       action: 'run_start',
       allowed: true,
+      requestSurface: 'readiness_smoke_operator_request',
       runId,
       status: 'ready',
       surface: 'run',
@@ -600,6 +601,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceRuntimeAction=${scalarValue(serviceEvidencePartial.summary, 'runtimeAction') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeActionStatus=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionStatus') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeActionSurface=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionSurface') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeActionRequestSurface=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionRequestSurface') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeActionRequestSurfaceEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionRequestSurfaceEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeActionRun=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionRun') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeActionRunIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionRunIdentityChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeActionTask=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionTask') ?? 'missing'}`);
@@ -761,6 +764,8 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'runtimeAction') !== 'run_start'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeActionStatus') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeActionSurface') !== 'run'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeActionRequestSurface') !== 'readiness_smoke_operator_request'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeActionRequestSurfaceEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeActionRun') !== 'run_api_execution_partial'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeActionRunIdentityChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeActionTask') !== 'task_1'

@@ -83,6 +83,13 @@ export type RunVerificationRecord = {
   updatedAt: string;
 };
 
+export type RunRequestSurface =
+  | 'right_panel_agent_execution'
+  | 'right_panel_task_progress_intent'
+  | 'ipc_run_trigger'
+  | 'scheduled_event_agent_trigger'
+  | 'readiness_smoke_operator_request';
+
 export type CreateRunInput = {
   taskId: string;
   type: RunType;
@@ -90,6 +97,7 @@ export type CreateRunInput = {
   allowLocalWorkspaceRead?: boolean;
   allowTaskMutationTools?: boolean;
   pilotDecision?: PilotDecisionSnapshot | null;
+  requestSurface?: RunRequestSurface;
 };
 
 export type CodeAgentAllowedCheck = 'test' | 'lint';

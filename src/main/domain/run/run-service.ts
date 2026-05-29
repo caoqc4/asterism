@@ -584,6 +584,7 @@ export class RunService {
       runtimeAction: {
         action: params.runtimeAction.action,
         allowed: params.runtimeAction.allowed,
+        requestSurface: params.input.requestSurface ?? 'ipc_run_trigger',
         runId,
         status: params.runtimeAction.allowed ? 'ready' : 'blocked',
         surface: params.runtimeAction.surface,

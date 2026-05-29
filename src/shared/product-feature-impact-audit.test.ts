@@ -1398,6 +1398,7 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('provider_visible_preflight configured provider identity to match the selected runtime provider');
     expect(evidence).toContain('requires simplicity_check to carry the target-task smallest movement evidence');
     expect(evidence).toContain('requires runtime_action to carry run_start/run service evidence tied to the selected run and target task');
+    expect(evidence).toContain('product request-surface identity');
     expect(evidence).toContain('requires subtask_start to carry target-task readiness evidence instead of a naked gate boolean');
     expect(evidence).toContain('simplicity_check, runtime_action, runtime_context_assembly, context_readiness');
     expect(evidence).toContain('task_memory_coverage, task_memory_guidance, pre_step, subtask_start');
@@ -1405,6 +1406,8 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('simplicityCheck, simplicityCheckTask, simplicityCheckSmallestMovement, simplicityCheckGateEvidenceChain');
     expect(evidence).toContain('selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain');
     expect(evidence).toContain('runtimeAction, runtimeActionStatus, runtimeActionSurface, runtimeActionRun, runtimeActionRunIdentityChain, runtimeActionTask, runtimeActionGateEvidenceChain');
+    expect(evidence).toContain('runtimeActionRequestSurface=readiness_smoke_operator_request');
+    expect(evidence).toContain('runtimeActionRequestSurfaceEvidenceChain=ready');
     expect(evidence).toContain('providerConfigured=ready, configuredProvider=openai, selectedRuntimeProvider=openai, selectedRuntimeProviderEvidenceChain=ready, providerStartupProbe=not_called');
     expect(evidence).toContain('simplicityCheckGateEvidenceChain=ready');
     expect(evidence).toContain('runtimeActionGateEvidenceChain=ready');
@@ -1670,6 +1673,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('explicit selected Agent API execution requests');
     expect(rightPanel?.evidence.join(' ')).toContain('task-bound progress intents such as "继续完善当前任务"');
     expect(rightPanel?.evidence.join(' ')).toContain('through Taskplane RunService triggerRun');
+    expect(rightPanel?.evidence.join(' ')).toContain('requestSurface=right_panel_agent_execution');
+    expect(rightPanel?.evidence.join(' ')).toContain('requestSurface=right_panel_task_progress_intent');
     expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion or phase closeout handoff messages');
     expect(rightPanel?.evidence.join(' ')).toContain('execution requests and progress intents now pass the bounded Pilot decision snapshot into RunService');
     expect(rightPanel?.evidence.join(' ')).toContain('persist it in the Agent API execution promotion readiness step input');

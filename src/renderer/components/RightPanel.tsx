@@ -836,6 +836,11 @@ function isAgentApiExecutionIntent(text: string): boolean {
   return strongExecutionSignal || terseContinuation;
 }
 
+function isTaskProgressIntent(text: string): boolean {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  return /继续(?:推进|完善|执行|处理|做)|按.+继续|^(继续|推进|完善)$/i.test(normalized);
+}
+
 function formatAgentCliRunMessage(params: {
   output: string;
   childTaskConversation?: boolean;
@@ -3269,6 +3274,9 @@ export function RightPanel({
         const run = await window.api.triggerRun({
           instructions: taskplaneConversationPrompt,
           pilotDecision: buildPilotDecisionSnapshot(pilotDecision),
+          requestSurface: isTaskProgressIntent(text)
+            ? 'right_panel_task_progress_intent'
+            : 'right_panel_agent_execution',
           taskId: activeTaskId,
           type: 'agent',
         });

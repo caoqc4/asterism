@@ -1696,6 +1696,7 @@ describe('ai runtime invocation contract', () => {
       runtimeAction: {
         action: 'run_start',
         allowed: true,
+        requestSurface: 'readiness_smoke_operator_request',
         runId: 'run_api_execution_partial',
         status: 'ready',
         surface: 'run',
@@ -1817,6 +1818,8 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('runtimeAction=run_start');
     expect(ready.summary).toContain('runtimeActionStatus=ready');
     expect(ready.summary).toContain('runtimeActionSurface=run');
+    expect(ready.summary).toContain('runtimeActionRequestSurface=readiness_smoke_operator_request');
+    expect(ready.summary).toContain('runtimeActionRequestSurfaceEvidenceChain=ready');
     expect(ready.summary).toContain('runtimeActionRun=run_api_execution');
     expect(ready.summary).toContain('runtimeActionRunIdentityChain=ready');
     expect(ready.summary).toContain('runtimeActionTask=task_1');
@@ -2301,6 +2304,29 @@ describe('ai runtime invocation contract', () => {
     expect(wrongIdentity.summary).toContain('simplicityCheckTask=task_2');
     expect(wrongIdentity.summary).toContain('runtimeActionRunIdentityChain=missing');
     expect(wrongIdentity.summary).toContain('runtimeActionTask=task_2');
+  });
+
+  it('blocks Agent API execution promotion when the runtime request surface is missing', () => {
+    const missingRequestSurface = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runtimeAction: {
+        action: 'run_start',
+        allowed: true,
+        runId: 'run_api_execution',
+        status: 'ready',
+        surface: 'run',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(missingRequestSurface).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['runtime_action'],
+    });
+    expect(missingRequestSurface.summary).toContain('runtimeActionRequestSurface=missing');
+    expect(missingRequestSurface.summary).toContain('runtimeActionRequestSurfaceEvidenceChain=missing');
+    expect(missingRequestSurface.summary).toContain('runtimeActionGateEvidenceChain=missing');
   });
 
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
@@ -2928,6 +2954,7 @@ function completeAgentApiExecutionPromotionEvidence() {
     runtimeAction: {
       action: 'run_start',
       allowed: true,
+      requestSurface: 'readiness_smoke_operator_request' as const,
       runId: 'run_api_execution',
       status: 'ready' as const,
       surface: 'run',
