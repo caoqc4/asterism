@@ -292,7 +292,7 @@ function buildSchedulerDecisionApprovalItem(params: {
       intent.rationale,
       readiness.summary,
     ].filter(Boolean).join('\n'),
-    id: approvalId(params.event.id, 'scheduler_decision', intent.title),
+    id: approvalId(evidenceRunId, 'scheduler_decision', intent.title),
     kind: 'scheduler_decision',
     plan,
     runId: evidenceRunId,

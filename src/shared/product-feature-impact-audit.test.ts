@@ -1282,4 +1282,12 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('duplicate-free option labels');
     expect(decisions?.evidence.join(' ')).toContain('cannot bypass the SchedulerService producer validation');
   });
+
+  it('records scheduler Decision approval queue dedupe coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('approval items now use evidenceRunId plus normalized title');
+    expect(decisions?.evidence.join(' ')).toContain('collapse into one operator confirmation card');
+    expect(decisions?.evidence.join(' ')).toContain('duplicating approval queue work');
+  });
 });
