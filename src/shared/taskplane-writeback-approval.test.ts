@@ -516,6 +516,37 @@ describe('Taskplane writeback approval items', () => {
     expect(items).toEqual([]);
   });
 
+  it('blocks scheduler Decision proposal timeline events without no-direct-side-effect readiness evidence', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_missing_side_effect_closure',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          proposalReadinessSummary: [
+            'Scheduler Decision proposal contract',
+            'proposalReady=yes',
+            'approvalQueueSurface=task_dynamics',
+            'targetTask=task_1',
+          ].join(' / '),
+          rationale: '历史 producer 没有声明直接持久化和触发权限关闭。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
   it('blocks scheduler Decision proposal timeline events when event and payload task identity diverge', () => {
     const items = buildTaskplaneWritebackApprovalItems({
       runDetails: [],
@@ -658,6 +689,9 @@ function schedulerDecisionReadinessSummary(targetTaskId: string): string {
     'proposalReady=yes',
     'approvalQueueSurface=task_dynamics',
     `targetTask=${targetTaskId}`,
+    'decisionPersistenceAllowed=false',
+    'writebackDispatchAllowed=false',
+    'schedulerTriggerAllowed=false',
   ].join(' / ');
 }
 

@@ -244,6 +244,9 @@ function buildSchedulerDecisionApprovalItem(params: {
     || !proposalReadinessSummary.includes('proposalReady=yes')
     || !proposalReadinessSummary.includes('approvalQueueSurface=task_dynamics')
     || !proposalReadinessSummary.includes(`targetTask=${targetTaskId}`)
+    || !proposalReadinessSummary.includes('decisionPersistenceAllowed=false')
+    || !proposalReadinessSummary.includes('writebackDispatchAllowed=false')
+    || !proposalReadinessSummary.includes('schedulerTriggerAllowed=false')
   ) {
     return null;
   }

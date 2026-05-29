@@ -1430,6 +1430,14 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('cannot bypass the SchedulerService producer validation');
   });
 
+  it('records scheduler Decision no-direct-side-effect approval evidence coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+    const evidence = decisions?.evidence.join(' ');
+
+    expect(evidence).toContain('requires proposalReadinessSummary to preserve decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false');
+    expect(evidence).toContain('cannot enter the confirmation queue unless producer evidence explicitly keeps direct Decision persistence, direct writeback, and runtime triggering closed');
+  });
+
   it('records scheduler Decision approval queue dedupe coverage', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
