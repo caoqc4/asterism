@@ -2860,7 +2860,7 @@ describe('App redesign v1', () => {
       },
       promotionReadiness: {
         ready: true,
-        summary: 'Agent API decomposition promotion readiness / ready=yes / requirements=7/7 / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / proposalSubtaskTitleEvidenceChain=ready / applyPlanSubtaskTitleEvidenceChain=ready / proposalSubtaskUniqueChain=ready / promotionMissingRequirements=none',
+        summary: 'Agent API decomposition promotion readiness / ready=yes / requirements=7/7 / selectedRuntimeProvider=openai / selectedRuntimeProviderEvidenceChain=ready / proposalSubtaskTitleEvidenceChain=ready / applyPlanSubtaskTitleEvidenceChain=ready / proposalSubtaskSummaryEvidenceChain=ready / applyPlanSubtaskSummaryEvidenceChain=ready / proposalAcceptanceCriteriaEvidenceChain=ready / applyPlanAcceptanceCriteriaEvidenceChain=ready / proposalRationaleEvidenceChain=ready / applyPlanRationaleEvidenceChain=ready / proposalDependencyEvidenceChain=ready / applyPlanDependencyEvidenceChain=ready / proposalSubtaskUniqueChain=ready / promotionMissingRequirements=none',
         satisfiedRequirements: [
           'selected_runtime_contract',
           'parent_task_identity',
@@ -2898,6 +2898,14 @@ describe('App redesign v1', () => {
     expect(within(decompositionReadiness).getByText('selectedRuntimeProvider=openai')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('proposalSubtaskTitleEvidenceChain=ready')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('applyPlanSubtaskTitleEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('proposalSubtaskSummaryEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('applyPlanSubtaskSummaryEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('proposalAcceptanceCriteriaEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('applyPlanAcceptanceCriteriaEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('proposalRationaleEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('applyPlanRationaleEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('proposalDependencyEvidenceChain=ready')).toBeTruthy();
+    expect(within(decompositionReadiness).getByText('applyPlanDependencyEvidenceChain=ready')).toBeTruthy();
     expect(within(decompositionReadiness).getByText('proposalSubtaskUniqueChain=ready')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '确认创建子任务' }));

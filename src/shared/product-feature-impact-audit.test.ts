@@ -1617,5 +1617,12 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('Tasks project decomposition draft readiness now projects selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, and timelineRuntimeProvider evidence chips');
     expect(evidence).toContain('Tasks project decomposition draft readiness now also projects proposalSubtaskTitleEvidenceChain, applyPlanSubtaskTitleEvidenceChain, and proposalSubtaskUniqueChain evidence chips');
     expect(evidence).toContain('blank, duplicated, near-duplicated, or apply-plan-mismatched child titles are visible before durable child creation');
+    expect(evidence).toContain('Right-panel AI decomposition draft readiness now projects promotionReadiness identity chips');
+    expect(evidence).toContain('proposalSubtaskSummaryEvidenceChain, applyPlanSubtaskSummaryEvidenceChain');
+    expect(evidence).toContain('proposalAcceptanceCriteriaEvidenceChain, applyPlanAcceptanceCriteriaEvidenceChain');
+    expect(evidence).toContain('proposalRationaleEvidenceChain, applyPlanRationaleEvidenceChain');
+    expect(evidence).toContain('subtask-title identity chain');
+    expect(evidence).toContain('subtask summary/acceptance/rationale identity chains');
+    expect(evidence).toContain('subtask dependency identity chain');
   });
 });
