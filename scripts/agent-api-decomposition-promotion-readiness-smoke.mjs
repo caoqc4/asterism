@@ -84,6 +84,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
       subtaskSummaries: ['Prepare one reversible child task draft for promotion-readiness evidence.'],
       subtaskTitles: ['Review Agent API decomposition promotion boundary'],
       acceptanceCriteria: ['The reversible child-task draft can be reviewed before persistence.'],
+      rationales: ['This is an independent and reviewable promotion-readiness slice.'],
       dependencies: [null],
     },
     selectedRuntimeContract: {
@@ -128,6 +129,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceApplyPlanAcceptanceCriteria=${scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteria') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalAcceptanceCriteriaEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalAcceptanceCriteriaEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanAcceptanceCriteriaEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteriaEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalRationales=${scalarValue(serviceEvidencePartial.summary, 'proposalRationales') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanRationales=${scalarValue(serviceEvidencePartial.summary, 'applyPlanRationales') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalRationaleEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalRationaleEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanRationaleEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'applyPlanRationaleEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalDependencies=${scalarValue(serviceEvidencePartial.summary, 'proposalDependencies') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanDependencies=${scalarValue(serviceEvidencePartial.summary, 'applyPlanDependencies') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalDependencyEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalDependencyEvidenceChain') ?? 'missing'}`);
@@ -188,6 +193,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteria') !== 'The reversible child-task draft can be reviewed before persistence.'
     || scalarValue(serviceEvidencePartial.summary, 'proposalAcceptanceCriteriaEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteriaEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalRationales') !== 'This is an independent and reviewable promotion-readiness slice.'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanRationales') !== 'This is an independent and reviewable promotion-readiness slice.'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalRationaleEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanRationaleEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalDependencies') !== 'none'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanDependencies') !== 'none'
     || scalarValue(serviceEvidencePartial.summary, 'proposalDependencyEvidenceChain') !== 'ready'
@@ -238,6 +247,7 @@ function buildSubtaskDraft() {
   return {
     acceptanceCriteria: 'The reversible child-task draft can be reviewed before persistence.',
     dependency: null,
+    rationale: 'This is an independent and reviewable promotion-readiness slice.',
     summary: 'Prepare one reversible child task draft for promotion-readiness evidence.',
     title: 'Review Agent API decomposition promotion boundary',
   };

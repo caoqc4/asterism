@@ -733,7 +733,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('keeps draft_only_timeline_evidence missing when apply-plan evidenceRunId and timeline evidenceRunId diverge or when both run identities are absent');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('keeps the reversible proposal card missing when its proposalId, parentTaskId, subtask count, subtask title identity, subtask dependency identity, or subtask-title uniqueness does not match the same apply-plan evidence chain');
+      .toContain('keeps the reversible proposal card missing when its proposalId, parentTaskId, subtask count, subtask title identity, subtask rationale identity, subtask dependency identity, or subtask-title uniqueness does not match the same apply-plan evidence chain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('satisfied and missing requirement lists');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))

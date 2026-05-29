@@ -18,6 +18,7 @@ export type TaskplaneWritebackTimelineDraft = {
 export type TaskplaneSubtaskDraftInput = {
   acceptanceCriteria: string;
   dependency?: string | null;
+  rationale?: string | null;
   summary: string;
   title: string;
 };
@@ -190,6 +191,7 @@ export function formatSubtaskDraftSummary(subtask: TaskplaneSubtaskDraftInput): 
     subtask.summary,
     subtask.acceptanceCriteria ? `验收：${subtask.acceptanceCriteria}` : null,
     subtask.dependency ? `依赖：${subtask.dependency}` : null,
+    subtask.rationale ? `理由：${subtask.rationale}` : null,
   ].filter(Boolean).join('\n');
 }
 

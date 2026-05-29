@@ -175,6 +175,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_cli_decomposition',
@@ -208,6 +209,10 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('proposalSubtaskEvidenceChain=ready');
     expect(partial.summary).toContain('proposalSubtaskTitles=需求与范围确认');
     expect(partial.summary).toContain('applyPlanSubtaskTitles=需求与范围确认');
+    expect(partial.summary).toContain('proposalRationales=独立边界清楚');
+    expect(partial.summary).toContain('applyPlanRationales=独立边界清楚');
+    expect(partial.summary).toContain('proposalRationaleEvidenceChain=ready');
+    expect(partial.summary).toContain('applyPlanRationaleEvidenceChain=ready');
     expect(partial.summary).toContain('proposalSubtaskUniqueChain=ready');
     expect(partial.summary).toContain('proposalSubtaskIdentityChain=ready');
     expect(partial.summary).toContain('subtaskCount=1');
@@ -246,6 +251,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -321,6 +327,7 @@ describe('ai runtime invocation contract', () => {
       parentTaskId: 'task_project',
       reversibleProposalCard: {
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
@@ -369,6 +376,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -414,6 +422,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -456,6 +465,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_other',
@@ -486,6 +496,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -533,6 +544,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -573,6 +585,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -613,6 +626,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -652,6 +666,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -690,6 +705,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -730,6 +746,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -772,6 +789,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -845,6 +863,7 @@ describe('ai runtime invocation contract', () => {
       parentTaskId: 'task_project',
       reversibleProposalCard: {
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
@@ -886,6 +905,7 @@ describe('ai runtime invocation contract', () => {
       parentTaskId: 'task_project',
       reversibleProposalCard: {
         acceptanceCriteria: ['Different criteria'],
+        rationales: ['独立边界清楚'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
         status: 'ready',
@@ -914,6 +934,49 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('proposalCard=missing');
   });
 
+  it('blocks Agent API decomposition promotion when proposal rationales do not match the apply plan', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [buildSubtaskDraft()],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['Different rationale'],
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        provider: 'openai',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalRationales=Different rationale');
+    expect(mismatch.summary).toContain('applyPlanRationales=独立边界清楚');
+    expect(mismatch.summary).toContain('proposalRationaleEvidenceChain=ready');
+    expect(mismatch.summary).toContain('applyPlanRationaleEvidenceChain=ready');
+    expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
+    expect(mismatch.summary).toContain('proposalCard=missing');
+  });
+
   it('blocks Agent API decomposition promotion when proposal dependencies do not match the apply plan', () => {
     const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
@@ -930,6 +993,7 @@ describe('ai runtime invocation contract', () => {
       parentTaskId: 'task_project',
       reversibleProposalCard: {
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
         dependencies: ['其他依赖'],
         parentTaskId: 'task_project',
         proposalId: 'project_decomposition:task_project',
@@ -1189,6 +1253,7 @@ describe('ai runtime invocation contract', () => {
         subtaskSummaries: ['确认范围'],
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -2704,6 +2769,7 @@ function buildSubtaskDraft() {
   return {
     acceptanceCriteria: '范围文档可验收',
     dependency: null,
+    rationale: '独立边界清楚',
     summary: '确认范围',
     title: '需求与范围确认',
   };

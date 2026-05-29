@@ -219,6 +219,7 @@ interface TaskDecompositionDraft {
   subtasks: Array<{
     acceptanceCriteria: string;
     dependency?: string | null;
+    rationale?: string | null;
     summary: string;
     title: string;
   }>;
@@ -2549,6 +2550,7 @@ export function RightPanel({
           dependencies: taskDecompositionDraft.subtasks.map((subtask) => subtask.dependency ?? null),
           parentTaskId: activeTaskId,
           proposalId: `project_decomposition:${activeTaskId}`,
+          rationales: taskDecompositionDraft.subtasks.map((subtask) => subtask.rationale ?? null),
           status: 'ready',
           subtaskCount: taskDecompositionDraft.subtasks.length,
           subtaskSummaries: taskDecompositionDraft.subtasks.map((subtask) => subtask.summary),
@@ -3206,6 +3208,7 @@ export function RightPanel({
           subtasks: result.subtasks.map((subtask) => ({
             acceptanceCriteria: subtask.acceptanceCriteria,
             dependency: subtask.dependency,
+            rationale: subtask.rationale,
             summary: subtask.summary,
             title: subtask.title,
           })),

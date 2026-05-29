@@ -1109,6 +1109,7 @@ export function registerIpcHandlers(): void {
       subtasks: decomposition.subtasks.map((subtask) => ({
         acceptanceCriteria: subtask.acceptanceCriteria,
         dependency: subtask.dependency,
+        rationale: subtask.rationale,
         summary: subtask.summary,
         title: subtask.title,
       })),
@@ -1121,6 +1122,7 @@ export function registerIpcHandlers(): void {
         dependencies: decomposition.subtasks.map((subtask) => subtask.dependency),
         parentTaskId: input.taskId,
         proposalId: `project_decomposition:${input.taskId}`,
+        rationales: decomposition.subtasks.map((subtask) => subtask.rationale),
         status: 'ready',
         subtaskCount: decomposition.subtasks.length,
         subtaskSummaries: decomposition.subtasks.map((subtask) => subtask.summary),

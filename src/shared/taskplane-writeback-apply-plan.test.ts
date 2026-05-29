@@ -141,6 +141,7 @@ describe('Taskplane writeback apply plans', () => {
       subtasks: [{
         acceptanceCriteria: '范围文档可验收。',
         dependency: null,
+        rationale: '这是一个独立拆解块。',
         summary: '确认范围。',
         title: '确认范围',
       }],
@@ -151,6 +152,9 @@ describe('Taskplane writeback apply plans', () => {
       input: {
         parentTaskId: 'task_project',
         source: 'agent_api_decomposition',
+        subtasks: [{
+          rationale: '这是一个独立拆解块。',
+        }],
       },
       timeline: {
         payload: {
@@ -168,6 +172,16 @@ describe('Taskplane writeback apply plans', () => {
         },
       },
     });
+  });
+
+  it('formats subtask draft rationale for operator review', () => {
+    expect(formatSubtaskDraftSummary({
+      acceptanceCriteria: '范围文档可验收。',
+      dependency: '完成需求输入。',
+      rationale: '这是一个独立拆解块。',
+      summary: '确认范围。',
+      title: '确认范围',
+    })).toContain('理由：这是一个独立拆解块。');
   });
 
   it('does not infer Agent API decomposition runtime identity from apply-plan inputs', () => {

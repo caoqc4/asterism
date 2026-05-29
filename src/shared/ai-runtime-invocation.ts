@@ -108,6 +108,7 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
     dependencies?: (string | null)[] | null;
     parentTaskId?: string | null;
     proposalId?: string | null;
+    rationales?: (string | null)[] | null;
     status: 'missing' | 'ready';
     subtaskCount?: number | null;
     subtaskSummaries?: string[] | null;
@@ -479,12 +480,16 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const applyPlanAcceptanceCriteria = normalizedSubtaskTextList(
     applyPlan?.input.subtasks.map((subtask) => subtask.acceptanceCriteria) ?? [],
   );
+  const applyPlanRationales = normalizedSubtaskTextList(
+    applyPlan?.input.subtasks.map((subtask) => subtask.rationale) ?? [],
+  );
   const applyPlanDependencies = normalizedSubtaskDependencies(
     applyPlan?.input.subtasks.map((subtask) => subtask.dependency) ?? [],
   );
   const proposalSubtaskTitles = normalizedSubtaskTitles(evidence.reversibleProposalCard?.subtaskTitles ?? []);
   const proposalSubtaskSummaries = normalizedSubtaskTextList(evidence.reversibleProposalCard?.subtaskSummaries ?? []);
   const proposalAcceptanceCriteria = normalizedSubtaskTextList(evidence.reversibleProposalCard?.acceptanceCriteria ?? []);
+  const proposalRationales = normalizedSubtaskTextList(evidence.reversibleProposalCard?.rationales ?? []);
   const proposalSubtaskCount = typeof evidence.reversibleProposalCard?.subtaskCount === 'number'
     && Number.isFinite(evidence.reversibleProposalCard.subtaskCount)
     ? evidence.reversibleProposalCard.subtaskCount
@@ -508,6 +513,11 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const proposalAcceptanceCriteriaEvidenceChainReady = proposalSubtaskCount !== null
     && proposalSubtaskCount > 0
     && proposalAcceptanceCriteria.length === proposalSubtaskCount;
+  const applyPlanRationaleEvidenceChainReady = applyPlanSubtaskCount > 0
+    && applyPlanRationales.length === applyPlanSubtaskCount;
+  const proposalRationaleEvidenceChainReady = proposalSubtaskCount !== null
+    && proposalSubtaskCount > 0
+    && proposalRationales.length === proposalSubtaskCount;
   const applyPlanDependencyEvidenceChainReady = applyPlanSubtaskCount > 0
     && applyPlanDependencies.length === applyPlanSubtaskCount;
   const proposalDependencyEvidenceChainReady = proposalSubtaskCount !== null
@@ -542,6 +552,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && proposalSubtaskSummaries.every((summary, index) => summary === applyPlanSubtaskSummaries[index])
     && proposalAcceptanceCriteria.length === applyPlanAcceptanceCriteria.length
     && proposalAcceptanceCriteria.every((criteria, index) => criteria === applyPlanAcceptanceCriteria[index])
+    && proposalRationales.length === applyPlanRationales.length
+    && proposalRationales.every((rationale, index) => rationale === applyPlanRationales[index])
+    && applyPlanRationaleEvidenceChainReady
+    && proposalRationaleEvidenceChainReady
     && proposalDependencies.length === applyPlanDependencies.length
     && proposalDependencies.every((dependency, index) => dependency === applyPlanDependencies[index])
     && proposalSubtaskUniqueChainReady;
@@ -628,6 +642,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `applyPlanAcceptanceCriteria=${applyPlanAcceptanceCriteria.length ? applyPlanAcceptanceCriteria.join('|') : 'missing'}`,
       `proposalAcceptanceCriteriaEvidenceChain=${proposalAcceptanceCriteriaEvidenceChainReady ? 'ready' : 'missing'}`,
       `applyPlanAcceptanceCriteriaEvidenceChain=${applyPlanAcceptanceCriteriaEvidenceChainReady ? 'ready' : 'missing'}`,
+      `proposalRationales=${proposalRationales.length ? proposalRationales.join('|') : 'missing'}`,
+      `applyPlanRationales=${applyPlanRationales.length ? applyPlanRationales.join('|') : 'missing'}`,
+      `proposalRationaleEvidenceChain=${proposalRationaleEvidenceChainReady ? 'ready' : 'missing'}`,
+      `applyPlanRationaleEvidenceChain=${applyPlanRationaleEvidenceChainReady ? 'ready' : 'missing'}`,
       `proposalDependencies=${proposalDependencies.length ? proposalDependencies.join('|') : 'missing'}`,
       `applyPlanDependencies=${applyPlanDependencies.length ? applyPlanDependencies.join('|') : 'missing'}`,
       `proposalDependencyEvidenceChain=${proposalDependencyEvidenceChainReady ? 'ready' : 'missing'}`,
