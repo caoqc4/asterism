@@ -777,6 +777,8 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('persists the selected runtime contract into the subtask.create_many panel.project_decomposed timeline payload');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('including evidenceRunId and parentTaskId');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('invocationLayer=api_runtime');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('runtimeMode=api');

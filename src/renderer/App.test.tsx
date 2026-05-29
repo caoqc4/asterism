@@ -21,7 +21,10 @@ import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffol
 import type { TaskMemoryGuidanceState } from '@shared/task-memory-guidance-state';
 import type { TaskMemoryWriteProposal } from '@shared/task-memory-write-proposal';
 import { App } from './App';
-import { projectDecompositionPromotionEvidenceChips } from './pages/TasksPage';
+import {
+  buildProjectDecompositionConfirmationApplyPlan,
+  projectDecompositionPromotionEvidenceChips,
+} from './pages/TasksPage';
 import {
   createManualWorkHabit,
   deleteWorkHabit,
@@ -6369,6 +6372,59 @@ describe('App redesign v1', () => {
     expect(vi.mocked(harness.api.triggerAgentCliRun!).mock.calls.length).toBe(agentCliCallsBeforePlanning);
     expect(screen.queryByText('AI 拆解草稿')).toBeNull();
     expect(harness.api.decomposeProject).not.toHaveBeenCalled();
+  });
+
+  it('preserves Agent API decomposition runtime identity when building project confirmation plans', () => {
+    const project = buildTask({
+      id: 'task_project',
+      title: '官网改版',
+      state: 'planned',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: [],
+      nextStep: '拆解项目结构',
+    });
+
+    const plan = buildProjectDecompositionConfirmationApplyPlan(project, {
+      parentGoal: '完成官网改版并上线。',
+      subtasks: [{
+        title: '确认官网改版范围',
+        summary: '明确页面范围、目标用户和上线边界。',
+        acceptanceCriteria: '范围清单被确认。',
+        dependency: null,
+        rationale: '这是后续执行的独立输入。',
+      }],
+      review: '子任务边界清楚。',
+      nextStep: '确认是否创建这些子任务。',
+      evidenceRunId: 'agent_api_decomposition:task_project',
+      invocation: {
+        phase: 'decomposition_draft',
+        layer: 'api_runtime',
+        runtime: {
+          mode: 'api',
+          label: 'Agent API Runtime 规划',
+        },
+        status: 'completed',
+        summary: '已生成 1 个项目子任务草稿。',
+      },
+    });
+
+    expect(plan.input).toEqual(expect.objectContaining({
+      evidenceRunId: 'agent_api_decomposition:task_project',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+    }));
+    expect(plan.timeline.payload).toEqual(expect.objectContaining({
+      evidenceRunId: 'agent_api_decomposition:task_project',
+      runtimeContract: expect.objectContaining({
+        evidenceRunId: 'agent_api_decomposition:task_project',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeLabel: 'Agent API Runtime 规划',
+        runtimeMode: 'api',
+      }),
+    }));
   });
 
   it('opens the first unfinished child when advancing a decomposed project', async () => {

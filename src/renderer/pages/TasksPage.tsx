@@ -47,7 +47,10 @@ import {
   type PriorityRecommendationTaskSignal,
 } from '@shared/priority-recommendation-ranking';
 import { evaluateAgentApiDecompositionPromotionReadinessFromEvidence } from '@shared/ai-runtime-invocation';
-import { buildSubtaskCreateManyWritebackApplyPlan } from '@shared/taskplane-writeback-apply-plan';
+import {
+  buildSubtaskCreateManyWritebackApplyPlan,
+  type TaskplaneSubtaskWritebackApplyPlan,
+} from '@shared/taskplane-writeback-apply-plan';
 import {
   buildTaskplaneWritebackApprovalItems,
   type TaskplaneWritebackApprovalItem,
@@ -184,6 +187,36 @@ export function projectDecompositionPromotionEvidenceChips(
       })
       .filter((chip): chip is string => Boolean(chip)),
   ];
+}
+
+export function buildProjectDecompositionConfirmationApplyPlan(
+  project: Pick<TaskListItemRecord, 'id'>,
+  draft: ProjectDecompositionResult,
+): TaskplaneSubtaskWritebackApplyPlan {
+  return buildSubtaskCreateManyWritebackApplyPlan({
+    evidenceRunId: draft.evidenceRunId ?? null,
+    nextStep: draft.nextStep,
+    parentSummary: draft.parentGoal,
+    parentTaskId: project.id,
+    review: draft.review,
+    runtimeContract: draft.invocation
+      ? {
+          evidenceRunId: draft.evidenceRunId ?? null,
+          invocationLayer: draft.invocation.layer,
+          parentTaskId: project.id,
+          phase: draft.invocation.phase,
+          runtimeLabel: draft.invocation.runtime.label,
+          runtimeMode: draft.invocation.runtime.mode,
+        }
+      : null,
+    source: 'agent_api_decomposition',
+    subtasks: draft.subtasks.map((subtask) => ({
+      acceptanceCriteria: subtask.acceptanceCriteria,
+      dependency: subtask.dependency,
+      summary: subtask.summary,
+      title: subtask.title,
+    })),
+  });
 }
 
 function scheduledEventAgentRunStartedMessage(result: TriggerScheduledEventAgentRunResult): string {
@@ -2944,28 +2977,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     setProjectCreatingChildrenId(project.id);
     setProjectDecompositionError(null);
     try {
-      const plan = buildSubtaskCreateManyWritebackApplyPlan({
-        evidenceRunId: draft.evidenceRunId ?? null,
-        nextStep: draft.nextStep,
-        parentSummary: draft.parentGoal,
-        parentTaskId: project.id,
-        review: draft.review,
-        runtimeContract: draft.invocation
-          ? {
-              invocationLayer: draft.invocation.layer,
-              phase: draft.invocation.phase,
-              runtimeLabel: draft.invocation.runtime.label,
-              runtimeMode: draft.invocation.runtime.mode,
-            }
-          : null,
-        source: 'agent_api_decomposition',
-        subtasks: draft.subtasks.map((subtask) => ({
-          acceptanceCriteria: subtask.acceptanceCriteria,
-          dependency: subtask.dependency,
-          summary: subtask.summary,
-          title: subtask.title,
-        })),
-      });
+      const plan = buildProjectDecompositionConfirmationApplyPlan(project, draft);
       const promotionReadiness = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
         applyPlan: plan,
         parentTaskId: project.id,
