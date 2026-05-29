@@ -903,6 +903,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('equivalent slash/backslash paths and repeated-separator aliases cannot satisfy duplicate-free evidence as separate files');
     expect(taskFiles?.evidence.join(' ')).toContain('cannot write a separate alias-named file on POSIX');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract to carry the same run id and target task id');
+    expect(taskFiles?.evidence.join(' ')).toContain('requires API runtime contracts to carry selectedRuntimeProvider identity');
     expect(taskFiles?.evidence.join(' ')).toContain('cannot be promoted from mode/layer/phase metadata alone');
     expect(taskFiles?.evidence.join(' ')).toContain('satisfied and missing requirement lists');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionReady');
@@ -914,6 +915,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeTask');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeTaskEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProvider');
+    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProviderEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('decisionArtifactEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('artifactEvidenceChain');
@@ -948,7 +951,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('settings and safety-report surfaces show the selected-runtime, target-task, same-run artifact');
     expect(taskFiles?.evidence.join(' ')).toContain('Settings configuration safety rows now render sandbox.patch_promotion evidence chips');
     expect(taskFiles?.evidence.join(' ')).toContain('promotionRequirements, promotionSatisfiedRequirements, promotionMissingRequirements, missingRequirements');
-    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
+    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('targetTaskIdentity, targetTaskEvidenceChain, checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('operatorApplyTask, operatorApplyRun, operatorApplyCheckpoint, operatorApplyEvidenceChain');
@@ -964,6 +967,8 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('service-evidence=2/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain=missing');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeTaskEvidenceChain=missing');
+    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProvider=openai');
+    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain, promotionDecisionId');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactTask, promotionDecisionTask, promotionPreflightTask, targetTaskEvidenceChain, checkpointEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('expectedFileCount, expectedFiles, expectedFileEvidenceChain, touchedFileCount, filePathSafetyChain, and touchedFileEvidenceChain identity evidence');
@@ -976,6 +981,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('resolves selectedRuntimeContract from first-party completed same-run RunStep evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('runtime=codex/claude steps become selected_runtime execution_run evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('Agent API promotion readiness steps become api_runtime execution_run evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProviderEvidenceChain is ready with a concrete provider');
     expect(taskFiles?.evidence.join(' ')).toContain('instead of accepting renderer-supplied runtime identity');
     expect(taskFiles?.evidence.join(' ')).toContain('Decision-driven apply and explicit IPC apply both satisfy the operatorApplyEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('preflight reports an already_applied promotion');
@@ -1328,7 +1334,8 @@ describe('product feature impact audit', () => {
   it('records selected-runtime identity evidence for runtime patch promotion routing', () => {
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
 
-    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract stays missing when the selected runtime run id or target task identity diverges');
+    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract stays missing when the selected runtime run id, target task identity, or API provider identity diverges');
+    expect(taskFiles?.evidence.join(' ')).toContain('API provider identity diverges or is absent');
     expect(taskFiles?.evidence.join(' ')).toContain('first-party completed same-run RunStep evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('only when the step belongs to the promotion run');
   });

@@ -140,6 +140,7 @@ describe('runtime patch promotion routing readiness', () => {
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
+        provider: 'openai',
         runtimeMode: 'api',
       },
       targetTaskId: 'task_1',
@@ -167,6 +168,8 @@ describe('runtime patch promotion routing readiness', () => {
     expect(partial.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
     expect(partial.summary).toContain('selectedRuntimeTask=missing');
     expect(partial.summary).toContain('selectedRuntimeTaskEvidenceChain=missing');
+    expect(partial.summary).toContain('selectedRuntimeProvider=openai');
+    expect(partial.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(partial.summary).toContain('targetTaskIdentity=missing');
     expect(partial.summary).toContain('promotionPreflight=missing');
     expect(partial.summary).toContain('sameRunEvidenceChain=missing');
@@ -243,6 +246,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -255,6 +259,8 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('requirements=8/8');
     expect(ready.summary).toContain('promotionSatisfiedRequirements=selected_runtime_contract,target_task_identity,patch_artifact,promotion_decision,promotion_preflight,explicit_operator_apply,same_run_evidence_chain,post_apply_run_evidence');
     expect(ready.summary).toContain('targetTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('selectedRuntimeProvider=openai');
+    expect(ready.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
     expect(ready.summary).toContain('decisionArtifactEvidenceChain=ready');
     expect(ready.summary).toContain('artifactEvidenceChain=ready');
     expect(ready.summary).toContain('sameRunEvidenceChain=ready');
@@ -276,6 +282,65 @@ describe('runtime patch promotion routing readiness', () => {
     expect(ready.summary).toContain('touchedFiles=src/app.ts');
     expect(ready.summary).toContain('filePathSafetyChain=ready');
     expect(ready.summary).toContain('touchedFileEvidenceChain=ready');
+  });
+
+  it('requires API selected-runtime provider identity before patch promotion can be ready', () => {
+    const missingProvider = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(missingProvider).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(missingProvider.summary).toContain('selectedRuntimeContract=missing');
+    expect(missingProvider.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
+    expect(missingProvider.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
+    expect(missingProvider.summary).toContain('selectedRuntimeProvider=missing');
+    expect(missingProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
   });
 
   it('requires patch, decision, preflight, and post-apply evidence to match the target task', () => {
@@ -321,6 +386,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -385,6 +451,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -450,6 +517,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_other',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -507,6 +575,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_other',
       },
       targetTaskId: 'task_1',
@@ -566,6 +635,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -631,6 +701,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -696,6 +767,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -760,6 +832,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -825,6 +898,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -891,6 +965,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -956,6 +1031,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1019,6 +1095,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1078,6 +1155,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1141,6 +1219,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1206,6 +1285,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1269,6 +1349,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1332,6 +1413,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1395,6 +1477,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1458,6 +1541,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1518,6 +1602,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',
@@ -1573,6 +1658,7 @@ describe('runtime patch promotion routing readiness', () => {
         phase: 'execution_run',
         runId: 'run_patch_1',
         runtimeMode: 'api',
+        provider: 'openai',
         taskId: 'task_1',
       },
       targetTaskId: 'task_1',

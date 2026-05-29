@@ -79,6 +79,7 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     selectedRuntimeContract: {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      provider: 'openai',
       runtimeMode: 'api',
     },
     targetTaskId: 'task_1',
@@ -100,6 +101,8 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
   console.log(`serviceEvidenceSelectedRuntimeRunEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeTask=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTaskEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeProvider=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProvider') ?? 'missing'}`);
+  console.log(`serviceEvidenceSelectedRuntimeProviderEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProviderEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidencePatchArtifactId=${scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionArtifactId=${scalarValue(serviceEvidencePartial.summary, 'decisionArtifactId') ?? 'missing'}`);
   console.log(`serviceEvidencePreflightArtifactId=${scalarValue(serviceEvidencePartial.summary, 'preflightArtifactId') ?? 'missing'}`);
@@ -138,6 +141,8 @@ export async function runRuntimePatchPromotionRoutingReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeRunEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTask') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeTaskEvidenceChain') !== 'missing'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProvider') !== 'openai'
+    || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProviderEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'patchArtifactId') !== 'artifact_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'decisionArtifactId') !== 'artifact_patch_1'
     || scalarValue(serviceEvidencePartial.summary, 'preflightArtifactId') !== 'artifact_patch_1'

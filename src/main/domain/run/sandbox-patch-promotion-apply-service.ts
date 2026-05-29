@@ -518,12 +518,17 @@ export function inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps(pa
       && output.includes('runtimeMode=api')
       && output.includes('invocationLayer=api_runtime')
       && output.includes(`selectedRuntimeRun=${runId}`)
-      && output.includes(`selectedRuntimeTask=${taskId}`);
+      && output.includes(`selectedRuntimeTask=${taskId}`)
+      && output.includes('selectedRuntimeProviderEvidenceChain=ready');
   });
   if (apiReadinessStep) {
+    const provider = scalarValue(apiReadinessStep.output ?? '', 'selectedRuntimeProvider');
+    if (!provider || provider === 'missing') return null;
+
     return {
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      provider,
       runId,
       runtimeMode: 'api',
       taskId,
@@ -544,6 +549,12 @@ export function inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps(pa
     runtimeMode: cliRuntimeId,
     taskId,
   };
+}
+
+function scalarValue(summary: string, key: string): string | null {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() ?? null;
 }
 
 async function validateSandboxPatchApplication(params: {

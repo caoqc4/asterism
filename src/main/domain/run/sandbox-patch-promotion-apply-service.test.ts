@@ -286,6 +286,8 @@ describe('SandboxPatchPromotionApplyService', () => {
           'invocationLayer=api_runtime',
           'selectedRuntimeRun=run_api_1',
           'selectedRuntimeTask=task_api_1',
+          'selectedRuntimeProvider=openai',
+          'selectedRuntimeProviderEvidenceChain=ready',
         ].join(' / '),
       }),
     ];
@@ -296,6 +298,7 @@ describe('SandboxPatchPromotionApplyService', () => {
     })).toMatchObject({
       invocationLayer: 'api_runtime',
       phase: 'execution_run',
+      provider: 'openai',
       runId: 'run_api_1',
       runtimeMode: 'api',
       taskId: 'task_api_1',
@@ -304,6 +307,26 @@ describe('SandboxPatchPromotionApplyService', () => {
       runId: 'run_api_1',
       steps: apiSteps,
       taskId: 'task_other',
+    })).toBeNull();
+
+    expect(inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+      runId: 'run_api_1',
+      steps: [
+        buildStep({
+          runId: 'run_api_1',
+          output: [
+            'Agent API execution promotion readiness',
+            'selectedRuntimeContract=ready',
+            'runtimeMode=api',
+            'invocationLayer=api_runtime',
+            'selectedRuntimeRun=run_api_1',
+            'selectedRuntimeTask=task_api_1',
+            'selectedRuntimeProvider=missing',
+            'selectedRuntimeProviderEvidenceChain=missing',
+          ].join(' / '),
+        }),
+      ],
+      taskId: 'task_api_1',
     })).toBeNull();
 
     expect(inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
