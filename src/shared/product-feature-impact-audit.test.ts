@@ -1217,8 +1217,9 @@ describe('product feature impact audit', () => {
   it('records deduplicated Agent API provider tool declaration evidence', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
-    expect(capabilities?.evidence.join(' ')).toContain('case-insensitive deduplication');
+    expect(capabilities?.evidence.join(' ')).toContain('case-insensitive and separator-normalized deduplication');
     expect(capabilities?.evidence.join(' ')).toContain('without overstating duplicate tool evidence');
+    expect(capabilities?.evidence.join(' ')).toContain('colon/dot provider namespace aliases');
   });
 
   it('records Agent API provider generic helper negative readiness coverage', () => {

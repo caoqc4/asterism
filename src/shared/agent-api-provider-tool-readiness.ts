@@ -104,12 +104,16 @@ function normalizeDeclaredTools(tools: string[] | undefined): string[] {
   for (const tool of tools ?? []) {
     const normalizedTool = tool.trim();
     if (!normalizedTool) continue;
-    const identityKey = normalizedTool.toLowerCase();
+    const identityKey = declaredToolIdentityKey(normalizedTool);
     if (seen.has(identityKey)) continue;
     seen.add(identityKey);
     normalizedTools.push(normalizedTool);
   }
   return normalizedTools;
+}
+
+function declaredToolIdentityKey(tool: string): string {
+  return tool.toLowerCase().replace(/[.:-]+/g, '_').replace(/_+/g, '_');
 }
 
 function declaredWebSearchTools(tools: string[] | undefined, configuredProvider?: string | null): string[] {
@@ -124,7 +128,7 @@ function declaredWebSearchTools(tools: string[] | undefined, configuredProvider?
       : '';
     if (namespace && namespace !== providerNamespace && namespace !== 'web') return false;
 
-    const normalizedTool = loweredTool.replace(/[.:-]+/g, '_').replace(/_+/g, '_');
+    const normalizedTool = declaredToolIdentityKey(loweredTool);
     if (EXPLICIT_WEB_SEARCH_TOOL_NAMES.has(normalizedTool)) return true;
 
     const segments = normalizedTool.split('_').filter(Boolean);
