@@ -1201,6 +1201,12 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('missing/invalid run-limit accounting evidence');
   });
 
+  it('records near-duplicate subtask title blocking for decomposition promotion readiness', () => {
+    const decomposition = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition');
+
+    expect(decomposition?.evidence.join(' ')).toContain('near-duplicate subtask titles cannot satisfy duplicate-free promotion readiness');
+  });
+
   it('records Agent API provider dot-namespace tool readiness coverage', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 

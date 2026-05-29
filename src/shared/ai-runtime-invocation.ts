@@ -6,6 +6,7 @@ import type { RunStatus } from './types/run.js';
 import type { TaskExecutionType } from './types/task.js';
 import type { ProjectDecompositionResult } from './types/ipc.js';
 import type { TaskplaneSubtaskWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
+import { isLikelyDuplicateTaskTitle } from './task-title-identity.js';
 import {
   RUNTIME_ENTRYPOINT_COVERAGE,
   requiredRuntimeEntrypointGatesForKind,
@@ -605,7 +606,15 @@ function normalizedSubtaskTitles(titles: readonly (string | null | undefined)[])
 }
 
 function titlesAreUnique(titles: readonly string[]): boolean {
-  return titles.length > 0 && new Set(titles).size === titles.length;
+  if (titles.length === 0) return false;
+  for (let index = 0; index < titles.length; index += 1) {
+    for (let nextIndex = index + 1; nextIndex < titles.length; nextIndex += 1) {
+      if (isLikelyDuplicateTaskTitle(titles[index], titles[nextIndex])) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 export function buildApiRuntimeDecisionDraftInvocation(params: {

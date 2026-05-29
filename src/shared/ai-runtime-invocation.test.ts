@@ -778,6 +778,58 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('proposalCard=missing');
   });
 
+  it('blocks Agent API decomposition promotion when near-duplicate subtask titles make identity ambiguous', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [
+        {
+          acceptanceCriteria: '需求清单可验收。',
+          dependency: null,
+          summary: '分析需求边界。',
+          title: '需求分析',
+        },
+        {
+          acceptanceCriteria: '需求风险可验收。',
+          dependency: null,
+          summary: '梳理需求风险。',
+          title: '分析需求',
+        },
+      ],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 2,
+        subtaskTitles: ['需求分析', '分析需求'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalSubtaskEvidenceChain=ready');
+    expect(mismatch.summary).toContain('proposalSubtaskTitles=需求分析|分析需求');
+    expect(mismatch.summary).toContain('applyPlanSubtaskTitles=需求分析|分析需求');
+    expect(mismatch.summary).toContain('proposalSubtaskUniqueChain=missing');
+    expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
+    expect(mismatch.summary).toContain('proposalCard=missing');
+  });
+
   it('blocks Agent API decomposition promotion when blank subtask titles are filtered out of identity evidence', () => {
     const applyPlan = buildAgentApiDecompositionApplyPlan({
       evidenceRunId: 'run_api_decomposition',
