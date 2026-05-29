@@ -1260,7 +1260,8 @@ describe('product feature impact audit', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
     expect(capabilities?.evidence.join(' ')).toContain('Provider-native agent session gates now require both provider-native payload provider identity and normalized plan provider identity');
-    expect(capabilities?.evidence.join(' ')).toContain('provider payload or normalized plan from a different configured runtime cannot cross the provider-native session boundary');
+    expect(capabilities?.evidence.join(' ')).toContain('plus nonempty providerCallIds identity evidence');
+    expect(capabilities?.evidence.join(' ')).toContain('hand-shaped proposal without provider tool-call identity evidence cannot cross the provider-native session boundary');
   });
 
   it('records exact Agent API execution Write Intent action identity coverage', () => {

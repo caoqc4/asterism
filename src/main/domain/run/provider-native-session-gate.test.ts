@@ -146,6 +146,19 @@ describe('evaluateProviderNativeSessionGate', () => {
       },
       reason: 'Provider-native normalized plan provider does not match the selected runtime provider.',
     },
+    {
+      label: 'normalized plan without provider call ids',
+      overrides: {
+        normalization: {
+          status: 'normalized',
+          plan: {
+            ...normalized.plan,
+            providerCallIds: [],
+          },
+        },
+      },
+      reason: 'Provider-native normalized plan is missing provider tool-call identity evidence.',
+    },
   ])('blocks $label', ({ overrides, reason }) => {
     expect(evaluateProviderNativeSessionGate(buildGateInput(overrides as never))).toEqual({
       allowed: false,

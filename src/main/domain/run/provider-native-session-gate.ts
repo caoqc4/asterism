@@ -79,6 +79,13 @@ export function evaluateProviderNativeSessionGate(
     };
   }
 
+  if (params.normalization.plan.providerCallIds.length === 0) {
+    return {
+      allowed: false,
+      reason: 'Provider-native normalized plan is missing provider tool-call identity evidence.',
+    };
+  }
+
   return {
     allowed: true,
   };
