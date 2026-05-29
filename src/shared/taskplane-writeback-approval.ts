@@ -68,6 +68,7 @@ export function buildTaskplaneWritebackApprovalItems(params: {
     if (detail.output?.trim()) {
       const proposalSet = buildTaskplaneWritebackProposalsFromText({
         date: params.date,
+        businessLineId: detail.businessLineId ?? null,
         output: detail.output,
         runId: detail.id,
         taskId: params.taskId,
@@ -442,6 +443,7 @@ function buildTaskFileApprovalItem(params: {
   const plan = buildTaskFileWritebackApplyPlan({
     evidenceRunId: params.proposal.evidenceRunId,
     input: {
+      businessLineId: params.proposal.businessLineId ?? null,
       content: params.proposal.content,
       kind: 'file',
       name: fileNameFromPath(path),

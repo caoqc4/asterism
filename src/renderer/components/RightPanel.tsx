@@ -192,6 +192,7 @@ interface PendingCtxSwitch {
 }
 
 interface TaskFileWriteProposal {
+  businessLineId?: string | null;
   evidenceRunId?: string | null;
   intentSource?: 'write_intent';
   path: string;
@@ -1248,6 +1249,7 @@ function parseAgentCliDecompositionDraft(output: string, runId: string): TaskDec
 }
 
 function parseAgentCliTaskRecordWriteIntent(params: {
+  businessLineId?: string | null;
   output: string;
   runId: string;
   taskId: string;
@@ -1257,6 +1259,7 @@ function parseAgentCliTaskRecordWriteIntent(params: {
 }
 
 function parseAgentCliTaskFileWriteIntent(params: {
+  businessLineId?: string | null;
   output: string;
   runId: string;
   taskId: string;
@@ -1268,6 +1271,7 @@ function parseAgentCliTaskFileWriteIntent(params: {
 }
 
 function parseAgentCliSourceContextWriteIntent(params: {
+  businessLineId?: string | null;
   output: string;
   runId: string;
   taskId: string;
@@ -1279,6 +1283,7 @@ function parseAgentCliSourceContextWriteIntent(params: {
 }
 
 function parseAgentCliArtifactWriteIntent(params: {
+  businessLineId?: string | null;
   output: string;
   runId: string;
   taskId: string;
@@ -1290,6 +1295,7 @@ function parseAgentCliArtifactWriteIntent(params: {
 }
 
 function parseAgentCliStructuredWritebackIntent(params: {
+  businessLineId?: string | null;
   output: string;
   runId: string;
   taskId: string;
@@ -1872,12 +1878,14 @@ export function RightPanel({
         } else {
           const taskTitle = titleCache[current.taskId] ?? activeTaskDetail?.title ?? current.taskId;
           const taskRecordProposal = parseAgentCliTaskRecordWriteIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: detail.id,
             taskId: current.taskId,
             taskTitle,
           });
           const taskFileProposal = taskRecordProposal ?? parseAgentCliTaskFileWriteIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: detail.id,
             taskId: current.taskId,
@@ -1886,6 +1894,7 @@ export function RightPanel({
             updateTaskFileProposal((existing) => existing ?? taskFileProposal);
           }
           const sourceProposal = parseAgentCliSourceContextWriteIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: detail.id,
             taskId: current.taskId,
@@ -1894,6 +1903,7 @@ export function RightPanel({
             updateSourceContextProposal((existing) => existing ?? sourceProposal);
           }
           const artifactProposal = parseAgentCliArtifactWriteIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: detail.id,
             taskId: current.taskId,
@@ -1902,6 +1912,7 @@ export function RightPanel({
             updateArtifactProposal((existing) => existing ?? artifactProposal);
           }
           const structuredProposal = parseAgentCliStructuredWritebackIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: detail.id,
             taskId: current.taskId,
@@ -2803,6 +2814,7 @@ export function RightPanel({
           taskId: activeTaskId,
           ports: {
             createArtifact: (input) => window.api.createManualArtifact({
+              businessLineId: input.businessLineId ?? null,
               content: input.content,
               taskId: input.taskId,
               title: input.title,
@@ -2866,6 +2878,7 @@ export function RightPanel({
     ) return;
     const normalizedInput = normalizeCreateTaskFileInput({
       taskId: activeTaskId,
+      businessLineId: taskFileProposal.businessLineId ?? activeBusinessLineId ?? null,
       name: normalizeTaskFilePath(taskFileProposal.path).split('/').filter(Boolean).at(-1) ?? taskFileProposal.path,
       path: taskFileProposal.path,
       kind: 'file',
@@ -2924,6 +2937,7 @@ export function RightPanel({
       if (memoryApplyPlan?.status === 'ready') {
         const taskFilePlan = memoryApplyPlan.action === 'update'
           ? buildTaskFileUpdateWritebackApplyPlan({
+            businessLineId: taskFileProposal.businessLineId ?? activeBusinessLineId ?? null,
             evidenceRunId: taskFileProposal.evidenceRunId ?? null,
             input: memoryApplyPlan.input,
             path,
@@ -2934,7 +2948,10 @@ export function RightPanel({
           })
           : buildTaskFileWritebackApplyPlan({
             evidenceRunId: taskFileProposal.evidenceRunId ?? null,
-            input: memoryApplyPlan.input,
+            input: {
+              ...memoryApplyPlan.input,
+              businessLineId: taskFileProposal.businessLineId ?? activeBusinessLineId ?? null,
+            },
             source: writebackSource,
             surface: taskFileProposal.surface,
             surfaceLabel: taskFileProposal.surfaceLabel,
@@ -2956,17 +2973,23 @@ export function RightPanel({
             appendSysMsg('任务记忆写入已暂停：当前环境不支持更新任务文件。');
             return;
           }
-          if (!taskFileWritebackApplied) await window.api.updateTaskFile(memoryApplyPlan.input);
+          if (!taskFileWritebackApplied) {
+            await window.api.updateTaskFile(memoryApplyPlan.input);
+          }
         } else if (!taskFileWritebackApplied) {
           if (!window.api.createTaskFile) {
             appendSysMsg('任务记忆写入已暂停：当前环境不支持创建任务文件。');
             return;
           }
-          await window.api.createTaskFile(memoryApplyPlan.input);
+          await window.api.createTaskFile({
+            ...memoryApplyPlan.input,
+            businessLineId: taskFileProposal.businessLineId ?? activeBusinessLineId ?? null,
+          });
         }
       } else {
         const createInput = {
           ...normalizedInput,
+          businessLineId: taskFileProposal.businessLineId ?? activeBusinessLineId ?? null,
           taskId: activeTaskId,
         };
         const taskFilePlan = buildTaskFileWritebackApplyPlan({
@@ -3018,6 +3041,7 @@ export function RightPanel({
       if (!taskFileWritebackApplied) {
         await recordPanelTimelineEvent(activeTaskId, 'panel.task_file_written', {
           evidenceRunId: taskFileProposal.evidenceRunId ?? null,
+          businessLineId: taskFileProposal.businessLineId ?? activeBusinessLineId ?? null,
           path,
           surface: taskFileProposal.surface,
           surfaceLabel: taskFileProposal.surfaceLabel,
@@ -3196,12 +3220,14 @@ export function RightPanel({
           setTaskDecompositionDraft(decompositionDraft);
         } else if (activeTaskId) {
           const taskRecordProposal = parseAgentCliTaskRecordWriteIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: run.id,
             taskId: activeTaskId,
             taskTitle: title ?? titleCache[activeTaskId] ?? activeTaskId,
           });
           const taskFileProposal = taskRecordProposal ?? parseAgentCliTaskFileWriteIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: run.id,
             taskId: activeTaskId,
@@ -3210,6 +3236,7 @@ export function RightPanel({
             updateTaskFileProposal((existing) => existing ?? taskFileProposal);
           }
           const sourceProposal = parseAgentCliSourceContextWriteIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: run.id,
             taskId: activeTaskId,
@@ -3218,6 +3245,7 @@ export function RightPanel({
             updateSourceContextProposal((existing) => existing ?? sourceProposal);
           }
           const artifactProposal = parseAgentCliArtifactWriteIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: run.id,
             taskId: activeTaskId,
@@ -3226,6 +3254,7 @@ export function RightPanel({
             updateArtifactProposal((existing) => existing ?? artifactProposal);
           }
           const structuredProposal = parseAgentCliStructuredWritebackIntent({
+            businessLineId: activeBusinessLineId,
             output,
             runId: run.id,
             taskId: activeTaskId,
@@ -3292,12 +3321,14 @@ export function RightPanel({
         const detail = await window.api.getRunDetail(run.id).catch(() => null);
         const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || `${runtimeLabel} run 已记录。`;
         const taskRecordProposal = parseAgentCliTaskRecordWriteIntent({
+          businessLineId: activeBusinessLineId,
           output,
           runId: run.id,
           taskId: activeTaskId,
           taskTitle: title ?? titleCache[activeTaskId] ?? activeTaskId,
         });
         const taskFileProposal = taskRecordProposal ?? parseAgentCliTaskFileWriteIntent({
+          businessLineId: activeBusinessLineId,
           output,
           runId: run.id,
           taskId: activeTaskId,
@@ -3306,6 +3337,7 @@ export function RightPanel({
           updateTaskFileProposal((existing) => existing ?? taskFileProposal);
         }
         const sourceProposal = parseAgentCliSourceContextWriteIntent({
+          businessLineId: activeBusinessLineId,
           output,
           runId: run.id,
           taskId: activeTaskId,
@@ -3314,6 +3346,7 @@ export function RightPanel({
           updateSourceContextProposal((existing) => existing ?? sourceProposal);
         }
         const artifactProposal = parseAgentCliArtifactWriteIntent({
+          businessLineId: activeBusinessLineId,
           output,
           runId: run.id,
           taskId: activeTaskId,
@@ -3322,6 +3355,7 @@ export function RightPanel({
           updateArtifactProposal((existing) => existing ?? artifactProposal);
         }
         const structuredProposal = parseAgentCliStructuredWritebackIntent({
+          businessLineId: activeBusinessLineId,
           output,
           runId: run.id,
           taskId: activeTaskId,

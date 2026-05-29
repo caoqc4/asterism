@@ -42,11 +42,13 @@ describe('Taskplane writeback proposal builder', () => {
         ],
       }),
       runId: 'run_1',
+      businessLineId: 'business_line_product',
       taskId: 'task_scope',
       taskTitle: '明确网站目标与范围',
     });
 
     expect(proposals.taskRecord).toMatchObject({
+      businessLineId: 'business_line_product',
       content: '# Scope\n已确认首版范围。',
       evidenceRunId: 'run_1',
       intentSource: 'write_intent',
@@ -55,12 +57,14 @@ describe('Taskplane writeback proposal builder', () => {
       surfaceLabel: '任务记录',
     });
     expect(proposals.sourceContext).toMatchObject({
+      businessLineId: 'business_line_product',
       evidenceRunId: 'run_1',
       note: '官方文档入口。',
       title: 'Codex docs',
       uri: 'https://example.com/codex',
     });
     expect(proposals.taskFile).toMatchObject({
+      businessLineId: 'business_line_product',
       content: '# Codex 教程大纲\n\n- 入门路径',
       evidenceRunId: 'run_1',
       intentSource: 'write_intent',
@@ -70,6 +74,7 @@ describe('Taskplane writeback proposal builder', () => {
       surfaceLabel: '文件',
     });
     expect(proposals.artifact).toMatchObject({
+      businessLineId: 'business_line_product',
       content: '# 首版教程结构\n\n- 入门\n- 案例',
       evidenceRunId: 'run_1',
       kind: 'note',
@@ -77,6 +82,7 @@ describe('Taskplane writeback proposal builder', () => {
       title: 'codex-tutorial-structure.md',
     });
     expect(proposals.structured).toMatchObject({
+      businessLineId: 'business_line_product',
       detail: '范围会影响页面结构。',
       evidenceRunId: 'run_1',
       title: '决策提案：确认首版范围',

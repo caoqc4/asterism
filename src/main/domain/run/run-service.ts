@@ -231,6 +231,14 @@ export class RunService {
       throw new Error(startVerification.detail);
     }
 
+    const businessLineId = input.businessLineId ?? task.businessLineId ?? null;
+    const businessLineWorkspace = businessLineId && this.businessLineContextProvider
+      ? await this.businessLineContextProvider.getWorkspace(businessLineId)
+      : null;
+    if (businessLineId && this.businessLineContextProvider && !businessLineWorkspace) {
+      throw new Error(`Business line not found: ${businessLineId}`);
+    }
+
     let taskForExecution = task;
 
     if (task.state === 'planned') {
@@ -245,10 +253,6 @@ export class RunService {
       }
     }
 
-    const businessLineId = input.businessLineId ?? taskForExecution.businessLineId ?? null;
-    const businessLineWorkspace = businessLineId && this.businessLineContextProvider
-      ? await this.businessLineContextProvider.getWorkspace(businessLineId)
-      : null;
     const runInput: CreateRunInput = {
       ...input,
       businessLineId,

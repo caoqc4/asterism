@@ -14,6 +14,7 @@ import {
 } from './taskplane-write-intent.js';
 
 export type TaskplaneTaskFileWritebackProposal = {
+  businessLineId?: string | null;
   content: string;
   evidenceRunId: string;
   intentSource: 'write_intent';
@@ -24,6 +25,7 @@ export type TaskplaneTaskFileWritebackProposal = {
 };
 
 export type TaskplaneArtifactWritebackProposal = {
+  businessLineId?: string | null;
   content: string;
   evidenceRunId: string;
   kind: 'note' | 'patch';
@@ -32,6 +34,7 @@ export type TaskplaneArtifactWritebackProposal = {
 };
 
 export type TaskplaneSourceContextWritebackProposal = {
+  businessLineId?: string | null;
   credibility?: 'verified' | 'unknown' | 'low';
   evidenceRunId: string;
   note: string;
@@ -46,6 +49,7 @@ export type TaskplaneStructuredWritebackIntent =
   | TaskplaneTaskCompleteIntent;
 
 export type TaskplaneStructuredWritebackProposal = {
+  businessLineId?: string | null;
   detail: string;
   evidenceRunId: string;
   intent: TaskplaneStructuredWritebackIntent;
@@ -64,6 +68,7 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
   date?: Date;
   output: string;
   runId: string;
+  businessLineId?: string | null;
   taskId: string;
   taskTitle: string;
 }): TaskplaneWritebackProposalSet {
@@ -89,20 +94,22 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
   ));
 
   return {
-    artifact: artifactIntent ? buildArtifactProposal(artifactIntent) : null,
+    artifact: artifactIntent ? buildArtifactProposal(artifactIntent, params.businessLineId ?? null) : null,
     sourceContext: sourceContextIntent?.type === 'source_context.create'
       ? {
           credibility: sourceContextIntent.credibility,
+          businessLineId: params.businessLineId ?? null,
           evidenceRunId: sourceContextIntent.evidenceRunId,
           note: sourceContextIntent.note,
           title: sourceContextIntent.title,
           uri: sourceContextIntent.uri ?? null,
         }
       : null,
-    structured: structuredIntent ? buildStructuredWritebackProposal(structuredIntent) : null,
-    taskFile: taskFileIntent ? buildTaskFileProposal(taskFileIntent) : null,
+    structured: structuredIntent ? buildStructuredWritebackProposal(structuredIntent, params.businessLineId ?? null) : null,
+    taskFile: taskFileIntent ? buildTaskFileProposal(taskFileIntent, params.businessLineId ?? null) : null,
     taskRecord: taskRecordIntent?.type === 'task_record.create'
       ? {
+          businessLineId: params.businessLineId ?? null,
           content: taskRecordIntent.content,
           evidenceRunId: taskRecordIntent.evidenceRunId,
           intentSource: 'write_intent',
@@ -115,8 +122,9 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
   };
 }
 
-function buildArtifactProposal(intent: TaskplaneArtifactProposeIntent): TaskplaneArtifactWritebackProposal {
+function buildArtifactProposal(intent: TaskplaneArtifactProposeIntent, businessLineId?: string | null): TaskplaneArtifactWritebackProposal {
   return {
+    businessLineId: businessLineId ?? null,
     content: intent.content,
     evidenceRunId: intent.evidenceRunId,
     kind: intent.kind,
@@ -125,7 +133,10 @@ function buildArtifactProposal(intent: TaskplaneArtifactProposeIntent): Taskplan
   };
 }
 
-function buildTaskFileProposal(intent: TaskplaneTaskFileProposeIntent): TaskplaneTaskFileWritebackProposal {
+function buildTaskFileProposal(
+  intent: TaskplaneTaskFileProposeIntent,
+  businessLineId?: string | null,
+): TaskplaneTaskFileWritebackProposal {
   const path = normalizeProposalPath(intent.path);
   const name = path.split('/').filter(Boolean).at(-1) ?? path;
   const surface = classifyRuntimeFileSurface({
@@ -135,6 +146,7 @@ function buildTaskFileProposal(intent: TaskplaneTaskFileProposeIntent): Taskplan
     taskFileKind: 'file',
   });
   return {
+    businessLineId: businessLineId ?? null,
     content: intent.content,
     evidenceRunId: intent.evidenceRunId,
     intentSource: 'write_intent',
@@ -147,10 +159,12 @@ function buildTaskFileProposal(intent: TaskplaneTaskFileProposeIntent): Taskplan
 
 function buildStructuredWritebackProposal(
   intent: TaskplaneStructuredWritebackIntent,
+  businessLineId?: string | null,
 ): TaskplaneStructuredWritebackProposal {
   switch (intent.type) {
     case 'decision.create':
       return {
+        businessLineId: businessLineId ?? null,
         detail: intent.rationale,
         evidenceRunId: intent.evidenceRunId,
         intent,
@@ -158,6 +172,7 @@ function buildStructuredWritebackProposal(
       };
     case 'task.update_next_step':
       return {
+        businessLineId: businessLineId ?? null,
         detail: intent.reason,
         evidenceRunId: intent.evidenceRunId,
         intent,
@@ -165,6 +180,7 @@ function buildStructuredWritebackProposal(
       };
     case 'task.mark_blocked':
       return {
+        businessLineId: businessLineId ?? null,
         detail: intent.unblockCondition
           ? `${intent.reason}\n解除条件：${intent.unblockCondition}`
           : intent.reason,
@@ -174,6 +190,7 @@ function buildStructuredWritebackProposal(
       };
     case 'task.complete.propose':
       return {
+        businessLineId: businessLineId ?? null,
         detail: intent.evidence,
         evidenceRunId: intent.evidenceRunId,
         intent,

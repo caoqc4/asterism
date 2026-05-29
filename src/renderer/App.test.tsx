@@ -766,6 +766,7 @@ function createMockApi() {
     createSourceContext: vi.fn().mockImplementation(async (input) => ({
       id: 'source_created',
       taskId: input.taskId,
+      businessLineId: input.businessLineId ?? null,
       title: input.title,
       kind: input.kind,
       isKey: input.isKey ?? false,
@@ -793,6 +794,7 @@ function createMockApi() {
       const artifact = {
         id: 'artifact_manual',
         taskId: input.taskId,
+        businessLineId: input.businessLineId ?? null,
         sourceType: 'manual' as const,
         sourceId: 'task_files',
         kind: input.kind ?? 'note' as const,
@@ -1127,6 +1129,7 @@ function createMockApi() {
     }
     if (plan.action === 'artifact.create_note_from_run') {
       await api.createManualArtifact({
+        businessLineId: plan.input.businessLineId ?? null,
         content: plan.input.content,
         taskId: plan.input.taskId,
         title: plan.input.title,
@@ -1502,6 +1505,74 @@ describe('App redesign v1', () => {
     await waitFor(() => {
       expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
         businessLineId: 'business_line_task_product',
+        taskId: 'task_risk',
+      }));
+    });
+  });
+
+  it('keeps business line context on Agent API writeback proposals', async () => {
+    const user = userEvent.setup();
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    homeBrief.businessLineSuggestions = [{
+      id: 'business-line-progress:business_line_task_product:task_risk',
+      type: 'progress',
+      businessLineId: 'business_line_task_product',
+      businessLineTitle: 'GoalPilot product',
+      whyNow: 'Accepted learning changed the next recommendation.',
+      nextStep: 'Update Today suggestion trust layer.',
+      sourceRecords: ['review: navigation model changed'],
+      risk: {
+        level: 'medium',
+        note: null,
+      },
+      requiresDecision: false,
+      taskId: 'task_risk',
+    }];
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    vi.mocked(harness.api.triggerRun).mockImplementationOnce(async (input) => buildRun({
+      id: 'run_business_line_writeback',
+      output: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [{
+          type: 'source_context.create',
+          title: 'Business line launch signal',
+          note: 'The next action should stay anchored to accepted learning.',
+        }],
+      }),
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: input.taskId,
+      type: input.type,
+    }));
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+    expect(await screen.findByText(/Context: Business \/ GoalPilot product \/ Next Action/)).toBeTruthy();
+    const input = screen.getByRole('textbox');
+    await user.clear(input);
+    await user.type(input, '开始执行当前任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(await screen.findByText('来源上下文写入提案')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认保存来源' }));
+
+    await waitFor(() => {
+      expect(harness.api.applyTaskplaneWriteback).toHaveBeenCalledWith(expect.objectContaining({
+        plan: expect.objectContaining({
+          action: 'source_context.create',
+          input: expect.objectContaining({
+            businessLineId: 'business_line_task_product',
+            taskId: 'task_risk',
+            title: 'Business line launch signal',
+          }),
+          timeline: expect.objectContaining({
+            payload: expect.objectContaining({
+              businessLineId: 'business_line_task_product',
+            }),
+          }),
+        }),
         taskId: 'task_risk',
       }));
     });
@@ -4805,9 +4876,9 @@ describe('App redesign v1', () => {
     });
 
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     expect(await screen.findByText('开发小程序')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /一次性任务/ }));
     expect(screen.queryByText('拆解下一步：开发小程序')).toBeNull();
@@ -4902,9 +4973,9 @@ describe('App redesign v1', () => {
     }
 
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     const cards = Array.from(document.querySelectorAll('.execution-queue-card')) as HTMLElement[];
     const orderedTitles = cards.map((card) => card.textContent ?? '').filter((text) => text.includes('小程序'));
     expect(orderedTitles.some((text) => text.includes('开发小程序'))).toBe(true);
@@ -5204,9 +5275,9 @@ describe('App redesign v1', () => {
       configurable: true,
       value: { writeText },
     });
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     const taskRowTitle = async () => (await screen.findAllByText('董事会材料修订'))[0]!;
     fireEvent.contextMenu(await taskRowTitle());
     await user.click(await screen.findByRole('button', { name: '中' }));
@@ -6433,9 +6504,9 @@ describe('App redesign v1', () => {
     saveTaskAttributes(third.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
 
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     await user.click(await screen.findByRole('button', { name: '上线项目' }));
 
@@ -6499,9 +6570,9 @@ describe('App redesign v1', () => {
     saveTaskAttributes(unrelated.id, { type: 'simple', typeConfirmed: true });
 
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     await user.click(await screen.findByRole('button', { name: '开发小程序' }));
 
@@ -6578,9 +6649,9 @@ describe('App redesign v1', () => {
     });
 
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     await user.click(await screen.findByRole('button', { name: '资料整理项目' }));
 
@@ -6642,9 +6713,9 @@ describe('App redesign v1', () => {
     });
 
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     await user.click(await screen.findByRole('button', { name: '上线项目' }));
     const taskWorkspace = document.querySelector('.task-list') as HTMLElement;
@@ -6814,9 +6885,9 @@ describe('App redesign v1', () => {
     saveTaskAttributes(second.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
 
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     await user.click(await screen.findByRole('button', { name: '上线项目' }));
     const childList = document.querySelector('.project-child-list') as HTMLElement;
@@ -7482,9 +7553,9 @@ describe('App redesign v1', () => {
     };
 
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: '整理一段说明' }));
     expect(await screen.findByRole('button', { name: /规划下一步/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: '打开工作台 →' })).toBeNull();
@@ -7511,9 +7582,9 @@ describe('App redesign v1', () => {
 
   it('clears the selected task when switching task explorer lenses', async () => {
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
     expect(await screen.findByRole('button', { name: /去拍板/ })).toBeTruthy();
 
@@ -7728,9 +7799,9 @@ describe('App redesign v1', () => {
     });
     window.api = harness.api;
 
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
     await user.click(await findTaskFileButton(/reviewed\.patch/));
 
@@ -7856,9 +7927,9 @@ describe('App redesign v1', () => {
     });
     window.api = harness.api;
 
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
     await user.click(await findTaskFileButton(/apply-reviewed\.patch/));
     expect(await screen.findByText(/只写入 reviewed patch 中通过 preflight 的匹配文件/)).toBeTruthy();
@@ -7986,9 +8057,9 @@ describe('App redesign v1', () => {
     });
     window.api = harness.api;
 
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
     fireEvent.contextMenu(await findTaskFileButton(/context-reviewed\.patch/));
     await user.click(await screen.findByRole('button', { name: '应用到工作区' }));
@@ -8106,9 +8177,9 @@ describe('App redesign v1', () => {
 
   it('opens the right panel with the current task and selected file context from Tasks', async () => {
     const user = userEvent.setup();
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
     await user.click(await findTaskFileButton(/Task.md/));
     await user.click(screen.getByRole('button', { name: /Search or ask/ }));
@@ -8305,9 +8376,9 @@ describe('App redesign v1', () => {
             ],
           }
         : null);
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByText('来源驱动任务'));
     await user.click(await findTaskFileButton(/会话刷新前保全.md/));
 
@@ -8342,9 +8413,9 @@ describe('App redesign v1', () => {
             ],
           }
         : null);
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByText('AI 产出任务'));
     await user.click(await findTaskFileButton(/AI 项目拆解自检.md/));
 

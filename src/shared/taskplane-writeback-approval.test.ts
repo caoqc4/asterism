@@ -61,6 +61,68 @@ describe('Taskplane writeback approval items', () => {
     });
   });
 
+  it('keeps business line context on task file and task record approval queue plans', () => {
+    const run = buildRunDetail({
+      businessLineId: 'business_line_product',
+      output: [
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [
+            {
+              type: 'task_record.create',
+              content: '# 复盘\n需要保留业务线归属。',
+              confidence: 'high',
+            },
+            {
+              type: 'task_file.propose',
+              path: 'Drafts/business-line-note.md',
+              content: '# 业务线笔记',
+              summary: '保存业务线笔记。',
+            },
+          ],
+        }),
+        '```',
+      ].join('\n'),
+    });
+
+    const items = buildTaskplaneWritebackApprovalItems({
+      date: new Date('2026-05-30T00:00:00.000Z'),
+      runDetails: [run],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+    });
+
+    const taskRecord = items.find((item) => item.kind === 'task_record');
+    const taskFile = items.find((item) => item.kind === 'task_file');
+    expect(taskRecord?.plan).toMatchObject({
+      action: 'task_file.create',
+      input: {
+        businessLineId: 'business_line_product',
+        path: 'Task Records/2026-05-30-codex-教程站-agent-record.md',
+        taskId: 'task_1',
+      },
+      timeline: {
+        payload: {
+          businessLineId: 'business_line_product',
+        },
+      },
+    });
+    expect(taskFile?.plan).toMatchObject({
+      action: 'task_file.create',
+      input: {
+        businessLineId: 'business_line_product',
+        path: 'Drafts/business-line-note.md',
+        taskId: 'task_1',
+      },
+      timeline: {
+        payload: {
+          businessLineId: 'business_line_product',
+        },
+      },
+    });
+  });
+
   it('filters proposals that already have durable task surfaces', () => {
     const run = buildRunDetail({
       output: [
@@ -826,6 +888,7 @@ function buildRunDetail(partial: Partial<RunDetailRecord> = {}): RunDetailRecord
   return {
     id: partial.id ?? 'run_1',
     taskId: partial.taskId ?? 'task_1',
+    businessLineId: partial.businessLineId ?? null,
     type: 'agent',
     status: 'completed',
     instructions: null,

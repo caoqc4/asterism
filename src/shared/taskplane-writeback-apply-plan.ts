@@ -73,6 +73,7 @@ export type TaskplaneSourceContextWritebackApplyPlan = {
 };
 
 type TaskplaneArtifactWritebackInput = {
+  businessLineId?: string | null;
   content: string;
   runId: string;
   taskId: string;
@@ -224,6 +225,7 @@ export function buildTaskFileWritebackApplyPlan(params: {
   surfaceLabel: string;
   taskId: string;
 }): TaskplaneTaskFileWritebackApplyPlan {
+  const businessLineId = params.input.businessLineId ?? null;
   const path = params.input.path ?? params.input.name;
   return {
     action: 'task_file.create',
@@ -235,6 +237,7 @@ export function buildTaskFileWritebackApplyPlan(params: {
       type: 'panel.task_file_written',
       payload: {
         evidenceRunId: params.evidenceRunId ?? null,
+        businessLineId,
         path,
         source: params.source,
         surface: params.surface,
@@ -245,6 +248,7 @@ export function buildTaskFileWritebackApplyPlan(params: {
 }
 
 export function buildTaskFileUpdateWritebackApplyPlan(params: {
+  businessLineId?: string | null;
   evidenceRunId?: string | null;
   input: UpdateTaskFileInput;
   path: string;
@@ -253,6 +257,7 @@ export function buildTaskFileUpdateWritebackApplyPlan(params: {
   surfaceLabel: string;
   taskId: string;
 }): TaskplaneTaskFileWritebackApplyPlan {
+  const businessLineId = params.businessLineId ?? null;
   return {
     action: 'task_file.update',
     input: params.input,
@@ -263,6 +268,7 @@ export function buildTaskFileUpdateWritebackApplyPlan(params: {
       type: 'panel.task_file_written',
       payload: {
         evidenceRunId: params.evidenceRunId ?? null,
+        businessLineId,
         path: params.path,
         source: params.source,
         surface: params.surface,
@@ -294,6 +300,7 @@ export function buildSourceContextWritebackApplyPlan(params: {
       note: proposal.note,
       runId: proposal.evidenceRunId,
       sourceRole: proposal.uri ? 'raw' : 'digest',
+      businessLineId: proposal.businessLineId ?? null,
       taskId: params.taskId,
       title: proposal.title,
       uri: proposal.uri ?? null,
@@ -304,6 +311,7 @@ export function buildSourceContextWritebackApplyPlan(params: {
       payload: {
         confirmationSurface,
         evidenceRunId: proposal.evidenceRunId,
+        businessLineId: proposal.businessLineId ?? null,
         source: 'taskplane_write_intent',
         title: proposal.title,
         uri: proposal.uri ?? null,
@@ -322,6 +330,7 @@ export function buildArtifactWritebackApplyPlan(params: {
     input: {
       content: proposal.content,
       runId: proposal.evidenceRunId,
+      businessLineId: proposal.businessLineId ?? null,
       taskId: params.taskId,
       title: proposal.title,
     },
@@ -330,6 +339,7 @@ export function buildArtifactWritebackApplyPlan(params: {
       type: 'panel.artifact_written',
       payload: {
         evidenceRunId: proposal.evidenceRunId,
+        businessLineId: proposal.businessLineId ?? null,
         kind: proposal.kind,
         source: 'taskplane_write_intent',
         title: proposal.title,
@@ -369,6 +379,7 @@ export function buildStructuredWritebackApplyPlan(params: {
         sourceId: params.sourceId ?? intent.evidenceRunId,
         sourceLabel: params.sourceLabel ?? 'Agent CLI Write Intent',
         sourceType: params.sourceType ?? 'run',
+        businessLineId: params.proposal.businessLineId ?? null,
         taskId: params.taskId,
         title: intent.title,
       },
@@ -381,6 +392,7 @@ export function buildStructuredWritebackApplyPlan(params: {
       action: 'task.update_next_step',
       input: {
         id: params.taskId,
+        businessLineId: params.proposal.businessLineId ?? null,
         nextStep: intent.nextStep,
       },
       nextStep: intent.nextStep,
@@ -390,6 +402,7 @@ export function buildStructuredWritebackApplyPlan(params: {
         type: 'panel.task_goal_updated',
         payload: {
           evidenceRunId: intent.evidenceRunId,
+          businessLineId: params.proposal.businessLineId ?? null,
           nextStep: intent.nextStep,
           reason: intent.reason,
           source: 'taskplane_write_intent',
@@ -426,6 +439,7 @@ export function buildStructuredWritebackApplyPlan(params: {
       sourceId: intent.evidenceRunId,
       sourceLabel: params.sourceLabel ?? 'Agent CLI Write Intent',
       sourceType: 'run',
+      businessLineId: params.proposal.businessLineId ?? null,
       taskId: params.taskId,
       title: '确认任务是否完成',
     },

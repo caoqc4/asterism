@@ -15,6 +15,7 @@ describe('Taskplane writeback apply plans', () => {
     const plan = buildSourceContextWritebackApplyPlan({
       capturedAt: '2026-05-24T00:00:00.000Z',
       proposal: {
+        businessLineId: 'business_line_product',
         evidenceRunId: 'run_1',
         note: '官方文档入口。',
         title: 'Codex docs',
@@ -30,6 +31,7 @@ describe('Taskplane writeback apply plans', () => {
       kind: 'link',
       runId: 'run_1',
       sourceRole: 'raw',
+      businessLineId: 'business_line_product',
       taskId: 'task_1',
       title: 'Codex docs',
       uri: 'https://example.com/codex',
@@ -39,6 +41,7 @@ describe('Taskplane writeback apply plans', () => {
       payload: {
         confirmationSurface: 'right_panel_writeback_confirmation',
         evidenceRunId: 'run_1',
+        businessLineId: 'business_line_product',
         source: 'taskplane_write_intent',
       },
     });
@@ -47,6 +50,7 @@ describe('Taskplane writeback apply plans', () => {
   it('maps structured decision and next-step proposals to deterministic apply plans', () => {
     const decisionPlan = buildStructuredWritebackApplyPlan({
       proposal: {
+        businessLineId: 'business_line_product',
         detail: '范围影响页面结构。',
         evidenceRunId: 'run_2',
         title: '决策提案：确认首版范围',
@@ -73,6 +77,7 @@ describe('Taskplane writeback apply plans', () => {
         kind: 'direction_choice',
         sourceId: 'run_2',
         sourceType: 'run',
+        businessLineId: 'business_line_product',
         taskId: 'task_1',
         title: '确认首版范围',
       },
@@ -217,6 +222,7 @@ describe('Taskplane writeback apply plans', () => {
   it('maps artifact proposals to run-backed note artifacts', () => {
     const plan = buildArtifactWritebackApplyPlan({
       proposal: {
+        businessLineId: 'business_line_product',
         content: '# 首版教程结构\n\n- 入门\n- 案例',
         evidenceRunId: 'run_6',
         kind: 'note',
@@ -231,6 +237,7 @@ describe('Taskplane writeback apply plans', () => {
       input: {
         content: '# 首版教程结构\n\n- 入门\n- 案例',
         runId: 'run_6',
+        businessLineId: 'business_line_product',
         taskId: 'task_1',
         title: 'codex-tutorial-structure.md',
       },
@@ -238,6 +245,7 @@ describe('Taskplane writeback apply plans', () => {
         type: 'panel.artifact_written',
         payload: {
           evidenceRunId: 'run_6',
+          businessLineId: 'business_line_product',
           kind: 'note',
           source: 'taskplane_write_intent',
           title: 'codex-tutorial-structure.md',
