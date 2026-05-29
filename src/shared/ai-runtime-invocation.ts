@@ -160,6 +160,11 @@ export type AgentApiExecutionPromotionReadiness = {
   summary: string;
 };
 
+const AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS = new Set([
+  'artifact.propose',
+  'task_file.propose',
+]);
+
 export type AgentApiExecutionPromotionServiceEvidence = {
   contextManifestSummary?: string | null;
   contextManifestTaskId?: string | null;
@@ -764,6 +769,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
+  const writeIntentActionBoundaryReady = supportedWriteActions.length > 0
+    && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action));
   const configuredProvider = evidence.providerVisiblePreflight?.configuredProvider?.trim() || '';
   const providerPreflightRunId = evidence.providerVisiblePreflight?.runId?.trim() || '';
   const providerPreflightTaskId = evidence.providerVisiblePreflight?.taskId?.trim() || '';
@@ -909,6 +916,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     evidence.writeIntentExtraction?.status === 'ready'
     && supportedWriteActions.includes('artifact.propose')
     && supportedWriteActions.includes('task_file.propose')
+    && writeIntentActionBoundaryReady
     && writeIntentRunEvidenceChainReady
     && writeIntentTaskEvidenceChainReady
   ) {
@@ -996,6 +1004,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `runGoalTaskEvidenceChain=${runGoalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `preStepGateEvidenceChain=${gateEvidenceReady('pre_step') ? 'ready' : 'missing'}`,
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
+      `writeIntentActionBoundary=${writeIntentActionBoundaryReady ? 'ready' : 'missing'}`,
       `reviewedPatchApplyBoundary=${reviewedPatchApplyBoundaryReady ? 'ready' : 'missing'}`,
       `patchPromotionStatus=${evidence.reviewedPatchApplyBoundary?.appliedPromotionStatus ?? 'missing'}`,
       `patchPromotionRun=${patchPromotionRunId || 'missing'}`,

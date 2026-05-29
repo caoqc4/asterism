@@ -528,6 +528,7 @@ describe('runtime context manifest', () => {
 
   it('adds source freshness inclusion reasons to manifest source contexts', () => {
     const manifest = buildRuntimeContextManifest({
+      now: '2026-05-15T00:00:00.000Z',
       sourceContexts: [
         {
           id: 'source_recent',

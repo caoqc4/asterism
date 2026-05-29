@@ -220,6 +220,7 @@ export function buildRuntimeContextManifest(params: {
   capabilityRegistry?: CapabilityRegistryEntry[] | null;
   currentRunId?: string | null;
   selectedFile?: RuntimeContextSelectedFile | null;
+  now?: string;
   sourceContexts?: RuntimeContextSourceContext[];
   task?: RuntimeContextManifestTask | null;
   taskFiles?: RuntimeContextTaskFile[];
@@ -269,6 +270,7 @@ export function buildRuntimeContextManifest(params: {
           createdAt: source.createdAt,
           currentRunId: params.currentRunId,
           isKey: source.isKey,
+          now: params.now,
           runId: source.runId,
           selected: source.selected,
           sourceRole: source.sourceRole,
@@ -348,6 +350,7 @@ export function buildRuntimeContextManifest(params: {
           createdAt: source.createdAt,
           currentRunId: params.currentRunId,
           isKey: source.isKey,
+          now: params.now,
           runId: source.runId,
           selected: source.selected,
           sourceRole: source.sourceRole,

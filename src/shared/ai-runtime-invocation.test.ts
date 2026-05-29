@@ -1297,6 +1297,7 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('runGoalTask=task_1');
     expect(ready.summary).toContain('runGoalTaskEvidenceChain=ready');
     expect(ready.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
+    expect(ready.summary).toContain('writeIntentActionBoundary=ready');
     expect(ready.summary).toContain('reviewedPatchApplyBoundary=ready');
     expect(ready.summary).toContain('patchPromotionStatus=applied');
     expect(ready.summary).toContain('patchPromotionRun=run_api_execution');
@@ -1625,6 +1626,27 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('writeIntentRunEvidenceChain=ready');
     expect(wrongTask.summary).toContain('writeIntentTask=task_2');
     expect(wrongTask.summary).toContain('writeIntentTaskEvidenceChain=missing');
+  });
+
+  it('blocks Agent API execution promotion when Write Intent extraction includes non-proposal actions', () => {
+    const unsafeAction = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      writeIntentExtraction: {
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: ['artifact.propose', 'task_file.propose', 'workspace.apply'],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(unsafeAction).toMatchObject({
+      ready: false,
+      missingRequirements: ['write_intent_extraction'],
+    });
+    expect(unsafeAction.summary).toContain('writeIntentActions=artifact.propose,task_file.propose,workspace.apply');
+    expect(unsafeAction.summary).toContain('writeIntentActionBoundary=missing');
+    expect(unsafeAction.summary).toContain('writeIntentRunEvidenceChain=ready');
+    expect(unsafeAction.summary).toContain('writeIntentTaskEvidenceChain=ready');
   });
 
   it('keeps post-run Agent API execution promotion blocked until writeback evidence is complete', () => {
