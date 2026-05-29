@@ -172,6 +172,17 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('blockedPostApplyRunEvidence=missing');
   });
 
+  it('records selected-runtime identity as part of runtime patch same-run evidence', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ') ?? '';
+
+    expect(evidence).toContain('includes the selectedRuntimeContract in sameRunEvidenceChain');
+    expect(evidence).toContain('same-run evidence remains missing when selected-runtime run identity');
+    expect(evidence).toContain('selected-runtime-mismatch=6/8 requirements');
+    expect(evidence).toContain('selectedRuntimeRun=run_other');
+    expect(evidence).toContain('sameRunEvidenceChain=missing');
+  });
+
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');

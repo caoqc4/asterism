@@ -292,7 +292,8 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
     && touchedFileEvidenceChainReady
   );
   const sameRunEvidenceChainReady = (
-    patchArtifactReady
+    selectedRuntimeContractReady
+    && patchArtifactReady
     && promotionDecisionReady
     && promotionPreflightReady
     && explicitOperatorApply

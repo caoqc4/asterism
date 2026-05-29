@@ -415,9 +415,10 @@ describe('runtime patch promotion routing readiness', () => {
 
     expect(missingProvider).toMatchObject({
       ready: false,
-      missingRequirements: ['selected_runtime_contract'],
+      missingRequirements: ['selected_runtime_contract', 'same_run_evidence_chain'],
     });
     expect(missingProvider.summary).toContain('selectedRuntimeContract=missing');
+    expect(missingProvider.summary).toContain('sameRunEvidenceChain=missing');
     expect(missingProvider.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
     expect(missingProvider.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
     expect(missingProvider.summary).toContain('selectedRuntimeProvider=missing');
@@ -480,8 +481,9 @@ describe('runtime patch promotion routing readiness', () => {
 
     expect(mismatch).toMatchObject({
       ready: false,
-      missingRequirements: ['selected_runtime_contract'],
+      missingRequirements: ['selected_runtime_contract', 'same_run_evidence_chain'],
     });
+    expect(mismatch.summary).toContain('sameRunEvidenceChain=missing');
     expect(mismatch.summary).toContain('selectedRuntimeProvider=openai');
     expect(mismatch.summary).toContain('providerConfigured=ready');
     expect(mismatch.summary).toContain('configuredProvider=anthropic');
@@ -674,9 +676,10 @@ describe('runtime patch promotion routing readiness', () => {
 
     expect(wrongRun).toMatchObject({
       ready: false,
-      missingRequirements: ['selected_runtime_contract'],
+      missingRequirements: ['selected_runtime_contract', 'same_run_evidence_chain'],
     });
     expect(wrongRun.summary).toContain('selectedRuntimeContract=missing');
+    expect(wrongRun.summary).toContain('sameRunEvidenceChain=missing');
     expect(wrongRun.summary).toContain('selectedRuntimeRun=run_other');
     expect(wrongRun.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
     expect(wrongRun.summary).toContain('selectedRuntimeTask=task_1');
@@ -733,9 +736,10 @@ describe('runtime patch promotion routing readiness', () => {
 
     expect(wrongTask).toMatchObject({
       ready: false,
-      missingRequirements: ['selected_runtime_contract'],
+      missingRequirements: ['selected_runtime_contract', 'same_run_evidence_chain'],
     });
     expect(wrongTask.summary).toContain('selectedRuntimeContract=missing');
+    expect(wrongTask.summary).toContain('sameRunEvidenceChain=missing');
     expect(wrongTask.summary).toContain('selectedRuntimeRun=run_patch_1');
     expect(wrongTask.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
     expect(wrongTask.summary).toContain('selectedRuntimeTask=task_other');
