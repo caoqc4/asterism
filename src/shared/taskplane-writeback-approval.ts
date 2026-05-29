@@ -309,6 +309,11 @@ function buildSchedulerDecisionApprovalItem(params: {
     sourceType: payload.evidenceRunId?.trim() ? 'run' : 'system',
     taskId: params.taskId,
   });
+  const confirmedPlan = {
+    ...plan,
+    confirmationBoundary: 'task_dynamics_scheduler_decision_confirmed' as const,
+    draftOnlyBeforeConfirmation: true as const,
+  };
 
   return {
     detail: [
@@ -317,7 +322,7 @@ function buildSchedulerDecisionApprovalItem(params: {
     ].filter(Boolean).join('\n'),
     id: approvalId(approvalSourceId, 'scheduler_decision', intent.title),
     kind: 'scheduler_decision',
-    plan,
+    plan: confirmedPlan,
     runId: evidenceRunId,
     source: 'scheduler_decision_proposal',
     summary: '已通过 Task Dynamics 队列、目标任务身份和授权检查；确认后创建 Decision。',

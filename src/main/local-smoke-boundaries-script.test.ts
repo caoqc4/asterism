@@ -1202,6 +1202,8 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('approvalPlanTitle=Confirm scheduler action');
     expect(result.output).toContain('approvalPlanOptionCount=2');
     expect(result.output).toContain('approvalPlanRecommended=Approve');
+    expect(result.output).toContain('approvalPlanConfirmationBoundary=task_dynamics_scheduler_decision_confirmed');
+    expect(result.output).toContain('approvalPlanDraftOnlyBeforeConfirmation=yes');
     expect(result.output).toContain('approvalItemStillRequiresConfirmation=yes');
   });
 

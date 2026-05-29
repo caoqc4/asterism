@@ -157,6 +157,8 @@ describe('Taskplane writeback approval items', () => {
       kind: 'scheduler_decision',
       plan: {
         action: 'decision.create',
+        confirmationBoundary: 'task_dynamics_scheduler_decision_confirmed',
+        draftOnlyBeforeConfirmation: true,
         input: {
           sourceId: 'run_scheduler_1',
           sourceLabel: 'Scheduler/background Decision proposal',

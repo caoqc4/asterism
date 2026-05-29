@@ -105,6 +105,8 @@ export type TaskplaneTaskFileWritebackApplyPlan =
 export type TaskplaneStructuredWritebackApplyPlan =
   | {
       action: 'decision.create';
+      confirmationBoundary?: 'task_dynamics_scheduler_decision_confirmed';
+      draftOnlyBeforeConfirmation?: true;
       input: CreateDecisionInput;
       requiredApi: 'createDecision';
       successMessage: string;

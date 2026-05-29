@@ -265,6 +265,8 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`approvalPlanTitle=${approvalPlan?.input?.title ?? 'missing'}`);
   console.log(`approvalPlanOptionCount=${Array.isArray(approvalPlan?.input?.options) ? approvalPlan.input.options.length : 'missing'}`);
   console.log(`approvalPlanRecommended=${approvalPlan?.input?.recommendation?.label ?? 'missing'}`);
+  console.log(`approvalPlanConfirmationBoundary=${approvalPlan?.confirmationBoundary ?? 'missing'}`);
+  console.log(`approvalPlanDraftOnlyBeforeConfirmation=${approvalPlan?.draftOnlyBeforeConfirmation === true ? 'yes' : 'no'}`);
   console.log(`approvalItemStillRequiresConfirmation=${approvalItem ? 'yes' : 'missing'}`);
 
   if (
@@ -365,6 +367,8 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || !Array.isArray(approvalPlan.input?.options)
     || approvalPlan.input.options.length !== 2
     || approvalPlan.input?.recommendation?.label !== 'Approve'
+    || approvalPlan.confirmationBoundary !== 'task_dynamics_scheduler_decision_confirmed'
+    || approvalPlan.draftOnlyBeforeConfirmation !== true
   ) {
     console.log('status=failed');
     return 1;

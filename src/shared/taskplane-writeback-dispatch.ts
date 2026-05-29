@@ -113,6 +113,15 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   }
 
   if (plan.action === 'decision.create') {
+    if (
+      plan.input.sourceLabel === 'Scheduler/background Decision proposal'
+      && (
+        plan.confirmationBoundary !== 'task_dynamics_scheduler_decision_confirmed'
+        || plan.draftOnlyBeforeConfirmation !== true
+      )
+    ) {
+      return blocked(plan.action, '调度决策提案已暂停：缺少 Task Dynamics 已确认写入边界。');
+    }
     if (!ports.createDecision) return blocked(plan.action, '决策提案已暂停：当前环境不支持创建 Decision。');
     await ports.createDecision(plan.input);
     return completed(plan);

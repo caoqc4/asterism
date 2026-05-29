@@ -356,6 +356,51 @@ describe('Taskplane writeback dispatch', () => {
       status: 'blocked',
     });
   });
+
+  it('blocks scheduler Decision writes when the Task Dynamics confirmation boundary is missing', async () => {
+    const createDecision = vi.fn();
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createDecision,
+      },
+      plan: schedulerDecisionPlan(),
+    });
+
+    expect(createDecision).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      action: 'decision.create',
+      message: '调度决策提案已暂停：缺少 Task Dynamics 已确认写入边界。',
+      status: 'blocked',
+    });
+  });
+
+  it('dispatches scheduler Decision writes only after Task Dynamics confirmation', async () => {
+    const createDecision = vi.fn().mockResolvedValue({});
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createDecision,
+      },
+      plan: {
+        ...schedulerDecisionPlan(),
+        confirmationBoundary: 'task_dynamics_scheduler_decision_confirmed',
+        draftOnlyBeforeConfirmation: true,
+      },
+    });
+
+    expect(createDecision).toHaveBeenCalledWith(expect.objectContaining({
+      sourceLabel: 'Scheduler/background Decision proposal',
+      taskId: 'task_1',
+      title: '确认自动巡检策略',
+    }));
+    expect(result).toMatchObject({
+      action: 'decision.create',
+      status: 'completed',
+    });
+  });
 });
 
 function nextStepPlan(): TaskplaneStructuredWritebackApplyPlan {
@@ -376,5 +421,33 @@ function nextStepPlan(): TaskplaneStructuredWritebackApplyPlan {
         source: 'taskplane_write_intent',
       },
     },
+  };
+}
+
+function schedulerDecisionPlan(): Extract<TaskplaneStructuredWritebackApplyPlan, { action: 'decision.create' }> {
+  return {
+    action: 'decision.create',
+    input: {
+      context: {
+        whyNow: '自动巡检提出了下一步策略，需要确认。',
+      },
+      kind: 'direction_choice',
+      options: [
+        { id: 'option_1', label: '继续自动巡检' },
+        { id: 'option_2', label: '暂停自动巡检' },
+      ],
+      recommendation: {
+        label: '继续自动巡检',
+        reason: '保持当前自动巡检节奏。',
+      },
+      scope: 'task',
+      sourceId: 'run_scheduler_1',
+      sourceLabel: 'Scheduler/background Decision proposal',
+      sourceType: 'run',
+      taskId: 'task_1',
+      title: '确认自动巡检策略',
+    },
+    requiredApi: 'createDecision',
+    successMessage: '已确认并创建 Decision：确认自动巡检策略。',
   };
 }
