@@ -1207,4 +1207,10 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('colon/dot provider-namespaced web_search/web_fetch declarations');
     expect(capabilities?.evidence.join(' ')).toContain('colon or dot provider-namespace mismatches');
   });
+
+  it('records selected-runtime identity evidence for runtime patch promotion routing', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+
+    expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeContract stays missing when the selected runtime run id or target task identity diverges');
+  });
 });

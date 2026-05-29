@@ -407,6 +407,122 @@ describe('runtime patch promotion routing readiness', () => {
     expect(readiness.summary).toContain('expectedFileEvidenceChain=ready');
   });
 
+  it('requires the selected runtime contract to match the reviewed patch run and target task', () => {
+    const wrongRun = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_other',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(wrongRun).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(wrongRun.summary).toContain('selectedRuntimeContract=missing');
+    expect(wrongRun.summary).toContain('selectedRuntimeRun=run_other');
+    expect(wrongRun.summary).toContain('selectedRuntimeRunEvidenceChain=missing');
+    expect(wrongRun.summary).toContain('selectedRuntimeTask=task_1');
+    expect(wrongRun.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
+
+    const wrongTask = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_other',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(wrongTask).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(wrongTask.summary).toContain('selectedRuntimeContract=missing');
+    expect(wrongTask.summary).toContain('selectedRuntimeRun=run_patch_1');
+    expect(wrongTask.summary).toContain('selectedRuntimeRunEvidenceChain=ready');
+    expect(wrongTask.summary).toContain('selectedRuntimeTask=task_other');
+    expect(wrongTask.summary).toContain('selectedRuntimeTaskEvidenceChain=missing');
+  });
+
   it('requires promotion Decision evidence to belong to the same run as the reviewed patch', () => {
     const readiness = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
       explicitOperatorApply: {
