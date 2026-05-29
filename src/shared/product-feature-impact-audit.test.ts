@@ -1244,4 +1244,11 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('missing terminal failure evidence explicit');
     expect(decisions?.evidence.join(' ')).toContain('record missing failure evidence instead of seeing only a generic failed-run recovery card');
   });
+
+  it('records duplicate-free scheduler Decision option coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+
+    expect(decisions?.evidence.join(' ')).toContain('nonblank duplicate-free option list');
+    expect(decisions?.evidence.join(' ')).toContain('repeated choices');
+  });
 });

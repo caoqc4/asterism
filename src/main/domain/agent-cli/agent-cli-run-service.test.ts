@@ -2008,6 +2008,10 @@ describe('AgentCliRunService', () => {
 
   it('waits for the CLI subprocess to close after cancellation before returning terminal evidence', async () => {
     const controller = new AbortController();
+    let markStarted: (() => void) | null = null;
+    const started = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
     const execution = executeAgentCliCommand({
       args: ['-e', [
         "process.on('SIGTERM', () => {",
@@ -2020,12 +2024,15 @@ describe('AgentCliRunService', () => {
       command: process.execPath,
       cwd: process.cwd(),
       input: '',
+      onStdoutLine: (line) => {
+        if (line === 'started') markStarted?.();
+      },
       outputLimitBytes: 64_000,
       signal: controller.signal,
       timeoutMs: 5_000,
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await started;
     controller.abort('Operator cancelled from test.');
 
     await expect(execution).resolves.toMatchObject({

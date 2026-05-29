@@ -781,6 +781,7 @@ export class SchedulerService {
     const title = input.title.trim();
     const rationale = input.rationale.trim();
     const options = input.options?.map((option) => option.trim()).filter(Boolean) ?? [];
+    const optionIdentityReady = options.length > 0 && new Set(options).size === options.length;
     const proposedOutcome = input.proposedOutcome?.trim() || '';
     const proposedOutcomeMatchesOption = Boolean(proposedOutcome) && options.includes(proposedOutcome);
     if (!this.scheduledEventAgentTimelinePort) {
@@ -818,6 +819,7 @@ export class SchedulerService {
       || !title
       || !rationale
       || options.length === 0
+      || !optionIdentityReady
       || !proposedOutcome
       || !proposedOutcomeMatchesOption
     ) {
@@ -828,6 +830,7 @@ export class SchedulerService {
           `title=${title ? 'present' : 'missing'}`,
           `rationale=${rationale ? 'present' : 'missing'}`,
           `options=${options.length ? options.length : 'missing'}`,
+          `optionIdentity=${optionIdentityReady ? 'ready' : 'duplicate_or_missing'}`,
           `proposedOutcome=${proposedOutcome ? 'present' : 'missing'}`,
           `proposedOutcomeMatchesOption=${proposedOutcomeMatchesOption ? 'yes' : 'no'}`,
           'schedulerDecisionProposal=blocked',
