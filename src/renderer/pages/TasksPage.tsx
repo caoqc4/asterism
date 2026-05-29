@@ -141,6 +141,46 @@ function standingApprovalEvidenceChips(draft: AgentStandingApprovalConfirmationD
   ];
 }
 
+export function writebackApprovalEvidenceChips(item: TaskplaneWritebackApprovalItem): string[] {
+  if (item.source !== 'scheduler_decision_proposal' || item.kind !== 'scheduler_decision') {
+    return [];
+  }
+  const summaryKeys = [
+    'proposalReady',
+    'approvalItemAllowed',
+    'approvalQueueSurface',
+    'approvalQueueSurfaceReady',
+    'decisionPayload',
+    'decisionTitleKey',
+    'decisionOptionKeys',
+    'decisionOptionIdentity',
+    'decisionProposedOutcomeKey',
+    'decisionProposedOutcomeMatchesOption',
+    'targetTask',
+    'authorizationCount',
+    'authorization',
+    'authorizationEvidenceChain',
+    'operatorId',
+    'localRecoveryRunId',
+    'localRecoveryTask',
+    'localRecoveryCompleted',
+    'localRecoveryTaskMatched',
+    'standingApprovalPolicyId',
+    'standingApprovalScopeTask',
+    'standingApprovalActive',
+    'standingApprovalScopeMatched',
+    'decisionPersistenceAllowed',
+    'writebackDispatchAllowed',
+    'schedulerTriggerAllowed',
+  ];
+  return summaryKeys
+    .map((key) => {
+      const value = scalarSummaryValue(item.detail, key);
+      return value ? `${key}=${value}` : null;
+    })
+    .filter((chip): chip is string => Boolean(chip));
+}
+
 export function projectDecompositionPromotionEvidenceChips(
   readiness: ProjectDecompositionResult['promotionReadiness'],
 ): string[] {
@@ -4308,6 +4348,7 @@ function TaskTimelineView({
           <div className="task-writeback-approvals" aria-label="待确认写回提案">
             {writebackApprovals.slice(0, 4).map((item) => {
               const busy = applyingWritebackApprovalId === item.id;
+              const evidenceChips = writebackApprovalEvidenceChips(item);
               return (
                 <div className="task-writeback-approval" key={item.id}>
                   <div className="task-writeback-approval-main">
@@ -4317,6 +4358,13 @@ function TaskTimelineView({
                     </div>
                     <p>{item.summary}</p>
                     <small>{truncateRuntimeApprovalDetail(item.detail)}</small>
+                    {evidenceChips.length > 0 && (
+                      <div className="task-writeback-evidence-chips" aria-label={`${item.kind} approval evidence`}>
+                        {evidenceChips.map((chip) => (
+                          <span key={chip}>{chip}</span>
+                        ))}
+                      </div>
+                    )}
                     {writebackApprovalMessages[item.id] && (
                       <em>{writebackApprovalMessages[item.id]}</em>
                     )}

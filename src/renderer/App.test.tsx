@@ -24,6 +24,7 @@ import { App } from './App';
 import {
   buildProjectDecompositionConfirmationApplyPlan,
   projectDecompositionPromotionEvidenceChips,
+  writebackApprovalEvidenceChips,
 } from './pages/TasksPage';
 import {
   createManualWorkHabit,
@@ -1260,6 +1261,84 @@ describe('App redesign v1', () => {
     expect(chips).toContain('timelineInvocationPhase=decomposition_draft');
     expect(chips).toContain('timelineRuntimeProvider=openai');
     expect(chips).toContain('selectedRuntimeEvidenceChain=ready');
+  });
+
+  it('projects scheduler Decision approval evidence chips', () => {
+    const chips = writebackApprovalEvidenceChips({
+      detail: [
+        '确认调度策略。',
+        'Scheduler Decision proposal contract',
+        'proposalReady=yes',
+        'approvalItemAllowed=true',
+        'approvalQueueSurface=task_dynamics',
+        'approvalQueueSurfaceReady=yes',
+        'decisionPayload=ready',
+        'decisionTitleKey=confirm_scheduler_action',
+        'decisionOptionKeys=approve,hold',
+        'decisionOptionIdentity=ready',
+        'decisionProposedOutcomeKey=approve',
+        'decisionProposedOutcomeMatchesOption=yes',
+        'targetTask=task_scheduler',
+        'authorizationCount=1',
+        'authorization=standing_approval',
+        'authorizationEvidenceChain=ready',
+        'operatorId=missing',
+        'localRecoveryRunId=missing',
+        'localRecoveryTask=missing',
+        'localRecoveryCompleted=no',
+        'localRecoveryTaskMatched=no',
+        'standingApprovalPolicyId=standing_policy_1',
+        'standingApprovalScopeTask=task_scheduler',
+        'standingApprovalActive=yes',
+        'standingApprovalScopeMatched=yes',
+        'decisionPersistenceAllowed=false',
+        'writebackDispatchAllowed=false',
+        'schedulerTriggerAllowed=false',
+      ].join(' / '),
+      id: 'writeback:run_scheduler:scheduler_decision:confirm',
+      kind: 'scheduler_decision',
+      plan: {
+        action: 'decision.create',
+        input: {
+          context: {
+            whyNow: '确认调度策略。',
+          },
+          options: [{ id: 'option_1', label: 'Approve' }],
+          recommendation: {
+            label: 'Approve',
+            reason: '确认调度策略。',
+          },
+          sourceId: 'run_scheduler',
+          sourceLabel: 'Scheduler/background Decision proposal',
+          sourceType: 'run',
+          taskId: 'task_scheduler',
+          title: 'Confirm scheduler action',
+        },
+        requiredApi: 'createDecision',
+        successMessage: 'Decision 已创建。',
+      },
+      runId: 'run_scheduler',
+      source: 'scheduler_decision_proposal',
+      summary: '已通过 Task Dynamics 队列、目标任务身份和授权检查；确认后创建 Decision。',
+      taskId: 'task_scheduler',
+      title: '调度决策提案：Confirm scheduler action',
+    });
+
+    expect(chips).toContain('proposalReady=yes');
+    expect(chips).toContain('approvalItemAllowed=true');
+    expect(chips).toContain('approvalQueueSurface=task_dynamics');
+    expect(chips).toContain('decisionPayload=ready');
+    expect(chips).toContain('decisionTitleKey=confirm_scheduler_action');
+    expect(chips).toContain('decisionOptionKeys=approve,hold');
+    expect(chips).toContain('decisionProposedOutcomeMatchesOption=yes');
+    expect(chips).toContain('targetTask=task_scheduler');
+    expect(chips).toContain('authorization=standing_approval');
+    expect(chips).toContain('authorizationEvidenceChain=ready');
+    expect(chips).toContain('standingApprovalPolicyId=standing_policy_1');
+    expect(chips).toContain('standingApprovalScopeMatched=yes');
+    expect(chips).toContain('decisionPersistenceAllowed=false');
+    expect(chips).toContain('writebackDispatchAllowed=false');
+    expect(chips).toContain('schedulerTriggerAllowed=false');
   });
 
   it('renders the redesigned navigation zones and keeps the external signal hint visible', async () => {
