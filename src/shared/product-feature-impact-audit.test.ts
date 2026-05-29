@@ -152,6 +152,21 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('apiDispatchTimelineRecordPath=Task Records/mock-project-decomposition.md');
   });
 
+  it('records patch promotion apply smoke routing evidence chips', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ') ?? '';
+
+    expect(evidence).toContain('enabledPromotionRequirements=8/8');
+    expect(evidence).toContain('enabledSelectedRuntimeContract=ready');
+    expect(evidence).toContain('enabledTargetTaskEvidenceChain=ready');
+    expect(evidence).toContain('enabledOperatorApplyEvidenceChain=ready');
+    expect(evidence).toContain('enabledSameRunEvidenceChain=ready');
+    expect(evidence).toContain('enabledPostApplyRunEvidence=ready');
+    expect(evidence).toContain('enabledPostApplyFilesMatched=yes');
+    expect(evidence).toContain('enabledPromotionMissingRequirements=none');
+    expect(evidence).toContain('blockedPostApplyRunEvidence=missing');
+  });
+
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');

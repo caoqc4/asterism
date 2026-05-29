@@ -311,9 +311,13 @@ describe('local smoke script default boundaries', () => {
       'npm run build:main && node scripts/sandbox-patch-promotion-apply-smoke.mjs',
     );
     expect(scripts['accept:agent-local']).toContain('npm run accept:sandbox-coding:patch-promotion-apply-smoke');
-    expect(script).toContain('default=${noWrite}');
-    expect(script).toContain('enabled=${applied}');
-    expect(script).toContain('blocked=${blocked}');
+    expect(script).toContain('default=${noWrite.status}');
+    expect(script).toContain('enabled=${applied.status}');
+    expect(script).toContain('blocked=${blocked.status}');
+    expect(script).toContain("enabledPromotionRequirements=${scalarValue(applied.auditSummary, 'promotionRequirements') ?? 'missing'}");
+    expect(script).toContain("enabledSelectedRuntimeContract=${scalarValue(applied.auditSummary, 'selectedRuntimeContract') ?? 'missing'}");
+    expect(script).toContain("enabledPostApplyFilesMatched=${scalarValue(applied.auditSummary, 'postApplyFilesMatched') ?? 'missing'}");
+    expect(script).toContain("blockedPostApplyRunEvidence=${scalarValue(blocked.auditSummary, 'postApplyRunEvidence') ?? 'missing'}");
     expect(script).toContain('Patch promotion workspace content does not match reviewed base');
     expect(script).toContain('No workspace files were written.');
   });

@@ -94,9 +94,19 @@ try {
 
   console.log([
     'Sandbox patch promotion apply smoke: ready',
-    `default=${noWrite}`,
-    `enabled=${applied}`,
-    `blocked=${blocked}`,
+    `default=${noWrite.status}`,
+    `enabled=${applied.status}`,
+    `blocked=${blocked.status}`,
+    `enabledPromotionRequirements=${scalarValue(applied.auditSummary, 'promotionRequirements') ?? 'missing'}`,
+    `enabledSelectedRuntimeContract=${scalarValue(applied.auditSummary, 'selectedRuntimeContract') ?? 'missing'}`,
+    `enabledTargetTaskEvidenceChain=${scalarValue(applied.auditSummary, 'targetTaskEvidenceChain') ?? 'missing'}`,
+    `enabledOperatorApplyEvidenceChain=${scalarValue(applied.auditSummary, 'operatorApplyEvidenceChain') ?? 'missing'}`,
+    `enabledSameRunEvidenceChain=${scalarValue(applied.auditSummary, 'sameRunEvidenceChain') ?? 'missing'}`,
+    `enabledPostApplyRunEvidence=${scalarValue(applied.auditSummary, 'postApplyRunEvidence') ?? 'missing'}`,
+    `enabledPostApplyFilesMatched=${scalarValue(applied.auditSummary, 'postApplyFilesMatched') ?? 'missing'}`,
+    `enabledPromotionMissingRequirements=${scalarValue(applied.auditSummary, 'promotionMissingRequirements') ?? 'missing'}`,
+    `blockedPostApplyRunEvidence=${scalarValue(blocked.auditSummary, 'postApplyRunEvidence') ?? 'missing'}`,
+    `blockedPostApplyFilesMatched=${scalarValue(blocked.auditSummary, 'postApplyFilesMatched') ?? 'missing'}`,
     'docker=not-started',
     'ai=not-called',
   ].join(' / '));
@@ -154,7 +164,10 @@ async function runScenario({ driftContent, enabled, id, nextContent, originalCon
       ),
       'blocked promotion did not record no-write failure evidence',
     );
-    return 'blocked-no-write';
+    return {
+      auditSummary: promotion.auditSummary ?? '',
+      status: 'blocked-no-write',
+    };
   }
 
   if (enabled) {
@@ -167,7 +180,10 @@ async function runScenario({ driftContent, enabled, id, nextContent, originalCon
       'enabled promotion did not record selected runtime routing readiness',
     );
     assert(steps.some((step) => step.output?.includes(`Touched files: ${id}.md`)), 'enabled promotion did not record touched files');
-    return 'applied';
+    return {
+      auditSummary: promotion.auditSummary ?? '',
+      status: 'applied',
+    };
   }
 
   assert(content === originalContent, 'default promotion unexpectedly changed the workspace file');
@@ -177,7 +193,10 @@ async function runScenario({ driftContent, enabled, id, nextContent, originalCon
     steps.some((step) => step.output?.includes('Workspace file application is disabled by feature flag; no workspace files were written.')),
     'default promotion did not record no-write output',
   );
-  return 'no-write';
+  return {
+    auditSummary: promotion?.auditSummary ?? '',
+    status: 'no-write',
+  };
 }
 
 async function createPromotionCheckpoint({ filePath, patchDiff, sourceId }) {
@@ -379,4 +398,10 @@ function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function scalarValue(summary, key) {
+  const prefix = `${key}=`;
+  const part = summary.split(' / ').find((item) => item.trim().startsWith(prefix));
+  return part?.trim().slice(prefix.length).trim() ?? null;
 }
