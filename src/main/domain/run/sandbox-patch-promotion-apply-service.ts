@@ -49,6 +49,15 @@ export class SandboxPatchPromotionApplyService {
       operatorId?: string | null;
     } = {},
   ): Promise<SandboxPatchPromotionApplyResult> {
+    if (options.operatorConfirmed !== true || !options.operatorId?.trim()) {
+      return {
+        auditSummary: 'Sandbox patch promotion apply blocked: explicit operator confirmation is required before workspace files can be written.',
+        blockedReasons: ['Sandbox patch promotion apply requires explicit operator confirmation.'],
+        status: 'blocked',
+        touchedFiles: [],
+      };
+    }
+
     const preflight = await this.preflightService.preflight(checkpointId);
 
     if (preflight.status === 'blocked') {

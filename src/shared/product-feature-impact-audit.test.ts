@@ -966,7 +966,7 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('stale-build detection');
     expect(taskFiles?.evidence.join(' ')).toContain('blocked=2/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('same-run-blocked=7/8 requirements');
-    expect(taskFiles?.evidence.join(' ')).toContain('service-evidence=3/8 requirements');
+    expect(taskFiles?.evidence.join(' ')).toContain('service-evidence=2/8 requirements');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain=missing');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeTaskEvidenceChain=missing');
     expect(taskFiles?.evidence.join(' ')).toContain('patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain, promotionDecisionId');
@@ -1308,6 +1308,14 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('instead of throwing out of the operator-facing apply path');
     expect(taskFiles?.evidence.join(' ')).toContain('marks durable promotion records blocked and appends runtime patch promotion routing readiness when promotion preflight itself fails before workspace validation');
     expect(taskFiles?.evidence.join(' ')).toContain('metadata divergence leaves selected-runtime and explicit-operator evidence plus missing target-task, preflight, same-run, and post-apply evidence');
+  });
+
+  it('records service-level operator confirmation coverage for patch-promotion apply', () => {
+    const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
+    const evidence = taskFiles?.evidence.join(' ');
+
+    expect(evidence).toContain('blocks before promotion preflight when explicit operator confirmation or operator identity is missing');
+    expect(evidence).toContain('cannot write workspace files or mutate promotion records');
   });
 
   it('records missing terminal failure evidence in scheduler recovery proposals', () => {

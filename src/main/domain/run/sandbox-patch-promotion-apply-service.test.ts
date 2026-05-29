@@ -139,6 +139,76 @@ function buildService(params: {
 }
 
 describe('SandboxPatchPromotionApplyService', () => {
+  it('blocks workspace apply before preflight when explicit operator confirmation is missing', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-unconfirmed-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const diff = [
+        '--- a/notes.md',
+        '+++ b/notes.md',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const preflight = vi.fn().mockResolvedValue({
+        artifact: buildArtifact(diff),
+        checkpoint: buildCheckpoint(),
+        promotion: buildPromotion(),
+        status: 'ready',
+        summary: 'Sandbox patch promotion preflight: ready',
+      });
+      const markApplied = vi.fn();
+      const markBlocked = vi.fn();
+      const service = new SandboxPatchPromotionApplyService(
+        { preflight },
+        { markApplied, markBlocked },
+        () => tempRoot,
+      );
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: false,
+        operatorId: 'local_operator',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: ['Sandbox patch promotion apply requires explicit operator confirmation.'],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(result.auditSummary).toContain('explicit operator confirmation is required');
+      expect(preflight).not.toHaveBeenCalled();
+      expect(markApplied).not.toHaveBeenCalled();
+      expect(markBlocked).not.toHaveBeenCalled();
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks workspace apply before preflight when the operator identity is missing', async () => {
+    const preflight = vi.fn();
+    const markApplied = vi.fn();
+    const markBlocked = vi.fn();
+    const service = new SandboxPatchPromotionApplyService(
+      { preflight },
+      { markApplied, markBlocked },
+      () => '/tmp/unused',
+    );
+
+    await expect(service.apply('run_checkpoint_1', {
+      operatorConfirmed: true,
+      operatorId: '   ',
+    })).resolves.toMatchObject({
+      blockedReasons: ['Sandbox patch promotion apply requires explicit operator confirmation.'],
+      status: 'blocked',
+      touchedFiles: [],
+    });
+    expect(preflight).not.toHaveBeenCalled();
+    expect(markApplied).not.toHaveBeenCalled();
+    expect(markBlocked).not.toHaveBeenCalled();
+  });
+
   it('applies a reviewed sandbox patch and marks the promotion applied', async () => {
     const tempRoot = makeTempDir('taskplane-sandbox-promotion-apply-');
 
