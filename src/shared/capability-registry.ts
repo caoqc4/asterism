@@ -630,6 +630,9 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeProviderCallIdCount')
         ? `providerNativeProviderCallIdCount=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeProviderCallIdCount')}`
         : null,
+      scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeProviderCallIdIdentity')
+        ? `providerNativeProviderCallIdIdentity=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeProviderCallIdIdentity')}`
+        : null,
       scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeProviderWebSearchCallCount')
         ? `providerNativeProviderWebSearchCallCount=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeProviderWebSearchCallCount')}`
         : null,

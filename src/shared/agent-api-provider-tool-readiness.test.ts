@@ -115,6 +115,30 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerNativeProviderWebSearchCallCount=0');
   });
 
+  it('requires provider-native call ids to be unique before declaring a native session ready', () => {
+    const readiness = evaluateAgentApiProviderNativeSessionReadinessFromEvidence({
+      featureFlagEnabled: true,
+      normalizedPlanProvider: 'openai',
+      payloadProvider: 'openai',
+      providerCallIds: ['call_1', ' call_1 '],
+      providerCallSource: 'provider_payload',
+      providerCallToolNames: ['web_search_preview'],
+      trustedProviderWebSearchToolNames: ['web_search_preview'],
+      selectedRuntimeProvider: 'openai',
+    });
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      missingRequirements: ['provider_call_ids'],
+    });
+    expect(readiness.summary).toContain('providerNativeSessionRequirements=6/7');
+    expect(readiness.summary).toContain('providerNativeProviderCallIds=call_1,call_1');
+    expect(readiness.summary).toContain('providerNativeProviderCallIdIdentity=duplicate_or_missing');
+    expect(readiness.summary).toContain('providerNativeProviderCallSource=provider_payload');
+    expect(readiness.summary).toContain('providerNativeProviderWebSearchCallCount=1');
+    expect(readiness.summary).toContain('providerNativeTrustedWebSearchCallCount=1');
+  });
+
   it('requires provider-native call ids to identify web/search tools from provider payload evidence', () => {
     const readiness = evaluateAgentApiProviderNativeSessionReadinessFromEvidence({
       featureFlagEnabled: true,

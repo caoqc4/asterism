@@ -164,6 +164,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerNativePlanProvider=${scalarValue(agentApiRuntime.summary, 'providerNativePlanProvider') ?? 'missing'}`);
   console.log(`providerNativePlanProviderMatchesSelected=${scalarValue(agentApiRuntime.summary, 'providerNativePlanProviderMatchesSelected') ?? 'missing'}`);
   console.log(`providerNativeProviderCallIdCount=${scalarValue(agentApiRuntime.summary, 'providerNativeProviderCallIdCount') ?? 'missing'}`);
+  console.log(`providerNativeProviderCallIdIdentity=${scalarValue(agentApiRuntime.summary, 'providerNativeProviderCallIdIdentity') ?? 'missing'}`);
   console.log(`providerNativeProviderWebSearchCallCount=${scalarValue(agentApiRuntime.summary, 'providerNativeProviderWebSearchCallCount') ?? 'missing'}`);
   console.log(`providerNativeReadySessionReady=${providerNativeSessionReady.ready ? 'yes' : 'no'}`);
   console.log(`providerNativeReadySessionRequirements=${providerNativeSessionReady.satisfiedRequirements.length}/7`);
@@ -174,6 +175,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerNativeReadyPlanProviderMatchesSelected=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativePlanProviderMatchesSelected') ?? 'missing'}`);
   console.log(`providerNativeReadyProviderCallSource=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallSource') ?? 'missing'}`);
   console.log(`providerNativeReadyProviderCallIdCount=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallIdCount') ?? 'missing'}`);
+  console.log(`providerNativeReadyProviderCallIdIdentity=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallIdIdentity') ?? 'missing'}`);
   console.log(`providerNativeReadyProviderCallTools=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallTools') ?? 'missing'}`);
   console.log(`providerNativeReadyProviderWebSearchCallCount=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderWebSearchCallCount') ?? 'missing'}`);
   console.log(`providerNativeReadyProviderWebSearchCallTools=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderWebSearchCallTools') ?? 'missing'}`);
@@ -277,6 +279,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     !agentApiRuntime.summary.includes('providerNativePlanProvider=missing') ? 'provider_native_plan_provider' : null,
     !agentApiRuntime.summary.includes('providerNativePlanProviderMatchesSelected=no') ? 'provider_native_plan_provider_match' : null,
     !agentApiRuntime.summary.includes('providerNativeProviderCallIdCount=0') ? 'provider_native_provider_call_id_count' : null,
+    !agentApiRuntime.summary.includes('providerNativeProviderCallIdIdentity=duplicate_or_missing') ? 'provider_native_provider_call_id_identity' : null,
     !agentApiRuntime.summary.includes('providerNativeProviderWebSearchCallCount=0') ? 'provider_native_provider_web_search_call_count' : null,
     !providerNativeSessionReady.ready ? 'provider_native_ready_session' : null,
     providerNativeSessionReady.satisfiedRequirements.length !== 7 ? 'provider_native_ready_requirement_count' : null,
@@ -287,6 +290,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativePlanProviderMatchesSelected') !== 'yes' ? 'provider_native_ready_plan_provider_match' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallSource') !== 'provider_payload' ? 'provider_native_ready_provider_call_source' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallIdCount') !== '1' ? 'provider_native_ready_provider_call_id_count' : null,
+    serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallIdIdentity') !== 'ready' ? 'provider_native_ready_provider_call_id_identity' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallTools') !== 'web_search_preview' ? 'provider_native_ready_provider_call_tools' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderWebSearchCallCount') !== '1' ? 'provider_native_ready_provider_web_search_call_count' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderWebSearchCallTools') !== 'web_search_preview' ? 'provider_native_ready_provider_web_search_call_tools' : null,

@@ -200,6 +200,9 @@ describe('product feature impact audit', () => {
   });
 
   it('tracks the current native CLI writeback and research progress support without stale gaps', () => {
+    // This regression audit intentionally checks a long historical evidence string; keep the type checker out of
+    // the oversized control-flow graph while narrower tests cover the specific contracts below.
+    // @ts-expect-error TS2563: the test body is larger than TypeScript's control-flow analysis budget.
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
     const taskMemory = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_memory_and_context_clear');
     const taskFiles = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_files_artifacts_local_writes');
@@ -857,6 +860,8 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('before dispatching TaskplaneWritebackApplyPlan');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('proposalEvidenceRunChain remains same-run from draft generation through operator-confirmed child creation');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('persists the selected runtime contract into the subtask.create_many panel.project_decomposed timeline payload');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('including evidenceRunId and parentTaskId');
@@ -1173,6 +1178,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');
+    expect(capabilities?.evidence.join(' ')).toContain('providerNativeProviderCallIdIdentity');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
@@ -1371,7 +1377,7 @@ describe('product feature impact audit', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
     expect(capabilities?.evidence.join(' ')).toContain('Provider-native agent session gates now require both provider-native payload provider identity and normalized plan provider identity');
-    expect(capabilities?.evidence.join(' ')).toContain('plus nonempty providerCallIds, provider web/search call tool names from provider_payload evidence, and matching trusted provider-owned web/search declarations');
+    expect(capabilities?.evidence.join(' ')).toContain('plus nonempty duplicate-free providerCallIds, provider web/search call tool names from provider_payload evidence, and matching trusted provider-owned web/search declarations');
     expect(capabilities?.evidence.join(' ')).toContain('runtime projection, or hand-shaped proposal without provider-owned web/search tool-call identity and declaration evidence cannot cross the provider-native session boundary');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now also projects provider-native session readiness from static selected-runtime evidence');
     expect(capabilities?.evidence.join(' ')).toContain('enabling provider-native tool calls does not imply a live provider-native web/search session without payload-owned providerCallIds and provider-owned web/search tool-name declaration evidence');
@@ -1388,11 +1394,12 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls,provider_web_search_declaration');
     expect(evidence).toContain('providerNativeFlag=enabled');
     expect(evidence).toContain('providerNativeProviderCallIdCount=0');
+    expect(evidence).toContain('providerNativeProviderCallIdIdentity=duplicate_or_missing');
     expect(evidence).toContain('providerNativeProviderWebSearchCallCount=0');
     expect(evidence).toContain('providerNativeReadySessionReady=yes');
     expect(evidence).toContain('providerNativeReadySessionRequirements=7/7');
     expect(evidence).toContain('trusted provider-owned web/search declarations');
-    expect(evidence).toContain('payload provider identity, normalized plan provider identity, providerCallSource=provider_payload, providerCallIds, provider web/search call tool names, and trusted provider-owned web/search declarations all match the selected runtime provider');
+    expect(evidence).toContain('payload provider identity, normalized plan provider identity, providerCallSource=provider_payload, duplicate-free providerCallIds, provider web/search call tool names, and trusted provider-owned web/search declarations all match the selected runtime provider');
   });
 
   it('records exact Agent API execution Write Intent action identity coverage', () => {

@@ -143,6 +143,7 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   providerNativePlanProvider: string | null;
   providerNativePlanProviderMatchesSelected: string | null;
   providerNativeProviderCallIdCount: string | null;
+  providerNativeProviderCallIdIdentity: string | null;
   providerNativeSelectedProvider: string | null;
   providerNativeSessionMissingRequirements: string | null;
   providerNativeSessionReady: string | null;
@@ -180,6 +181,7 @@ function agentApiProviderToolEvidence(summary?: string | null): {
     providerNativePlanProvider: scalarValue(text, 'providerNativePlanProvider'),
     providerNativePlanProviderMatchesSelected: scalarValue(text, 'providerNativePlanProviderMatchesSelected'),
     providerNativeProviderCallIdCount: scalarValue(text, 'providerNativeProviderCallIdCount'),
+    providerNativeProviderCallIdIdentity: scalarValue(text, 'providerNativeProviderCallIdIdentity'),
     providerNativeSelectedProvider: scalarValue(text, 'providerNativeSelectedProvider'),
     providerNativeSessionMissingRequirements: scalarValue(text, 'providerNativeSessionMissingRequirements'),
     providerNativeSessionReady: scalarValue(text, 'providerNativeSessionReady'),
@@ -922,6 +924,9 @@ function AgentCliRuntimeSection({
                 )}
                 {apiProviderToolEvidence.providerNativeProviderCallIdCount && (
                   <span>{`providerNativeProviderCallIdCount=${apiProviderToolEvidence.providerNativeProviderCallIdCount}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativeProviderCallIdIdentity && (
+                  <span>{`providerNativeProviderCallIdIdentity=${apiProviderToolEvidence.providerNativeProviderCallIdIdentity}`}</span>
                 )}
                 {apiProviderToolEvidence.selectedApiRuntime && (
                   <span>{`selectedApiRuntime=${apiProviderToolEvidence.selectedApiRuntime}`}</span>

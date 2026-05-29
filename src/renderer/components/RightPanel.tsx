@@ -2690,6 +2690,7 @@ export function RightPanel({
         reversibleProposalCard: {
           acceptanceCriteria: taskDecompositionDraft.subtasks.map((subtask) => subtask.acceptanceCriteria),
           dependencies: taskDecompositionDraft.subtasks.map((subtask) => subtask.dependency ?? null),
+          evidenceRunId: taskDecompositionDraft.runId,
           parentTaskId: activeTaskId,
           proposalId: `project_decomposition:${activeTaskId}`,
           rationales: taskDecompositionDraft.subtasks.map((subtask) => subtask.rationale ?? null),

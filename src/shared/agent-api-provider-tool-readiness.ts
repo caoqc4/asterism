@@ -357,6 +357,8 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
   const providerCallIds = (evidence.providerCallIds ?? [])
     .map((id) => id.trim())
     .filter(Boolean);
+  const providerCallIdIdentityReady = providerCallIds.length > 0
+    && new Set(providerCallIds).size === providerCallIds.length;
   const providerCallSource = evidence.providerCallSource ?? 'unknown';
   const providerCallToolNames = normalizeDeclaredTools(evidence.providerCallToolNames ?? []);
   const providerWebSearchCallToolNames = providerCallSource === 'provider_payload'
@@ -385,7 +387,7 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
   if (selectedRuntimeProvider) satisfiedRequirements.push('selected_runtime_provider');
   if (payloadProviderMatchesSelected) satisfiedRequirements.push('provider_payload_identity');
   if (normalizedPlanProviderMatchesSelected) satisfiedRequirements.push('normalized_plan_identity');
-  if (providerCallIds.length > 0 && providerCallSource === 'provider_payload') {
+  if (providerCallIdIdentityReady && providerCallSource === 'provider_payload') {
     satisfiedRequirements.push('provider_call_ids');
   }
   if (providerWebSearchCallToolNames.length > 0) {
@@ -420,6 +422,7 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
       `providerNativePlanProvider=${normalizedPlanProvider || 'missing'}`,
       `providerNativePlanProviderMatchesSelected=${normalizedPlanProviderMatchesSelected ? 'yes' : 'no'}`,
       `providerNativeProviderCallIds=${providerCallIds.length ? providerCallIds.join(',') : 'missing'}`,
+      `providerNativeProviderCallIdIdentity=${providerCallIdIdentityReady ? 'ready' : 'duplicate_or_missing'}`,
       `providerNativeProviderCallSource=${providerCallSource}`,
       `providerNativeProviderCallIdCount=${providerCallIds.length}`,
       `providerNativeProviderCallTools=${providerCallToolNames.length ? providerCallToolNames.join(',') : 'missing'}`,
