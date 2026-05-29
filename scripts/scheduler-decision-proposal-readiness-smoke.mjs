@@ -97,6 +97,24 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     },
     targetTaskId: 'task_scheduler_decision_service_smoke',
   });
+  const serviceEvidenceReady = planSchedulerDecisionProposalFromEvidence({
+    approvalQueue: {
+      connected: true,
+      surface: 'task_dynamics',
+    },
+    evidenceRunId: 'run_scheduler_service_ready_smoke',
+    operatorConfirmation: {
+      confirmed: true,
+      operatorId: 'operator_scheduler_service_ready_smoke',
+    },
+    proposal: {
+      options: ['Approve', 'Hold'],
+      proposedOutcome: 'Approve',
+      rationale: 'Review scheduler proposal.',
+      title: 'Confirm scheduler action',
+    },
+    targetTaskId: 'task_scheduler_decision_service_ready_smoke',
+  });
 
   console.log(`blockedStatus=${blocked.status}`);
   console.log(`blockedProposalReady=${blocked.approvalItemAllowed ? 'yes' : 'no'}`);
@@ -187,6 +205,20 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`serviceEvidenceDecisionPersistenceAllowed=${String(serviceEvidencePartial.decisionPersistenceAllowed)}`);
   console.log(`serviceEvidenceWritebackDispatchAllowed=${String(serviceEvidencePartial.writebackDispatchAllowed)}`);
   console.log(`serviceEvidenceSchedulerTriggerAllowed=${String(serviceEvidencePartial.schedulerTriggerAllowed)}`);
+  console.log(`serviceEvidenceReadyStatus=${serviceEvidenceReady.status}`);
+  console.log(`serviceEvidenceReadyProposalReady=${serviceEvidenceReady.approvalItemAllowed ? 'yes' : 'no'}`);
+  console.log(`serviceEvidenceReadyRequirements=${serviceEvidenceReady.satisfiedRequirements.length}/4`);
+  console.log(`serviceEvidenceReadyMissingRequirements=${serviceEvidenceReady.missingRequirements.join(',') || 'none'}`);
+  console.log(`serviceEvidenceReadyDecisionPayload=${scalarValue(serviceEvidenceReady.summary, 'decisionPayload') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyEvidenceSourceType=${serviceEvidenceReady.evidenceSourceType}`);
+  console.log(`serviceEvidenceReadyEvidenceRunId=${serviceEvidenceReady.evidenceRunId ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyEvidenceSourceIdentityChain=${serviceEvidenceReady.evidenceSourceIdentityChain}`);
+  console.log(`serviceEvidenceReadyAuthorizationCount=${scalarValue(serviceEvidenceReady.summary, 'authorizationCount') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyAuthorization=${serviceEvidenceReady.authorizations.join(',') || 'none'}`);
+  console.log(`serviceEvidenceReadyAuthorizationEvidenceChain=${scalarValue(serviceEvidenceReady.summary, 'authorizationEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceReadyDecisionPersistenceAllowed=${String(serviceEvidenceReady.decisionPersistenceAllowed)}`);
+  console.log(`serviceEvidenceReadyWritebackDispatchAllowed=${String(serviceEvidenceReady.writebackDispatchAllowed)}`);
+  console.log(`serviceEvidenceReadySchedulerTriggerAllowed=${String(serviceEvidenceReady.schedulerTriggerAllowed)}`);
 
   if (
     blocked.approvalItemAllowed
@@ -259,6 +291,20 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || serviceEvidencePartial.decisionPersistenceAllowed
     || serviceEvidencePartial.writebackDispatchAllowed
     || serviceEvidencePartial.schedulerTriggerAllowed
+    || !serviceEvidenceReady.approvalItemAllowed
+    || serviceEvidenceReady.status !== 'ready'
+    || serviceEvidenceReady.satisfiedRequirements.length !== 4
+    || serviceEvidenceReady.missingRequirements.length !== 0
+    || scalarValue(serviceEvidenceReady.summary, 'decisionPayload') !== 'ready'
+    || serviceEvidenceReady.evidenceSourceType !== 'run'
+    || serviceEvidenceReady.evidenceRunId !== 'run_scheduler_service_ready_smoke'
+    || serviceEvidenceReady.evidenceSourceIdentityChain !== 'ready'
+    || scalarValue(serviceEvidenceReady.summary, 'authorizationCount') !== '1'
+    || serviceEvidenceReady.authorizations.join(',') !== 'operator_confirmation'
+    || scalarValue(serviceEvidenceReady.summary, 'authorizationEvidenceChain') !== 'ready'
+    || serviceEvidenceReady.decisionPersistenceAllowed
+    || serviceEvidenceReady.writebackDispatchAllowed
+    || serviceEvidenceReady.schedulerTriggerAllowed
   ) {
     console.log('status=failed');
     return 1;

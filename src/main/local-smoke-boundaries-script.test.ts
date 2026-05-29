@@ -1122,6 +1122,17 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceDecisionTitleKey=confirm_scheduler_action');
     expect(result.output).toContain('serviceEvidenceDecisionOptionKeys=approve,hold');
     expect(result.output).toContain('serviceEvidenceDecisionProposedOutcomeKey=approve');
+    expect(result.output).toContain('serviceEvidenceReadyProposalReady=yes');
+    expect(result.output).toContain('serviceEvidenceReadyRequirements=4/4');
+    expect(result.output).toContain('serviceEvidenceReadyMissingRequirements=none');
+    expect(result.output).toContain('serviceEvidenceReadyDecisionPayload=ready');
+    expect(result.output).toContain('serviceEvidenceReadyEvidenceSourceType=run');
+    expect(result.output).toContain('serviceEvidenceReadyEvidenceRunId=run_scheduler_service_ready_smoke');
+    expect(result.output).toContain('serviceEvidenceReadyAuthorization=operator_confirmation');
+    expect(result.output).toContain('serviceEvidenceReadyAuthorizationEvidenceChain=ready');
+    expect(result.output).toContain('serviceEvidenceReadyDecisionPersistenceAllowed=false');
+    expect(result.output).toContain('serviceEvidenceReadyWritebackDispatchAllowed=false');
+    expect(result.output).toContain('serviceEvidenceReadySchedulerTriggerAllowed=false');
   });
 
   it('validates Agent API execution preflight config before calling a provider', () => {

@@ -1549,6 +1549,8 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('standing-approval=4/4 requirements with evidenceSourceType=system');
     expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=3/4 requirements with authorizationCount=0 and authorizationEvidenceChain=missing');
     expect(decisions?.evidence.join(' ')).toContain('service-evidence=3/4 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('service-evidence-ready=4/4 requirements');
+    expect(decisions?.evidence.join(' ')).toContain('run evidence source identity and operator_confirmation authorization from structured service evidence');
     expect(decisions?.evidence.join(' ')).toContain('decisionPayload=ready');
     expect(decisions?.evidence.join(' ')).toContain('Task Dynamics scheduler Decision proposal consumption now reuses shared decision_payload readiness');
     expect(decisions?.evidence.join(' ')).toContain('explicit payload targetTaskId plus timeline event taskId to both match the current task');
