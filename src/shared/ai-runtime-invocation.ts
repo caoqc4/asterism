@@ -926,12 +926,16 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
-  const declaredWriteActions = evidence.writeIntentExtraction?.declaredActions
-    ?.map((action) => action.trim())
-    .filter(Boolean) ?? supportedWriteActions;
+  const declaredWriteActionsProvided = Array.isArray(evidence.writeIntentExtraction?.declaredActions);
+  const declaredWriteActions = declaredWriteActionsProvided
+    ? evidence.writeIntentExtraction?.declaredActions
+      ?.map((action) => action.trim())
+      .filter(Boolean) ?? []
+    : [];
   const supportedWriteActionSet = new Set(supportedWriteActions);
   const declaredWriteActionSet = new Set(declaredWriteActions);
-  const declaredWriteActionsMatchSupportedActions = declaredWriteActions.length === supportedWriteActions.length
+  const declaredWriteActionsMatchSupportedActions = declaredWriteActionsProvided
+    && declaredWriteActions.length === supportedWriteActions.length
     && declaredWriteActionSet.size === declaredWriteActions.length
     && supportedWriteActionSet.size === supportedWriteActions.length
     && declaredWriteActions.every((action) => supportedWriteActionSet.has(action));
@@ -1265,6 +1269,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
       `writeIntentDeclaredActionCount=${declaredWriteActions.length}`,
       `declaredWriteIntentActions=${declaredWriteActions.length ? declaredWriteActions.join(',') : 'none'}`,
+      `writeIntentDeclaredActionEvidenceChain=${declaredWriteActionsProvided ? 'ready' : 'missing'}`,
       `writeIntentDeclaredActionChain=${declaredWriteActionsMatchSupportedActions ? 'ready' : 'missing'}`,
       `writeIntentMode=${noWriteIntentRequiredReady ? 'no_write_intents_required' : 'proposal_boundary'}`,
       `noWriteIntentRequired=${evidence.writeIntentExtraction?.noWriteIntentRequired === true ? 'yes' : 'no'}`,

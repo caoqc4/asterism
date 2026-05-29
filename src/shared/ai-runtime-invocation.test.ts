@@ -2251,6 +2251,7 @@ describe('ai runtime invocation contract', () => {
     const artifactOnly = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       writeIntentExtraction: {
+        declaredActions: ['artifact.propose'],
         status: 'ready',
         supportedActions: ['artifact.propose'],
       },
@@ -2269,6 +2270,7 @@ describe('ai runtime invocation contract', () => {
     const wrongRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       writeIntentExtraction: {
+        declaredActions: ['artifact.propose', 'task_file.propose'],
         runId: 'run_other',
         status: 'ready',
         supportedActions: ['artifact.propose', 'task_file.propose'],
@@ -2287,6 +2289,7 @@ describe('ai runtime invocation contract', () => {
     const wrongTask = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       writeIntentExtraction: {
+        declaredActions: ['artifact.propose', 'task_file.propose'],
         runId: 'run_api_execution',
         status: 'ready',
         supportedActions: ['artifact.propose', 'task_file.propose'],
@@ -2307,6 +2310,7 @@ describe('ai runtime invocation contract', () => {
     const unsafeAction = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       writeIntentExtraction: {
+        declaredActions: ['artifact.propose', 'task_file.propose', 'workspace.apply'],
         runId: 'run_api_execution',
         status: 'ready',
         supportedActions: ['artifact.propose', 'task_file.propose', 'workspace.apply'],
@@ -2331,6 +2335,7 @@ describe('ai runtime invocation contract', () => {
     const duplicateAction = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       writeIntentExtraction: {
+        declaredActions: ['artifact.propose', 'task_file.propose', 'task_file.propose'],
         runId: 'run_api_execution',
         status: 'ready',
         supportedActions: ['artifact.propose', 'task_file.propose', 'task_file.propose'],
@@ -2351,6 +2356,26 @@ describe('ai runtime invocation contract', () => {
     expect(duplicateAction.summary).toContain('writeIntentActionBoundary=missing');
     expect(duplicateAction.summary).toContain('writeIntentRunEvidenceChain=ready');
     expect(duplicateAction.summary).toContain('writeIntentTaskEvidenceChain=ready');
+  });
+
+  it('blocks Agent API execution promotion when declared Write Intent action evidence is missing', () => {
+    const missingDeclaredActionEvidence = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      writeIntentExtraction: {
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: ['artifact.propose', 'task_file.propose'],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(missingDeclaredActionEvidence.ready).toBe(false);
+    expect(missingDeclaredActionEvidence.missingRequirements).toContain('write_intent_extraction');
+    expect(missingDeclaredActionEvidence.summary).toContain('writeIntentDeclaredActionCount=0');
+    expect(missingDeclaredActionEvidence.summary).toContain('declaredWriteIntentActions=none');
+    expect(missingDeclaredActionEvidence.summary).toContain('writeIntentDeclaredActionEvidenceChain=missing');
+    expect(missingDeclaredActionEvidence.summary).toContain('writeIntentDeclaredActionChain=missing');
+    expect(missingDeclaredActionEvidence.summary).toContain('writeIntentActionBoundary=missing');
   });
 
   it('keeps post-run Agent API execution promotion blocked until writeback evidence is complete', () => {
@@ -2406,6 +2431,7 @@ describe('ai runtime invocation contract', () => {
         taskId: 'task_1',
       },
       writeIntentExtraction: {
+        declaredActions: [],
         noWriteIntentRequired: true,
         runId: 'run_api_execution',
         status: 'ready',
@@ -2481,6 +2507,7 @@ describe('ai runtime invocation contract', () => {
         taskId: 'task_1',
       },
       writeIntentExtraction: {
+        declaredActions: ['source_context.create'],
         runId: 'run_api_execution',
         status: 'ready',
         supportedActions: ['source_context.create'],
@@ -2861,6 +2888,7 @@ function completeAgentApiExecutionPromotionEvidence() {
       taskId: 'task_1',
     },
     writeIntentExtraction: {
+      declaredActions: ['artifact.propose', 'task_file.propose'],
       runId: 'run_api_execution',
       status: 'ready' as const,
       supportedActions: ['artifact.propose', 'task_file.propose'],

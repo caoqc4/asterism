@@ -186,7 +186,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry either applied patch promotion status plus same-run and target-task identity evidence or explicit noWorkspaceWriteRequired/not_required evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
-    expect(rightPanel?.evidence.join(' ')).toContain('providerPreflightStatus, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, writeIntentExtraction, writeIntentSupportedActionCount, writeIntentActions, writeIntentDeclaredActionCount, declaredWriteIntentActions, writeIntentMode, noWriteIntentRequired');
+    expect(rightPanel?.evidence.join(' ')).toContain('providerPreflightStatus, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, writeIntentExtraction, writeIntentSupportedActionCount, writeIntentActions, writeIntentDeclaredActionCount, declaredWriteIntentActions, writeIntentDeclaredActionEvidenceChain, writeIntentMode, noWriteIntentRequired');
     expect(rightPanel?.evidence.join(' ')).toContain('contextStep, contextStepTask, contextStepTaskEvidenceChain, contextManifest, contextManifestTask, contextManifestEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('taskMemoryGuidance, taskMemoryGuidanceCount, taskMemoryGuidanceTask, taskMemoryGuidanceTaskEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('runGoalRun, runGoalRunEvidenceChain, runGoalTask, runGoalTaskEvidenceChain');
@@ -222,7 +222,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('deferred=0/11 requirements and 0/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('partial=5/11 requirements and 3/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=3/11 requirements and 7/9 gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain=missing, providerPreflightRunEvidenceChain=missing, and providerPreflightTaskEvidenceChain=ready');
+    expect(rightPanel?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain=missing, providerPreflightRunEvidenceChain=missing, providerPreflightTaskEvidenceChain=ready, and writeIntentDeclaredActionEvidenceChain=missing');
     expect(rightPanel?.evidence.join(' ')).toContain('until persisted same-run Run evidence exists');
     expect(rightPanel?.evidence.join(' ')).toContain('synthetic-ready=11/11 requirements and 9/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API execution preflight smoke');
@@ -1286,7 +1286,7 @@ describe('product feature impact audit', () => {
   it('records exact Agent API execution Write Intent action identity coverage', () => {
     const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
 
-    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to either include exactly one artifact.propose and exactly one task_file.propose with persisted same-run and target-task identity evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to either include exactly one explicitly declared artifact.propose and exactly one explicitly declared task_file.propose with persisted same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('explicit noWorkspaceWriteRequired/not_required evidence for no-patch runs');
     expect(rightPanel?.evidence.join(' ')).toContain('source_context.create as a reviewable non-workspace Write Intent');
     expect(rightPanel?.evidence.join(' ')).toContain('source-context-only runs can satisfy write_intent_extraction');
@@ -1294,13 +1294,18 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentMode');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentSupportedActionCount');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentDeclaredActionCount');
+    expect(rightPanel?.evidence.join(' ')).toContain('writeIntentDeclaredActionEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('noWriteIntentRequired');
     expect(rightPanel?.evidence.join(' ')).toContain('noWorkspaceWriteRequired');
     expect(rightPanel?.evidence.join(' ')).toContain('noWriteRequired=11/11 requirements and 9/9 gates');
+    expect(rightPanel?.evidence.join(' ')).toContain('declaredActions=[] evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentMode=no_write_intents_required');
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionStatus=not_required');
-    expect(rightPanel?.evidence.join(' ')).toContain('duplicate, missing, or non-proposal write actions still blocked');
+    expect(rightPanel?.evidence.join(' ')).toContain('sourceContextOnly=11/11 requirements with writeIntentDeclaredActionEvidenceChain=ready');
+    expect(rightPanel?.evidence.join(' ')).toContain('duplicate, missing-declaration, or non-proposal write actions still blocked');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
+    expect(rightPanel?.evidence.join(' ')).toContain('supportedActions alone no longer proves runtime-declared Write Intent identity');
+    expect(rightPanel?.evidence.join(' ')).toContain('no-write promotion requires declaredActions=[] plus noWriteIntentRequired=yes');
   });
 
   it('records Agent API execution subtask-start gate evidence coverage', () => {
