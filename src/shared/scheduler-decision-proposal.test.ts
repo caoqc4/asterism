@@ -14,6 +14,9 @@ describe('scheduler decision proposal contract', () => {
       approvalItemAllowed: false,
       approvalQueueSurface: null,
       decisionPersistenceAllowed: false,
+      evidenceRunId: null,
+      evidenceSourceIdentityChain: 'missing',
+      evidenceSourceType: 'missing',
       operatorId: null,
       schedulerTriggerAllowed: false,
       standingApprovalPolicyId: null,
@@ -42,6 +45,9 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('approvalItemAllowed=false');
     expect(plan.summary).toContain('approvalQueueSurface=missing');
     expect(plan.summary).toContain('decisionPersistenceAllowed=false');
+    expect(plan.summary).toContain('evidenceSourceType=missing');
+    expect(plan.summary).toContain('evidenceRunId=missing');
+    expect(plan.summary).toContain('evidenceSourceIdentityChain=missing');
     expect(plan.summary).toContain('writebackDispatchAllowed=false');
     expect(plan.summary).toContain('schedulerTriggerAllowed=false');
     expect(plan.summary).toContain('authorizationCount=0');
@@ -88,6 +94,9 @@ describe('scheduler decision proposal contract', () => {
       approvalItemAllowed: true,
       approvalQueueSurface: 'task_dynamics',
       decisionPersistenceAllowed: false,
+      evidenceRunId: null,
+      evidenceSourceIdentityChain: 'ready',
+      evidenceSourceType: 'system',
       operatorId: 'operator_1',
       schedulerTriggerAllowed: false,
       standingApprovalPolicyId: null,
@@ -115,6 +124,9 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('decisionOptionKeys=approve,hold');
     expect(plan.summary).toContain('decisionProposedOutcomeKey=approve');
     expect(plan.summary).toContain('decisionProposedOutcomeMatchesOption=yes');
+    expect(plan.summary).toContain('evidenceSourceType=system');
+    expect(plan.summary).toContain('evidenceRunId=missing');
+    expect(plan.summary).toContain('evidenceSourceIdentityChain=ready');
     expect(plan.summary).toContain('authorizationCount=1');
     expect(plan.summary).toContain('authorization=operator_confirmation');
     expect(plan.summary).toContain('authorizationEvidenceChain=ready');
@@ -190,6 +202,9 @@ describe('scheduler decision proposal contract', () => {
       status: 'ready',
       approvalItemAllowed: true,
       decisionPersistenceAllowed: false,
+      evidenceRunId: 'run_recovered_1',
+      evidenceSourceIdentityChain: 'ready',
+      evidenceSourceType: 'run',
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
       authorizations: ['local_recovery'],
@@ -206,6 +221,9 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('authorization=local_recovery');
     expect(plan.summary).toContain('authorizationEvidenceChain=ready');
     expect(plan.summary).toContain('localRecoveryRunId=run_recovered_1');
+    expect(plan.summary).toContain('evidenceSourceType=run');
+    expect(plan.summary).toContain('evidenceRunId=run_recovered_1');
+    expect(plan.summary).toContain('evidenceSourceIdentityChain=ready');
     expect(plan.summary).toContain('localRecoveryTask=task_recovered_1');
     expect(plan.summary).toContain('localRecoveryCompleted=yes');
     expect(plan.summary).toContain('localRecoveryTaskMatched=yes');
@@ -460,6 +478,7 @@ describe('scheduler decision proposal contract', () => {
         connected: true,
         surface: 'task_dynamics',
       },
+      evidenceRunId: 'run_scheduler_service_evidence',
       operatorConfirmation: {
         confirmed: true,
         operatorId: 'operator_1',
@@ -483,6 +502,9 @@ describe('scheduler decision proposal contract', () => {
       approvalItemAllowed: true,
       approvalQueueSurface: 'task_dynamics',
       decisionPersistenceAllowed: false,
+      evidenceRunId: 'run_scheduler_service_evidence',
+      evidenceSourceIdentityChain: 'ready',
+      evidenceSourceType: 'run',
       schedulerTriggerAllowed: false,
       writebackDispatchAllowed: false,
       operatorId: 'operator_1',
@@ -505,6 +527,9 @@ describe('scheduler decision proposal contract', () => {
     expect(ready.summary).toContain('proposalSatisfiedRequirements=approval_queue,decision_payload,target_task_identity,authorization');
     expect(ready.summary).toContain('approvalQueueSurface=task_dynamics');
     expect(ready.summary).toContain('authorizationCount=2');
+    expect(ready.summary).toContain('evidenceSourceType=run');
+    expect(ready.summary).toContain('evidenceRunId=run_scheduler_service_evidence');
+    expect(ready.summary).toContain('evidenceSourceIdentityChain=ready');
     expect(ready.summary).toContain('authorization=operator_confirmation,standing_approval');
     expect(ready.summary).toContain('authorizationEvidenceChain=ready');
     expect(ready.summary).toContain('operatorId=operator_1');

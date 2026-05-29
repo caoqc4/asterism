@@ -8,6 +8,9 @@ export type SchedulerDecisionProposalPlan = {
   approvalItemAllowed: boolean;
   approvalQueueSurface: 'task_dynamics' | 'right_panel' | 'unknown' | null;
   decisionPersistenceAllowed: false;
+  evidenceRunId: string | null;
+  evidenceSourceIdentityChain: 'ready' | 'missing';
+  evidenceSourceType: 'run' | 'system' | 'missing';
   operatorId: string | null;
   schedulerTriggerAllowed: false;
   standingApprovalPolicyId: string | null;
@@ -36,6 +39,7 @@ export type SchedulerDecisionProposalServiceEvidence = {
     confirmed: boolean;
     operatorId?: string | null;
   } | null;
+  evidenceRunId?: string | null;
   localRecovery?: {
     recoveredRunId?: string | null;
     taskId?: string | null;
@@ -67,6 +71,7 @@ export function schedulerDecisionProposalRequirements(): SchedulerDecisionPropos
 export function planSchedulerDecisionProposal(params: {
   approvalQueueConnected?: boolean;
   approvalQueueSurface?: 'task_dynamics' | 'right_panel' | 'unknown' | null;
+  evidenceRunId?: string | null;
   operatorId?: string | null;
   operatorConfirmed?: boolean;
   standingApprovalActive?: boolean;
@@ -121,6 +126,15 @@ export function planSchedulerDecisionProposal(params: {
     && Boolean(standingApprovalPolicyId)
     && standingApprovalScopeMatched
   );
+  const explicitEvidenceRunId = params.evidenceRunId?.trim() || null;
+  const evidenceRunId = explicitEvidenceRunId || (localRecoveryCompleted ? localRecoveryRunId : null);
+  const systemSourceIdentityReady = Boolean(targetTaskId && titleIdentityKey);
+  const evidenceSourceType = evidenceRunId
+    ? 'run'
+    : systemSourceIdentityReady
+      ? 'system'
+      : 'missing';
+  const evidenceSourceIdentityChain = evidenceSourceType === 'missing' ? 'missing' : 'ready';
   const authorizations = [
     localRecoveryCompleted ? 'local_recovery' : null,
     operatorConfirmed ? 'operator_confirmation' : null,
@@ -162,6 +176,9 @@ export function planSchedulerDecisionProposal(params: {
     approvalItemAllowed,
     approvalQueueSurface,
     decisionPersistenceAllowed: false,
+    evidenceRunId,
+    evidenceSourceIdentityChain,
+    evidenceSourceType,
     operatorId: operatorConfirmed ? operatorId : null,
     schedulerTriggerAllowed: false,
     standingApprovalPolicyId,
@@ -194,6 +211,9 @@ export function planSchedulerDecisionProposal(params: {
       `decisionProposedOutcomeKey=${proposedOutcomeIdentityKey || 'missing'}`,
       `decisionProposedOutcomeMatchesOption=${proposedOutcomeMatched ? 'yes' : 'no'}`,
       `targetTask=${targetTaskId ?? 'missing'}`,
+      `evidenceSourceType=${evidenceSourceType}`,
+      `evidenceRunId=${evidenceRunId ?? 'missing'}`,
+      `evidenceSourceIdentityChain=${evidenceSourceIdentityChain}`,
       'decisionPersistenceAllowed=false',
       'writebackDispatchAllowed=false',
       'schedulerTriggerAllowed=false',
@@ -240,6 +260,7 @@ export function planSchedulerDecisionProposalFromEvidence(
   return planSchedulerDecisionProposal({
     approvalQueueConnected: evidence.approvalQueue?.connected === true,
     approvalQueueSurface: evidence.approvalQueue?.surface ?? null,
+    evidenceRunId: evidence.evidenceRunId ?? null,
     operatorId: evidence.operatorConfirmation?.operatorId ?? null,
     operatorConfirmed,
     localRecoveryCompleted,

@@ -381,6 +381,7 @@ describe('SchedulerService', () => {
     );
 
     const result = await service.proposeSchedulerDecision({
+      evidenceRunId: 'run_scheduler_decision_1',
       operatorConfirmed: true,
       operatorId: 'operator_1',
       options: ['继续巡检', '暂停巡检'],
@@ -392,6 +393,9 @@ describe('SchedulerService', () => {
 
     expect(result.status).toBe('proposed');
     expect(result.summary).toContain('proposalReady=yes');
+    expect(result.summary).toContain('evidenceSourceType=run');
+    expect(result.summary).toContain('evidenceRunId=run_scheduler_decision_1');
+    expect(result.summary).toContain('evidenceSourceIdentityChain=ready');
     expect(result.summary).toContain('timelineEvent=panel.scheduler_decision_proposed');
     expect(result.summary).toContain('durableDecisionCreation=approval_required');
     expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
@@ -400,6 +404,7 @@ describe('SchedulerService', () => {
       payload: expect.objectContaining({
         approvalQueueSurface: 'task_dynamics',
         authorization: 'operator_confirmation',
+        evidenceRunId: 'run_scheduler_decision_1',
         operatorConfirmed: true,
         operatorId: 'operator_1',
         proposedOutcome: '继续巡检',

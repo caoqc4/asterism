@@ -33,6 +33,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   const operatorConfirmed = planSchedulerDecisionProposal({
     approvalQueueConnected: true,
     approvalQueueSurface: 'task_dynamics',
+    evidenceRunId: 'run_scheduler_operator_smoke',
     operatorId: 'operator_scheduler_decision_smoke',
     operatorConfirmed: true,
     options: ['Approve', 'Hold'],
@@ -82,6 +83,7 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
       connected: true,
       surface: 'task_dynamics',
     },
+    evidenceRunId: 'run_scheduler_service_smoke',
     standingApproval: {
       active: true,
       policyId: 'standing_policy_1',
@@ -108,6 +110,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`operatorConfirmedDecisionTitleKey=${scalarValue(operatorConfirmed.summary, 'decisionTitleKey') ?? 'missing'}`);
   console.log(`operatorConfirmedDecisionOptionKeys=${scalarValue(operatorConfirmed.summary, 'decisionOptionKeys') ?? 'missing'}`);
   console.log(`operatorConfirmedDecisionProposedOutcomeKey=${scalarValue(operatorConfirmed.summary, 'decisionProposedOutcomeKey') ?? 'missing'}`);
+  console.log(`operatorConfirmedEvidenceSourceType=${operatorConfirmed.evidenceSourceType}`);
+  console.log(`operatorConfirmedEvidenceRunId=${operatorConfirmed.evidenceRunId ?? 'missing'}`);
+  console.log(`operatorConfirmedEvidenceSourceIdentityChain=${operatorConfirmed.evidenceSourceIdentityChain}`);
   console.log(`operatorConfirmedApprovalQueueSurface=${operatorConfirmed.approvalQueueSurface ?? 'missing'}`);
   console.log(`operatorConfirmedAuthorizationCount=${scalarValue(operatorConfirmed.summary, 'authorizationCount') ?? 'missing'}`);
   console.log(`operatorConfirmedAuthorization=${operatorConfirmed.authorizations.join(',') || 'none'}`);
@@ -120,6 +125,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`standingApprovalProposalReady=${standingApproval.approvalItemAllowed ? 'yes' : 'no'}`);
   console.log(`standingApprovalRequirements=${standingApproval.satisfiedRequirements.length}/4`);
   console.log(`standingApprovalApprovalQueueSurface=${standingApproval.approvalQueueSurface ?? 'missing'}`);
+  console.log(`standingApprovalEvidenceSourceType=${standingApproval.evidenceSourceType}`);
+  console.log(`standingApprovalEvidenceRunId=${standingApproval.evidenceRunId ?? 'missing'}`);
+  console.log(`standingApprovalEvidenceSourceIdentityChain=${standingApproval.evidenceSourceIdentityChain}`);
   console.log(`standingApprovalAuthorizationCount=${scalarValue(standingApproval.summary, 'authorizationCount') ?? 'missing'}`);
   console.log(`standingApprovalAuthorization=${standingApproval.authorizations.join(',') || 'none'}`);
   console.log(`standingApprovalAuthorizationEvidenceChain=${scalarValue(standingApproval.summary, 'authorizationEvidenceChain') ?? 'missing'}`);
@@ -136,6 +144,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`localRecoveryDecisionTitleKey=${scalarValue(localRecovery.summary, 'decisionTitleKey') ?? 'missing'}`);
   console.log(`localRecoveryDecisionOptionKeys=${scalarValue(localRecovery.summary, 'decisionOptionKeys') ?? 'missing'}`);
   console.log(`localRecoveryDecisionProposedOutcomeKey=${scalarValue(localRecovery.summary, 'decisionProposedOutcomeKey') ?? 'missing'}`);
+  console.log(`localRecoveryEvidenceSourceType=${localRecovery.evidenceSourceType}`);
+  console.log(`localRecoveryEvidenceRunId=${localRecovery.evidenceRunId ?? 'missing'}`);
+  console.log(`localRecoveryEvidenceSourceIdentityChain=${localRecovery.evidenceSourceIdentityChain}`);
   console.log(`localRecoveryAuthorizationCount=${scalarValue(localRecovery.summary, 'authorizationCount') ?? 'missing'}`);
   console.log(`localRecoveryAuthorization=${localRecovery.authorizations.join(',') || 'none'}`);
   console.log(`localRecoveryAuthorizationEvidenceChain=${scalarValue(localRecovery.summary, 'authorizationEvidenceChain') ?? 'missing'}`);
@@ -163,6 +174,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
   console.log(`serviceEvidenceDecisionTitleKey=${scalarValue(serviceEvidencePartial.summary, 'decisionTitleKey') ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionOptionKeys=${scalarValue(serviceEvidencePartial.summary, 'decisionOptionKeys') ?? 'missing'}`);
   console.log(`serviceEvidenceDecisionProposedOutcomeKey=${scalarValue(serviceEvidencePartial.summary, 'decisionProposedOutcomeKey') ?? 'missing'}`);
+  console.log(`serviceEvidenceEvidenceSourceType=${serviceEvidencePartial.evidenceSourceType}`);
+  console.log(`serviceEvidenceEvidenceRunId=${serviceEvidencePartial.evidenceRunId ?? 'missing'}`);
+  console.log(`serviceEvidenceEvidenceSourceIdentityChain=${serviceEvidencePartial.evidenceSourceIdentityChain}`);
   console.log(`serviceEvidenceMissingRequirements=${serviceEvidencePartial.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceApprovalQueueSurface=${serviceEvidencePartial.approvalQueueSurface ?? 'missing'}`);
   console.log(`serviceEvidenceAuthorizationCount=${scalarValue(serviceEvidencePartial.summary, 'authorizationCount') ?? 'missing'}`);
@@ -194,11 +208,20 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || scalarValue(operatorConfirmed.summary, 'decisionTitleKey') !== 'confirm_scheduler_action'
     || scalarValue(operatorConfirmed.summary, 'decisionOptionKeys') !== 'approve,hold'
     || scalarValue(operatorConfirmed.summary, 'decisionProposedOutcomeKey') !== 'approve'
+    || operatorConfirmed.evidenceSourceType !== 'run'
+    || operatorConfirmed.evidenceRunId !== 'run_scheduler_operator_smoke'
+    || operatorConfirmed.evidenceSourceIdentityChain !== 'ready'
+    || standingApproval.evidenceSourceType !== 'system'
+    || standingApproval.evidenceRunId !== null
+    || standingApproval.evidenceSourceIdentityChain !== 'ready'
     || scalarValue(localRecovery.summary, 'decisionPayload') !== 'ready'
     || scalarValue(localRecovery.summary, 'decisionTitleKey') !== 'confirm_scheduler_action'
     || scalarValue(localRecovery.summary, 'decisionOptionKeys') !== 'approve,hold'
     || scalarValue(localRecovery.summary, 'decisionProposedOutcomeKey') !== 'approve'
     || scalarValue(localRecovery.summary, 'localRecoveryRunId') !== 'run_scheduler_recovery_smoke'
+    || localRecovery.evidenceSourceType !== 'run'
+    || localRecovery.evidenceRunId !== 'run_scheduler_recovery_smoke'
+    || localRecovery.evidenceSourceIdentityChain !== 'ready'
     || scalarValue(localRecovery.summary, 'localRecoveryTask') !== 'task_scheduler_decision_recovery_smoke'
     || scalarValue(localRecovery.summary, 'localRecoveryCompleted') !== 'yes'
     || scalarValue(localRecovery.summary, 'localRecoveryTaskMatched') !== 'yes'
@@ -220,6 +243,9 @@ export async function runSchedulerDecisionProposalReadinessSmoke() {
     || serviceEvidencePartial.approvalItemAllowed
     || serviceEvidencePartial.approvalQueueSurface !== 'task_dynamics'
     || serviceEvidencePartial.standingApprovalPolicyId !== 'standing_policy_1'
+    || serviceEvidencePartial.evidenceSourceType !== 'run'
+    || serviceEvidencePartial.evidenceRunId !== 'run_scheduler_service_smoke'
+    || serviceEvidencePartial.evidenceSourceIdentityChain !== 'ready'
     || serviceEvidencePartial.standingApprovalScopeTaskId !== 'task_scheduler_decision_other'
     || scalarValue(serviceEvidencePartial.summary, 'standingApprovalScopeMatched') !== 'no'
     || scalarValue(serviceEvidencePartial.summary, 'authorizationCount') !== '0'

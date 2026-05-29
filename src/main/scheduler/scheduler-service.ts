@@ -973,6 +973,7 @@ export class SchedulerService {
         connected: true,
         surface: 'task_dynamics',
       },
+      evidenceRunId: input.evidenceRunId ?? null,
       operatorConfirmation: {
         confirmed: input.operatorConfirmed === true,
         operatorId: input.operatorId ?? null,
