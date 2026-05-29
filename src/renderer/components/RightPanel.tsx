@@ -921,6 +921,26 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
       readStepKeyValue(agentApiPromotionStep.output, 'writeIntentDeclaredActionEvidenceChain')
       ?? readSlashSummaryValue(agentApiPromotionStep.output, 'writeIntentDeclaredActionEvidenceChain')
     );
+    const reviewedPatchApplyBoundary = (
+      readStepKeyValue(agentApiPromotionStep.output, 'reviewedPatchApplyBoundary')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'reviewedPatchApplyBoundary')
+    );
+    const patchPromotionStatus = (
+      readStepKeyValue(agentApiPromotionStep.output, 'patchPromotionStatus')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'patchPromotionStatus')
+    );
+    const terminalRunStatus = (
+      readStepKeyValue(agentApiPromotionStep.output, 'terminalRunStatus')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'terminalRunStatus')
+    );
+    const terminalEvidenceSummary = (
+      readStepKeyValue(agentApiPromotionStep.output, 'terminalEvidenceSummary')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'terminalEvidenceSummary')
+    );
+    const terminalEvidenceSummaryChain = (
+      readStepKeyValue(agentApiPromotionStep.output, 'terminalEvidenceSummaryChain')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'terminalEvidenceSummaryChain')
+    );
     const label = ready === 'yes'
       ? noWorkspaceWriteRequired ? 'ready，无需工作区写入' : 'ready'
       : missingRequirements && missingRequirements !== 'none'
@@ -931,7 +951,13 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
       : declaredActionEvidence === 'missing'
         ? '；Write Intent 声明证据 missing'
         : '';
-    lines.push(`Agent API 执行证据：promotion readiness ${label}${requirements ? `（${requirements}）` : ''}${declaredActionLabel}。`);
+    const patchBoundaryLabel = reviewedPatchApplyBoundary
+      ? `；Patch 边界 ${reviewedPatchApplyBoundary}${patchPromotionStatus ? `/${patchPromotionStatus}` : ''}`
+      : '';
+    const terminalEvidenceLabel = terminalEvidenceSummaryChain === 'ready' && terminalEvidenceSummary
+      ? `；终端证据 ${terminalRunStatus && terminalRunStatus !== 'missing' ? `${terminalRunStatus}/` : ''}${truncateAgentCliChatLine(terminalEvidenceSummary, 48)}`
+      : '';
+    lines.push(`Agent API 执行证据：promotion readiness ${label}${requirements ? `（${requirements}）` : ''}${declaredActionLabel}${patchBoundaryLabel}${terminalEvidenceLabel}。`);
   }
 
   const nativeWorkspaceWriteStep = orderedSteps.find((step) => (

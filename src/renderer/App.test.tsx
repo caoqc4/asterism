@@ -2753,7 +2753,7 @@ describe('App redesign v1', () => {
           status: 'completed',
           title: 'Agent API execution post-run promotion readiness',
           input: 'pilotDecision={"executor":"agent_api"}',
-          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / reviewedPatchApplyBoundary=ready / writeIntentDeclaredActionEvidenceChain=ready',
+          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / reviewedPatchApplyBoundary=ready / patchPromotionStatus=not_required / writeIntentDeclaredActionEvidenceChain=ready / terminalRunStatus=completed / terminalEvidenceSummary=output_chars=33 / terminalEvidenceSummaryChain=ready',
           error: null,
           createdAt: now,
           updatedAt: now,
@@ -2768,7 +2768,7 @@ describe('App redesign v1', () => {
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '开始执行当前任务');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
-    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）；Write Intent 声明证据 ready/)).toBeTruthy();
+    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）；Write Intent 声明证据 ready；Patch 边界 ready\/not_required；终端证据 completed\/output_chars=33/)).toBeTruthy();
   });
 
   it('prefers post-run Agent API execution readiness over pre-run readiness in the right panel summary', async () => {
@@ -2805,7 +2805,7 @@ describe('App redesign v1', () => {
           status: 'completed',
           title: 'Agent API execution post-run promotion readiness',
           input: 'pilotDecision={"executor":"agent_api"}',
-          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / reviewedPatchApplyBoundary=ready / writeIntentDeclaredActionEvidenceChain=ready',
+          output: 'Agent API execution promotion readiness / ready=yes / requirements=11/11 / missingRequirements=none / noWorkspaceWriteRequired=yes / reviewedPatchApplyBoundary=ready / patchPromotionStatus=not_required / writeIntentDeclaredActionEvidenceChain=ready / terminalRunStatus=completed / terminalEvidenceSummary=output_chars=47 / terminalEvidenceSummaryChain=ready',
           error: null,
           createdAt: now,
           updatedAt: now,
@@ -2820,7 +2820,7 @@ describe('App redesign v1', () => {
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '开始执行当前任务');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
-    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）；Write Intent 声明证据 ready/)).toBeTruthy();
+    expect(await screen.findByText(/Agent API 执行证据：promotion readiness ready，无需工作区写入（11\/11）；Write Intent 声明证据 ready；Patch 边界 ready\/not_required；终端证据 completed\/output_chars=47/)).toBeTruthy();
     expect(screen.queryByText(/post_step,run_evidence_persistence/)).toBeNull();
   });
 

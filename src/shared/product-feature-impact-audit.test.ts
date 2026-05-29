@@ -1564,6 +1564,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('final execution evidence is not masked by the initial readiness gate');
     expect(rightPanel?.evidence.join(' ')).toContain('completed Agent API execution summaries now surface writeIntentDeclaredActionEvidenceChain');
     expect(rightPanel?.evidence.join(' ')).toContain('blocked by missing runtime-declared Write Intent evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('completed Agent API execution summaries now also surface reviewedPatchApplyBoundary, patchPromotionStatus, terminalRunStatus, and terminalEvidenceSummary');
+    expect(rightPanel?.evidence.join(' ')).toContain('post-run evidence and workspace boundary without opening Run detail');
     expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion');
     expect(rightPanel?.gaps.join(' ')).toContain('explicit right-panel execution requests can enter RunService');
     expect(rightPanel?.nextActions.join(' ')).toContain('expanding from explicit right-panel execution requests');
