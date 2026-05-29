@@ -14,6 +14,7 @@ function toRecord(row: typeof runs.$inferSelect): RunRecord {
   return {
     id: row.id,
     taskId: row.taskId,
+    businessLineId: row.businessLineId,
     type: row.type as RunRecord['type'],
     status: row.status as RunStatus,
     instructions: row.instructions,
@@ -46,6 +47,7 @@ export class RunRepository {
     await db.insert(runs).values({
       id,
       taskId: input.taskId,
+      businessLineId: input.businessLineId?.trim() || null,
       type: input.type,
       status: 'running',
       instructions: input.instructions?.trim() || null,

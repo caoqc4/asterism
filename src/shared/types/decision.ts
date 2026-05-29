@@ -11,6 +11,7 @@ export type DecisionSourceType =
 export type DecisionScope =
   | 'task'
   | 'run'
+  | 'business_line'
   | 'agent'
   | 'external_access'
   | 'workspace'
@@ -49,6 +50,7 @@ export type DecisionRecommendation = {
 export type DecisionRecord = {
   id: string;
   taskId: string | null;
+  businessLineId?: string | null;
   title: string;
   status: DecisionStatus;
   scope: DecisionScope;
@@ -65,6 +67,7 @@ export type DecisionRecord = {
 
 export type CreateDecisionInput = {
   taskId?: string | null;
+  businessLineId?: string | null;
   title: string;
   scope?: DecisionScope;
   kind?: DecisionKind;

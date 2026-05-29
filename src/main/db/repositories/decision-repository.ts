@@ -36,6 +36,7 @@ function toRecord(row: typeof decisionRequests.$inferSelect): DecisionRecord {
   return {
     id: row.id,
     taskId: row.taskId || null,
+    businessLineId: row.businessLineId,
     title: row.title,
     status: row.status as DecisionStatus,
     scope: (row.scope as DecisionScope | null) ?? (row.taskId ? 'task' : 'global'),
@@ -87,14 +88,16 @@ export class DecisionRepository {
     assertCanonicalWriteInput({
       domain: 'decision',
       input: normalizedInput as Record<string, unknown>,
-      allowedFields: ['taskId', 'title', 'scope', 'kind', 'sourceType', 'sourceId', 'sourceLabel', 'context', 'options', 'recommendation'],
+      allowedFields: ['taskId', 'businessLineId', 'title', 'scope', 'kind', 'sourceType', 'sourceId', 'sourceLabel', 'context', 'options', 'recommendation'],
       requiredFields: ['title', 'scope', 'kind', 'sourceType'],
     });
     const taskId = normalizedInput.taskId ?? '';
+    const businessLineId = normalizedInput.businessLineId?.trim() || null;
 
     await db.insert(decisionRequests).values({
       id,
       taskId,
+      businessLineId,
       title: normalizedInput.title,
       status: 'pending',
       scope: normalizedInput.scope,

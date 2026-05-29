@@ -796,6 +796,7 @@ function runtimeDecisionScope(scope: string): DecisionScope {
   if (
     scope === 'task' ||
     scope === 'run' ||
+    scope === 'business_line' ||
     scope === 'agent' ||
     scope === 'external_access' ||
     scope === 'workspace' ||

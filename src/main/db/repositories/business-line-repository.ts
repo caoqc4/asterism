@@ -24,6 +24,12 @@ import {
   businessLineReviews,
   businessLines,
   businessLineSkillRevisions,
+  artifacts,
+  decisionRequests,
+  runs,
+  sourceContexts,
+  taskFiles,
+  tasks,
 } from '../schema.js';
 import { initDatabase } from '../client.js';
 import { generateId, nowIso } from './repository-utils.js';
@@ -223,8 +229,14 @@ export class BusinessLineRepository {
     return rows.map(businessLineRecordFromRow);
   }
 
-  async listLinkedActionIds(businessLineId: string): Promise<string[]> {
+  async listActionTaskIds(businessLineId: string): Promise<string[]> {
     const db = initDatabase();
+    const ownedTaskRows = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(eq(tasks.businessLineId, businessLineId))
+      .orderBy(desc(tasks.updatedAt));
+
     const actionRows = await db
       .select()
       .from(businessLineActions)
@@ -235,20 +247,103 @@ export class BusinessLineRepository {
       .filter((link) => link.status === 'active')
       .map((link) => link.taskId);
 
-    if (linkedFromActionTable.length > 0) {
-      return linkedFromActionTable;
-    }
-
     const recordRows = await db
       .select()
       .from(businessLineRecords)
       .where(eq(businessLineRecords.businessLineId, businessLineId))
       .orderBy(desc(businessLineRecords.createdAt));
 
-    return recordRows
+    const linkedFromRecords = recordRows
       .map(businessLineRecordFromRow)
       .filter((record) => record.type === 'action' && Boolean(record.linkedActionId))
       .map((record) => record.linkedActionId!);
+
+    return [...new Set([
+      ...ownedTaskRows.map((row) => row.id),
+      ...linkedFromActionTable,
+      ...linkedFromRecords,
+    ])];
+  }
+
+  async listLinkedActionIds(businessLineId: string): Promise<string[]> {
+    return this.listActionTaskIds(businessLineId);
+  }
+
+  async resolveBusinessLineForTask(taskId: string): Promise<string | null> {
+    const db = initDatabase();
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
+    if (!task) return null;
+    if (task.businessLineId) return task.businessLineId;
+    const [legacyLine] = await db
+      .select()
+      .from(businessLines)
+      .where(eq(businessLines.legacyTaskId, taskId))
+      .limit(1);
+    return legacyLine?.id ?? null;
+  }
+
+  async resolveBusinessLineForRun(runId: string): Promise<string | null> {
+    const db = initDatabase();
+    const [run] = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
+    if (!run) return null;
+    if (run.businessLineId) return run.businessLineId;
+    return this.resolveBusinessLineForTask(run.taskId);
+  }
+
+  async resolveBusinessLineForDecision(decisionId: string): Promise<string | null> {
+    const db = initDatabase();
+    const [decision] = await db
+      .select()
+      .from(decisionRequests)
+      .where(eq(decisionRequests.id, decisionId))
+      .limit(1);
+    if (!decision) return null;
+    if (decision.businessLineId) return decision.businessLineId;
+    return decision.taskId ? this.resolveBusinessLineForTask(decision.taskId) : null;
+  }
+
+  async resolveBusinessLineForSource(sourceContextId: string): Promise<string | null> {
+    const db = initDatabase();
+    const [source] = await db
+      .select()
+      .from(sourceContexts)
+      .where(eq(sourceContexts.id, sourceContextId))
+      .limit(1);
+    if (!source) return null;
+    if (source.businessLineId) return source.businessLineId;
+    if (source.runId) {
+      const businessLineId = await this.resolveBusinessLineForRun(source.runId);
+      if (businessLineId) return businessLineId;
+    }
+    return this.resolveBusinessLineForTask(source.taskId);
+  }
+
+  async resolveBusinessLineForArtifact(artifactId: string): Promise<string | null> {
+    const db = initDatabase();
+    const [artifact] = await db
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.id, artifactId))
+      .limit(1);
+    if (!artifact) return null;
+    if (artifact.businessLineId) return artifact.businessLineId;
+    if (artifact.sourceType === 'run') {
+      const businessLineId = await this.resolveBusinessLineForRun(artifact.sourceId);
+      if (businessLineId) return businessLineId;
+    }
+    return this.resolveBusinessLineForTask(artifact.taskId);
+  }
+
+  async resolveBusinessLineForTaskFile(taskFileId: string): Promise<string | null> {
+    const db = initDatabase();
+    const [taskFile] = await db
+      .select()
+      .from(taskFiles)
+      .where(eq(taskFiles.id, taskFileId))
+      .limit(1);
+    if (!taskFile) return null;
+    if (taskFile.businessLineId) return taskFile.businessLineId;
+    return this.resolveBusinessLineForTask(taskFile.taskId);
   }
 
   async createActionLink(input: {

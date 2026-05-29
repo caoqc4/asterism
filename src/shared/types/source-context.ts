@@ -9,6 +9,7 @@ export type SourceContextCredibility = 'verified' | 'unknown' | 'low';
 export type SourceContextRecord = {
   id: string;
   taskId: string;
+  businessLineId?: string | null;
   title: string;
   kind: SourceContextKind;
   isKey: boolean;
@@ -30,6 +31,7 @@ export type SourceContextRecord = {
 
 export type CreateSourceContextInput = {
   taskId: string;
+  businessLineId?: string | null;
   title: string;
   kind: SourceContextKind;
   isKey?: boolean;

@@ -31,6 +31,7 @@ export type TaskRecord = {
   taskType?: TaskExecutionType;
   taskFacets?: TaskExecutionType[];
   parentTaskId?: string | null;
+  businessLineId?: string | null;
   childTaskIds?: string[];
   state: TaskState;
   nextStep: string | null;
@@ -144,6 +145,7 @@ export type CreateTaskInput = {
   taskType?: TaskExecutionType;
   taskFacets?: TaskExecutionType[];
   parentTaskId?: string | null;
+  businessLineId?: string | null;
   childTaskIds?: string[];
 };
 
@@ -154,6 +156,7 @@ export type UpdateTaskInput = {
   taskType?: TaskExecutionType;
   taskFacets?: TaskExecutionType[];
   parentTaskId?: string | null;
+  businessLineId?: string | null;
   childTaskIds?: string[];
   nextStep?: string | null;
   waitingReason?: string | null;

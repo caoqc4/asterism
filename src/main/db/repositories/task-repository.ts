@@ -75,6 +75,7 @@ function taskRecordFromRow(row: TaskRow): TaskRecord {
     taskType,
     taskFacets: parseTaskFacets(row.taskFacets, taskType),
     parentTaskId: row.parentTaskId,
+    businessLineId: row.businessLineId,
     childTaskIds: parseChildTaskIds(row.childTaskIds),
     state: row.state as TaskRecord['state'],
     nextStep: row.nextStep,
@@ -122,6 +123,7 @@ export class TaskRepository {
       taskType: input.taskType ?? 'simple',
       taskFacets: JSON.stringify(normalizeTaskFacets(input.taskFacets, input.taskType ?? 'simple')),
       parentTaskId: input.parentTaskId ?? null,
+      businessLineId: input.businessLineId?.trim() || null,
       childTaskIds: JSON.stringify(input.childTaskIds ?? []),
       state: 'captured',
       nextStep: null,
@@ -166,6 +168,7 @@ export class TaskRepository {
       taskType: normalizeTaskType(task.taskType),
       taskFacets: parseTaskFacets(task.taskFacets, normalizeTaskType(task.taskType)),
       parentTaskId: task.parentTaskId,
+      businessLineId: task.businessLineId,
       childTaskIds: parseChildTaskIds(task.childTaskIds),
       state: task.state as TaskRecord['state'],
       nextStep: task.nextStep,
@@ -212,6 +215,8 @@ export class TaskRepository {
         : normalizeTaskFacets(input.taskFacets, nextTaskType);
     const nextParentTaskId =
       input.parentTaskId === undefined ? current.parentTaskId : input.parentTaskId?.trim() || null;
+    const nextBusinessLineId =
+      input.businessLineId === undefined ? current.businessLineId : input.businessLineId?.trim() || null;
     const nextChildTaskIds =
       input.childTaskIds === undefined ? parseChildTaskIds(current.childTaskIds) : input.childTaskIds;
     const nextStep =
@@ -249,6 +254,7 @@ export class TaskRepository {
         taskType: nextTaskType,
         taskFacets: JSON.stringify(nextTaskFacets),
         parentTaskId: nextParentTaskId,
+        businessLineId: nextBusinessLineId,
         childTaskIds: JSON.stringify(nextChildTaskIds),
         nextStep,
         waitingReason: nextWaitingReason,
@@ -269,6 +275,7 @@ export class TaskRepository {
           taskType: nextTaskType,
           taskFacets: nextTaskFacets,
           parentTaskId: nextParentTaskId,
+          businessLineId: nextBusinessLineId,
           childTaskIds: nextChildTaskIds,
           nextStep,
           waitingReason: nextWaitingReason,

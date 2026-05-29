@@ -238,7 +238,11 @@ export class RunService {
       }
     }
 
-    const created = await this.runRepository.create(input);
+    const runInput: CreateRunInput = {
+      ...input,
+      businessLineId: input.businessLineId ?? taskForExecution.businessLineId ?? null,
+    };
+    const created = await this.runRepository.create(runInput);
     const contextReadiness = evaluateRuntimeContextReadiness({
       prompt: input.instructions ?? '',
       task: taskForExecution,
@@ -254,7 +258,7 @@ export class RunService {
     await this.recordAgentApiExecutionPromotionReadiness({
       capabilities,
       contextReadiness,
-      input,
+      input: runInput,
       runId: created.id,
       runtimeAction: actionEvaluation,
       task: taskForExecution,
@@ -267,13 +271,13 @@ export class RunService {
         ? await this.runOrchestrator.executeAgentRun({
             run: created,
             task: taskForExecution,
-            input,
+            input: runInput,
             applicableWorkHabitSummaries: applicableWorkHabits.summaries,
           })
         : await this.runOrchestrator.executeTextRun({
             run: created,
             task: taskForExecution,
-            input,
+            input: runInput,
             applicableWorkHabitSummaries: applicableWorkHabits.summaries,
           });
     await this.recordAppliedWorkHabits(applicableWorkHabits.ids);

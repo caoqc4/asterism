@@ -22,6 +22,7 @@ export type RunVerificationSource = 'lightweight_rule_engine' | 'ai_verifier';
 export type RunRecord = {
   id: string;
   taskId: string;
+  businessLineId?: string | null;
   type: RunType;
   status: RunStatus;
   instructions: string | null;
@@ -92,6 +93,7 @@ export type RunRequestSurface =
 
 export type CreateRunInput = {
   taskId: string;
+  businessLineId?: string | null;
   type: RunType;
   instructions?: string;
   allowLocalWorkspaceRead?: boolean;

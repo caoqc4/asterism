@@ -266,6 +266,39 @@ describe('TaskService', () => {
     });
   });
 
+  it('preserves business-line ownership when creating an execution task', async () => {
+    const created = {
+      ...buildRecord('captured'),
+      id: 'task_business_line_action',
+      title: '推进业务线动作',
+      businessLineId: 'business_line_product',
+    };
+    const repository = {
+      list: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue(created),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({
+      title: '推进业务线动作',
+      businessLineId: 'business_line_product',
+    })).resolves.toMatchObject({
+      id: 'task_business_line_action',
+      businessLineId: 'business_line_product',
+    });
+    expect(repository.create).toHaveBeenCalledWith({
+      title: '推进业务线动作',
+      businessLineId: 'business_line_product',
+    });
+  });
+
   it('allows same child title under a different project scope', async () => {
     const created = {
       ...buildRecord('captured'),

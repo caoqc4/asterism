@@ -7,6 +7,7 @@ export const tasks = sqliteTable('tasks', {
   taskType: text('task_type').notNull().default('simple'),
   taskFacets: text('task_facets').notNull().default('[]'),
   parentTaskId: text('parent_task_id'),
+  businessLineId: text('business_line_id'),
   childTaskIds: text('child_task_ids').notNull().default('[]'),
   state: text('state').notNull().default('captured'),
   nextStep: text('next_step'),
@@ -28,6 +29,7 @@ export const timelineEvents = sqliteTable('timeline_events', {
 export const decisionRequests = sqliteTable('decision_requests', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull(),
+  businessLineId: text('business_line_id'),
   title: text('title').notNull(),
   status: text('status').notNull(),
   scope: text('scope').notNull().default('task'),
@@ -45,6 +47,7 @@ export const decisionRequests = sqliteTable('decision_requests', {
 export const runs = sqliteTable('runs', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull(),
+  businessLineId: text('business_line_id'),
   type: text('type').notNull(),
   status: text('status').notNull(),
   instructions: text('instructions'),
@@ -183,6 +186,7 @@ export const completionCriteria = sqliteTable('completion_criteria', {
 export const artifacts = sqliteTable('artifacts', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull(),
+  businessLineId: text('business_line_id'),
   sourceType: text('source_type').notNull(),
   sourceId: text('source_id').notNull(),
   kind: text('kind').notNull(),
@@ -195,6 +199,7 @@ export const artifacts = sqliteTable('artifacts', {
 export const sourceContexts = sqliteTable('source_contexts', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull(),
+  businessLineId: text('business_line_id'),
   title: text('title').notNull(),
   kind: text('kind').notNull(),
   isKey: text('is_key').notNull().default('false'),
@@ -217,6 +222,7 @@ export const sourceContexts = sqliteTable('source_contexts', {
 export const taskFiles = sqliteTable('task_files', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull(),
+  businessLineId: text('business_line_id'),
   name: text('name').notNull(),
   path: text('path').notNull(),
   kind: text('kind').notNull(),

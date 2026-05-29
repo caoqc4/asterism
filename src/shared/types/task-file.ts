@@ -3,6 +3,7 @@ export type TaskFileKind = 'file' | 'folder';
 export type TaskFileRecord = {
   id: string;
   taskId: string;
+  businessLineId?: string | null;
   name: string;
   path: string;
   kind: TaskFileKind;
@@ -13,6 +14,7 @@ export type TaskFileRecord = {
 
 export type CreateTaskFileInput = {
   taskId: string;
+  businessLineId?: string | null;
   name: string;
   path?: string;
   kind: TaskFileKind;

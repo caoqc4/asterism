@@ -10,6 +10,7 @@ function toRecord(row: typeof artifacts.$inferSelect): ArtifactRecord {
   return {
     id: row.id,
     taskId: row.taskId,
+    businessLineId: row.businessLineId,
     sourceType: row.sourceType as ArtifactRecord['sourceType'],
     sourceId: row.sourceId,
     kind: row.kind as ArtifactKind,
@@ -22,6 +23,7 @@ function toRecord(row: typeof artifacts.$inferSelect): ArtifactRecord {
 
 function assertArtifactCreateInput(input: {
   taskId: string;
+  businessLineId?: string | null;
   sourceType: ArtifactRecord['sourceType'];
   sourceId: string;
   kind: ArtifactKind;
@@ -31,7 +33,7 @@ function assertArtifactCreateInput(input: {
   assertCanonicalWriteInput({
     domain: 'artifact',
     input,
-    allowedFields: ['taskId', 'sourceType', 'sourceId', 'kind', 'title', 'content'],
+    allowedFields: ['taskId', 'businessLineId', 'sourceType', 'sourceId', 'kind', 'title', 'content'],
     requiredFields: ['taskId', 'sourceType', 'sourceId', 'kind', 'title', 'content'],
   });
 }
@@ -84,6 +86,7 @@ export class ArtifactRepository {
 
   async createFromRun(params: {
     taskId: string;
+    businessLineId?: string | null;
     runId: string;
     runType: string;
     content: string;
@@ -94,6 +97,7 @@ export class ArtifactRepository {
     const title = `${params.runType} output`;
     assertArtifactCreateInput({
       taskId: params.taskId,
+      businessLineId: params.businessLineId,
       sourceType: 'run',
       sourceId: params.runId,
       kind: 'run_output',
@@ -104,6 +108,7 @@ export class ArtifactRepository {
     await db.insert(artifacts).values({
       id,
       taskId: params.taskId,
+      businessLineId: params.businessLineId?.trim() || null,
       sourceType: 'run',
       sourceId: params.runId,
       kind: 'run_output',
@@ -133,6 +138,7 @@ export class ArtifactRepository {
 
   async createNoteFromRun(params: {
     taskId: string;
+    businessLineId?: string | null;
     runId: string;
     title: string;
     content: string;
@@ -143,6 +149,7 @@ export class ArtifactRepository {
     const title = params.title.trim();
     assertArtifactCreateInput({
       taskId: params.taskId,
+      businessLineId: params.businessLineId,
       sourceType: 'run',
       sourceId: params.runId,
       kind: 'note',
@@ -153,6 +160,7 @@ export class ArtifactRepository {
     await db.insert(artifacts).values({
       id,
       taskId: params.taskId,
+      businessLineId: params.businessLineId?.trim() || null,
       sourceType: 'run',
       sourceId: params.runId,
       kind: 'note',
@@ -182,6 +190,7 @@ export class ArtifactRepository {
 
   async createPatchFromRun(params: {
     taskId: string;
+    businessLineId?: string | null;
     runId: string;
     title: string;
     content: string;
@@ -192,6 +201,7 @@ export class ArtifactRepository {
     const title = params.title.trim();
     assertArtifactCreateInput({
       taskId: params.taskId,
+      businessLineId: params.businessLineId,
       sourceType: 'run',
       sourceId: params.runId,
       kind: 'patch',
@@ -202,6 +212,7 @@ export class ArtifactRepository {
     await db.insert(artifacts).values({
       id,
       taskId: params.taskId,
+      businessLineId: params.businessLineId?.trim() || null,
       sourceType: 'run',
       sourceId: params.runId,
       kind: 'patch',
@@ -231,6 +242,7 @@ export class ArtifactRepository {
 
   async createBrowserEvidenceFromRun(params: {
     taskId: string;
+    businessLineId?: string | null;
     runId: string;
     title: string;
     content: string;
@@ -241,6 +253,7 @@ export class ArtifactRepository {
     const title = params.title.trim();
     assertArtifactCreateInput({
       taskId: params.taskId,
+      businessLineId: params.businessLineId,
       sourceType: 'run',
       sourceId: params.runId,
       kind: 'browser_evidence',
@@ -251,6 +264,7 @@ export class ArtifactRepository {
     await db.insert(artifacts).values({
       id,
       taskId: params.taskId,
+      businessLineId: params.businessLineId?.trim() || null,
       sourceType: 'run',
       sourceId: params.runId,
       kind: 'browser_evidence',
@@ -280,6 +294,7 @@ export class ArtifactRepository {
 
   async createManualNote(params: {
     taskId: string;
+    businessLineId?: string | null;
     title: string;
     content: string;
   }): Promise<ArtifactRecord> {
@@ -289,6 +304,7 @@ export class ArtifactRepository {
     const title = params.title.trim();
     assertArtifactCreateInput({
       taskId: params.taskId,
+      businessLineId: params.businessLineId,
       sourceType: 'manual',
       sourceId: 'task_files',
       kind: 'note',
@@ -299,6 +315,7 @@ export class ArtifactRepository {
     await db.insert(artifacts).values({
       id,
       taskId: params.taskId,
+      businessLineId: params.businessLineId?.trim() || null,
       sourceType: 'manual',
       sourceId: 'task_files',
       kind: 'note',

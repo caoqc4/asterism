@@ -8,6 +8,7 @@ import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
+import { RunRepository } from '../../db/repositories/run-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
 import { TaskFileRepository } from '../../db/repositories/task-file-repository.js';
@@ -225,9 +226,80 @@ describe('BusinessLineService', () => {
     ]));
     expect(decisionService.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'policy_change',
-      scope: 'global',
+      businessLineId: created.id,
+      scope: 'business_line',
       taskId: null,
     }));
+  });
+
+  it('reads canonical business-line actions and resolves durable object ownership', async () => {
+    const created = await service.create({
+      title: 'Canonical owned business line',
+      goal: 'Own durable work directly',
+      kind: 'software_product',
+    });
+    const ownedTask = await taskService.create({
+      title: 'Owned canonical action',
+      businessLineId: created.id,
+    });
+    await taskService.update({
+      id: ownedTask.id,
+      nextStep: 'Execute owned canonical action.',
+    });
+
+    const workspace = await service.getWorkspace(created.id);
+    expect(workspace?.nextActions.map((task) => task.id)).toContain(ownedTask.id);
+    await expect(service.listTodaySuggestions()).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        businessLineId: created.id,
+        taskId: ownedTask.id,
+        nextStep: 'Execute owned canonical action.',
+      }),
+    ]));
+    await expect(businessLineRepository.resolveBusinessLineForTask(ownedTask.id)).resolves.toBe(created.id);
+
+    const runRepository = new RunRepository();
+    const run = await runRepository.create({
+      taskId: ownedTask.id,
+      businessLineId: created.id,
+      type: 'draft',
+    });
+    expect(run.businessLineId).toBe(created.id);
+    await expect(businessLineRepository.resolveBusinessLineForRun(run.id)).resolves.toBe(created.id);
+
+    const decision = await new DecisionRepository().create({
+      businessLineId: created.id,
+      title: 'Confirm canonical business-line policy',
+      scope: 'business_line',
+      kind: 'policy_change',
+      sourceType: 'system',
+    });
+    expect(decision.businessLineId).toBe(created.id);
+    await expect(businessLineRepository.resolveBusinessLineForDecision(decision.id)).resolves.toBe(created.id);
+
+    const source = await new SourceContextRepository().create({
+      taskId: ownedTask.id,
+      title: 'Owned source',
+      kind: 'note',
+      runId: run.id,
+    });
+    await expect(businessLineRepository.resolveBusinessLineForSource(source.id)).resolves.toBe(created.id);
+
+    const artifact = await new ArtifactRepository().createFromRun({
+      taskId: ownedTask.id,
+      runId: run.id,
+      runType: 'draft',
+      content: 'Owned artifact',
+    });
+    await expect(businessLineRepository.resolveBusinessLineForArtifact(artifact.id)).resolves.toBe(created.id);
+
+    const taskFile = await new TaskFileRepository().create({
+      taskId: ownedTask.id,
+      name: 'Owned note.md',
+      kind: 'file',
+      content: 'Owned file',
+    });
+    await expect(businessLineRepository.resolveBusinessLineForTaskFile(taskFile.id)).resolves.toBe(created.id);
   });
 
   it('keeps canonical linked actions after the action record falls out of display windows', async () => {
@@ -242,7 +314,10 @@ describe('BusinessLineService', () => {
       nextActionSuggestions: ['Stable canonical action.'],
     });
     const actionTaskId = reviewed.nextActions[0]!.id;
-    await expect(businessLineRepository.listLinkedActionIds(created.id)).resolves.toContain(actionTaskId);
+    await expect(businessLineRepository.listActionTaskIds(created.id)).resolves.toContain(actionTaskId);
+    await expect(taskService.getDetail(actionTaskId)).resolves.toMatchObject({
+      businessLineId: created.id,
+    });
 
     for (let index = 0; index < 60; index += 1) {
       await businessLineRepository.createRecord({

@@ -366,9 +366,14 @@ export class DecisionService {
     const normalizedInput = normalizeCreateDecisionInput(input);
     const taskId = normalizedInput.taskId ?? null;
     const requiresTask = normalizedInput.scope === 'task';
+    const requiresBusinessLine = normalizedInput.scope === 'business_line';
 
     if (requiresTask && !taskId) {
       throw new Error('Task-scoped Decision requires taskId.');
+    }
+
+    if (requiresBusinessLine && !normalizedInput.businessLineId) {
+      throw new Error('Business-line-scoped Decision requires businessLineId.');
     }
 
     if (taskId) {

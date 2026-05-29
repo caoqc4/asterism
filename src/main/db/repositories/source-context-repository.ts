@@ -28,6 +28,7 @@ function toRecord(row: typeof sourceContexts.$inferSelect): SourceContextRecord 
   return {
     id: row.id,
     taskId: row.taskId,
+    businessLineId: row.businessLineId,
     title: row.title,
     kind: row.kind as SourceContextRecord['kind'],
     isKey: row.isKey === 'true',
@@ -95,7 +96,7 @@ export class SourceContextRepository {
     assertCanonicalWriteInput({
       domain: 'source_context',
       input: input as Record<string, unknown>,
-      allowedFields: ['taskId', 'title', 'kind', 'isKey', 'uri', 'content', 'note', 'capturedAt', 'runId', 'batchId', 'sourceRole', 'credibility', 'isDuplicate', 'containsSensitiveData'],
+      allowedFields: ['taskId', 'businessLineId', 'title', 'kind', 'isKey', 'uri', 'content', 'note', 'capturedAt', 'runId', 'batchId', 'sourceRole', 'credibility', 'isDuplicate', 'containsSensitiveData'],
       requiredFields: ['taskId', 'title', 'kind'],
     });
     const db = initDatabase();
@@ -107,6 +108,7 @@ export class SourceContextRepository {
     await db.insert(sourceContexts).values({
       id,
       taskId: input.taskId,
+      businessLineId: input.businessLineId?.trim() || null,
       title: input.title.trim(),
       kind: input.kind,
       isKey: input.isKey ? 'true' : 'false',

@@ -121,6 +121,7 @@ function buildDecisionRecord(partial: Partial<DecisionRecord> = {}): DecisionRec
   return {
     id: partial.id ?? 'decision_1',
     taskId,
+    businessLineId: partial.businessLineId ?? null,
     title: partial.title ?? 'Need approval',
     status: partial.status ?? 'pending',
     scope: partial.scope ?? (partial.taskId === null ? 'global' : 'task'),
@@ -286,6 +287,46 @@ describe('DecisionService', () => {
       key: 'task:task_2',
       pendingCount: 1,
     });
+  });
+
+  it('creates business-line scoped Decisions without requiring a task', async () => {
+    const created = buildDecisionRecord({
+      id: 'decision_business_line',
+      taskId: null,
+      businessLineId: 'business_line_product',
+      scope: 'business_line',
+      kind: 'policy_change',
+      sourceType: 'system',
+    });
+    const decisionRepository = {
+      create: vi.fn().mockResolvedValue(created),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+    );
+
+    await expect(service.create({
+      businessLineId: 'business_line_product',
+      title: 'Confirm business-line policy',
+      scope: 'business_line',
+      kind: 'policy_change',
+      sourceType: 'system',
+    })).resolves.toMatchObject({
+      businessLineId: 'business_line_product',
+      scope: 'business_line',
+      taskId: null,
+    });
+    expect(taskService.getDetail).not.toHaveBeenCalled();
+    expect(decisionRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: 'business_line_product',
+      scope: 'business_line',
+      taskId: null,
+    }));
   });
 
   it('drafts a decision with selected process templates', async () => {

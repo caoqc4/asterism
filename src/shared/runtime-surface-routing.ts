@@ -413,6 +413,7 @@ function normalizeDecisionSourceType(input: CreateDecisionInput): DecisionSource
 function normalizeDecisionScope(input: CreateDecisionInput, sourceType: DecisionSourceType): DecisionScope {
   if (input.scope) return input.scope;
   if (input.taskId?.trim()) return 'task';
+  if (input.businessLineId?.trim()) return 'business_line';
   if (sourceType === 'external_access') return 'external_access';
   if (sourceType === 'workspace') return 'workspace';
   if (sourceType === 'system') return 'system';
@@ -444,6 +445,7 @@ export function normalizeCreateDecisionInput(input: CreateDecisionInput): Create
   return {
     ...input,
     taskId: input.taskId?.trim() || null,
+    ...(input.businessLineId?.trim() ? { businessLineId: input.businessLineId.trim() } : {}),
     title: input.title.trim(),
     scope: normalizeDecisionScope(input, sourceType),
     kind: normalizeDecisionKind(input, sourceType),

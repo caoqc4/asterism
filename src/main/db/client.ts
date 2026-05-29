@@ -38,6 +38,7 @@ function bootstrapTables(connection: Database.Database): void {
       task_type TEXT NOT NULL DEFAULT 'simple',
       task_facets TEXT NOT NULL DEFAULT '[]',
       parent_task_id TEXT,
+      business_line_id TEXT,
       child_task_ids TEXT NOT NULL DEFAULT '[]',
       state TEXT NOT NULL DEFAULT 'captured',
       next_step TEXT,
@@ -59,6 +60,7 @@ function bootstrapTables(connection: Database.Database): void {
     CREATE TABLE IF NOT EXISTS decision_requests (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
+      business_line_id TEXT,
       title TEXT NOT NULL,
       status TEXT NOT NULL,
       scope TEXT NOT NULL DEFAULT 'task',
@@ -76,6 +78,7 @@ function bootstrapTables(connection: Database.Database): void {
     CREATE TABLE IF NOT EXISTS runs (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
+      business_line_id TEXT,
       type TEXT NOT NULL,
       status TEXT NOT NULL,
       instructions TEXT,
@@ -217,6 +220,7 @@ function bootstrapTables(connection: Database.Database): void {
     CREATE TABLE IF NOT EXISTS artifacts (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
+      business_line_id TEXT,
       source_type TEXT NOT NULL,
       source_id TEXT NOT NULL,
       kind TEXT NOT NULL,
@@ -229,6 +233,7 @@ function bootstrapTables(connection: Database.Database): void {
     CREATE TABLE IF NOT EXISTS source_contexts (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
+      business_line_id TEXT,
       title TEXT NOT NULL,
       kind TEXT NOT NULL,
       is_key TEXT NOT NULL DEFAULT 'false',
@@ -251,6 +256,7 @@ function bootstrapTables(connection: Database.Database): void {
     CREATE TABLE IF NOT EXISTS task_files (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
+      business_line_id TEXT,
       name TEXT NOT NULL,
       path TEXT NOT NULL,
       kind TEXT NOT NULL,
@@ -368,10 +374,12 @@ function bootstrapTables(connection: Database.Database): void {
   `);
 
   ensureColumn(connection, 'runs', 'instructions', 'TEXT');
+  ensureColumn(connection, 'runs', 'business_line_id', 'TEXT');
   ensureColumn(connection, 'runs', 'output', 'TEXT');
   ensureColumn(connection, 'runs', 'output_source', 'TEXT');
   ensureColumn(connection, 'runs', 'failure_reason', 'TEXT');
   ensureColumn(connection, 'decision_requests', 'source_type', 'TEXT');
+  ensureColumn(connection, 'decision_requests', 'business_line_id', 'TEXT');
   ensureColumn(connection, 'decision_requests', 'source_id', 'TEXT');
   ensureColumn(connection, 'decision_requests', 'source_label', 'TEXT');
   ensureColumn(connection, 'decision_requests', 'scope', "TEXT NOT NULL DEFAULT 'task'");
@@ -383,6 +391,7 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'tasks', 'task_type', "TEXT NOT NULL DEFAULT 'simple'");
   ensureColumn(connection, 'tasks', 'task_facets', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(connection, 'tasks', 'parent_task_id', 'TEXT');
+  ensureColumn(connection, 'tasks', 'business_line_id', 'TEXT');
   ensureColumn(connection, 'tasks', 'child_task_ids', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(connection, 'tasks', 'waiting_reason', 'TEXT');
   ensureColumn(connection, 'tasks', 'risk_level', "TEXT NOT NULL DEFAULT 'none'");
@@ -414,6 +423,7 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'completion_criteria', 'updated_at', 'TEXT');
   ensureColumn(connection, 'completion_criteria', 'satisfied_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'uri', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'business_line_id', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'content', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'note', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'is_key', "TEXT NOT NULL DEFAULT 'false'");
@@ -428,6 +438,8 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'source_contexts', 'updated_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'archived_at', 'TEXT');
   ensureColumn(connection, 'process_templates', 'summary', 'TEXT');
+  ensureColumn(connection, 'artifacts', 'business_line_id', 'TEXT');
+  ensureColumn(connection, 'task_files', 'business_line_id', 'TEXT');
   ensureColumn(connection, 'process_templates', 'content', "TEXT NOT NULL DEFAULT ''");
   ensureColumn(connection, 'process_templates', 'kind', "TEXT NOT NULL DEFAULT 'skill'");
   ensureColumn(connection, 'process_templates', 'tags', "TEXT NOT NULL DEFAULT '[]'");

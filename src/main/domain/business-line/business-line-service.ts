@@ -215,6 +215,7 @@ export class BusinessLineService {
         taskType: 'simple',
         taskFacets: ['simple'],
         parentTaskId: businessLine.legacyTaskId,
+        businessLineId: businessLine.id,
       });
       await this.taskService.update({
         id: createdTask.id,
@@ -238,8 +239,9 @@ export class BusinessLineService {
     if (input.requiresDecision) {
       const decision = await this.decisionService.create({
         taskId: businessLine.legacyTaskId,
+        businessLineId: businessLine.id,
         title: `确认业务线学习更新：${businessLine.title}`,
-        scope: businessLine.legacyTaskId ? 'task' : 'global',
+        scope: businessLine.legacyTaskId ? 'task' : 'business_line',
         kind: 'policy_change',
         sourceType: 'system',
         sourceId: review.id,
@@ -319,7 +321,7 @@ export class BusinessLineService {
     businessLine: BusinessLine,
     tasks: TaskListItemRecord[],
   ): Promise<TaskListItemRecord[]> {
-    const linkedActionIds = new Set(await this.businessLineRepository.listLinkedActionIds(businessLine.id));
+    const linkedActionIds = new Set(await this.businessLineRepository.listActionTaskIds(businessLine.id));
     return newestFirst(tasks.filter((task) => {
       if (linkedActionIds.has(task.id)) return task.state !== 'completed' && task.state !== 'archived';
       if (!businessLine.legacyTaskId) return false;

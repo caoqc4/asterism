@@ -16,6 +16,7 @@ function toRecord(row: typeof taskFiles.$inferSelect): TaskFileRecord {
   return {
     id: row.id,
     taskId: row.taskId,
+    businessLineId: row.businessLineId,
     name: row.name,
     path: row.path,
     kind: row.kind as TaskFileKind,
@@ -56,13 +57,14 @@ export class TaskFileRepository {
     assertCanonicalWriteInput({
       domain: 'task_file',
       input: normalizedInput as Record<string, unknown>,
-      allowedFields: ['taskId', 'name', 'path', 'kind', 'content'],
+      allowedFields: ['taskId', 'businessLineId', 'name', 'path', 'kind', 'content'],
       requiredFields: ['taskId', 'name', 'kind'],
     });
 
     await db.insert(taskFiles).values({
       id,
       taskId: normalizedInput.taskId,
+      businessLineId: normalizedInput.businessLineId?.trim() || null,
       name: normalizedInput.name,
       path: normalizedInput.path ?? normalizedInput.name,
       kind: normalizedInput.kind,

@@ -5,6 +5,7 @@ export type ArtifactSourceType = 'run' | 'manual';
 export type ArtifactRecord = {
   id: string;
   taskId: string;
+  businessLineId?: string | null;
   sourceType: ArtifactSourceType;
   sourceId: string;
   kind: ArtifactKind;
@@ -16,6 +17,7 @@ export type ArtifactRecord = {
 
 export type CreateManualArtifactInput = {
   taskId: string;
+  businessLineId?: string | null;
   title: string;
   content?: string;
   kind?: Extract<ArtifactKind, 'note'>;
