@@ -917,12 +917,21 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
       readStepKeyValue(agentApiPromotionStep.output, 'noWorkspaceWriteRequired')
       ?? readSlashSummaryValue(agentApiPromotionStep.output, 'noWorkspaceWriteRequired')
     ) === 'yes';
+    const declaredActionEvidence = (
+      readStepKeyValue(agentApiPromotionStep.output, 'writeIntentDeclaredActionEvidenceChain')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'writeIntentDeclaredActionEvidenceChain')
+    );
     const label = ready === 'yes'
       ? noWorkspaceWriteRequired ? 'ready，无需工作区写入' : 'ready'
       : missingRequirements && missingRequirements !== 'none'
         ? `missing ${truncateAgentCliChatLine(missingRequirements, 72)}`
         : 'recorded';
-    lines.push(`Agent API 执行证据：promotion readiness ${label}${requirements ? `（${requirements}）` : ''}。`);
+    const declaredActionLabel = declaredActionEvidence === 'ready'
+      ? '；Write Intent 声明证据 ready'
+      : declaredActionEvidence === 'missing'
+        ? '；Write Intent 声明证据 missing'
+        : '';
+    lines.push(`Agent API 执行证据：promotion readiness ${label}${requirements ? `（${requirements}）` : ''}${declaredActionLabel}。`);
   }
 
   const nativeWorkspaceWriteStep = orderedSteps.find((step) => (
