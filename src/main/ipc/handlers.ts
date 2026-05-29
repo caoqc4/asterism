@@ -1116,6 +1116,7 @@ export function registerIpcHandlers(): void {
       parentTaskId: input.taskId,
       reversibleProposalCard: {
         acceptanceCriteria: decomposition.subtasks.map((subtask) => subtask.acceptanceCriteria),
+        dependencies: decomposition.subtasks.map((subtask) => subtask.dependency),
         parentTaskId: input.taskId,
         proposalId: `project_decomposition:${input.taskId}`,
         status: 'ready',

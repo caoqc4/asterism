@@ -104,6 +104,7 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
   parentTaskId?: string | null;
   reversibleProposalCard?: {
     acceptanceCriteria?: string[] | null;
+    dependencies?: (string | null)[] | null;
     parentTaskId?: string | null;
     proposalId?: string | null;
     status: 'missing' | 'ready';
@@ -466,6 +467,9 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const applyPlanAcceptanceCriteria = normalizedSubtaskTextList(
     applyPlan?.input.subtasks.map((subtask) => subtask.acceptanceCriteria) ?? [],
   );
+  const applyPlanDependencies = normalizedSubtaskDependencies(
+    applyPlan?.input.subtasks.map((subtask) => subtask.dependency) ?? [],
+  );
   const proposalSubtaskTitles = normalizedSubtaskTitles(evidence.reversibleProposalCard?.subtaskTitles ?? []);
   const proposalSubtaskSummaries = normalizedSubtaskTextList(evidence.reversibleProposalCard?.subtaskSummaries ?? []);
   const proposalAcceptanceCriteria = normalizedSubtaskTextList(evidence.reversibleProposalCard?.acceptanceCriteria ?? []);
@@ -473,6 +477,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && Number.isFinite(evidence.reversibleProposalCard.subtaskCount)
     ? evidence.reversibleProposalCard.subtaskCount
     : null;
+  const proposalDependencies = normalizedSubtaskDependencies(
+    evidence.reversibleProposalCard?.dependencies
+      ?? Array.from({ length: proposalSubtaskCount ?? 0 }, () => null),
+  );
   const applyPlanSubtaskTitleEvidenceChainReady = applyPlanSubtaskCount > 0
     && applyPlanSubtaskTitles.length === applyPlanSubtaskCount;
   const proposalSubtaskTitleEvidenceChainReady = proposalSubtaskCount !== null
@@ -488,6 +496,11 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const proposalAcceptanceCriteriaEvidenceChainReady = proposalSubtaskCount !== null
     && proposalSubtaskCount > 0
     && proposalAcceptanceCriteria.length === proposalSubtaskCount;
+  const applyPlanDependencyEvidenceChainReady = applyPlanSubtaskCount > 0
+    && applyPlanDependencies.length === applyPlanSubtaskCount;
+  const proposalDependencyEvidenceChainReady = proposalSubtaskCount !== null
+    && proposalSubtaskCount > 0
+    && proposalDependencies.length === proposalSubtaskCount;
   const proposalTaskEvidenceChainReady = Boolean(proposalParentTaskId)
     && Boolean(parentTaskId)
     && proposalParentTaskId === parentTaskId
@@ -509,12 +522,16 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
     && proposalSubtaskSummaryEvidenceChainReady
     && applyPlanAcceptanceCriteriaEvidenceChainReady
     && proposalAcceptanceCriteriaEvidenceChainReady
+    && applyPlanDependencyEvidenceChainReady
+    && proposalDependencyEvidenceChainReady
     && proposalSubtaskTitles.length === applyPlanSubtaskTitles.length
     && proposalSubtaskTitles.every((title, index) => title === applyPlanSubtaskTitles[index])
     && proposalSubtaskSummaries.length === applyPlanSubtaskSummaries.length
     && proposalSubtaskSummaries.every((summary, index) => summary === applyPlanSubtaskSummaries[index])
     && proposalAcceptanceCriteria.length === applyPlanAcceptanceCriteria.length
     && proposalAcceptanceCriteria.every((criteria, index) => criteria === applyPlanAcceptanceCriteria[index])
+    && proposalDependencies.length === applyPlanDependencies.length
+    && proposalDependencies.every((dependency, index) => dependency === applyPlanDependencies[index])
     && proposalSubtaskUniqueChainReady;
   const confirmationBoundary = typeof applyPlan?.timeline.payload.confirmationBoundary === 'string'
     ? applyPlan.timeline.payload.confirmationBoundary
@@ -599,6 +616,10 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `applyPlanAcceptanceCriteria=${applyPlanAcceptanceCriteria.length ? applyPlanAcceptanceCriteria.join('|') : 'missing'}`,
       `proposalAcceptanceCriteriaEvidenceChain=${proposalAcceptanceCriteriaEvidenceChainReady ? 'ready' : 'missing'}`,
       `applyPlanAcceptanceCriteriaEvidenceChain=${applyPlanAcceptanceCriteriaEvidenceChainReady ? 'ready' : 'missing'}`,
+      `proposalDependencies=${proposalDependencies.length ? proposalDependencies.join('|') : 'missing'}`,
+      `applyPlanDependencies=${applyPlanDependencies.length ? applyPlanDependencies.join('|') : 'missing'}`,
+      `proposalDependencyEvidenceChain=${proposalDependencyEvidenceChainReady ? 'ready' : 'missing'}`,
+      `applyPlanDependencyEvidenceChain=${applyPlanDependencyEvidenceChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskUniqueChain=${proposalSubtaskUniqueChainReady ? 'ready' : 'missing'}`,
       `proposalSubtaskIdentityChain=${proposalSubtaskIdentityChainReady ? 'ready' : 'missing'}`,
       `subtaskCount=${applyPlanSubtaskCount}`,
@@ -671,6 +692,13 @@ function normalizedSubtaskTextList(values: readonly (string | null | undefined)[
   return values
     .map((value) => value?.trim().replace(/\s+/g, ' ') ?? '')
     .filter(Boolean);
+}
+
+function normalizedSubtaskDependencies(values: readonly (string | null | undefined)[]): string[] {
+  return values.map((value) => {
+    const normalized = value?.trim().replace(/\s+/g, ' ') ?? '';
+    return normalized || 'none';
+  });
 }
 
 function titlesAreUnique(titles: readonly string[]): boolean {

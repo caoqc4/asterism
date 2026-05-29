@@ -158,6 +158,10 @@ export function projectDecompositionPromotionEvidenceChips(
     'proposalSubtaskEvidenceChain',
     'proposalSubtaskTitles',
     'applyPlanSubtaskTitles',
+    'proposalDependencies',
+    'applyPlanDependencies',
+    'proposalDependencyEvidenceChain',
+    'applyPlanDependencyEvidenceChain',
     'proposalSubtaskIdentityChain',
     'parentTask',
     'applyPlanParentTask',
@@ -2983,6 +2987,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         parentTaskId: project.id,
         reversibleProposalCard: {
           acceptanceCriteria: draft.subtasks.map((subtask) => subtask.acceptanceCriteria),
+          dependencies: draft.subtasks.map((subtask) => subtask.dependency),
           parentTaskId: project.id,
           proposalId: `project_decomposition:${project.id}`,
           status: 'ready',

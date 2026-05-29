@@ -276,6 +276,10 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('applyPlanAcceptanceCriteria=范围文档可验收');
     expect(ready.summary).toContain('proposalAcceptanceCriteriaEvidenceChain=ready');
     expect(ready.summary).toContain('applyPlanAcceptanceCriteriaEvidenceChain=ready');
+    expect(ready.summary).toContain('proposalDependencies=none');
+    expect(ready.summary).toContain('applyPlanDependencies=none');
+    expect(ready.summary).toContain('proposalDependencyEvidenceChain=ready');
+    expect(ready.summary).toContain('applyPlanDependencyEvidenceChain=ready');
     expect(ready.summary).toContain('proposalSubtaskUniqueChain=ready');
     expect(ready.summary).toContain('proposalSubtaskIdentityChain=ready');
     expect(ready.summary).toContain('parentTask=task_project');
@@ -845,6 +849,51 @@ describe('ai runtime invocation contract', () => {
     expect(mismatch.summary).toContain('proposalAcceptanceCriteria=Different criteria');
     expect(mismatch.summary).toContain('applyPlanAcceptanceCriteria=范围文档可验收');
     expect(mismatch.summary).toContain('proposalAcceptanceCriteriaEvidenceChain=ready');
+    expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
+    expect(mismatch.summary).toContain('proposalCard=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when proposal dependencies do not match the apply plan', () => {
+    const applyPlan = buildAgentApiDecompositionApplyPlan({
+      evidenceRunId: 'run_api_decomposition',
+      parentTaskId: 'task_project',
+      source: 'agent_api_decomposition',
+      subtasks: [{
+        ...buildSubtaskDraft(),
+        dependency: '完成需求确认',
+      }],
+    });
+
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan,
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        acceptanceCriteria: ['范围文档可验收'],
+        dependencies: ['其他依赖'],
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
+        subtaskTitles: ['需求与范围确认'],
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['reversible_proposal_card'],
+    });
+    expect(mismatch.summary).toContain('proposalDependencies=其他依赖');
+    expect(mismatch.summary).toContain('applyPlanDependencies=完成需求确认');
+    expect(mismatch.summary).toContain('proposalDependencyEvidenceChain=ready');
+    expect(mismatch.summary).toContain('applyPlanDependencyEvidenceChain=ready');
     expect(mismatch.summary).toContain('proposalSubtaskIdentityChain=missing');
     expect(mismatch.summary).toContain('proposalCard=missing');
   });

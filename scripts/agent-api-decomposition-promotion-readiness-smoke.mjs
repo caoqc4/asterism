@@ -84,6 +84,7 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
       subtaskSummaries: ['Prepare one reversible child task draft for promotion-readiness evidence.'],
       subtaskTitles: ['Review Agent API decomposition promotion boundary'],
       acceptanceCriteria: ['The reversible child-task draft can be reviewed before persistence.'],
+      dependencies: [null],
     },
     selectedRuntimeContract: {
       evidenceRunId: 'run_cli_decomposition_smoke',
@@ -126,6 +127,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceApplyPlanAcceptanceCriteria=${scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteria') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalAcceptanceCriteriaEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalAcceptanceCriteriaEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceApplyPlanAcceptanceCriteriaEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteriaEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalDependencies=${scalarValue(serviceEvidencePartial.summary, 'proposalDependencies') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanDependencies=${scalarValue(serviceEvidencePartial.summary, 'applyPlanDependencies') ?? 'missing'}`);
+  console.log(`serviceEvidenceProposalDependencyEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'proposalDependencyEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceApplyPlanDependencyEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'applyPlanDependencyEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskUniqueChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskUniqueChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProposalSubtaskIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') ?? 'missing'}`);
   console.log(`serviceEvidenceParentTask=${scalarValue(serviceEvidencePartial.summary, 'parentTask') ?? 'missing'}`);
@@ -179,6 +184,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteria') !== 'The reversible child-task draft can be reviewed before persistence.'
     || scalarValue(serviceEvidencePartial.summary, 'proposalAcceptanceCriteriaEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'applyPlanAcceptanceCriteriaEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalDependencies') !== 'none'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanDependencies') !== 'none'
+    || scalarValue(serviceEvidencePartial.summary, 'proposalDependencyEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'applyPlanDependencyEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskUniqueChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'proposalSubtaskIdentityChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'parentTask') !== 'task_project'

@@ -739,7 +739,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('keeps draft_only_timeline_evidence missing when apply-plan evidenceRunId and timeline evidenceRunId diverge or when both run identities are absent');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('keeps the reversible proposal card missing when its proposalId, parentTaskId, subtask count, subtask title identity, or subtask-title uniqueness does not match the same apply-plan evidence chain');
+      .toContain('keeps the reversible proposal card missing when its proposalId, parentTaskId, subtask count, subtask title identity, subtask dependency identity, or subtask-title uniqueness does not match the same apply-plan evidence chain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('satisfied and missing requirement lists');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
@@ -751,7 +751,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('promotionMissingRequirements=...');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('proposalId, expectedProposalId, proposalIdEvidenceChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalSubtaskUniqueChain, proposalSubtaskIdentityChain, parentTask, applyPlanParentTask, parentTaskEvidenceChain, subtaskCount, evidenceRunId, timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain');
+      .toContain('proposalId, expectedProposalId, proposalIdEvidenceChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalDependencies, applyPlanDependencies, proposalDependencyEvidenceChain, applyPlanDependencyEvidenceChain, proposalSubtaskUniqueChain, proposalSubtaskIdentityChain, parentTask, applyPlanParentTask, parentTaskEvidenceChain, subtaskCount, evidenceRunId, timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('confirmationBoundary, draftOnlyBeforeConfirmation, runtimeMode, invocationLayer');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
@@ -805,6 +805,8 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('subtask-title identity chain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
+      .toContain('subtask dependency identity chain');
+    expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('subtask-title uniqueness');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('source chain');
@@ -819,7 +821,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('service-evidence=6/7 requirements');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('proposalId, expectedProposalId, proposalIdEvidenceChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalSubtaskUniqueChain, proposalSubtaskIdentityChain');
+      .toContain('proposalId, expectedProposalId, proposalIdEvidenceChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalDependencies, applyPlanDependencies, proposalDependencyEvidenceChain, applyPlanDependencyEvidenceChain, proposalSubtaskUniqueChain, proposalSubtaskIdentityChain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
