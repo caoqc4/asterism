@@ -214,6 +214,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('missing for reviewedPatchApplyBoundary until explicit apply completes successfully');
     expect(rightPanel?.evidence.join(' ')).toContain('parsed TASKPLANE_WRITE_INTENTS artifact.propose plus task_file.propose output and same-run patch promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('without hand-filled readiness');
+    expect(rightPanel?.evidence.join(' ')).toContain('derives no-write completion evidence from real RunService output');
+    expect(rightPanel?.evidence.join(' ')).toContain('no parsed structured Write Intent actions, and no same-run sandbox patch promotions');
+    expect(rightPanel?.evidence.join(' ')).toContain('without requiring a fake patch');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run promotion requirements and missing lists through evaluateAgentApiExecutionPromotionReadinessFromEvidence');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports aligned with service-evidence readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');

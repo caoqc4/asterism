@@ -409,6 +409,19 @@ export class RunService {
     const reviewedPatchApplyBoundaryEvidence = await this.readReviewedPatchApplyBoundaryEvidence(
       phase === 'post_run' ? runId : null,
     );
+    const terminalRunHasReviewableEvidence = Boolean(
+      phase === 'post_run'
+      && params.run
+      && (params.run.output?.trim() || params.run.failureReason?.trim()),
+    );
+    const noStructuredWriteIntentRequired = Boolean(
+      terminalRunHasReviewableEvidence
+      && supportedWriteActions.length === 0
+      && !reviewedPatchApplyBoundaryEvidence,
+    );
+    const noWorkspaceWriteRequired = Boolean(
+      noStructuredWriteIntentRequired,
+    );
     const taskMemoryGuidanceReady = params.taskMemoryGuidance.outcome !== 'pending';
     const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       contextManifestSummary: params.capabilities?.summary ?? null,
@@ -447,7 +460,16 @@ export class RunService {
             runId: reviewedPatchApplyBoundaryEvidence.runId,
             taskId: reviewedPatchApplyBoundaryEvidence.taskId,
           }
-        : null,
+        : noWorkspaceWriteRequired
+          ? {
+              appliedPromotionStatus: 'not_required',
+              explicitApplyOnly: true,
+              noWorkspaceWriteRequired: true,
+              promotionPreflightReady: false,
+              runId,
+              taskId: params.task.id,
+            }
+          : null,
       postStepVerification: phase === 'post_run'
         ? {
             runId,
@@ -492,7 +514,15 @@ export class RunService {
             supportedActions: supportedWriteActions,
             taskId: params.task.id,
           }
-        : null,
+        : noStructuredWriteIntentRequired
+          ? {
+              noWriteIntentRequired: true,
+              runId,
+              status: 'ready',
+              supportedActions: [],
+              taskId: params.task.id,
+            }
+          : null,
     });
 
     await this.runStepRepository.create({
