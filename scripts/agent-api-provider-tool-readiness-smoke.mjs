@@ -155,6 +155,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`declaredWebSearchTools=${scalarValue(agentApiRuntime.summary, 'declaredWebSearchTools') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
   console.log(`trustedWebSearchToolCount=${scalarValue(agentApiRuntime.summary, 'trustedWebSearchToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'trustedWebSearchToolCount') ?? '0'}`);
   console.log(`trustedWebSearchTools=${scalarValue(agentApiRuntime.summary, 'trustedWebSearchTools') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'trustedWebSearchTools') ?? 'none'}`);
+  console.log(`untrustedWebSearchToolCount=${scalarValue(agentApiRuntime.summary, 'untrustedWebSearchToolCount') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'untrustedWebSearchToolCount') ?? '0'}`);
+  console.log(`untrustedWebSearchTools=${scalarValue(agentApiRuntime.summary, 'untrustedWebSearchTools') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'untrustedWebSearchTools') ?? 'none'}`);
   console.log(`startupProbe=${scalarValue(agentApiRuntime.summary, 'startupProbe') ?? 'missing'}`);
   console.log(`executionRun=${scalarValue(agentApiRuntime.summary, 'executionRun') ?? 'missing'}`);
   console.log(`executionRunPromotionRequirements=${scalarValue(agentApiRuntime.summary, 'executionRunPromotionRequirements') ?? 'missing'}`);
@@ -180,6 +182,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`serviceEvidenceDeclaredWebSearchTools=${serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
   console.log(`serviceEvidenceTrustedWebSearchToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'trustedWebSearchToolCount') ?? '0'}`);
   console.log(`serviceEvidenceTrustedWebSearchTools=${serviceScalarValue(serviceEvidenceReadiness.summary, 'trustedWebSearchTools') ?? 'none'}`);
+  console.log(`serviceEvidenceUntrustedWebSearchToolCount=${serviceScalarValue(serviceEvidenceReadiness.summary, 'untrustedWebSearchToolCount') ?? '0'}`);
+  console.log(`serviceEvidenceUntrustedWebSearchTools=${serviceScalarValue(serviceEvidenceReadiness.summary, 'untrustedWebSearchTools') ?? 'none'}`);
   console.log(`genericHelperProviderToolStatus=${genericHelperReadiness.status}`);
   console.log(`genericHelperProviderToolReadiness=${genericHelperReadiness.toolReadiness}`);
   console.log(`genericHelperProviderToolRequirements=${genericHelperReadiness.satisfiedRequirements.length}/5`);
@@ -189,6 +193,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`genericHelperDeclaredWebSearchTools=${serviceScalarValue(genericHelperReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
   console.log(`genericHelperTrustedWebSearchToolCount=${serviceScalarValue(genericHelperReadiness.summary, 'trustedWebSearchToolCount') ?? '0'}`);
   console.log(`genericHelperTrustedWebSearchTools=${serviceScalarValue(genericHelperReadiness.summary, 'trustedWebSearchTools') ?? 'none'}`);
+  console.log(`genericHelperUntrustedWebSearchToolCount=${serviceScalarValue(genericHelperReadiness.summary, 'untrustedWebSearchToolCount') ?? '0'}`);
+  console.log(`genericHelperUntrustedWebSearchTools=${serviceScalarValue(genericHelperReadiness.summary, 'untrustedWebSearchTools') ?? 'none'}`);
   console.log(`legacyPreviewProviderToolStatus=${legacyWebSearchPreviewReadiness.status}`);
   console.log(`legacyPreviewProviderToolReadiness=${legacyWebSearchPreviewReadiness.toolReadiness}`);
   console.log(`legacyPreviewProviderToolRequirements=${legacyWebSearchPreviewReadiness.satisfiedRequirements.length}/5`);
@@ -198,6 +204,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`legacyPreviewDeclaredWebSearchTools=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'declaredWebSearchTools') ?? 'none'}`);
   console.log(`legacyPreviewTrustedWebSearchToolCount=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'trustedWebSearchToolCount') ?? '0'}`);
   console.log(`legacyPreviewTrustedWebSearchTools=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'trustedWebSearchTools') ?? 'none'}`);
+  console.log(`legacyPreviewUntrustedWebSearchToolCount=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'untrustedWebSearchToolCount') ?? '0'}`);
+  console.log(`legacyPreviewUntrustedWebSearchTools=${serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'untrustedWebSearchTools') ?? 'none'}`);
 
   const failureReasons = [
     snapshot.executionRuntime.kind !== 'agent_api' ? 'runtime_kind' : null,
@@ -231,6 +239,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     (serviceScalarValue(serviceEvidenceReadiness.summary, 'declaredWebSearchTools') ?? 'none') !== 'none' ? 'service_declared_web_search_tools' : null,
     (serviceScalarValue(serviceEvidenceReadiness.summary, 'trustedWebSearchToolCount') ?? '0') !== '0' ? 'service_trusted_web_search_tool_count' : null,
     (serviceScalarValue(serviceEvidenceReadiness.summary, 'trustedWebSearchTools') ?? 'none') !== 'none' ? 'service_trusted_web_search_tools' : null,
+    (serviceScalarValue(serviceEvidenceReadiness.summary, 'untrustedWebSearchToolCount') ?? '0') !== '0' ? 'service_untrusted_web_search_tool_count' : null,
+    (serviceScalarValue(serviceEvidenceReadiness.summary, 'untrustedWebSearchTools') ?? 'none') !== 'none' ? 'service_untrusted_web_search_tools' : null,
     !agentApiRuntime.summary.includes('startupProbe=never') ? 'startup_probe' : null,
     !agentApiRuntime.summary.includes('executionRun=deferred') ? 'execution_run' : null,
     serviceEvidenceReadiness.status !== 'not_declared' ? 'service_status' : null,
@@ -246,6 +256,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     (serviceScalarValue(genericHelperReadiness.summary, 'declaredWebSearchTools') ?? 'none') !== 'none' ? 'generic_helper_declared_web_search_tools' : null,
     (serviceScalarValue(genericHelperReadiness.summary, 'trustedWebSearchToolCount') ?? '0') !== '0' ? 'generic_helper_trusted_web_search_tool_count' : null,
     (serviceScalarValue(genericHelperReadiness.summary, 'trustedWebSearchTools') ?? 'none') !== 'none' ? 'generic_helper_trusted_web_search_tools' : null,
+    (serviceScalarValue(genericHelperReadiness.summary, 'untrustedWebSearchToolCount') ?? '0') !== '0' ? 'generic_helper_untrusted_web_search_tool_count' : null,
+    (serviceScalarValue(genericHelperReadiness.summary, 'untrustedWebSearchTools') ?? 'none') !== 'none' ? 'generic_helper_untrusted_web_search_tools' : null,
     legacyWebSearchPreviewReadiness.status !== 'declared' ? 'legacy_preview_status' : null,
     legacyWebSearchPreviewReadiness.toolReadiness !== 'declared' ? 'legacy_preview_tool_readiness' : null,
     legacyWebSearchPreviewReadiness.satisfiedRequirements.length !== 5 ? 'legacy_preview_requirement_count' : null,
@@ -255,6 +267,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'declaredWebSearchTools') !== 'web_search_preview' ? 'legacy_preview_declared_web_search_tools' : null,
     serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'trustedWebSearchToolCount') !== '1' ? 'legacy_preview_trusted_web_search_tool_count' : null,
     serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'trustedWebSearchTools') !== 'web_search_preview' ? 'legacy_preview_trusted_web_search_tools' : null,
+    serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'untrustedWebSearchToolCount') !== '0' ? 'legacy_preview_untrusted_web_search_tool_count' : null,
+    serviceScalarValue(legacyWebSearchPreviewReadiness.summary, 'untrustedWebSearchTools') !== 'none' ? 'legacy_preview_untrusted_web_search_tools' : null,
   ].filter(Boolean);
 
   if (failureReasons.length > 0) {

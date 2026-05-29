@@ -217,6 +217,11 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
     && declarations?.source === 'provider_owned_metadata'
     && declarationPackageMatchesMetadata
   ) ? webSearchDeclaredTools : [];
+  const trustedWebSearchToolIdentityKeys = new Set(
+    trustedWebSearchDeclaredTools.map(declaredToolIdentityKey),
+  );
+  const untrustedWebSearchDeclaredTools = webSearchDeclaredTools.filter((tool) =>
+    !trustedWebSearchToolIdentityKeys.has(declaredToolIdentityKey(tool)));
 
   if (evidence.selectedRuntime?.runtimeKind === 'agent_api' && evidence.selectedRuntime.mode === 'api') {
     satisfiedRequirements.push('selected_api_runtime');
@@ -282,6 +287,8 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
       `declaredWebSearchTools=${webSearchDeclaredTools.length ? webSearchDeclaredTools.join(',') : 'none'}`,
       `trustedWebSearchToolCount=${trustedWebSearchDeclaredTools.length}`,
       `trustedWebSearchTools=${trustedWebSearchDeclaredTools.length ? trustedWebSearchDeclaredTools.join(',') : 'none'}`,
+      `untrustedWebSearchToolCount=${untrustedWebSearchDeclaredTools.length}`,
+      `untrustedWebSearchTools=${untrustedWebSearchDeclaredTools.length ? untrustedWebSearchDeclaredTools.join(',') : 'none'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `providerToolMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),

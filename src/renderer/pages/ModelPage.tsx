@@ -120,6 +120,10 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   declaredToolCount: string | null;
   declaredWebSearchToolCount: string | null;
   declaredWebSearchTools: string | null;
+  trustedWebSearchToolCount: string | null;
+  trustedWebSearchTools: string | null;
+  untrustedWebSearchToolCount: string | null;
+  untrustedWebSearchTools: string | null;
   explicitToolDeclarationSource: string | null;
   configuredProvider: string | null;
   providerMetadataMatchesSelected: string | null;
@@ -138,6 +142,10 @@ function agentApiProviderToolEvidence(summary?: string | null): {
     declaredToolCount: scalarValue(text, 'declaredToolCount'),
     declaredWebSearchToolCount: scalarValue(text, 'declaredWebSearchToolCount'),
     declaredWebSearchTools: scalarValue(text, 'declaredWebSearchTools'),
+    trustedWebSearchToolCount: scalarValue(text, 'trustedWebSearchToolCount'),
+    trustedWebSearchTools: scalarValue(text, 'trustedWebSearchTools'),
+    untrustedWebSearchToolCount: scalarValue(text, 'untrustedWebSearchToolCount'),
+    untrustedWebSearchTools: scalarValue(text, 'untrustedWebSearchTools'),
     configuredProvider: scalarValue(text, 'configuredProvider'),
     providerMetadataMatchesSelected: scalarValue(text, 'providerMetadataMatchesSelected'),
     explicitToolDeclaration: scalarValue(text, 'explicitToolDeclaration'),
@@ -893,6 +901,18 @@ function AgentCliRuntimeSection({
                 )}
                 {apiProviderToolEvidence.declaredWebSearchTools && (
                   <span>{`declaredWebSearchTools=${apiProviderToolEvidence.declaredWebSearchTools}`}</span>
+                )}
+                {apiProviderToolEvidence.trustedWebSearchToolCount && (
+                  <span>{`trustedWebSearchToolCount=${apiProviderToolEvidence.trustedWebSearchToolCount}`}</span>
+                )}
+                {apiProviderToolEvidence.trustedWebSearchTools && (
+                  <span>{`trustedWebSearchTools=${apiProviderToolEvidence.trustedWebSearchTools}`}</span>
+                )}
+                {apiProviderToolEvidence.untrustedWebSearchToolCount && (
+                  <span>{`untrustedWebSearchToolCount=${apiProviderToolEvidence.untrustedWebSearchToolCount}`}</span>
+                )}
+                {apiProviderToolEvidence.untrustedWebSearchTools && (
+                  <span>{`untrustedWebSearchTools=${apiProviderToolEvidence.untrustedWebSearchTools}`}</span>
                 )}
                 <span>provider tools not implied</span>
               </div>

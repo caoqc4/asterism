@@ -450,6 +450,10 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredToolCount=9');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
     expect(readiness.summary).toContain('declaredWebSearchTools=openai:web_search');
+    expect(readiness.summary).toContain('trustedWebSearchToolCount=1');
+    expect(readiness.summary).toContain('trustedWebSearchTools=openai:web_search');
+    expect(readiness.summary).toContain('untrustedWebSearchToolCount=0');
+    expect(readiness.summary).toContain('untrustedWebSearchTools=none');
   });
 
   it('requires explicit provider-owned tool declarations to match provider metadata package identity', () => {
@@ -483,6 +487,10 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('explicitToolDeclarationPackage=@some/other-package');
     expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=no');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+    expect(readiness.summary).toContain('trustedWebSearchToolCount=0');
+    expect(readiness.summary).toContain('trustedWebSearchTools=none');
+    expect(readiness.summary).toContain('untrustedWebSearchToolCount=1');
+    expect(readiness.summary).toContain('untrustedWebSearchTools=web_search');
     expect(readiness.summary).toContain('explicitToolDeclaration=missing');
   });
 
@@ -522,6 +530,8 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
     expect(readiness.summary).toContain('trustedWebSearchToolCount=0');
     expect(readiness.summary).toContain('trustedWebSearchTools=none');
+    expect(readiness.summary).toContain('untrustedWebSearchToolCount=1');
+    expect(readiness.summary).toContain('untrustedWebSearchTools=web_search');
   });
 
   it('does not accept known-provider metadata from third-party package name prefixes', () => {
@@ -791,5 +801,7 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
     expect(readiness.summary).toContain('trustedWebSearchToolCount=0');
     expect(readiness.summary).toContain('trustedWebSearchTools=none');
+    expect(readiness.summary).toContain('untrustedWebSearchToolCount=1');
+    expect(readiness.summary).toContain('untrustedWebSearchTools=web_search');
   });
 });

@@ -648,6 +648,12 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       scalarSummaryValue(providerToolReadiness.summary, 'trustedWebSearchTools')
         ? `trustedWebSearchTools=${scalarSummaryValue(providerToolReadiness.summary, 'trustedWebSearchTools')}`
         : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'untrustedWebSearchToolCount')
+        ? `untrustedWebSearchToolCount=${scalarSummaryValue(providerToolReadiness.summary, 'untrustedWebSearchToolCount')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'untrustedWebSearchTools')
+        ? `untrustedWebSearchTools=${scalarSummaryValue(providerToolReadiness.summary, 'untrustedWebSearchTools')}`
+        : null,
       'startupProbe=never',
       selected ? 'selected=true' : null,
       providerConfigured ? 'provider=configured' : 'provider=missing',

@@ -1082,7 +1082,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');
-    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, configuredProvider, startupProbe, providerOwnedMetadata, providerMetadataMatchesSelected, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, explicitToolDeclarationPackage, explicitToolDeclarationPackageMatchesMetadata, declaredToolCount, declaredWebSearchToolCount, declaredWebSearchTools, trustedWebSearchToolCount, and trustedWebSearchTools chips');
+    expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime, providerConfigured, configuredProvider, startupProbe, providerOwnedMetadata, providerMetadataMatchesSelected, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, explicitToolDeclarationPackage, explicitToolDeclarationPackageMatchesMetadata, declaredToolCount, declaredWebSearchToolCount, declaredWebSearchTools, trustedWebSearchToolCount, trustedWebSearchTools, untrustedWebSearchToolCount, and untrustedWebSearchTools chips');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
     expect(capabilities?.evidence.join(' ')).toContain('structured service evidence');
@@ -1091,10 +1091,11 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now derives Agent API Runtime providerToolReadiness');
     expect(capabilities?.evidence.join(' ')).toContain('keeps selected Agent API Runtime disabled when provider identity is missing');
     expect(capabilities?.evidence.join(' ')).toContain('no-start local provider package metadata for @ai-sdk/openai and @ai-sdk/anthropic');
-    expect(capabilities?.evidence.join(' ')).toMatch(/providerToolStatus[\s\S]*providerToolRequirements[\s\S]*providerToolMissingRequirements[\s\S]*selectedApiRuntime[\s\S]*providerConfigured[\s\S]*configuredProvider[\s\S]*providerOwnedMetadata[\s\S]*providerMetadataMatchesSelected[\s\S]*providerMetadataOwner[\s\S]*providerMetadataPackage[\s\S]*explicitToolDeclaration[\s\S]*explicitToolDeclarationSource[\s\S]*explicitToolDeclarationPackage[\s\S]*explicitToolDeclarationPackageMatchesMetadata[\s\S]*declaredToolCount[\s\S]*declaredWebSearchToolCount[\s\S]*declaredWebSearchTools[\s\S]*trustedWebSearchToolCount[\s\S]*trustedWebSearchTools/);
+    expect(capabilities?.evidence.join(' ')).toMatch(/providerToolStatus[\s\S]*providerToolRequirements[\s\S]*providerToolMissingRequirements[\s\S]*selectedApiRuntime[\s\S]*providerConfigured[\s\S]*configuredProvider[\s\S]*providerOwnedMetadata[\s\S]*providerMetadataMatchesSelected[\s\S]*providerMetadataOwner[\s\S]*providerMetadataPackage[\s\S]*explicitToolDeclaration[\s\S]*explicitToolDeclarationSource[\s\S]*explicitToolDeclarationPackage[\s\S]*explicitToolDeclarationPackageMatchesMetadata[\s\S]*declaredToolCount[\s\S]*declaredWebSearchToolCount[\s\S]*declaredWebSearchTools[\s\S]*trustedWebSearchToolCount[\s\S]*trustedWebSearchTools[\s\S]*untrustedWebSearchToolCount[\s\S]*untrustedWebSearchTools/);
     expect(capabilities?.evidence.join(' ')).toContain('provider-owned package declarations');
     expect(capabilities?.evidence.join(' ')).toContain('web/search-specific declarations');
     expect(capabilities?.evidence.join(' ')).toContain('trusted provider-owned web/search declarations');
+    expect(capabilities?.evidence.join(' ')).toContain('raw-but-untrusted declarations');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness smoke');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolRequirements=4/5');
@@ -1105,9 +1106,11 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclarationPackage=@ai-sdk/openai');
     expect(capabilities?.evidence.join(' ')).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
     expect(capabilities?.evidence.join(' ')).toMatch(/declaredWebSearchToolCount=0[\s\S]*declaredWebSearchTools=none[\s\S]*trustedWebSearchToolCount=0[\s\S]*trustedWebSearchTools=none/);
+    expect(capabilities?.evidence.join(' ')).toMatch(/untrustedWebSearchToolCount=0[\s\S]*untrustedWebSearchTools=none/);
     expect(capabilities?.evidence.join(' ')).toContain('service-evidence=4/5 requirements');
     expect(capabilities?.evidence.join(' ')).toContain('explicit_tool_declaration missing');
     expect(capabilities?.evidence.join(' ')).toContain('genericHelperTrustedWebSearchToolCount=0');
+    expect(capabilities?.evidence.join(' ')).toContain('genericHelperUntrustedWebSearchToolCount=0');
     expect(capabilities?.evidence.join(' ')).toContain('legacyPreviewProviderToolStatus=declared');
     expect(capabilities?.evidence.join(' ')).toContain('legacyPreviewDeclaredWebSearchTools=web_search_preview');
     expect(capabilities?.evidence.join(' ')).toContain('web_search_cache remains excluded');
@@ -1240,6 +1243,8 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('case-insensitive and separator-normalized deduplication');
     expect(capabilities?.evidence.join(' ')).toContain('without overstating duplicate tool evidence');
     expect(capabilities?.evidence.join(' ')).toContain('colon/dot/slash provider namespace aliases');
+    expect(capabilities?.evidence.join(' ')).toContain('untrustedWebSearchToolCount');
+    expect(capabilities?.evidence.join(' ')).toContain('raw-but-untrusted declarations');
   });
 
   it('records Agent API provider generic helper negative readiness coverage', () => {
