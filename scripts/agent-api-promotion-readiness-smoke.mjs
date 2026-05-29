@@ -282,11 +282,13 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceRunGoalTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runGoalTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidencePreStepGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'preStepGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceWriteIntentActions=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`serviceEvidenceWriteIntentActionIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'writeIntentActionIdentityChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'runtimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'invocationLayer') ?? 'missing'}`);
   console.log(`artifactOnlyPromotionReady=${serviceEvidenceArtifactOnly.ready ? 'yes' : 'no'}`);
   console.log(`artifactOnlyMissingRequirements=${serviceEvidenceArtifactOnly.missingRequirements.join(',') || 'none'}`);
   console.log(`artifactOnlyWriteIntentActions=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') ?? 'missing'}`);
+  console.log(`artifactOnlyWriteIntentActionIdentityChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActionIdentityChain') ?? 'missing'}`);
   console.log(`artifactOnlyWriteIntentRunEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentRunEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyWriteIntentTaskEvidenceChain=${scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentTaskEvidenceChain') ?? 'missing'}`);
   console.log(`artifactOnlyTaskMemoryGuidanceTask=${scalarValue(serviceEvidenceArtifactOnly.summary, 'taskMemoryGuidanceTask') ?? 'missing'}`);
@@ -354,11 +356,13 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'runGoalTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'preStepGateEvidenceChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'writeIntentActions') !== 'none'
+    || scalarValue(serviceEvidencePartial.summary, 'writeIntentActionIdentityChain') !== 'missing'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'invocationLayer') !== 'api_runtime'
     || serviceEvidenceArtifactOnly.ready
     || !serviceEvidenceArtifactOnly.missingRequirements.includes('write_intent_extraction')
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActions') !== 'artifact.propose'
+    || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentActionIdentityChain') !== 'missing'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentRunEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'writeIntentTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceArtifactOnly.summary, 'taskMemoryGuidanceTask') !== 'task_1'

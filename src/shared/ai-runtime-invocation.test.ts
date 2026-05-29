@@ -1297,6 +1297,7 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('runGoalTask=task_1');
     expect(ready.summary).toContain('runGoalTaskEvidenceChain=ready');
     expect(ready.summary).toContain('writeIntentActions=artifact.propose,task_file.propose');
+    expect(ready.summary).toContain('writeIntentActionIdentityChain=ready');
     expect(ready.summary).toContain('writeIntentActionBoundary=ready');
     expect(ready.summary).toContain('reviewedPatchApplyBoundary=ready');
     expect(ready.summary).toContain('patchPromotionStatus=applied');
@@ -1644,9 +1645,32 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: ['write_intent_extraction'],
     });
     expect(unsafeAction.summary).toContain('writeIntentActions=artifact.propose,task_file.propose,workspace.apply');
+    expect(unsafeAction.summary).toContain('writeIntentActionIdentityChain=missing');
     expect(unsafeAction.summary).toContain('writeIntentActionBoundary=missing');
     expect(unsafeAction.summary).toContain('writeIntentRunEvidenceChain=ready');
     expect(unsafeAction.summary).toContain('writeIntentTaskEvidenceChain=ready');
+  });
+
+  it('blocks Agent API execution promotion when Write Intent actions are duplicated', () => {
+    const duplicateAction = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      writeIntentExtraction: {
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: ['artifact.propose', 'task_file.propose', 'task_file.propose'],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(duplicateAction).toMatchObject({
+      ready: false,
+      missingRequirements: ['write_intent_extraction'],
+    });
+    expect(duplicateAction.summary).toContain('writeIntentActions=artifact.propose,task_file.propose,task_file.propose');
+    expect(duplicateAction.summary).toContain('writeIntentActionIdentityChain=missing');
+    expect(duplicateAction.summary).toContain('writeIntentActionBoundary=ready');
+    expect(duplicateAction.summary).toContain('writeIntentRunEvidenceChain=ready');
+    expect(duplicateAction.summary).toContain('writeIntentTaskEvidenceChain=ready');
   });
 
   it('keeps post-run Agent API execution promotion blocked until writeback evidence is complete', () => {

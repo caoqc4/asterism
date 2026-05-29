@@ -769,6 +769,11 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
+  const supportedWriteActionSet = new Set(supportedWriteActions);
+  const writeIntentActionIdentityReady = supportedWriteActions.length === AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.size
+    && supportedWriteActionSet.size === supportedWriteActions.length
+    && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action))
+    && [...AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS].every((action) => supportedWriteActionSet.has(action));
   const writeIntentActionBoundaryReady = supportedWriteActions.length > 0
     && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action));
   const configuredProvider = evidence.providerVisiblePreflight?.configuredProvider?.trim() || '';
@@ -914,8 +919,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
 
   if (
     evidence.writeIntentExtraction?.status === 'ready'
-    && supportedWriteActions.includes('artifact.propose')
-    && supportedWriteActions.includes('task_file.propose')
+    && writeIntentActionIdentityReady
     && writeIntentActionBoundaryReady
     && writeIntentRunEvidenceChainReady
     && writeIntentTaskEvidenceChainReady
@@ -1004,6 +1008,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `runGoalTaskEvidenceChain=${runGoalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `preStepGateEvidenceChain=${gateEvidenceReady('pre_step') ? 'ready' : 'missing'}`,
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
+      `writeIntentActionIdentityChain=${writeIntentActionIdentityReady ? 'ready' : 'missing'}`,
       `writeIntentActionBoundary=${writeIntentActionBoundaryReady ? 'ready' : 'missing'}`,
       `reviewedPatchApplyBoundary=${reviewedPatchApplyBoundaryReady ? 'ready' : 'missing'}`,
       `patchPromotionStatus=${evidence.reviewedPatchApplyBoundary?.appliedPromotionStatus ?? 'missing'}`,

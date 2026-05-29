@@ -183,7 +183,6 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('treats task_memory_guidance as ready when there is no pending guidance or when completed guidance exists');
     expect(rightPanel?.evidence.join(' ')).toContain('while still requiring target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('run_goal_contract to carry persisted same-run and target-task identity evidence');
-    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include both artifact.propose and task_file.propose with persisted same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires reviewed_patch_apply_boundary to carry applied patch promotion status plus same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('requires post_step_verification to carry same-run and target-task identity evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain');
@@ -1214,6 +1213,14 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('generic-helper service evidence remains genericHelperProviderToolStatus=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('genericHelperDeclaredWebSearchToolCount=0');
     expect(capabilities?.evidence.join(' ')).toContain('browser.search/search.web_fetch/task_browser/vendor:browse/web_search_cache-style helpers');
+  });
+
+  it('records exact Agent API execution Write Intent action identity coverage', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+
+    expect(rightPanel?.evidence.join(' ')).toContain('requires write_intent_extraction to include exactly one artifact.propose and exactly one task_file.propose with persisted same-run and target-task identity evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('no duplicate, missing, or non-proposal write actions');
+    expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
   });
 
   it('records selected-runtime identity evidence for runtime patch promotion routing', () => {
