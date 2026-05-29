@@ -201,7 +201,7 @@ export function evaluateRuntimePatchPromotionRoutingReadinessFromEvidence(
       selectedRuntime?.invocationLayer === 'api_runtime'
       && selectedRuntime.runtimeMode === 'api'
       && Boolean(selectedRuntimeProvider)
-      && (!evidence.providerConfiguration || configuredProviderEvidenceChainReady)
+      && configuredProviderEvidenceChainReady
     )
   );
   const selectedRuntimeContractReady = (

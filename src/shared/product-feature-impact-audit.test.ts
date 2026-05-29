@@ -1077,11 +1077,13 @@ describe('product feature impact audit', () => {
     expect(taskFiles?.evidence.join(' ')).toContain('real workspace apply evidence records target-task identity across patch artifact, promotion Decision, preflight, and post-apply evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('explicit operator apply with same task/run/checkpoint evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('remaining selected-runtime-contract gap only when first-party run-step evidence is unavailable');
-    expect(taskFiles?.evidence.join(' ')).toContain('resolves selectedRuntimeContract from first-party completed same-run RunStep evidence');
+    expect(taskFiles?.evidence.join(' ')).toContain('resolves selectedRuntimeContract and providerConfiguration from first-party completed same-run RunStep evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('runtime=codex/claude steps become selected_runtime execution_run evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('Agent API promotion readiness steps become api_runtime execution_run evidence');
     expect(taskFiles?.evidence.join(' ')).toContain('selectedRuntimeProviderEvidenceChain is ready with a concrete provider');
-    expect(taskFiles?.evidence.join(' ')).toContain('instead of accepting renderer-supplied runtime identity');
+    expect(taskFiles?.evidence.join(' ')).toContain('providerConfigured=ready');
+    expect(taskFiles?.evidence.join(' ')).toContain('configuredProvider matches selectedRuntimeProvider');
+    expect(taskFiles?.evidence.join(' ')).toContain('instead of accepting renderer-supplied runtime/provider identity');
     expect(taskFiles?.evidence.join(' ')).toContain('Decision-driven apply and explicit IPC apply both satisfy the operatorApplyEvidenceChain and operatorApplySurfaceEvidenceChain');
     expect(taskFiles?.evidence.join(' ')).toContain('preflight reports an already_applied promotion');
     expect(taskFiles?.evidence.join(' ')).toContain('idempotent apply responses aligned with applied audit evidence');
@@ -1501,11 +1503,14 @@ describe('product feature impact audit', () => {
     const evidence = taskFiles?.evidence.join(' ');
 
     expect(evidence).toContain('selectedRuntimeContract stays missing when the selected runtime run id, target task identity, API provider identity, or configured provider identity diverges');
+    expect(evidence).toContain('selected-provider-only evidence');
+    expect(evidence).toContain('missing provider configuration');
     expect(evidence).toContain('configuredProviderEvidenceChain');
     expect(evidence).toContain('stitched configured-provider evidence');
     expect(evidence).toContain('providerConfigured=ready, configuredProvider=openai, configuredProviderEvidenceChain=ready');
-    expect(evidence).toContain('first-party completed same-run RunStep evidence');
+    expect(evidence).toContain('selectedRuntimeContract and providerConfiguration from first-party completed same-run RunStep evidence');
     expect(evidence).toContain('only when the step belongs to the promotion run');
+    expect(evidence).toContain('configuredProvider matches selectedRuntimeProvider');
   });
 
   it('records operator-facing reviewed patch apply file-count evidence', () => {

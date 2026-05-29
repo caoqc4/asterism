@@ -8,6 +8,7 @@ import type { RunCheckpointRecord, RunStepRecord } from '../../../shared/types/r
 import type { SandboxPatchPromotionRecord } from '../../../shared/types/sandbox-patch-promotion.js';
 import { makeTempDir } from '../../test-utils.js';
 import {
+  inferRuntimePatchPromotionProviderConfigurationFromRunSteps,
   inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps,
   SandboxPatchPromotionApplyService,
 } from './sandbox-patch-promotion-apply-service.js';
@@ -92,7 +93,7 @@ function buildArtifact(diff: string, partial: Partial<ArtifactRecord> = {}): Art
 function buildService(params: {
   artifact: ArtifactRecord;
   promotion?: SandboxPatchPromotionRecord;
-  selectedRuntime?: 'codex' | 'none';
+  selectedRuntime?: 'api' | 'api_without_provider_configuration' | 'codex' | 'none';
   workspaceRoot: string;
 }) {
   const promotion = params.promotion ?? buildPromotion();
@@ -131,6 +132,21 @@ function buildService(params: {
           runId,
           runtimeMode: 'codex',
           taskId,
+        })
+      : params.selectedRuntime === 'api' || params.selectedRuntime === 'api_without_provider_configuration'
+        ? async (runId, taskId) => ({
+            invocationLayer: 'api_runtime',
+            phase: 'execution_run',
+            provider: 'openai',
+            runId,
+            runtimeMode: 'api',
+            taskId,
+          })
+        : null,
+    params.selectedRuntime === 'api'
+      ? async () => ({
+          configuredProvider: 'openai',
+          providerConfigured: true,
         })
       : null,
   );
@@ -309,6 +325,90 @@ describe('SandboxPatchPromotionApplyService', () => {
     }
   });
 
+  it('blocks API reviewed patch workspace apply when provider configuration evidence is missing', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-missing-api-provider-config-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const diff = [
+        '--- a/notes.md',
+        '+++ b/notes.md',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const { markApplied, markBlocked, service } = buildService({
+        artifact: buildArtifact(diff),
+        selectedRuntime: 'api_without_provider_configuration',
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+        operatorSurface: 'ipc_explicit_apply',
+      });
+
+      expect(result).toMatchObject({
+        blockedReasons: [
+          'Patch promotion apply requires complete runtime patch promotion routing evidence before workspace files can be written.',
+        ],
+        status: 'blocked',
+        touchedFiles: [],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(markApplied).not.toHaveBeenCalled();
+      expect(markBlocked).toHaveBeenCalled();
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('selectedRuntimeProvider=openai');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('providerConfigured=missing');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('configuredProviderEvidenceChain=missing');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('selectedRuntimeProviderEvidenceChain=missing');
+      expect(markBlocked.mock.calls[0]?.[2]).toContain('promotionMissingRequirements=selected_runtime_contract,same_run_evidence_chain');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('applies API reviewed patch workspace apply when runtime and provider evidence match', async () => {
+    const tempRoot = makeTempDir('taskplane-sandbox-promotion-api-apply-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const diff = [
+        '--- a/notes.md',
+        '+++ b/notes.md',
+        '@@',
+        '-alpha',
+        '+beta',
+      ].join('\n');
+      const { markApplied, service } = buildService({
+        artifact: buildArtifact(diff),
+        selectedRuntime: 'api',
+        workspaceRoot: tempRoot,
+      });
+
+      const result = await service.apply('run_checkpoint_1', {
+        operatorConfirmed: true,
+        operatorId: 'local_operator',
+        operatorSurface: 'ipc_explicit_apply',
+      });
+
+      expect(result).toMatchObject({
+        status: 'applied',
+        touchedFiles: ['notes.md'],
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('beta\n');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('providerConfigured=ready');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('configuredProvider=openai');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('configuredProviderEvidenceChain=ready');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('selectedRuntimeProviderEvidenceChain=ready');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionRequirements=8/8');
+      expect(markApplied.mock.calls[0]?.[1]).toContain('promotionMissingRequirements=none');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('infers selected runtime contract from first-party run step evidence', () => {
     const cliSteps: RunStepRecord[] = [
       buildStep({
@@ -403,6 +503,80 @@ describe('SandboxPatchPromotionApplyService', () => {
         }),
       ],
       taskId: 'task_1',
+    })).toBeNull();
+  });
+
+  it('infers API provider configuration only from matching provider evidence chains', () => {
+    const readyStep = buildStep({
+      runId: 'run_api_1',
+      output: [
+        'Agent API execution promotion readiness',
+        'selectedRuntimeContract=ready',
+        'runtimeMode=api',
+        'invocationLayer=api_runtime',
+        'selectedRuntimeRun=run_api_1',
+        'selectedRuntimeTask=task_api_1',
+        'selectedRuntimeProvider=openai',
+        'selectedRuntimeProviderEvidenceChain=ready',
+        'providerConfigured=ready',
+        'configuredProvider=openai',
+        'configuredProviderEvidenceChain=ready',
+      ].join(' / '),
+    });
+
+    expect(inferRuntimePatchPromotionProviderConfigurationFromRunSteps({
+      runId: 'run_api_1',
+      steps: [readyStep],
+      taskId: 'task_api_1',
+    })).toEqual({
+      configuredProvider: 'openai',
+      providerConfigured: true,
+    });
+
+    const stitchedProviderStep = buildStep({
+      runId: 'run_api_1',
+      output: [
+        'Agent API execution promotion readiness',
+        'selectedRuntimeContract=ready',
+        'runtimeMode=api',
+        'invocationLayer=api_runtime',
+        'selectedRuntimeRun=run_api_1',
+        'selectedRuntimeTask=task_api_1',
+        'selectedRuntimeProvider=openai',
+        'selectedRuntimeProviderEvidenceChain=ready',
+        'providerConfigured=ready',
+        'configuredProvider=anthropic',
+        'configuredProviderEvidenceChain=ready',
+      ].join(' / '),
+    });
+
+    expect(inferRuntimePatchPromotionProviderConfigurationFromRunSteps({
+      runId: 'run_api_1',
+      steps: [stitchedProviderStep],
+      taskId: 'task_api_1',
+    })).toBeNull();
+
+    expect(inferRuntimePatchPromotionProviderConfigurationFromRunSteps({
+      runId: 'run_api_1',
+      steps: [
+        buildStep({
+          runId: 'run_api_1',
+          output: [
+            'Agent API execution promotion readiness',
+            'selectedRuntimeContract=ready',
+            'runtimeMode=api',
+            'invocationLayer=api_runtime',
+            'selectedRuntimeRun=run_api_1',
+            'selectedRuntimeTask=task_api_1',
+            'selectedRuntimeProvider=openai',
+            'selectedRuntimeProviderEvidenceChain=ready',
+            'providerConfigured=missing',
+            'configuredProvider=openai',
+            'configuredProviderEvidenceChain=missing',
+          ].join(' / '),
+        }),
+      ],
+      taskId: 'task_api_1',
     })).toBeNull();
   });
 

@@ -462,6 +462,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -482,6 +486,67 @@ describe('runtime patch promotion routing readiness', () => {
     expect(missingProvider.summary).toContain('selectedRuntimeTaskEvidenceChain=ready');
     expect(missingProvider.summary).toContain('selectedRuntimeProvider=missing');
     expect(missingProvider.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+  });
+
+  it('requires API selected-runtime provider configuration evidence before patch promotion can be ready', () => {
+    const missingConfiguration = evaluateRuntimePatchPromotionRoutingReadinessFromEvidence({
+      explicitOperatorApply: {
+        checkpointId: 'checkpoint_patch_1',
+        confirmed: true,
+        surface: 'ipc_explicit_apply',
+        operatorId: 'operator_1',
+        runId: 'run_patch_1',
+        taskId: 'task_1',
+      },
+      patchArtifact: {
+        artifactId: 'artifact_patch_1',
+        expectedFiles: ['src/app.ts'],
+        kind: 'patch',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      postApplyRunEvidence: {
+        runId: 'run_patch_1',
+        status: 'present',
+        taskId: 'task_1',
+        touchedFiles: ['src/app.ts'],
+      },
+      promotionDecision: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        decisionId: 'decision_patch_1',
+        runId: 'run_patch_1',
+        status: 'approved',
+        taskId: 'task_1',
+      },
+      promotionPreflight: {
+        artifactId: 'artifact_patch_1',
+        checkpointId: 'checkpoint_patch_1',
+        runId: 'run_patch_1',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      selectedRuntimeContract: {
+        invocationLayer: 'api_runtime',
+        phase: 'execution_run',
+        provider: 'openai',
+        runId: 'run_patch_1',
+        runtimeMode: 'api',
+        taskId: 'task_1',
+      },
+      targetTaskId: 'task_1',
+    });
+
+    expect(missingConfiguration).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract', 'same_run_evidence_chain'],
+    });
+    expect(missingConfiguration.summary).toContain('selectedRuntimeProvider=openai');
+    expect(missingConfiguration.summary).toContain('providerConfigured=missing');
+    expect(missingConfiguration.summary).toContain('configuredProvider=missing');
+    expect(missingConfiguration.summary).toContain('configuredProviderEvidenceChain=missing');
+    expect(missingConfiguration.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
   });
 
   it('blocks API patch promotion when configured provider evidence is stitched', () => {
@@ -589,6 +654,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -654,6 +723,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -722,6 +795,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -781,6 +858,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -843,6 +924,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -911,6 +996,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -978,6 +1067,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_other',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1043,6 +1136,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -1110,6 +1207,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -1179,6 +1280,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1246,6 +1351,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1312,6 +1421,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1373,6 +1486,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -1439,6 +1556,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -1507,6 +1628,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1571,6 +1696,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -1637,6 +1766,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1701,6 +1834,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
@@ -1767,6 +1904,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1830,6 +1971,10 @@ describe('runtime patch promotion routing readiness', () => {
         status: 'ready',
         taskId: 'task_1',
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',
         phase: 'execution_run',
@@ -1887,6 +2032,10 @@ describe('runtime patch promotion routing readiness', () => {
         runId: 'run_patch_1',
         status: 'ready',
         taskId: 'task_1',
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         invocationLayer: 'api_runtime',

@@ -35,6 +35,7 @@ import { CodeAgentRunService } from '../domain/run/code-agent-run-service.js';
 import { OperatorStartedRunService } from '../domain/run/operator-started-run-service.js';
 import { RunService } from '../domain/run/run-service.js';
 import {
+  inferRuntimePatchPromotionProviderConfigurationFromRunSteps,
   inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps,
   SandboxPatchPromotionApplyService,
 } from '../domain/run/sandbox-patch-promotion-apply-service.js';
@@ -131,6 +132,11 @@ const sandboxPatchPromotionApplyService = new SandboxPatchPromotionApplyService(
   sandboxPatchPromotionRepository,
   () => appConfigService.read().workspaceRoot ?? process.cwd(),
   async (runId, taskId) => inferRuntimePatchPromotionSelectedRuntimeContractFromRunSteps({
+    runId,
+    steps: await runStepRepository.listForRun(runId),
+    taskId,
+  }),
+  async (runId, taskId) => inferRuntimePatchPromotionProviderConfigurationFromRunSteps({
     runId,
     steps: await runStepRepository.listForRun(runId),
     taskId,
