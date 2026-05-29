@@ -124,6 +124,17 @@ export function extractTaskplaneWriteIntentsFromText(params: {
   return dedupeWriteIntents(intents);
 }
 
+export function extractTaskplaneWriteIntentTypeNamesFromText(text: string): string[] {
+  const candidates = extractJsonCandidates(text);
+  const types: string[] = [];
+  for (const candidate of candidates) {
+    const parsed = parseJsonCandidate(candidate);
+    if (parsed === null) continue;
+    types.push(...collectWriteIntentTypeNames(parsed));
+  }
+  return Array.from(new Set(types));
+}
+
 export function validateTaskplaneWriteIntent(intent: TaskplaneWriteIntent): TaskplaneWriteIntentValidation {
   const issues: string[] = [];
   if (!intent.evidenceRunId.trim()) {
@@ -318,6 +329,20 @@ function normalizeWriteIntentValue(value: unknown, params: {
     }];
   }
   return [];
+}
+
+function collectWriteIntentTypeNames(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectWriteIntentTypeNames(item));
+  }
+  if (!isRecord(value)) return [];
+  const type = readString(value.type);
+  if (type === 'TASKPLANE_WRITE_INTENTS' || type === 'TASKPLANE_WRITE_INTENT') {
+    return Array.isArray(value.intents)
+      ? value.intents.flatMap((item) => collectWriteIntentTypeNames(item))
+      : [];
+  }
+  return type ? [type] : [];
 }
 
 function normalizeSubtaskDrafts(value: unknown): TaskplaneSubtaskDraftIntent['subtasks'] {

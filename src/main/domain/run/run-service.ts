@@ -8,6 +8,7 @@ import {
   type RuntimeCapabilitySnapshot,
 } from '../../../shared/runtime-capability-snapshot.js';
 import { buildTaskplaneWritebackProposalsFromText } from '../../../shared/taskplane-writeback-proposal.js';
+import { extractTaskplaneWriteIntentTypeNamesFromText } from '../../../shared/taskplane-write-intent.js';
 import {
   evaluateRuntimeContextReadiness,
   formatRuntimeContextReadinessForStep,
@@ -401,11 +402,13 @@ export class RunService {
     const phase = params.phase ?? 'pre_execution';
     const runId = params.run?.id ?? params.runId;
     if (!runId) return;
-    const supportedWriteActions = deriveWriteIntentSupportedActions({
+    const writeIntentActionEvidence = deriveWriteIntentActionEvidence({
       output: params.run?.output ?? null,
       runId,
       task: params.task,
     });
+    const supportedWriteActions = writeIntentActionEvidence.supportedActions;
+    const declaredWriteActions = writeIntentActionEvidence.declaredActions;
     const reviewedPatchApplyBoundaryEvidence = await this.readReviewedPatchApplyBoundaryEvidence(
       phase === 'post_run' ? runId : null,
     );
@@ -417,12 +420,15 @@ export class RunService {
     const noStructuredWriteIntentRequired = Boolean(
       terminalRunHasReviewableEvidence
       && supportedWriteActions.length === 0
+      && declaredWriteActions.length === 0
       && !reviewedPatchApplyBoundaryEvidence,
     );
     const onlySourceContextWriteIntentRequired = Boolean(
       terminalRunHasReviewableEvidence
       && supportedWriteActions.length === 1
       && supportedWriteActions[0] === 'source_context.create'
+      && declaredWriteActions.length === 1
+      && declaredWriteActions[0] === 'source_context.create'
       && !reviewedPatchApplyBoundaryEvidence,
     );
     const noWorkspaceWriteRequired = Boolean(
@@ -519,8 +525,9 @@ export class RunService {
         status: taskMemoryGuidanceReady ? 'ready' : 'missing',
         taskId: params.task.id,
       },
-      writeIntentExtraction: supportedWriteActions.length
+      writeIntentExtraction: supportedWriteActions.length || declaredWriteActions.length
         ? {
+            declaredActions: declaredWriteActions,
             runId,
             status: 'ready',
             supportedActions: supportedWriteActions,
@@ -528,6 +535,7 @@ export class RunService {
           }
         : noStructuredWriteIntentRequired
           ? {
+              declaredActions: declaredWriteActions,
               noWriteIntentRequired: true,
               runId,
               status: 'ready',
@@ -800,12 +808,13 @@ export class RunService {
   }
 }
 
-function deriveWriteIntentSupportedActions(params: {
+function deriveWriteIntentActionEvidence(params: {
   output: string | null;
   runId: string;
   task: TaskDetail;
-}): string[] {
-  if (!params.output?.trim()) return [];
+}): { declaredActions: string[]; supportedActions: string[] } {
+  if (!params.output?.trim()) return { declaredActions: [], supportedActions: [] };
+  const declaredActions = extractTaskplaneWriteIntentTypeNamesFromText(params.output);
   const proposals = buildTaskplaneWritebackProposalsFromText({
     output: params.output,
     runId: params.runId,
@@ -818,5 +827,5 @@ function deriveWriteIntentSupportedActions(params: {
   if (proposals.structured) actions.push(proposals.structured.intent.type);
   if (proposals.taskFile) actions.push('task_file.propose');
   if (proposals.taskRecord) actions.push('task_record.create');
-  return actions;
+  return { declaredActions, supportedActions: actions };
 }

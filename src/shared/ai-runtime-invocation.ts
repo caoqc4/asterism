@@ -218,6 +218,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     taskId?: string | null;
   } | null;
   writeIntentExtraction?: {
+    declaredActions?: string[];
     noWriteIntentRequired?: boolean;
     runId?: string | null;
     status: 'missing' | 'ready';
@@ -784,19 +785,31 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const supportedWriteActions = evidence.writeIntentExtraction?.supportedActions
     .map((action) => action.trim())
     .filter(Boolean) ?? [];
+  const declaredWriteActions = evidence.writeIntentExtraction?.declaredActions
+    ?.map((action) => action.trim())
+    .filter(Boolean) ?? supportedWriteActions;
   const supportedWriteActionSet = new Set(supportedWriteActions);
+  const declaredWriteActionSet = new Set(declaredWriteActions);
+  const declaredWriteActionsMatchSupportedActions = declaredWriteActions.length === supportedWriteActions.length
+    && declaredWriteActionSet.size === declaredWriteActions.length
+    && supportedWriteActionSet.size === supportedWriteActions.length
+    && declaredWriteActions.every((action) => supportedWriteActionSet.has(action));
   const noWriteIntentRequiredReady = evidence.writeIntentExtraction?.noWriteIntentRequired === true
-    && supportedWriteActions.length === 0;
+    && supportedWriteActions.length === 0
+    && declaredWriteActions.length === 0;
   const patchProposalWriteIntentReady = supportedWriteActions.length === 2
+    && declaredWriteActionsMatchSupportedActions
     && supportedWriteActionSet.size === supportedWriteActions.length
     && supportedWriteActionSet.has('artifact.propose')
     && supportedWriteActionSet.has('task_file.propose');
   const sourceContextWriteIntentReady = supportedWriteActions.length === 1
+    && declaredWriteActionsMatchSupportedActions
     && supportedWriteActionSet.has('source_context.create');
   const writeIntentActionIdentityReady = patchProposalWriteIntentReady || sourceContextWriteIntentReady;
   const writeIntentActionBoundaryReady = noWriteIntentRequiredReady
     || (
-      supportedWriteActions.length > 0
+      declaredWriteActionsMatchSupportedActions
+      && supportedWriteActions.length > 0
       && supportedWriteActions.every((action) => AGENT_API_EXECUTION_ALLOWED_WRITE_INTENT_ACTIONS.has(action))
     );
   const configuredProvider = evidence.providerVisiblePreflight?.configuredProvider?.trim() || '';
@@ -1041,6 +1054,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `runGoalTaskEvidenceChain=${runGoalTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `preStepGateEvidenceChain=${gateEvidenceReady('pre_step') ? 'ready' : 'missing'}`,
       `writeIntentActions=${supportedWriteActions.length ? supportedWriteActions.join(',') : 'none'}`,
+      `declaredWriteIntentActions=${declaredWriteActions.length ? declaredWriteActions.join(',') : 'none'}`,
+      `writeIntentDeclaredActionChain=${declaredWriteActionsMatchSupportedActions ? 'ready' : 'missing'}`,
       `writeIntentMode=${noWriteIntentRequiredReady ? 'no_write_intents_required' : 'proposal_boundary'}`,
       `noWriteIntentRequired=${evidence.writeIntentExtraction?.noWriteIntentRequired === true ? 'yes' : 'no'}`,
       `writeIntentActionIdentityChain=${writeIntentActionIdentityReady ? 'ready' : 'missing'}`,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  extractTaskplaneWriteIntentTypeNamesFromText,
   extractTaskplaneWriteIntentsFromText,
   validateTaskplaneWriteIntent,
 } from './taskplane-write-intent';
@@ -60,6 +61,19 @@ describe('Taskplane write intent', () => {
       parentTaskId: 'task_parent',
       type: 'subtask.propose',
     });
+  });
+
+  it('extracts declared write intent type names even when payloads are invalid or unsupported', () => {
+    const typeNames = extractTaskplaneWriteIntentTypeNamesFromText(JSON.stringify({
+      type: 'TASKPLANE_WRITE_INTENTS',
+      intents: [
+        { type: 'source_context.create', title: 'Missing note' },
+        { type: 'workspace.apply', patch: 'diff --git ...' },
+        { type: 'source_context.create', title: 'Duplicate still deduped' },
+      ],
+    }));
+
+    expect(typeNames).toEqual(['source_context.create', 'workspace.apply']);
   });
 
   it('blocks invalid subtask proposals before persistence', () => {

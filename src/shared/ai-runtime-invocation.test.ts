@@ -1759,8 +1759,10 @@ describe('ai runtime invocation contract', () => {
       missingRequirements: ['write_intent_extraction'],
     });
     expect(duplicateAction.summary).toContain('writeIntentActions=artifact.propose,task_file.propose,task_file.propose');
+    expect(duplicateAction.summary).toContain('declaredWriteIntentActions=artifact.propose,task_file.propose,task_file.propose');
+    expect(duplicateAction.summary).toContain('writeIntentDeclaredActionChain=missing');
     expect(duplicateAction.summary).toContain('writeIntentActionIdentityChain=missing');
-    expect(duplicateAction.summary).toContain('writeIntentActionBoundary=ready');
+    expect(duplicateAction.summary).toContain('writeIntentActionBoundary=missing');
     expect(duplicateAction.summary).toContain('writeIntentRunEvidenceChain=ready');
     expect(duplicateAction.summary).toContain('writeIntentTaskEvidenceChain=ready');
   });
@@ -1843,6 +1845,38 @@ describe('ai runtime invocation contract', () => {
     expect(noWriteRun.summary).toContain('patchPromotionTaskEvidenceChain=ready');
   });
 
+  it('does not treat declared-but-invalid write intents as no-write Agent API promotion evidence', () => {
+    const invalidDeclaredIntent = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'not_required',
+        explicitApplyOnly: true,
+        noWorkspaceWriteRequired: true,
+        promotionPreflightReady: false,
+        runId: 'run_api_execution',
+        taskId: 'task_1',
+      },
+      writeIntentExtraction: {
+        declaredActions: ['source_context.create'],
+        noWriteIntentRequired: true,
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: [],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(invalidDeclaredIntent).toMatchObject({
+      ready: false,
+      missingRequirements: ['write_intent_extraction'],
+    });
+    expect(invalidDeclaredIntent.summary).toContain('writeIntentActions=none');
+    expect(invalidDeclaredIntent.summary).toContain('declaredWriteIntentActions=source_context.create');
+    expect(invalidDeclaredIntent.summary).toContain('writeIntentDeclaredActionChain=missing');
+    expect(invalidDeclaredIntent.summary).toContain('noWriteIntentRequired=yes');
+    expect(invalidDeclaredIntent.summary).toContain('writeIntentActionBoundary=missing');
+  });
+
   it('allows Agent API execution promotion for source-context-only write intents without workspace patch evidence', () => {
     const sourceContextRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
@@ -1874,6 +1908,37 @@ describe('ai runtime invocation contract', () => {
     expect(sourceContextRun.summary).toContain('reviewedPatchApplyBoundary=ready');
     expect(sourceContextRun.summary).toContain('noWorkspaceWriteRequired=yes');
     expect(sourceContextRun.summary).toContain('patchPromotionStatus=not_required');
+  });
+
+  it('blocks source-context-only Agent API promotion when extra unsupported write intents were declared', () => {
+    const mixedDeclaredIntent = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      reviewedPatchApplyBoundary: {
+        appliedPromotionStatus: 'not_required',
+        explicitApplyOnly: true,
+        noWorkspaceWriteRequired: true,
+        promotionPreflightReady: false,
+        runId: 'run_api_execution',
+        taskId: 'task_1',
+      },
+      writeIntentExtraction: {
+        declaredActions: ['source_context.create', 'workspace.apply'],
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: ['source_context.create'],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(mixedDeclaredIntent).toMatchObject({
+      ready: false,
+      missingRequirements: ['write_intent_extraction'],
+    });
+    expect(mixedDeclaredIntent.summary).toContain('writeIntentActions=source_context.create');
+    expect(mixedDeclaredIntent.summary).toContain('declaredWriteIntentActions=source_context.create,workspace.apply');
+    expect(mixedDeclaredIntent.summary).toContain('writeIntentDeclaredActionChain=missing');
+    expect(mixedDeclaredIntent.summary).toContain('writeIntentActionIdentityChain=missing');
+    expect(mixedDeclaredIntent.summary).toContain('writeIntentActionBoundary=missing');
   });
 
   it('requires provider-visible preflight to carry the configured provider identity', () => {
