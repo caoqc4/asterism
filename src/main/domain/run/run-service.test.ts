@@ -1356,7 +1356,7 @@ describe('RunService', () => {
     );
   });
 
-  it('treats source-context-only Agent API writeback as non-workspace promotion evidence', async () => {
+  it('keeps source-context-only Agent API writeback blocked until durable writeback confirmation evidence exists', async () => {
     const output = [
       'Runtime completed with research evidence to save.',
       '```json',
@@ -1459,7 +1459,13 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('requirements=11/11'),
+        output: expect.stringContaining('requirements=10/11'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('missingRequirements=reviewed_patch_apply_boundary'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
@@ -1477,7 +1483,13 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('noWorkspaceWriteRequired=yes'),
+        output: expect.stringContaining('reviewedPatchBoundaryMode=durable_writeback_mismatch'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('durableWritebackStatus=missing'),
       }),
     );
   });

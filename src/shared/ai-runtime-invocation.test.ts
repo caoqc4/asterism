@@ -2741,7 +2741,7 @@ describe('ai runtime invocation contract', () => {
     expect(invalidDeclaredIntent.summary).toContain('writeIntentActionBoundary=missing');
   });
 
-  it('allows Agent API execution promotion for source-context-only write intents without workspace patch evidence', () => {
+  it('blocks source-context-only Agent API promotion until durable writeback apply is confirmed', () => {
     const sourceContextRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),
       reviewedPatchApplyBoundary: {
@@ -2762,8 +2762,8 @@ describe('ai runtime invocation contract', () => {
     });
 
     expect(sourceContextRun).toMatchObject({
-      ready: true,
-      missingRequirements: [],
+      ready: false,
+      missingRequirements: ['reviewed_patch_apply_boundary'],
       missingGates: [],
     });
     expect(sourceContextRun.summary).toContain('writeIntentActions=source_context.create');
@@ -2772,10 +2772,49 @@ describe('ai runtime invocation contract', () => {
     expect(sourceContextRun.summary).toContain('writeIntentMode=proposal_boundary');
     expect(sourceContextRun.summary).toContain('writeIntentActionIdentityChain=ready');
     expect(sourceContextRun.summary).toContain('writeIntentActionBoundary=ready');
-    expect(sourceContextRun.summary).toContain('reviewedPatchApplyBoundary=ready');
-    expect(sourceContextRun.summary).toContain('reviewedPatchBoundaryMode=no_workspace_write');
+    expect(sourceContextRun.summary).toContain('reviewedPatchApplyBoundary=missing');
+    expect(sourceContextRun.summary).toContain('reviewedPatchBoundaryMode=durable_writeback_mismatch');
     expect(sourceContextRun.summary).toContain('noWorkspaceWriteRequired=yes');
     expect(sourceContextRun.summary).toContain('patchPromotionStatus=not_required');
+    expect(sourceContextRun.summary).toContain('durableWritebackAction=missing');
+    expect(sourceContextRun.summary).toContain('durableWritebackStatus=missing');
+    expect(sourceContextRun.summary).toContain('durableWritebackRunEvidenceChain=missing');
+    expect(sourceContextRun.summary).toContain('durableWritebackTaskEvidenceChain=missing');
+  });
+
+  it('allows source-context-only Agent API promotion after durable writeback apply evidence is confirmed', () => {
+    const sourceContextRun = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      durableWritebackBoundary: {
+        action: 'source_context.create',
+        confirmationSurface: 'right_panel_writeback_confirmation',
+        runId: 'run_api_execution',
+        status: 'applied',
+        taskId: 'task_1',
+      },
+      reviewedPatchApplyBoundary: null,
+      writeIntentExtraction: {
+        declaredActions: ['source_context.create'],
+        runId: 'run_api_execution',
+        status: 'ready',
+        supportedActions: ['source_context.create'],
+        taskId: 'task_1',
+      },
+    });
+
+    expect(sourceContextRun).toMatchObject({
+      ready: true,
+      missingRequirements: [],
+      missingGates: [],
+    });
+    expect(sourceContextRun.summary).toContain('writeIntentActions=source_context.create');
+    expect(sourceContextRun.summary).toContain('reviewedPatchApplyBoundary=ready');
+    expect(sourceContextRun.summary).toContain('reviewedPatchBoundaryMode=durable_writeback');
+    expect(sourceContextRun.summary).toContain('durableWritebackAction=source_context.create');
+    expect(sourceContextRun.summary).toContain('durableWritebackStatus=applied');
+    expect(sourceContextRun.summary).toContain('durableWritebackConfirmationSurface=right_panel_writeback_confirmation');
+    expect(sourceContextRun.summary).toContain('durableWritebackRunEvidenceChain=ready');
+    expect(sourceContextRun.summary).toContain('durableWritebackTaskEvidenceChain=ready');
   });
 
   it('blocks patch-proposal Agent API promotion when reviewed-patch apply is replaced by no-workspace-write evidence', () => {

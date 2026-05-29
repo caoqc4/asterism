@@ -1397,7 +1397,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('declaredActions=[] evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentMode=no_write_intents_required');
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionStatus=not_required');
-    expect(rightPanel?.evidence.join(' ')).toContain('sourceContextOnly=11/11 requirements with writeIntentDeclaredActionEvidenceChain=ready');
+    expect(rightPanel?.evidence.join(' ')).toContain('sourceContextOnly=10/11 requirements with durableWritebackStatus=missing');
+    expect(rightPanel?.evidence.join(' ')).toContain('source_context.create remains a durable writeback proposal until product-side confirmation evidence exists');
     expect(rightPanel?.evidence.join(' ')).toContain('duplicate, missing-declaration, or non-proposal write actions still blocked');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
     expect(rightPanel?.evidence.join(' ')).toContain('supportedActions alone no longer proves runtime-declared Write Intent identity');

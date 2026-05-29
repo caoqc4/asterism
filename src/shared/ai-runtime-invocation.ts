@@ -214,6 +214,13 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     runId?: string | null;
     taskId?: string | null;
   } | null;
+  durableWritebackBoundary?: {
+    action: 'source_context.create';
+    confirmationSurface?: string | null;
+    runId?: string | null;
+    status: 'applied' | 'blocked' | 'pending';
+    taskId?: string | null;
+  } | null;
   runEvidencePersistence?: {
     runId?: string | null;
     taskId?: string | null;
@@ -1008,6 +1015,9 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const terminalRunStatus = evidence.runEvidencePersistence?.terminalRunStatus ?? null;
   const patchPromotionRunId = evidence.reviewedPatchApplyBoundary?.runId?.trim() || '';
   const patchPromotionTaskId = evidence.reviewedPatchApplyBoundary?.taskId?.trim() || '';
+  const durableWritebackRunId = evidence.durableWritebackBoundary?.runId?.trim() || '';
+  const durableWritebackTaskId = evidence.durableWritebackBoundary?.taskId?.trim() || '';
+  const durableWritebackConfirmationSurface = evidence.durableWritebackBoundary?.confirmationSurface?.trim() || '';
   const writeIntentRunId = evidence.writeIntentExtraction?.runId?.trim() || '';
   const writeIntentTaskId = evidence.writeIntentExtraction?.taskId?.trim() || '';
   const postStepRunId = evidence.postStepVerification?.runId?.trim() || '';
@@ -1068,6 +1078,12 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const patchPromotionTaskEvidenceChainReady = Boolean(patchPromotionTaskId)
     && Boolean(targetTaskId)
     && patchPromotionTaskId === targetTaskId;
+  const durableWritebackRunEvidenceChainReady = Boolean(durableWritebackRunId)
+    && Boolean(runEvidenceId)
+    && durableWritebackRunId === runEvidenceId;
+  const durableWritebackTaskEvidenceChainReady = Boolean(durableWritebackTaskId)
+    && Boolean(targetTaskId)
+    && durableWritebackTaskId === targetTaskId;
   const postStepRunEvidenceChainReady = Boolean(postStepRunId)
     && Boolean(runEvidenceId)
     && postStepRunId === runEvidenceId;
@@ -1122,23 +1138,36 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   );
   const reviewedNoWorkspaceWriteBoundaryReady = (
     reviewedPatchApplyIdentityReady
-    && (noWriteIntentRequiredReady || sourceContextWriteIntentReady)
+    && noWriteIntentRequiredReady
     && evidence.reviewedPatchApplyBoundary?.noWorkspaceWriteRequired === true
     && evidence.reviewedPatchApplyBoundary.appliedPromotionStatus === 'not_required'
+  );
+  const durableSourceContextWritebackBoundaryReady = (
+    sourceContextWriteIntentReady
+    && evidence.durableWritebackBoundary?.action === 'source_context.create'
+    && evidence.durableWritebackBoundary.status === 'applied'
+    && Boolean(durableWritebackConfirmationSurface)
+    && durableWritebackRunEvidenceChainReady
+    && durableWritebackTaskEvidenceChainReady
   );
   const reviewedPatchApplyBoundaryReady = (
     reviewedPatchAppliedBoundaryReady
     || reviewedNoWorkspaceWriteBoundaryReady
+    || durableSourceContextWritebackBoundaryReady
   );
   const reviewedPatchBoundaryMode = reviewedPatchAppliedBoundaryReady
     ? 'applied_patch'
     : reviewedNoWorkspaceWriteBoundaryReady
       ? 'no_workspace_write'
-      : (
-        evidence.reviewedPatchApplyBoundary?.noWorkspaceWriteRequired === true
-          ? 'no_workspace_write_mismatch'
-          : 'patch_apply_mismatch'
-      );
+      : durableSourceContextWritebackBoundaryReady
+        ? 'durable_writeback'
+        : (
+          sourceContextWriteIntentReady
+            ? 'durable_writeback_mismatch'
+            : evidence.reviewedPatchApplyBoundary?.noWorkspaceWriteRequired === true
+              ? 'no_workspace_write_mismatch'
+              : 'patch_apply_mismatch'
+        );
   const runGoalContractReady = Boolean(
     runGoalObjective
     && evidence.runGoalContract?.completionConditionCount
@@ -1358,6 +1387,13 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `patchPromotionRunEvidenceChain=${patchPromotionRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `patchPromotionTask=${patchPromotionTaskId || 'missing'}`,
       `patchPromotionTaskEvidenceChain=${patchPromotionTaskEvidenceChainReady ? 'ready' : 'missing'}`,
+      `durableWritebackAction=${evidence.durableWritebackBoundary?.action ?? 'missing'}`,
+      `durableWritebackStatus=${evidence.durableWritebackBoundary?.status ?? 'missing'}`,
+      `durableWritebackConfirmationSurface=${durableWritebackConfirmationSurface || 'missing'}`,
+      `durableWritebackRun=${durableWritebackRunId || 'missing'}`,
+      `durableWritebackRunEvidenceChain=${durableWritebackRunEvidenceChainReady ? 'ready' : 'missing'}`,
+      `durableWritebackTask=${durableWritebackTaskId || 'missing'}`,
+      `durableWritebackTaskEvidenceChain=${durableWritebackTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `postStepRun=${postStepRunId || 'missing'}`,
       `postStepRunEvidenceChain=${postStepRunEvidenceChainReady ? 'ready' : 'missing'}`,
       `postStepTask=${postStepTaskId || 'missing'}`,

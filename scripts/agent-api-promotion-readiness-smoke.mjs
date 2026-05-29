@@ -739,6 +739,9 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`sourceContextOnlyReviewedPatchApplyBoundary=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchApplyBoundary') ?? 'missing'}`);
   console.log(`sourceContextOnlyReviewedPatchBoundaryMode=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchBoundaryMode') ?? 'missing'}`);
   console.log(`sourceContextOnlyNoWorkspaceWriteRequired=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'noWorkspaceWriteRequired') ?? 'missing'}`);
+  console.log(`sourceContextOnlyDurableWritebackStatus=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackStatus') ?? 'missing'}`);
+  console.log(`sourceContextOnlyDurableWritebackRunEvidenceChain=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackRunEvidenceChain') ?? 'missing'}`);
+  console.log(`sourceContextOnlyDurableWritebackTaskEvidenceChain=${scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackTaskEvidenceChain') ?? 'missing'}`);
 
   if (
     deferredInvocation.status !== 'skipped'
@@ -890,19 +893,23 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidenceNoWriteRequired.summary, 'reviewedPatchBoundaryMode') !== 'no_workspace_write'
     || scalarValue(serviceEvidenceNoWriteRequired.summary, 'noWorkspaceWriteRequired') !== 'yes'
     || scalarValue(serviceEvidenceNoWriteRequired.summary, 'patchPromotionStatus') !== 'not_required'
-    || !serviceEvidenceSourceContextOnly.ready
-    || serviceEvidenceSourceContextOnly.satisfiedRequirements.length !== 11
+    || serviceEvidenceSourceContextOnly.ready
+    || serviceEvidenceSourceContextOnly.satisfiedRequirements.length !== 10
     || serviceEvidenceSourceContextOnly.satisfiedGates.length !== 9
-    || serviceEvidenceSourceContextOnly.missingRequirements.length !== 0
+    || serviceEvidenceSourceContextOnly.missingRequirements.length !== 1
+    || !serviceEvidenceSourceContextOnly.missingRequirements.includes('reviewed_patch_apply_boundary')
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentSupportedActionCount') !== '1'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentActions') !== 'source_context.create'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentDeclaredActionCount') !== '1'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentDeclaredActionEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentActionIdentityChain') !== 'ready'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'writeIntentActionBoundary') !== 'ready'
-    || scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchApplyBoundary') !== 'ready'
-    || scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchBoundaryMode') !== 'no_workspace_write'
+    || scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchApplyBoundary') !== 'missing'
+    || scalarValue(serviceEvidenceSourceContextOnly.summary, 'reviewedPatchBoundaryMode') !== 'durable_writeback_mismatch'
     || scalarValue(serviceEvidenceSourceContextOnly.summary, 'noWorkspaceWriteRequired') !== 'yes'
+    || scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackStatus') !== 'missing'
+    || scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackRunEvidenceChain') !== 'missing'
+    || scalarValue(serviceEvidenceSourceContextOnly.summary, 'durableWritebackTaskEvidenceChain') !== 'missing'
   ) {
     console.log('status=failed');
     return 1;
