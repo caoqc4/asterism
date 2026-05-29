@@ -197,6 +197,10 @@ function formatScheduledEventAgentSweepError(error: unknown): string {
   return (raw.trim() || 'unknown').replace(/\s+/g, ' ').replace(/\//g, '-');
 }
 
+function normalizeSchedulerDecisionText(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
 function planScheduledEventAgentTriggerFromServiceEvidence(params: {
   aiStatus: Pick<
     AiConfigStatus,
@@ -778,12 +782,16 @@ export class SchedulerService {
     input: SchedulerDecisionProposalInput,
   ): Promise<SchedulerDecisionProposalResult> {
     const targetTaskId = input.targetTaskId.trim();
-    const title = input.title.trim();
-    const rationale = input.rationale.trim();
-    const options = input.options?.map((option) => option.trim()).filter(Boolean) ?? [];
-    const optionIdentityReady = options.length > 0 && new Set(options).size === options.length;
-    const proposedOutcome = input.proposedOutcome?.trim() || '';
-    const proposedOutcomeMatchesOption = Boolean(proposedOutcome) && options.includes(proposedOutcome);
+    const title = normalizeSchedulerDecisionText(input.title);
+    const rationale = normalizeSchedulerDecisionText(input.rationale);
+    const options = input.options?.map(normalizeSchedulerDecisionText).filter(Boolean) ?? [];
+    const optionIdentityKeys = options.map((option) => option.toLowerCase());
+    const optionIdentityReady = options.length > 0 && new Set(optionIdentityKeys).size === optionIdentityKeys.length;
+    const proposedOutcomeInput = normalizeSchedulerDecisionText(input.proposedOutcome ?? '');
+    const proposedOutcomeIdentityKey = proposedOutcomeInput.toLowerCase();
+    const matchedProposedOutcome = options.find((option) => option.toLowerCase() === proposedOutcomeIdentityKey) ?? '';
+    const proposedOutcome = matchedProposedOutcome || proposedOutcomeInput;
+    const proposedOutcomeMatchesOption = Boolean(proposedOutcomeInput) && Boolean(matchedProposedOutcome);
     if (!this.scheduledEventAgentTimelinePort) {
       return {
         status: 'blocked',

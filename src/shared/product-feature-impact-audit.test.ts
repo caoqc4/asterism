@@ -1257,5 +1257,6 @@ describe('product feature impact audit', () => {
 
     expect(decisions?.evidence.join(' ')).toContain('nonblank duplicate-free option list');
     expect(decisions?.evidence.join(' ')).toContain('repeated choices');
+    expect(decisions?.evidence.join(' ')).toContain('whitespace/case-equivalent duplicate choices');
   });
 });
