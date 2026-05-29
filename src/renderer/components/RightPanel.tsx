@@ -815,6 +815,10 @@ function taskFileProposalConfirmLabel(proposal: TaskFileWriteProposal): string {
   return isDecompositionMemoryProposal(proposal) ? '保存拆解记录' : '确认补写记忆';
 }
 
+function isExplicitAgentApiExecutionRequest(text: string): boolean {
+  return /启动(?:任务)?\s*(?:agent\s*)?run|开始执行|执行(?:这个|当前)?任务|跑(?:一下)?(?:任务|agent)|agent\s*run|run\s*(?:this|task|agent)/i.test(text);
+}
+
 function formatAgentCliRunMessage(params: {
   output: string;
   childTaskConversation?: boolean;
@@ -3008,6 +3012,70 @@ export function RightPanel({
         ].join('\n\n');
       } else if (
         isAgentApiRuntimeMode
+        && activeTaskId
+        && pilotDecision.shouldStartExecutor
+        && pilotDecision.executor === 'agent_api'
+        && isExplicitAgentApiExecutionRequest(text)
+        && window.api?.triggerRun
+      ) {
+        const runtimeLabel = 'Agent API Runtime';
+        setAgentCliLaunchNotice(formatPilotDecisionLaunchNotice(pilotDecision, runtimeLabel));
+        const run = await window.api.triggerRun({
+          instructions: taskplaneConversationPrompt,
+          taskId: activeTaskId,
+          type: 'agent',
+        });
+        setAgentCliLaunchNotice(null);
+        const detail = await window.api.getRunDetail(run.id).catch(() => null);
+        const output = detail?.output?.trim() || run.output?.trim() || run.failureReason || `${runtimeLabel} run 已记录。`;
+        const taskRecordProposal = parseAgentCliTaskRecordWriteIntent({
+          output,
+          runId: run.id,
+          taskId: activeTaskId,
+          taskTitle: title ?? titleCache[activeTaskId] ?? activeTaskId,
+        });
+        const taskFileProposal = taskRecordProposal ?? parseAgentCliTaskFileWriteIntent({
+          output,
+          runId: run.id,
+          taskId: activeTaskId,
+        });
+        if (taskFileProposal) {
+          updateTaskFileProposal((existing) => existing ?? taskFileProposal);
+        }
+        const sourceProposal = parseAgentCliSourceContextWriteIntent({
+          output,
+          runId: run.id,
+          taskId: activeTaskId,
+        });
+        if (sourceProposal) {
+          updateSourceContextProposal((existing) => existing ?? sourceProposal);
+        }
+        const artifactProposal = parseAgentCliArtifactWriteIntent({
+          output,
+          runId: run.id,
+          taskId: activeTaskId,
+        });
+        if (artifactProposal) {
+          updateArtifactProposal((existing) => existing ?? artifactProposal);
+        }
+        const structuredProposal = parseAgentCliStructuredWritebackIntent({
+          output,
+          runId: run.id,
+          taskId: activeTaskId,
+        });
+        if (structuredProposal) {
+          updateStructuredWritebackProposal((existing) => existing ?? structuredProposal);
+        }
+        replyText = formatAgentCliRunMessage({
+          childTaskConversation,
+          output,
+          runId: run.id,
+          runtimeLabel,
+          steps: detail?.steps ?? (run as RunRecord & { steps?: RunStepRecord[] }).steps,
+          statusText: run.status === 'completed' ? '已完成' : run.status,
+        });
+      } else if (
+        isAgentApiRuntimeMode
         && (!activeTaskId || (pilotDecision.shouldStartExecutor && pilotDecision.executor === 'agent_api'))
         && window.api?.chatWithAI
       ) {
@@ -3156,7 +3224,7 @@ export function RightPanel({
         shouldUseAgentCliRuntime
           ? `执行边界：${sandboxBoundaryLabel}`
           : runtimeMode === 'api'
-            ? '执行边界：Agent API Runtime 当前接入问答 / 拆解 / 决策草稿等阶段；任务执行 run 仍待完善。'
+            ? '执行边界：Agent API Runtime 普通任务讨论走 API assistant；明确执行请求会通过 Taskplane RunService 记录 evidence。'
             : '执行边界：所选 Agent CLI 未就绪或当前阶段未接入；不会隐式切换到其他 AI Runtime。',
       ].join('\n');
     }

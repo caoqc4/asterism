@@ -2663,7 +2663,34 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/执行 runtime：Agent API Runtime/)).toBeTruthy();
-    expect(screen.getByText(/Agent API Runtime 当前接入问答 \/ 拆解 \/ 决策草稿等阶段/)).toBeTruthy();
+    expect(screen.getByText(/Agent API Runtime 普通任务讨论走 API assistant/)).toBeTruthy();
+  });
+
+  it('routes an explicit task-bound Agent API execution request through RunService', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+
+    await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '开始执行当前任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerRun).toHaveBeenCalledWith(expect.objectContaining({
+        instructions: expect.stringContaining('开始执行当前任务'),
+        taskId: 'task_risk',
+        type: 'agent',
+      }));
+    });
+    expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_risk',
+      messages: expect.arrayContaining([
+        expect.objectContaining({ content: expect.stringContaining('开始执行当前任务') }),
+      ]),
+    }));
+    expect(await screen.findByText(/已完成，结果已记录到任务动态/)).toBeTruthy();
   });
 
   it('keeps /goal product-owned in task chat and persists it as the Taskplane task goal', async () => {

@@ -140,6 +140,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Right-panel task chat now runs through shared PilotDecision and TaskAdvancementOrchestrator before Agent CLI launch, preserving operation mode, backendPlan, message priority, user-owned approval boundaries, and executor routing.',
       'Agent CLI run records preserve the trimmed Pilot decision snapshot as a Pilot 决策辅助计划 step for phase-2 auditability.',
       'Agent API chat invocations preserve the same trimmed Pilot decision snapshot in invocation provenance.',
+      'Right-panel task chat now routes explicit selected Agent API execution requests such as "开始执行当前任务" through Taskplane RunService triggerRun, preserving Pilot decision prompt shaping, task-bound Run evidence, post-run Write Intent proposal extraction, and normal API assistant behavior for ordinary task discussion.',
       'Retained API Runtime / Agent API-like RunService runs now record context.readiness.evaluate before provider-visible execution resolves runtime config.',
       'Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate before model-producer execution, including blocked early exits.',
       'Code Agent model-producer live and preview smokes default to skipReason=opt_in_required with provider=not-called, docker=not-started, and workspace=unchanged; explicitly enabled runs with incomplete provider config report skipReason=config_missing without provider, Docker, or workspace effects.',
@@ -174,10 +175,10 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'The packaged task-files smoke now seeds approved reviewed-patch promotions, enables the apply flag in a temporary workspace, drives both applied and blocked Tasks UI apply actions, and verifies workspace file content plus applied/blocked run evidence.',
     ],
     gaps: [
-      'Future Agent API execution remains deferred; native CLI workspace-write mode stays separate from the common run path because selected-runtime contract and reviewed-patch apply already own the operator-facing workspace mutation boundary.',
+      'General Agent API task execution promotion remains partial: explicit right-panel execution requests can enter RunService, but broader automatic Agent API executor routing still must prove every selected-runtime contract, target-task identity, writeback, verification, and reviewed-patch boundary before replacing the deferred invocation everywhere; selected-runtime contract and reviewed-patch apply already own the operator-facing workspace mutation boundary.',
     ],
     nextActions: [
-      'Promote future Agent API execution only by replacing the deferred invocation after the read-only promotion readiness smoke, evaluateAgentApiExecutionPromotionReadiness, and evaluateAgentApiExecutionPromotionReadinessFromEvidence all report ready from real service evidence for every requirement and gate.',
+      'Continue promoting Agent API execution by expanding from explicit right-panel execution requests only after the read-only promotion readiness smoke, evaluateAgentApiExecutionPromotionReadiness, and evaluateAgentApiExecutionPromotionReadinessFromEvidence all report ready from real service evidence for every requirement and gate.',
     ],
   },
   {

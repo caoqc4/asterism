@@ -244,7 +244,7 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('workspace-drift blocked recovery evidence');
     expect(rightPanel?.gaps.join(' ')).not.toContain('broader recovery copy is still needed');
     expect(rightPanel?.cliOnlyClosure).toBe('supported');
-    expect(rightPanel?.gaps.join(' ')).toContain('Future Agent API execution remains deferred');
+    expect(rightPanel?.gaps.join(' ')).toContain('General Agent API task execution promotion remains partial');
     expect(rightPanel?.nextActions.join(' ')).toContain('read-only promotion readiness smoke');
     expect(rightPanel?.nextActions.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadiness, and evaluateAgentApiExecutionPromotionReadinessFromEvidence all report ready');
     expect(rightPanel?.nextActions.join(' ')).toContain('evaluateAgentApiExecutionPromotionReadinessFromEvidence all report ready');
@@ -1458,5 +1458,15 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('system-sourced scheduler Decision approval plans now use that same stable target-task-plus-title identity');
     expect(decisions?.evidence.join(' ')).toContain('durable Decision sourceId');
     expect(decisions?.evidence.join(' ')).toContain('suppresses later duplicate timeline proposals after refresh');
+  });
+
+  it('records explicit right-panel Agent API execution routing coverage', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+
+    expect(rightPanel?.evidence.join(' ')).toContain('explicit selected Agent API execution requests');
+    expect(rightPanel?.evidence.join(' ')).toContain('through Taskplane RunService triggerRun');
+    expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion');
+    expect(rightPanel?.gaps.join(' ')).toContain('explicit right-panel execution requests can enter RunService');
+    expect(rightPanel?.nextActions.join(' ')).toContain('expanding from explicit right-panel execution requests');
   });
 });
