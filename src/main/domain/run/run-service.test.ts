@@ -1494,6 +1494,181 @@ describe('RunService', () => {
     );
   });
 
+  it('recovers source-context durable writeback evidence from refreshed task detail after Agent API run completion', async () => {
+    const output = [
+      'Runtime completed with research evidence to save.',
+      '```json',
+      JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [{
+          type: 'source_context.create',
+          credibility: 'verified',
+          note: 'Official documentation confirms the integration boundary.',
+          title: 'Agent API research source',
+          uri: 'https://example.com/docs',
+        }],
+      }),
+      '```',
+    ].join('\n');
+    const task = {
+      ...buildTaskDetail('planned'),
+      completionCriteria: [{
+        id: 'criteria_1',
+        taskId: 'task_1',
+        text: 'Capture reviewable research evidence.',
+        verificationResponsibility: null,
+        verificationResponsibilityLabel: null,
+        status: 'open',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        satisfiedAt: null,
+      }],
+    } satisfies TaskDetail;
+    const refreshedTask = {
+      ...task,
+      sourceContexts: [{
+        id: 'source_context_1',
+        taskId: 'task_1',
+        title: 'Agent API research source',
+        kind: 'link',
+        isKey: false,
+        uri: 'https://example.com/docs',
+        content: null,
+        note: 'Official documentation confirms the integration boundary.',
+        status: 'active',
+        capturedAt: '2026-01-01T00:00:05.000Z',
+        runId: 'run_1',
+        batchId: null,
+        sourceRole: 'digest',
+        credibility: 'verified',
+        isDuplicate: false,
+        containsSensitiveData: false,
+        createdAt: '2026-01-01T00:00:05.000Z',
+        updatedAt: '2026-01-01T00:00:05.000Z',
+        archivedAt: null,
+      }],
+      timeline: [{
+        id: 'timeline_1',
+        taskId: 'task_1',
+        type: 'panel.source_updated',
+        payload: JSON.stringify({
+          confirmationSurface: 'right_panel_writeback_confirmation',
+          evidenceRunId: 'run_1',
+          source: 'taskplane_write_intent',
+        }),
+        createdAt: '2026-01-01T00:00:06.000Z',
+      }],
+    } satisfies TaskDetail;
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(buildRunRecord('pending')),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        output,
+        outputSource: 'ai',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn()
+        .mockResolvedValueOnce(task)
+        .mockResolvedValue(refreshedTask),
+      transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateRunFailed: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const artifactRepository = buildArtifactRepositoryMock({
+      createFromRun: vi.fn().mockResolvedValue({
+        ...buildArtifactRecord(),
+        content: output,
+      }),
+    });
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue(output),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn(),
+    };
+    const sandboxPatchPromotionRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      aiConfigService as never,
+      textExecutor as never,
+      undefined,
+      runStepRepository as never,
+      null,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      runVerificationRepository as never,
+      undefined,
+      null,
+      sandboxPatchPromotionRepository as never,
+    );
+
+    const result = await service.trigger({
+      taskId: 'task_1',
+      type: 'draft',
+      instructions: 'Save the provided stable source note',
+      pilotDecision: buildAgentApiPilotDecision(),
+      requestSurface: 'right_panel_agent_execution',
+    });
+
+    expect(result.status).toBe('completed');
+    expect(taskService.getDetail).toHaveBeenCalledWith('task_1');
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('requirements=11/11'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('missingRequirements=none'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('reviewedPatchBoundaryMode=durable_writeback'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('durableWritebackConfirmationSurface=right_panel_writeback_confirmation'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('durableWritebackRunEvidenceChain=ready'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('durableWritebackTaskEvidenceChain=ready'),
+      }),
+    );
+  });
+
   it('does not satisfy reviewed patch apply boundary with pending patch promotion evidence', async () => {
     const output = [
       'Runtime completed with a pending patch review.',

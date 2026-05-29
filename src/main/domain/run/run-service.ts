@@ -1,6 +1,9 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
-import { evaluateAgentApiExecutionPromotionReadinessFromEvidence } from '../../../shared/ai-runtime-invocation.js';
+import {
+  deriveAgentApiDurableWritebackBoundaryFromTaskEvidence,
+  evaluateAgentApiExecutionPromotionReadinessFromEvidence,
+} from '../../../shared/ai-runtime-invocation.js';
 import { evaluatePausedRunResumeEligibility } from '../../../shared/run-resume-eligibility.js';
 import { evaluateRuntimeAction, type RuntimeActionEvaluation } from '../../../shared/runtime-action-evaluator.js';
 import {
@@ -475,6 +478,18 @@ export class RunService {
     const noWorkspaceWriteRequired = Boolean(
       noStructuredWriteIntentRequired || onlySourceContextWriteIntentRequired,
     );
+    const refreshedTaskEvidence = phase === 'post_run'
+      ? await this.readTaskDetailForPromotionEvidence(params.task.id)
+      : null;
+    const durableWritebackBoundary = onlySourceContextWriteIntentRequired
+      ? deriveAgentApiDurableWritebackBoundaryFromTaskEvidence({
+          action: 'source_context.create',
+          runId,
+          sourceContexts: refreshedTaskEvidence?.sourceContexts ?? params.task.sourceContexts,
+          taskId: params.task.id,
+          timeline: refreshedTaskEvidence?.timeline ?? params.task.timeline,
+        })
+      : null;
     const taskMemoryGuidanceReady = params.taskMemoryGuidance.outcome !== 'pending';
     const runGoalObjective = params.input.instructions ?? params.task.nextStep ?? params.task.summary;
     const runGoalCompletionConditionCount = params.task.completionCriteria.length > 0
@@ -539,6 +554,7 @@ export class RunService {
               taskId: params.task.id,
             }
           : null,
+      durableWritebackBoundary,
       postStepVerification: phase === 'post_run'
         ? {
             runId,
@@ -643,6 +659,14 @@ export class RunService {
         ?? promotions.find((promotion) => promotion.status === 'blocked')
         ?? promotions.find((promotion) => promotion.status === 'pending')
         ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async readTaskDetailForPromotionEvidence(taskId: string): Promise<TaskDetail | null> {
+    try {
+      return await this.taskService.getDetail(taskId);
     } catch {
       return null;
     }

@@ -1435,6 +1435,8 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('dispatchTaskplaneWritebackApplyPlan returns durableWritebackBoundary');
     expect(rightPanel?.evidence.join(' ')).toContain('deriveAgentApiDurableWritebackBoundaryFromTaskEvidence can recover source_context.create durableWritebackBoundary');
     expect(rightPanel?.evidence.join(' ')).toContain('source-context promotion evidence survives page reloads');
+    expect(rightPanel?.evidence.join(' ')).toContain('RunService post-run Agent API execution promotion readiness now refreshes TaskDetail');
+    expect(rightPanel?.evidence.join(' ')).toContain('source-context-only runs can reach reviewedPatchBoundaryMode=durable_writeback and requirements=11/11 from real service evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('duplicate, missing-declaration, or non-proposal write actions still blocked');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
     expect(rightPanel?.evidence.join(' ')).toContain('supportedActions alone no longer proves runtime-declared Write Intent identity');
