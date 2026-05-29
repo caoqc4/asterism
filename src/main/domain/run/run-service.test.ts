@@ -6,6 +6,27 @@ import type { RunStepKind, RunStepStatus, RunRecord } from '../../../shared/type
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import { RunService } from './run-service.js';
 
+function buildAgentApiPilotDecision() {
+  return {
+    backend: 'agent_api' as const,
+    backendPlan: {
+      backend: 'agent_api' as const,
+      maxTurns: 1,
+      outputContract: 'pilot_decision_summary' as const,
+      reason: 'Explicit execution request.',
+      status: 'requested' as const,
+      triggers: ['user_steer' as const],
+    },
+    confidence: 'rule' as const,
+    executor: 'agent_api' as const,
+    messagePriority: 'steer' as const,
+    movement: 'execute' as const,
+    operationMode: 'product_control_layer' as const,
+    priorityLane: 'continue_or_review' as const,
+    reason: 'Operator requested an Agent API run.',
+  };
+}
+
 function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
   return {
     id: 'task_1',
@@ -1050,6 +1071,8 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Please draft this',
+      pilotDecision: buildAgentApiPilotDecision(),
+      requestSurface: 'right_panel_agent_execution',
     });
 
     expect(result.status).toBe('completed');
@@ -1166,6 +1189,8 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Please draft this',
+      pilotDecision: buildAgentApiPilotDecision(),
+      requestSurface: 'right_panel_agent_execution',
     });
 
     expect(result.status).toBe('completed');
@@ -1299,6 +1324,8 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Please draft this',
+      pilotDecision: buildAgentApiPilotDecision(),
+      requestSurface: 'right_panel_agent_execution',
     });
 
     expect(result.status).toBe('completed');
@@ -1423,6 +1450,8 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Save the provided stable source note',
+      pilotDecision: buildAgentApiPilotDecision(),
+      requestSurface: 'right_panel_agent_execution',
     });
 
     expect(result.status).toBe('completed');
@@ -1565,6 +1594,8 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Please draft this',
+      pilotDecision: buildAgentApiPilotDecision(),
+      requestSurface: 'right_panel_agent_execution',
     });
 
     expect(result.status).toBe('completed');
@@ -1701,6 +1732,8 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Please draft this',
+      pilotDecision: buildAgentApiPilotDecision(),
+      requestSurface: 'right_panel_agent_execution',
     });
 
     expect(result.status).toBe('completed');

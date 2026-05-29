@@ -1384,7 +1384,6 @@ function scalarSummaryValue(summary: string, key: string): string | null {
 function isAgentApiExecutionRequestSurface(surface: RunRequestSurface | null): boolean {
   return surface === 'right_panel_agent_execution'
     || surface === 'right_panel_task_progress_intent'
-    || surface === 'ipc_run_trigger'
     || surface === 'readiness_smoke_operator_request';
 }
 

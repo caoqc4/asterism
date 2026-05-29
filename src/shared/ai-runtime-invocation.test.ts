@@ -2444,6 +2444,30 @@ describe('ai runtime invocation contract', () => {
     expect(missingRequestSurface.summary).toContain('runtimeActionGateEvidenceChain=missing');
   });
 
+  it('blocks Agent API execution promotion from generic IPC run surfaces', () => {
+    const genericIpcSurface = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runtimeAction: {
+        action: 'run_start',
+        allowed: true,
+        requestSurface: 'ipc_run_trigger',
+        runId: 'run_api_execution',
+        status: 'ready',
+        surface: 'run',
+        taskId: 'task_1',
+      },
+    });
+
+    expect(genericIpcSurface).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['runtime_action'],
+    });
+    expect(genericIpcSurface.summary).toContain('runtimeActionRequestSurface=ipc_run_trigger');
+    expect(genericIpcSurface.summary).toContain('runtimeActionRequestSurfaceEvidenceChain=missing');
+    expect(genericIpcSurface.summary).toContain('runtimeActionGateEvidenceChain=missing');
+  });
+
   it('keeps scheduled Agent API execution promotion closed until scheduled approval gates are promoted', () => {
     const scheduledSurface = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       ...completeAgentApiExecutionPromotionEvidence(),

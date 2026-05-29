@@ -1711,6 +1711,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('through Taskplane RunService triggerRun');
     expect(rightPanel?.evidence.join(' ')).toContain('requestSurface=right_panel_agent_execution');
     expect(rightPanel?.evidence.join(' ')).toContain('requestSurface=right_panel_task_progress_intent');
+    expect(rightPanel?.evidence.join(' ')).toContain('requestSurface=ipc_run_trigger outside the ready request-surface evidence chain');
+    expect(rightPanel?.evidence.join(' ')).toContain('direct IPC/service starts can still run but cannot be promoted as the future automatic Agent API executor route');
+    expect(rightPanel?.evidence.join(' ')).toContain('right_panel_agent_execution, right_panel_task_progress_intent, or readiness_smoke_operator_request');
     expect(rightPanel?.evidence.join(' ')).toContain('normal API assistant behavior for ordinary task discussion or phase closeout handoff messages');
     expect(rightPanel?.evidence.join(' ')).toContain('execution requests and progress intents now pass the bounded Pilot decision snapshot into RunService');
     expect(rightPanel?.evidence.join(' ')).toContain('persist it in the Agent API execution promotion readiness step input');
