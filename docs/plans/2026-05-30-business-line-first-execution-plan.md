@@ -479,13 +479,25 @@ git diff --check
 ### Codex Prompt
 
 ```text
-Goal: Turn business-line Records into a real business memory layer.
+Goal: Implement Goal 4 only - business-line Records as a memory projection layer.
 
 Complete only Goal 4.
 
-Unify native business records with linked source contexts, artifacts, task
-files, decisions, and reviews. Preserve provenance and context inclusion flags.
-Do not turn this into a full document editor.
+Unify native business-line records with linked source contexts, artifacts,
+task files, decisions, and reviews as a business memory surface.
+
+Required:
+- stable record types;
+- provenance for every projected record;
+- should_affect_future_context controls;
+- cross-business records excluded by default;
+- context pack reads only included records by default.
+
+Keep this slice narrow:
+- do not build a full document editor;
+- do not build a visual folder editor;
+- do not implement Goal 5 SOP versioning or rollback;
+- do not redesign the whole Business workspace.
 
 Add focused tests and stop with a checkpoint.
 ```
@@ -533,13 +545,22 @@ git diff --check
 ### Codex Prompt
 
 ```text
-Goal: Implement safe business-line SOP revision lifecycle.
+Goal: Implement Goal 5 only - safe business-line SOP revision lifecycle.
 
 Complete only Goal 5.
 
-Add versioning, supersede, reject, rollback, provenance, and Decision-gated
-risky activation. Keep the visible model as Business Line Skills/SOPs, not Task
-Packages.
+Add proposed, active, rejected, superseded, and disabled SOP revisions with
+provenance, source review, diff/previous content, approval source, rollback,
+and optional review-after/expiration.
+
+Risky activation must require an approved Decision before the revision can
+enter future context.
+
+Keep this slice narrow:
+- keep the visible model as Business Line Skills/SOPs;
+- do not introduce Task Packages, marketplace, or shareable task bundles;
+- do not redesign global Skills;
+- do not implement automation or sensor behavior.
 
 Add tests and stop with a checkpoint.
 ```
@@ -600,13 +621,32 @@ git diff --check
 ### Codex Prompt
 
 ```text
-Goal: Replace task-labeled Today with a business-line suggestion engine.
+Goal: Implement Goal 6 only - Today business-line suggestion engine.
 
 Complete only Goal 6.
 
-Suggestions must carry trust metadata and rank progress, record gaps, and
-improvements across business lines. Do not remove existing task attention
-logic until business suggestions are tested.
+Build deterministic, testable suggestion generation for progress, record_gap,
+and improvement suggestions across business lines.
+
+Each suggestion must carry:
+- businessLineId;
+- type;
+- why_now;
+- expected impact;
+- effort;
+- risk;
+- confidence;
+- source record ids;
+- next step;
+- requires_decision;
+- optional taskId.
+
+Keep this slice narrow:
+- do not remove existing task attention logic until business suggestions pass
+  focused tests;
+- do not redesign the whole Today UI;
+- do not make record_gap suggestions look like executable work;
+- do not let improvement suggestions replace actionable progress suggestions.
 
 Run tests and stop with a checkpoint.
 ```
@@ -652,14 +692,28 @@ git diff --check
 ### Codex Prompt
 
 ```text
-Goal: Integrate business-line execution with Run, Writeback, and post-run
-Review.
+Goal: Implement Goal 7 only - business-line execution and post-run review
+integration.
 
 Complete only Goal 7.
 
 Business-line Next Actions must be executable through the existing runtime
 gates. Completed runs should produce review/writeback options that update the
-business line. Do not weaken existing CLI/API evidence requirements.
+business line.
+
+Writeback/review options may create:
+- business records;
+- next actions;
+- source contexts;
+- artifacts;
+- decisions;
+- proposed SOP revisions.
+
+Keep this slice narrow:
+- do not weaken existing CLI/API evidence requirements;
+- do not rebuild runtime orchestration;
+- do not implement Goal 8 navigation redesign;
+- do not implement Goal 9 automations or sensors.
 
 Run verification and stop with a checkpoint.
 ```
@@ -723,13 +777,21 @@ git diff --check
 ### Codex Prompt
 
 ```text
-Goal: Complete the business-first UI interaction pass.
+Goal: Implement Goal 8 only - business-first UI interaction pass.
 
 Complete only Goal 8.
 
 Make Today, Business, Chat, and Decisions the Work model. Keep capability
 routes intact. Add compact/focus sidebar and full/focus chat only after context
 target display is wired.
+
+Required boundaries:
+- Tasks should not be a top-level mental model, but task detail and legacy
+  task explorer recovery route must remain reachable;
+- do not move External Access, MCP, AI Runtime, or Work Habits into
+  per-business-line configuration matrices;
+- Chat must always display context and writeback target;
+- no capability route may disappear.
 
 Run verification and stop with a checkpoint.
 ```
@@ -768,13 +830,20 @@ git diff --check
 ### Codex Prompt
 
 ```text
-Goal: Reframe scheduled/event work and external signals as business-line
-automations and sensors.
+Goal: Implement Goal 9 only - business-line automations and sensors.
 
 Complete only Goal 9.
 
 Keep MCP, runtime, and external authorization global. Business-line actions can
 use them through action-level gates. Do not build a complex automation builder.
+
+Required boundaries:
+- scheduled/event tasks may appear as business-line automations;
+- external previews may produce reviewable business records;
+- sensors are read-only unless a Decision-approved action explicitly mutates
+  local, external, public, or money-affecting state;
+- no external evidence enters future context without review or confirmation;
+- do not create per-business-line MCP/runtime/provider matrices.
 
 Run verification and stop with a checkpoint.
 ```
@@ -820,13 +889,21 @@ git diff --check
 ### Codex Prompt
 
 ```text
-Goal: Clean up task-first leftovers and add business-line-first product audit.
+Goal: Implement Goal 10 only - migration cleanup and business-line-first product
+audit.
 
 Complete only Goal 10.
 
 Do not delete compatibility surfaces unless tests prove replacement behavior.
 Update copy, route labels, audit checks, and smoke tests so the app can tell
 whether business-line-first is truly implemented.
+
+Required boundaries:
+- keep historical task data recoverable;
+- preserve compatibility routes until smoke tests cover replacement journeys;
+- do not remove CLI/API evidence gates;
+- do not introduce new top-level concepts beyond Business, Today, Chat,
+  Decisions, Records, Next Actions, Learning, Skills/SOPs, and Capabilities.
 
 Run verification and stop with a checkpoint.
 ```
