@@ -423,6 +423,12 @@ export class RunService {
       noStructuredWriteIntentRequired,
     );
     const taskMemoryGuidanceReady = params.taskMemoryGuidance.outcome !== 'pending';
+    const runGoalObjective = params.input.instructions ?? params.task.nextStep ?? params.task.summary;
+    const runGoalCompletionConditionCount = params.task.completionCriteria.length > 0
+      ? params.task.completionCriteria.length
+      : runGoalObjective?.trim()
+        ? 1
+        : 0;
     const readiness = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
       contextManifestSummary: params.capabilities?.summary ?? null,
       contextManifestTaskId: params.task.id,
@@ -479,8 +485,8 @@ export class RunService {
           }
         : null,
       runGoalContract: {
-        completionConditionCount: params.task.completionCriteria.length,
-        objective: params.input.instructions ?? params.task.nextStep ?? params.task.summary,
+        completionConditionCount: runGoalCompletionConditionCount,
+        objective: runGoalObjective,
         runId,
         taskId: params.task.id,
       },

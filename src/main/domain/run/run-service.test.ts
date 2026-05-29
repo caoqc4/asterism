@@ -845,7 +845,13 @@ describe('RunService', () => {
         kind: 'plan',
         status: 'completed',
         title: 'Agent API execution post-run promotion readiness',
-        output: expect.stringContaining('missingRequirements=run_goal_contract,write_intent_extraction'),
+        output: expect.stringContaining('missingRequirements=write_intent_extraction'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution post-run promotion readiness',
+        output: expect.stringContaining('runGoalConditions=1'),
       }),
     );
     expect(sandboxPatchPromotionRepository.listForRun).toHaveBeenCalledWith('run_1');

@@ -214,9 +214,6 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('missing for reviewedPatchApplyBoundary until explicit apply completes successfully');
     expect(rightPanel?.evidence.join(' ')).toContain('parsed TASKPLANE_WRITE_INTENTS artifact.propose plus task_file.propose output and same-run patch promotion evidence');
     expect(rightPanel?.evidence.join(' ')).toContain('without hand-filled readiness');
-    expect(rightPanel?.evidence.join(' ')).toContain('derives no-write completion evidence from real RunService output');
-    expect(rightPanel?.evidence.join(' ')).toContain('no parsed structured Write Intent actions, and no same-run sandbox patch promotions');
-    expect(rightPanel?.evidence.join(' ')).toContain('without requiring a fake patch');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run promotion requirements and missing lists through evaluateAgentApiExecutionPromotionReadinessFromEvidence');
     expect(rightPanel?.evidence.join(' ')).toContain('settings and safety reports aligned with service-evidence readiness');
     expect(rightPanel?.evidence.join(' ')).toContain('derive deferred execution_run key gates from the future provider-visible execution contract');
@@ -1244,6 +1241,18 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('patchPromotionStatus=not_required');
     expect(rightPanel?.evidence.join(' ')).toContain('duplicate, missing, or non-proposal write actions still blocked');
     expect(rightPanel?.evidence.join(' ')).toContain('writeIntentActionIdentityChain, writeIntentActionBoundary');
+  });
+
+  it('records real no-write API RunService promotion evidence', () => {
+    const rightPanel = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'right_panel_agent_run');
+    const evidence = rightPanel?.evidence.join(' ');
+
+    expect(evidence).toContain('derives no-write completion evidence from real RunService output');
+    expect(evidence).toContain('no parsed structured Write Intent actions, and no same-run sandbox patch promotions');
+    expect(evidence).toContain('without requiring a fake patch');
+    expect(evidence).toContain('derives a default Run Goal Contract completion condition from run instructions, next step, or task summary');
+    expect(evidence).toContain('runGoalConditions=1 can be backed by a concrete run objective');
+    expect(evidence).toContain('instead of leaving run_goal_contract missing');
   });
 
   it('records selected-runtime identity evidence for runtime patch promotion routing', () => {
