@@ -819,7 +819,7 @@ describe('product feature impact audit', () => {
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
-      .toContain('selectedRuntimeEvidenceRunId, selectedRuntimeEvidenceRunChain, selectedRuntimeParentTask, selectedRuntimeParentTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, timelineRuntimeMode');
+      .toContain('selectedRuntimeEvidenceRunId, selectedRuntimeEvidenceRunChain, selectedRuntimeParentTask, selectedRuntimeParentTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerConfigured, configuredProvider, configuredProviderEvidenceChain, timelineRuntimeMode');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
       .toContain('identity evidence plus agent_api_decomposition_source missing');
     expect(PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'task_creation_and_project_decomposition')?.evidence.join(' '))
@@ -1233,7 +1233,11 @@ describe('product feature impact audit', () => {
     const evidence = decomposition?.evidence.join(' ');
 
     expect(evidence).toContain('same evidenceRunId, parentTaskId, and provider identity');
+    expect(evidence).toContain('configured provider evidence separate from selected-runtime provider identity');
+    expect(evidence).toContain('configuredProvider evidence is stitched from another provider');
     expect(evidence).toContain('selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain');
+    expect(evidence).toContain('providerConfigured');
+    expect(evidence).toContain('configuredProviderEvidenceChain');
     expect(evidence).toContain('timelineRuntimeProvider');
     expect(evidence).toContain('selectedRuntimeProviderEvidenceChain can become ready');
   });

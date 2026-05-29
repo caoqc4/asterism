@@ -87,6 +87,10 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
       rationales: ['This is an independent and reviewable promotion-readiness slice.'],
       dependencies: [null],
     },
+    providerConfiguration: {
+      configuredProvider: 'openai',
+      providerConfigured: true,
+    },
     selectedRuntimeContract: {
       evidenceRunId: 'run_cli_decomposition_smoke',
       invocationLayer: 'api_runtime',
@@ -157,6 +161,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
   console.log(`serviceEvidenceSelectedRuntimeParentTaskEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTaskEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeProvider=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProvider') ?? 'missing'}`);
   console.log(`serviceEvidenceSelectedRuntimeProviderEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProviderEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderConfigured=${scalarValue(serviceEvidencePartial.summary, 'providerConfigured') ?? 'missing'}`);
+  console.log(`serviceEvidenceConfiguredProvider=${scalarValue(serviceEvidencePartial.summary, 'configuredProvider') ?? 'missing'}`);
+  console.log(`serviceEvidenceConfiguredProviderEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'configuredProviderEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineRuntimeMode=${scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineInvocationLayer=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') ?? 'missing'}`);
   console.log(`serviceEvidenceTimelineInvocationPhase=${scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') ?? 'missing'}`);
@@ -221,6 +228,9 @@ export async function runAgentApiDecompositionPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeParentTaskEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProvider') !== 'openai'
     || scalarValue(serviceEvidencePartial.summary, 'selectedRuntimeProviderEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'providerConfigured') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'configuredProvider') !== 'openai'
+    || scalarValue(serviceEvidencePartial.summary, 'configuredProviderEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'timelineRuntimeMode') !== 'api'
     || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationLayer') !== 'api_runtime'
     || scalarValue(serviceEvidencePartial.summary, 'timelineInvocationPhase') !== 'decomposition_draft'

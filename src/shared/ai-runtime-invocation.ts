@@ -114,6 +114,10 @@ export type AgentApiDecompositionPromotionServiceEvidence = {
     subtaskSummaries?: string[] | null;
     subtaskTitles?: string[] | null;
   } | null;
+  providerConfiguration?: {
+    configuredProvider?: string | null;
+    providerConfigured: boolean;
+  } | null;
   selectedRuntimeContract?: {
     evidenceRunId?: string | null;
     invocationLayer: RuntimeInvocationLayer;
@@ -427,6 +431,7 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const selectedRuntimeEvidenceRunId = selectedRuntime?.evidenceRunId?.trim() || '';
   const selectedRuntimeParentTaskId = selectedRuntime?.parentTaskId?.trim() || '';
   const selectedRuntimeProvider = selectedRuntime?.provider?.trim() || '';
+  const configuredProvider = evidence.providerConfiguration?.configuredProvider?.trim() || '';
   const evidenceParentTaskId = evidence.parentTaskId?.trim() || '';
   const applyPlanParentTaskId = applyPlan?.input.parentTaskId?.trim() || '';
   const applyPlanEvidenceRunId = applyPlan?.input.evidenceRunId?.trim() || '';
@@ -446,9 +451,16 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
   const selectedRuntimeParentTaskEvidenceChainReady = Boolean(selectedRuntimeParentTaskId)
     && Boolean(applyPlanParentTaskId)
     && selectedRuntimeParentTaskId === applyPlanParentTaskId;
+  const configuredProviderEvidenceChainReady = Boolean(configuredProvider)
+    && evidence.providerConfiguration?.providerConfigured === true
+    && Boolean(selectedRuntimeProvider)
+    && Boolean(timelineRuntimeProvider)
+    && selectedRuntimeProvider === configuredProvider
+    && timelineRuntimeProvider === configuredProvider;
   const selectedRuntimeProviderEvidenceChainReady = Boolean(selectedRuntimeProvider)
     && Boolean(timelineRuntimeProvider)
-    && selectedRuntimeProvider === timelineRuntimeProvider;
+    && selectedRuntimeProvider === timelineRuntimeProvider
+    && (!evidence.providerConfiguration || configuredProviderEvidenceChainReady);
   const selectedRuntimeContractReady = selectedRuntime?.runtimeMode === 'api'
     && selectedRuntime.invocationLayer === 'api_runtime'
     && selectedRuntime.phase === 'decomposition_draft'
@@ -667,6 +679,9 @@ export function evaluateAgentApiDecompositionPromotionReadinessFromEvidence(
       `selectedRuntimeParentTaskEvidenceChain=${selectedRuntimeParentTaskEvidenceChainReady ? 'ready' : 'missing'}`,
       `selectedRuntimeProvider=${selectedRuntimeProvider || 'missing'}`,
       `selectedRuntimeProviderEvidenceChain=${selectedRuntimeProviderEvidenceChainReady ? 'ready' : 'missing'}`,
+      `providerConfigured=${evidence.providerConfiguration?.providerConfigured === true ? 'ready' : 'missing'}`,
+      `configuredProvider=${configuredProvider || 'missing'}`,
+      `configuredProviderEvidenceChain=${configuredProviderEvidenceChainReady ? 'ready' : 'missing'}`,
       `timelineRuntimeMode=${timelineRuntimeContract?.runtimeMode ?? 'missing'}`,
       `timelineInvocationLayer=${timelineRuntimeContract?.invocationLayer ?? 'missing'}`,
       `timelineInvocationPhase=${timelineRuntimeContract?.phase ?? 'missing'}`,

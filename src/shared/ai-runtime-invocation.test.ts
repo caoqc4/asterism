@@ -177,6 +177,10 @@ describe('ai runtime invocation contract', () => {
         acceptanceCriteria: ['范围文档可验收'],
         rationales: ['独立边界清楚'],
       },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
+      },
       selectedRuntimeContract: {
         evidenceRunId: 'run_cli_decomposition',
         invocationLayer: 'api_runtime',
@@ -230,6 +234,9 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
     expect(partial.summary).toContain('selectedRuntimeProvider=openai');
     expect(partial.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
+    expect(partial.summary).toContain('providerConfigured=ready');
+    expect(partial.summary).toContain('configuredProvider=openai');
+    expect(partial.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(partial.summary).toContain('timelineRuntimeEvidenceRunId=run_cli_decomposition');
     expect(partial.summary).toContain('timelineRuntimeParentTask=task_project');
     expect(partial.summary).toContain('timelineRuntimeProvider=openai');
@@ -252,6 +259,10 @@ describe('ai runtime invocation contract', () => {
         subtaskTitles: ['需求与范围确认'],
         acceptanceCriteria: ['范围文档可验收'],
         rationales: ['独立边界清楚'],
+      },
+      providerConfiguration: {
+        configuredProvider: 'openai',
+        providerConfigured: true,
       },
       selectedRuntimeContract: {
         evidenceRunId: 'run_api_decomposition',
@@ -311,6 +322,9 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('selectedRuntimeParentTaskEvidenceChain=ready');
     expect(ready.summary).toContain('selectedRuntimeProvider=openai');
     expect(ready.summary).toContain('selectedRuntimeProviderEvidenceChain=ready');
+    expect(ready.summary).toContain('providerConfigured=ready');
+    expect(ready.summary).toContain('configuredProvider=openai');
+    expect(ready.summary).toContain('configuredProviderEvidenceChain=ready');
     expect(ready.summary).toContain('timelineRuntimeEvidenceRunId=run_api_decomposition');
     expect(ready.summary).toContain('timelineRuntimeParentTask=task_project');
     expect(ready.summary).toContain('timelineRuntimeProvider=openai');
@@ -351,6 +365,52 @@ describe('ai runtime invocation contract', () => {
     });
     expect(mismatch.summary).toContain('selectedRuntimeProvider=anthropic');
     expect(mismatch.summary).toContain('timelineRuntimeProvider=openai');
+    expect(mismatch.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
+    expect(mismatch.summary).toContain('selectedRuntimeEvidenceChain=missing');
+  });
+
+  it('blocks Agent API decomposition promotion when configured provider evidence is stitched', () => {
+    const mismatch = evaluateAgentApiDecompositionPromotionReadinessFromEvidence({
+      applyPlan: buildAgentApiDecompositionApplyPlan({
+        evidenceRunId: 'run_api_decomposition',
+        parentTaskId: 'task_project',
+        source: 'agent_api_decomposition',
+        subtasks: [buildSubtaskDraft()],
+      }),
+      parentTaskId: 'task_project',
+      reversibleProposalCard: {
+        acceptanceCriteria: ['范围文档可验收'],
+        rationales: ['独立边界清楚'],
+        parentTaskId: 'task_project',
+        proposalId: 'project_decomposition:task_project',
+        status: 'ready',
+        subtaskCount: 1,
+        subtaskSummaries: ['确认范围'],
+        subtaskTitles: ['需求与范围确认'],
+      },
+      providerConfiguration: {
+        configuredProvider: 'anthropic',
+        providerConfigured: true,
+      },
+      selectedRuntimeContract: {
+        evidenceRunId: 'run_api_decomposition',
+        invocationLayer: 'api_runtime',
+        parentTaskId: 'task_project',
+        phase: 'decomposition_draft',
+        provider: 'openai',
+        runtimeMode: 'api',
+      },
+    });
+
+    expect(mismatch).toMatchObject({
+      ready: false,
+      missingRequirements: ['selected_runtime_contract'],
+    });
+    expect(mismatch.summary).toContain('selectedRuntimeProvider=openai');
+    expect(mismatch.summary).toContain('timelineRuntimeProvider=openai');
+    expect(mismatch.summary).toContain('providerConfigured=ready');
+    expect(mismatch.summary).toContain('configuredProvider=anthropic');
+    expect(mismatch.summary).toContain('configuredProviderEvidenceChain=missing');
     expect(mismatch.summary).toContain('selectedRuntimeProviderEvidenceChain=missing');
     expect(mismatch.summary).toContain('selectedRuntimeEvidenceChain=missing');
   });
