@@ -44,6 +44,8 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('decisionPersistenceAllowed=false');
     expect(plan.summary).toContain('writebackDispatchAllowed=false');
     expect(plan.summary).toContain('schedulerTriggerAllowed=false');
+    expect(plan.summary).toContain('authorizationCount=0');
+    expect(plan.summary).toContain('authorizationEvidenceChain=missing');
     expect(plan.summary).toContain('targetTask=missing');
     expect(plan.summary).toContain('localRecoveryRunId=missing');
     expect(plan.summary).toContain('localRecoveryTask=missing');
@@ -107,7 +109,9 @@ describe('scheduler decision proposal contract', () => {
     expect(plan.summary).toContain('decisionPayload=ready');
     expect(plan.summary).toContain('decisionOptions=2');
     expect(plan.summary).toContain('decisionProposedOutcomeMatchesOption=yes');
+    expect(plan.summary).toContain('authorizationCount=1');
     expect(plan.summary).toContain('authorization=operator_confirmation');
+    expect(plan.summary).toContain('authorizationEvidenceChain=ready');
     expect(plan.summary).toContain('operatorId=operator_1');
     expect(plan.summary).toContain('standingApprovalPolicyId=missing');
     expect(plan.summary).toContain('targetTask=task_decision_1');
@@ -153,7 +157,9 @@ describe('scheduler decision proposal contract', () => {
     });
     expect(plan.summary).toContain('requirements=4/4');
     expect(plan.summary).toContain('proposalSatisfiedRequirements=approval_queue,decision_payload,target_task_identity,authorization');
+    expect(plan.summary).toContain('authorizationCount=1');
     expect(plan.summary).toContain('authorization=standing_approval');
+    expect(plan.summary).toContain('authorizationEvidenceChain=ready');
     expect(plan.summary).toContain('standingApprovalPolicyId=policy_2');
     expect(plan.summary).toContain('standingApprovalScopeTask=task_decision_2');
     expect(plan.summary).toContain('standingApprovalActive=yes');
@@ -190,7 +196,9 @@ describe('scheduler decision proposal contract', () => {
       ],
       missingRequirements: [],
     });
+    expect(plan.summary).toContain('authorizationCount=1');
     expect(plan.summary).toContain('authorization=local_recovery');
+    expect(plan.summary).toContain('authorizationEvidenceChain=ready');
     expect(plan.summary).toContain('localRecoveryRunId=run_recovered_1');
     expect(plan.summary).toContain('localRecoveryTask=task_recovered_1');
     expect(plan.summary).toContain('localRecoveryCompleted=yes');
@@ -216,7 +224,9 @@ describe('scheduler decision proposal contract', () => {
       operatorId: null,
       missingRequirements: ['authorization'],
     });
+    expect(missingOperator.summary).toContain('authorizationCount=0');
     expect(missingOperator.summary).toContain('authorization=missing');
+    expect(missingOperator.summary).toContain('authorizationEvidenceChain=missing');
     expect(missingOperator.summary).toContain('operatorId=missing');
 
     const scopeMismatch = planSchedulerDecisionProposal({
@@ -242,7 +252,9 @@ describe('scheduler decision proposal contract', () => {
     });
     expect(scopeMismatch.summary).toContain('standingApprovalActive=no');
     expect(scopeMismatch.summary).toContain('standingApprovalScopeMatched=no');
+    expect(scopeMismatch.summary).toContain('authorizationCount=0');
     expect(scopeMismatch.summary).toContain('authorization=missing');
+    expect(scopeMismatch.summary).toContain('authorizationEvidenceChain=missing');
   });
 
   it('requires the Task Dynamics approval queue surface before scheduler proposals can become approval items', () => {
@@ -361,7 +373,9 @@ describe('scheduler decision proposal contract', () => {
     expect(partial.summary).toContain('requirements=3/4');
     expect(partial.summary).toContain('proposalSatisfiedRequirements=approval_queue,decision_payload,target_task_identity');
     expect(partial.summary).toContain('approvalQueueSurface=task_dynamics');
+    expect(partial.summary).toContain('authorizationCount=0');
     expect(partial.summary).toContain('authorization=missing');
+    expect(partial.summary).toContain('authorizationEvidenceChain=missing');
     expect(partial.summary).toContain('standingApprovalPolicyId=policy_1');
     expect(partial.summary).toContain('standingApprovalScopeTask=task_other');
     expect(partial.summary).toContain('standingApprovalActive=no');
@@ -393,7 +407,9 @@ describe('scheduler decision proposal contract', () => {
       authorizations: ['local_recovery'],
       missingRequirements: [],
     });
+    expect(localRecovery.summary).toContain('authorizationCount=1');
     expect(localRecovery.summary).toContain('authorization=local_recovery');
+    expect(localRecovery.summary).toContain('authorizationEvidenceChain=ready');
     expect(localRecovery.summary).toContain('localRecoveryRunId=run_recovered_1');
     expect(localRecovery.summary).toContain('localRecoveryTask=task_decision_3');
     expect(localRecovery.summary).toContain('localRecoveryCompleted=yes');
@@ -423,6 +439,8 @@ describe('scheduler decision proposal contract', () => {
       authorizations: [],
       missingRequirements: ['authorization'],
     });
+    expect(wrongRecoveryTask.summary).toContain('authorizationCount=0');
+    expect(wrongRecoveryTask.summary).toContain('authorizationEvidenceChain=missing');
     expect(wrongRecoveryTask.summary).toContain('localRecoveryRunId=run_recovered_1');
     expect(wrongRecoveryTask.summary).toContain('localRecoveryTask=task_other');
     expect(wrongRecoveryTask.summary).toContain('localRecoveryCompleted=no');
@@ -477,7 +495,9 @@ describe('scheduler decision proposal contract', () => {
     expect(ready.summary).toContain('requirements=4/4');
     expect(ready.summary).toContain('proposalSatisfiedRequirements=approval_queue,decision_payload,target_task_identity,authorization');
     expect(ready.summary).toContain('approvalQueueSurface=task_dynamics');
+    expect(ready.summary).toContain('authorizationCount=2');
     expect(ready.summary).toContain('authorization=operator_confirmation,standing_approval');
+    expect(ready.summary).toContain('authorizationEvidenceChain=ready');
     expect(ready.summary).toContain('operatorId=operator_1');
     expect(ready.summary).toContain('standingApprovalPolicyId=policy_1');
     expect(ready.summary).toContain('standingApprovalScopeTask=task_decision_3');

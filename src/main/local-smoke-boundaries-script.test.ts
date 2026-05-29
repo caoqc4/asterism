@@ -1079,12 +1079,18 @@ describe('local smoke script default boundaries', () => {
       return;
     }
     expect(result.output).toContain('localRecoveryProposalReady=yes');
+    expect(result.output).toContain('localRecoveryAuthorizationCount=1');
     expect(result.output).toContain('localRecoveryAuthorization=local_recovery');
+    expect(result.output).toContain('localRecoveryAuthorizationEvidenceChain=ready');
     expect(result.output).toContain('localRecoveryRunId=run_scheduler_recovery_smoke');
     expect(result.output).toContain('localRecoveryTask=task_scheduler_decision_recovery_smoke');
     expect(result.output).toContain('localRecoveryCompleted=yes');
     expect(result.output).toContain('localRecoveryTaskMatched=yes');
     expect(result.output).toContain('localRecoveryDecisionPersistenceAllowed=false');
+    expect(result.output).toContain('scopeMismatchAuthorizationCount=0');
+    expect(result.output).toContain('scopeMismatchAuthorizationEvidenceChain=missing');
+    expect(result.output).toContain('serviceEvidenceAuthorizationCount=0');
+    expect(result.output).toContain('serviceEvidenceAuthorizationEvidenceChain=missing');
   });
 
   it('validates Agent API execution preflight config before calling a provider', () => {

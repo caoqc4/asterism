@@ -301,7 +301,7 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('runtimeStartMissingRequirements');
     expect(decisions?.evidence.join(' ')).toContain('scheduler Decision proposal readiness smoke');
     expect(decisions?.evidence.join(' ')).toContain('approvalQueueSurface=task_dynamics');
-    expect(decisions?.evidence.join(' ')).toContain('authorization missing when Standing Approval scope does not match the target task');
+    expect(decisions?.evidence.join(' ')).toContain('authorizationEvidenceChain=missing when Standing Approval scope does not match the target task');
     expect(decisions?.evidence.join(' ')).toContain('panel.scheduler_decision_proposed timeline events');
     expect(decisions?.evidence.join(' ')).toContain('converts only ready proposals into the existing TaskplaneWritebackApprovalItem queue');
     expect(decisions?.evidence.join(' ')).toContain('SchedulerService.proposeSchedulerDecision');
@@ -1447,6 +1447,19 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('whitespace-varied duplicate history');
   });
 
+  it('records scheduler Decision authorization evidence-chain coverage', () => {
+    const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
+    const evidence = decisions?.evidence.join(' ');
+
+    expect(evidence).toContain('authorizationCount');
+    expect(evidence).toContain('authorizationEvidenceChain');
+    expect(evidence).toContain('authorizationCount, authorization, authorizationEvidenceChain');
+    expect(evidence).toContain('authorizationCount=1');
+    expect(evidence).toContain('authorizationEvidenceChain=ready');
+    expect(evidence).toContain('authorizationCount=0');
+    expect(evidence).toContain('authorizationEvidenceChain=missing');
+  });
+
   it('records duplicate-free scheduler Decision option coverage', () => {
     const decisions = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'decisions_checkpoints_completion');
 
@@ -1461,10 +1474,10 @@ describe('product feature impact audit', () => {
     expect(decisions?.evidence.join(' ')).toContain('valid Decision payload');
     expect(decisions?.evidence.join(' ')).toContain('decisionPayload, decisionTitle, decisionRationale, decisionOptions, decisionOptionIdentity, decisionProposedOutcome, decisionProposedOutcomeMatchesOption');
     expect(decisions?.evidence.join(' ')).toContain('blocked=0/4 requirements');
-    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=4/4 requirements with operatorId and decisionPayload=ready evidence');
-    expect(decisions?.evidence.join(' ')).toContain('local-recovery=4/4 requirements with decisionPayload=ready, localRecoveryRunId');
-    expect(decisions?.evidence.join(' ')).toContain('standing-approval=4/4 requirements with standingApprovalPolicyId, standingApprovalScopeTask, and standingApprovalScopeMatched=yes evidence');
-    expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=3/4 requirements with authorization missing');
+    expect(decisions?.evidence.join(' ')).toContain('operator-confirmed=4/4 requirements with operatorId, decisionPayload=ready, authorizationCount=1');
+    expect(decisions?.evidence.join(' ')).toContain('local-recovery=4/4 requirements with decisionPayload=ready, authorizationCount=1');
+    expect(decisions?.evidence.join(' ')).toContain('standing-approval=4/4 requirements with authorizationCount=1');
+    expect(decisions?.evidence.join(' ')).toContain('scope-mismatch=3/4 requirements with authorizationCount=0 and authorizationEvidenceChain=missing');
     expect(decisions?.evidence.join(' ')).toContain('service-evidence=3/4 requirements');
     expect(decisions?.evidence.join(' ')).toContain('decisionPayload=ready');
     expect(decisions?.evidence.join(' ')).toContain('Task Dynamics scheduler Decision proposal consumption now reuses shared decision_payload readiness');
