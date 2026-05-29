@@ -2,7 +2,7 @@ import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { evaluateAgentApiExecutionPromotionReadinessFromEvidence } from '../../../shared/ai-runtime-invocation.js';
 import { evaluatePausedRunResumeEligibility } from '../../../shared/run-resume-eligibility.js';
-import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
+import { evaluateRuntimeAction, type RuntimeActionEvaluation } from '../../../shared/runtime-action-evaluator.js';
 import {
   buildRuntimeCapabilitySnapshot,
   type RuntimeCapabilitySnapshot,
@@ -225,6 +225,7 @@ export class RunService {
       contextReadiness,
       input,
       runId: created.id,
+      runtimeAction: actionEvaluation,
       task: taskForExecution,
       taskMemoryCoverage,
       taskMemoryGuidance,
@@ -278,6 +279,7 @@ export class RunService {
         input,
         phase: 'post_run',
         run: completed,
+        runtimeAction: actionEvaluation,
         task: taskForExecution,
         taskMemoryCoverage,
         taskMemoryGuidance,
@@ -321,6 +323,7 @@ export class RunService {
       input,
       phase: 'post_run',
       run: failed,
+      runtimeAction: actionEvaluation,
       task: taskForExecution,
       taskMemoryCoverage,
       taskMemoryGuidance,
@@ -404,6 +407,7 @@ export class RunService {
     phase?: 'pre_execution' | 'post_run';
     run?: RunRecord;
     runId?: string;
+    runtimeAction: RuntimeActionEvaluation;
     task: TaskDetail;
     taskMemoryCoverage: TaskMemoryCoverageEvaluation;
     taskMemoryGuidance: TaskMemoryGuidanceState;
@@ -528,8 +532,21 @@ export class RunService {
             taskId: params.task.id,
           }
         : null,
+      simplicityCheck: {
+        smallestMovement: 'run_start',
+        status: 'ready',
+        taskId: params.task.id,
+      },
       subtaskStart: {
         status: 'ready',
+        taskId: params.task.id,
+      },
+      runtimeAction: {
+        action: params.runtimeAction.action,
+        allowed: params.runtimeAction.allowed,
+        runId,
+        status: params.runtimeAction.allowed ? 'ready' : 'blocked',
+        surface: params.runtimeAction.surface,
         taskId: params.task.id,
       },
       taskMemoryCoverage: {

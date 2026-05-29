@@ -8,6 +8,24 @@ const root = process.cwd();
 const modulePath = path.join(root, 'dist-electron', 'shared', 'ai-runtime-invocation.js');
 const sourceModulePath = path.join(root, 'src', 'shared', 'ai-runtime-invocation.ts');
 
+function taskBoundRunStartEvidence(runId, taskId = 'task_1') {
+  return {
+    runtimeAction: {
+      action: 'run_start',
+      allowed: true,
+      runId,
+      status: 'ready',
+      surface: 'run',
+      taskId,
+    },
+    simplicityCheck: {
+      smallestMovement: 'run_start',
+      status: 'ready',
+      taskId,
+    },
+  };
+}
+
 export async function runAgentApiPromotionReadinessSmoke() {
   console.log('Agent API promotion readiness smoke');
   console.log('mode=read-only');
@@ -86,6 +104,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    ...taskBoundRunStartEvidence('run_api_execution_partial'),
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 0,
@@ -165,6 +184,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    ...taskBoundRunStartEvidence('run_api_execution'),
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
@@ -237,6 +257,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    ...taskBoundRunStartEvidence('run_api_execution'),
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
@@ -311,6 +332,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    ...taskBoundRunStartEvidence('run_api_execution'),
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
@@ -392,6 +414,7 @@ export async function runAgentApiPromotionReadinessSmoke() {
       status: 'ready',
       taskId: 'task_1',
     },
+    ...taskBoundRunStartEvidence('run_api_execution'),
     targetTaskId: 'task_1',
     taskMemoryGuidance: {
       guidanceCount: 1,
@@ -457,6 +480,17 @@ export async function runAgentApiPromotionReadinessSmoke() {
   console.log(`serviceEvidenceContextManifestTask=${scalarValue(serviceEvidencePartial.summary, 'contextManifestTask') ?? 'missing'}`);
   console.log(`serviceEvidenceContextManifestEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'contextManifestEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceRuntimeContextAssemblyGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runtimeContextAssemblyGateEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceSimplicityCheck=${scalarValue(serviceEvidencePartial.summary, 'simplicityCheck') ?? 'missing'}`);
+  console.log(`serviceEvidenceSimplicityCheckTask=${scalarValue(serviceEvidencePartial.summary, 'simplicityCheckTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceSimplicityCheckSmallestMovement=${scalarValue(serviceEvidencePartial.summary, 'simplicityCheckSmallestMovement') ?? 'missing'}`);
+  console.log(`serviceEvidenceSimplicityCheckGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'simplicityCheckGateEvidenceChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeAction=${scalarValue(serviceEvidencePartial.summary, 'runtimeAction') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeActionStatus=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionStatus') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeActionSurface=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionSurface') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeActionRun=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionRun') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeActionRunIdentityChain=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionRunIdentityChain') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeActionTask=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionTask') ?? 'missing'}`);
+  console.log(`serviceEvidenceRuntimeActionGateEvidenceChain=${scalarValue(serviceEvidencePartial.summary, 'runtimeActionGateEvidenceChain') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidance=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidance') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidanceCount=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceCount') ?? 'missing'}`);
   console.log(`serviceEvidenceTaskMemoryGuidanceTask=${scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTask') ?? 'missing'}`);
@@ -567,6 +601,17 @@ export async function runAgentApiPromotionReadinessSmoke() {
     || scalarValue(serviceEvidencePartial.summary, 'contextManifestTask') !== 'task_1'
     || scalarValue(serviceEvidencePartial.summary, 'contextManifestEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'runtimeContextAssemblyGateEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'simplicityCheck') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'simplicityCheckTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'simplicityCheckSmallestMovement') !== 'run_start'
+    || scalarValue(serviceEvidencePartial.summary, 'simplicityCheckGateEvidenceChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeAction') !== 'run_start'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeActionStatus') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeActionSurface') !== 'run'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeActionRun') !== 'run_api_execution_partial'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeActionRunIdentityChain') !== 'ready'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeActionTask') !== 'task_1'
+    || scalarValue(serviceEvidencePartial.summary, 'runtimeActionGateEvidenceChain') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidance') !== 'ready'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceCount') !== '0'
     || scalarValue(serviceEvidencePartial.summary, 'taskMemoryGuidanceTask') !== 'task_1'

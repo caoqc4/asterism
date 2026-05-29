@@ -222,7 +222,6 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('deferred=0/11 requirements and 0/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('partial=5/11 requirements and 3/9 gates');
     expect(rightPanel?.evidence.join(' ')).toContain('service-evidence=3/11 requirements and 7/9 gates');
-    expect(rightPanel?.evidence.join(' ')).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called, taskMemoryGuidance=ready, taskMemoryGuidanceCount=0');
     expect(rightPanel?.evidence.join(' ')).toContain('selectedRuntimeRunEvidenceChain=missing, providerPreflightRunEvidenceChain=missing, and providerPreflightTaskEvidenceChain=ready');
     expect(rightPanel?.evidence.join(' ')).toContain('until persisted same-run Run evidence exists');
     expect(rightPanel?.evidence.join(' ')).toContain('synthetic-ready=11/11 requirements and 9/9 gates');
@@ -1278,9 +1277,18 @@ describe('product feature impact audit', () => {
     const evidence = rightPanel?.evidence.join(' ');
 
     expect(evidence).toContain('requires task_memory_coverage to carry target-task memory coverage evidence instead of a naked gate boolean');
+    expect(evidence).toContain('requires simplicity_check to carry the target-task smallest movement evidence');
+    expect(evidence).toContain('requires runtime_action to carry run_start/run service evidence tied to the selected run and target task');
     expect(evidence).toContain('requires subtask_start to carry target-task readiness evidence instead of a naked gate boolean');
+    expect(evidence).toContain('simplicity_check, runtime_action, runtime_context_assembly, context_readiness');
     expect(evidence).toContain('task_memory_coverage, task_memory_guidance, pre_step, subtask_start');
     expect(evidence).toContain('post_step gates to their matching service-evidence chains');
+    expect(evidence).toContain('simplicityCheck, simplicityCheckTask, simplicityCheckSmallestMovement, simplicityCheckGateEvidenceChain');
+    expect(evidence).toContain('runtimeAction, runtimeActionStatus, runtimeActionSurface, runtimeActionRun, runtimeActionRunIdentityChain, runtimeActionTask, runtimeActionGateEvidenceChain');
+    expect(evidence).toContain('providerConfigured=ready, configuredProvider=openai, providerStartupProbe=not_called');
+    expect(evidence).toContain('simplicityCheckGateEvidenceChain=ready');
+    expect(evidence).toContain('runtimeActionGateEvidenceChain=ready');
+    expect(evidence).toContain('taskMemoryGuidance=ready, taskMemoryGuidanceCount=0');
     expect(evidence).toContain('taskMemoryCoverage, taskMemoryCoverageTask, taskMemoryCoverageEvidenceChain, taskMemoryCoverageGateEvidenceChain');
     expect(evidence).toContain('taskMemoryCoverageGateEvidenceChain=ready');
     expect(evidence).toContain('runGoalConditions=1');

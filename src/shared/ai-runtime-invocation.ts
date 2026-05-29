@@ -213,8 +213,21 @@ export type AgentApiExecutionPromotionServiceEvidence = {
     runtimeMode: AiRuntimeMode | 'local_rule' | 'product_harness';
     taskId?: string | null;
   } | null;
+  simplicityCheck?: {
+    smallestMovement?: string | null;
+    status: 'blocked' | 'ready';
+    taskId?: string | null;
+  } | null;
   subtaskStart?: {
     status: 'blocked' | 'ready';
+    taskId?: string | null;
+  } | null;
+  runtimeAction?: {
+    action?: string | null;
+    allowed: boolean;
+    runId?: string | null;
+    status: 'blocked' | 'ready';
+    surface?: string | null;
     taskId?: string | null;
   } | null;
   taskMemoryCoverage?: {
@@ -873,6 +886,9 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const writeIntentTaskId = evidence.writeIntentExtraction?.taskId?.trim() || '';
   const postStepRunId = evidence.postStepVerification?.runId?.trim() || '';
   const postStepTaskId = evidence.postStepVerification?.taskId?.trim() || '';
+  const runtimeActionRunId = evidence.runtimeAction?.runId?.trim() || '';
+  const runtimeActionTaskId = evidence.runtimeAction?.taskId?.trim() || '';
+  const simplicityCheckTaskId = evidence.simplicityCheck?.taskId?.trim() || '';
   const subtaskStartTaskId = evidence.subtaskStart?.taskId?.trim() || '';
   const taskMemoryCoverageTaskId = evidence.taskMemoryCoverage?.taskId?.trim() || '';
   const runEvidenceTaskEvidenceChainReady = Boolean(runEvidenceId)
@@ -936,6 +952,24 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     && Boolean(taskMemoryCoverageTaskId)
     && Boolean(targetTaskId)
     && taskMemoryCoverageTaskId === targetTaskId;
+  const simplicityCheckEvidenceChainReady = evidence.simplicityCheck?.status === 'ready'
+    && Boolean(evidence.simplicityCheck.smallestMovement?.trim())
+    && Boolean(simplicityCheckTaskId)
+    && Boolean(targetTaskId)
+    && simplicityCheckTaskId === targetTaskId;
+  const runtimeActionRunIdentityChainReady = Boolean(runtimeActionRunId)
+    && (
+      (Boolean(runEvidenceId) && runtimeActionRunId === runEvidenceId)
+      || (Boolean(selectedRuntimeRunId) && runtimeActionRunId === selectedRuntimeRunId)
+    );
+  const runtimeActionEvidenceChainReady = evidence.runtimeAction?.status === 'ready'
+    && evidence.runtimeAction.allowed === true
+    && evidence.runtimeAction.action === 'run_start'
+    && evidence.runtimeAction.surface === 'run'
+    && runtimeActionRunIdentityChainReady
+    && Boolean(runtimeActionTaskId)
+    && Boolean(targetTaskId)
+    && runtimeActionTaskId === targetTaskId;
   const reviewedPatchApplyBoundaryReady = (
     evidence.reviewedPatchApplyBoundary?.explicitApplyOnly === true
     && patchPromotionRunEvidenceChainReady
@@ -1049,6 +1083,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
   const requiredGates = agentApiExecutionRequiredGates();
   const gateEvidenceReady = (gate: RuntimeEntrypointGate): boolean => {
     if (evidence.gates?.[gate] !== true) return false;
+    if (gate === 'simplicity_check') return simplicityCheckEvidenceChainReady;
+    if (gate === 'runtime_action') return runtimeActionEvidenceChainReady;
     if (gate === 'runtime_context_assembly') return contextManifestEvidenceChainReady;
     if (gate === 'context_readiness') {
       return evidence.contextReadinessStep?.status === 'ready'
@@ -1102,6 +1138,17 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `contextManifestTask=${contextManifestTaskId || 'missing'}`,
       `contextManifestEvidenceChain=${contextManifestEvidenceChainReady ? 'ready' : 'missing'}`,
       `runtimeContextAssemblyGateEvidenceChain=${gateEvidenceReady('runtime_context_assembly') ? 'ready' : 'missing'}`,
+      `simplicityCheck=${evidence.simplicityCheck?.status ?? 'missing'}`,
+      `simplicityCheckTask=${simplicityCheckTaskId || 'missing'}`,
+      `simplicityCheckSmallestMovement=${evidence.simplicityCheck?.smallestMovement?.trim() || 'missing'}`,
+      `simplicityCheckGateEvidenceChain=${gateEvidenceReady('simplicity_check') ? 'ready' : 'missing'}`,
+      `runtimeAction=${evidence.runtimeAction?.action ?? 'missing'}`,
+      `runtimeActionStatus=${evidence.runtimeAction?.status ?? 'missing'}`,
+      `runtimeActionSurface=${evidence.runtimeAction?.surface ?? 'missing'}`,
+      `runtimeActionRun=${runtimeActionRunId || 'missing'}`,
+      `runtimeActionRunIdentityChain=${runtimeActionRunIdentityChainReady ? 'ready' : 'missing'}`,
+      `runtimeActionTask=${runtimeActionTaskId || 'missing'}`,
+      `runtimeActionGateEvidenceChain=${gateEvidenceReady('runtime_action') ? 'ready' : 'missing'}`,
       `taskMemoryGuidance=${evidence.taskMemoryGuidance?.status ?? 'missing'}`,
       `taskMemoryGuidanceCount=${evidence.taskMemoryGuidance?.guidanceCount ?? 0}`,
       `taskMemoryGuidanceTask=${taskMemoryGuidanceTaskId || 'missing'}`,

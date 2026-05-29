@@ -1397,6 +1397,19 @@ describe('ai runtime invocation contract', () => {
         runtimeMode: 'api',
         taskId: 'task_1',
       },
+      simplicityCheck: {
+        smallestMovement: 'run_start',
+        status: 'ready',
+        taskId: 'task_1',
+      },
+      runtimeAction: {
+        action: 'run_start',
+        allowed: true,
+        runId: 'run_api_execution_partial',
+        status: 'ready',
+        surface: 'run',
+        taskId: 'task_1',
+      },
       targetTaskId: 'task_1',
     });
 
@@ -1491,6 +1504,17 @@ describe('ai runtime invocation contract', () => {
     expect(ready.summary).toContain('writeIntentExtraction=ready');
     expect(ready.summary).toContain('contextStepTask=task_1');
     expect(ready.summary).toContain('contextStepTaskEvidenceChain=ready');
+    expect(ready.summary).toContain('simplicityCheck=ready');
+    expect(ready.summary).toContain('simplicityCheckTask=task_1');
+    expect(ready.summary).toContain('simplicityCheckSmallestMovement=run_start');
+    expect(ready.summary).toContain('simplicityCheckGateEvidenceChain=ready');
+    expect(ready.summary).toContain('runtimeAction=run_start');
+    expect(ready.summary).toContain('runtimeActionStatus=ready');
+    expect(ready.summary).toContain('runtimeActionSurface=run');
+    expect(ready.summary).toContain('runtimeActionRun=run_api_execution');
+    expect(ready.summary).toContain('runtimeActionRunIdentityChain=ready');
+    expect(ready.summary).toContain('runtimeActionTask=task_1');
+    expect(ready.summary).toContain('runtimeActionGateEvidenceChain=ready');
     expect(ready.summary).toContain('taskMemoryGuidance=ready');
     expect(ready.summary).toContain('contextManifestTask=task_1');
     expect(ready.summary).toContain('contextManifestEvidenceChain=ready');
@@ -1857,6 +1881,50 @@ describe('ai runtime invocation contract', () => {
     expect(wrongTask.summary).toContain('taskMemoryCoverageTask=task_2');
     expect(wrongTask.summary).toContain('taskMemoryCoverageEvidenceChain=missing');
     expect(wrongTask.summary).toContain('taskMemoryCoverageGateEvidenceChain=missing');
+  });
+
+  it('does not satisfy simplicity or runtime-action gates without service evidence', () => {
+    const missingEvidence = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runtimeAction: null,
+      simplicityCheck: null,
+    });
+
+    expect(missingEvidence).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['simplicity_check', 'runtime_action'],
+    });
+    expect(missingEvidence.summary).toContain('simplicityCheck=missing');
+    expect(missingEvidence.summary).toContain('simplicityCheckGateEvidenceChain=missing');
+    expect(missingEvidence.summary).toContain('runtimeAction=missing');
+    expect(missingEvidence.summary).toContain('runtimeActionGateEvidenceChain=missing');
+
+    const wrongIdentity = evaluateAgentApiExecutionPromotionReadinessFromEvidence({
+      ...completeAgentApiExecutionPromotionEvidence(),
+      runtimeAction: {
+        action: 'run_start',
+        allowed: true,
+        runId: 'run_other',
+        status: 'ready',
+        surface: 'run',
+        taskId: 'task_2',
+      },
+      simplicityCheck: {
+        smallestMovement: 'run_start',
+        status: 'ready',
+        taskId: 'task_2',
+      },
+    });
+
+    expect(wrongIdentity).toMatchObject({
+      ready: false,
+      missingRequirements: [],
+      missingGates: ['simplicity_check', 'runtime_action'],
+    });
+    expect(wrongIdentity.summary).toContain('simplicityCheckTask=task_2');
+    expect(wrongIdentity.summary).toContain('runtimeActionRunIdentityChain=missing');
+    expect(wrongIdentity.summary).toContain('runtimeActionTask=task_2');
   });
 
   it('requires patch artifact and task file write intents before satisfying execution writeback extraction', () => {
@@ -2425,8 +2493,21 @@ function completeAgentApiExecutionPromotionEvidence() {
       runtimeMode: 'api' as const,
       taskId: 'task_1',
     },
+    simplicityCheck: {
+      smallestMovement: 'run_start',
+      status: 'ready' as const,
+      taskId: 'task_1',
+    },
     subtaskStart: {
       status: 'ready' as const,
+      taskId: 'task_1',
+    },
+    runtimeAction: {
+      action: 'run_start',
+      allowed: true,
+      runId: 'run_api_execution',
+      status: 'ready' as const,
+      surface: 'run',
       taskId: 'task_1',
     },
     targetTaskId: 'task_1',
