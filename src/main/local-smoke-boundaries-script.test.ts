@@ -929,6 +929,8 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
     expect(result.output).toContain('declaredWebSearchToolCount=0');
     expect(result.output).toContain('declaredWebSearchTools=none');
+    expect(result.output).toContain('trustedWebSearchToolCount=0');
+    expect(result.output).toContain('trustedWebSearchTools=none');
     expect(result.output).toContain('serviceEvidenceSelectedApiRuntime=ready');
     expect(result.output).toContain('serviceEvidenceProviderConfigured=ready');
     expect(result.output).toContain('serviceEvidenceProviderOwnedMetadata=ready');
@@ -938,6 +940,8 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('serviceEvidenceExplicitToolDeclarationPackageMatchesMetadata=yes');
     expect(result.output).toContain('serviceEvidenceDeclaredWebSearchToolCount=0');
     expect(result.output).toContain('serviceEvidenceDeclaredWebSearchTools=none');
+    expect(result.output).toContain('serviceEvidenceTrustedWebSearchToolCount=0');
+    expect(result.output).toContain('serviceEvidenceTrustedWebSearchTools=none');
     expect(result.output).toContain('genericHelperProviderToolStatus=not_declared');
     expect(result.output).toContain('genericHelperProviderToolReadiness=not_declared');
     expect(result.output).toContain('genericHelperProviderToolRequirements=4/5');
@@ -945,6 +949,8 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('genericHelperDeclaredToolCount=5');
     expect(result.output).toContain('genericHelperDeclaredWebSearchToolCount=0');
     expect(result.output).toContain('genericHelperDeclaredWebSearchTools=none');
+    expect(result.output).toContain('genericHelperTrustedWebSearchToolCount=0');
+    expect(result.output).toContain('genericHelperTrustedWebSearchTools=none');
     expect(result.output).toContain('workspace=unchanged');
   });
 

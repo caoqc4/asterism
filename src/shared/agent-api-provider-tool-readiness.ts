@@ -211,6 +211,11 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
     && metadataMatchesConfiguredProvider;
   const declarationPackageMatchesMetadata = Boolean(declarationPackageName)
     && declarationPackageName === (metadata?.packageName?.trim().toLowerCase() ?? '');
+  const trustedWebSearchDeclaredTools = (
+    providerOwnedMetadataReady
+    && declarations?.source === 'provider_owned_metadata'
+    && declarationPackageMatchesMetadata
+  ) ? webSearchDeclaredTools : [];
 
   if (evidence.selectedRuntime?.runtimeKind === 'agent_api' && evidence.selectedRuntime.mode === 'api') {
     satisfiedRequirements.push('selected_api_runtime');
@@ -232,7 +237,7 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
     providerOwnedMetadataReady
     && declarations?.source === 'provider_owned_metadata'
     && declarationPackageMatchesMetadata
-    && webSearchDeclaredTools.length > 0
+    && trustedWebSearchDeclaredTools.length > 0
   ) {
     satisfiedRequirements.push('explicit_tool_declaration');
   }
@@ -274,6 +279,8 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
       `declaredToolCount=${normalizedDeclaredTools.length}`,
       `declaredWebSearchToolCount=${webSearchDeclaredTools.length}`,
       `declaredWebSearchTools=${webSearchDeclaredTools.length ? webSearchDeclaredTools.join(',') : 'none'}`,
+      `trustedWebSearchToolCount=${trustedWebSearchDeclaredTools.length}`,
+      `trustedWebSearchTools=${trustedWebSearchDeclaredTools.length ? trustedWebSearchDeclaredTools.join(',') : 'none'}`,
       `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
       `providerToolMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),

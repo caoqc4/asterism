@@ -41,6 +41,8 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredToolCount=0');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=0');
     expect(readiness.summary).toContain('declaredWebSearchTools=none');
+    expect(readiness.summary).toContain('trustedWebSearchToolCount=0');
+    expect(readiness.summary).toContain('trustedWebSearchTools=none');
   });
 
   it('requires configured provider identity before satisfying provider configuration', () => {
@@ -165,6 +167,8 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('declaredToolCount=1');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
     expect(readiness.summary).toContain('declaredWebSearchTools=web_search');
+    expect(readiness.summary).toContain('trustedWebSearchToolCount=1');
+    expect(readiness.summary).toContain('trustedWebSearchTools=web_search');
   });
 
   it('deduplicates provider tool declarations before reporting web/search evidence counts', () => {
@@ -450,6 +454,8 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('providerOwnedMetadata=missing');
     expect(readiness.summary).toContain('explicitToolDeclarationPackageMatchesMetadata=yes');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+    expect(readiness.summary).toContain('trustedWebSearchToolCount=0');
+    expect(readiness.summary).toContain('trustedWebSearchTools=none');
   });
 
   it('does not accept known-provider metadata from third-party package name prefixes', () => {
@@ -717,5 +723,7 @@ describe('Agent API provider tool readiness', () => {
     expect(readiness.summary).toContain('explicitToolDeclarationSource=runtime_probe');
     expect(readiness.summary).toContain('declaredToolCount=1');
     expect(readiness.summary).toContain('declaredWebSearchToolCount=1');
+    expect(readiness.summary).toContain('trustedWebSearchToolCount=0');
+    expect(readiness.summary).toContain('trustedWebSearchTools=none');
   });
 });
