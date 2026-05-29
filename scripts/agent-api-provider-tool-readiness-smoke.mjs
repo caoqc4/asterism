@@ -137,6 +137,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     providerCallSource: 'provider_payload',
     providerCallIds: ['call_search_1'],
     providerCallToolNames: ['web_search_preview'],
+    trustedProviderWebSearchToolNames: ['web_search_preview'],
     selectedRuntimeProvider: snapshot.model.provider,
   });
   const providerToolStatus = scalarValue(agentApiRuntime.summary, 'providerToolStatus') ?? serviceEvidenceReadiness.status;
@@ -165,7 +166,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerNativeProviderCallIdCount=${scalarValue(agentApiRuntime.summary, 'providerNativeProviderCallIdCount') ?? 'missing'}`);
   console.log(`providerNativeProviderWebSearchCallCount=${scalarValue(agentApiRuntime.summary, 'providerNativeProviderWebSearchCallCount') ?? 'missing'}`);
   console.log(`providerNativeReadySessionReady=${providerNativeSessionReady.ready ? 'yes' : 'no'}`);
-  console.log(`providerNativeReadySessionRequirements=${providerNativeSessionReady.satisfiedRequirements.length}/6`);
+  console.log(`providerNativeReadySessionRequirements=${providerNativeSessionReady.satisfiedRequirements.length}/7`);
   console.log(`providerNativeReadySessionMissingRequirements=${providerNativeSessionReady.missingRequirements.join(',') || 'none'}`);
   console.log(`providerNativeReadyPayloadProvider=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativePayloadProvider') ?? 'missing'}`);
   console.log(`providerNativeReadyPayloadProviderMatchesSelected=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativePayloadProviderMatchesSelected') ?? 'missing'}`);
@@ -176,6 +177,11 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`providerNativeReadyProviderCallTools=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallTools') ?? 'missing'}`);
   console.log(`providerNativeReadyProviderWebSearchCallCount=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderWebSearchCallCount') ?? 'missing'}`);
   console.log(`providerNativeReadyProviderWebSearchCallTools=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderWebSearchCallTools') ?? 'missing'}`);
+  console.log(`providerNativeReadyTrustedWebSearchDeclarationCount=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeTrustedWebSearchDeclarationCount') ?? 'missing'}`);
+  console.log(`providerNativeReadyTrustedWebSearchDeclarations=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeTrustedWebSearchDeclarations') ?? 'missing'}`);
+  console.log(`providerNativeReadyTrustedWebSearchCallCount=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeTrustedWebSearchCallCount') ?? 'missing'}`);
+  console.log(`providerNativeReadyTrustedWebSearchCallTools=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeTrustedWebSearchCallTools') ?? 'missing'}`);
+  console.log(`providerNativeReadyUntrustedWebSearchCallCount=${serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeUntrustedWebSearchCallCount') ?? 'missing'}`);
   console.log(`selectedApiRuntime=${scalarValue(agentApiRuntime.summary, 'selectedApiRuntime') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'selectedApiRuntime') ?? 'missing'}`);
   console.log(`providerConfiguredStatus=${scalarValue(agentApiRuntime.summary, 'providerConfigured') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerConfigured') ?? 'missing'}`);
   console.log(`configuredProvider=${scalarValue(agentApiRuntime.summary, 'configuredProvider') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'configuredProvider') ?? 'missing'}`);
@@ -262,8 +268,8 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     !agentApiRuntime.summary.includes('providerToolRequirements=4/5') ? 'provider_tool_requirements' : null,
     !agentApiRuntime.summary.includes('providerToolMissingRequirements=explicit_tool_declaration') ? 'provider_tool_missing_requirements' : null,
     !agentApiRuntime.summary.includes('providerNativeSessionReady=no') ? 'provider_native_session_ready' : null,
-    !agentApiRuntime.summary.includes('providerNativeSessionRequirements=2/6') ? 'provider_native_session_requirements' : null,
-    !agentApiRuntime.summary.includes('providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls') ? 'provider_native_session_missing_requirements' : null,
+    !agentApiRuntime.summary.includes('providerNativeSessionRequirements=2/7') ? 'provider_native_session_requirements' : null,
+    !agentApiRuntime.summary.includes('providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls,provider_web_search_declaration') ? 'provider_native_session_missing_requirements' : null,
     !agentApiRuntime.summary.includes('providerNativeFlag=enabled') ? 'provider_native_flag' : null,
     !agentApiRuntime.summary.includes('providerNativeSelectedProvider=openai') ? 'provider_native_selected_provider' : null,
     !agentApiRuntime.summary.includes('providerNativePayloadProvider=missing') ? 'provider_native_payload_provider' : null,
@@ -273,7 +279,7 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     !agentApiRuntime.summary.includes('providerNativeProviderCallIdCount=0') ? 'provider_native_provider_call_id_count' : null,
     !agentApiRuntime.summary.includes('providerNativeProviderWebSearchCallCount=0') ? 'provider_native_provider_web_search_call_count' : null,
     !providerNativeSessionReady.ready ? 'provider_native_ready_session' : null,
-    providerNativeSessionReady.satisfiedRequirements.length !== 6 ? 'provider_native_ready_requirement_count' : null,
+    providerNativeSessionReady.satisfiedRequirements.length !== 7 ? 'provider_native_ready_requirement_count' : null,
     providerNativeSessionReady.missingRequirements.length !== 0 ? 'provider_native_ready_missing_requirements' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativePayloadProvider') !== 'openai' ? 'provider_native_ready_payload_provider' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativePayloadProviderMatchesSelected') !== 'yes' ? 'provider_native_ready_payload_provider_match' : null,
@@ -284,6 +290,11 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderCallTools') !== 'web_search_preview' ? 'provider_native_ready_provider_call_tools' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderWebSearchCallCount') !== '1' ? 'provider_native_ready_provider_web_search_call_count' : null,
     serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeProviderWebSearchCallTools') !== 'web_search_preview' ? 'provider_native_ready_provider_web_search_call_tools' : null,
+    serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeTrustedWebSearchDeclarationCount') !== '1' ? 'provider_native_ready_trusted_web_search_declaration_count' : null,
+    serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeTrustedWebSearchDeclarations') !== 'web_search_preview' ? 'provider_native_ready_trusted_web_search_declarations' : null,
+    serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeTrustedWebSearchCallCount') !== '1' ? 'provider_native_ready_trusted_web_search_call_count' : null,
+    serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeTrustedWebSearchCallTools') !== 'web_search_preview' ? 'provider_native_ready_trusted_web_search_call_tools' : null,
+    serviceScalarValue(providerNativeSessionReady.summary, 'providerNativeUntrustedWebSearchCallCount') !== '0' ? 'provider_native_ready_untrusted_web_search_call_count' : null,
     !agentApiRuntime.summary.includes('selectedApiRuntime=ready') ? 'selected_api_runtime' : null,
     !agentApiRuntime.summary.includes('providerConfigured=ready') ? 'provider_configured' : null,
     !agentApiRuntime.summary.includes('configuredProvider=openai') ? 'configured_provider' : null,

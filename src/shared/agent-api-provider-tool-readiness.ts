@@ -16,7 +16,8 @@ export type AgentApiProviderNativeSessionReadinessRequirement =
   | 'provider_payload_identity'
   | 'normalized_plan_identity'
   | 'provider_call_ids'
-  | 'provider_web_search_calls';
+  | 'provider_web_search_calls'
+  | 'provider_web_search_declaration';
 
 export type AgentApiProviderToolReadiness = {
   missingRequirements: AgentApiProviderToolReadinessRequirement[];
@@ -65,6 +66,7 @@ export type AgentApiProviderNativeSessionReadinessEvidence = {
   payloadProvider?: string | null;
   providerCallIds?: string[] | null;
   providerCallToolNames?: string[] | null;
+  trustedProviderWebSearchToolNames?: string[] | null;
   selectedRuntimeProvider?: string | null;
 };
 
@@ -126,6 +128,7 @@ export function agentApiProviderNativeSessionReadinessRequirements(): AgentApiPr
     'normalized_plan_identity',
     'provider_call_ids',
     'provider_web_search_calls',
+    'provider_web_search_declaration',
   ];
 }
 
@@ -359,6 +362,17 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
   const providerWebSearchCallToolNames = providerCallSource === 'provider_payload'
     ? declaredWebSearchTools(providerCallToolNames, selectedRuntimeProvider)
     : [];
+  const trustedProviderWebSearchToolNames = declaredWebSearchTools(
+    evidence.trustedProviderWebSearchToolNames ?? [],
+    selectedRuntimeProvider,
+  );
+  const trustedProviderWebSearchToolIdentityKeys = new Set(
+    trustedProviderWebSearchToolNames.map(declaredToolIdentityKey),
+  );
+  const trustedProviderWebSearchCallToolNames = providerWebSearchCallToolNames.filter((toolName) =>
+    trustedProviderWebSearchToolIdentityKeys.has(declaredToolIdentityKey(toolName)));
+  const untrustedProviderWebSearchCallToolNames = providerWebSearchCallToolNames.filter((toolName) =>
+    !trustedProviderWebSearchToolIdentityKeys.has(declaredToolIdentityKey(toolName)));
   const payloadProviderMatchesSelected = Boolean(selectedRuntimeProvider)
     && Boolean(payloadProvider)
     && payloadProvider === selectedRuntimeProvider;
@@ -376,6 +390,13 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
   }
   if (providerWebSearchCallToolNames.length > 0) {
     satisfiedRequirements.push('provider_web_search_calls');
+  }
+  if (
+    providerWebSearchCallToolNames.length > 0
+    && trustedProviderWebSearchCallToolNames.length > 0
+    && untrustedProviderWebSearchCallToolNames.length === 0
+  ) {
+    satisfiedRequirements.push('provider_web_search_declaration');
   }
 
   const satisfiedRequirementSet = new Set(satisfiedRequirements);
@@ -404,6 +425,12 @@ export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
       `providerNativeProviderCallTools=${providerCallToolNames.length ? providerCallToolNames.join(',') : 'missing'}`,
       `providerNativeProviderWebSearchCallCount=${providerWebSearchCallToolNames.length}`,
       `providerNativeProviderWebSearchCallTools=${providerWebSearchCallToolNames.length ? providerWebSearchCallToolNames.join(',') : 'none'}`,
+      `providerNativeTrustedWebSearchDeclarationCount=${trustedProviderWebSearchToolNames.length}`,
+      `providerNativeTrustedWebSearchDeclarations=${trustedProviderWebSearchToolNames.length ? trustedProviderWebSearchToolNames.join(',') : 'none'}`,
+      `providerNativeTrustedWebSearchCallCount=${trustedProviderWebSearchCallToolNames.length}`,
+      `providerNativeTrustedWebSearchCallTools=${trustedProviderWebSearchCallToolNames.length ? trustedProviderWebSearchCallToolNames.join(',') : 'none'}`,
+      `providerNativeUntrustedWebSearchCallCount=${untrustedProviderWebSearchCallToolNames.length}`,
+      `providerNativeUntrustedWebSearchCallTools=${untrustedProviderWebSearchCallToolNames.length ? untrustedProviderWebSearchCallToolNames.join(',') : 'none'}`,
     ].join(' / '),
   };
 }

@@ -206,7 +206,7 @@ describe('configuration safety report', () => {
     expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')?.reason)
       .toContain('providerNativeSessionReady=no');
     expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')?.reason)
-      .toContain('providerNativeSessionMissingRequirements=feature_flag,provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls');
+      .toContain('providerNativeSessionMissingRequirements=feature_flag,provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls,provider_web_search_declaration');
   });
 
   it('treats pending or errored External Access connectors as missing configuration, not disabled flags', () => {

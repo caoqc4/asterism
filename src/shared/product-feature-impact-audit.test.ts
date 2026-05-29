@@ -1355,10 +1355,10 @@ describe('product feature impact audit', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 
     expect(capabilities?.evidence.join(' ')).toContain('Provider-native agent session gates now require both provider-native payload provider identity and normalized plan provider identity');
-    expect(capabilities?.evidence.join(' ')).toContain('plus nonempty providerCallIds and provider web/search call tool names from provider_payload evidence');
-    expect(capabilities?.evidence.join(' ')).toContain('runtime projection, or hand-shaped proposal without provider-owned web/search tool-call identity evidence cannot cross the provider-native session boundary');
+    expect(capabilities?.evidence.join(' ')).toContain('plus nonempty providerCallIds, provider web/search call tool names from provider_payload evidence, and matching trusted provider-owned web/search declarations');
+    expect(capabilities?.evidence.join(' ')).toContain('runtime projection, or hand-shaped proposal without provider-owned web/search tool-call identity and declaration evidence cannot cross the provider-native session boundary');
     expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now also projects provider-native session readiness from static selected-runtime evidence');
-    expect(capabilities?.evidence.join(' ')).toContain('enabling provider-native tool calls does not imply a live provider-native web/search session without payload-owned providerCallIds and web/search tool-name evidence');
+    expect(capabilities?.evidence.join(' ')).toContain('enabling provider-native tool calls does not imply a live provider-native web/search session without payload-owned providerCallIds and provider-owned web/search tool-name declaration evidence');
   });
 
   it('records provider-native session readiness chips and smoke evidence', () => {
@@ -1368,14 +1368,15 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('providerNativeSessionReady');
     expect(evidence).toContain('providerNativeSessionMissingRequirements');
     expect(evidence).toContain('providerNativeSessionReady=no');
-    expect(evidence).toContain('providerNativeSessionRequirements=2/6');
-    expect(evidence).toContain('providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls');
+    expect(evidence).toContain('providerNativeSessionRequirements=2/7');
+    expect(evidence).toContain('providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls,provider_web_search_declaration');
     expect(evidence).toContain('providerNativeFlag=enabled');
     expect(evidence).toContain('providerNativeProviderCallIdCount=0');
     expect(evidence).toContain('providerNativeProviderWebSearchCallCount=0');
     expect(evidence).toContain('providerNativeReadySessionReady=yes');
-    expect(evidence).toContain('providerNativeReadySessionRequirements=6/6');
-    expect(evidence).toContain('payload provider identity, normalized plan provider identity, providerCallSource=provider_payload, providerCallIds, and provider web/search call tool names all match the selected runtime provider');
+    expect(evidence).toContain('providerNativeReadySessionRequirements=7/7');
+    expect(evidence).toContain('trusted provider-owned web/search declarations');
+    expect(evidence).toContain('payload provider identity, normalized plan provider identity, providerCallSource=provider_payload, providerCallIds, provider web/search call tool names, and trusted provider-owned web/search declarations all match the selected runtime provider');
   });
 
   it('records exact Agent API execution Write Intent action identity coverage', () => {
