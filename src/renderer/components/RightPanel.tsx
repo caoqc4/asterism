@@ -891,8 +891,32 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
     }
   }
 
+  const agentApiPromotionStep = orderedSteps.find((step) => /Agent API execution(?: post-run)? promotion readiness/i.test(step.title));
+  if (agentApiPromotionStep) {
+    const ready = readStepKeyValue(agentApiPromotionStep.output, 'ready')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'ready')
+      ?? readStepKeyValue(agentApiPromotionStep.output, 'promotionReady')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'promotionReady');
+    const requirements = readStepKeyValue(agentApiPromotionStep.output, 'requirements')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'requirements')
+      ?? readStepKeyValue(agentApiPromotionStep.output, 'promotionRequirements')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'promotionRequirements');
+    const missingRequirements = readStepKeyValue(agentApiPromotionStep.output, 'missingRequirements')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'missingRequirements')
+      ?? readStepKeyValue(agentApiPromotionStep.output, 'promotionMissingRequirements')
+      ?? readSlashSummaryValue(agentApiPromotionStep.output, 'promotionMissingRequirements')
+      ?? readStepKeyValue(agentApiPromotionStep.output, 'missing');
+    const label = ready === 'yes'
+      ? 'ready'
+      : missingRequirements && missingRequirements !== 'none'
+        ? `missing ${truncateAgentCliChatLine(missingRequirements, 72)}`
+        : 'recorded';
+    lines.push(`Agent API 执行证据：promotion readiness ${label}${requirements ? `（${requirements}）` : ''}。`);
+  }
+
   const nativeWorkspaceWriteStep = orderedSteps.find((step) => (
     !/Agent CLI 联网调研准备/i.test(step.title)
+    && step.id !== agentApiPromotionStep?.id
     && readStepKeyValue(step.output, 'capability')?.toLowerCase() === 'workspace_write'
   ));
   if (nativeWorkspaceWriteStep) {
@@ -906,6 +930,7 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
 
   const nativeWebStep = orderedSteps.find((step) => (
     !/Agent CLI 联网调研准备/i.test(step.title)
+    && step.id !== agentApiPromotionStep?.id
     && step.id !== nativeWorkspaceWriteStep?.id
     && isNativeWebResearchStep(step)
   ));
@@ -920,6 +945,7 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
 
   const nativeLocalStep = orderedSteps.find((step) => (
     !/Agent CLI 联网调研准备/i.test(step.title)
+    && step.id !== agentApiPromotionStep?.id
     && step.id !== nativeWorkspaceWriteStep?.id
     && !isNativeWebResearchStep(step)
     && /capability=(workspace_read|shell_command)|工作区|命令执行|shell|command_execution|bash|terminal/i.test(`${step.title}\n${step.output ?? ''}`)

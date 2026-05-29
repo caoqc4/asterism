@@ -2669,6 +2669,33 @@ describe('App redesign v1', () => {
   it('routes an explicit task-bound Agent API execution request through RunService', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    vi.mocked(harness.api.triggerRun).mockImplementationOnce(async (input) => {
+      const run = buildRun({
+        id: 'run_api_execution',
+        output: 'Agent API execution finished.',
+        outputSource: 'ai',
+        status: 'completed',
+        taskId: input.taskId,
+        type: input.type,
+      }) as RunRecord & { steps: RunStepRecord[] };
+      run.steps = [
+        {
+          id: 'step_api_promotion',
+          runId: run.id,
+          index: 0,
+          kind: 'plan',
+          status: 'completed',
+          title: 'Agent API execution promotion readiness',
+          input: 'pilotDecision={"executor":"agent_api"}',
+          output: 'Agent API execution promotion readiness / ready=no / requirements=5/11 / missingRequirements=write_intent_extraction,reviewed_patch_apply_boundary',
+          error: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ];
+      harness.runs.push(run);
+      return run;
+    });
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
@@ -2695,6 +2722,7 @@ describe('App redesign v1', () => {
       ]),
     }));
     expect(await screen.findByText(/已完成，结果已记录到任务动态/)).toBeTruthy();
+    expect(await screen.findByText(/Agent API 执行证据：promotion readiness missing write_intent_extraction,reviewed_patch_apply_boundary/)).toBeTruthy();
   });
 
   it('routes right-panel Agent API decomposition requests through the task-bound decomposition adapter', async () => {
