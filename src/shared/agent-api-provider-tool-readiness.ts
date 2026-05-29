@@ -10,6 +10,13 @@ export type AgentApiProviderToolReadinessStatus =
   | 'declared'
   | 'not_declared';
 
+export type AgentApiProviderNativeSessionReadinessRequirement =
+  | 'feature_flag'
+  | 'selected_runtime_provider'
+  | 'provider_payload_identity'
+  | 'normalized_plan_identity'
+  | 'provider_call_ids';
+
 export type AgentApiProviderToolReadiness = {
   missingRequirements: AgentApiProviderToolReadinessRequirement[];
   satisfiedRequirements: AgentApiProviderToolReadinessRequirement[];
@@ -48,6 +55,14 @@ export type AgentApiProviderToolReadinessServiceEvidence = {
     runtimeKind: 'agent_api' | 'agent_cli' | 'none';
   } | null;
   startupProbe?: 'called' | 'never' | 'not_attempted';
+};
+
+export type AgentApiProviderNativeSessionReadinessEvidence = {
+  featureFlagEnabled?: boolean;
+  normalizedPlanProvider?: string | null;
+  payloadProvider?: string | null;
+  providerCallIds?: string[] | null;
+  selectedRuntimeProvider?: string | null;
 };
 
 export function deriveAgentApiProviderToolMetadata(
@@ -97,6 +112,16 @@ export function agentApiProviderToolReadinessRequirements(): AgentApiProviderToo
     'no_startup_probe',
     'provider_owned_metadata',
     'explicit_tool_declaration',
+  ];
+}
+
+export function agentApiProviderNativeSessionReadinessRequirements(): AgentApiProviderNativeSessionReadinessRequirement[] {
+  return [
+    'feature_flag',
+    'selected_runtime_provider',
+    'provider_payload_identity',
+    'normalized_plan_identity',
+    'provider_call_ids',
   ];
 }
 
@@ -307,5 +332,60 @@ export function evaluateAgentApiProviderToolReadinessFromEvidence(
       `providerToolMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
     ].join(' / '),
     toolReadiness,
+  };
+}
+
+export function evaluateAgentApiProviderNativeSessionReadinessFromEvidence(
+  evidence: AgentApiProviderNativeSessionReadinessEvidence = {},
+): {
+  missingRequirements: AgentApiProviderNativeSessionReadinessRequirement[];
+  ready: boolean;
+  satisfiedRequirements: AgentApiProviderNativeSessionReadinessRequirement[];
+  summary: string;
+} {
+  const requiredRequirements = agentApiProviderNativeSessionReadinessRequirements();
+  const selectedRuntimeProvider = normalizeProvider(evidence.selectedRuntimeProvider);
+  const payloadProvider = normalizeProvider(evidence.payloadProvider);
+  const normalizedPlanProvider = normalizeProvider(evidence.normalizedPlanProvider);
+  const providerCallIds = (evidence.providerCallIds ?? [])
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const payloadProviderMatchesSelected = Boolean(selectedRuntimeProvider)
+    && Boolean(payloadProvider)
+    && payloadProvider === selectedRuntimeProvider;
+  const normalizedPlanProviderMatchesSelected = Boolean(selectedRuntimeProvider)
+    && Boolean(normalizedPlanProvider)
+    && normalizedPlanProvider === selectedRuntimeProvider;
+  const satisfiedRequirements: AgentApiProviderNativeSessionReadinessRequirement[] = [];
+
+  if (evidence.featureFlagEnabled === true) satisfiedRequirements.push('feature_flag');
+  if (selectedRuntimeProvider) satisfiedRequirements.push('selected_runtime_provider');
+  if (payloadProviderMatchesSelected) satisfiedRequirements.push('provider_payload_identity');
+  if (normalizedPlanProviderMatchesSelected) satisfiedRequirements.push('normalized_plan_identity');
+  if (providerCallIds.length > 0) satisfiedRequirements.push('provider_call_ids');
+
+  const satisfiedRequirementSet = new Set(satisfiedRequirements);
+  const missingRequirements = requiredRequirements.filter((requirement) => !satisfiedRequirementSet.has(requirement));
+  const ready = missingRequirements.length === 0;
+
+  return {
+    missingRequirements,
+    ready,
+    satisfiedRequirements,
+    summary: [
+      'Agent API provider-native session readiness',
+      `providerNativeSessionReady=${ready ? 'yes' : 'no'}`,
+      `providerNativeSessionRequirements=${satisfiedRequirements.length}/${requiredRequirements.length}`,
+      `providerNativeSessionSatisfiedRequirements=${satisfiedRequirements.join(',') || 'none'}`,
+      `providerNativeSessionMissingRequirements=${missingRequirements.join(',') || 'none'}`,
+      `providerNativeFlag=${evidence.featureFlagEnabled === true ? 'enabled' : 'disabled'}`,
+      `providerNativeSelectedProvider=${selectedRuntimeProvider || 'missing'}`,
+      `providerNativePayloadProvider=${payloadProvider || 'missing'}`,
+      `providerNativePayloadProviderMatchesSelected=${payloadProviderMatchesSelected ? 'yes' : 'no'}`,
+      `providerNativePlanProvider=${normalizedPlanProvider || 'missing'}`,
+      `providerNativePlanProviderMatchesSelected=${normalizedPlanProviderMatchesSelected ? 'yes' : 'no'}`,
+      `providerNativeProviderCallIds=${providerCallIds.length ? providerCallIds.join(',') : 'missing'}`,
+      `providerNativeProviderCallIdCount=${providerCallIds.length}`,
+    ].join(' / '),
   };
 }

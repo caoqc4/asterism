@@ -137,6 +137,16 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   providerConfigured: string | null;
   providerToolMissingRequirements: string | null;
   providerToolRequirements: string | null;
+  providerNativeFlag: string | null;
+  providerNativePayloadProvider: string | null;
+  providerNativePayloadProviderMatchesSelected: string | null;
+  providerNativePlanProvider: string | null;
+  providerNativePlanProviderMatchesSelected: string | null;
+  providerNativeProviderCallIdCount: string | null;
+  providerNativeSelectedProvider: string | null;
+  providerNativeSessionMissingRequirements: string | null;
+  providerNativeSessionReady: string | null;
+  providerNativeSessionRequirements: string | null;
   selectedApiRuntime: string | null;
   selectedRuntimeProvider: string | null;
   selectedRuntimeProviderEvidenceChain: string | null;
@@ -164,6 +174,16 @@ function agentApiProviderToolEvidence(summary?: string | null): {
     providerConfigured: scalarValue(text, 'providerConfigured'),
     providerToolMissingRequirements: scalarValue(text, 'providerToolMissingRequirements'),
     providerToolRequirements: scalarValue(text, 'providerToolRequirements'),
+    providerNativeFlag: scalarValue(text, 'providerNativeFlag'),
+    providerNativePayloadProvider: scalarValue(text, 'providerNativePayloadProvider'),
+    providerNativePayloadProviderMatchesSelected: scalarValue(text, 'providerNativePayloadProviderMatchesSelected'),
+    providerNativePlanProvider: scalarValue(text, 'providerNativePlanProvider'),
+    providerNativePlanProviderMatchesSelected: scalarValue(text, 'providerNativePlanProviderMatchesSelected'),
+    providerNativeProviderCallIdCount: scalarValue(text, 'providerNativeProviderCallIdCount'),
+    providerNativeSelectedProvider: scalarValue(text, 'providerNativeSelectedProvider'),
+    providerNativeSessionMissingRequirements: scalarValue(text, 'providerNativeSessionMissingRequirements'),
+    providerNativeSessionReady: scalarValue(text, 'providerNativeSessionReady'),
+    providerNativeSessionRequirements: scalarValue(text, 'providerNativeSessionRequirements'),
     selectedApiRuntime: scalarValue(text, 'selectedApiRuntime'),
     selectedRuntimeProvider: scalarValue(text, 'selectedRuntimeProvider'),
     selectedRuntimeProviderEvidenceChain: scalarValue(text, 'selectedRuntimeProviderEvidenceChain'),
@@ -872,6 +892,36 @@ function AgentCliRuntimeSection({
                 )}
                 {apiProviderToolEvidence.providerToolMissingRequirements && (
                   <span>{`providerToolMissingRequirements=${apiProviderToolEvidence.providerToolMissingRequirements}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativeSessionReady && (
+                  <span>{`providerNativeSessionReady=${apiProviderToolEvidence.providerNativeSessionReady}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativeSessionRequirements && (
+                  <span>{`providerNativeSessionRequirements=${apiProviderToolEvidence.providerNativeSessionRequirements}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativeSessionMissingRequirements && (
+                  <span>{`providerNativeSessionMissingRequirements=${apiProviderToolEvidence.providerNativeSessionMissingRequirements}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativeFlag && (
+                  <span>{`providerNativeFlag=${apiProviderToolEvidence.providerNativeFlag}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativeSelectedProvider && (
+                  <span>{`providerNativeSelectedProvider=${apiProviderToolEvidence.providerNativeSelectedProvider}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativePayloadProvider && (
+                  <span>{`providerNativePayloadProvider=${apiProviderToolEvidence.providerNativePayloadProvider}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativePayloadProviderMatchesSelected && (
+                  <span>{`providerNativePayloadProviderMatchesSelected=${apiProviderToolEvidence.providerNativePayloadProviderMatchesSelected}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativePlanProvider && (
+                  <span>{`providerNativePlanProvider=${apiProviderToolEvidence.providerNativePlanProvider}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativePlanProviderMatchesSelected && (
+                  <span>{`providerNativePlanProviderMatchesSelected=${apiProviderToolEvidence.providerNativePlanProviderMatchesSelected}`}</span>
+                )}
+                {apiProviderToolEvidence.providerNativeProviderCallIdCount && (
+                  <span>{`providerNativeProviderCallIdCount=${apiProviderToolEvidence.providerNativeProviderCallIdCount}`}</span>
                 )}
                 {apiProviderToolEvidence.selectedApiRuntime && (
                   <span>{`selectedApiRuntime=${apiProviderToolEvidence.selectedApiRuntime}`}</span>

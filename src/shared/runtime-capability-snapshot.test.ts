@@ -68,6 +68,7 @@ describe('runtime capability snapshot', () => {
         testAvailable: false,
       },
       flags: {
+        providerNativeToolCalls: 'unknown',
         scheduler: 'disabled',
         sandboxCodingAgent: 'available',
         selfCheck: 'available',
@@ -96,6 +97,7 @@ describe('runtime capability snapshot', () => {
     });
     expect(snapshot.summary).toContain('runtime=unknown');
     expect(snapshot.summary).toContain('model=configured');
+    expect(snapshot.summary).toContain('providerNativeToolCalls=unknown');
     expect(snapshot.summary).toContain('sandbox=not_probed');
     expect(capabilitySnapshotAllowsModelExecution(snapshot)).toBe(false);
     expect(capabilitySnapshotAllowsWorkspaceVerification(snapshot)).toBe(true);

@@ -27,6 +27,7 @@ export type RuntimeCapabilitySnapshot = {
     testAvailable: boolean;
   };
   flags: {
+    providerNativeToolCalls: RuntimeCapabilityStatus;
     scheduler: RuntimeCapabilityStatus;
     sandboxCodingAgent: RuntimeCapabilityStatus;
     selfCheck: RuntimeCapabilityStatus;
@@ -125,6 +126,7 @@ export function buildRuntimeCapabilitySnapshot(params: {
       testAvailable: Boolean(aiStatus?.codeAgentWorkspaceChecks?.test.available),
     },
     flags: {
+      providerNativeToolCalls: flagStatus(aiStatus?.featureFlags.enableProviderNativeToolCalls),
       scheduler: flagStatus(aiStatus?.featureFlags.enableScheduler),
       sandboxCodingAgent: flagStatus(aiStatus?.featureFlags.enableSandboxCodingAgent),
       selfCheck: flagStatus(aiStatus?.featureFlags.enableSelfCheck),
@@ -155,6 +157,7 @@ export function buildRuntimeCapabilitySnapshot(params: {
     snapshot.model.provider ? `provider=${snapshot.model.provider}` : null,
     snapshot.model.model ? `modelId=${snapshot.model.model}` : null,
     `modelProducer=${snapshot.model.producer}`,
+    `providerNativeToolCalls=${snapshot.flags.providerNativeToolCalls}`,
     `workspace=${snapshot.workspace.rootConfigured ? 'configured' : 'missing'}`,
     `checks=lint:${snapshot.workspace.lintAvailable ? 'yes' : 'no'},test:${snapshot.workspace.testAvailable ? 'yes' : 'no'}`,
     `sandbox=${snapshot.sandbox.producerBackendReady ? 'ready' : snapshot.sandbox.backendProbed ? 'blocked' : 'not_probed'}`,

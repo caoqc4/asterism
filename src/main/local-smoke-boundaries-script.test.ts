@@ -947,6 +947,16 @@ describe('local smoke script default boundaries', () => {
       return;
     }
     expect(result.output).toContain('providerToolStatus=not_declared');
+    expect(result.output).toContain('providerNativeSessionReady=no');
+    expect(result.output).toContain('providerNativeSessionRequirements=2/5');
+    expect(result.output).toContain('providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids');
+    expect(result.output).toContain('providerNativeFlag=enabled');
+    expect(result.output).toContain('providerNativeSelectedProvider=openai');
+    expect(result.output).toContain('providerNativePayloadProvider=missing');
+    expect(result.output).toContain('providerNativePayloadProviderMatchesSelected=no');
+    expect(result.output).toContain('providerNativePlanProvider=missing');
+    expect(result.output).toContain('providerNativePlanProviderMatchesSelected=no');
+    expect(result.output).toContain('providerNativeProviderCallIdCount=0');
     expect(result.output).toContain('selectedApiRuntime=ready');
     expect(result.output).toContain('providerConfiguredStatus=ready');
     expect(result.output).toContain('configuredProviderEvidenceChain=ready');

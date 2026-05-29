@@ -8,6 +8,7 @@ import {
 } from './ai-runtime-invocation.js';
 import {
   deriveAgentApiProviderToolMetadata,
+  evaluateAgentApiProviderNativeSessionReadinessFromEvidence,
   evaluateAgentApiProviderToolReadinessFromEvidence,
 } from './agent-api-provider-tool-readiness.js';
 import {
@@ -576,6 +577,10 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
     },
     startupProbe: 'never',
   });
+  const providerNativeSessionReadiness = evaluateAgentApiProviderNativeSessionReadinessFromEvidence({
+    featureFlagEnabled: snapshot?.flags.providerNativeToolCalls === 'available',
+    selectedRuntimeProvider: selected ? configuredProvider || null : null,
+  });
   return {
     id: 'agent_api.runtime',
     label: 'Agent API Runtime',
@@ -601,6 +606,30 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       `providerToolStatus=${providerToolReadiness.status}`,
       `providerToolRequirements=${providerToolReadiness.satisfiedRequirements.length}/${providerToolReadiness.satisfiedRequirements.length + providerToolReadiness.missingRequirements.length}`,
       `providerToolMissingRequirements=${providerToolReadiness.missingRequirements.join(',') || 'none'}`,
+      `providerNativeSessionReady=${providerNativeSessionReadiness.ready ? 'yes' : 'no'}`,
+      `providerNativeSessionRequirements=${providerNativeSessionReadiness.satisfiedRequirements.length}/${providerNativeSessionReadiness.satisfiedRequirements.length + providerNativeSessionReadiness.missingRequirements.length}`,
+      `providerNativeSessionMissingRequirements=${providerNativeSessionReadiness.missingRequirements.join(',') || 'none'}`,
+      scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeFlag')
+        ? `providerNativeFlag=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeFlag')}`
+        : null,
+      scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeSelectedProvider')
+        ? `providerNativeSelectedProvider=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeSelectedProvider')}`
+        : null,
+      scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativePayloadProvider')
+        ? `providerNativePayloadProvider=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativePayloadProvider')}`
+        : null,
+      scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativePayloadProviderMatchesSelected')
+        ? `providerNativePayloadProviderMatchesSelected=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativePayloadProviderMatchesSelected')}`
+        : null,
+      scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativePlanProvider')
+        ? `providerNativePlanProvider=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativePlanProvider')}`
+        : null,
+      scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativePlanProviderMatchesSelected')
+        ? `providerNativePlanProviderMatchesSelected=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativePlanProviderMatchesSelected')}`
+        : null,
+      scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeProviderCallIdCount')
+        ? `providerNativeProviderCallIdCount=${scalarSummaryValue(providerNativeSessionReadiness.summary, 'providerNativeProviderCallIdCount')}`
+        : null,
       scalarSummaryValue(providerToolReadiness.summary, 'selectedApiRuntime')
         ? `selectedApiRuntime=${scalarSummaryValue(providerToolReadiness.summary, 'selectedApiRuntime')}`
         : null,

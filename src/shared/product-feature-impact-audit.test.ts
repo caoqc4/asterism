@@ -1287,6 +1287,21 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('Provider-native agent session gates now require both provider-native payload provider identity and normalized plan provider identity');
     expect(capabilities?.evidence.join(' ')).toContain('plus nonempty providerCallIds identity evidence');
     expect(capabilities?.evidence.join(' ')).toContain('hand-shaped proposal without provider tool-call identity evidence cannot cross the provider-native session boundary');
+    expect(capabilities?.evidence.join(' ')).toContain('CapabilityRegistry now also projects provider-native session readiness from static selected-runtime evidence');
+    expect(capabilities?.evidence.join(' ')).toContain('enabling provider-native tool calls does not imply a live provider-native session without payload and providerCallIds evidence');
+  });
+
+  it('records provider-native session readiness chips and smoke evidence', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+    const evidence = capabilities?.evidence.join(' ');
+
+    expect(evidence).toContain('providerNativeSessionReady');
+    expect(evidence).toContain('providerNativeSessionMissingRequirements');
+    expect(evidence).toContain('providerNativeSessionReady=no');
+    expect(evidence).toContain('providerNativeSessionRequirements=2/5');
+    expect(evidence).toContain('providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids');
+    expect(evidence).toContain('providerNativeFlag=enabled');
+    expect(evidence).toContain('providerNativeProviderCallIdCount=0');
   });
 
   it('records exact Agent API execution Write Intent action identity coverage', () => {

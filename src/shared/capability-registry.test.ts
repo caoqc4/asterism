@@ -190,8 +190,11 @@ describe('capability registry', () => {
       visibility: 'hidden',
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / configuredProvider=anthropic / configuredProviderEvidenceChain=ready / selectedRuntimeProvider=anthropic / selectedRuntimeProviderEvidenceChain=ready / providerOwnedMetadata=ready / providerMetadataMatchesSelected=yes / providerMetadataOwner=provider / providerMetadataPackage=@ai-sdk/anthropic / explicitToolDeclaration=missing / explicitToolDeclarationSource=provider_owned_metadata / explicitToolDeclarationPackage=@ai-sdk/anthropic / explicitToolDeclarationPackageMatchesMetadata=yes / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / trustedWebSearchToolCount=0 / trustedWebSearchTools=none / untrustedWebSearchToolCount=0 / untrustedWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
     });
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionReady=no');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionMissingRequirements=feature_flag,provider_payload_identity,normalized_plan_identity,provider_call_ids');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSelectedProvider=anthropic');
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
       visibility: 'policy_gated',
@@ -292,8 +295,10 @@ describe('capability registry', () => {
       status: 'available',
       configured: true,
       missingReason: null,
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration / selectedApiRuntime=ready / providerConfigured=ready / configuredProvider=anthropic / configuredProviderEvidenceChain=ready / selectedRuntimeProvider=anthropic / selectedRuntimeProviderEvidenceChain=ready / providerOwnedMetadata=ready / providerMetadataMatchesSelected=yes / providerMetadataOwner=provider / providerMetadataPackage=@ai-sdk/anthropic / explicitToolDeclaration=missing / explicitToolDeclarationSource=provider_owned_metadata / explicitToolDeclarationPackage=@ai-sdk/anthropic / explicitToolDeclarationPackageMatchesMetadata=yes / declaredToolCount=0 / declaredWebSearchToolCount=0 / declaredWebSearchTools=none / trustedWebSearchToolCount=0 / trustedWebSearchTools=none / untrustedWebSearchToolCount=0 / untrustedWebSearchTools=none / startupProbe=never / selected=true / provider=configured'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
     });
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionRequirements=1/5');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeFlag=disabled');
     expect(RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'run.triggerAgentApi.future')?.requiredGates)
       .toEqual(expect.arrayContaining(['runtime_context_assembly', 'context_readiness', 'task_memory_coverage', 'task_memory_guidance', 'pre_step', 'subtask_start', 'post_step']));
   });
@@ -312,7 +317,7 @@ describe('capability registry', () => {
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
       status: 'disabled',
       configured: false,
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=blocked / providerToolRequirements=1/5 / providerToolMissingRequirements=selected_api_runtime,provider_configured,provider_owned_metadata,explicit_tool_declaration / selectedApiRuntime=missing / providerConfigured=missing / configuredProvider=missing / configuredProviderEvidenceChain=missing / selectedRuntimeProvider=missing / selectedRuntimeProviderEvidenceChain=missing'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=blocked / providerToolRequirements=1/5 / providerToolMissingRequirements=selected_api_runtime,provider_configured,provider_owned_metadata,explicit_tool_declaration'),
     });
   });
 
