@@ -18,6 +18,7 @@ const PRODUCT_BRAND_NAME = 'GoalPilot';
 const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Today',
   business: 'Business',
+  chat: 'Chat',
   tasks: 'Tasks',
   decisions: 'Decisions',
   'work-habits': 'Work Habits',
@@ -27,6 +28,8 @@ const ROUTE_LABELS: Record<AppRoute, string> = {
   connections: 'External Access',
   settings: 'Settings',
 };
+
+type SidebarMode = 'expanded' | 'compact' | 'focus';
 
 export function App() {
   const [route, setRouteState] = useState<AppRoute>(getRouteFromHash);
@@ -49,6 +52,7 @@ export function App() {
   });
   const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
   const [businessFocusId, setBusinessFocusId] = useState<string | null>(null);
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>('expanded');
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
   const refreshAiRuntimeAvailability = useCallback(() => {
@@ -67,6 +71,10 @@ export function App() {
     setRoute(r);
     setTaskFocusId(null);
     setBusinessFocusId(null);
+    if (r === 'chat') {
+      setPanelOpen(false);
+      setPanelSuspended(false);
+    }
     if (r !== 'tasks') {
       setWorkspaceSelection({ taskId: null, taskTitle: null, parentTaskId: null, childTaskIds: [], selectedFile: null });
     }
@@ -174,8 +182,8 @@ export function App() {
   }, [panelOpen, panelSuspended, panelTaskId, route, workspaceSelection]);
 
   return (
-    <div className={`app${panelOpen ? ' panel-open' : ''}`}>
-      <Sidebar route={route} onNavigate={navigate} />
+    <div className={`app sidebar-${sidebarMode}${panelOpen ? ' panel-open' : ''}`}>
+      <Sidebar route={route} mode={sidebarMode} onModeChange={setSidebarMode} onNavigate={navigate} />
       <div className="main">
         <Topbar
           route={route}
@@ -212,6 +220,22 @@ export function App() {
               focusBusinessLineId={businessFocusId}
             />
           )}
+          {route === 'chat' && (
+            <ChatPage
+              taskId={panelTaskId}
+              taskTitleHint={panelTaskTitle}
+              businessLineId={panelBusinessLineId}
+              businessLineTitleHint={panelBusinessLineTitle}
+              selectedFile={panelSelectedFile}
+              onOpenTask={openTaskInTasks}
+              onClearTask={() => {
+                setPanelTaskId(null);
+                setPanelTaskTitle(null);
+                setPanelDraftPrompt(null);
+                setPanelSelectedFile(null);
+              }}
+            />
+          )}
           {route === 'tasks' && (
             <TasksPage
               onOpenPanel={openPanelForTask}
@@ -234,7 +258,7 @@ export function App() {
           {route === 'settings' && <SettingsPage />}
         </div>
       </div>
-      {(panelOpen || panelSuspended) && (
+      {route !== 'chat' && (panelOpen || panelSuspended) && (
         <RightPanel
           key={panelSessionKey}
           taskId={panelTaskId}
@@ -263,6 +287,40 @@ export function App() {
   );
 }
 
+function ChatPage({
+  businessLineId,
+  businessLineTitleHint,
+  onClearTask,
+  onOpenTask,
+  selectedFile,
+  taskId,
+  taskTitleHint,
+}: {
+  businessLineId: string | null;
+  businessLineTitleHint: string | null;
+  onClearTask: () => void;
+  onOpenTask: (taskId: string) => void;
+  selectedFile: TaskWorkspaceSelectionContext['selectedFile'];
+  taskId: string | null;
+  taskTitleHint: string | null;
+}) {
+  return (
+    <div className="chat-page">
+      <RightPanel
+        taskId={taskId}
+        taskTitleHint={taskTitleHint}
+        businessLineId={businessLineId}
+        businessLineTitleHint={businessLineTitleHint}
+        selectedFile={selectedFile}
+        surface="page"
+        onOpenTask={onOpenTask}
+        onClose={() => undefined}
+        onClearTask={onClearTask}
+      />
+    </div>
+  );
+}
+
 /* ─── Setup banner ─── */
 
 function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
@@ -272,7 +330,7 @@ function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
     <div className="setup-banner">
       <span className="setup-banner-icon">⚠</span>
       <span className="setup-banner-text">
-        AI Runtime 尚未配置；可先连接 Agent CLI 或配置模型服务，任务管理仍可继续使用。
+        AI Runtime 尚未配置；可先连接 Agent CLI 或配置模型服务，Today、Business 和 Decisions 仍可继续使用。
       </span>
       <button className="btn sm primary" onClick={onGoToModel}>
         前往 AI Runtime →
@@ -287,13 +345,15 @@ function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
 /* ─── Sidebar ─── */
 
 interface SidebarProps {
+  mode: SidebarMode;
   route: AppRoute;
+  onModeChange: (mode: SidebarMode) => void;
   onNavigate: (r: AppRoute) => void;
 }
 
-function Sidebar({ route, onNavigate }: SidebarProps) {
+function Sidebar({ mode, route, onModeChange, onNavigate }: SidebarProps) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${mode}`}>
       <div className="sidebar-traffic">
         <div className="tl-dot" />
         <div className="tl-dot" />
@@ -302,12 +362,30 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
       <div className="sidebar-brand">
         <img className="brand-logo" src={goalPilotLogo} alt="" aria-hidden="true" />
         <span className="brand-name">{PRODUCT_BRAND_NAME}</span>
+        <div className="sidebar-mode-actions">
+          {mode !== 'expanded' && (
+            <button className="icon-btn sidebar-mode-btn" onClick={() => onModeChange('expanded')} title="Expand sidebar" aria-label="Expand sidebar">
+              <IconSidebarExpand />
+            </button>
+          )}
+          {mode === 'expanded' && (
+            <>
+              <button className="icon-btn sidebar-mode-btn" onClick={() => onModeChange('compact')} title="Compact sidebar" aria-label="Compact sidebar">
+                <IconSidebarCompact />
+              </button>
+              <button className="icon-btn sidebar-mode-btn" onClick={() => onModeChange('focus')} title="Focus sidebar" aria-label="Focus sidebar">
+                <IconSidebarFocus />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <nav className="nav">
         <div className="nav-zone-label">Work</div>
         <NavItem icon={<IconBrief />} label="Today" active={route === 'brief'} onClick={() => onNavigate('brief')} />
         <NavItem icon={<IconBusiness />} label="Business" active={route === 'business'} onClick={() => onNavigate('business')} />
+        <NavItem icon={<IconChat />} label="Chat" active={route === 'chat'} onClick={() => onNavigate('chat')} />
         <NavItem icon={<IconDecisions />} label="Decisions" active={route === 'decisions'} onClick={() => onNavigate('decisions')} />
 
         <div className="nav-divider" />
@@ -326,6 +404,14 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
           <strong>{PRODUCT_BRAND_NAME}</strong>
           业务线 Agent · 学习闭环
         </div>
+        <button
+          className="sidebar-recovery-link"
+          onClick={() => onNavigate('tasks')}
+          title="Open legacy Tasks explorer recovery route"
+          aria-label="Legacy Tasks Explorer"
+        >
+          Legacy Tasks Explorer
+        </button>
       </div>
     </aside>
   );
@@ -342,9 +428,9 @@ interface NavItemProps {
 
 function NavItem({ icon, label, active, badge, hot, onClick }: NavItemProps) {
   return (
-    <button className={`nav-item${active ? ' active' : ''}`} onClick={onClick}>
+    <button className={`nav-item${active ? ' active' : ''}`} onClick={onClick} title={label} aria-label={label}>
       {icon}
-      <span>{label}</span>
+      <span className="nav-label">{label}</span>
       {badge != null && (
         <span className={`nav-badge${hot ? ' hot' : ''}`}>{badge}</span>
       )}
@@ -433,10 +519,46 @@ function IconDecisions() {
   );
 }
 
+function IconChat() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 2.5h9v6.5h-4L4.5 12v-3H2.5z" />
+      <path d="M4.5 5h5M4.5 7h3" />
+    </svg>
+  );
+}
+
 function IconContext() {
   return (
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 4h10M2 7h7M2 10h5" />
+    </svg>
+  );
+}
+
+function IconSidebarCompact() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="10" height="10" rx="1.5" />
+      <path d="M5 2v10" />
+    </svg>
+  );
+}
+
+function IconSidebarFocus() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3h3M3 11h3M8 3h3M8 11h3" />
+      <path d="M5.5 5.5h3v3h-3z" />
+    </svg>
+  );
+}
+
+function IconSidebarExpand() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="10" height="10" rx="1.5" />
+      <path d="M5 2v10M7 5l2 2-2 2" />
     </svg>
   );
 }

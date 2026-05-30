@@ -1643,6 +1643,7 @@ interface RightPanelProps {
     dirty?: boolean;
     contentPreview: string | null;
   } | null;
+  surface?: 'panel' | 'page';
   hidden?: boolean;
   onTaskCaptured?: (taskId: string) => void;
   onOpenTask?: (taskId: string) => void;
@@ -1658,6 +1659,7 @@ export function RightPanel({
   draftPrompt = null,
   autoSendDraftPrompt = false,
   selectedFile = null,
+  surface = 'panel',
   hidden = false,
   onTaskCaptured,
   onOpenTask,
@@ -3981,6 +3983,13 @@ export function RightPanel({
     : activeTaskId
     ? `Context: Task / ${title ?? activeTaskId}`
     : 'Context: Global';
+  const writebackTargetLabel = activeBusinessLineId
+    ? activeTaskId
+      ? `Writeback: Business / ${activeBusinessLineTitle ?? activeBusinessLineId} / Next Action / ${title ?? activeTaskId}`
+      : `Writeback: Business / ${activeBusinessLineTitle ?? activeBusinessLineId}`
+    : activeTaskId
+    ? `Writeback: Task / ${title ?? activeTaskId}`
+    : 'Writeback: Global / capture proposal';
   const hasSessionActivity = Boolean(activeBusinessLineId || activeTaskId || messages.length > 0 || input.trim());
   const pendingMemoryGuidanceLookupKey = activeTaskId
     && sessionRefreshSuggestion
@@ -4004,7 +4013,7 @@ export function RightPanel({
   }, [activeTaskId, pendingMemoryGuidanceLookupKey]);
 
   return (
-    <div className={`right-panel${fullScreen ? ' fullscreen' : ''}${hidden ? ' hidden' : ''}`}>
+    <div className={`right-panel ${surface}${fullScreen ? ' fullscreen' : ''}${hidden ? ' hidden' : ''}`}>
       {/* Header */}
       <div className="panel-header">
         <div className="panel-header-ctx">
@@ -4026,6 +4035,9 @@ export function RightPanel({
             </span>
           )}
         </div>
+        <div className="panel-writeback-target" title={writebackTargetLabel}>
+          {writebackTargetLabel}
+        </div>
         <div className="panel-header-actions">
           <button
             className={`icon-btn${historyOpen ? ' active' : ''}`}
@@ -4037,19 +4049,25 @@ export function RightPanel({
           <button
             className="icon-btn"
             onClick={() => setFullScreen((value) => !value)}
-            title={fullScreen ? '退出全屏' : '全屏显示'}
+            title={fullScreen ? 'Exit focus chat' : 'Focus chat'}
           >
             {fullScreen ? <IconMinimize /> : <IconMaximize />}
           </button>
-          <button className="icon-btn" onClick={() => onClose(hasSessionActivity)} title="关闭面板">
-            <IconClose />
-          </button>
+          {surface === 'panel' && (
+            <button className="icon-btn" onClick={() => onClose(hasSessionActivity)} title="关闭面板">
+              <IconClose />
+            </button>
+          )}
           {historyOpen && (
             <div className="panel-history-popover">
               <div className="panel-history-title">当前会话</div>
               <div className="panel-history-row">
                 <span>上下文</span>
                 <strong>{contextLabel}</strong>
+              </div>
+              <div className="panel-history-row">
+                <span>写回目标</span>
+                <strong>{writebackTargetLabel}</strong>
               </div>
               <div className="panel-history-row">
                 <span>消息</span>

@@ -1495,7 +1495,9 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/业务线 Agent · 学习闭环/)).toBeTruthy();
     expect(screen.getByTitle(/搜索、提问或捕获任务想法/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Business/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Tasks/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Chat' })).toBeTruthy();
+    expect(within(screen.getByRole('navigation')).queryByRole('button', { name: /Tasks/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Legacy Tasks Explorer/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
     expect(screen.getByText(/与业务线 Next Actions 共用/)).toBeTruthy();
@@ -1507,6 +1509,26 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('连接器状态')).toBeTruthy();
     expect(screen.getByText('仅手动')).toBeTruthy();
     expect(screen.getByText('先质检，再确认')).toBeTruthy();
+  });
+
+  it('opens full Chat with context and writeback target, and keeps sidebar recovery controls', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'Chat' }));
+    expect(await screen.findByText('Context: Global')).toBeTruthy();
+    expect(screen.getByText('Writeback: Global / capture proposal')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Focus chat' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Compact sidebar' }));
+    expect(screen.getByRole('button', { name: 'External Access' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'AI Runtime' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Expand sidebar' }));
+    await user.click(screen.getByRole('button', { name: 'Focus sidebar' }));
+    expect(screen.getByRole('button', { name: 'Chat' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeTruthy();
   });
 
   it('renders Brief attention count and inclusion reasons from shared projection data', async () => {
@@ -2820,8 +2842,9 @@ describe('App redesign v1', () => {
     render(<App />);
 
     expect(await screen.findByText(/AI Runtime 尚未配置/)).toBeTruthy();
-    expect(screen.getByText(/任务管理仍可继续使用/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
+    expect(screen.getByText(/Today、Business 和 Decisions 仍可继续使用/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Business/ })).toBeTruthy();
+    expect(within(screen.getByRole('navigation')).queryByRole('button', { name: /Tasks/ })).toBeNull();
   });
 
   it('treats a ready manual Agent CLI runtime as AI Runtime setup', async () => {
@@ -3279,9 +3302,9 @@ describe('App redesign v1', () => {
     await waitFor(() => {
       expect(screen.queryByText(/不会中断当前对话/)).toBeNull();
     });
-    fireEvent.click(screen.getByTitle('全屏显示'));
-    expect(screen.getByTitle('退出全屏')).toBeTruthy();
-    fireEvent.click(screen.getByTitle('退出全屏'));
+    fireEvent.click(screen.getByTitle('Focus chat'));
+    expect(screen.getByTitle('Exit focus chat')).toBeTruthy();
+    fireEvent.click(screen.getByTitle('Exit focus chat'));
     fireEvent.click(screen.getByTitle('历史记录'));
     expect(screen.getByText('当前会话')).toBeTruthy();
     expect(screen.getByText('消息')).toBeTruthy();

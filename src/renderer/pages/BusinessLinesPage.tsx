@@ -11,7 +11,7 @@ import type {
   CreateBusinessLineInput,
 } from '@shared/types/business-line';
 
-type Tab = 'overview' | 'records' | 'next-actions' | 'learning';
+type Tab = 'overview' | 'records' | 'next-actions' | 'learning' | 'settings';
 
 interface BusinessLinesPageProps {
   onOpenBusinessLinePanel: (
@@ -159,6 +159,9 @@ export function BusinessLinesPage({ onOpenBusinessLinePanel, onOpenTask, focusBu
               <TabButton id="records" label="Records" active={tab === 'records'} onClick={setTab} />
               <TabButton id="next-actions" label="Next Actions" active={tab === 'next-actions'} onClick={setTab} />
               <TabButton id="learning" label="Learning" active={tab === 'learning'} onClick={setTab} />
+              <button className={`business-tab secondary${tab === 'settings' ? ' active' : ''}`} onClick={() => setTab('settings')}>
+                Settings
+              </button>
             </div>
 
             {tab === 'overview' && (
@@ -173,8 +176,46 @@ export function BusinessLinesPage({ onOpenBusinessLinePanel, onOpenTask, focusBu
             {tab === 'learning' && (
               <LearningTab workspace={workspace} onWorkspace={setWorkspace} />
             )}
+            {tab === 'settings' && (
+              <BusinessLineSettingsTab workspace={workspace} onOpenTask={onOpenTask} />
+            )}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function BusinessLineSettingsTab({ workspace, onOpenTask }: {
+  workspace: BusinessLineWorkspace;
+  onOpenTask: BusinessLinesPageProps['onOpenTask'];
+}) {
+  return (
+    <div className="business-section">
+      <h3>Settings</h3>
+      <div className="business-settings-list">
+        <div>
+          <span>Business line id</span>
+          <strong>{workspace.businessLine.id}</strong>
+        </div>
+        <div>
+          <span>Kind</span>
+          <strong>{workspace.businessLine.kind}</strong>
+        </div>
+        <div>
+          <span>Goal</span>
+          <strong>{workspace.businessLine.goal ?? workspace.businessLine.summary ?? 'Not set'}</strong>
+        </div>
+        <div>
+          <span>Legacy recovery</span>
+          {workspace.businessLine.legacyTaskId ? (
+            <button className="link-button" onClick={() => onOpenTask(workspace.businessLine.legacyTaskId!)}>
+              Open legacy task detail
+            </button>
+          ) : (
+            <strong>Canonical business line</strong>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -16,4 +16,10 @@ describe('renderer router', () => {
 
     expect(window.location.hash).toBe('#business');
   });
+
+  it('keeps Chat as a retained Work route', () => {
+    window.location.hash = '#/chat';
+
+    expect(getRouteFromHash()).toBe('chat');
+  });
 });
