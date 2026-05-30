@@ -989,6 +989,61 @@ describe('BusinessLineService', () => {
     });
   });
 
+  it('applies business-line-native writeback through resolved service ownership', async () => {
+    const created = await service.create({
+      title: 'Native writeback business line',
+      goal: 'Persist business-native writeback',
+      kind: 'software_product',
+    });
+    const sourceAction = await taskService.create({
+      title: 'Owned execution carrier',
+      businessLineId: created.id,
+    });
+
+    const record = await service.createBusinessLineRecord({
+      businessLineId: null,
+      sourceActionId: sourceAction.id,
+      source: 'run:run_business',
+      summary: 'Business-native signal persisted through service.',
+      type: 'signal',
+    });
+    const nextAction = await service.createBusinessLineNextAction({
+      businessLineId: null,
+      evidenceRunId: 'run_business',
+      sourceActionId: sourceAction.id,
+      title: 'Draft native writeback checklist',
+    });
+    const revision = await service.proposeBusinessLineSopRevision({
+      businessLineId: null,
+      changeReason: 'Runtime proposed a reusable rule.',
+      evidenceRunId: 'run_business',
+      nextContent: 'Verify business-native writebacks before activation.',
+      requiresDecision: true,
+      sourceActionId: sourceAction.id,
+    });
+
+    expect(record).toMatchObject({
+      businessLineId: created.id,
+      linkedActionId: sourceAction.id,
+      summary: 'Business-native signal persisted through service.',
+      type: 'signal',
+    });
+    expect(nextAction).toMatchObject({
+      businessLineId: created.id,
+      nextStep: 'Draft native writeback checklist',
+    });
+    expect(revision).toMatchObject({
+      businessLineId: created.id,
+      nextContent: 'Verify business-native writebacks before activation.',
+      status: 'proposed',
+    });
+    expect(decisionService.create).toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: created.id,
+      kind: 'policy_change',
+      sourceLabel: 'Business Line SOP revision writeback',
+    }));
+  });
+
   it('projects business memory records with provenance and only includes marked records in context', async () => {
     const created = await service.create({
       title: 'Projected memory line',

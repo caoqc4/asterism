@@ -16,6 +16,11 @@ export const PANEL_RUNTIME_TIMELINE_EVENT_TYPES = [
   'panel.source_archived',
   'panel.artifact_written',
   'panel.artifact_deleted',
+  'panel.business_record_written',
+  'panel.business_review_written',
+  'panel.business_next_action_written',
+  'panel.business_sop_revision_proposed',
+  'panel.business_handoff_written',
   'panel.project_decomposed',
   'panel.project_membership_changed',
   'panel.completion_handoff',
@@ -57,6 +62,11 @@ export function getPanelRuntimeTimelineEventTitle(type: PanelRuntimeTimelineEven
     case 'panel.source_archived': return '来源上下文已归档';
     case 'panel.artifact_written': return '任务产物已写入';
     case 'panel.artifact_deleted': return '任务产物已删除';
+    case 'panel.business_record_written': return '业务记录已写入';
+    case 'panel.business_review_written': return '业务复盘已写入';
+    case 'panel.business_next_action_written': return '业务线 Next Action 已创建';
+    case 'panel.business_sop_revision_proposed': return '业务线 SOP revision 已提议';
+    case 'panel.business_handoff_written': return '业务交接记录已写入';
     case 'panel.project_decomposed': return '项目拆解已确认';
     case 'panel.project_membership_changed': return '任务项目归属已更新';
     case 'panel.completion_handoff': return '任务完成交接已记录';

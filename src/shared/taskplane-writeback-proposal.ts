@@ -5,6 +5,11 @@ import {
 import {
   extractTaskplaneWriteIntentsFromText,
   type TaskplaneArtifactProposeIntent,
+  type TaskplaneBusinessHandoffRecordIntent,
+  type TaskplaneBusinessNextActionCreateIntent,
+  type TaskplaneBusinessRecordCreateIntent,
+  type TaskplaneBusinessReviewRecordIntent,
+  type TaskplaneBusinessSopRevisionProposeIntent,
   type TaskplaneDecisionCreateIntent,
   type TaskplaneTaskBlockedIntent,
   type TaskplaneTaskCompleteIntent,
@@ -56,8 +61,24 @@ export type TaskplaneStructuredWritebackProposal = {
   title: string;
 };
 
+export type TaskplaneBusinessLineWritebackIntent =
+  | TaskplaneBusinessRecordCreateIntent
+  | TaskplaneBusinessReviewRecordIntent
+  | TaskplaneBusinessNextActionCreateIntent
+  | TaskplaneBusinessSopRevisionProposeIntent
+  | TaskplaneBusinessHandoffRecordIntent;
+
+export type TaskplaneBusinessLineWritebackProposal = {
+  businessLineId: string | null;
+  detail: string;
+  evidenceRunId: string;
+  intent: TaskplaneBusinessLineWritebackIntent;
+  title: string;
+};
+
 export type TaskplaneWritebackProposalSet = {
   artifact: TaskplaneArtifactWritebackProposal | null;
+  businessLine: TaskplaneBusinessLineWritebackProposal[];
   sourceContext: TaskplaneSourceContextWritebackProposal | null;
   structured: TaskplaneStructuredWritebackProposal | null;
   taskFile: TaskplaneTaskFileWritebackProposal | null;
@@ -92,9 +113,18 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
     || intent.type === 'task.mark_blocked'
     || intent.type === 'task.complete.propose'
   ));
+  const businessLineIntents = intents.filter((intent): intent is TaskplaneBusinessLineWritebackIntent => (
+    intent.type === 'business_record.create'
+    || intent.type === 'business_review.record'
+    || intent.type === 'business_next_action.create'
+    || intent.type === 'business_sop_revision.propose'
+    || intent.type === 'business_handoff.record'
+  ));
 
   return {
     artifact: artifactIntent ? buildArtifactProposal(artifactIntent, params.businessLineId ?? null) : null,
+    businessLine: businessLineIntents.map((intent) =>
+      buildBusinessLineWritebackProposal(intent, params.businessLineId ?? null)),
     sourceContext: sourceContextIntent?.type === 'source_context.create'
       ? {
           credibility: sourceContextIntent.credibility,
@@ -120,6 +150,55 @@ export function buildTaskplaneWritebackProposalsFromText(params: {
         }
       : null,
   };
+}
+
+function buildBusinessLineWritebackProposal(
+  intent: TaskplaneBusinessLineWritebackIntent,
+  fallbackBusinessLineId?: string | null,
+): TaskplaneBusinessLineWritebackProposal {
+  const businessLineId = intent.businessLineId ?? fallbackBusinessLineId ?? null;
+  switch (intent.type) {
+    case 'business_record.create':
+      return {
+        businessLineId,
+        detail: intent.summary,
+        evidenceRunId: intent.evidenceRunId,
+        intent: { ...intent, businessLineId },
+        title: '业务记录写回提案',
+      };
+    case 'business_review.record':
+      return {
+        businessLineId,
+        detail: intent.resultSummary,
+        evidenceRunId: intent.evidenceRunId,
+        intent: { ...intent, businessLineId },
+        title: '业务复盘写回提案',
+      };
+    case 'business_next_action.create':
+      return {
+        businessLineId,
+        detail: intent.summary ?? intent.nextStep ?? intent.title,
+        evidenceRunId: intent.evidenceRunId,
+        intent: { ...intent, businessLineId },
+        title: `业务下一步提案：${intent.title}`,
+      };
+    case 'business_sop_revision.propose':
+      return {
+        businessLineId,
+        detail: intent.changeReason,
+        evidenceRunId: intent.evidenceRunId,
+        intent: { ...intent, businessLineId },
+        title: '业务 SOP revision 提案',
+      };
+    case 'business_handoff.record':
+      return {
+        businessLineId,
+        detail: `${intent.currentState}\nNext: ${intent.nextSafeAction}\nReason: ${intent.reason}`,
+        evidenceRunId: intent.evidenceRunId,
+        intent: { ...intent, businessLineId },
+        title: '业务交接记录提案',
+      };
+  }
 }
 
 function buildArtifactProposal(intent: TaskplaneArtifactProposeIntent, businessLineId?: string | null): TaskplaneArtifactWritebackProposal {

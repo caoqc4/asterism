@@ -32,6 +32,11 @@ import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskFileRecord } from '../../../shared/types/task-file.js';
 import type { TaskListItemRecord } from '../../../shared/types/task.js';
+import type {
+  TaskplaneBusinessLineRecordCreateInput,
+  TaskplaneBusinessNextActionCreateInput,
+  TaskplaneBusinessSopRevisionProposeInput,
+} from '../../../shared/taskplane-writeback-apply-plan.js';
 
 function isBusinessLineLegacyTask(task: TaskListItemRecord): boolean {
   const facets = task.taskFacets ?? [];
@@ -343,17 +348,142 @@ export class BusinessLineService {
     return this.businessLineRepository.resolveBusinessLineOwnership(input);
   }
 
+  async createBusinessLineRecord(input: TaskplaneBusinessLineRecordCreateInput): Promise<BusinessLineRecord> {
+    const ownership = await this.resolveOwnership({
+      explicitBusinessLineId: input.businessLineId,
+      taskId: input.sourceActionId ?? input.linkedActionId ?? null,
+    });
+    if (ownership.status !== 'resolved') {
+      throw new Error('Business line write requires a resolved business line owner.');
+    }
+    return this.businessLineRepository.createRecord({
+      businessLineId: ownership.businessLineId,
+      confidence: input.confidence,
+      linkedActionId: input.linkedActionId ?? input.sourceActionId ?? null,
+      linkedDecisionId: input.linkedDecisionId ?? null,
+      shouldAffectFutureContext: input.shouldAffectFutureContext,
+      source: input.source,
+      summary: input.summary,
+      type: input.type,
+    });
+  }
+
+  async createBusinessLineNextAction(input: TaskplaneBusinessNextActionCreateInput): Promise<TaskListItemRecord> {
+    const ownership = await this.resolveOwnership({
+      explicitBusinessLineId: input.businessLineId,
+      taskId: input.sourceActionId ?? null,
+    });
+    if (ownership.status !== 'resolved') {
+      throw new Error('Business line next action requires a resolved business line owner.');
+    }
+    const businessLine = await this.businessLineRepository.findById(ownership.businessLineId);
+    if (!businessLine) throw new Error(`Business line not found: ${ownership.businessLineId}`);
+    const createdTask = await this.taskService.create({
+      title: input.title.trim(),
+      summary: input.summary?.trim() || `Business line next action from writeback${input.evidenceRunId ? ` ${input.evidenceRunId}` : ''}.`,
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      parentTaskId: businessLine.legacyTaskId,
+      businessLineId: businessLine.id,
+    });
+    const nextStep = input.nextStep?.trim() || input.title.trim();
+    const updatedTask = await this.taskService.update({
+      id: createdTask.id,
+      nextStep,
+    });
+    const actionRecord = await this.businessLineRepository.createRecord({
+      businessLineId: businessLine.id,
+      type: 'action',
+      source: input.evidenceRunId ? `run:${input.evidenceRunId}` : 'writeback:business_next_action.create',
+      summary: nextStep,
+      confidence: 70,
+      linkedActionId: updatedTask.id,
+    });
+    await this.businessLineRepository.createActionLink({
+      businessLineId: businessLine.id,
+      taskId: updatedTask.id,
+      sourceReviewId: null,
+      sourceRecordId: actionRecord.id,
+    });
+    return updatedTask;
+  }
+
+  async proposeBusinessLineSopRevision(input: TaskplaneBusinessSopRevisionProposeInput): Promise<BusinessLineSkillRevision> {
+    const ownership = await this.resolveOwnership({
+      explicitBusinessLineId: input.businessLineId,
+      taskId: input.sourceActionId ?? null,
+    });
+    if (ownership.status !== 'resolved') {
+      throw new Error('Business line SOP revision requires a resolved business line owner.');
+    }
+    const scopePath = input.scopePath?.trim() || 'Learning / SOP';
+    const previousActiveRevision = await this.activeSkillRevisionForScope(ownership.businessLineId, scopePath);
+    const review = await this.businessLineRepository.createReview({
+      businessLineId: ownership.businessLineId,
+      sourceActionId: input.sourceActionId ?? null,
+      sourceRunId: input.evidenceRunId ?? null,
+      resultSummary: input.changeReason,
+      evidenceItems: input.evidenceItems ?? (input.evidenceRunId ? [`run:${input.evidenceRunId}`] : []),
+      hypothesisChange: input.changeReason,
+      skillUpdateSuggestions: [input.nextContent],
+      nextActionSuggestions: [],
+      confidence: 70,
+      requiresDecision: input.requiresDecision ?? false,
+      reviewAfterAt: input.reviewAfterAt ?? null,
+    });
+    const revision = await this.businessLineRepository.createSkillRevision({
+      businessLineId: ownership.businessLineId,
+      sourceReviewId: review.id,
+      nextContent: input.nextContent,
+      changeReason: input.changeReason,
+      previousContent: previousActiveRevision?.nextContent ?? null,
+      scopePath,
+      provenance: {
+        sourceType: 'business_line_review',
+        sourceReviewId: review.id,
+        sourceReviewSummary: review.resultSummary,
+        sourceActionId: review.sourceActionId,
+      },
+      reviewAfterAt: input.reviewAfterAt ?? null,
+    });
+    if (input.requiresDecision) {
+      await this.decisionService.create({
+        taskId: review.sourceActionId,
+        businessLineId: ownership.businessLineId,
+        title: '确认业务线 SOP revision 提案',
+        scope: review.sourceActionId ? 'task' : 'business_line',
+        kind: 'policy_change',
+        sourceType: 'system',
+        sourceId: review.id,
+        sourceLabel: 'Business Line SOP revision writeback',
+        context: {
+          whyNow: input.changeReason,
+          impact: input.nextContent,
+          reversibility: 'Revision remains proposed until separately accepted or rejected.',
+        },
+      });
+    }
+    return revision;
+  }
+
   async recordReview(input: RecordBusinessLineReviewInput): Promise<BusinessLineWorkspace> {
-    const ownership = await this.resolveOwnership({ explicitBusinessLineId: input.businessLineId });
+    const ownership = await this.resolveOwnership({
+      explicitBusinessLineId: input.businessLineId,
+      taskId: input.sourceActionId ?? null,
+    });
     if (ownership.status !== 'resolved') throw new Error(`Business line not found: ${input.businessLineId}`);
     const businessLine = await this.businessLineRepository.findById(ownership.businessLineId);
     if (!businessLine) throw new Error(`Business line not found: ${input.businessLineId}`);
-    const review = await this.businessLineRepository.createReview(input);
+    const businessLineId = ownership.businessLineId;
+    const review = await this.businessLineRepository.createReview({
+      ...input,
+      businessLineId,
+    });
     for (const recordSuggestion of input.recordSuggestions ?? []) {
       const summary = recordSuggestion.summary.trim();
       if (!summary) continue;
       await this.businessLineRepository.createRecord({
-        businessLineId: input.businessLineId,
+        businessLineId,
         type: this.normalizeReviewRecordType(recordSuggestion),
         source: recordSuggestion.source?.trim()
           || (input.sourceRunId ? `run:${input.sourceRunId}` : `review:${review.id}`),
@@ -366,9 +496,9 @@ export class BusinessLineService {
     for (const suggestion of input.skillUpdateSuggestions ?? []) {
       if (!suggestion.trim()) continue;
       const scopePath = 'Learning / SOP';
-      const previousActiveRevision = await this.activeSkillRevisionForScope(input.businessLineId, scopePath);
+      const previousActiveRevision = await this.activeSkillRevisionForScope(businessLineId, scopePath);
       await this.businessLineRepository.createSkillRevision({
-        businessLineId: input.businessLineId,
+        businessLineId,
         sourceReviewId: review.id,
         nextContent: suggestion,
         changeReason: input.hypothesisChange ?? input.resultSummary,
@@ -399,7 +529,7 @@ export class BusinessLineService {
         nextStep: suggestion.trim(),
       });
       const actionRecord = await this.businessLineRepository.createRecord({
-        businessLineId: input.businessLineId,
+        businessLineId,
         type: 'action',
         source: `review:${review.id}`,
         summary: suggestion,
@@ -407,7 +537,7 @@ export class BusinessLineService {
         linkedActionId: createdTask.id,
       });
       await this.businessLineRepository.createActionLink({
-        businessLineId: input.businessLineId,
+        businessLineId,
         taskId: createdTask.id,
         sourceReviewId: review.id,
         sourceRecordId: actionRecord.id,
@@ -442,7 +572,7 @@ export class BusinessLineService {
       for (const suggestion of input.skillUpdateSuggestions ?? []) {
         if (!suggestion.trim()) continue;
         await this.businessLineRepository.createRecord({
-          businessLineId: input.businessLineId,
+          businessLineId,
           type: 'decision',
           source: `decision:${decision.id}`,
           summary: `Risky learning update requires Decision approval: ${decision.title}`,
@@ -452,7 +582,7 @@ export class BusinessLineService {
         });
       }
     }
-    const workspace = await this.getWorkspace(input.businessLineId);
+    const workspace = await this.getWorkspace(businessLineId);
     if (!workspace) throw new Error(`Business line not found: ${input.businessLineId}`);
     return workspace;
   }

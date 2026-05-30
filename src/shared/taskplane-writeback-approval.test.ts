@@ -197,6 +197,65 @@ describe('Taskplane writeback approval items', () => {
     });
   });
 
+  it('turns business-line-native runtime intents into approval queue items', () => {
+    const run = buildRunDetail({
+      businessLineId: 'business_line_product',
+      output: [
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [
+            {
+              type: 'business_record.create',
+              summary: 'Business signal from the run.',
+              recordType: 'signal',
+            },
+            {
+              type: 'business_next_action.create',
+              title: 'Draft onboarding checklist',
+              nextStep: 'Draft onboarding checklist.',
+            },
+          ],
+        }),
+        '```',
+      ].join('\n'),
+    });
+
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [run],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+    });
+
+    expect(items.filter((item) => item.kind === 'business_line')).toMatchObject([
+      {
+        plan: {
+          action: 'business_record.create',
+          input: {
+            businessLineId: 'business_line_product',
+            summary: 'Business signal from the run.',
+          },
+          timeline: {
+            payload: {
+              confirmationSurface: 'taskplane_writeback_approval_queue',
+            },
+          },
+        },
+        summary: '确认后保存为业务记录。',
+      },
+      {
+        plan: {
+          action: 'business_next_action.create',
+          input: {
+            businessLineId: 'business_line_product',
+            title: 'Draft onboarding checklist',
+          },
+        },
+        summary: '确认后创建业务线 Next Action。',
+      },
+    ]);
+  });
+
   it('turns pending task memory guidance into the same writeback approval queue', () => {
     const run = buildRunDetail({
       taskMemoryWriteProposals: [{

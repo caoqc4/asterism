@@ -219,10 +219,34 @@ function formatAiBehaviorPreferences(featureFlags: FeatureFlags): string {
 
 function emitTaskplaneWritebackEvents(input: ApplyTaskplaneWritebackInput): void {
   emitAppEvent('task.changed', input.taskId);
+  if (isBusinessLineNativeWriteback(input.plan.action)) {
+    const businessLineId = readPlanBusinessLineId(input.plan);
+    emitAppEvent('businessLine.changed', businessLineId ?? undefined);
+    emitAppEvent('brief.changed');
+    if (
+      input.plan.action === 'business_sop_revision.propose'
+      && input.plan.input.requiresDecision === true
+    ) {
+      emitAppEvent('decision.changed');
+    }
+  }
   if (input.plan.action === 'decision.create' || input.plan.action === 'completion_decision.create') {
     emitAppEvent('decision.changed');
     emitAppEvent('brief.changed');
   }
+}
+
+function isBusinessLineNativeWriteback(action: ApplyTaskplaneWritebackInput['plan']['action']): boolean {
+  return action === 'business_record.create'
+    || action === 'business_review.record'
+    || action === 'business_next_action.create'
+    || action === 'business_sop_revision.propose'
+    || action === 'business_handoff.record';
+}
+
+function readPlanBusinessLineId(plan: ApplyTaskplaneWritebackInput['plan']): string | null {
+  if (!isBusinessLineNativeWriteback(plan.action)) return null;
+  return 'businessLineId' in plan.input ? plan.input.businessLineId?.trim() || null : null;
 }
 
 async function assertTaskBoundMutationAllowed(taskId: string): Promise<void> {

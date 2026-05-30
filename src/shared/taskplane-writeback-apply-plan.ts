@@ -5,7 +5,12 @@ import type { TaskListItemRecord, UpdateTaskInput } from './types/task.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from './types/task-file.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
+  BusinessLineRecordType,
+  RecordBusinessLineReviewInput,
+} from './types/business-line.js';
+import type {
   TaskplaneArtifactWritebackProposal,
+  TaskplaneBusinessLineWritebackProposal,
   TaskplaneSourceContextWritebackProposal,
   TaskplaneStructuredWritebackProposal,
 } from './taskplane-writeback-proposal.js';
@@ -150,8 +155,74 @@ export type TaskplaneStructuredWritebackApplyPlan =
       successMessage: string;
     };
 
+export type TaskplaneBusinessLineRecordCreateInput = {
+  businessLineId: string | null;
+  confidence?: number;
+  linkedActionId?: string | null;
+  linkedDecisionId?: string | null;
+  shouldAffectFutureContext?: boolean;
+  source: string;
+  sourceActionId?: string | null;
+  summary: string;
+  type: BusinessLineRecordType;
+};
+
+export type TaskplaneBusinessNextActionCreateInput = {
+  businessLineId: string | null;
+  evidenceRunId?: string | null;
+  nextStep?: string | null;
+  sourceActionId?: string | null;
+  summary?: string | null;
+  title: string;
+};
+
+export type TaskplaneBusinessSopRevisionProposeInput = {
+  businessLineId: string | null;
+  changeReason: string;
+  evidenceItems?: string[];
+  evidenceRunId?: string | null;
+  nextContent: string;
+  requiresDecision?: boolean;
+  reviewAfterAt?: string | null;
+  scopePath?: string | null;
+  sourceActionId?: string | null;
+};
+
+export type TaskplaneBusinessLineWritebackApplyPlan =
+  | {
+      action: 'business_record.create';
+      input: TaskplaneBusinessLineRecordCreateInput;
+      successMessage: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    }
+  | {
+      action: 'business_review.record';
+      input: RecordBusinessLineReviewInput;
+      successMessage: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    }
+  | {
+      action: 'business_next_action.create';
+      input: TaskplaneBusinessNextActionCreateInput;
+      successMessage: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    }
+  | {
+      action: 'business_sop_revision.propose';
+      input: TaskplaneBusinessSopRevisionProposeInput;
+      successMessage: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    }
+  | {
+      action: 'business_handoff.record';
+      input: TaskplaneBusinessLineRecordCreateInput;
+      successMessage: string;
+      timeline: TaskplaneWritebackTimelineDraft;
+    };
+
 export type TaskplaneWritebackApplyPlan =
   | TaskplaneArtifactWritebackApplyPlan
+  | TaskplaneBusinessLineWritebackApplyPlan
   | TaskplaneSourceContextWritebackApplyPlan
   | TaskplaneSubtaskWritebackApplyPlan
   | TaskplaneTaskFileWritebackApplyPlan
@@ -344,6 +415,134 @@ export function buildArtifactWritebackApplyPlan(params: {
         source: 'taskplane_write_intent',
         title: proposal.title,
       },
+    },
+  };
+}
+
+export function buildBusinessLineWritebackApplyPlan(params: {
+  confirmationSurface?: TaskplaneDurableWritebackConfirmationSurface;
+  proposal: TaskplaneBusinessLineWritebackProposal;
+}): TaskplaneBusinessLineWritebackApplyPlan {
+  const { intent } = params.proposal;
+  const businessLineId = params.proposal.businessLineId ?? null;
+  const confirmationSurface = params.confirmationSurface ?? 'right_panel_writeback_confirmation';
+  const basePayload = {
+    businessLineId,
+    confirmationSurface,
+    evidenceRunId: params.proposal.evidenceRunId,
+    source: 'taskplane_write_intent',
+  };
+  if (intent.type === 'business_record.create') {
+    return {
+      action: 'business_record.create',
+      input: {
+        businessLineId,
+        confidence: intent.confidence,
+        shouldAffectFutureContext: intent.shouldAffectFutureContext ?? true,
+        source: intent.source ?? `run:${intent.evidenceRunId}`,
+        sourceActionId: intent.taskId ?? null,
+        summary: intent.summary,
+        type: intent.recordType ?? 'signal',
+      },
+      successMessage: '已确认并保存业务记录。',
+      timeline: {
+        type: 'panel.business_record_written',
+        payload: {
+          ...basePayload,
+          recordType: intent.recordType ?? 'signal',
+        },
+      },
+    };
+  }
+  if (intent.type === 'business_review.record') {
+    return {
+      action: 'business_review.record',
+      input: {
+        businessLineId: businessLineId ?? '',
+        confidence: intent.confidence,
+        evidenceItems: intent.evidenceItems ?? [`run:${intent.evidenceRunId}`],
+        hypothesisChange: intent.hypothesisChange ?? null,
+        nextActionSuggestions: intent.nextActionSuggestions ?? [],
+        requiresDecision: intent.requiresDecision ?? false,
+        resultSummary: intent.resultSummary,
+        skillUpdateSuggestions: intent.skillUpdateSuggestions ?? [],
+        sourceActionId: intent.sourceActionId ?? intent.taskId ?? null,
+        sourceRunId: intent.evidenceRunId,
+      },
+      successMessage: '已确认并保存业务复盘。',
+      timeline: {
+        type: 'panel.business_review_written',
+        payload: basePayload,
+      },
+    };
+  }
+  if (intent.type === 'business_next_action.create') {
+    return {
+      action: 'business_next_action.create',
+      input: {
+        businessLineId,
+        evidenceRunId: intent.evidenceRunId,
+        nextStep: intent.nextStep ?? intent.title,
+        sourceActionId: intent.sourceActionId ?? intent.taskId ?? null,
+        summary: intent.summary ?? null,
+        title: intent.title,
+      },
+      successMessage: `已确认并创建业务线 Next Action：${intent.title}。`,
+      timeline: {
+        type: 'panel.business_next_action_written',
+        payload: {
+          ...basePayload,
+          title: intent.title,
+        },
+      },
+    };
+  }
+  if (intent.type === 'business_sop_revision.propose') {
+    return {
+      action: 'business_sop_revision.propose',
+      input: {
+        businessLineId,
+        changeReason: intent.changeReason,
+        evidenceItems: intent.evidenceItems ?? [`run:${intent.evidenceRunId}`],
+        evidenceRunId: intent.evidenceRunId,
+        nextContent: intent.nextContent,
+        requiresDecision: intent.requiresDecision ?? false,
+        reviewAfterAt: intent.reviewAfterAt ?? null,
+        scopePath: intent.scopePath ?? 'Learning / SOP',
+        sourceActionId: intent.sourceActionId ?? intent.taskId ?? null,
+      },
+      successMessage: '已确认并提出业务线 SOP revision。',
+      timeline: {
+        type: 'panel.business_sop_revision_proposed',
+        payload: {
+          ...basePayload,
+          requiresDecision: intent.requiresDecision ?? false,
+          scopePath: intent.scopePath ?? 'Learning / SOP',
+        },
+      },
+    };
+  }
+  return {
+    action: 'business_handoff.record',
+    input: {
+      businessLineId,
+      confidence: 75,
+      linkedActionId: intent.sourceActionId ?? intent.taskId ?? null,
+      shouldAffectFutureContext: intent.shouldAffectFutureContext ?? true,
+      source: `handoff:${intent.evidenceRunId}`,
+      sourceActionId: intent.sourceActionId ?? intent.taskId ?? null,
+      summary: [
+        `Current: ${intent.currentState}`,
+        `Next: ${intent.nextSafeAction}`,
+        `Reason: ${intent.reason}`,
+        ...(intent.evidenceItems ?? []).map((item) => `Evidence: ${item}`),
+      ].join('\n'),
+      type: 'review',
+    },
+    successMessage: '已确认并保存业务交接记录。',
+    timeline: {
+      type: 'panel.business_handoff_written',
+      payload: basePayload,
     },
   };
 }

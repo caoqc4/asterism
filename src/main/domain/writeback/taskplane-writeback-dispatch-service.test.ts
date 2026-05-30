@@ -686,6 +686,169 @@ describe('TaskplaneWritebackDispatchService', () => {
     expect(taskFiles.update).not.toHaveBeenCalled();
     expect(taskService.recordTimelineEvent).not.toHaveBeenCalled();
   });
+
+  it('routes business-line-native writeback through business line services after ownership resolution', async () => {
+    const taskService = {
+      create: vi.fn(),
+      createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      transition: vi.fn(),
+      update: vi.fn(),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const ownershipResolver = {
+      resolveOwnership: vi.fn().mockResolvedValue({
+        status: 'resolved',
+        businessLineId: 'business_line_product',
+        source: 'explicit',
+        legacy: false,
+        explicitBusinessLineId: 'business_line_product',
+        taskId: 'task_1',
+        runId: null,
+        decisionId: null,
+        sourceContextId: null,
+        artifactId: null,
+        taskFileId: null,
+      }),
+    };
+    const businessLineService = {
+      createBusinessLineNextAction: vi.fn(),
+      createBusinessLineRecord: vi.fn().mockResolvedValue({ id: 'business_line_record_1' }),
+      proposeBusinessLineSopRevision: vi.fn(),
+      recordReview: vi.fn(),
+      resolveOwnership: ownershipResolver.resolveOwnership,
+    };
+    const service = new TaskplaneWritebackDispatchService(
+      taskService,
+      decisionService,
+      taskFileRepository(),
+      artifactRepository(),
+      ownershipResolver,
+      businessLineService,
+    );
+
+    const result = await service.dispatch({
+      taskId: 'task_1',
+      plan: {
+        action: 'business_record.create',
+        input: {
+          businessLineId: 'business_line_product',
+          source: 'run:run_business',
+          summary: 'Business signal.',
+          type: 'signal',
+        },
+        successMessage: '已确认并保存业务记录。',
+        timeline: {
+          payload: {
+            businessLineId: 'business_line_product',
+            evidenceRunId: 'run_business',
+          },
+          type: 'panel.business_record_written',
+        },
+      },
+    });
+
+    expect(ownershipResolver.resolveOwnership).toHaveBeenCalledWith({
+      explicitBusinessLineId: 'business_line_product',
+      taskId: 'task_1',
+      allowOneOff: false,
+    });
+    expect(businessLineService.createBusinessLineRecord).toHaveBeenCalledWith({
+      businessLineId: 'business_line_product',
+      source: 'run:run_business',
+      summary: 'Business signal.',
+      type: 'signal',
+    });
+    expect(taskService.recordTimelineEvent).toHaveBeenCalledWith({
+      payload: {
+        businessLineId: 'business_line_product',
+        evidenceRunId: 'run_business',
+      },
+      taskId: 'task_1',
+      type: 'panel.business_record_written',
+    });
+    expect(result).toMatchObject({
+      action: 'business_record.create',
+      status: 'completed',
+    });
+  });
+
+  it('blocks business-line-native writeback when no business line owner can be resolved', async () => {
+    const taskService = {
+      create: vi.fn(),
+      createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
+      recordTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+      update: vi.fn(),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const ownershipResolver = {
+      resolveOwnership: vi.fn().mockResolvedValue({
+        status: 'missing',
+        reason: 'no_business_line_owner',
+        taskId: 'task_1',
+      }),
+    };
+    const businessLineService = {
+      createBusinessLineNextAction: vi.fn(),
+      createBusinessLineRecord: vi.fn(),
+      proposeBusinessLineSopRevision: vi.fn(),
+      recordReview: vi.fn(),
+      resolveOwnership: ownershipResolver.resolveOwnership,
+    };
+    const service = new TaskplaneWritebackDispatchService(
+      taskService,
+      decisionService,
+      taskFileRepository(),
+      artifactRepository(),
+      ownershipResolver,
+      businessLineService,
+    );
+
+    const result = await service.dispatch({
+      taskId: 'task_1',
+      plan: {
+        action: 'business_record.create',
+        input: {
+          businessLineId: null,
+          source: 'run:run_business',
+          summary: 'Business signal.',
+          type: 'signal',
+        },
+        successMessage: '已确认并保存业务记录。',
+        timeline: {
+          payload: {
+            evidenceRunId: 'run_business',
+          },
+          type: 'panel.business_record_written',
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      action: 'business_record.create',
+      message: 'Write Intent 已暂停：业务线写入缺少可解析的业务线归属。',
+      status: 'blocked',
+    });
+    expect(ownershipResolver.resolveOwnership).toHaveBeenCalledWith({
+      explicitBusinessLineId: null,
+      taskId: 'task_1',
+      allowOneOff: false,
+    });
+    expect(businessLineService.createBusinessLineRecord).not.toHaveBeenCalled();
+  });
 });
 
 function taskFileRepository() {

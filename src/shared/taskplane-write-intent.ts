@@ -86,6 +86,71 @@ export type TaskplaneTaskCompleteIntent = {
   type: 'task.complete.propose';
 };
 
+export type TaskplaneBusinessRecordCreateIntent = {
+  businessLineId?: string | null;
+  confidence?: number;
+  evidenceRunId: string;
+  recordType?: 'signal' | 'hypothesis' | 'decision' | 'action' | 'artifact' | 'result' | 'review' | 'rule';
+  shouldAffectFutureContext?: boolean;
+  source?: string | null;
+  summary: string;
+  taskId?: string | null;
+  type: 'business_record.create';
+};
+
+export type TaskplaneBusinessReviewRecordIntent = {
+  businessLineId?: string | null;
+  confidence?: number;
+  evidenceItems?: string[];
+  evidenceRunId: string;
+  hypothesisChange?: string | null;
+  nextActionSuggestions?: string[];
+  requiresDecision?: boolean;
+  resultSummary: string;
+  skillUpdateSuggestions?: string[];
+  sourceActionId?: string | null;
+  taskId?: string | null;
+  type: 'business_review.record';
+};
+
+export type TaskplaneBusinessNextActionCreateIntent = {
+  businessLineId?: string | null;
+  evidenceRunId: string;
+  nextStep?: string | null;
+  sourceActionId?: string | null;
+  summary?: string | null;
+  taskId?: string | null;
+  title: string;
+  type: 'business_next_action.create';
+};
+
+export type TaskplaneBusinessSopRevisionProposeIntent = {
+  businessLineId?: string | null;
+  changeReason: string;
+  evidenceItems?: string[];
+  evidenceRunId: string;
+  nextContent: string;
+  requiresDecision?: boolean;
+  reviewAfterAt?: string | null;
+  scopePath?: string | null;
+  sourceActionId?: string | null;
+  taskId?: string | null;
+  type: 'business_sop_revision.propose';
+};
+
+export type TaskplaneBusinessHandoffRecordIntent = {
+  businessLineId?: string | null;
+  currentState: string;
+  evidenceItems?: string[];
+  evidenceRunId: string;
+  nextSafeAction: string;
+  reason: string;
+  shouldAffectFutureContext?: boolean;
+  sourceActionId?: string | null;
+  taskId?: string | null;
+  type: 'business_handoff.record';
+};
+
 export type TaskplaneWriteIntent =
   | TaskplaneTaskRecordCreateIntent
   | TaskplaneTaskFileProposeIntent
@@ -95,7 +160,12 @@ export type TaskplaneWriteIntent =
   | TaskplaneTaskNextStepIntent
   | TaskplaneSubtaskDraftIntent
   | TaskplaneTaskBlockedIntent
-  | TaskplaneTaskCompleteIntent;
+  | TaskplaneTaskCompleteIntent
+  | TaskplaneBusinessRecordCreateIntent
+  | TaskplaneBusinessReviewRecordIntent
+  | TaskplaneBusinessNextActionCreateIntent
+  | TaskplaneBusinessSopRevisionProposeIntent
+  | TaskplaneBusinessHandoffRecordIntent;
 
 export type TaskplaneWriteIntentValidation =
   | {
@@ -149,7 +219,7 @@ export function validateTaskplaneWriteIntent(intent: TaskplaneWriteIntent): Task
       if (!subtask.summary.trim()) issues.push(`Subtask ${index + 1} requires summary.`);
       if (!subtask.acceptanceCriteria.trim()) issues.push(`Subtask ${index + 1} requires acceptanceCriteria.`);
     });
-  } else if ('taskId' in intent && !intent.taskId.trim()) {
+  } else if (isTaskNativeIntentWithRequiredTask(intent) && !intent.taskId.trim()) {
     issues.push(`${intent.type} requires taskId.`);
   }
   if (intent.type === 'task_record.create') {
@@ -194,6 +264,24 @@ export function validateTaskplaneWriteIntent(intent: TaskplaneWriteIntent): Task
   }
   if (intent.type === 'task.complete.propose') {
     if (!intent.evidence.trim()) issues.push('Completion proposal requires evidence.');
+  }
+  if (intent.type === 'business_record.create') {
+    if (!intent.summary.trim()) issues.push('Business record intent requires summary.');
+  }
+  if (intent.type === 'business_review.record') {
+    if (!intent.resultSummary.trim()) issues.push('Business review intent requires resultSummary.');
+  }
+  if (intent.type === 'business_next_action.create') {
+    if (!intent.title.trim()) issues.push('Business next action intent requires title.');
+  }
+  if (intent.type === 'business_sop_revision.propose') {
+    if (!intent.nextContent.trim()) issues.push('Business SOP revision intent requires nextContent.');
+    if (!intent.changeReason.trim()) issues.push('Business SOP revision intent requires changeReason.');
+  }
+  if (intent.type === 'business_handoff.record') {
+    if (!intent.currentState.trim()) issues.push('Business handoff intent requires currentState.');
+    if (!intent.nextSafeAction.trim()) issues.push('Business handoff intent requires nextSafeAction.');
+    if (!intent.reason.trim()) issues.push('Business handoff intent requires reason.');
   }
 
   return issues.length
@@ -328,6 +416,89 @@ function normalizeWriteIntentValue(value: unknown, params: {
       type: 'task.complete.propose',
     }];
   }
+  if (type === 'business_record.create') {
+    const summary = readString(value.summary);
+    if (!summary) return [];
+    return [{
+      businessLineId: readString(value.businessLineId) || null,
+      confidence: normalizeNumber(value.confidence),
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      recordType: normalizeBusinessRecordType(value.recordType ?? value.typeHint),
+      shouldAffectFutureContext: normalizeBoolean(value.shouldAffectFutureContext, true),
+      source: readString(value.source) || null,
+      summary,
+      taskId: readString(value.taskId) || params.taskId || null,
+      type: 'business_record.create',
+    }];
+  }
+  if (type === 'business_review.record') {
+    const resultSummary = readString(value.resultSummary);
+    if (!resultSummary) return [];
+    return [{
+      businessLineId: readString(value.businessLineId) || null,
+      confidence: normalizeNumber(value.confidence),
+      evidenceItems: normalizeStringArray(value.evidenceItems),
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      hypothesisChange: readString(value.hypothesisChange) || null,
+      nextActionSuggestions: normalizeStringArray(value.nextActionSuggestions),
+      requiresDecision: normalizeBoolean(value.requiresDecision, false),
+      resultSummary,
+      skillUpdateSuggestions: normalizeStringArray(value.skillUpdateSuggestions),
+      sourceActionId: readString(value.sourceActionId) || readString(value.taskId) || params.taskId || null,
+      taskId: readString(value.taskId) || params.taskId || null,
+      type: 'business_review.record',
+    }];
+  }
+  if (type === 'business_next_action.create') {
+    const title = readString(value.title);
+    if (!title) return [];
+    return [{
+      businessLineId: readString(value.businessLineId) || null,
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      nextStep: readString(value.nextStep) || null,
+      sourceActionId: readString(value.sourceActionId) || readString(value.taskId) || params.taskId || null,
+      summary: readString(value.summary) || null,
+      taskId: readString(value.taskId) || params.taskId || null,
+      title,
+      type: 'business_next_action.create',
+    }];
+  }
+  if (type === 'business_sop_revision.propose') {
+    const nextContent = readString(value.nextContent);
+    const changeReason = readString(value.changeReason);
+    if (!nextContent || !changeReason) return [];
+    return [{
+      businessLineId: readString(value.businessLineId) || null,
+      changeReason,
+      evidenceItems: normalizeStringArray(value.evidenceItems),
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      nextContent,
+      requiresDecision: normalizeBoolean(value.requiresDecision, false),
+      reviewAfterAt: readString(value.reviewAfterAt) || null,
+      scopePath: readString(value.scopePath) || null,
+      sourceActionId: readString(value.sourceActionId) || readString(value.taskId) || params.taskId || null,
+      taskId: readString(value.taskId) || params.taskId || null,
+      type: 'business_sop_revision.propose',
+    }];
+  }
+  if (type === 'business_handoff.record') {
+    const currentState = readString(value.currentState);
+    const nextSafeAction = readString(value.nextSafeAction);
+    const reason = readString(value.reason);
+    if (!currentState || !nextSafeAction || !reason) return [];
+    return [{
+      businessLineId: readString(value.businessLineId) || null,
+      currentState,
+      evidenceItems: normalizeStringArray(value.evidenceItems),
+      evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
+      nextSafeAction,
+      reason,
+      shouldAffectFutureContext: normalizeBoolean(value.shouldAffectFutureContext, true),
+      sourceActionId: readString(value.sourceActionId) || readString(value.taskId) || params.taskId || null,
+      taskId: readString(value.taskId) || params.taskId || null,
+      type: 'business_handoff.record',
+    }];
+  }
   return [];
 }
 
@@ -433,10 +604,48 @@ function normalizeSourceCredibility(value: unknown): TaskplaneSourceContextCreat
   return value === 'verified' || value === 'low' || value === 'unknown' ? value : 'unknown';
 }
 
+function normalizeBusinessRecordType(value: unknown): TaskplaneBusinessRecordCreateIntent['recordType'] {
+  return value === 'hypothesis'
+    || value === 'decision'
+    || value === 'action'
+    || value === 'artifact'
+    || value === 'result'
+    || value === 'review'
+    || value === 'rule'
+    ? value
+    : 'signal';
+}
+
+function normalizeNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function normalizeBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
 function looksLikePatchContent(value: string): boolean {
   const normalized = value.replace(/\r\n/g, '\n');
   return /\ndiff --git\s+a\/.+\s+b\/.+/.test(`\n${normalized}`)
     || (/^---\s+/m.test(normalized) && /^\+\+\+\s+/m.test(normalized));
+}
+
+function isTaskNativeIntentWithRequiredTask(
+  intent: TaskplaneWriteIntent,
+): intent is Exclude<TaskplaneWriteIntent, TaskplaneSubtaskDraftIntent
+  | TaskplaneBusinessRecordCreateIntent
+  | TaskplaneBusinessReviewRecordIntent
+  | TaskplaneBusinessNextActionCreateIntent
+  | TaskplaneBusinessSopRevisionProposeIntent
+  | TaskplaneBusinessHandoffRecordIntent> {
+  return intent.type === 'task_record.create'
+    || intent.type === 'task_file.propose'
+    || intent.type === 'artifact.propose'
+    || intent.type === 'decision.create'
+    || intent.type === 'source_context.create'
+    || intent.type === 'task.update_next_step'
+    || intent.type === 'task.mark_blocked'
+    || intent.type === 'task.complete.propose';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -368,6 +368,114 @@ describe('Taskplane writeback dispatch', () => {
     });
   });
 
+  it('dispatches business-line-native writes through product service ports', async () => {
+    const createBusinessLineRecord = vi.fn().mockResolvedValue({});
+    const createBusinessLineNextAction = vi.fn().mockResolvedValue({
+      id: 'task_next_action',
+      title: 'Draft onboarding checklist',
+    });
+    const proposeBusinessLineSopRevision = vi.fn().mockResolvedValue({});
+    const recordTimelineEvent = vi.fn().mockResolvedValue(undefined);
+
+    const recordResult = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createBusinessLineRecord,
+        recordTimelineEvent,
+      },
+      plan: {
+        action: 'business_record.create',
+        input: {
+          businessLineId: 'business_line_product',
+          source: 'run:run_business',
+          summary: 'Business signal.',
+          type: 'signal',
+        },
+        successMessage: '已确认并保存业务记录。',
+        timeline: {
+          type: 'panel.business_record_written',
+          payload: {
+            businessLineId: 'business_line_product',
+            evidenceRunId: 'run_business',
+          },
+        },
+      },
+    });
+    const nextActionResult = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createBusinessLineNextAction,
+        recordTimelineEvent,
+      },
+      plan: {
+        action: 'business_next_action.create',
+        input: {
+          businessLineId: 'business_line_product',
+          evidenceRunId: 'run_business',
+          nextStep: 'Draft onboarding checklist.',
+          title: 'Draft onboarding checklist',
+        },
+        successMessage: '已确认并创建业务线 Next Action：Draft onboarding checklist。',
+        timeline: {
+          type: 'panel.business_next_action_written',
+          payload: {
+            businessLineId: 'business_line_product',
+            evidenceRunId: 'run_business',
+          },
+        },
+      },
+    });
+    const sopResult = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        proposeBusinessLineSopRevision,
+        recordTimelineEvent,
+      },
+      plan: {
+        action: 'business_sop_revision.propose',
+        input: {
+          businessLineId: 'business_line_product',
+          changeReason: 'Stale assumptions found.',
+          evidenceRunId: 'run_business',
+          nextContent: 'Verify evidence before launch copy.',
+          requiresDecision: true,
+        },
+        successMessage: '已确认并提出业务线 SOP revision。',
+        timeline: {
+          type: 'panel.business_sop_revision_proposed',
+          payload: {
+            businessLineId: 'business_line_product',
+            evidenceRunId: 'run_business',
+            requiresDecision: true,
+          },
+        },
+      },
+    });
+
+    expect(createBusinessLineRecord).toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: 'business_line_product',
+      summary: 'Business signal.',
+    }));
+    expect(createBusinessLineNextAction).toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: 'business_line_product',
+      title: 'Draft onboarding checklist',
+    }));
+    expect(proposeBusinessLineSopRevision).toHaveBeenCalledWith(expect.objectContaining({
+      nextContent: 'Verify evidence before launch copy.',
+      requiresDecision: true,
+    }));
+    expect(recordResult).toMatchObject({ action: 'business_record.create', status: 'completed' });
+    expect(nextActionResult).toMatchObject({
+      action: 'business_next_action.create',
+      createdTasks: [{ id: 'task_next_action' }],
+      status: 'completed',
+    });
+    expect(sopResult).toMatchObject({ action: 'business_sop_revision.propose', status: 'completed' });
+    expect(recordTimelineEvent).toHaveBeenCalledWith('task_1', 'panel.business_sop_revision_proposed', expect.objectContaining({
+      requiresDecision: true,
+    }));
+  });
+
   it('blocks subtask creation when the operator confirmation surface is missing', async () => {
     const createSubtasks = vi.fn();
 

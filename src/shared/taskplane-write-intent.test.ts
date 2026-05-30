@@ -135,6 +135,73 @@ describe('Taskplane write intent', () => {
     expect(intents.map((intent) => validateTaskplaneWriteIntent(intent).status)).toEqual(['ready', 'ready']);
   });
 
+  it('extracts business-line-native write intents without requiring runtime persistence', () => {
+    const intents = extractTaskplaneWriteIntentsFromText({
+      evidenceRunId: 'run_business',
+      taskId: 'task_scope',
+      text: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [
+          {
+            type: 'business_record.create',
+            summary: 'Customer onboarding signal.',
+            recordType: 'signal',
+          },
+          {
+            type: 'business_review.record',
+            resultSummary: 'Run validated onboarding.',
+            evidenceItems: ['customer interview'],
+          },
+          {
+            type: 'business_next_action.create',
+            title: 'Draft onboarding checklist',
+            nextStep: 'Draft onboarding checklist.',
+          },
+          {
+            type: 'business_sop_revision.propose',
+            nextContent: 'Verify onboarding evidence before launch copy.',
+            changeReason: 'The run found stale assumptions.',
+            requiresDecision: true,
+          },
+          {
+            type: 'business_handoff.record',
+            currentState: 'Research finished.',
+            nextSafeAction: 'Turn findings into checklist.',
+            reason: 'Keep the next agent oriented.',
+          },
+        ],
+      }),
+    });
+
+    expect(intents.map((intent) => intent.type)).toEqual([
+      'business_record.create',
+      'business_review.record',
+      'business_next_action.create',
+      'business_sop_revision.propose',
+      'business_handoff.record',
+    ]);
+    expect(intents).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        evidenceRunId: 'run_business',
+        summary: 'Customer onboarding signal.',
+        taskId: 'task_scope',
+        type: 'business_record.create',
+      }),
+      expect.objectContaining({
+        nextContent: 'Verify onboarding evidence before launch copy.',
+        requiresDecision: true,
+        type: 'business_sop_revision.propose',
+      }),
+    ]));
+    expect(intents.map((intent) => validateTaskplaneWriteIntent(intent).status)).toEqual([
+      'ready',
+      'ready',
+      'ready',
+      'ready',
+      'ready',
+    ]);
+  });
+
   it('extracts generic task file proposals without crossing task-memory surfaces', () => {
     const intents = extractTaskplaneWriteIntentsFromText({
       evidenceRunId: 'run_4_file',

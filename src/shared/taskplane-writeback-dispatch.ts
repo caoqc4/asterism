@@ -4,6 +4,11 @@ import type { SourceContextRecord } from './types/source-context.js';
 import type { TaskListItemRecord } from './types/task.js';
 import type { TaskFileRecord } from './types/task-file.js';
 import type { ArtifactRecord } from './types/artifact.js';
+import type {
+  BusinessLineRecord,
+  BusinessLineSkillRevision,
+  BusinessLineWorkspace,
+} from './types/business-line.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
 import type {
   TaskplaneDurableWritebackConfirmationSurface,
@@ -30,6 +35,10 @@ export type TaskplaneWritebackDispatchPorts = {
   createSourceContext?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'source_context.create' }>, SourceContextRecord>;
   createSubtasks?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'subtask.create_many' }>, TaskplaneSubtaskCreateManyResult>;
   createTaskFile?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'task_file.create' }>, TaskFileRecord>;
+  createBusinessLineRecord?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'business_record.create' | 'business_handoff.record' }>, BusinessLineRecord>;
+  createBusinessLineReview?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'business_review.record' }>, BusinessLineWorkspace>;
+  createBusinessLineNextAction?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'business_next_action.create' }>, TaskListItemRecord>;
+  proposeBusinessLineSopRevision?: TaskplaneWritebackPort<Extract<TaskplaneWritebackApplyPlan, { action: 'business_sop_revision.propose' }>, BusinessLineSkillRevision>;
   recordTimelineEvent?: (
     taskId: string,
     type: PanelRuntimeTimelineEventType,
@@ -97,6 +106,34 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   if (plan.action === 'task_file.update') {
     if (!ports.updateTaskFile) return blocked(plan.action, '任务文件提案已暂停：当前环境不支持更新任务文件。');
     await ports.updateTaskFile(plan.input);
+    await recordTimeline(ports, taskId, plan.timeline);
+    return completed(plan);
+  }
+
+  if (plan.action === 'business_record.create' || plan.action === 'business_handoff.record') {
+    if (!ports.createBusinessLineRecord) return blocked(plan.action, '业务记录提案已暂停：当前环境不支持保存业务记录。');
+    await ports.createBusinessLineRecord(plan.input);
+    await recordTimeline(ports, taskId, plan.timeline);
+    return completed(plan);
+  }
+
+  if (plan.action === 'business_review.record') {
+    if (!ports.createBusinessLineReview) return blocked(plan.action, '业务复盘提案已暂停：当前环境不支持保存业务复盘。');
+    await ports.createBusinessLineReview(plan.input);
+    await recordTimeline(ports, taskId, plan.timeline);
+    return completed(plan);
+  }
+
+  if (plan.action === 'business_next_action.create') {
+    if (!ports.createBusinessLineNextAction) return blocked(plan.action, '业务线 Next Action 提案已暂停：当前环境不支持创建 Next Action。');
+    const createdTask = await ports.createBusinessLineNextAction(plan.input);
+    await recordTimeline(ports, taskId, plan.timeline);
+    return completed(plan, null, [createdTask]);
+  }
+
+  if (plan.action === 'business_sop_revision.propose') {
+    if (!ports.proposeBusinessLineSopRevision) return blocked(plan.action, '业务线 SOP revision 提案已暂停：当前环境不支持提出 SOP revision。');
+    await ports.proposeBusinessLineSopRevision(plan.input);
     await recordTimeline(ports, taskId, plan.timeline);
     return completed(plan);
   }

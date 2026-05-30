@@ -1,4 +1,9 @@
 import type { DecisionRecord } from '../../../shared/types/decision.js';
+import type {
+  BusinessLineRecord,
+  BusinessLineSkillRevision,
+  BusinessLineWorkspace,
+} from '../../../shared/types/business-line.js';
 import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskExecutionType, TaskListItemRecord } from '../../../shared/types/task.js';
@@ -18,6 +23,7 @@ import { evaluateTaskAdvancement } from '../../../shared/task-advancement-orches
 import type { PanelRuntimeTimelineEventType } from '../../../shared/runtime-panel-events.js';
 import type { TaskService } from '../task/task-service.js';
 import type { DecisionService } from '../decision/decision-service.js';
+import type { BusinessLineService } from '../business-line/business-line-service.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { TaskFileRepository } from '../../db/repositories/task-file-repository.js';
 import type {
@@ -45,6 +51,14 @@ export type TaskplaneWritebackArtifactRepositoryPort = Pick<ArtifactRepository, 
 export type TaskplaneWritebackBusinessLineOwnershipResolverPort = {
   resolveOwnership(input: BusinessLineOwnershipInput): Promise<BusinessLineOwnershipResolution>;
 };
+export type TaskplaneWritebackBusinessLineServicePort = Pick<
+  BusinessLineService,
+  | 'createBusinessLineNextAction'
+  | 'createBusinessLineRecord'
+  | 'proposeBusinessLineSopRevision'
+  | 'recordReview'
+  | 'resolveOwnership'
+>;
 
 export class TaskplaneWritebackDispatchService {
   constructor(
@@ -53,6 +67,7 @@ export class TaskplaneWritebackDispatchService {
     private readonly taskFileRepository: TaskplaneWritebackTaskFileRepositoryPort,
     private readonly artifactRepository: TaskplaneWritebackArtifactRepositoryPort,
     private readonly businessLineOwnershipResolver: TaskplaneWritebackBusinessLineOwnershipResolverPort | null = null,
+    private readonly businessLineService: TaskplaneWritebackBusinessLineServicePort | null = null,
   ) {}
 
   async dispatch(params: {
@@ -74,7 +89,7 @@ export class TaskplaneWritebackDispatchService {
     }
 
     const targetTaskId = getPlanTargetTaskId(params.plan);
-    if (targetTaskId !== params.taskId) {
+    if (targetTaskId && targetTaskId !== params.taskId) {
       return {
         action: params.plan.action,
         message: 'Write Intent 已暂停：计划目标任务与当前任务不一致。',
@@ -104,10 +119,26 @@ export class TaskplaneWritebackDispatchService {
         createArtifact: (input): Promise<ArtifactRecord> => this.artifactRepository.createNoteFromRun(input),
         createPatchArtifact: (input): Promise<ArtifactRecord> => this.artifactRepository.createPatchFromRun(input),
         createBlocker: (input): Promise<BlockerRecord> => this.taskService.createBlocker(input),
+        createBusinessLineNextAction: (input): Promise<TaskListItemRecord> => {
+          if (!this.businessLineService) throw new Error('Business line service unavailable.');
+          return this.businessLineService.createBusinessLineNextAction(input);
+        },
+        createBusinessLineRecord: (input): Promise<BusinessLineRecord> => {
+          if (!this.businessLineService) throw new Error('Business line service unavailable.');
+          return this.businessLineService.createBusinessLineRecord(input);
+        },
+        createBusinessLineReview: (input): Promise<BusinessLineWorkspace> => {
+          if (!this.businessLineService) throw new Error('Business line service unavailable.');
+          return this.businessLineService.recordReview(input);
+        },
         createDecision: (input): Promise<DecisionRecord> => this.decisionService.create(input),
         createSourceContext: (input): Promise<SourceContextRecord> => this.taskService.createSourceContext(input),
         createSubtasks: (input): Promise<TaskplaneSubtaskCreateManyResult> => this.createSubtasks(input),
         createTaskFile: (input): Promise<TaskFileRecord> => this.taskFileRepository.create(input),
+        proposeBusinessLineSopRevision: (input): Promise<BusinessLineSkillRevision> => {
+          if (!this.businessLineService) throw new Error('Business line service unavailable.');
+          return this.businessLineService.proposeBusinessLineSopRevision(input);
+        },
         recordTimelineEvent: (
           taskId: string,
           type: PanelRuntimeTimelineEventType,
@@ -129,11 +160,12 @@ export class TaskplaneWritebackDispatchService {
   }): Promise<TaskplaneWritebackDispatchResult | null> {
     if (!this.businessLineOwnershipResolver) return null;
     const explicitBusinessLineId = getPlanBusinessLineId(params.plan);
+    const businessLineNative = isBusinessLineNativePlan(params.plan);
     const ownership = await this.businessLineOwnershipResolver.resolveOwnership({
       explicitBusinessLineId,
       taskId: params.taskId,
       ...(params.plan.action === 'task_file.update' ? { taskFileId: params.plan.input.id } : {}),
-      allowOneOff: !explicitBusinessLineId,
+      allowOneOff: !businessLineNative && !explicitBusinessLineId,
     });
     if (ownership.status === 'mismatch') {
       return {
@@ -146,6 +178,13 @@ export class TaskplaneWritebackDispatchService {
       return {
         action: params.plan.action,
         message: 'Write Intent 已暂停：业务线不存在。',
+        status: 'blocked',
+      };
+    }
+    if (ownership.status === 'missing' && businessLineNative) {
+      return {
+        action: params.plan.action,
+        message: 'Write Intent 已暂停：业务线写入缺少可解析的业务线归属。',
         status: 'blocked',
       };
     }
@@ -276,6 +315,7 @@ function buildProjectDecompositionRecordContent(
 }
 
 function getPlanTargetTaskId(plan: TaskplaneWritebackApplyPlan): string | null | undefined {
+  if (isBusinessLineNativePlan(plan)) return null;
   if (plan.action === 'task.update_next_step') return plan.input.id;
   if (plan.action === 'task_file.update') return plan.taskId;
   if (plan.action === 'subtask.create_many') return plan.input.parentTaskId;
@@ -283,6 +323,7 @@ function getPlanTargetTaskId(plan: TaskplaneWritebackApplyPlan): string | null |
 }
 
 function getPlanBusinessLineId(plan: TaskplaneWritebackApplyPlan): string | null {
+  if (isBusinessLineNativePlan(plan)) return plan.input.businessLineId?.trim() || null;
   if (plan.action === 'subtask.create_many') return null;
   if (plan.action === 'task_file.update') {
     const timelineBusinessLineId = plan.timeline.payload.businessLineId;
@@ -294,4 +335,22 @@ function getPlanBusinessLineId(plan: TaskplaneWritebackApplyPlan): string | null
     return plan.input.businessLineId?.trim() || null;
   }
   return null;
+}
+
+function isBusinessLineNativePlan(plan: TaskplaneWritebackApplyPlan): plan is Extract<
+  TaskplaneWritebackApplyPlan,
+  {
+    action:
+      | 'business_record.create'
+      | 'business_review.record'
+      | 'business_next_action.create'
+      | 'business_sop_revision.propose'
+      | 'business_handoff.record';
+  }
+> {
+  return plan.action === 'business_record.create'
+    || plan.action === 'business_review.record'
+    || plan.action === 'business_next_action.create'
+    || plan.action === 'business_sop_revision.propose'
+    || plan.action === 'business_handoff.record';
 }

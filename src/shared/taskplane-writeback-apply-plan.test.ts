@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildArtifactWritebackApplyPlan,
+  buildBusinessLineWritebackApplyPlan,
   buildSubtaskCreateManyWritebackApplyPlan,
   buildTaskFileWritebackApplyPlan,
   buildSourceContextWritebackApplyPlan,
@@ -252,6 +253,94 @@ describe('Taskplane writeback apply plans', () => {
         },
       },
     });
+  });
+
+  it('maps business-line-native proposals to service apply plans without activating SOPs', () => {
+    const recordPlan = buildBusinessLineWritebackApplyPlan({
+      proposal: {
+        businessLineId: 'business_line_product',
+        detail: 'Customer onboarding signal.',
+        evidenceRunId: 'run_business',
+        title: '业务记录写回提案',
+        intent: {
+          businessLineId: 'business_line_product',
+          evidenceRunId: 'run_business',
+          recordType: 'signal',
+          summary: 'Customer onboarding signal.',
+          type: 'business_record.create',
+        },
+      },
+    });
+    const reviewPlan = buildBusinessLineWritebackApplyPlan({
+      proposal: {
+        businessLineId: 'business_line_product',
+        detail: 'Run validated onboarding.',
+        evidenceRunId: 'run_business',
+        title: '业务复盘写回提案',
+        intent: {
+          businessLineId: 'business_line_product',
+          evidenceRunId: 'run_business',
+          resultSummary: 'Run validated onboarding.',
+          nextActionSuggestions: ['Draft onboarding checklist.'],
+          type: 'business_review.record',
+        },
+      },
+    });
+    const sopPlan = buildBusinessLineWritebackApplyPlan({
+      proposal: {
+        businessLineId: 'business_line_product',
+        detail: 'Stale assumptions found.',
+        evidenceRunId: 'run_business',
+        title: '业务 SOP revision 提案',
+        intent: {
+          businessLineId: 'business_line_product',
+          changeReason: 'Stale assumptions found.',
+          evidenceRunId: 'run_business',
+          nextContent: 'Verify evidence before launch copy.',
+          requiresDecision: true,
+          type: 'business_sop_revision.propose',
+        },
+      },
+    });
+
+    expect(recordPlan).toMatchObject({
+      action: 'business_record.create',
+      input: {
+        businessLineId: 'business_line_product',
+        source: 'run:run_business',
+        summary: 'Customer onboarding signal.',
+        type: 'signal',
+      },
+      timeline: {
+        type: 'panel.business_record_written',
+      },
+    });
+    expect(reviewPlan).toMatchObject({
+      action: 'business_review.record',
+      input: {
+        businessLineId: 'business_line_product',
+        nextActionSuggestions: ['Draft onboarding checklist.'],
+        sourceRunId: 'run_business',
+      },
+      timeline: {
+        type: 'panel.business_review_written',
+      },
+    });
+    expect(sopPlan).toMatchObject({
+      action: 'business_sop_revision.propose',
+      input: {
+        businessLineId: 'business_line_product',
+        nextContent: 'Verify evidence before launch copy.',
+        requiresDecision: true,
+      },
+      timeline: {
+        type: 'panel.business_sop_revision_proposed',
+        payload: {
+          requiresDecision: true,
+        },
+      },
+    });
+    expect(sopPlan.action).not.toBe('decision.create');
   });
 
   it('maps patch artifact proposals to run-backed patch artifacts', () => {

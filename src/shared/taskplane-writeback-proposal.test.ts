@@ -123,4 +123,53 @@ describe('Taskplane writeback proposal builder', () => {
       title: 'changes.patch',
     });
   });
+
+  it('builds business-line-native proposals from runtime Write Intent output', () => {
+    const proposals = buildTaskplaneWritebackProposalsFromText({
+      output: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [
+          {
+            type: 'business_record.create',
+            summary: 'Customer onboarding signal should guide the business line.',
+            recordType: 'signal',
+          },
+          {
+            type: 'business_review.record',
+            resultSummary: 'The run validated the onboarding sequence.',
+            nextActionSuggestions: ['Draft onboarding checklist.'],
+          },
+          {
+            type: 'business_sop_revision.propose',
+            nextContent: 'Always verify onboarding evidence before creating launch copy.',
+            changeReason: 'The run found stale assumptions.',
+          },
+          {
+            type: 'business_handoff.record',
+            currentState: 'Research finished.',
+            nextSafeAction: 'Turn findings into checklist.',
+            reason: 'Keep the next agent oriented.',
+          },
+        ],
+      }),
+      runId: 'run_business',
+      businessLineId: 'business_line_product',
+      taskId: 'task_scope',
+      taskTitle: 'Advance onboarding',
+    });
+
+    expect(proposals.businessLine).toHaveLength(4);
+    expect(proposals.businessLine.map((proposal) => proposal.intent.type)).toEqual([
+      'business_record.create',
+      'business_review.record',
+      'business_sop_revision.propose',
+      'business_handoff.record',
+    ]);
+    expect(proposals.businessLine[0]).toMatchObject({
+      businessLineId: 'business_line_product',
+      detail: 'Customer onboarding signal should guide the business line.',
+      evidenceRunId: 'run_business',
+      title: '业务记录写回提案',
+    });
+  });
 });

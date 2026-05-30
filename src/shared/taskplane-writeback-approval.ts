@@ -1,5 +1,6 @@
 import {
   buildArtifactWritebackApplyPlan,
+  buildBusinessLineWritebackApplyPlan,
   buildSourceContextWritebackApplyPlan,
   buildStructuredWritebackApplyPlan,
   buildTaskFileUpdateWritebackApplyPlan,
@@ -24,6 +25,7 @@ import type { TaskFileRecord } from './types/task-file.js';
 
 export type TaskplaneWritebackApprovalKind =
   | 'artifact'
+  | 'business_line'
   | 'source_context'
   | 'structured'
   | 'task_file'
@@ -153,6 +155,24 @@ export function buildTaskplaneWritebackApprovalItems(params: {
           summary: structuredSummary(proposalSet.structured.intent.type),
           taskId: params.taskId,
           title: proposalSet.structured.title,
+        });
+      }
+
+      for (const proposal of proposalSet.businessLine) {
+        const plan = buildBusinessLineWritebackApplyPlan({
+          confirmationSurface: 'taskplane_writeback_approval_queue',
+          proposal,
+        });
+        items.push({
+          detail: proposal.detail,
+          id: approvalId(detail.id, 'business_line', proposal.intent.type, proposal.title),
+          kind: 'business_line',
+          plan,
+          runId: detail.id,
+          source: 'runtime_write_intent',
+          summary: businessLineSummary(proposal.intent.type),
+          taskId: params.taskId,
+          title: proposal.title,
         });
       }
     }
@@ -522,6 +542,14 @@ function structuredSummary(intentType: string): string {
   if (intentType === 'task.update_next_step') return '确认后更新任务下一步。';
   if (intentType === 'task.mark_blocked') return '确认后记录当前阻塞项。';
   return '确认后创建完成验收 Decision。';
+}
+
+function businessLineSummary(intentType: string): string {
+  if (intentType === 'business_record.create') return '确认后保存为业务记录。';
+  if (intentType === 'business_review.record') return '确认后保存业务复盘。';
+  if (intentType === 'business_next_action.create') return '确认后创建业务线 Next Action。';
+  if (intentType === 'business_sop_revision.propose') return '确认后提出 SOP revision，激活仍需单独 gate。';
+  return '确认后保存业务交接记录。';
 }
 
 function dedupeApprovalItems(items: TaskplaneWritebackApprovalItem[]): TaskplaneWritebackApprovalItem[] {

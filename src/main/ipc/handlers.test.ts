@@ -1309,6 +1309,63 @@ describe('registerIpcHandlers', () => {
     expect(result.status).toBe('completed');
   });
 
+  it('emits business-line refresh events after business-native writeback', async () => {
+    servicesMock.taskplaneWritebackDispatchService.dispatch.mockResolvedValue({
+      action: 'business_sop_revision.propose',
+      status: 'completed',
+      successMessage: '已确认并提出业务线 SOP revision。',
+    });
+
+    const handler = getRegisteredHandler<
+      [{
+        taskId: string;
+        plan: {
+          action: 'business_sop_revision.propose';
+          input: {
+            businessLineId: string;
+            changeReason: string;
+            nextContent: string;
+            requiresDecision: true;
+          };
+          successMessage: string;
+          timeline: {
+            type: 'panel.business_sop_revision_proposed';
+            payload: Record<string, unknown>;
+          };
+        };
+      }],
+      Awaited<ReturnType<typeof servicesMock.taskplaneWritebackDispatchService.dispatch>>
+    >('taskplaneWriteback:apply');
+    const input = {
+      taskId: 'task_1',
+      plan: {
+        action: 'business_sop_revision.propose' as const,
+        input: {
+          businessLineId: 'business_line_product',
+          changeReason: 'Risky SOP proposal.',
+          nextContent: 'Verify source evidence before activation.',
+          requiresDecision: true as const,
+        },
+        successMessage: '已确认并提出业务线 SOP revision。',
+        timeline: {
+          type: 'panel.business_sop_revision_proposed' as const,
+          payload: {
+            businessLineId: 'business_line_product',
+          },
+        },
+      },
+    };
+
+    const result = await handler({}, input);
+
+    expect(servicesMock.taskplaneWritebackDispatchService.dispatch).toHaveBeenCalledWith(input);
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenCalledWith('businessLine.changed', 'business_line_product');
+    expect(emitAppEventMock).toHaveBeenCalledWith('brief.changed');
+    expect(emitAppEventMock).toHaveBeenCalledWith('decision.changed');
+    expect(result.status).toBe('completed');
+  });
+
   it('emits task.changed after completion criteria writes', async () => {
     servicesMock.taskService.createCompletionCriteria.mockResolvedValue({
       id: 'criteria_1',
