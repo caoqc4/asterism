@@ -337,6 +337,65 @@ execution infrastructure.
 - Product audit should eventually fail if new implementation surfaces create
   durable business state without a business-line owner.
 
+## Architecture Goal 0 Implementation Drift Appendix
+
+Audit date: 2026-05-30
+Baseline: repository state after `b1b6f44d`
+Scope inspected: data model, repositories, services, writeback, runtime, UI,
+scheduler/automation paths, and audit tests.
+
+This appendix is the route map for the later architecture goals. It classifies
+implementation state without changing product behavior.
+
+| Area | Files / surfaces inspected | Classification | Finding | Route |
+| --- | --- | --- | --- | --- |
+| Business-line schema | `src/main/db/client.ts`, `src/main/db/schema.ts` | aligned | Native business-line tables exist for lines, records, action links, reviews, and skill/SOP revisions. Task-linked tables already carry nullable `business_line_id` where needed for runs, Decisions, source contexts, artifacts, task files, and tasks. | Preserve. Future goals should not delete task columns or legacy surfaces. |
+| Canonical action membership | `business_line_actions`, `tasks.business_line_id`, `BusinessLineRepository.listActionTaskIds()` | aligned | Canonical business lines no longer depend on a paged record window to recover open Next Actions. Action membership is persisted through task ownership and `business_line_actions`, with record links as additional evidence. | Preserve in Goals 1, 4, and 9. |
+| Legacy project/routine recovery | `legacy_task_id`, `BusinessLineRepository.resolveBusinessLineForTask()`, `BusinessLinesPage`, Legacy Tasks Explorer | compatibility adapter | Legacy project/routine tasks and child tasks resolve to a business line through `legacy_task_id` or parent traversal. UI still exposes legacy recovery, but primary Work navigation does not promote Tasks. | Keep explicit. Do not migrate all history in this plan. |
+| Owner resolution location | `BusinessLineRepository.resolveBusinessLineForTask/Run/Decision/Source/Artifact/TaskFile()` | needs service-boundary change | Ownership resolution exists, but it is repository-local and returns a nullable id rather than a typed owner result that distinguishes direct business-line owner, task/run carrier, legacy recovery, one-off scope, and mismatch evidence. | Goal 1 should introduce a shared resolver and use it from service write paths. |
+| Direct id mismatch checks | `RunService.trigger()`, writeback dispatch, repository resolvers | needs service-boundary change | Several paths accept an explicit `businessLineId` and validate existence, but the common mismatch rule is not centralized. External Access has a local mismatch check; RunService and generic writeback dispatch still need a shared owner-vs-carrier check. | Goal 1 should reject explicit owner mismatch across task/run/source/artifact/file/Decision writes. |
+| BusinessLineService workspace facade | `BusinessLineService.getWorkspace()`, `recordReview()`, SOP lifecycle, Today suggestions | aligned | BusinessLineService assembles workspace state, context pack, records, reviews, SOP revisions, Next Actions, automations, sensors, and Today suggestions. Risky SOP activation is Decision-gated, and SOP activation/rollback is transactional. | Preserve as facade. Tighten method boundaries in Goal 4. |
+| Review to learning loop | `BusinessLineService.recordReview()`, `business_line_reviews`, `business_line_skill_revisions`, `business_line_actions` | aligned | Reviews are canonical review memory, can create Business Records, proposed SOP revisions, real Next Action tasks, and action links. Future context reads accepted non-expired SOPs and selected future-context records. | Preserve. Goal 2 should expose these as writeback-native intents. |
+| Business-line creation seeding | `BusinessLineService.seedCreatedBusinessLine()` | aligned | Creation flow can seed initial records, proposed SOPs, and initial Next Actions under the canonical business line; inherited SOPs stay proposed instead of active context. | Preserve. Goal 7 should keep cross-business provenance explicit. |
+| Cross-business reuse | creation flow source business line, inherited records/SOPs | compatibility adapter | Cross-business reuse is explicit only in the creation flow. It is not a general copy/reuse mechanism and does not silently activate copied SOPs. | Keep narrow until Goal 7. |
+| Write Intent vocabulary | `src/shared/taskplane-write-intent.ts` | needs writeback change | The union is still task-native: task records, task files, artifacts, Decisions, source contexts, next-step/block/complete, and subtask proposals. It does not yet contain native `business_record.create`, `business_review.record`, `business_next_action.create`, `business_sop_revision.propose`, or `business_handoff.record`. | Goal 2. |
+| Proposal and apply plans | `taskplane-writeback-proposal.ts`, `taskplane-writeback-apply-plan.ts`, `taskplane-writeback-approval.ts` | needs writeback change | Existing proposal/apply-plan paths preserve `businessLineId` for task-native surfaces when available, but business-line writes are still side paths such as post-run review confirmation rather than first-class apply-plan actions. | Goal 2. |
+| Main-side writeback dispatch | `TaskplaneWritebackDispatchService.dispatch()` | needs writeback change | Dispatch validates the target task and task-file ownership, then calls task, source, artifact, Decision, and task-file services. It does not yet resolve and enforce business-line ownership for every durable write or dispatch native business-line actions. | Goals 1 and 2. |
+| Runtime run scope | `RunService.trigger()`, `CreateRunInput`, `RunRecord` | needs runtime change | Runs require `taskId` and carry optional `businessLineId`. Business-line context injection works, and missing business lines are rejected, but scope is inferred from task/input instead of a typed scope such as global chat, business-line chat, Next Action execution, scheduler loop carrier, legacy recovery, or one-off. | Goal 3. |
+| Run owner mismatch | `RunService.trigger()` | needs runtime change | `RunService` derives `businessLineId` from input or task and validates that the line exists, but the explicit id is not proven to match the task-derived owner through the shared resolver. | Goals 1 and 3. |
+| Post-run review proposal | `shared/business-line-post-run-review.ts`, `RightPanel.confirmBusinessLineRunReview()` | needs writeback change | Completed business-line runs generate review options and RightPanel can save a review through `recordBusinessLineReview()`. This closes the MVP path, but it bypasses the generic Write Intent/apply-plan vocabulary for Business Record, Review, SOP, and Next Action writes. | Goal 2, then Goal 9 smoke. |
+| Runtime surface routing | `runtime-surface-routing.ts`, context transition/handoff helpers | compatibility adapter | Runtime memory routing still contains Task.md and Task Records as valid execution surfaces. This is correct for active Next Action and legacy recovery, but should not become the business-line default. | Keep; audit in Goal 8 should allow this language only when execution-scoped. |
+| Business workspace UI | `BusinessLinesPage.tsx` | aligned | Business workspace presents Overview, Records, Next Actions, Learning, Automations & Sensors, and Settings. It can open business-line chat/run context and records post-action reviews. | Preserve. Later UI cleanup should avoid broad product churn. |
+| Primary navigation | `App.tsx` | aligned | Work navigation is Today, Business, Chat, Decisions. Tasks is reachable as `Legacy Tasks Explorer` in the footer, so it is recovery infrastructure rather than the primary owner. | Preserve and audit in Goal 8. |
+| RightPanel context target | `RightPanel.tsx` | aligned | RightPanel shows `Context:` and `Writeback:` targets for Global, Business Line, and Business / Next Action, and passes `activeBusinessLineId` through proposal and post-run review paths. | Preserve. Goal 5 should remove remaining task-first fallback wording where it affects ownership. |
+| RightPanel fallback/capture copy | `RightPanel.tsx` | needs UI change | Some fallback assistant text and capture messages still say "Tasks" as the default product destination. This is mostly mock/fallback copy, but it can reintroduce task-first product language if surfaced in business-line context. | Goal 5. |
+| TasksPage | `TasksPage.tsx` | compatibility adapter | TasksPage remains the broad task dynamics, file, Task.md, Task Records, decomposition, completion, scheduler proposal, and writeback approval surface. This is acceptable as Legacy Tasks Explorer and execution infrastructure, not as primary Work navigation. | Keep. Goal 5 should label ownership boundaries rather than delete task mechanics. |
+| Task files and Task Records | `TaskFileRepository`, `Task.md`, `Task Records/` guards | should not change now | Task.md, Task Records, task files, blockers, criteria, and subtasks remain necessary execution memory. They should not be renamed or removed during business-line architecture migration. | Preserve. Only add owner resolution around durable business-impacting writes. |
+| Scheduler/automation projection | `BusinessLineService.automationSnapshotForBusinessLine()`, TasksPage scheduler readiness, scheduler smoke scripts | needs data-model change | Business workspace projects scheduled/event/routine tasks as Automations & Sensors, and existing scheduler gates use task carriers plus Standing Approval evidence. There is not yet a durable business-line loop object or loop-scoped standing approval owner. | Goal 6 should decide the smallest loop model; do not rewrite scheduler in earlier goals. |
+| Scheduler execution gates | scheduled/event readiness, Standing Approval, run-limit evidence, product audit | aligned | Scheduler paths are currently gated as proposal/readiness flows with Standing Approval, run-limit, terminal evidence, and no default provider-visible background execution. | Preserve while adding business-line loop ownership in Goal 6. |
+| External Access ingestion | `ExternalAccessSourceIngestionService` | aligned | Preview is read-only; commit requires confirmation; confirmed source ingestion rejects mismatched `businessLineId` vs selected task ownership and creates business records with `shouldAffectFutureContext=false`. | Preserve as pattern for owner mismatch checks. |
+| Product and rule-layer audit | `product-feature-impact-audit.ts`, audit summary script, local smoke boundary test | aligned | Product audit reports `businessLineFirst readiness=ready`; rule-layer audit reports `businessLineFirstRules readiness=ready checks=7 issues=0`. | Preserve. |
+| Implementation regression audit | audit registry and smoke tests | should not change now | Audit currently proves product/rule readiness and some implementation evidence, but it does not yet fail every new code path that drops business-line ownership in writeback, runtime, UI, or scheduler surfaces. | Goal 8 should add implementation-level regression checks after Goals 1-6 settle contracts. |
+| Runtime-native goal and matrix runtime | native runtime orchestration, capability audit | should not change now | Runtime-native goal loops, Agent API promotion, and future matrix runtime remain executor/backend capabilities. They should not become business-line state owners during this architecture slice. | Keep as executor evidence paths. |
+
+### Goal 0 Route Summary
+
+- Goal 1 should centralize ownership resolution and mismatch rejection.
+- Goal 2 should add business-line-native Write Intent, proposal, apply-plan, and
+  dispatch actions.
+- Goal 3 should make run scope explicit and stop relying on optional
+  `businessLineId` inference.
+- Goal 4 should tighten BusinessLineService mutation boundaries without
+  splitting the facade.
+- Goal 5 should clean UI ownership language and target display while keeping
+  Legacy Tasks Explorer usable.
+- Goal 6 should introduce the smallest durable business-line loop ownership
+  model for scheduler/automation work.
+- Goal 7 should keep cross-business reuse explicit, proposed, and traceable.
+- Goal 8 should convert this appendix into implementation regression audits.
+- Goal 9 should prove the full UI -> runtime -> writeback -> review -> learning
+  loop.
+
 ## Migration Sequence
 
 Run architecture goals after the rule-layer goals. Each goal should stop with a
