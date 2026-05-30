@@ -532,6 +532,74 @@ describe('RunService', () => {
     expect(runStepRepository.create).not.toHaveBeenCalled();
   });
 
+  it('rejects business line ownership mismatch before advancing planned tasks', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('planned'),
+        businessLineId: 'business_line_product',
+      }),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const processTemplateSelector = {
+      select: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const businessLineContextProvider = {
+      getWorkspace: vi.fn(),
+      resolveOwnership: vi.fn().mockResolvedValue({
+        status: 'mismatch',
+        explicitBusinessLineId: 'business_line_other',
+        resolvedBusinessLineId: 'business_line_product',
+        resolvedSource: 'task',
+        taskId: 'task_1',
+        runId: null,
+      }),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      buildArtifactRepositoryMock() as never,
+      aiConfigService as never,
+      {} as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      null,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      null,
+      null,
+      businessLineContextProvider as never,
+    );
+
+    await expect(service.trigger({
+      taskId: 'task_1',
+      businessLineId: 'business_line_other',
+      type: 'draft',
+      instructions: 'Please draft this',
+    })).rejects.toThrow('Business line target does not match task ownership');
+    expect(taskService.transitionIfAllowed).not.toHaveBeenCalled();
+    expect(runRepository.create).not.toHaveBeenCalled();
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(businessLineContextProvider.getWorkspace).not.toHaveBeenCalled();
+  });
+
   it('returns post-run business line review options from completed run detail', async () => {
     const runRepository = {
       list: vi.fn(),

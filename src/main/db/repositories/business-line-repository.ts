@@ -5,6 +5,9 @@ import type {
   BusinessLineActionLink,
   BusinessLineActionStatus,
   BusinessLineKind,
+  BusinessLineOwnershipInput,
+  BusinessLineOwnershipResolution,
+  BusinessLineOwnershipSource,
   BusinessLineRecord,
   BusinessLineRecordType,
   BusinessLineReview,
@@ -51,6 +54,10 @@ type BusinessLineSkillRevisionRow = typeof businessLineSkillRevisions.$inferSele
 type SourceContextRow = typeof sourceContexts.$inferSelect;
 type ArtifactRow = typeof artifacts.$inferSelect;
 type TaskFileRow = typeof taskFiles.$inferSelect;
+
+type ResolvedOwnershipCandidate = Extract<BusinessLineOwnershipResolution, { status: 'resolved' }>;
+type MissingOwnershipCandidate = Extract<BusinessLineOwnershipResolution, { status: 'missing' }>;
+type OwnershipCandidate = ResolvedOwnershipCandidate | MissingOwnershipCandidate | null;
 
 function parseJsonArray(value: string | null | undefined): string[] {
   try {
@@ -442,7 +449,116 @@ export class BusinessLineRepository {
     return this.listActionTaskIds(businessLineId);
   }
 
+  async resolveBusinessLineOwnership(input: BusinessLineOwnershipInput): Promise<BusinessLineOwnershipResolution> {
+    const explicitBusinessLineId = input.explicitBusinessLineId?.trim() || null;
+    const explicitLine = explicitBusinessLineId ? await this.findById(explicitBusinessLineId) : null;
+    if (explicitBusinessLineId && !explicitLine) {
+      return {
+        status: 'missing',
+        reason: 'business_line_not_found',
+        missingBusinessLineId: explicitBusinessLineId,
+      };
+    }
+
+    const carrier = await this.resolveCarrierOwnership(input, explicitBusinessLineId);
+    if (carrier?.status === 'missing') return carrier;
+    if (explicitBusinessLineId) {
+      if (carrier?.status === 'resolved' && carrier.businessLineId !== explicitBusinessLineId) {
+        return {
+          status: 'mismatch',
+          explicitBusinessLineId,
+          resolvedBusinessLineId: carrier.businessLineId,
+          resolvedSource: carrier.source,
+          taskId: carrier.taskId,
+          runId: carrier.runId,
+          decisionId: carrier.decisionId,
+          sourceContextId: carrier.sourceContextId,
+          artifactId: carrier.artifactId,
+          taskFileId: carrier.taskFileId,
+        };
+      }
+      return this.resolvedOwnership({
+        businessLineId: explicitBusinessLineId,
+        explicitBusinessLineId,
+        source: 'explicit',
+        legacy: Boolean(explicitLine?.legacyTaskId),
+        taskId: carrier?.status === 'resolved' ? carrier.taskId : input.taskId?.trim() || null,
+        runId: carrier?.status === 'resolved' ? carrier.runId : input.runId?.trim() || null,
+        decisionId: carrier?.status === 'resolved' ? carrier.decisionId : input.decisionId?.trim() || null,
+        sourceContextId: carrier?.status === 'resolved' ? carrier.sourceContextId : input.sourceContextId?.trim() || null,
+        artifactId: carrier?.status === 'resolved' ? carrier.artifactId : input.artifactId?.trim() || null,
+        taskFileId: carrier?.status === 'resolved' ? carrier.taskFileId : input.taskFileId?.trim() || null,
+      });
+    }
+
+    if (carrier?.status === 'resolved') return carrier;
+    if (input.allowOneOff) {
+      return {
+        status: 'one_off',
+        businessLineId: null,
+        legacy: false,
+      };
+    }
+
+    return {
+      status: 'missing',
+      reason: 'no_business_line_owner',
+      taskId: input.taskId?.trim() || null,
+      runId: input.runId?.trim() || null,
+      decisionId: input.decisionId?.trim() || null,
+      sourceContextId: input.sourceContextId?.trim() || null,
+      artifactId: input.artifactId?.trim() || null,
+      taskFileId: input.taskFileId?.trim() || null,
+    };
+  }
+
   async resolveBusinessLineForTask(taskId: string): Promise<string | null> {
+    const resolved = await this.resolveBusinessLineOwnership({ taskId });
+    return resolved.status === 'resolved' ? resolved.businessLineId : null;
+  }
+
+  async resolveBusinessLineForRun(runId: string): Promise<string | null> {
+    const resolved = await this.resolveBusinessLineOwnership({ runId });
+    return resolved.status === 'resolved' ? resolved.businessLineId : null;
+  }
+
+  async resolveBusinessLineForDecision(decisionId: string): Promise<string | null> {
+    const resolved = await this.resolveBusinessLineOwnership({ decisionId });
+    return resolved.status === 'resolved' ? resolved.businessLineId : null;
+  }
+
+  async resolveBusinessLineForSource(sourceContextId: string): Promise<string | null> {
+    const resolved = await this.resolveBusinessLineOwnership({ sourceContextId });
+    return resolved.status === 'resolved' ? resolved.businessLineId : null;
+  }
+
+  async resolveBusinessLineForArtifact(artifactId: string): Promise<string | null> {
+    const resolved = await this.resolveBusinessLineOwnership({ artifactId });
+    return resolved.status === 'resolved' ? resolved.businessLineId : null;
+  }
+
+  async resolveBusinessLineForTaskFile(taskFileId: string): Promise<string | null> {
+    const resolved = await this.resolveBusinessLineOwnership({ taskFileId });
+    return resolved.status === 'resolved' ? resolved.businessLineId : null;
+  }
+
+  private async resolveCarrierOwnership(
+    input: BusinessLineOwnershipInput,
+    explicitBusinessLineId: string | null,
+  ): Promise<OwnershipCandidate> {
+    if (input.taskFileId?.trim()) return this.resolveTaskFileOwnership(input.taskFileId.trim(), explicitBusinessLineId);
+    if (input.artifactId?.trim()) return this.resolveArtifactOwnership(input.artifactId.trim(), explicitBusinessLineId);
+    if (input.sourceContextId?.trim()) return this.resolveSourceContextOwnership(input.sourceContextId.trim(), explicitBusinessLineId);
+    if (input.decisionId?.trim()) return this.resolveDecisionOwnership(input.decisionId.trim(), explicitBusinessLineId);
+    if (input.runId?.trim()) return this.resolveRunOwnership(input.runId.trim(), explicitBusinessLineId);
+    if (input.taskId?.trim()) return this.resolveTaskOwnership(input.taskId.trim(), explicitBusinessLineId);
+    return null;
+  }
+
+  private async resolveTaskOwnership(
+    taskId: string,
+    explicitBusinessLineId: string | null,
+  ): Promise<OwnershipCandidate> {
     const db = initDatabase();
     let currentTaskId: string | null = taskId;
     const visited = new Set<string>();
@@ -450,82 +566,258 @@ export class BusinessLineRepository {
     while (currentTaskId && !visited.has(currentTaskId)) {
       visited.add(currentTaskId);
       const [task] = await db.select().from(tasks).where(eq(tasks.id, currentTaskId)).limit(1);
-      if (!task) return null;
-      if (task.businessLineId) return task.businessLineId;
+      if (!task) {
+        return {
+          status: 'missing',
+          reason: 'task_not_found',
+          taskId,
+        };
+      }
+      if (task.businessLineId) {
+        return this.resolvedOwnership({
+          businessLineId: task.businessLineId,
+          explicitBusinessLineId,
+          source: currentTaskId === taskId ? 'task' : 'task_parent',
+          taskId,
+        });
+      }
       const [legacyLine] = await db
         .select()
         .from(businessLines)
         .where(eq(businessLines.legacyTaskId, currentTaskId))
         .limit(1);
-      if (legacyLine) return legacyLine.id;
+      if (legacyLine) {
+        return this.resolvedOwnership({
+          businessLineId: legacyLine.id,
+          explicitBusinessLineId,
+          source: 'legacy_task',
+          legacy: true,
+          taskId,
+        });
+      }
       currentTaskId = task.parentTaskId;
     }
 
     return null;
   }
 
-  async resolveBusinessLineForRun(runId: string): Promise<string | null> {
+  private async resolveRunOwnership(
+    runId: string,
+    explicitBusinessLineId: string | null,
+  ): Promise<OwnershipCandidate> {
     const db = initDatabase();
     const [run] = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
-    if (!run) return null;
-    if (run.businessLineId) return run.businessLineId;
-    return this.resolveBusinessLineForTask(run.taskId);
+    if (!run) {
+      return {
+        status: 'missing',
+        reason: 'run_not_found',
+        runId,
+      };
+    }
+    if (run.businessLineId) {
+      return this.resolvedOwnership({
+        businessLineId: run.businessLineId,
+        explicitBusinessLineId,
+        source: 'run',
+        taskId: run.taskId,
+        runId,
+      });
+    }
+    return this.retargetOwnershipSource(
+      await this.resolveTaskOwnership(run.taskId, explicitBusinessLineId),
+      'run_task',
+      { runId },
+    );
   }
 
-  async resolveBusinessLineForDecision(decisionId: string): Promise<string | null> {
+  private async resolveDecisionOwnership(
+    decisionId: string,
+    explicitBusinessLineId: string | null,
+  ): Promise<OwnershipCandidate> {
     const db = initDatabase();
     const [decision] = await db
       .select()
       .from(decisionRequests)
       .where(eq(decisionRequests.id, decisionId))
       .limit(1);
-    if (!decision) return null;
-    if (decision.businessLineId) return decision.businessLineId;
-    return decision.taskId ? this.resolveBusinessLineForTask(decision.taskId) : null;
+    if (!decision) {
+      return {
+        status: 'missing',
+        reason: 'decision_not_found',
+        decisionId,
+      };
+    }
+    if (decision.businessLineId) {
+      return this.resolvedOwnership({
+        businessLineId: decision.businessLineId,
+        explicitBusinessLineId,
+        source: 'decision',
+        taskId: decision.taskId,
+        decisionId,
+      });
+    }
+    if (!decision.taskId) return null;
+    return this.retargetOwnershipSource(
+      await this.resolveTaskOwnership(decision.taskId, explicitBusinessLineId),
+      'decision_task',
+      { decisionId },
+    );
   }
 
-  async resolveBusinessLineForSource(sourceContextId: string): Promise<string | null> {
+  private async resolveSourceContextOwnership(
+    sourceContextId: string,
+    explicitBusinessLineId: string | null,
+  ): Promise<OwnershipCandidate> {
     const db = initDatabase();
     const [source] = await db
       .select()
       .from(sourceContexts)
       .where(eq(sourceContexts.id, sourceContextId))
       .limit(1);
-    if (!source) return null;
-    if (source.businessLineId) return source.businessLineId;
-    if (source.runId) {
-      const businessLineId = await this.resolveBusinessLineForRun(source.runId);
-      if (businessLineId) return businessLineId;
+    if (!source) {
+      return {
+        status: 'missing',
+        reason: 'source_context_not_found',
+        sourceContextId,
+      };
     }
-    return this.resolveBusinessLineForTask(source.taskId);
+    if (source.businessLineId) {
+      return this.resolvedOwnership({
+        businessLineId: source.businessLineId,
+        explicitBusinessLineId,
+        source: 'source_context',
+        taskId: source.taskId,
+        runId: source.runId,
+        sourceContextId,
+      });
+    }
+    if (source.runId) {
+      const runOwnership = await this.resolveRunOwnership(source.runId, explicitBusinessLineId);
+      if (runOwnership?.status === 'resolved') {
+        return this.retargetOwnershipSource(runOwnership, 'source_context_run', { sourceContextId });
+      }
+      if (runOwnership?.status === 'missing') return runOwnership;
+    }
+    return this.retargetOwnershipSource(
+      await this.resolveTaskOwnership(source.taskId, explicitBusinessLineId),
+      'source_context_task',
+      { sourceContextId },
+    );
   }
 
-  async resolveBusinessLineForArtifact(artifactId: string): Promise<string | null> {
+  private async resolveArtifactOwnership(
+    artifactId: string,
+    explicitBusinessLineId: string | null,
+  ): Promise<OwnershipCandidate> {
     const db = initDatabase();
     const [artifact] = await db
       .select()
       .from(artifacts)
       .where(eq(artifacts.id, artifactId))
       .limit(1);
-    if (!artifact) return null;
-    if (artifact.businessLineId) return artifact.businessLineId;
-    if (artifact.sourceType === 'run') {
-      const businessLineId = await this.resolveBusinessLineForRun(artifact.sourceId);
-      if (businessLineId) return businessLineId;
+    if (!artifact) {
+      return {
+        status: 'missing',
+        reason: 'artifact_not_found',
+        artifactId,
+      };
     }
-    return this.resolveBusinessLineForTask(artifact.taskId);
+    if (artifact.businessLineId) {
+      return this.resolvedOwnership({
+        businessLineId: artifact.businessLineId,
+        explicitBusinessLineId,
+        source: 'artifact',
+        taskId: artifact.taskId,
+        runId: artifact.sourceType === 'run' ? artifact.sourceId : null,
+        artifactId,
+      });
+    }
+    if (artifact.sourceType === 'run') {
+      const runOwnership = await this.resolveRunOwnership(artifact.sourceId, explicitBusinessLineId);
+      if (runOwnership?.status === 'resolved') {
+        return this.retargetOwnershipSource(runOwnership, 'artifact_run', { artifactId });
+      }
+      if (runOwnership?.status === 'missing') return runOwnership;
+    }
+    return this.retargetOwnershipSource(
+      await this.resolveTaskOwnership(artifact.taskId, explicitBusinessLineId),
+      'artifact_task',
+      { artifactId },
+    );
   }
 
-  async resolveBusinessLineForTaskFile(taskFileId: string): Promise<string | null> {
+  private async resolveTaskFileOwnership(
+    taskFileId: string,
+    explicitBusinessLineId: string | null,
+  ): Promise<OwnershipCandidate> {
     const db = initDatabase();
     const [taskFile] = await db
       .select()
       .from(taskFiles)
       .where(eq(taskFiles.id, taskFileId))
       .limit(1);
-    if (!taskFile) return null;
-    if (taskFile.businessLineId) return taskFile.businessLineId;
-    return this.resolveBusinessLineForTask(taskFile.taskId);
+    if (!taskFile) {
+      return {
+        status: 'missing',
+        reason: 'task_file_not_found',
+        taskFileId,
+      };
+    }
+    if (taskFile.businessLineId) {
+      return this.resolvedOwnership({
+        businessLineId: taskFile.businessLineId,
+        explicitBusinessLineId,
+        source: 'task_file',
+        taskId: taskFile.taskId,
+        taskFileId,
+      });
+    }
+    return this.retargetOwnershipSource(
+      await this.resolveTaskOwnership(taskFile.taskId, explicitBusinessLineId),
+      'task_file_task',
+      { taskFileId },
+    );
+  }
+
+  private async resolvedOwnership(params: {
+    businessLineId: string;
+    explicitBusinessLineId?: string | null;
+    source: BusinessLineOwnershipSource;
+    legacy?: boolean;
+    taskId?: string | null;
+    runId?: string | null;
+    decisionId?: string | null;
+    sourceContextId?: string | null;
+    artifactId?: string | null;
+    taskFileId?: string | null;
+  }): Promise<ResolvedOwnershipCandidate> {
+    const line = await this.findById(params.businessLineId);
+    return {
+      status: 'resolved',
+      businessLineId: params.businessLineId,
+      source: params.source,
+      legacy: params.legacy ?? Boolean(line?.legacyTaskId),
+      explicitBusinessLineId: params.explicitBusinessLineId ?? null,
+      taskId: params.taskId ?? null,
+      runId: params.runId ?? null,
+      decisionId: params.decisionId ?? null,
+      sourceContextId: params.sourceContextId ?? null,
+      artifactId: params.artifactId ?? null,
+      taskFileId: params.taskFileId ?? null,
+    };
+  }
+
+  private retargetOwnershipSource(
+    candidate: OwnershipCandidate,
+    source: BusinessLineOwnershipSource,
+    ids: Partial<Pick<ResolvedOwnershipCandidate, 'artifactId' | 'decisionId' | 'runId' | 'sourceContextId' | 'taskFileId'>>,
+  ): OwnershipCandidate {
+    if (candidate?.status !== 'resolved') return candidate;
+    return {
+      ...candidate,
+      source,
+      ...ids,
+    };
   }
 
   async createActionLink(input: {

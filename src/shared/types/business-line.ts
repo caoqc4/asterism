@@ -56,6 +56,94 @@ export type BusinessLine = {
   updatedAt: string;
 };
 
+export type BusinessLineOwnershipSource =
+  | 'explicit'
+  | 'task'
+  | 'task_parent'
+  | 'legacy_task'
+  | 'run'
+  | 'run_task'
+  | 'decision'
+  | 'decision_task'
+  | 'source_context'
+  | 'source_context_run'
+  | 'source_context_task'
+  | 'artifact'
+  | 'artifact_run'
+  | 'artifact_task'
+  | 'task_file'
+  | 'task_file_task';
+
+export type BusinessLineOwnershipInput = {
+  explicitBusinessLineId?: string | null;
+  taskId?: string | null;
+  runId?: string | null;
+  decisionId?: string | null;
+  sourceContextId?: string | null;
+  artifactId?: string | null;
+  taskFileId?: string | null;
+  allowOneOff?: boolean;
+};
+
+export type ResolvedBusinessLineOwnership = {
+  status: 'resolved';
+  businessLineId: string;
+  source: BusinessLineOwnershipSource;
+  legacy: boolean;
+  explicitBusinessLineId: string | null;
+  taskId: string | null;
+  runId: string | null;
+  decisionId: string | null;
+  sourceContextId: string | null;
+  artifactId: string | null;
+  taskFileId: string | null;
+};
+
+export type BusinessLineOwnershipMismatch = {
+  status: 'mismatch';
+  explicitBusinessLineId: string;
+  resolvedBusinessLineId: string;
+  resolvedSource: BusinessLineOwnershipSource;
+  taskId: string | null;
+  runId: string | null;
+  decisionId?: string | null;
+  sourceContextId?: string | null;
+  artifactId?: string | null;
+  taskFileId?: string | null;
+};
+
+export type MissingBusinessLineOwnership = {
+  status: 'missing';
+  reason:
+    | 'business_line_not_found'
+    | 'task_not_found'
+    | 'run_not_found'
+    | 'decision_not_found'
+    | 'source_context_not_found'
+    | 'artifact_not_found'
+    | 'task_file_not_found'
+    | 'no_business_line_owner';
+  missingBusinessLineId?: string | null;
+  taskId?: string | null;
+  runId?: string | null;
+  decisionId?: string | null;
+  sourceContextId?: string | null;
+  artifactId?: string | null;
+  taskFileId?: string | null;
+};
+
+export type OneOffBusinessLineOwnership = {
+  status: 'one_off';
+  businessLineId: null;
+  legacy: false;
+};
+
+export type BusinessLineOwnershipResolution =
+  | ResolvedBusinessLineOwnership
+  | BusinessLineOwnershipMismatch
+  | MissingBusinessLineOwnership
+  | OneOffBusinessLineOwnership;
+
 export type BusinessLineRecord = {
   id: string;
   type: BusinessLineRecordType;

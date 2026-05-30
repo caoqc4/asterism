@@ -38,7 +38,11 @@ import {
 import { appendBusinessLineContextPackToPrompt } from '../../../shared/business-line-context-pack.js';
 import { buildBusinessLinePostRunReviewOptions } from '../../../shared/business-line-post-run-review.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
-import type { BusinessLineWorkspace } from '../../../shared/types/business-line.js';
+import type {
+  BusinessLineOwnershipInput,
+  BusinessLineOwnershipResolution,
+  BusinessLineWorkspace,
+} from '../../../shared/types/business-line.js';
 import type {
   CreateRunInput,
   RunDetailRecord,
@@ -81,6 +85,7 @@ type ApplicableWorkHabits = {
 
 type BusinessLineContextProvider = {
   getWorkspace(businessLineId: string): Promise<BusinessLineWorkspace | null>;
+  resolveOwnership?(input: BusinessLineOwnershipInput): Promise<BusinessLineOwnershipResolution>;
 };
 
 function formatAgentApiExecutionPromotionReadinessInput(params: {
@@ -237,7 +242,24 @@ export class RunService {
       throw new Error(startVerification.detail);
     }
 
-    const businessLineId = input.businessLineId ?? task.businessLineId ?? null;
+    const explicitBusinessLineId = input.businessLineId ?? null;
+    let businessLineId = explicitBusinessLineId || task.businessLineId || null;
+    if (this.businessLineContextProvider?.resolveOwnership) {
+      const ownership = await this.businessLineContextProvider.resolveOwnership({
+        explicitBusinessLineId,
+        taskId: task.id,
+        allowOneOff: !explicitBusinessLineId,
+      });
+      if (ownership.status === 'mismatch') {
+        throw new Error(
+          `Business line target does not match task ownership: ${ownership.explicitBusinessLineId} vs ${ownership.resolvedBusinessLineId}`,
+        );
+      }
+      if (ownership.status === 'missing' && explicitBusinessLineId) {
+        throw new Error(`Business line not found: ${explicitBusinessLineId}`);
+      }
+      businessLineId = ownership.status === 'resolved' ? ownership.businessLineId : null;
+    }
     const businessLineWorkspace = businessLineId && this.businessLineContextProvider
       ? await this.businessLineContextProvider.getWorkspace(businessLineId)
       : null;

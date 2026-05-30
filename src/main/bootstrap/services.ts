@@ -174,6 +174,7 @@ const taskplaneWritebackDispatchService = new TaskplaneWritebackDispatchService(
   decisionService,
   taskFileRepository,
   artifactRepository,
+  businessLineService,
 );
 const workHabitService = new WorkHabitService(workHabitRepository);
 const runService = new RunService(

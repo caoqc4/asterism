@@ -20,6 +20,10 @@ import type { TaskService } from '../task/task-service.js';
 import type { DecisionService } from '../decision/decision-service.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { TaskFileRepository } from '../../db/repositories/task-file-repository.js';
+import type {
+  BusinessLineOwnershipInput,
+  BusinessLineOwnershipResolution,
+} from '../../../shared/types/business-line.js';
 
 export type TaskplaneWritebackTaskServicePort = Pick<
   TaskService,
@@ -38,6 +42,9 @@ export type TaskplaneWritebackDecisionServicePort = Pick<DecisionService, 'creat
 
 export type TaskplaneWritebackTaskFileRepositoryPort = Pick<TaskFileRepository, 'create' | 'findById' | 'update'>;
 export type TaskplaneWritebackArtifactRepositoryPort = Pick<ArtifactRepository, 'createNoteFromRun' | 'createPatchFromRun'>;
+export type TaskplaneWritebackBusinessLineOwnershipResolverPort = {
+  resolveOwnership(input: BusinessLineOwnershipInput): Promise<BusinessLineOwnershipResolution>;
+};
 
 export class TaskplaneWritebackDispatchService {
   constructor(
@@ -45,6 +52,7 @@ export class TaskplaneWritebackDispatchService {
     private readonly decisionService: TaskplaneWritebackDecisionServicePort,
     private readonly taskFileRepository: TaskplaneWritebackTaskFileRepositoryPort,
     private readonly artifactRepository: TaskplaneWritebackArtifactRepositoryPort,
+    private readonly businessLineOwnershipResolver: TaskplaneWritebackBusinessLineOwnershipResolverPort | null = null,
   ) {}
 
   async dispatch(params: {
@@ -83,6 +91,11 @@ export class TaskplaneWritebackDispatchService {
         };
       }
     }
+    const ownershipBlock = await this.evaluateBusinessLineOwnershipBoundary({
+      plan: params.plan,
+      taskId: params.taskId,
+    });
+    if (ownershipBlock) return ownershipBlock;
 
     return dispatchTaskplaneWritebackApplyPlan({
       plan: params.plan,
@@ -108,6 +121,34 @@ export class TaskplaneWritebackDispatchService {
         updateTask: (input): Promise<TaskListItemRecord> => this.taskService.update(input),
       },
     });
+  }
+
+  private async evaluateBusinessLineOwnershipBoundary(params: {
+    plan: TaskplaneWritebackApplyPlan;
+    taskId: string;
+  }): Promise<TaskplaneWritebackDispatchResult | null> {
+    if (!this.businessLineOwnershipResolver) return null;
+    const explicitBusinessLineId = getPlanBusinessLineId(params.plan);
+    const ownership = await this.businessLineOwnershipResolver.resolveOwnership({
+      explicitBusinessLineId,
+      taskId: params.taskId,
+      allowOneOff: !explicitBusinessLineId,
+    });
+    if (ownership.status === 'mismatch') {
+      return {
+        action: params.plan.action,
+        message: 'Write Intent 已暂停：业务线目标与当前任务归属不一致。',
+        status: 'blocked',
+      };
+    }
+    if (ownership.status === 'missing' && explicitBusinessLineId) {
+      return {
+        action: params.plan.action,
+        message: 'Write Intent 已暂停：业务线不存在。',
+        status: 'blocked',
+      };
+    }
+    return null;
   }
 
   private async createSubtasks(
@@ -238,4 +279,18 @@ function getPlanTargetTaskId(plan: TaskplaneWritebackApplyPlan): string | null |
   if (plan.action === 'task_file.update') return plan.taskId;
   if (plan.action === 'subtask.create_many') return plan.input.parentTaskId;
   return plan.input.taskId;
+}
+
+function getPlanBusinessLineId(plan: TaskplaneWritebackApplyPlan): string | null {
+  if (plan.action === 'subtask.create_many') return null;
+  if (plan.action === 'task_file.update') {
+    const timelineBusinessLineId = plan.timeline.payload.businessLineId;
+    return typeof timelineBusinessLineId === 'string' && timelineBusinessLineId.trim()
+      ? timelineBusinessLineId
+      : null;
+  }
+  if ('businessLineId' in plan.input) {
+    return plan.input.businessLineId?.trim() || null;
+  }
+  return null;
 }

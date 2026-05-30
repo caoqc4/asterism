@@ -548,6 +548,61 @@ describe('TaskplaneWritebackDispatchService', () => {
       },
     });
   });
+
+  it('blocks writeback when explicit business line ownership mismatches the task carrier', async () => {
+    const taskService = {
+      create: vi.fn(),
+      createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
+      recordTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+      update: vi.fn(),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const taskFiles = taskFileRepository();
+    const ownershipResolver = {
+      resolveOwnership: vi.fn().mockResolvedValue({
+        status: 'mismatch',
+        explicitBusinessLineId: 'business_line_other',
+        resolvedBusinessLineId: 'business_line_product',
+        resolvedSource: 'task',
+        taskId: 'task_1',
+        runId: null,
+      }),
+    };
+    const service = new TaskplaneWritebackDispatchService(
+      taskService,
+      decisionService,
+      taskFiles,
+      artifactRepository(),
+      ownershipResolver,
+    );
+    const plan = sourceContextPlan();
+    plan.input.businessLineId = 'business_line_other';
+
+    const result = await service.dispatch({
+      taskId: 'task_1',
+      plan,
+    });
+
+    expect(result).toMatchObject({
+      action: 'source_context.create',
+      message: 'Write Intent 已暂停：业务线目标与当前任务归属不一致。',
+      status: 'blocked',
+    });
+    expect(ownershipResolver.resolveOwnership).toHaveBeenCalledWith({
+      explicitBusinessLineId: 'business_line_other',
+      taskId: 'task_1',
+      allowOneOff: false,
+    });
+    expect(taskService.createSourceContext).not.toHaveBeenCalled();
+    expect(taskService.recordTimelineEvent).not.toHaveBeenCalled();
+  });
 });
 
 function taskFileRepository() {

@@ -868,25 +868,80 @@ describe('BusinessLineService', () => {
       }),
     ]));
     await expect(businessLineRepository.resolveBusinessLineForTask(ownedTask.id)).resolves.toBe(created.id);
+    await expect(businessLineRepository.resolveBusinessLineOwnership({ taskId: ownedTask.id })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: created.id,
+      legacy: false,
+      source: 'task',
+      taskId: ownedTask.id,
+    });
+    await expect(businessLineRepository.resolveBusinessLineOwnership({
+      explicitBusinessLineId: created.id,
+    })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: created.id,
+      source: 'explicit',
+    });
+    await expect(businessLineRepository.resolveBusinessLineOwnership({
+      allowOneOff: true,
+    })).resolves.toMatchObject({
+      status: 'one_off',
+      businessLineId: null,
+    });
+    await expect(businessLineRepository.resolveBusinessLineOwnership({
+      explicitBusinessLineId: 'missing_business_line',
+    })).resolves.toMatchObject({
+      status: 'missing',
+      reason: 'business_line_not_found',
+      missingBusinessLineId: 'missing_business_line',
+    });
+    const other = await service.create({
+      title: 'Other ownership line',
+      goal: 'Reject mismatched carriers',
+      kind: 'software_product',
+    });
+    await expect(businessLineRepository.resolveBusinessLineOwnership({
+      explicitBusinessLineId: other.id,
+      taskId: ownedTask.id,
+    })).resolves.toMatchObject({
+      status: 'mismatch',
+      explicitBusinessLineId: other.id,
+      resolvedBusinessLineId: created.id,
+      resolvedSource: 'task',
+      taskId: ownedTask.id,
+    });
 
     const runRepository = new RunRepository();
     const run = await runRepository.create({
       taskId: ownedTask.id,
-      businessLineId: created.id,
       type: 'draft',
     });
-    expect(run.businessLineId).toBe(created.id);
+    expect(run.businessLineId).toBeNull();
     await expect(businessLineRepository.resolveBusinessLineForRun(run.id)).resolves.toBe(created.id);
+    await expect(businessLineRepository.resolveBusinessLineOwnership({ runId: run.id })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: created.id,
+      source: 'run_task',
+      taskId: ownedTask.id,
+      runId: run.id,
+    });
 
     const decision = await new DecisionRepository().create({
-      businessLineId: created.id,
+      taskId: ownedTask.id,
       title: 'Confirm canonical business-line policy',
       scope: 'business_line',
       kind: 'policy_change',
       sourceType: 'system',
     });
-    expect(decision.businessLineId).toBe(created.id);
+    expect(decision.businessLineId).toBeNull();
     await expect(businessLineRepository.resolveBusinessLineForDecision(decision.id)).resolves.toBe(created.id);
+    await expect(businessLineRepository.resolveBusinessLineOwnership({ decisionId: decision.id })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: created.id,
+      source: 'decision_task',
+      taskId: ownedTask.id,
+      decisionId: decision.id,
+    });
 
     const source = await new SourceContextRepository().create({
       taskId: ownedTask.id,
@@ -895,6 +950,13 @@ describe('BusinessLineService', () => {
       runId: run.id,
     });
     await expect(businessLineRepository.resolveBusinessLineForSource(source.id)).resolves.toBe(created.id);
+    await expect(businessLineRepository.resolveBusinessLineOwnership({ sourceContextId: source.id })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: created.id,
+      source: 'source_context_run',
+      sourceContextId: source.id,
+      runId: run.id,
+    });
 
     const artifact = await new ArtifactRepository().createFromRun({
       taskId: ownedTask.id,
@@ -903,6 +965,13 @@ describe('BusinessLineService', () => {
       content: 'Owned artifact',
     });
     await expect(businessLineRepository.resolveBusinessLineForArtifact(artifact.id)).resolves.toBe(created.id);
+    await expect(businessLineRepository.resolveBusinessLineOwnership({ artifactId: artifact.id })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: created.id,
+      source: 'artifact_run',
+      artifactId: artifact.id,
+      runId: run.id,
+    });
 
     const taskFile = await new TaskFileRepository().create({
       taskId: ownedTask.id,
@@ -911,6 +980,13 @@ describe('BusinessLineService', () => {
       content: 'Owned file',
     });
     await expect(businessLineRepository.resolveBusinessLineForTaskFile(taskFile.id)).resolves.toBe(created.id);
+    await expect(businessLineRepository.resolveBusinessLineOwnership({ taskFileId: taskFile.id })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: created.id,
+      source: 'task_file_task',
+      taskFileId: taskFile.id,
+      taskId: ownedTask.id,
+    });
   });
 
   it('projects business memory records with provenance and only includes marked records in context', async () => {
@@ -1098,12 +1174,27 @@ describe('BusinessLineService', () => {
     });
 
     await expect(businessLineRepository.resolveBusinessLineForTask(childTask.id)).resolves.toBe(line!.id);
+    await expect(businessLineRepository.resolveBusinessLineOwnership({ taskId: childTask.id })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: line!.id,
+      legacy: true,
+      source: 'legacy_task',
+      taskId: childTask.id,
+    });
 
     const run = await new RunRepository().create({
       taskId: childTask.id,
       type: 'draft',
     });
     await expect(businessLineRepository.resolveBusinessLineForRun(run.id)).resolves.toBe(line!.id);
+    await expect(businessLineRepository.resolveBusinessLineOwnership({ runId: run.id })).resolves.toMatchObject({
+      status: 'resolved',
+      businessLineId: line!.id,
+      legacy: true,
+      source: 'run_task',
+      taskId: childTask.id,
+      runId: run.id,
+    });
 
     const source = await new SourceContextRepository().create({
       taskId: childTask.id,

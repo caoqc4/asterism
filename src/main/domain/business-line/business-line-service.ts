@@ -12,6 +12,8 @@ import type {
   BusinessLineCreationTemplate,
   BusinessLineContextPack,
   BusinessLineListItem,
+  BusinessLineOwnershipInput,
+  BusinessLineOwnershipResolution,
   BusinessLineRecord,
   BusinessLineSensor,
   BusinessLineSkillRevision,
@@ -337,8 +339,14 @@ export class BusinessLineService {
       .slice(0, 8);
   }
 
+  async resolveOwnership(input: BusinessLineOwnershipInput): Promise<BusinessLineOwnershipResolution> {
+    return this.businessLineRepository.resolveBusinessLineOwnership(input);
+  }
+
   async recordReview(input: RecordBusinessLineReviewInput): Promise<BusinessLineWorkspace> {
-    const businessLine = await this.businessLineRepository.findById(input.businessLineId);
+    const ownership = await this.resolveOwnership({ explicitBusinessLineId: input.businessLineId });
+    if (ownership.status !== 'resolved') throw new Error(`Business line not found: ${input.businessLineId}`);
+    const businessLine = await this.businessLineRepository.findById(ownership.businessLineId);
     if (!businessLine) throw new Error(`Business line not found: ${input.businessLineId}`);
     const review = await this.businessLineRepository.createReview(input);
     for (const recordSuggestion of input.recordSuggestions ?? []) {
