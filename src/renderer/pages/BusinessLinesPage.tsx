@@ -495,6 +495,21 @@ function LearningTab({ workspace, onWorkspace }: {
     }
   }
 
+  async function updateRevision(action: 'accept' | 'reject' | 'disable' | 'rollback', revisionId: string) {
+    if (action === 'accept' && window.api?.acceptBusinessLineSkillRevision) {
+      onWorkspace(await window.api.acceptBusinessLineSkillRevision({ revisionId }));
+    }
+    if (action === 'reject' && window.api?.rejectBusinessLineSkillRevision) {
+      onWorkspace(await window.api.rejectBusinessLineSkillRevision({ revisionId }));
+    }
+    if (action === 'disable' && window.api?.disableBusinessLineSkillRevision) {
+      onWorkspace(await window.api.disableBusinessLineSkillRevision({ revisionId }));
+    }
+    if (action === 'rollback' && window.api?.rollbackBusinessLineSkillRevision) {
+      onWorkspace(await window.api.rollbackBusinessLineSkillRevision({ revisionId }));
+    }
+  }
+
   return (
     <div className="business-grid">
       <section className="business-section wide">
@@ -520,26 +535,58 @@ function LearningTab({ workspace, onWorkspace }: {
         <div className="business-record-list">
           {workspace.learning.skillRevisions.map((revision) => (
             <div key={revision.id} className="business-record">
-              <span className="tag">{revision.status}</span>
+              <div className="business-record-header">
+                <span className="tag">{revision.status}</span>
+                {revision.requiresDecision && <span className="tag decision">Decision</span>}
+                {revision.needsReview && <span className="tag waiting">review due</span>}
+                {revision.isExpired && <span className="tag muted-tag">expired</span>}
+              </div>
               <p>{revision.nextContent}</p>
               <small>{revision.changeReason}</small>
+              <small>
+                Source review: {revision.provenance?.sourceReviewSummary ?? revision.sourceReviewId}
+                {' · '}
+                Scope: {revision.scopePath}
+              </small>
+              {revision.contentDiff && <small>Diff: {revision.contentDiff}</small>}
+              {revision.approvalSourceType && (
+                <small>
+                  Approval: {revision.approvalSourceType}
+                  {revision.approvalSourceId ? ` · ${revision.approvalSourceId}` : ''}
+                  {revision.approvedBy ? ` · ${revision.approvedBy}` : ''}
+                </small>
+              )}
+              {revision.rollbackTargetRevisionId && <small>Rollback target: {revision.rollbackTargetRevisionId}</small>}
+              {(revision.reviewAfterAt || revision.expiresAt) && (
+                <small>
+                  {revision.reviewAfterAt ? `Review after ${revision.reviewAfterAt}` : ''}
+                  {revision.reviewAfterAt && revision.expiresAt ? ' · ' : ''}
+                  {revision.expiresAt ? `Expires ${revision.expiresAt}` : ''}
+                </small>
+              )}
               {revision.requiresDecision && revision.approvalDecisionStatus !== 'approved' && (
                 <small>Decision required before activation: {revision.approvalDecisionStatus ?? 'pending'}</small>
               )}
               {revision.status === 'proposed' && (
-                <button
-                  className="btn sm"
-                  disabled={revision.requiresDecision && revision.approvalDecisionStatus !== 'approved'}
-                  title={revision.requiresDecision && revision.approvalDecisionStatus !== 'approved'
-                    ? '需要先批准关联 Decision'
-                    : '接受这条业务线 SOP revision'}
-                  onClick={async () => {
-                    if (!window.api?.acceptBusinessLineSkillRevision) return;
-                    onWorkspace(await window.api.acceptBusinessLineSkillRevision({ revisionId: revision.id }));
-                  }}
-                >
-                  接受
-                </button>
+                <div className="business-action-buttons">
+                  <button
+                    className="btn sm"
+                    disabled={revision.isExpired || (revision.requiresDecision && revision.approvalDecisionStatus !== 'approved')}
+                    title={revision.requiresDecision && revision.approvalDecisionStatus !== 'approved'
+                      ? '需要先批准关联 Decision'
+                      : '接受这条业务线 SOP revision'}
+                    onClick={() => void updateRevision('accept', revision.id)}
+                  >
+                    接受
+                  </button>
+                  <button className="btn sm ghost" onClick={() => void updateRevision('reject', revision.id)}>拒绝</button>
+                </div>
+              )}
+              {revision.status === 'active' && (
+                <div className="business-action-buttons">
+                  <button className="btn sm" onClick={() => void updateRevision('rollback', revision.id)}>回滚</button>
+                  <button className="btn sm ghost" onClick={() => void updateRevision('disable', revision.id)}>禁用</button>
+                </div>
               )}
             </div>
           ))}

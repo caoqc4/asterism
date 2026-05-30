@@ -1098,6 +1098,9 @@ function createMockApi() {
     getBusinessLineWorkspace: vi.fn().mockResolvedValue(null),
     recordBusinessLineReview: vi.fn(),
     acceptBusinessLineSkillRevision: vi.fn(),
+    rejectBusinessLineSkillRevision: vi.fn(),
+    disableBusinessLineSkillRevision: vi.fn(),
+    rollbackBusinessLineSkillRevision: vi.fn(),
     listRuns: vi.fn().mockResolvedValue(runs),
     getRunDetail: vi.fn().mockImplementation(async (runId) => {
       const run = runs.find((item) => item.id === runId);
@@ -1723,6 +1726,104 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/draft output · artifact · confidence 70/)).toBeTruthy();
     expect(screen.getByText('memory only')).toBeTruthy();
     expect(screen.getByText(/excluded from default future context/)).toBeTruthy();
+  });
+
+  it('shows SOP revision lifecycle provenance, Decision gate, and rollback actions', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_sop_lifecycle',
+      title: 'SOP lifecycle product',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      learning: {
+        reviews: [],
+        acceptedSkills: [],
+        skillRevisions: [
+          {
+            id: 'revision_pending_decision',
+            skillId: 'skill_pending_decision',
+            businessLineId: line.id,
+            scopePath: 'Learning / SOP',
+            previousContent: 'Old SOP content.',
+            nextContent: 'Risky SOP content.',
+            contentDiff: '- Old SOP content.\n+ Risky SOP content.',
+            changeReason: 'Risky update from review.',
+            sourceReviewId: 'review_risky',
+            provenance: {
+              sourceType: 'business_line_review',
+              sourceReviewId: 'review_risky',
+              sourceReviewSummary: 'Risky review summary.',
+            },
+            approvedBy: null,
+            approvalSourceType: null,
+            approvalSourceId: null,
+            status: 'proposed',
+            effectiveAt: null,
+            rollbackTargetRevisionId: null,
+            requiresDecision: true,
+            approvalDecisionId: 'decision_risky',
+            approvalDecisionStatus: 'pending',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'revision_active',
+            skillId: 'skill_active',
+            businessLineId: line.id,
+            scopePath: 'Learning / SOP',
+            previousContent: null,
+            nextContent: 'Active SOP content.',
+            contentDiff: '+ Active SOP content.',
+            changeReason: 'Accepted from review.',
+            sourceReviewId: 'review_active',
+            provenance: {
+              sourceType: 'business_line_review',
+              sourceReviewId: 'review_active',
+              sourceReviewSummary: 'Active review summary.',
+            },
+            approvedBy: 'tester',
+            approvalSourceType: 'operator',
+            approvalSourceId: null,
+            status: 'active',
+            effectiveAt: now,
+            rollbackTargetRevisionId: 'revision_prior',
+            reviewAfterAt: '2000-01-01T00:00:00.000Z',
+            expiresAt: '2999-01-01T00:00:00.000Z',
+            needsReview: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      },
+    });
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.rejectBusinessLineSkillRevision!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.disableBusinessLineSkillRevision!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.rollbackBusinessLineSkillRevision!).mockResolvedValue(workspace);
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'Learning' }));
+
+    expect(screen.getByText('Risky SOP content.')).toBeTruthy();
+    expect(screen.getByText(/Source review: Risky review summary/)).toBeTruthy();
+    expect(screen.getByText(/Diff: - Old SOP content/)).toBeTruthy();
+    expect(screen.getByText(/Decision required before activation: pending/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: '接受' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(screen.getByRole('button', { name: '拒绝' }));
+    expect(harness.api.rejectBusinessLineSkillRevision).toHaveBeenCalledWith({ revisionId: 'revision_pending_decision' });
+
+    expect(screen.getByText('Active SOP content.')).toBeTruthy();
+    expect(screen.getByText(/Approval: operator · tester/)).toBeTruthy();
+    expect(screen.getByText(/Rollback target: revision_prior/)).toBeTruthy();
+    expect(screen.getByText('review due')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '回滚' }));
+    expect(harness.api.rollbackBusinessLineSkillRevision).toHaveBeenCalledWith({ revisionId: 'revision_active' });
+    await user.click(screen.getByRole('button', { name: '禁用' }));
+    expect(harness.api.disableBusinessLineSkillRevision).toHaveBeenCalledWith({ revisionId: 'revision_active' });
   });
 
   it('opens business line context from a Today suggestion and sends business-line chat', async () => {
@@ -5556,7 +5657,7 @@ describe('App redesign v1', () => {
     });
   });
 
-  it('routes task preview primary action to Decisions when the task needs approval', async () => {
+  it('routes task preview primary action to approval view when the task needs approval', async () => {
     const user = userEvent.setup();
     const baseSource = harness.details.task_risk!.sourceContexts[0]!;
     harness.details.task_risk!.sourceContexts = [

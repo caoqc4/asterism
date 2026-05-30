@@ -17,7 +17,10 @@ import type {
   BusinessLineWorkspace,
   BusinessLineReview,
   CreateBusinessLineInput,
+  DisableBusinessLineSkillRevisionInput,
   RecordBusinessLineReviewInput,
+  RejectBusinessLineSkillRevisionInput,
+  RollbackBusinessLineSkillRevisionInput,
 } from '../../../shared/types/business-line.js';
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
@@ -47,6 +50,12 @@ function decisionForReview(reviewId: string, decisions: DecisionRecord[]): Decis
 function compactRecordSummary(text: string): string {
   const normalized = text.replace(/\s+/g, ' ').trim();
   return normalized.length > 180 ? `${normalized.slice(0, 177)}...` : normalized;
+}
+
+function isPastIso(value: string | null | undefined, now = new Date()): boolean {
+  if (!value) return false;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) && parsed <= now.getTime();
 }
 
 export class BusinessLineService {
@@ -92,7 +101,8 @@ export class BusinessLineService {
         ...businessLine,
         nextActionCount: nextActions.length,
         latestRecordSummary: records[0]?.summary ?? null,
-        activeSkillCount: skillRevisions.filter((revision) => revision.status === 'active').length,
+        activeSkillCount: skillRevisions.filter((revision) =>
+          revision.status === 'active' && !isPastIso(revision.expiresAt)).length,
       };
     }));
     return listItems;
@@ -132,14 +142,25 @@ export class BusinessLineService {
     const enrichedSkillRevisions = skillRevisions.map((revision) => {
       const sourceReview = reviews.find((review) => review.id === revision.sourceReviewId);
       const approvalDecision = decisionForReview(revision.sourceReviewId, decisions);
+      const isExpired = isPastIso(revision.expiresAt);
+      const needsReview = isPastIso(revision.reviewAfterAt);
       return {
         ...revision,
+        provenance: {
+          ...(revision.provenance ?? { sourceType: 'business_line_review' as const }),
+          sourceReviewId: revision.sourceReviewId,
+          sourceReviewSummary: sourceReview?.resultSummary ?? revision.provenance?.sourceReviewSummary ?? null,
+          sourceActionId: sourceReview?.sourceActionId ?? revision.provenance?.sourceActionId ?? null,
+        },
         requiresDecision: sourceReview?.requiresDecision ?? false,
         approvalDecisionId: approvalDecision?.id ?? null,
         approvalDecisionStatus: approvalDecision?.status ?? null,
+        isExpired,
+        needsReview,
       };
     });
-    const acceptedSkills = enrichedSkillRevisions.filter((revision) => revision.status === 'active');
+    const acceptedSkills = enrichedSkillRevisions.filter((revision) =>
+      revision.status === 'active' && !revision.isExpired);
     const latestRecords = memoryRecords.filter((record) => record.shouldAffectFutureContext).slice(0, 10);
     const missingContext = this.deriveMissingContext({
       businessLine,
@@ -167,7 +188,14 @@ export class BusinessLineService {
     return {
       businessLine,
       overview: {
-        nextSuggestion: this.suggestionForBusinessLine(businessLine, nextActions, memoryRecords, sourceRecords.length, blockedDecisions.length),
+        nextSuggestion: this.suggestionForBusinessLine(
+          businessLine,
+          nextActions,
+          memoryRecords,
+          sourceRecords.length,
+          blockedDecisions.length,
+          acceptedSkills,
+        ),
         recentChanges: contextPack.recentChanges,
         blockedDecisions,
         missingContext,
@@ -193,9 +221,10 @@ export class BusinessLineService {
       this.taskService.list(),
     ]);
     const suggestions = await Promise.all(businessLines.map(async (businessLine) => {
-      const [records, reviews, decisions] = await Promise.all([
+      const [records, reviews, skillRevisions, decisions] = await Promise.all([
         this.businessLineRepository.listRecords(businessLine.id, 10),
         this.businessLineRepository.listReviews(businessLine.id),
+        this.businessLineRepository.listSkillRevisions(businessLine.id),
         this.decisionService.list(),
       ]);
       const reviewIds = new Set(reviews.map((review) => review.id));
@@ -214,6 +243,7 @@ export class BusinessLineService {
         records,
         sourceRecordCount,
         pendingDecisionCount,
+        skillRevisions.filter((revision) => revision.status === 'active' && !isPastIso(revision.expiresAt)),
       );
     }));
     return suggestions
@@ -227,11 +257,23 @@ export class BusinessLineService {
     const review = await this.businessLineRepository.createReview(input);
     for (const suggestion of input.skillUpdateSuggestions ?? []) {
       if (!suggestion.trim()) continue;
+      const scopePath = 'Learning / SOP';
+      const previousActiveRevision = await this.activeSkillRevisionForScope(input.businessLineId, scopePath);
       await this.businessLineRepository.createSkillRevision({
         businessLineId: input.businessLineId,
         sourceReviewId: review.id,
         nextContent: suggestion,
         changeReason: input.hypothesisChange ?? input.resultSummary,
+        previousContent: previousActiveRevision?.nextContent ?? null,
+        scopePath,
+        provenance: {
+          sourceType: 'business_line_review',
+          sourceReviewId: review.id,
+          sourceReviewSummary: review.resultSummary,
+          sourceActionId: review.sourceActionId,
+        },
+        reviewAfterAt: input.reviewAfterAt ?? null,
+        expiresAt: input.expiresAt ?? null,
       });
     }
     for (const suggestion of input.nextActionSuggestions ?? []) {
@@ -314,24 +356,55 @@ export class BusinessLineService {
     }
     const reviews = await this.businessLineRepository.listReviews(revisionBeforeActivation.businessLineId);
     const sourceReview = reviews.find((review) => review.id === revisionBeforeActivation.sourceReviewId);
+    if (revisionBeforeActivation.status !== 'proposed') {
+      throw new Error(`Only proposed business-line skill revisions can be accepted: ${input.revisionId}`);
+    }
+    if (isPastIso(revisionBeforeActivation.expiresAt)) {
+      throw new Error('Expired business-line skill revision cannot be activated.');
+    }
+    let approvalDecision: DecisionRecord | null = null;
     if (sourceReview?.requiresDecision) {
-      const approvalDecision = decisionForReview(sourceReview.id, await this.decisionService.list());
+      approvalDecision = decisionForReview(sourceReview.id, await this.decisionService.list());
       if (approvalDecision?.status !== 'approved') {
         throw new Error('Risky business-line skill revision requires an approved Decision before activation.');
       }
     }
-    const revision = await this.businessLineRepository.activateSkillRevision(
+    const revision = await this.businessLineRepository.activateSkillRevision({
+      id: input.revisionId,
+      approvedBy: input.approvedBy?.trim() || 'local_operator',
+      approvalSourceType: approvalDecision ? 'decision' : 'operator',
+      approvalSourceId: approvalDecision?.id ?? null,
+    });
+    const workspace = await this.getWorkspace(revision.businessLineId);
+    if (!workspace) throw new Error(`Business line not found: ${revision.businessLineId}`);
+    return workspace;
+  }
+
+  async rejectSkillRevision(input: RejectBusinessLineSkillRevisionInput): Promise<BusinessLineWorkspace> {
+    const revision = await this.businessLineRepository.rejectSkillRevision(
+      input.revisionId,
+      input.rejectedBy?.trim() || 'local_operator',
+    );
+    const workspace = await this.getWorkspace(revision.businessLineId);
+    if (!workspace) throw new Error(`Business line not found: ${revision.businessLineId}`);
+    return workspace;
+  }
+
+  async disableSkillRevision(input: DisableBusinessLineSkillRevisionInput): Promise<BusinessLineWorkspace> {
+    const revision = await this.businessLineRepository.disableSkillRevision(
+      input.revisionId,
+      input.disabledBy?.trim() || 'local_operator',
+    );
+    const workspace = await this.getWorkspace(revision.businessLineId);
+    if (!workspace) throw new Error(`Business line not found: ${revision.businessLineId}`);
+    return workspace;
+  }
+
+  async rollbackSkillRevision(input: RollbackBusinessLineSkillRevisionInput): Promise<BusinessLineWorkspace> {
+    const revision = await this.businessLineRepository.rollbackSkillRevision(
       input.revisionId,
       input.approvedBy?.trim() || 'local_operator',
     );
-    await this.businessLineRepository.createRecord({
-      businessLineId: revision.businessLineId,
-      type: 'rule',
-      source: `skill_revision:${revision.id}`,
-      summary: revision.nextContent,
-      confidence: 90,
-      shouldAffectFutureContext: true,
-    });
     const workspace = await this.getWorkspace(revision.businessLineId);
     if (!workspace) throw new Error(`Business line not found: ${revision.businessLineId}`);
     return workspace;
@@ -451,6 +524,12 @@ export class BusinessLineService {
         sourceReviewId: review.id,
         nextContent: suggestion,
         changeReason: `Proposed by ${this.templateLabel(template)} creation flow.`,
+        provenance: {
+          sourceType: 'template',
+          sourceReviewId: review.id,
+          sourceReviewSummary: review.resultSummary,
+          sourceActionId: review.sourceActionId,
+        },
       });
     }
     for (const revision of inheritedActiveSops) {
@@ -461,6 +540,12 @@ export class BusinessLineService {
         previousContent: null,
         scopePath: revision.scopePath,
         changeReason: `Inherited from ${params.sourceBusinessLine!.title}; explicit acceptance required before active use.`,
+        provenance: {
+          sourceType: 'inherited',
+          sourceReviewId: review.id,
+          sourceReviewSummary: review.resultSummary,
+          sourceActionId: review.sourceActionId,
+        },
       });
     }
     for (const suggestion of initialNextActions) {
@@ -500,7 +585,18 @@ export class BusinessLineService {
 
   private async inheritedActiveSops(businessLine: BusinessLine): Promise<BusinessLineSkillRevision[]> {
     return (await this.businessLineRepository.listSkillRevisions(businessLine.id))
-      .filter((revision) => revision.status === 'active');
+      .filter((revision) => revision.status === 'active' && !isPastIso(revision.expiresAt));
+  }
+
+  private async activeSkillRevisionForScope(
+    businessLineId: string,
+    scopePath: string,
+  ): Promise<BusinessLineSkillRevision | null> {
+    const revisions = await this.businessLineRepository.listSkillRevisions(businessLineId);
+    return revisions.find((revision) =>
+      revision.status === 'active'
+      && revision.scopePath === scopePath
+      && !isPastIso(revision.expiresAt)) ?? null;
   }
 
   private templateLabel(template: BusinessLineCreationTemplate): string {
@@ -528,7 +624,7 @@ export class BusinessLineService {
     const nativeRecords = this.nativeRecordsWithoutProjectedReviewDuplicates(
       params.nativeRecords,
       params.reviews,
-    );
+    ).filter((record) => !this.isSkillRevisionMirrorRecord(record));
 
     return newestFirst([
       ...nativeRecords,
@@ -553,6 +649,10 @@ export class BusinessLineService {
     if (record.source !== 'post_action_review' && !record.source.startsWith('next_action:')) return false;
     return record.summary.trim() === review.resultSummary.trim()
       && (record.linkedActionId ?? null) === (review.sourceActionId ?? null);
+  }
+
+  private isSkillRevisionMirrorRecord(record: BusinessLineRecord): boolean {
+    return record.type === 'rule' && record.source.startsWith('skill_revision:');
   }
 
   private async decisionBelongsToBusinessLine(
@@ -738,8 +838,9 @@ export class BusinessLineService {
     records: BusinessLineRecord[],
     sourceRecordCount: number,
     pendingDecisionCount: number,
+    activeSkills: BusinessLineSkillRevision[] = [],
   ): BusinessLineTodaySuggestion | null {
-    const activeSkillRecord = records.find((record) => record.type === 'rule');
+    const activeSkill = activeSkills[0] ?? null;
     if (nextActions[0]) {
       const task = nextActions[0];
       return {
@@ -751,12 +852,12 @@ export class BusinessLineService {
           ? `Current blocker: ${task.activeBlocker.title}`
           : task.waitingReason
           ? `Waiting reason: ${task.waitingReason}`
-          : activeSkillRecord
-          ? `Accepted learning should shape this action: ${activeSkillRecord.summary}`
+          : activeSkill
+          ? `Accepted learning should shape this action: ${activeSkill.nextContent}`
           : task.nextStep ?? 'This is the current open next action for the business line.',
         nextStep: task.nextStep ?? `Open next action: ${task.title}`,
         sourceRecords: [
-          activeSkillRecord?.summary,
+          activeSkill?.nextContent,
           records[0]?.summary,
           sourceRecordCount > 0 ? `${sourceRecordCount} source records on the legacy task` : null,
         ].filter((item): item is string => Boolean(item)),
@@ -765,15 +866,15 @@ export class BusinessLineService {
         taskId: task.id,
       };
     }
-    if (activeSkillRecord) {
+    if (activeSkill) {
       return {
-        id: `business-line-improvement:${businessLine.id}:${activeSkillRecord.id}`,
+        id: `business-line-improvement:${businessLine.id}:${activeSkill.id}`,
         type: 'improvement',
         businessLineId: businessLine.id,
         businessLineTitle: businessLine.title,
         whyNow: 'Accepted learning is available, but no executable next action is attached yet.',
         nextStep: 'Create or choose the next business-line action using the accepted learning.',
-        sourceRecords: [activeSkillRecord.summary],
+        sourceRecords: [activeSkill.nextContent],
         risk: { level: 'low', note: null },
         requiresDecision: false,
         taskId: businessLine.legacyTaskId,

@@ -90,7 +90,10 @@ import type {
   BusinessLineListItem,
   BusinessLineWorkspace,
   CreateBusinessLineInput,
+  DisableBusinessLineSkillRevisionInput,
   RecordBusinessLineReviewInput,
+  RejectBusinessLineSkillRevisionInput,
+  RollbackBusinessLineSkillRevisionInput,
 } from './business-line.js';
 import type {
   BlockerRecord,
@@ -385,6 +388,15 @@ export type ElectronApi = {
   recordBusinessLineReview?: (input: RecordBusinessLineReviewInput) => Promise<BusinessLineWorkspace>;
   acceptBusinessLineSkillRevision?: (
     input: AcceptBusinessLineSkillRevisionInput,
+  ) => Promise<BusinessLineWorkspace>;
+  rejectBusinessLineSkillRevision?: (
+    input: RejectBusinessLineSkillRevisionInput,
+  ) => Promise<BusinessLineWorkspace>;
+  disableBusinessLineSkillRevision?: (
+    input: DisableBusinessLineSkillRevisionInput,
+  ) => Promise<BusinessLineWorkspace>;
+  rollbackBusinessLineSkillRevision?: (
+    input: RollbackBusinessLineSkillRevisionInput,
   ) => Promise<BusinessLineWorkspace>;
   listRuns: () => Promise<RunRecord[]>;
   getRunDetail: (runId: string) => Promise<RunDetailRecord | null>;

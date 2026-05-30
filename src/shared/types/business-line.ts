@@ -17,7 +17,16 @@ export type BusinessLineRecordType =
   | 'review'
   | 'rule';
 
-export type BusinessLineSkillRevisionStatus = 'proposed' | 'active' | 'disabled' | 'superseded';
+export type BusinessLineSkillRevisionStatus = 'proposed' | 'active' | 'rejected' | 'disabled' | 'superseded';
+
+export type BusinessLineSkillRevisionApprovalSourceType = 'operator' | 'decision' | 'rollback';
+
+export type BusinessLineSkillRevisionProvenance = {
+  sourceType: 'business_line_review' | 'template' | 'inherited' | 'manual';
+  sourceReviewId?: string | null;
+  sourceReviewSummary?: string | null;
+  sourceActionId?: string | null;
+};
 
 export type BusinessLineRecordProvenanceSource =
   | 'business_line_record'
@@ -96,15 +105,28 @@ export type BusinessLineSkillRevision = {
   scopePath: string;
   previousContent: string | null;
   nextContent: string;
+  contentDiff?: string | null;
   changeReason: string;
   sourceReviewId: string;
+  provenance?: BusinessLineSkillRevisionProvenance | null;
   approvedBy: string | null;
+  approvalSourceType?: BusinessLineSkillRevisionApprovalSourceType | null;
+  approvalSourceId?: string | null;
   status: BusinessLineSkillRevisionStatus;
   effectiveAt: string | null;
   rollbackTargetRevisionId: string | null;
+  supersededByRevisionId?: string | null;
+  rejectedBy?: string | null;
+  rejectedAt?: string | null;
+  disabledBy?: string | null;
+  disabledAt?: string | null;
+  reviewAfterAt?: string | null;
+  expiresAt?: string | null;
   requiresDecision?: boolean;
   approvalDecisionId?: string | null;
   approvalDecisionStatus?: DecisionStatus | null;
+  isExpired?: boolean;
+  needsReview?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -187,9 +209,26 @@ export type RecordBusinessLineReviewInput = {
   nextActionSuggestions?: string[];
   confidence?: number;
   requiresDecision?: boolean;
+  reviewAfterAt?: string | null;
+  expiresAt?: string | null;
 };
 
 export type AcceptBusinessLineSkillRevisionInput = {
+  revisionId: string;
+  approvedBy?: string | null;
+};
+
+export type RejectBusinessLineSkillRevisionInput = {
+  revisionId: string;
+  rejectedBy?: string | null;
+};
+
+export type DisableBusinessLineSkillRevisionInput = {
+  revisionId: string;
+  disabledBy?: string | null;
+};
+
+export type RollbackBusinessLineSkillRevisionInput = {
   revisionId: string;
   approvedBy?: string | null;
 };

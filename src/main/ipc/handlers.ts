@@ -15,7 +15,10 @@ import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/
 import type {
   AcceptBusinessLineSkillRevisionInput,
   CreateBusinessLineInput,
+  DisableBusinessLineSkillRevisionInput,
   RecordBusinessLineReviewInput,
+  RejectBusinessLineSkillRevisionInput,
+  RollbackBusinessLineSkillRevisionInput,
 } from '../../shared/types/business-line.js';
 import type {
   CreateCompletionCriteriaInput,
@@ -830,6 +833,36 @@ export function registerIpcHandlers(): void {
     input: AcceptBusinessLineSkillRevisionInput,
   ) => {
     const workspace = await getServices().businessLineService.acceptSkillRevision(input);
+    emitAppEvent('businessLine.changed', workspace.businessLine.id);
+    emitAppEvent('brief.changed');
+    return workspace;
+  });
+
+  ipcMain.handle('businessLine:rejectSkillRevision', async (
+    _event,
+    input: RejectBusinessLineSkillRevisionInput,
+  ) => {
+    const workspace = await getServices().businessLineService.rejectSkillRevision(input);
+    emitAppEvent('businessLine.changed', workspace.businessLine.id);
+    emitAppEvent('brief.changed');
+    return workspace;
+  });
+
+  ipcMain.handle('businessLine:disableSkillRevision', async (
+    _event,
+    input: DisableBusinessLineSkillRevisionInput,
+  ) => {
+    const workspace = await getServices().businessLineService.disableSkillRevision(input);
+    emitAppEvent('businessLine.changed', workspace.businessLine.id);
+    emitAppEvent('brief.changed');
+    return workspace;
+  });
+
+  ipcMain.handle('businessLine:rollbackSkillRevision', async (
+    _event,
+    input: RollbackBusinessLineSkillRevisionInput,
+  ) => {
+    const workspace = await getServices().businessLineService.rollbackSkillRevision(input);
     emitAppEvent('businessLine.changed', workspace.businessLine.id);
     emitAppEvent('brief.changed');
     return workspace;

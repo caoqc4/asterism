@@ -262,6 +262,132 @@ describe('BusinessLineService', () => {
     expect(accepted.learning.skillRevisions[0]?.status).toBe('active');
   });
 
+  it('manages SOP revision lifecycle with Decision-gated activation, supersede, rejection, disable, and rollback', async () => {
+    const created = await service.create({
+      title: 'SOP lifecycle line',
+      goal: 'Keep SOP revisions safe',
+      kind: 'software_product',
+    });
+    const firstReview = await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'First SOP emerged.',
+      skillUpdateSuggestions: ['Use the first SOP before planning.'],
+    });
+    const firstAccepted = await service.acceptSkillRevision({
+      revisionId: firstReview.learning.skillRevisions[0]!.id,
+      approvedBy: 'tester',
+    });
+    const firstRevision = firstAccepted.learning.acceptedSkills[0]!;
+    expect(firstRevision).toMatchObject({
+      status: 'active',
+      approvalSourceType: 'operator',
+      approvedBy: 'tester',
+      previousContent: null,
+    });
+
+    const riskyReview = await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'Risky SOP update emerged.',
+      skillUpdateSuggestions: ['Use the second SOP only after approval.'],
+      requiresDecision: true,
+      reviewAfterAt: '2000-01-01T00:00:00.000Z',
+      expiresAt: '2999-01-01T00:00:00.000Z',
+    });
+    const secondRevisionId = riskyReview.learning.skillRevisions.find((revision) =>
+      revision.nextContent === 'Use the second SOP only after approval.')!.id;
+
+    await expect(service.acceptSkillRevision({
+      revisionId: secondRevisionId,
+      approvedBy: 'tester',
+    })).rejects.toThrow(/requires an approved Decision/);
+    decisionStore = decisionStore.map((decision) => ({ ...decision, status: 'approved' }));
+
+    const secondAccepted = await service.acceptSkillRevision({
+      revisionId: secondRevisionId,
+      approvedBy: 'tester',
+    });
+    const secondRevision = secondAccepted.learning.acceptedSkills[0]!;
+    const supersededFirst = secondAccepted.learning.skillRevisions.find((revision) => revision.id === firstRevision.id)!;
+    expect(secondRevision).toMatchObject({
+      status: 'active',
+      approvalSourceType: 'decision',
+      approvalSourceId: 'decision_learning_1',
+      rollbackTargetRevisionId: firstRevision.id,
+      previousContent: 'Use the first SOP before planning.',
+      needsReview: true,
+      isExpired: false,
+      provenance: expect.objectContaining({
+        sourceType: 'business_line_review',
+        sourceReviewSummary: 'Risky SOP update emerged.',
+      }),
+    });
+    expect(secondRevision.contentDiff).toContain('- Use the first SOP before planning.');
+    expect(secondRevision.contentDiff).toContain('+ Use the second SOP only after approval.');
+    expect(supersededFirst).toMatchObject({
+      status: 'superseded',
+      supersededByRevisionId: secondRevision.id,
+    });
+    expect(secondAccepted.contextPack.acceptedSkills.map((revision) => revision.id)).toEqual([secondRevision.id]);
+    expect(secondAccepted.overview.nextSuggestion?.sourceRecords.join(' ')).toContain('Use the second SOP only after approval.');
+    expect(secondAccepted.overview.nextSuggestion?.sourceRecords.join(' ')).not.toContain('Use the first SOP before planning.');
+    expect(secondAccepted.records.some((record) => record.type === 'rule')).toBe(false);
+
+    const rejectedReview = await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'Rejected SOP emerged.',
+      skillUpdateSuggestions: ['This SOP should be rejected.'],
+    });
+    const rejectedRevisionId = rejectedReview.learning.skillRevisions.find((revision) =>
+      revision.nextContent === 'This SOP should be rejected.')!.id;
+    const rejectedWorkspace = await service.rejectSkillRevision({
+      revisionId: rejectedRevisionId,
+      rejectedBy: 'tester',
+    });
+    expect(rejectedWorkspace.learning.skillRevisions.find((revision) => revision.id === rejectedRevisionId)).toMatchObject({
+      status: 'rejected',
+      rejectedBy: 'tester',
+      rejectedAt: expect.any(String),
+    });
+    expect(rejectedWorkspace.contextPack.acceptedSkills.map((revision) => revision.nextContent))
+      .not.toContain('This SOP should be rejected.');
+
+    const rolledBack = await service.rollbackSkillRevision({
+      revisionId: secondRevision.id,
+      approvedBy: 'tester',
+    });
+    expect(rolledBack.learning.acceptedSkills.map((revision) => revision.id)).toEqual([firstRevision.id]);
+    expect(rolledBack.learning.skillRevisions.find((revision) => revision.id === secondRevision.id)).toMatchObject({
+      status: 'disabled',
+      disabledBy: 'tester',
+    });
+    expect(rolledBack.learning.skillRevisions.find((revision) => revision.id === firstRevision.id)).toMatchObject({
+      status: 'active',
+      approvalSourceType: 'rollback',
+      approvalSourceId: secondRevision.id,
+    });
+
+    const disabled = await service.disableSkillRevision({
+      revisionId: firstRevision.id,
+      disabledBy: 'tester',
+    });
+    expect(disabled.learning.acceptedSkills).toHaveLength(0);
+    expect(disabled.contextPack.acceptedSkills).toHaveLength(0);
+    expect(disabled.overview.nextSuggestion?.sourceRecords.join(' ')).not.toContain('Use the first SOP before planning.');
+
+    const expiredReview = await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'Expired SOP proposal emerged.',
+      skillUpdateSuggestions: ['Expired SOP should never activate.'],
+      expiresAt: '2000-01-01T00:00:00.000Z',
+    });
+    const expiredRevisionId = expiredReview.learning.skillRevisions.find((revision) =>
+      revision.nextContent === 'Expired SOP should never activate.')!.id;
+    await expect(service.acceptSkillRevision({
+      revisionId: expiredRevisionId,
+      approvedBy: 'tester',
+    })).rejects.toThrow(/Expired business-line skill revision/);
+  });
+
   it('creates a Web Product template business line with initial structure, review prompts, proposed SOPs, and actions', async () => {
     const created = await service.create({
       title: 'Activation web product',

@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
 import type {
   BusinessLine,
@@ -9,6 +9,8 @@ import type {
   BusinessLineRecordType,
   BusinessLineReview,
   BusinessLineSkillRevision,
+  BusinessLineSkillRevisionApprovalSourceType,
+  BusinessLineSkillRevisionProvenance,
   BusinessLineSkillRevisionStatus,
   CreateBusinessLineInput,
   RecordBusinessLineReviewInput,
@@ -61,6 +63,26 @@ function parseJsonArray(value: string | null | undefined): string[] {
   }
 }
 
+function parseJsonObject<T>(value: string | null | undefined, fallback: T): T {
+  try {
+    return value ? JSON.parse(value) as T : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function serializeJson(value: unknown): string | null {
+  return value == null ? null : JSON.stringify(value);
+}
+
+function buildContentDiff(previousContent: string | null, nextContent: string): string {
+  const previous = previousContent?.trim();
+  const next = nextContent.trim();
+  if (!previous) return `+ ${next}`;
+  if (previous === next) return 'No content changes.';
+  return [`- ${previous}`, `+ ${next}`].join('\n');
+}
+
 function normalizeKind(value: string | null | undefined): BusinessLineKind {
   if (value === 'software_product' || value === 'project' || value === 'routine' || value === 'general') {
     return value;
@@ -90,10 +112,21 @@ function normalizeActionStatus(value: string | null | undefined): BusinessLineAc
 }
 
 function normalizeRevisionStatus(value: string | null | undefined): BusinessLineSkillRevisionStatus {
-  if (value === 'proposed' || value === 'active' || value === 'disabled' || value === 'superseded') {
+  if (
+    value === 'proposed' ||
+    value === 'active' ||
+    value === 'rejected' ||
+    value === 'disabled' ||
+    value === 'superseded'
+  ) {
     return value;
   }
   return 'proposed';
+}
+
+function normalizeApprovalSourceType(value: string | null | undefined): BusinessLineSkillRevisionApprovalSourceType | null {
+  if (value === 'operator' || value === 'decision' || value === 'rollback') return value;
+  return null;
 }
 
 function businessLineFromRow(row: BusinessLineRow): BusinessLine {
@@ -220,6 +253,10 @@ function businessLineReviewFromRow(row: BusinessLineReviewRow): BusinessLineRevi
 }
 
 function businessLineSkillRevisionFromRow(row: BusinessLineSkillRevisionRow): BusinessLineSkillRevision {
+  const provenanceFallback: BusinessLineSkillRevisionProvenance = {
+    sourceType: 'business_line_review',
+    sourceReviewId: row.sourceReviewId,
+  };
   return {
     id: row.id,
     skillId: row.skillId,
@@ -227,12 +264,23 @@ function businessLineSkillRevisionFromRow(row: BusinessLineSkillRevisionRow): Bu
     scopePath: row.scopePath,
     previousContent: row.previousContent,
     nextContent: row.nextContent,
+    contentDiff: row.contentDiff ?? buildContentDiff(row.previousContent, row.nextContent),
     changeReason: row.changeReason,
     sourceReviewId: row.sourceReviewId,
+    provenance: parseJsonObject<BusinessLineSkillRevisionProvenance>(row.provenance, provenanceFallback),
     approvedBy: row.approvedBy,
+    approvalSourceType: normalizeApprovalSourceType(row.approvalSourceType),
+    approvalSourceId: row.approvalSourceId,
     status: normalizeRevisionStatus(row.status),
     effectiveAt: row.effectiveAt,
     rollbackTargetRevisionId: row.rollbackTargetRevisionId,
+    supersededByRevisionId: row.supersededByRevisionId,
+    rejectedBy: row.rejectedBy,
+    rejectedAt: row.rejectedAt,
+    disabledBy: row.disabledBy,
+    disabledAt: row.disabledAt,
+    reviewAfterAt: row.reviewAfterAt,
+    expiresAt: row.expiresAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -602,23 +650,42 @@ export class BusinessLineRepository {
     changeReason: string;
     previousContent?: string | null;
     scopePath?: string;
+    provenance?: BusinessLineSkillRevisionProvenance | null;
+    reviewAfterAt?: string | null;
+    expiresAt?: string | null;
   }): Promise<BusinessLineSkillRevision> {
     const db = initDatabase();
     const timestamp = nowIso();
     const id = generateId('business_line_skill_revision');
+    const previousContent = input.previousContent ?? null;
+    const nextContent = input.nextContent.trim();
     await db.insert(businessLineSkillRevisions).values({
       id,
       skillId: generateId('business_line_skill'),
       businessLineId: input.businessLineId,
       scopePath: input.scopePath ?? 'Learning / SOP',
-      previousContent: input.previousContent ?? null,
-      nextContent: input.nextContent.trim(),
+      previousContent,
+      nextContent,
+      contentDiff: buildContentDiff(previousContent, nextContent),
       changeReason: input.changeReason.trim(),
       sourceReviewId: input.sourceReviewId,
+      provenance: serializeJson(input.provenance ?? {
+        sourceType: 'business_line_review',
+        sourceReviewId: input.sourceReviewId,
+      }),
       approvedBy: null,
+      approvalSourceType: null,
+      approvalSourceId: null,
       status: 'proposed',
       effectiveAt: null,
       rollbackTargetRevisionId: null,
+      supersededByRevisionId: null,
+      rejectedBy: null,
+      rejectedAt: null,
+      disabledBy: null,
+      disabledAt: null,
+      reviewAfterAt: input.reviewAfterAt ?? null,
+      expiresAt: input.expiresAt ?? null,
       createdAt: timestamp,
       updatedAt: timestamp,
     });
@@ -630,24 +697,195 @@ export class BusinessLineRepository {
     return businessLineSkillRevisionFromRow(created);
   }
 
-  async activateSkillRevision(id: string, approvedBy: string | null): Promise<BusinessLineSkillRevision> {
+  async activateSkillRevision(input: {
+    id: string;
+    approvedBy: string | null;
+    approvalSourceType: BusinessLineSkillRevisionApprovalSourceType;
+    approvalSourceId?: string | null;
+  }): Promise<BusinessLineSkillRevision> {
     const db = initDatabase();
+    const timestamp = nowIso();
+    return db.transaction((tx) => {
+      const [current] = tx
+        .select()
+        .from(businessLineSkillRevisions)
+        .where(eq(businessLineSkillRevisions.id, input.id))
+        .limit(1)
+        .all();
+      if (!current) throw new Error(`Business line skill revision not found: ${input.id}`);
+      const currentRevision = businessLineSkillRevisionFromRow(current);
+      if (currentRevision.status !== 'proposed') {
+        throw new Error(`Only proposed business-line skill revisions can be activated: ${input.id}`);
+      }
+      const activeRows = tx
+        .select()
+        .from(businessLineSkillRevisions)
+        .where(and(
+          eq(businessLineSkillRevisions.businessLineId, currentRevision.businessLineId),
+          eq(businessLineSkillRevisions.scopePath, currentRevision.scopePath),
+          eq(businessLineSkillRevisions.status, 'active'),
+        ))
+        .orderBy(desc(businessLineSkillRevisions.effectiveAt))
+        .all();
+      const activeRevisions = activeRows.map(businessLineSkillRevisionFromRow);
+      const rollbackTargetRevision = activeRevisions[0] ?? null;
+      for (const activeRevision of activeRevisions) {
+        tx
+          .update(businessLineSkillRevisions)
+          .set({
+            status: 'superseded',
+            supersededByRevisionId: currentRevision.id,
+            updatedAt: timestamp,
+          })
+          .where(eq(businessLineSkillRevisions.id, activeRevision.id))
+          .run();
+      }
+      tx
+        .update(businessLineSkillRevisions)
+        .set({
+          approvedBy: input.approvedBy,
+          approvalSourceType: input.approvalSourceType,
+          approvalSourceId: input.approvalSourceId ?? null,
+          status: 'active',
+          effectiveAt: timestamp,
+          rollbackTargetRevisionId: rollbackTargetRevision?.id ?? currentRevision.rollbackTargetRevisionId ?? null,
+          previousContent: currentRevision.previousContent ?? rollbackTargetRevision?.nextContent ?? null,
+          contentDiff: buildContentDiff(
+            currentRevision.previousContent ?? rollbackTargetRevision?.nextContent ?? null,
+            currentRevision.nextContent,
+          ),
+          updatedAt: timestamp,
+        })
+        .where(eq(businessLineSkillRevisions.id, input.id))
+        .run();
+      const [updated] = tx
+        .select()
+        .from(businessLineSkillRevisions)
+        .where(eq(businessLineSkillRevisions.id, input.id))
+        .limit(1)
+        .all();
+      if (!updated) throw new Error(`Business line skill revision not found: ${input.id}`);
+      return businessLineSkillRevisionFromRow(updated);
+    });
+  }
+
+  async rejectSkillRevision(id: string, rejectedBy: string | null): Promise<BusinessLineSkillRevision> {
+    return this.updateSkillRevisionStatus({
+      id,
+      status: 'rejected',
+      actorField: 'rejectedBy',
+      atField: 'rejectedAt',
+      actor: rejectedBy,
+      allowedStatuses: ['proposed'],
+    });
+  }
+
+  async disableSkillRevision(id: string, disabledBy: string | null): Promise<BusinessLineSkillRevision> {
+    return this.updateSkillRevisionStatus({
+      id,
+      status: 'disabled',
+      actorField: 'disabledBy',
+      atField: 'disabledAt',
+      actor: disabledBy,
+      allowedStatuses: ['active'],
+    });
+  }
+
+  async rollbackSkillRevision(id: string, approvedBy: string | null): Promise<BusinessLineSkillRevision> {
+    const db = initDatabase();
+    const timestamp = nowIso();
+    return db.transaction((tx) => {
+      const [current] = tx
+        .select()
+        .from(businessLineSkillRevisions)
+        .where(eq(businessLineSkillRevisions.id, id))
+        .limit(1)
+        .all();
+      if (!current) throw new Error(`Business line skill revision not found: ${id}`);
+      const currentRevision = businessLineSkillRevisionFromRow(current);
+      if (currentRevision.status !== 'active') {
+        throw new Error(`Only active business-line skill revisions can be rolled back: ${id}`);
+      }
+
+      tx
+        .update(businessLineSkillRevisions)
+        .set({
+          status: 'disabled',
+          disabledBy: approvedBy,
+          disabledAt: timestamp,
+          updatedAt: timestamp,
+        })
+        .where(eq(businessLineSkillRevisions.id, id))
+        .run();
+
+      if (!currentRevision.rollbackTargetRevisionId) {
+        const [disabled] = tx
+          .select()
+          .from(businessLineSkillRevisions)
+          .where(eq(businessLineSkillRevisions.id, id))
+          .limit(1)
+          .all();
+        return businessLineSkillRevisionFromRow(disabled);
+      }
+
+      tx
+        .update(businessLineSkillRevisions)
+        .set({
+          approvedBy: approvedBy ?? currentRevision.approvedBy,
+          approvalSourceType: 'rollback',
+          approvalSourceId: currentRevision.id,
+          status: 'active',
+          effectiveAt: timestamp,
+          supersededByRevisionId: null,
+          updatedAt: timestamp,
+        })
+        .where(eq(businessLineSkillRevisions.id, currentRevision.rollbackTargetRevisionId))
+        .run();
+
+      const [restored] = tx
+        .select()
+        .from(businessLineSkillRevisions)
+        .where(eq(businessLineSkillRevisions.id, currentRevision.rollbackTargetRevisionId))
+        .limit(1)
+        .all();
+      return businessLineSkillRevisionFromRow(restored);
+    });
+  }
+
+  private async updateSkillRevisionStatus(input: {
+    id: string;
+    status: Extract<BusinessLineSkillRevisionStatus, 'rejected' | 'disabled'>;
+    actorField: 'rejectedBy' | 'disabledBy';
+    atField: 'rejectedAt' | 'disabledAt';
+    actor: string | null;
+    allowedStatuses: BusinessLineSkillRevisionStatus[];
+  }): Promise<BusinessLineSkillRevision> {
+    const db = initDatabase();
+    const [current] = await db
+      .select()
+      .from(businessLineSkillRevisions)
+      .where(eq(businessLineSkillRevisions.id, input.id))
+      .limit(1);
+    if (!current) throw new Error(`Business line skill revision not found: ${input.id}`);
+    const currentRevision = businessLineSkillRevisionFromRow(current);
+    if (!input.allowedStatuses.includes(currentRevision.status)) {
+      throw new Error(`Business line skill revision ${input.id} cannot move from ${currentRevision.status} to ${input.status}.`);
+    }
     const timestamp = nowIso();
     await db
       .update(businessLineSkillRevisions)
       .set({
-        approvedBy,
-        status: 'active',
-        effectiveAt: timestamp,
+        status: input.status,
+        [input.actorField]: input.actor,
+        [input.atField]: timestamp,
         updatedAt: timestamp,
       })
-      .where(eq(businessLineSkillRevisions.id, id));
+      .where(eq(businessLineSkillRevisions.id, input.id));
     const [updated] = await db
       .select()
       .from(businessLineSkillRevisions)
-      .where(eq(businessLineSkillRevisions.id, id))
+      .where(eq(businessLineSkillRevisions.id, input.id))
       .limit(1);
-    if (!updated) throw new Error(`Business line skill revision not found: ${id}`);
     return businessLineSkillRevisionFromRow(updated);
   }
 }

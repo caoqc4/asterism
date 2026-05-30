@@ -362,12 +362,23 @@ function bootstrapTables(connection: Database.Database): void {
       scope_path TEXT NOT NULL,
       previous_content TEXT,
       next_content TEXT NOT NULL,
+      content_diff TEXT,
       change_reason TEXT NOT NULL,
       source_review_id TEXT NOT NULL,
+      provenance TEXT,
       approved_by TEXT,
+      approval_source_type TEXT,
+      approval_source_id TEXT,
       status TEXT NOT NULL DEFAULT 'proposed',
       effective_at TEXT,
       rollback_target_revision_id TEXT,
+      superseded_by_revision_id TEXT,
+      rejected_by TEXT,
+      rejected_at TEXT,
+      disabled_by TEXT,
+      disabled_at TEXT,
+      review_after_at TEXT,
+      expires_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -471,8 +482,19 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'business_line_reviews', 'confidence', 'INTEGER NOT NULL DEFAULT 70');
   ensureColumn(connection, 'business_line_reviews', 'requires_decision', "TEXT NOT NULL DEFAULT 'false'");
   ensureColumn(connection, 'business_line_skill_revisions', 'approved_by', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'approval_source_type', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'approval_source_id', 'TEXT');
   ensureColumn(connection, 'business_line_skill_revisions', 'effective_at', 'TEXT');
   ensureColumn(connection, 'business_line_skill_revisions', 'rollback_target_revision_id', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'superseded_by_revision_id', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'rejected_by', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'rejected_at', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'disabled_by', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'disabled_at', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'review_after_at', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'expires_at', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'content_diff', 'TEXT');
+  ensureColumn(connection, 'business_line_skill_revisions', 'provenance', 'TEXT');
   ensureColumn(connection, 'business_line_skill_revisions', 'updated_at', 'TEXT');
 }
 
