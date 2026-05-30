@@ -779,6 +779,9 @@ export class BusinessLineService {
         changeReason: `Inherited from ${params.sourceBusinessLine!.title}; explicit acceptance required before active use.`,
         provenance: {
           sourceType: 'inherited',
+          sourceBusinessLineId: params.sourceBusinessLine!.id,
+          sourceBusinessLineTitle: params.sourceBusinessLine!.title,
+          sourceSkillRevisionId: revision.id,
           sourceReviewId: review.id,
           sourceReviewSummary: review.resultSummary,
           sourceActionId: review.sourceActionId,

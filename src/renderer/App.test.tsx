@@ -1726,6 +1726,47 @@ describe('App redesign v1', () => {
     expect(screen.getByText('Capture the current user problem, product surface, and one success metric.')).toBeTruthy();
   });
 
+  it('shows explicit source business line reference when creation reuses another business line', async () => {
+    const user = userEvent.setup();
+    const sourceLine = buildBusinessLineListItem({
+      id: 'business_line_source_reuse',
+      title: 'Source product loop',
+    });
+    const createdLine = buildBusinessLineListItem({
+      id: 'business_line_target_reuse',
+      title: 'Target product loop',
+    });
+    const createdWorkspace = buildBusinessLineWorkspace({
+      businessLine: createdLine,
+    });
+    vi.mocked(harness.api.listBusinessLines!)
+      .mockResolvedValueOnce([sourceLine])
+      .mockResolvedValueOnce([sourceLine, createdLine]);
+    vi.mocked(harness.api.createBusinessLine!).mockResolvedValueOnce(createdWorkspace);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(createdWorkspace);
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '新建' }));
+    await user.type(screen.getByLabelText('What is this business line?'), 'Target product loop');
+    await user.selectOptions(
+      screen.getByLabelText("Is this based on an existing business line's structure or experience?"),
+      sourceLine.id,
+    );
+
+    expect(screen.getByText('Source business line: Source product loop')).toBeTruthy();
+    expect(screen.getByText(/copied as source evidence or proposed learning only/i)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '创建业务线' }));
+
+    await waitFor(() => {
+      expect(harness.api.createBusinessLine).toHaveBeenCalledWith(expect.objectContaining({
+        sourceBusinessLineId: sourceLine.id,
+      }));
+    });
+  });
+
   it('renders business Records as a provenance-backed memory surface', async () => {
     const user = userEvent.setup();
     const line = buildBusinessLineListItem({

@@ -777,6 +777,13 @@ describe('BusinessLineService', () => {
       approvedBy: 'tester',
     });
     expect(acceptedSource.learning.acceptedSkills).toHaveLength(1);
+    const sourceOnlyRecord = await businessLineRepository.createRecord({
+      businessLineId: source.id,
+      type: 'signal',
+      source: 'source-only:future-context',
+      summary: 'Do not leak this source business-line record into target context.',
+      shouldAffectFutureContext: true,
+    });
 
     const inherited = await service.create({
       title: 'Inherited web product',
@@ -793,10 +800,15 @@ describe('BusinessLineService', () => {
         source: `business_line:${source.id}:structure`,
         summary: expect.stringContaining('Structure:'),
         shouldAffectFutureContext: false,
+        provenance: expect.objectContaining({
+          sourceBusinessLineId: source.id,
+        }),
       }),
     ]));
     expect(workspace?.contextPack.latestRecords.map((record) => record.source))
       .not.toContain(`business_line:${source.id}:structure`);
+    expect(workspace?.contextPack.latestRecords.map((record) => record.id))
+      .not.toContain(sourceOnlyRecord.id);
     expect(workspace?.learning.acceptedSkills).toHaveLength(0);
     expect(workspace?.contextPack.acceptedSkills).toHaveLength(0);
     expect(workspace?.records.some((record) => record.type === 'rule')).toBe(false);
@@ -805,8 +817,27 @@ describe('BusinessLineService', () => {
         nextContent: acceptedSource.learning.acceptedSkills[0]?.nextContent,
         status: 'proposed',
         changeReason: 'Inherited from Source web product; explicit acceptance required before active use.',
+        provenance: expect.objectContaining({
+          sourceBusinessLineId: source.id,
+          sourceBusinessLineTitle: 'Source web product',
+          sourceSkillRevisionId: acceptedSource.learning.acceptedSkills[0]?.id,
+        }),
       }),
     ]));
+
+    const inheritedRevision = workspace!.learning.skillRevisions.find((revision) =>
+      revision.provenance?.sourceType === 'inherited');
+    expect(inheritedRevision).toBeTruthy();
+    const activated = await service.acceptSkillRevision({
+      revisionId: inheritedRevision!.id,
+      approvedBy: 'tester',
+    });
+    expect(activated.contextPack.acceptedSkills.map((revision) => revision.id))
+      .toContain(inheritedRevision!.id);
+    expect(activated.contextPack.acceptedSkills[0]?.provenance).toEqual(expect.objectContaining({
+      sourceBusinessLineId: source.id,
+      sourceSkillRevisionId: acceptedSource.learning.acceptedSkills[0]?.id,
+    }));
   });
 
   it('keeps non-future records and inactive or expired SOP revisions out of the default context pack', async () => {

@@ -29,6 +29,9 @@ export type BusinessLineSkillRevisionApprovalSourceType = 'operator' | 'decision
 
 export type BusinessLineSkillRevisionProvenance = {
   sourceType: 'business_line_review' | 'template' | 'inherited' | 'manual';
+  sourceBusinessLineId?: string | null;
+  sourceBusinessLineTitle?: string | null;
+  sourceSkillRevisionId?: string | null;
   sourceReviewId?: string | null;
   sourceReviewSummary?: string | null;
   sourceActionId?: string | null;
@@ -46,6 +49,8 @@ export type BusinessLineRecordProvenance = {
   sourceType: BusinessLineRecordProvenanceSource;
   sourceId: string;
   sourceLabel: string;
+  sourceBusinessLineId?: string | null;
+  sourceBusinessLineTitle?: string | null;
   taskId?: string | null;
   runId?: string | null;
   uri?: string | null;

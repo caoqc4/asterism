@@ -152,6 +152,7 @@ function businessLineFromRow(row: BusinessLineRow): BusinessLine {
 
 function businessLineRecordFromRow(row: BusinessLineRecordRow): BusinessLineRecord {
   const shouldAffectFutureContext = row.shouldAffectFutureContext === 'true';
+  const sourceBusinessLineId = row.source.match(/^business_line:([^:]+):/)?.[1] ?? null;
   return {
     id: row.id,
     type: normalizeRecordType(row.type),
@@ -169,6 +170,7 @@ function businessLineRecordFromRow(row: BusinessLineRecordRow): BusinessLineReco
       sourceType: 'business_line_record',
       sourceId: row.id,
       sourceLabel: row.source,
+      sourceBusinessLineId,
       taskId: row.linkedActionId,
     },
     createdAt: row.createdAt,

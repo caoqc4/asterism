@@ -238,6 +238,7 @@ function BusinessLineCreationPanel({ existingLines, onCancel, onCreated }: {
   const [proposedSops, setProposedSops] = useState('');
   const [initialNextActions, setInitialNextActions] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const selectedSourceBusinessLine = existingLines.find((line) => line.id === sourceBusinessLineId) ?? null;
 
   function generateDraft() {
     const draft = buildBusinessLineCreationDraft({
@@ -330,6 +331,14 @@ function BusinessLineCreationPanel({ existingLines, onCancel, onCreated }: {
             ))}
           </select>
         </label>
+        {selectedSourceBusinessLine ? (
+          <div className="business-create-reference" role="note">
+            <strong>Source business line: {selectedSourceBusinessLine.title}</strong>
+            <span>
+              Reused structure and SOPs are copied as source evidence or proposed learning only; they do not enter active context until accepted.
+            </span>
+          </div>
+        ) : null}
       </div>
       <div className="business-create-actions">
         <button className="btn sm" onClick={generateDraft}>生成初始结构</button>
@@ -493,6 +502,7 @@ function RecordsTab({ workspace }: { workspace: BusinessLineWorkspace }) {
             <p>{record.summary}</p>
             <small>
               {record.provenance?.sourceLabel ?? record.source}
+              {record.provenance?.sourceBusinessLineId ? ` · Source business line: ${record.provenance.sourceBusinessLineTitle ?? record.provenance.sourceBusinessLineId}` : ''}
               {' · '}
               {record.provenance?.sourceType ?? 'record'}
               {' · confidence '}
@@ -647,6 +657,7 @@ function LearningTab({ workspace, onWorkspace }: {
               <small>{revision.changeReason}</small>
               <small>
                 Source review: {revision.provenance?.sourceReviewSummary ?? revision.sourceReviewId}
+                {revision.provenance?.sourceBusinessLineId ? ` · Source business line: ${revision.provenance.sourceBusinessLineTitle ?? revision.provenance.sourceBusinessLineId}` : ''}
                 {' · '}
                 Scope: {revision.scopePath}
               </small>
