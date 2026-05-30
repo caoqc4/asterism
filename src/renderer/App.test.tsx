@@ -2041,6 +2041,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('业务线执行复盘提案')).toBeTruthy();
     expect(screen.getByText('Business record')).toBeTruthy();
     expect(screen.getByText('Next action')).toBeTruthy();
+    await user.clear(screen.getByLabelText('业务线复盘结果'));
+    await user.type(screen.getByLabelText('业务线复盘结果'), 'Edited business result for future context.');
 
     await user.click(screen.getByRole('button', { name: '确认写入业务线复盘' }));
 
@@ -2051,6 +2053,7 @@ describe('App redesign v1', () => {
         sourceRunId: 'run_business_line_execution',
         recordSuggestions: [expect.objectContaining({
           source: 'run:run_business_line_execution',
+          summary: 'Edited business result for future context.',
           type: 'result',
         })],
         nextActionSuggestions: ['Follow up on launch evidence.'],

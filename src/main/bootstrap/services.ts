@@ -217,6 +217,7 @@ const agentCliRunService = new AgentCliRunService(
     emitAppEvent('task.changed', run.taskId);
     emitAppEvent('brief.changed');
   },
+  businessLineService,
 );
 const codeAgentRunService = new CodeAgentRunService(
   taskService,

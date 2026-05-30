@@ -11,7 +11,10 @@ import {
 } from '@shared/agent-cli-runtime-status';
 import type { AiRuntimeMode } from '@shared/types/settings';
 import type { RunRecord, RunStepRecord } from '@shared/types/run';
-import type { BusinessLinePostRunReviewOptions } from '@shared/types/business-line';
+import type {
+  BusinessLinePostRunReviewOptions,
+  BusinessLineReviewRecordSuggestion,
+} from '@shared/types/business-line';
 import { buildBusinessLinePostRunReviewOptions } from '@shared/business-line-post-run-review';
 import {
   selectBlockingTaskMemoryGuidance,
@@ -131,6 +134,32 @@ type ActiveAgentCliRunState = {
   suppressMemoryProposal?: boolean;
   taskId: string;
 };
+
+function syncBusinessLineReviewRecordSuggestions(
+  review: BusinessLinePostRunReviewOptions,
+): BusinessLineReviewRecordSuggestion[] {
+  const resultSummary = review.resultSummary.trim();
+  let updatedResult = false;
+  const suggestions = review.recordSuggestions.map((suggestion) => {
+    if (suggestion.type !== 'result' || updatedResult) return suggestion;
+    updatedResult = true;
+    return {
+      ...suggestion,
+      summary: resultSummary,
+      source: suggestion.source ?? `run:${review.sourceRunId}`,
+    };
+  });
+  if (!updatedResult) {
+    suggestions.push({
+      type: 'result',
+      source: `run:${review.sourceRunId}`,
+      summary: resultSummary,
+      confidence: review.confidence,
+      shouldAffectFutureContext: true,
+    });
+  }
+  return suggestions;
+}
 const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
   claude: 'Claude Code',
   codex: 'Codex CLI',
@@ -2900,15 +2929,17 @@ export function RightPanel({
 
   async function confirmBusinessLineRunReview() {
     if (!businessLineRunReview || savingBusinessLineRunReview || !window.api?.recordBusinessLineReview) return;
+    const resultSummary = businessLineRunReview.resultSummary.trim();
+    if (!resultSummary) return;
     setSavingBusinessLineRunReview(true);
     try {
       const workspace = await window.api.recordBusinessLineReview({
         businessLineId: businessLineRunReview.businessLineId,
         sourceActionId: businessLineRunReview.sourceActionId,
         sourceRunId: businessLineRunReview.sourceRunId,
-        resultSummary: businessLineRunReview.resultSummary,
+        resultSummary,
         evidenceItems: businessLineRunReview.evidenceItems,
-        recordSuggestions: businessLineRunReview.recordSuggestions,
+        recordSuggestions: syncBusinessLineReviewRecordSuggestions(businessLineRunReview),
         nextActionSuggestions: businessLineRunReview.nextActionSuggestions,
         skillUpdateSuggestions: businessLineRunReview.skillUpdateSuggestions,
         confidence: businessLineRunReview.confidence,

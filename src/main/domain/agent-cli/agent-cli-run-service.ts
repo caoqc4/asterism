@@ -50,6 +50,10 @@ import {
   agentCliRuntimeCapabilities,
   type AgentCliRuntimeId,
 } from '../../../shared/agent-cli-runtime-status.js';
+import {
+  appendBusinessLineContextPackToPrompt,
+  formatBusinessLineContextPackForPrompt,
+} from '../../../shared/business-line-context-pack.js';
 import type {
   CancelAgentCliRunInput,
   CancelAgentCliRunResult,
@@ -62,6 +66,7 @@ import type {
   RunStatus,
 } from '../../../shared/types/run.js';
 import type { PilotDecisionSnapshot } from '../../../shared/pilot-decision-contract.js';
+import type { BusinessLineWorkspace } from '../../../shared/types/business-line.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
@@ -109,6 +114,10 @@ type AgentCliAiConfigService = Pick<AiConfigService, 'getStatus'> & {
     model: string;
     provider: string;
   }>;
+};
+
+type BusinessLineContextProvider = {
+  getWorkspace(businessLineId: string): Promise<BusinessLineWorkspace | null>;
 };
 
 type AgentCliRunAdapter = {
@@ -177,6 +186,7 @@ export class AgentCliRunService {
     private readonly runVerificationRepository: Pick<RunVerificationRepository, 'upsert'> | null = null,
     private readonly workloadTracker: AgentCliRuntimeWorkloadTracker = agentCliRuntimeWorkloadTracker,
     private readonly onTerminalRun: AgentCliRunTerminalListener | null = null,
+    private readonly businessLineContextProvider: BusinessLineContextProvider | null = null,
   ) {}
 
   async recordNativeGoalRequest(input: RecordRuntimeNativeGoalRequestInput): Promise<RunRecord> {
@@ -271,6 +281,14 @@ export class AgentCliRunService {
       throw new Error(runtime.missingReason ?? `${adapter.acceptedLabel} is not authenticated; use the official CLI login flow before execution.`);
     }
     const runtimeCapabilities = agentCliRuntimeCapabilities(runtime);
+    const businessLineId = request.businessLineId ?? task.businessLineId ?? null;
+    const businessLineWorkspace = businessLineId && this.businessLineContextProvider
+      ? await this.businessLineContextProvider.getWorkspace(businessLineId)
+      : null;
+    if (businessLineId && this.businessLineContextProvider && !businessLineWorkspace) {
+      throw new Error(`Business line not found: ${businessLineId}`);
+    }
+    const runtimePrompt = appendBusinessLineContextPackToPrompt(request.prompt, businessLineWorkspace) ?? request.prompt;
 
     const startVerification = evaluateRuntimeVerification({
       mode: 'subtask_start',
@@ -298,7 +316,7 @@ export class AgentCliRunService {
       mode: 'pre_step',
       action: actionEvaluation,
       taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
-        hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || request.prompt.trim()),
+        hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || runtimePrompt.trim()),
       })),
       taskMemoryGuidance,
     });
@@ -348,7 +366,7 @@ export class AgentCliRunService {
     }
     const contextReadiness = evaluateRuntimeContextReadiness({
       contextAssembly,
-      prompt: request.prompt,
+      prompt: runtimePrompt,
       task,
     });
 
@@ -361,16 +379,16 @@ export class AgentCliRunService {
       throw new Error(`Agent CLI workspace root is not a readable directory: ${workspaceRoot}`);
     }
     const run = await this.runRepository.create({
-      ...(request.businessLineId ? { businessLineId: request.businessLineId } : {}),
+      ...(businessLineId ? { businessLineId } : {}),
       taskId: task.id,
       type: 'agent',
-      instructions: `Agent CLI (${runtime.label}) ${sandboxMode}: ${request.prompt}`,
+      instructions: `Agent CLI (${runtime.label}) ${sandboxMode}: ${runtimePrompt}`,
     });
     const runContract = buildRunGoalContract({
       contextGateSummary: contextGate.summary,
       contextManifest,
       executionKind: 'cli',
-      prompt: request.prompt,
+      prompt: runtimePrompt,
       runId: run.id,
       runtimeCapabilities,
       runtimeId,
@@ -384,7 +402,7 @@ export class AgentCliRunService {
       kind: 'plan',
       status: 'completed',
       title: 'agent cli run accepted',
-      input: request.prompt,
+      input: runtimePrompt,
       output: [
         `runtime=${runtime.id}`,
         `sandbox=${sandboxMode}`,
@@ -410,7 +428,7 @@ export class AgentCliRunService {
       kind: 'plan',
       status: contextReadiness.decision === 'blocked' ? 'failed' : 'completed',
       title: 'Agent CLI 上下文就绪判断',
-      input: request.prompt,
+      input: runtimePrompt,
       output: formatRuntimeContextReadinessForStep(contextReadiness),
     });
     await this.runStepRepository.create({
@@ -435,12 +453,13 @@ export class AgentCliRunService {
       contextSummary: buildAgentCliContextBridge({
         capabilityMode,
         contract: runContract,
+        businessLineWorkspace,
         manifest: contextManifest,
         readinessSummary: formatRuntimeContextReadinessForStep(contextReadiness),
         task,
         taskFilesForContext,
       }),
-      prompt: request.prompt,
+      prompt: runtimePrompt,
       sandboxMode,
       task,
       workspaceRoot,
@@ -1007,6 +1026,7 @@ const claudeCodeRunAdapter: AgentCliRunAdapter = {
 };
 
 function buildAgentCliContextBridge(params: {
+  businessLineWorkspace: BusinessLineWorkspace | null;
   capabilityMode: AgentCliCapabilityMode;
   contract: RunGoalContract;
   manifest: RuntimeContextManifest;
@@ -1051,6 +1071,9 @@ function buildAgentCliContextBridge(params: {
     '',
     'Context readiness decision:',
     params.readinessSummary,
+    params.businessLineWorkspace ? '' : null,
+    params.businessLineWorkspace ? 'Business-line source of truth:' : null,
+    params.businessLineWorkspace ? formatBusinessLineContextPackForPrompt(params.businessLineWorkspace) : null,
     taskFilePreviews.length ? '' : null,
     taskFilePreviews.length ? 'Task recovery context preview:' : null,
     ...taskFilePreviews,

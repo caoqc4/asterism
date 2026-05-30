@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
+import type { BusinessLineWorkspace } from '../../../shared/types/business-line.js';
 import type { RunRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import type { PilotDecisionSnapshot } from '../../../shared/pilot-decision-contract.js';
@@ -179,6 +180,88 @@ describe('AgentCliRunService', () => {
       tone: 'warn',
       label: 'Run 任务记忆待处理',
     }));
+  });
+
+  it('injects service-built business-line context into Agent CLI runs', async () => {
+    const runRepository = buildRunRepository();
+    const runStepRepository = buildRunStepRepository();
+    const taskService = buildTaskService(buildTask({
+      businessLineId: 'business_line_product',
+    }));
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Codex CLI final answer.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const businessLineContextProvider = {
+      getWorkspace: vi.fn().mockResolvedValue(buildBusinessLineWorkspace()),
+    };
+    const service = new AgentCliRunService(
+      taskService,
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      runStepRepository,
+      executor,
+      { upsert: vi.fn() },
+      undefined,
+      null,
+      businessLineContextProvider,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Review the next implementation step.',
+      taskId: 'task_1',
+    });
+
+    expect(businessLineContextProvider.getWorkspace).toHaveBeenCalledWith('business_line_product');
+    expect(runRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: 'business_line_product',
+      instructions: expect.stringContaining('BusinessLineContextPack'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'agent cli run accepted',
+      input: expect.stringContaining('BusinessLineContextPack'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent CLI 目标契约',
+      input: expect.stringContaining('BusinessLineContextPack'),
+    }));
+    expect(executor).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.stringContaining('BusinessLineContextPack'),
+    }));
+    const prompt = vi.mocked(executor).mock.calls[0]?.[0].input ?? '';
+    expect(prompt).toContain('Business line: Product line (business_line_product)');
+    expect(prompt).toContain('Accepted SOPs / skills:');
+  });
+
+  it('rejects missing business-line context before creating Agent CLI runs', async () => {
+    const runRepository = buildRunRepository();
+    const businessLineContextProvider = {
+      getWorkspace: vi.fn().mockResolvedValue(null),
+    };
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      runRepository,
+      buildRunStepRepository(),
+      vi.fn(),
+      { upsert: vi.fn() },
+      undefined,
+      null,
+      businessLineContextProvider,
+    );
+
+    await expect(service.trigger({
+      businessLineId: 'missing_business_line',
+      operatorConfirmed: true,
+      prompt: 'Review the next implementation step.',
+      taskId: 'task_1',
+    })).rejects.toThrow('Business line not found: missing_business_line');
+    expect(runRepository.create).not.toHaveBeenCalled();
   });
 
   it('notifies the app when an async Agent CLI run reaches a terminal state', async () => {
@@ -2456,6 +2539,51 @@ function buildTaskService(task: TaskDetail = buildTask()) {
     annotateRunFailed: vi.fn(),
     createSourceContext: vi.fn().mockImplementation(async (input) => input),
     getDetail: vi.fn().mockResolvedValue(task),
+  };
+}
+
+function buildBusinessLineWorkspace(partial: Partial<BusinessLineWorkspace> = {}): BusinessLineWorkspace {
+  const businessLine = {
+    id: 'business_line_product',
+    title: 'Product line',
+    summary: 'Grow the product launch motion.',
+    goal: 'Convert launch evidence into better next actions.',
+    kind: 'software_product',
+    legacyTaskId: null,
+    createdAt: '2026-05-19T00:00:00.000Z',
+    updatedAt: '2026-05-19T00:00:00.000Z',
+  } as BusinessLineWorkspace['businessLine'];
+  return {
+    businessLine,
+    contextPack: {
+      businessSummary: businessLine.summary,
+      currentGoal: businessLine.goal,
+      recentChanges: ['Launch evidence changed the next recommendation.'],
+      activeDecisions: [],
+      openNextActions: [],
+      latestRecords: [],
+      acceptedSkills: [],
+      knownConstraints: ['Do not bypass writeback confirmation.'],
+      permissionBoundaries: ['Runtime output proposes; Taskplane services persist.'],
+      missingContext: [],
+    },
+    learning: {
+      acceptedSkills: [],
+      reviews: [],
+      skillRevisions: [],
+    },
+    nextActions: [],
+    overview: {
+      blockedDecisions: [],
+      latestImprovement: null,
+      latestResult: null,
+      missingContext: [],
+      nextSuggestion: null,
+      recentChanges: ['Launch evidence changed the next recommendation.'],
+    },
+    records: [],
+    sourceRecords: [],
+    ...partial,
   };
 }
 
