@@ -16,6 +16,7 @@ import type {
   BusinessLineTodaySuggestion,
   BusinessLineWorkspace,
   BusinessLineReview,
+  BusinessLineReviewRecordSuggestion,
   CreateBusinessLineInput,
   DisableBusinessLineSkillRevisionInput,
   RecordBusinessLineReviewInput,
@@ -292,6 +293,20 @@ export class BusinessLineService {
     const businessLine = await this.businessLineRepository.findById(input.businessLineId);
     if (!businessLine) throw new Error(`Business line not found: ${input.businessLineId}`);
     const review = await this.businessLineRepository.createReview(input);
+    for (const recordSuggestion of input.recordSuggestions ?? []) {
+      const summary = recordSuggestion.summary.trim();
+      if (!summary) continue;
+      await this.businessLineRepository.createRecord({
+        businessLineId: input.businessLineId,
+        type: this.normalizeReviewRecordType(recordSuggestion),
+        source: recordSuggestion.source?.trim()
+          || (input.sourceRunId ? `run:${input.sourceRunId}` : `review:${review.id}`),
+        summary,
+        confidence: recordSuggestion.confidence ?? input.confidence ?? 70,
+        linkedActionId: input.sourceActionId ?? null,
+        shouldAffectFutureContext: recordSuggestion.shouldAffectFutureContext ?? true,
+      });
+    }
     for (const suggestion of input.skillUpdateSuggestions ?? []) {
       if (!suggestion.trim()) continue;
       const scopePath = 'Learning / SOP';
@@ -638,6 +653,20 @@ export class BusinessLineService {
 
   private templateLabel(template: BusinessLineCreationTemplate): string {
     return template === 'web_product' ? 'Web Product / Software Product' : 'Custom';
+  }
+
+  private normalizeReviewRecordType(record: BusinessLineReviewRecordSuggestion): BusinessLineRecord['type'] {
+    const allowed: BusinessLineRecord['type'][] = [
+      'signal',
+      'hypothesis',
+      'decision',
+      'action',
+      'artifact',
+      'result',
+      'review',
+      'rule',
+    ];
+    return allowed.includes(record.type) ? record.type : 'result';
   }
 
   private async memoryRecordsForBusinessLine(params: {

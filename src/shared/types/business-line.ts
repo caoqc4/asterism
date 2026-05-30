@@ -71,6 +71,43 @@ export type BusinessLineRecord = {
   createdAt: string;
 };
 
+export type BusinessLineReviewRecordSuggestion = {
+  type: BusinessLineRecordType;
+  summary: string;
+  source?: string | null;
+  confidence?: number;
+  shouldAffectFutureContext?: boolean;
+};
+
+export type BusinessLinePostRunReviewOptionType =
+  | 'business_record'
+  | 'next_action'
+  | 'source_context'
+  | 'artifact'
+  | 'decision'
+  | 'proposed_sop_revision';
+
+export type BusinessLinePostRunReviewOption = {
+  type: BusinessLinePostRunReviewOptionType;
+  label: string;
+  ready: boolean;
+  evidence: string[];
+};
+
+export type BusinessLinePostRunReviewOptions = {
+  businessLineId: string;
+  sourceActionId: string;
+  sourceRunId: string;
+  resultSummary: string;
+  evidenceItems: string[];
+  recordSuggestions: BusinessLineReviewRecordSuggestion[];
+  nextActionSuggestions: string[];
+  skillUpdateSuggestions: string[];
+  confidence: number;
+  requiresDecision: boolean;
+  writebackOptions: BusinessLinePostRunReviewOption[];
+};
+
 export type BusinessLineActionStatus = 'active' | 'completed' | 'archived';
 
 export type BusinessLineActionLink = {
@@ -209,9 +246,11 @@ export type CreateBusinessLineInput = {
 export type RecordBusinessLineReviewInput = {
   businessLineId: string;
   sourceActionId?: string | null;
+  sourceRunId?: string | null;
   resultSummary: string;
   evidenceItems?: string[];
   hypothesisChange?: string | null;
+  recordSuggestions?: BusinessLineReviewRecordSuggestion[];
   skillUpdateSuggestions?: string[];
   nextActionSuggestions?: string[];
   confidence?: number;

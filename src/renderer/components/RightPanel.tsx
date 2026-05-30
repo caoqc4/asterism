@@ -11,6 +11,8 @@ import {
 } from '@shared/agent-cli-runtime-status';
 import type { AiRuntimeMode } from '@shared/types/settings';
 import type { RunRecord, RunStepRecord } from '@shared/types/run';
+import type { BusinessLinePostRunReviewOptions } from '@shared/types/business-line';
+import { buildBusinessLinePostRunReviewOptions } from '@shared/business-line-post-run-review';
 import {
   selectBlockingTaskMemoryGuidance,
   type TaskMemoryGuidanceState,
@@ -1662,6 +1664,8 @@ export function RightPanel({
   const [savingSourceContextProposal, setSavingSourceContextProposal] = useState(false);
   const [savingStructuredWritebackProposal, setSavingStructuredWritebackProposal] = useState(false);
   const [savingArtifactProposal, setSavingArtifactProposal] = useState(false);
+  const [savingBusinessLineRunReview, setSavingBusinessLineRunReview] = useState(false);
+  const [businessLineRunReview, setBusinessLineRunReview] = useState<BusinessLinePostRunReviewOptions | null>(null);
   const [thinking, setThinking] = useState(false);
   const [agentCliLaunchNotice, setAgentCliLaunchNotice] = useState<string | null>(null);
   const [taskDecompositionDraft, setTaskDecompositionDraft] = useState<TaskDecompositionDraft | null>(null);
@@ -1920,6 +1924,12 @@ export function RightPanel({
           if (structuredProposal) {
             updateStructuredWritebackProposal((existing) => existing ?? structuredProposal);
           }
+          stageBusinessLinePostRunReview({
+            detailReview: detail.businessLinePostRunReview,
+            output,
+            run: detail,
+            taskId: current.taskId,
+          });
         }
         appendSysMsg(formatAgentCliRunMessage({
           childTaskConversation: suppressMemoryProposal,
@@ -2044,6 +2054,25 @@ export function RightPanel({
       ...prev,
       { id: nextId(), role: 'assistant', text, ts: now() },
     ]);
+  }
+
+  function stageBusinessLinePostRunReview(params: {
+    detailReview?: BusinessLinePostRunReviewOptions | null;
+    output: string;
+    run: RunRecord;
+    taskId: string;
+  }) {
+    if (!activeBusinessLineId || params.run.status !== 'completed') return;
+    const review = params.detailReview ?? buildBusinessLinePostRunReviewOptions({
+      output: params.output,
+      run: {
+        ...params.run,
+        businessLineId: params.run.businessLineId ?? activeBusinessLineId,
+        taskId: params.taskId,
+      },
+      taskTitle: titleCache[params.taskId] ?? activeTaskDetail?.title ?? params.taskId,
+    });
+    if (review) setBusinessLineRunReview(review);
   }
 
   function isChildTaskContext(taskId: string | null): boolean {
@@ -2869,6 +2898,29 @@ export function RightPanel({
     }
   }
 
+  async function confirmBusinessLineRunReview() {
+    if (!businessLineRunReview || savingBusinessLineRunReview || !window.api?.recordBusinessLineReview) return;
+    setSavingBusinessLineRunReview(true);
+    try {
+      const workspace = await window.api.recordBusinessLineReview({
+        businessLineId: businessLineRunReview.businessLineId,
+        sourceActionId: businessLineRunReview.sourceActionId,
+        sourceRunId: businessLineRunReview.sourceRunId,
+        resultSummary: businessLineRunReview.resultSummary,
+        evidenceItems: businessLineRunReview.evidenceItems,
+        recordSuggestions: businessLineRunReview.recordSuggestions,
+        nextActionSuggestions: businessLineRunReview.nextActionSuggestions,
+        skillUpdateSuggestions: businessLineRunReview.skillUpdateSuggestions,
+        confidence: businessLineRunReview.confidence,
+        requiresDecision: businessLineRunReview.requiresDecision,
+      });
+      setBusinessLineRunReview(null);
+      appendSysMsg(`已保存业务线复盘：${workspace.businessLine.title}。`);
+    } finally {
+      setSavingBusinessLineRunReview(false);
+    }
+  }
+
   async function confirmTaskFileWrite() {
     if (
       !activeTaskId
@@ -3203,6 +3255,7 @@ export function RightPanel({
         const runtimeLabel = AGENT_CLI_PANEL_RUNTIME_LABELS[activeAgentCliRuntimeMode];
         setAgentCliLaunchNotice(formatPilotDecisionLaunchNotice(pilotDecision, runtimeLabel));
         const run = await window.api.triggerAgentCliRun({
+          businessLineId: activeBusinessLineId,
           operatorConfirmed: true,
           pilotDecision: buildPilotDecisionSnapshot(pilotDecision),
           prompt: agentCliPrompt,
@@ -3262,6 +3315,12 @@ export function RightPanel({
           if (structuredProposal) {
             updateStructuredWritebackProposal((existing) => existing ?? structuredProposal);
           }
+          stageBusinessLinePostRunReview({
+            detailReview: detail?.businessLinePostRunReview ?? null,
+            output,
+            run,
+            taskId: activeTaskId,
+          });
         }
         if (run.status === 'running') {
           setActiveAgentCliRun({
@@ -3363,6 +3422,12 @@ export function RightPanel({
         if (structuredProposal) {
           updateStructuredWritebackProposal((existing) => existing ?? structuredProposal);
         }
+        stageBusinessLinePostRunReview({
+          detailReview: detail?.businessLinePostRunReview ?? null,
+          output,
+          run,
+          taskId: activeTaskId,
+        });
         replyText = formatAgentCliRunMessage({
           childTaskConversation,
           output,
@@ -4052,6 +4117,86 @@ export function RightPanel({
             <button className="btn sm ghost" onClick={proposeTaskFileWrite}>
               生成文件提案
             </button>
+          </div>
+        )}
+
+        {businessLineRunReview && (
+          <div className="panel-file-proposal">
+            <div className="panel-file-proposal-head">
+              <strong>业务线执行复盘提案</strong>
+              <span>确认后只写入业务线复盘；来源、产物和 Decision 仍需在各自写回卡片中单独确认</span>
+            </div>
+            <div className="panel-refresh-reason">
+              {businessLineRunReview.writebackOptions.map((option) => (
+                <span className={`tag${option.ready ? ' success' : ' muted-tag'}`} key={option.type}>
+                  {option.label}
+                </span>
+              ))}
+            </div>
+            <div className="panel-refresh-reason">
+              绿色标签表示本次 run 已识别到对应写回选项，不会随业务线复盘自动保存。
+            </div>
+            <textarea
+              className="panel-file-proposal-content"
+              value={businessLineRunReview.resultSummary}
+              onChange={(event) => setBusinessLineRunReview((current) => (
+                current ? { ...current, resultSummary: event.target.value } : current
+              ))}
+              aria-label="业务线复盘结果"
+            />
+            <textarea
+              className="panel-file-proposal-content"
+              value={businessLineRunReview.evidenceItems.join('\n')}
+              onChange={(event) => setBusinessLineRunReview((current) => (
+                current
+                  ? {
+                      ...current,
+                      evidenceItems: event.target.value.split('\n').map((item) => item.trim()).filter(Boolean),
+                    }
+                  : current
+              ))}
+              aria-label="业务线复盘证据"
+            />
+            <input
+              className="panel-file-proposal-path"
+              value={businessLineRunReview.nextActionSuggestions[0] ?? ''}
+              onChange={(event) => setBusinessLineRunReview((current) => (
+                current
+                  ? {
+                      ...current,
+                      nextActionSuggestions: event.target.value.trim() ? [event.target.value] : [],
+                    }
+                  : current
+              ))}
+              aria-label="业务线后续 Next Action"
+              placeholder="Optional next action"
+            />
+            <input
+              className="panel-file-proposal-path"
+              value={businessLineRunReview.skillUpdateSuggestions[0] ?? ''}
+              onChange={(event) => setBusinessLineRunReview((current) => (
+                current
+                  ? {
+                      ...current,
+                      skillUpdateSuggestions: event.target.value.trim() ? [event.target.value] : [],
+                    }
+                  : current
+              ))}
+              aria-label="业务线 SOP revision"
+              placeholder="Optional SOP revision"
+            />
+            <div className="panel-refresh-actions">
+              <button className="btn sm ghost" onClick={() => setBusinessLineRunReview(null)}>
+                放弃
+              </button>
+              <button
+                className={`btn sm primary${savingBusinessLineRunReview ? ' disabled' : ''}`}
+                onClick={() => void confirmBusinessLineRunReview()}
+                disabled={savingBusinessLineRunReview || !businessLineRunReview.resultSummary.trim()}
+              >
+                {savingBusinessLineRunReview ? '保存中…' : '确认写入业务线复盘'}
+              </button>
+            </div>
           </div>
         )}
 

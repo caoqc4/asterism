@@ -238,6 +238,66 @@ describe('BusinessLineService', () => {
     expect(workspace?.contextPack.latestRecords.filter((record) => record.type === 'review')).toHaveLength(1);
   });
 
+  it('records completed-run review options as business records, next actions, and proposed SOP revisions', async () => {
+    const created = await service.create({
+      title: 'Run review product',
+      goal: 'Learn from completed execution',
+      kind: 'software_product',
+    });
+    const action = await taskService.create({
+      title: 'Run the launch check',
+      businessLineId: created.id,
+    });
+
+    const workspace = await service.recordReview({
+      businessLineId: created.id,
+      sourceActionId: action.id,
+      sourceRunId: 'run_business_line_execution',
+      resultSummary: 'The completed run found launch evidence.',
+      evidenceItems: ['Run run_business_line_execution completed.'],
+      recordSuggestions: [{
+        type: 'result',
+        source: 'run:run_business_line_execution',
+        summary: 'Launch evidence changed the next recommendation.',
+        confidence: 82,
+        shouldAffectFutureContext: true,
+      }],
+      nextActionSuggestions: ['Follow up on launch evidence.'],
+      skillUpdateSuggestions: ['When launch evidence changes, review it before ranking the next action.'],
+      confidence: 82,
+    });
+
+    expect(workspace.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'result',
+        source: 'run:run_business_line_execution',
+        linkedActionId: action.id,
+        summary: 'Launch evidence changed the next recommendation.',
+      }),
+      expect.objectContaining({
+        type: 'review',
+        linkedActionId: action.id,
+        summary: 'The completed run found launch evidence.',
+      }),
+    ]));
+    expect(workspace.nextActions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        businessLineId: created.id,
+        nextStep: 'Follow up on launch evidence.',
+      }),
+    ]));
+    expect(workspace.learning.skillRevisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        nextContent: 'When launch evidence changes, review it before ranking the next action.',
+        status: 'proposed',
+      }),
+    ]));
+    expect(workspace.overview.nextSuggestion).toMatchObject({
+      businessLineId: created.id,
+      type: 'progress',
+    });
+  });
+
   it('accepts non-risky skill revisions inline', async () => {
     const created = await service.create({
       title: 'Canonical non-risky business line',

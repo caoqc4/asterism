@@ -6,6 +6,7 @@ import type { TaskMemoryGuidanceState } from '../task-memory-guidance-state.js';
 import type { TaskMemoryWriteProposal } from '../task-memory-write-proposal.js';
 import type { AgentCliRuntimeId } from '../agent-cli-runtime-status.js';
 import type { PilotDecisionSnapshot } from '../pilot-decision-contract.js';
+import type { BusinessLinePostRunReviewOptions } from './business-line.js';
 
 export type RunType = 'draft' | 'summarize' | 'agent';
 
@@ -56,6 +57,7 @@ export type RunDetailRecord = RunRecord & {
   verifications?: RunVerificationRecord[];
   runtimeEvents?: RuntimeEventRecord[];
   runtimeReplayGroups?: RuntimeReplayGroup[];
+  businessLinePostRunReview?: BusinessLinePostRunReviewOptions | null;
   taskMemoryGuidance?: TaskMemoryGuidanceState;
   taskMemoryWriteProposals?: TaskMemoryWriteProposal[];
 };
@@ -121,6 +123,7 @@ export type AgentCliRunSandboxMode = 'read-only';
 
 export type CreateAgentCliRunInput = {
   taskId: string;
+  businessLineId?: string | null;
   prompt: string;
   runtimeId?: AgentCliRuntimeId;
   sandboxMode?: AgentCliRunSandboxMode;

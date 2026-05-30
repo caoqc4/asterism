@@ -36,6 +36,7 @@ import {
   type TaskMemoryWriteProposal,
 } from '../../../shared/task-memory-write-proposal.js';
 import { appendBusinessLineContextPackToPrompt } from '../../../shared/business-line-context-pack.js';
+import { buildBusinessLinePostRunReviewOptions } from '../../../shared/business-line-post-run-review.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type { BusinessLineWorkspace } from '../../../shared/types/business-line.js';
 import type {
@@ -184,6 +185,11 @@ export class RunService {
         : [],
       runtimeEvents,
       runtimeReplayGroups: groupRuntimeEventsForReplay(runtimeEvents),
+      businessLinePostRunReview: buildBusinessLinePostRunReviewOptions({
+        output: run.output,
+        run,
+        taskTitle: taskDetail?.title ?? null,
+      }),
       taskMemoryGuidance,
       taskMemoryWriteProposals: taskMemory.writeProposals,
     };
@@ -255,9 +261,12 @@ export class RunService {
 
     const runInput: CreateRunInput = {
       ...input,
-      businessLineId,
-      instructions: appendBusinessLineContextPackToPrompt(input.instructions, businessLineWorkspace),
+      ...(businessLineId ? { businessLineId } : {}),
     };
+    const runInstructions = appendBusinessLineContextPackToPrompt(input.instructions, businessLineWorkspace);
+    if (runInstructions !== undefined) {
+      runInput.instructions = runInstructions;
+    }
     const created = await this.runRepository.create(runInput);
     const contextReadiness = evaluateRuntimeContextReadiness({
       prompt: runInput.instructions ?? '',

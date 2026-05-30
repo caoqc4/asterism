@@ -383,6 +383,7 @@ function buildRun(partial: Partial<RunRecord> = {}): RunRecord {
   return {
     id: partial.id ?? 'run_1',
     taskId: partial.taskId ?? 'task_1',
+    businessLineId: partial.businessLineId ?? null,
     type: partial.type ?? 'agent',
     status: partial.status ?? 'completed',
     instructions: partial.instructions ?? null,
@@ -1111,12 +1112,14 @@ function createMockApi() {
       return run ? buildRunDetail(run) : null;
     }),
     triggerRun: vi.fn().mockImplementation(async (input) => buildRun({
+      businessLineId: input.businessLineId ?? null,
       id: 'run_created',
       taskId: input.taskId,
       type: input.type,
     })),
     triggerAgentCliRun: vi.fn().mockImplementation(async (input) => {
       const run = buildRun({
+        businessLineId: input.businessLineId ?? null,
         id: 'run_agent_cli_created',
         output: null,
         outputSource: null,
@@ -1949,6 +1952,109 @@ describe('App redesign v1', () => {
           }),
         }),
         taskId: 'task_risk',
+      }));
+    });
+  });
+
+  it('executes a business-line Next Action through the panel runtime and saves post-run review options', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_execution',
+      title: 'Execution product',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [buildTask({
+        id: 'task_business_line_action',
+        title: 'Run launch evidence check',
+        businessLineId: line.id,
+        nextStep: 'Check launch evidence.',
+      })],
+    });
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    vi.mocked(harness.api.triggerRun).mockImplementationOnce(async (input) => buildRun({
+      id: 'run_business_line_execution',
+      businessLineId: input.businessLineId ?? null,
+      output: 'Launch evidence changed the next recommendation.',
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: input.taskId,
+      type: input.type,
+    }));
+    vi.mocked(harness.api.getRunDetail).mockResolvedValueOnce(buildRunDetail(buildRun({
+      id: 'run_business_line_execution',
+      businessLineId: line.id,
+      output: 'Launch evidence changed the next recommendation.',
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: 'task_business_line_action',
+      type: 'agent',
+    }), {
+      businessLinePostRunReview: {
+        businessLineId: line.id,
+        sourceActionId: 'task_business_line_action',
+        sourceRunId: 'run_business_line_execution',
+        resultSummary: 'Launch evidence changed the next recommendation.',
+        evidenceItems: ['Run run_business_line_execution completed for task task_business_line_action.'],
+        recordSuggestions: [{
+          type: 'result',
+          source: 'run:run_business_line_execution',
+          summary: 'Launch evidence changed the next recommendation.',
+          confidence: 75,
+          shouldAffectFutureContext: true,
+        }],
+        nextActionSuggestions: ['Follow up on launch evidence.'],
+        skillUpdateSuggestions: ['Review launch evidence before ranking this business line.'],
+        confidence: 75,
+        requiresDecision: false,
+        writebackOptions: [
+          { type: 'business_record', label: 'Business record', ready: true, evidence: ['run:run_business_line_execution'] },
+          { type: 'next_action', label: 'Next action', ready: true, evidence: ['Follow up on launch evidence.'] },
+          { type: 'source_context', label: 'Source context', ready: false, evidence: [] },
+          { type: 'artifact', label: 'Artifact', ready: false, evidence: [] },
+          { type: 'decision', label: 'Decision', ready: false, evidence: [] },
+          { type: 'proposed_sop_revision', label: 'Proposed SOP revision', ready: true, evidence: ['Review launch evidence before ranking this business line.'] },
+        ],
+      },
+    }));
+    vi.mocked(harness.api.recordBusinessLineReview!).mockResolvedValue(buildBusinessLineWorkspace({ businessLine: line }));
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'Next Actions' }));
+    await user.click(await screen.findByRole('button', { name: '执行' }));
+    const input = await screen.findByRole('textbox');
+    await user.clear(input);
+    await user.type(input, '开始执行当前任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerRun).toHaveBeenCalledWith(expect.objectContaining({
+        businessLineId: line.id,
+        requestSurface: 'right_panel_agent_execution',
+        taskId: 'task_business_line_action',
+      }));
+    });
+    expect(await screen.findByText('业务线执行复盘提案')).toBeTruthy();
+    expect(screen.getByText('Business record')).toBeTruthy();
+    expect(screen.getByText('Next action')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '确认写入业务线复盘' }));
+
+    await waitFor(() => {
+      expect(harness.api.recordBusinessLineReview).toHaveBeenCalledWith(expect.objectContaining({
+        businessLineId: line.id,
+        sourceActionId: 'task_business_line_action',
+        sourceRunId: 'run_business_line_execution',
+        recordSuggestions: [expect.objectContaining({
+          source: 'run:run_business_line_execution',
+          type: 'result',
+        })],
+        nextActionSuggestions: ['Follow up on launch evidence.'],
+        skillUpdateSuggestions: ['Review launch evidence before ranking this business line.'],
       }));
     });
   });

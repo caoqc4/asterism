@@ -532,6 +532,73 @@ describe('RunService', () => {
     expect(runStepRepository.create).not.toHaveBeenCalled();
   });
 
+  it('returns post-run business line review options from completed run detail', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        businessLineId: 'business_line_product',
+        output: JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [
+            {
+              type: 'source_context.create',
+              title: 'Launch evidence',
+              note: 'Customer proof should affect future suggestions.',
+            },
+            {
+              type: 'decision.create',
+              title: 'Confirm launch direction',
+              rationale: 'The result changes product direction.',
+            },
+          ],
+        }),
+        outputSource: 'ai',
+      }),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const runCheckpointRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const agentSessionRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const service = new RunService(
+      runRepository as never,
+      { getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')) } as never,
+      buildArtifactRepositoryMock() as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+      null,
+      runCheckpointRepository as never,
+      agentSessionRepository as never,
+    );
+
+    const detail = await service.getDetail('run_1');
+
+    expect(detail?.businessLinePostRunReview).toMatchObject({
+      businessLineId: 'business_line_product',
+      sourceActionId: 'task_1',
+      sourceRunId: 'run_1',
+      recordSuggestions: [expect.objectContaining({
+        source: 'run:run_1',
+        type: 'result',
+      })],
+      writebackOptions: expect.arrayContaining([
+        expect.objectContaining({ ready: true, type: 'business_record' }),
+        expect.objectContaining({ ready: true, type: 'source_context' }),
+        expect.objectContaining({ ready: true, type: 'decision' }),
+        expect.objectContaining({ type: 'artifact' }),
+        expect.objectContaining({ type: 'next_action' }),
+        expect.objectContaining({ type: 'proposed_sop_revision' }),
+      ]),
+    });
+  });
+
   it('returns run detail with execution steps, checkpoints, and agent sessions', async () => {
     const runRepository = {
       list: vi.fn(),

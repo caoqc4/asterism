@@ -361,6 +361,7 @@ export class AgentCliRunService {
       throw new Error(`Agent CLI workspace root is not a readable directory: ${workspaceRoot}`);
     }
     const run = await this.runRepository.create({
+      ...(request.businessLineId ? { businessLineId: request.businessLineId } : {}),
       taskId: task.id,
       type: 'agent',
       instructions: `Agent CLI (${runtime.label}) ${sandboxMode}: ${request.prompt}`,
@@ -897,6 +898,7 @@ function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): NormalizedAge
   }
   return {
     operatorConfirmed: input.operatorConfirmed === true,
+    businessLineId: input.businessLineId?.trim() || null,
     prompt: input.prompt?.trim() ?? '',
     runtimeId: input.runtimeId ?? 'codex',
     sandboxMode: 'read-only',

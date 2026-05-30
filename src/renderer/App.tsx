@@ -103,14 +103,15 @@ export function App() {
     draftPrompt?: string,
     taskId?: string | null,
     taskTitle?: string | null,
+    autoSendDraftPrompt = false,
     prefillDraftPrompt = true,
   ) => {
     setPanelBusinessLineId(businessLineId);
     setPanelBusinessLineTitle(businessLineTitle);
     setPanelTaskId(taskId ?? null);
     setPanelTaskTitle(taskTitle ?? null);
-    setPanelDraftPrompt(prefillDraftPrompt ? draftPrompt ?? null : null);
-    setPanelAutoSendDraftPrompt(false);
+    setPanelDraftPrompt((prefillDraftPrompt || autoSendDraftPrompt) ? draftPrompt ?? null : null);
+    setPanelAutoSendDraftPrompt(autoSendDraftPrompt);
     setPanelSelectedFile(taskId && workspaceSelection.taskId === taskId ? workspaceSelection.selectedFile : null);
     setPanelSessionKey((current) => current + 1);
     setPanelOpen(true);

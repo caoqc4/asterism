@@ -20,6 +20,7 @@ interface BusinessLinesPageProps {
     draftPrompt?: string,
     taskId?: string | null,
     taskTitle?: string | null,
+    autoSendDraftPrompt?: boolean,
   ) => void;
   onOpenTask: (taskId: string) => void;
   focusBusinessLineId?: string | null;
@@ -357,17 +358,34 @@ function OverviewTab({ workspace, onOpenBusinessLinePanel }: {
                 <span key={source}>{source}</span>
               ))}
             </div>
-            <button
-              className="btn sm primary"
-              onClick={() => onOpenBusinessLinePanel(
-                workspace.businessLine.id,
-                workspace.businessLine.title,
-                `请推进这个业务线 Next Action，并在完成后准备 post-action review。\n\n业务线：${workspace.businessLine.title}\n为什么现在：${suggestion.whyNow}\n下一步：${suggestion.nextStep}`,
-                suggestion.taskId,
+            <div className="business-action-buttons">
+              {suggestion.taskId && (
+                <button
+                  className="btn sm primary"
+                  onClick={() => onOpenBusinessLinePanel(
+                    workspace.businessLine.id,
+                    workspace.businessLine.title,
+                    `开始执行当前任务。\n\n业务线：${workspace.businessLine.title}\n为什么现在：${suggestion.whyNow}\n下一步：${suggestion.nextStep}\n\n完成后请返回可复盘的结果、证据和可能的 TASKPLANE_WRITE_INTENTS。`,
+                    suggestion.taskId,
+                    suggestion.nextStep,
+                    true,
+                  )}
+                >
+                  执行
+                </button>
               )}
-            >
-              推进
-            </button>
+              <button
+                className="btn sm"
+                onClick={() => onOpenBusinessLinePanel(
+                  workspace.businessLine.id,
+                  workspace.businessLine.title,
+                  `请推进这个业务线 Next Action，并在完成后准备 post-action review。\n\n业务线：${workspace.businessLine.title}\n为什么现在：${suggestion.whyNow}\n下一步：${suggestion.nextStep}`,
+                  suggestion.taskId,
+                )}
+              >
+                AI 协助
+              </button>
+            </div>
           </div>
         ) : (
           <p className="muted">暂无建议。</p>
@@ -438,6 +456,19 @@ function NextActionsTab({ workspace, onOpenBusinessLinePanel, onOpenTask }: {
               <button className="btn sm" onClick={() => onOpenTask(task.id)}>详情</button>
               <button
                 className="btn sm primary"
+                onClick={() => onOpenBusinessLinePanel(
+                  workspace.businessLine.id,
+                  workspace.businessLine.title,
+                  `开始执行当前任务。\n\n业务线：${workspace.businessLine.title}\nNext Action：${task.title}\n下一步：${task.nextStep ?? task.summary ?? task.title}\n\n完成后请返回可复盘的结果、证据和可能的 TASKPLANE_WRITE_INTENTS。`,
+                  task.id,
+                  task.title,
+                  true,
+                )}
+              >
+                执行
+              </button>
+              <button
+                className="btn sm"
                 onClick={() => onOpenBusinessLinePanel(
                   workspace.businessLine.id,
                   workspace.businessLine.title,
