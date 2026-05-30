@@ -12,7 +12,7 @@ authoritative
 
 ## Purpose
 
-Pilot is Taskplane's product-side decision posture. It is not a currently separate always-running agent. It judges and coordinates; it does not own durable state and does not replace executor runtimes.
+Pilot is Taskplane's product-side decision posture. It is not a currently separate always-running agent. It judges and coordinates business-line advancement, loop attention, and executor selection; it does not own durable state and does not replace executor runtimes.
 
 The role is always available at the product-control layer, but this document is
 not a second always-loaded total rule. Pilot composes GoalPilot movement with
@@ -42,7 +42,7 @@ visibility.
 
 | Role | Owns | Does not own |
 | --- | --- | --- |
-| Pilot | route, priority, context readiness, message priority, executor choice, escalation, verification posture | direct task mutation or long task execution |
+| Pilot | route, priority, context readiness, business-line loop attention, message priority, executor choice, escalation, verification posture | direct task mutation, scheduler policy ownership, or long task execution |
 | Executor | concrete work through Codex, Claude, API, matrix runtime, tool run, or human action | Taskplane state authority |
 
 This is a dual-role product model, not a mandatory two-agent or two-process architecture. The first implementation may run Pilot as rules plus bounded decision calls.
@@ -131,17 +131,18 @@ Executor choice is separate from Pilot backend choice:
 - matrix runtime for multi-agent mission-internal execution when available.
 
 Future matrix executors are delegated mission engines. Taskplane remains the
-mission control layer that verifies outcome evidence.
+business-line and mission control layer that verifies outcome evidence.
 
 ## Wanman Reference Boundary
 
 Wanman-style coordinators usually coordinate multiple agents inside one
-mission. Taskplane Pilot coordinates across tasks and missions first, then may
-delegate one selected mission to a matrix executor.
+mission. Taskplane Pilot coordinates across business lines, Next Actions, loop
+signals, and missions first, then may delegate one selected mission to a matrix
+executor.
 
 Do not turn GoalPilot into an agent matrix runtime. Reserve `wanman_matrix` as
-an executor backend while keeping Taskplane's task, evidence, decision, and
-memory authority.
+an executor backend while keeping Taskplane's business-line loop, task,
+evidence, decision, and memory authority.
 
 ## Hooks And Gates
 

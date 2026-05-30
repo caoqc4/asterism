@@ -62,8 +62,9 @@ to propose structured write intent.
 - `taskplane.pilot-decision-contract.v1` defines how a GoalPilot movement and
   priority signal become message priority, DecisionBackend choice, executor
   routing, and escalation.
-- `taskplane.priority-attention-routing.v1` defines the shared Brief/Pilot
-  priority language for competing tasks.
+- `taskplane.priority-attention-routing.v1` defines the shared Today/Brief/Pilot
+  business-line attention and why-now language for competing business lines,
+  Next Actions, and legacy task queue compatibility inputs.
 - `taskplane.agent-operating-principles.v1` loads for execution-level rules,
   runtime runs, tools, subagents, state mutation, and completion claims.
 - `taskplane.agent-output-contract.v1` decides how the chosen movement appears
@@ -167,7 +168,8 @@ events, proposed intents, persistent goal loop evidence, and execution evidence.
 Executor is the role that performs concrete work. Today an executor may be
 Codex CLI, Claude Code, API Runtime, a local rule path, or a human action. A
 future `wanman_matrix` executor can coordinate multiple mission-internal
-agents, while Taskplane Pilot remains the cross-task mission control layer.
+agents, while Taskplane Pilot remains the business-line, Next Action, and
+mission control layer.
 
 ## Product Rule Skills And Hooks
 
@@ -788,19 +790,31 @@ Current implementation:
 - Main-side Taskplane writeback dispatch calls the shared decision before
   applying validated Write Intent through task, decision, source, file, or
   subtask services.
-- `AgentAutomationReadiness` can diagnose scheduled, event-triggered, and
-  routine tasks when procedure, inputs, runtime, risk, and completion criteria
-  are present, but it still returns `automaticStartAllowed: false` and blocks
-  default read-only native runtime auto-start until a separate scheduled/event
-  execution entrypoint is available. Its summary includes `automationReady`,
-  `requirements=x/9`, and `missingRequirements=...` /
-  `automationMissingRequirements=...` evidence. The dedicated scheduled/event
-  trigger planner may mark `scheduledEventEntrypoint=available` only when the
-  scheduler trigger service is connected; final runtime start still depends on
-  Standing Approval, run-limit evidence, and post-step gates.
+- A business-line loop is the product-level scheduler object: it observes a
+  business line, proposes or executes bounded Next Actions, captures review
+  evidence, and feeds records or SOP updates back through Taskplane gates.
+  Scheduled, event-triggered, and routine tasks are execution carriers inside
+  that loop, not the durable scheduler owner.
+- A sensor is read-only loop observation. It can inspect time, external events,
+  source changes, run health, or task state and return evidence, but it cannot
+  mutate Taskplane data or start a runtime by itself.
+- An automation is a bounded loop action. It may start only after trigger
+  readiness proves the business line, carrier task, selected runtime, Standing
+  Approval, daily run-limit evidence, and post-step review/writeback gates.
+- `AgentAutomationReadiness` can diagnose business-line loop carriers such as
+  scheduled, event-triggered, and routine tasks when procedure, inputs, runtime,
+  risk, and completion criteria are present, but it still returns
+  `automaticStartAllowed: false` and blocks default read-only native runtime
+  auto-start until a separate scheduled/event execution entrypoint is available.
+  Its summary includes `automationReady`, `requirements=x/9`, and
+  `missingRequirements=...` / `automationMissingRequirements=...` evidence. The
+  dedicated scheduled/event trigger planner may mark
+  `scheduledEventEntrypoint=available` only when the scheduler trigger service
+  is connected; final runtime start still depends on Standing Approval,
+  run-limit evidence, and post-step gates.
 - Read-only orchestration diagnostics expose the automatic-start boundary, so
-  manual/operator-started readiness is distinct from scheduled/event tasks that
-  require a separate execution entrypoint.
+  manual/operator-started readiness is distinct from scheduled/event carriers
+  that require a separate execution entrypoint.
 - `AgentStandingApprovalPolicy` is the shared L2 authorization surface. It is
   accepted only when the policy is active, unexpired, scoped to the task type or
   task id, allows the requested lane and runtime, stays within the risk ceiling
@@ -822,19 +836,20 @@ Current implementation:
   still required before any automatic native runtime start.
 - `planScheduledEventAgentTrigger` is the shared no-start trigger planner. It
   consumes confirmed Standing Approval Task Dynamics records, re-checks runtime
-  readiness, task readiness, policy expiry/scope/risk, and scheduled/event task
-  class, accepts explicit daily run-limit accounting input, blocks plans when
-  `maxRunsPerDay` is reached, then returns a ready/blocked plan. By default the
-  plan stays no-start with `runtimeStartAllowed=false`; when a dedicated
-  trigger service is explicitly connected and daily run-limit count evidence is
-  present, a ready plan may return `runtimeStartAllowed=true`. The plan exposes
-  runtime-start satisfied and missing requirement lists plus
+  readiness, carrier-task readiness, policy expiry/scope/risk, and
+  scheduled/event task class, accepts explicit daily run-limit accounting input,
+  blocks plans when `maxRunsPerDay` is reached, then returns a ready/blocked
+  plan. By default the plan stays no-start with `runtimeStartAllowed=false`;
+  when a dedicated trigger service is explicitly connected and daily run-limit
+  count evidence is present, a ready plan may return
+  `runtimeStartAllowed=true`. The plan exposes runtime-start satisfied and
+  missing requirement lists plus
   `runtimeStartReady`, `runtimeStartRequirements=x/3`, and
   `runtimeStartMissingRequirements=...` evidence for trigger-plan readiness,
   scheduler trigger service connection, and run-limit count. The plan also carries the
-  trigger Run evidence contract: context readiness, target-task identity,
-  task-memory coverage, task-memory guidance, subtask-start, run-limit count,
-  and post-step evidence.
+  trigger Run evidence contract: context readiness, target business-line
+  evidence when available, target-task identity, task-memory coverage,
+  task-memory guidance, subtask-start, run-limit count, and post-step evidence.
 - `SchedulerService.diagnoseScheduledEventAgentTriggers` wires the planner to a
   scheduler diagnostic entrypoint. It reads selected-runtime readiness from AI
   config status, uses `RunRepository.countCreatedSinceByTask` for persisted
@@ -882,6 +897,15 @@ Current implementation:
   the started run as a blocked task. Failed sweeps release the in-flight guard,
   so the operator can see background automation health even when the sweep
   correctly starts no run or recovers after a failed sweep.
+- Post-run review is part of the loop contract. A scheduled/event carrier may
+  produce run evidence, source context, artifacts, business records, review
+  proposals, Next Actions, or SOP revision proposals, but risky mutation,
+  external/public effects, money-affecting changes, or cross-business reuse
+  remain Decision-gated before they can become active context.
+- Wanman or other matrix runtimes remain executor backends below Taskplane
+  Pilot. They may execute one delegated loop action and return evidence, but
+  they do not own the business-line loop, scheduler policy, Standing Approval,
+  run-limit accounting, review gate, or durable write authority.
 - The retained Agent API project-decomposition confirmation path now builds the
   same `subtask.create_many` apply plan as native CLI decomposition, including
   parent summary, parent/child criteria, dependencies, project timeline, and
@@ -901,10 +925,10 @@ Remaining work:
   selected-runtime contract, target-task identity, context readiness,
   task-memory, Run Goal, Write Intent, reviewed-patch, subtask-start, post-step,
   and Run evidence gates pass.
-- If scheduled/event native runtime execution is promoted, use a dedicated
-  scheduled/event entrypoint and confirmation model rather than
-  `scheduler_maintenance`, scheduled Brief assistance, or generic automation
-  readiness.
+- If scheduled/event native runtime execution is promoted, keep it inside the
+  business-line loop contract: use a dedicated scheduled/event entrypoint and
+  confirmation model rather than `scheduler_maintenance`, scheduled Brief
+  assistance, or generic automation readiness.
 
 ### Phase 5: API Decision Backend
 

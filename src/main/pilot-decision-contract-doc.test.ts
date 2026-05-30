@@ -9,6 +9,7 @@ describe('Pilot Decision Contract spec', () => {
 
     expect(spec).toContain('Document id: `taskplane.pilot-decision-contract.v1`');
     expect(spec).toContain('not a currently separate always-running agent');
+    expect(spec).toContain('business-line advancement, loop attention, and executor selection');
     expect(spec).toContain('not a mandatory two-agent or two-process architecture');
     expect(spec).toContain('not a second always-loaded total rule');
     expect(spec).toContain('| `product_control_layer` |');
@@ -30,6 +31,9 @@ describe('Pilot Decision Contract spec', () => {
     expect(spec).toContain('| `steer` |');
     expect(spec).toContain('| `escalate` |');
     expect(spec).toContain('wanman_matrix');
+    expect(spec).toContain('business-line loop attention');
+    expect(spec).toContain('business-line and mission control layer');
+    expect(spec).toContain('business-line loop, task,');
     expect(spec).toContain('Do not turn GoalPilot into an agent matrix runtime.');
     expect(spec).toContain('Taskplane gates and write services remain');
   });

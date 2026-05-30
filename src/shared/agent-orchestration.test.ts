@@ -499,7 +499,7 @@ describe('agent orchestration snapshot', () => {
     expect(readiness.summary).toContain('runtime');
   });
 
-  it('keeps scheduled event and routine tasks at proposal autonomy until a standing approval exists', () => {
+  it('keeps scheduled/event/routine task carriers at proposal autonomy until a business-line loop has standing approval', () => {
     const readiness = evaluateSkillInformedAutomationReadiness({
       snapshot: readyAutomationSnapshot(),
       task: matureAutomationTask({

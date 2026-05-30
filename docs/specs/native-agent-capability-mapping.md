@@ -126,7 +126,7 @@ Claude Code's strongest pattern for Taskplane is its staged permission ladder:
 | `plan` mode | Explore and propose before changing disk. | `context.readiness.evaluate` returns `plan_first`; show plan proposal before write-capable work. |
 | `acceptEdits` | User accepts a plan, then reviews diffs after execution. | Future write-capable run mode with patch/artifact approval. |
 | `auto` mode | Autonomy requires background classification and fallback. | Runtime action classifier plus repeated-block fallback to confirmation. |
-| `dontAsk` | Non-interactive runs need pre-approved tool lists. | CI/scheduled task lanes can use allowlisted tools only. |
+| `dontAsk` | Non-interactive runs need pre-approved tool lists. | CI and business-line loop lanes can use allowlisted tools only when scheduled/event task carriers pass Standing Approval gates. |
 | `bypassPermissions` | Full autonomy belongs only in isolated sandboxes. | Never expose bypass to ordinary Taskplane runs; use disposable sandbox only. |
 
 Other Claude Code mechanisms also map directly:
@@ -167,8 +167,9 @@ state, evidence, and review across runtimes.
 
 Wanman-style matrix runtimes are useful reference executors, not Taskplane's
 product identity. They coordinate multiple agents inside one delegated mission.
-Taskplane Pilot coordinates across tasks and missions, chooses what deserves
-attention, selects an executor, and verifies outcome evidence.
+Taskplane Pilot coordinates across business lines, Next Actions, and missions,
+chooses what deserves attention, selects an executor, and verifies outcome
+evidence.
 
 Taskplane should therefore model a matrix runtime as an executor capability:
 
@@ -183,7 +184,8 @@ Taskplane should therefore model a matrix runtime as an executor capability:
 
 The useful lesson is supervisor discipline: event logs, isolated workspaces,
 capability declarations, skill snapshots, and explicit escalation boundaries.
-Do not replace Taskplane's mission control layer with a black-box matrix.
+Do not replace Taskplane's business-line control layer, scheduler loop, or
+mission control layer with a black-box matrix.
 
 ## Context Readiness Pattern
 
@@ -283,6 +285,9 @@ runtime.
 - Pilot Decision Contract defines how selected movement and priority become
   DecisionBackend choice, message priority, executor selection, and
   matrix-runtime delegation boundary.
+- Native Runtime Orchestration defines business-line loop scheduling, sensors,
+  automations, Standing Approval, trigger readiness, run-limit evidence, review,
+  and Decision-gated mutation for scheduled/event carriers.
 - Pilot operation mode is a product-control choice first. Persistent AI Pilot
   remains a future opt-in capability, not a requirement for native CLI support.
 - Priority Attention Routing defines Brief/Pilot focus selection when multiple

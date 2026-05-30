@@ -26,6 +26,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('structured promotion');
     expect(content).toContain('Write Intent extraction');
     expect(content).toContain('reviewed-patch apply');
+    expect(content).toContain('business-line attention and why-now language');
+    expect(content).toContain('legacy task queue compatibility inputs');
     expect(content).toContain('provider-visible preflight');
     expect(content).toContain('executionRunPromotionRequirements=0/11');
     expect(content).toContain('executionRunMissingRequirements=...');
@@ -33,6 +35,8 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('`product_control_layer` or');
     expect(content).toContain('`persistent_ai_pilot_reserved` is a future');
     expect(content).toContain('future `wanman_matrix` executor');
+    expect(content).toContain('business-line, Next Action, and');
+    expect(content).toContain('mission control layer');
     expect(content).toContain('completed chat summary');
     expect(content).toContain('local');
     expect(content).toContain('command/workspace activity');
@@ -116,6 +120,14 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('guard');
     expect(content).toContain('background automation');
     expect(content).toContain('health');
+    expect(content).toContain('business-line loop is the product-level scheduler object');
+    expect(content).toContain('Scheduled, event-triggered, and routine tasks are execution carriers');
+    expect(content).toContain('A sensor is read-only loop observation');
+    expect(content).toContain('An automation is a bounded loop action');
+    expect(content).toMatch(/trigger\s+readiness proves the business line/);
+    expect(content).toContain('Post-run review is part of the loop contract');
+    expect(content).toContain('remain Decision-gated before they can become active context');
+    expect(content).toContain('Wanman or other matrix runtimes remain executor backends below Taskplane');
     expect(content).toContain('adapter-level native capability declarations');
     expect(content).toContain('provider help output');
     expect(content).toContain('compact/clear context');
