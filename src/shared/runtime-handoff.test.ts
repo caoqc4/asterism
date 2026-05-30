@@ -60,6 +60,7 @@ describe('runtime handoff', () => {
 
     expect(result.canProceed).toBe(false);
     expect(result.action).toBe('block');
+    expect(result.handoffType).toBe('ephemeral_session_handoff');
     expect(result.requiresArchive).toBe(true);
   });
 
@@ -220,6 +221,7 @@ describe('runtime handoff', () => {
 
     expect(result.canProceed).toBe(true);
     expect(result.action).toBe('handoff_to_task');
+    expect(result.handoffType).toBe('next_action_handoff');
     expect(result.toTaskId).toBe('child-1');
     expect(buildRuntimeResumePlan(result).source).toBe('handoff');
   });
@@ -241,6 +243,7 @@ describe('runtime handoff', () => {
 
     expect(result.canProceed).toBe(false);
     expect(result.action).toBe('block');
+    expect(result.handoffType).toBe('next_action_handoff');
     expect(result.autoContextClear).toMatchObject({
       outcome: 'needs_memory_write',
       reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
@@ -256,6 +259,7 @@ describe('runtime handoff', () => {
 
     expect(result.canProceed).toBe(false);
     expect(result.action).toBe('block');
+    expect(result.handoffType).toBe('runtime_or_subagent_handoff');
     expect(result.autoContextClear).toMatchObject({
       outcome: 'needs_user_decision',
       shouldAsk: true,

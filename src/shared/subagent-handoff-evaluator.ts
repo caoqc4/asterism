@@ -1,3 +1,5 @@
+import type { HandoffV2Type } from './context-preservation.js';
+
 export type SubagentActionKind =
   | 'analysis'
   | 'implementation'
@@ -52,6 +54,7 @@ export type SubagentHandoff = {
 
 export type SubagentHandoffEvaluation = {
   allowed: boolean;
+  handoffType: HandoffV2Type;
   tone: 'pass' | 'warn' | 'fail';
   summary: string;
   issueCount: number;
@@ -158,6 +161,7 @@ export function evaluateSubagentHandoff(params: {
   const allowed = errorCount === 0;
   return {
     allowed,
+    handoffType: 'runtime_or_subagent_handoff',
     tone: errorCount > 0 ? 'fail' : warningCount > 0 ? 'warn' : 'pass',
     summary: errorCount > 0
       ? `子代理交接未通过：${issues.find((item) => item.severity === 'error')?.message ?? '存在阻断问题。'}`

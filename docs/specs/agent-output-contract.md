@@ -22,8 +22,8 @@ run records, memory, and verification.
 
 The goal is to keep the user in control while hiding unnecessary machinery.
 Runtime adapters may use Codex CLI, Claude Code, or a future Agent API, but
-ordinary task conversation should feel like one Taskplane Agent helping with
-the current task.
+ordinary business-line or Next Action conversation should feel like one
+Taskplane Agent helping with the current work.
 
 ## Required Relationship
 
@@ -91,11 +91,11 @@ movement.
 | Clarify | Chat message | One or two short sentences; ask only the key question or small set of questions that unblock the next useful move; when reasonable defaults exist, state them and proceed. |
 | Shape | Chat message or editable draft card | Briefly state the current understanding and propose goal, scope, acceptance criteria, or next step only as far as needed. |
 | Decompose | Decomposition draft | Use a structured draft card with child title, goal or summary, acceptance criterion, dependency, and confirmation action. |
-| Select next task | Chat message or task navigation affordance | Name the selected child or successor and the reason in one concise sentence. |
+| Select Next Action | Chat message or navigation affordance | Name the selected Next Action, child, or successor and the reason in one concise sentence. |
 | Execute | Run or progress card plus final chat summary | Keep chat user-meaningful; store tool details, stdout, run ids, and recovery evidence in run detail or task dynamics. |
 | Verify | Verification result | State pass, fail, or needs confirmation; include the most important evidence gap or risk. |
-| Persist | Task dynamics, memory proposal, Task.md, or Task Record | Do not expose routine writes in chat; show a proposal card only when confirmation is required. |
-| Handoff | Chat message plus durable handoff when needed | Say what is ready next and where recovery context was preserved; do not dump archived context. |
+| Persist | Task dynamics, memory proposal, Business Record, Task.md, or Task Record | Do not expose routine writes in chat; show a proposal card only when confirmation is required. |
+| Handoff | Chat message plus typed handoff when needed | Say what is ready next, the handoff type when useful, and where recovery pointers were preserved; do not dump archived context. |
 | Pause | Chat message or Decision card | State the blocker, dependency, missing context, or approval needed, then give one recoverable next action. |
 
 If a turn combines movements, render the highest-risk or most user-visible
@@ -163,7 +163,8 @@ Use this when checking whether a task, subtask, run, or phase is acceptable.
 
 ### Memory Synthesis
 
-Use this when the harness decides whether task memory should be updated.
+Use this when the harness decides whether business/task memory should be
+updated.
 
 - Do not show routine memory-writing mechanics as ordinary chat messages.
 - Create or update task dynamics automatically when the evidence is routine.
@@ -175,11 +176,22 @@ Use this when the harness decides whether task memory should be updated.
 
 ### Context Refresh And Handoff
 
-Use this when switching tasks, clearing context, or handing off work.
+Use this when switching business lines or Next Actions, clearing context, or
+handing off work.
 
 - Briefly say what changed and what is ready next.
 - Do not dump archived context into chat.
 - Preserve durable handoff content through the memory spec before clearing.
+- Render `ephemeral_session_handoff` as a brief transition or refresh notice;
+  hide scratch details unless the user asks.
+- Render `durable_business_handoff` as a Business Record proposal/card when it
+  changes future business recovery.
+- Render `next_action_handoff` as a concise Next Action/task recovery note or
+  Task Record proposal/card when execution state must transfer.
+- Render `runtime_or_subagent_handoff` as a run/subagent result awaiting
+  evaluation; do not present proposed writes as already applied.
+- Show pointers to records, Runs, files, Decisions, sources, and artifacts
+  instead of copying the transcript or raw runtime output.
 
 ## Visibility Rules
 
@@ -195,7 +207,7 @@ Normal chat should hide:
 
 Normal chat may show:
 
-- concise task status in user language;
+- concise business-line or Next Action status in user language;
 - one clear question or next action;
 - a short explanation of why the Agent is blocked;
 - confirmation requests for meaningful durable changes.

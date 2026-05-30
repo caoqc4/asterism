@@ -6,7 +6,7 @@ import {
 } from './context-preservation.js';
 
 describe('context preservation', () => {
-  it('does not require task-level preservation outside task context', () => {
+  it('does not require preservation outside business-line or task context', () => {
     expect(evaluateContextPreservation({
       hasTaskContext: false,
       messages: [{ role: 'user', text: '目标是稍后创建一个任务' }],
@@ -53,6 +53,38 @@ describe('context preservation', () => {
       'task_record',
       'source_context',
     ]));
+  });
+
+  it('routes durable business handoff signals to Business Records', () => {
+    const result = evaluateContextPreservation({
+      handoffType: 'durable_business_handoff',
+      hasBusinessLineContext: true,
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '阶段收尾：目标保持增长实验，风险是来源证据不足，下一步补 Source Context。' },
+      ],
+    });
+
+    expect(result.handoffType).toBe('durable_business_handoff');
+    expect(result.status).toBe('needs_write');
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toEqual(expect.arrayContaining([
+      'business_record',
+      'source_context',
+    ]));
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).not.toContain('task_record');
+  });
+
+  it('routes runtime or subagent handoff signals to run steps before writes are applied', () => {
+    const result = evaluateContextPreservation({
+      handoffType: 'runtime_or_subagent_handoff',
+      hasTaskContext: true,
+      messages: [
+        { role: 'user', text: 'runtime handoff：实现已完成，下一步主 Agent 检查 diff，风险是验证还没跑。' },
+      ],
+    });
+
+    expect(result.handoffType).toBe('runtime_or_subagent_handoff');
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toContain('run_step');
   });
 
   it('marks recovery covered after the preservation write has completed', () => {
@@ -106,5 +138,10 @@ describe('context preservation', () => {
       evaluation,
       taskTitle: '上下文管理',
     })).toContain('保全状态：covered');
+    expect(buildContextPreservationRecordContent({
+      capturedAt: '2026-05-24T00:00:00.000Z',
+      evaluation,
+      taskTitle: '上下文管理',
+    })).toContain('交接类型：next_action_handoff');
   });
 });

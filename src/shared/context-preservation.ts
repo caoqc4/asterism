@@ -20,11 +20,20 @@ export type ContextPreservationSignalKind =
 
 export type ContextPreservationSurface =
   | 'artifact_reference'
+  | 'business_record'
   | 'decision'
   | 'discard'
+  | 'run_step'
   | 'source_context'
   | 'task_md'
-  | 'task_record';
+  | 'task_record'
+  | 'temporary_file';
+
+export type HandoffV2Type =
+  | 'durable_business_handoff'
+  | 'ephemeral_session_handoff'
+  | 'next_action_handoff'
+  | 'runtime_or_subagent_handoff';
 
 export type ContextPreservationStatus =
   | 'covered'
@@ -57,7 +66,9 @@ export type ContextPreservationWriteIntent = {
 
 export type ContextPreservationInput = {
   chatMessageCount?: number;
+  handoffType?: HandoffV2Type;
   hasBlocker?: boolean;
+  hasBusinessLineContext?: boolean;
   hasOpenDecision?: boolean;
   hasPendingRecoveryGuidance?: boolean;
   hasSpecificHandoffSignal?: boolean;
@@ -70,6 +81,7 @@ export type ContextPreservationInput = {
 
 export type ContextPreservationEvaluation = {
   discardRationale: string[];
+  handoffType: HandoffV2Type | null;
   hasValuableSignals: boolean;
   missingCoverage: string[];
   reason: string;
@@ -84,22 +96,34 @@ export function evaluateContextPreservation(
 ): ContextPreservationEvaluation {
   const messages = normalizeMessages(input.messages ?? []);
   const chatMessageCount = input.chatMessageCount ?? messages.filter((message) => message.role !== 'system').length;
-  const activeDiscussion = input.hasTaskContext && chatMessageCount > 0;
+  const hasBusinessLineContext = Boolean(input.hasBusinessLineContext);
+  const hasBoundContext = input.hasTaskContext || hasBusinessLineContext;
+  const handoffType = input.handoffType ?? inferHandoffType({
+    hasBusinessLineContext,
+    hasTaskContext: input.hasTaskContext,
+  });
+  const activeDiscussion = hasBoundContext && chatMessageCount > 0;
   const pendingGuidance = input.taskMemoryGuidance?.outcome === 'pending' || input.hasPendingRecoveryGuidance;
-  const baseSignals = extractContextPreservationSignals(messages);
+  const baseSignals = extractContextPreservationSignals(messages, {
+    hasBusinessLineContext,
+    hasTaskContext: input.hasTaskContext,
+    handoffType,
+  });
   const signals = ensureExplicitHandoffSignal(baseSignals, {
     activeDiscussion,
     hasSpecificHandoffSignal: Boolean(input.hasSpecificHandoffSignal),
+    handoffType,
   });
   const hasValuableSignals = signals.some((signal) => signal.targetSurface !== 'discard');
   const covered = Boolean(input.memoryWriteCompleted);
   const recoveryCheck = buildRecoveryCheck({ activeDiscussion, covered, hasValuableSignals, signals });
 
-  if (!input.hasTaskContext) {
+  if (!hasBoundContext) {
     return result('not_applicable', {
-      discardRationale: ['当前是全局或未绑定任务上下文，不需要任务级保全证明。'],
+      discardRationale: ['当前是全局或未绑定业务线/任务上下文，不需要保全证明。'],
+      handoffType,
       recoveryCheck,
-      reason: '当前没有任务上下文，不需要保全任务会话。',
+      reason: '当前没有业务线或任务上下文，不需要保全会话。',
       signals,
     });
   }
@@ -107,6 +131,7 @@ export function evaluateContextPreservation(
   if (input.hasOpenDecision) {
     return result('needs_user_decision', {
       missingCoverage: ['存在待拍板事项，不能通过整理上下文绕过用户判断。'],
+      handoffType,
       recoveryCheck,
       reason: '当前任务存在待拍板事项，需要先处理 Decision 边界。',
       signals: ensureDecisionSignal(signals),
@@ -116,6 +141,7 @@ export function evaluateContextPreservation(
   if (input.hasBlocker) {
     return result('keep_context', {
       missingCoverage: ['存在阻塞、依赖或等待条件，当前上下文仍有恢复价值。'],
+      handoffType,
       recoveryCheck,
       reason: '当前任务存在阻塞或依赖，应保留上下文直到阻塞状态被处理。',
       signals,
@@ -125,6 +151,7 @@ export function evaluateContextPreservation(
   if (input.shortTermReasoningActive) {
     return result('keep_context', {
       missingCoverage: ['当前仍处在短期推理现场，整理会丢失未稳定的判断链。'],
+      handoffType,
       recoveryCheck,
       reason: '当前对话仍是短期推理现场，暂不应重置上下文。',
       signals,
@@ -137,6 +164,7 @@ export function evaluateContextPreservation(
         input.taskMemoryGuidance?.reason
         ?? '当前存在尚未处理的任务记忆建议，应先确认写入 Task.md 或 Task Record。',
       ],
+      handoffType,
       recoveryCheck,
       reason: input.taskMemoryGuidance?.reason
         ?? '当前存在尚未处理的任务记忆建议，应先完成最小任务记忆写入。',
@@ -147,6 +175,7 @@ export function evaluateContextPreservation(
   if (!activeDiscussion) {
     return result('covered', {
       discardRationale: ['当前任务没有活跃讨论，不需要写入额外记忆。'],
+      handoffType,
       recoveryCheck,
       reason: '当前没有需要保全的任务讨论。',
       signals,
@@ -156,6 +185,7 @@ export function evaluateContextPreservation(
   if (!hasValuableSignals) {
     return result('keep_context', {
       missingCoverage: ['已有任务对话，但尚未形成目标、决定、风险、下一步、来源或交接信号。'],
+      handoffType,
       recoveryCheck,
       reason: '当前任务会话缺少可恢复信号，保留上下文比重置更安全。',
       signals,
@@ -165,6 +195,7 @@ export function evaluateContextPreservation(
   if (!covered) {
     return result('needs_write', {
       missingCoverage: ['需要先把可恢复信号写入 Task.md、Task Record、Decision、Source Context 或产物引用。'],
+      handoffType,
       recoveryCheck,
       reason: '重置上下文前需要先完成保全写入。',
       signals,
@@ -173,6 +204,7 @@ export function evaluateContextPreservation(
 
   return result('covered', {
     discardRationale: ['关键恢复信号已经写入持久任务记忆，可以丢弃临时聊天窗口。'],
+    handoffType,
     recoveryCheck,
     reason: '关键上下文已保全，可以重置或交接。',
     signals,
@@ -202,6 +234,7 @@ export function buildContextPreservationRecordContent(params: {
     '',
     '## Summary',
     `任务：${params.taskTitle}`,
+    `交接类型：${params.evaluation.handoffType ?? 'none'}`,
     `保全状态：${params.evaluation.status}`,
     `原因：${params.evaluation.reason}`,
     '',
@@ -222,7 +255,7 @@ export function buildContextPreservationRecordContent(params: {
     ...discarded,
     '',
     '## Next',
-    '- 刷新后从 Taskplane 结构化状态、Task.md、Task Records、Source Context 和 Run evidence 重新装配上下文。',
+    '- 刷新后从 Taskplane 业务线/任务结构化状态、Business Records、Task.md、Task Records、Source Context 和 Run evidence 重新装配上下文。',
   ].join('\n');
 }
 
@@ -231,6 +264,7 @@ function result(
   params: {
     discardRationale?: string[];
     missingCoverage?: string[];
+    handoffType?: HandoffV2Type | null;
     reason: string;
     recoveryCheck: ContextRecoveryCheck;
     signals: ContextPreservationSignal[];
@@ -239,6 +273,7 @@ function result(
   const valuableSignals = params.signals.filter((signal) => signal.targetSurface !== 'discard');
   return {
     discardRationale: params.discardRationale ?? [],
+    handoffType: params.handoffType ?? null,
     hasValuableSignals: valuableSignals.length > 0,
     missingCoverage: params.missingCoverage ?? [],
     reason: params.reason,
@@ -277,26 +312,33 @@ function normalizeMessages(messages: ContextPreservationMessage[]): ContextPrese
     .filter((message) => message.text);
 }
 
-function extractContextPreservationSignals(messages: ContextPreservationMessage[]): ContextPreservationSignal[] {
+function extractContextPreservationSignals(
+  messages: ContextPreservationMessage[],
+  params: {
+    handoffType: HandoffV2Type;
+    hasBusinessLineContext: boolean;
+    hasTaskContext: boolean;
+  },
+): ContextPreservationSignal[] {
   const signals: ContextPreservationSignal[] = [];
   const userMessages = messages.filter((message) => message.role === 'user');
   for (const message of userMessages.slice(-8)) {
     const text = message.text;
     const lower = text.toLowerCase();
     if (/确认|同意|决定|拍板|就这样|按这个|采用|不要|别|改成|更正|不是|应该|必须|优先|默认/.test(text)) {
-      signals.push(signal('decision', text, 'task_record', '用户判断、修正或偏好会影响未来执行。'));
+      signals.push(signal('decision', text, targetSurface(params, 'task_record', 'business_record'), '用户判断、修正或偏好会影响未来执行。'));
     }
     if (/目标|范围|定位|面向|受众|核心|非目标|边界|基调|主题/.test(text)) {
-      signals.push(signal('goal', text, 'task_md', '目标、范围或边界应进入当前恢复摘要。'));
+      signals.push(signal('goal', text, targetSurface(params, 'task_md', 'business_record'), '目标、范围或边界应进入当前恢复摘要。'));
     }
     if (/下一步|继续|开始|实现|检查|完善|优化|推进|提交|推送|验证|测试/.test(text)) {
-      signals.push(signal('next_step', text, 'task_md', '下一步会影响任务恢复和执行入口。'));
+      signals.push(signal('next_step', text, targetSurface(params, 'task_md', 'business_record'), '下一步会影响任务恢复和执行入口。'));
     }
     if (/风险|阻塞|问题|失败|不能|依赖|安全|权限|成本|漏洞|质量|下降/.test(text)) {
-      signals.push(signal('risk', text, 'task_record', '风险、阻塞或失败原因需要作为恢复依据。'));
+      signals.push(signal('risk', text, targetSurface(params, 'task_record', 'business_record'), '风险、阻塞或失败原因需要作为恢复依据。'));
     }
     if (/交接|handoff|切换|子任务|阶段|收尾|上下文|清理|重置|压缩|刷新/.test(text)) {
-      signals.push(signal('handoff', text, 'task_record', '上下文、交接或阶段信息需要可恢复记录。'));
+      signals.push(signal('handoff', text, handoffTargetSurface(params.handoffType), '上下文、交接或阶段信息需要可恢复记录。'));
     }
     if (/https?:\/\/|官方|文档|资料|搜索|调研|引用|source|docs?|github/.test(lower)) {
       signals.push(signal('source', text, 'source_context', '来源或调研线索需要进入 Source Context 或来源摘要。'));
@@ -305,7 +347,7 @@ function extractContextPreservationSignals(messages: ContextPreservationMessage[
       signals.push(signal('artifact', text, 'artifact_reference', '产物或文件线索需要保留引用。'));
     }
     if (/约束|规则|规范|必须|不要|不能|默认|偏好|习惯/.test(text)) {
-      signals.push(signal('constraint', text, 'task_record', '约束或偏好会影响后续执行。'));
+      signals.push(signal('constraint', text, targetSurface(params, 'task_record', 'business_record'), '约束或偏好会影响后续执行。'));
     }
   }
   return dedupeSignals(signals);
@@ -331,6 +373,7 @@ function ensureExplicitHandoffSignal(
   params: {
     activeDiscussion: boolean;
     hasSpecificHandoffSignal: boolean;
+    handoffType: HandoffV2Type;
   },
 ): ContextPreservationSignal[] {
   if (!params.activeDiscussion || !params.hasSpecificHandoffSignal) return signals;
@@ -342,7 +385,7 @@ function ensureExplicitHandoffSignal(
       kind: 'handoff',
       reason: '上游判断当前讨论包含可恢复信号。',
       summary: '当前任务讨论包含需要保全的上下文信号。',
-      targetSurface: 'task_record',
+      targetSurface: handoffTargetSurface(params.handoffType),
     },
   ];
 }
@@ -359,6 +402,39 @@ function ensureDecisionSignal(signals: ContextPreservationSignal[]): ContextPres
       targetSurface: 'decision',
     },
   ];
+}
+
+function inferHandoffType(params: {
+  hasBusinessLineContext: boolean;
+  hasTaskContext: boolean;
+}): HandoffV2Type {
+  if (params.hasBusinessLineContext && !params.hasTaskContext) return 'durable_business_handoff';
+  return 'next_action_handoff';
+}
+
+function targetSurface(
+  params: {
+    handoffType: HandoffV2Type;
+    hasBusinessLineContext: boolean;
+    hasTaskContext: boolean;
+  },
+  taskSurface: Exclude<ContextPreservationSurface, 'discard'>,
+  businessSurface: Exclude<ContextPreservationSurface, 'discard'>,
+): Exclude<ContextPreservationSurface, 'discard'> {
+  if (params.handoffType === 'ephemeral_session_handoff') return 'temporary_file';
+  if (params.handoffType === 'runtime_or_subagent_handoff') return 'run_step';
+  if (params.handoffType === 'durable_business_handoff') return businessSurface;
+  if (params.hasBusinessLineContext && !params.hasTaskContext) return businessSurface;
+  return taskSurface;
+}
+
+function handoffTargetSurface(type: HandoffV2Type): Exclude<ContextPreservationSurface, 'discard'> {
+  switch (type) {
+    case 'durable_business_handoff': return 'business_record';
+    case 'ephemeral_session_handoff': return 'temporary_file';
+    case 'runtime_or_subagent_handoff': return 'run_step';
+    case 'next_action_handoff': return 'task_record';
+  }
 }
 
 function buildRecoveryCheck(params: {

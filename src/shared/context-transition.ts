@@ -3,6 +3,7 @@ import {
   evaluateContextPreservation,
   type ContextPreservationEvaluation,
   type ContextPreservationInput,
+  type HandoffV2Type,
 } from './context-preservation.js';
 
 export type ContextTransitionIntent =
@@ -31,6 +32,7 @@ export type ContextResetStrategy =
 export type ContextTransitionEvaluation = {
   action: ContextTransitionAction;
   canProceedAfterWrites: boolean;
+  handoffType: HandoffV2Type;
   intent: ContextTransitionIntent;
   preservation: ContextPreservationEvaluation;
   reason: string;
@@ -45,24 +47,29 @@ export type ContextTransitionInput = ContextPreservationInput & {
 };
 
 export function evaluateContextTransition(input: ContextTransitionInput): ContextTransitionEvaluation {
-  const preservation = evaluateContextPreservation(input);
+  const defaultHandoffType = input.handoffType ?? defaultTransitionHandoffType(input);
+  const preservation = evaluateContextPreservation(
+    defaultHandoffType ? { ...input, handoffType: defaultHandoffType } : input,
+  );
+  const handoffType = preservation.handoffType ?? defaultHandoffType ?? 'ephemeral_session_handoff';
   const resetStrategy = chooseContextResetStrategy({
     preferCompact: input.preferCompact,
     runtimeCapabilities: input.runtimeCapabilities ?? null,
   });
 
   if (preservation.status === 'not_applicable') {
-    return transition(input, preservation, 'continue', 'none', false, '当前没有任务上下文，不需要过渡处理。');
+    return transition(input, preservation, handoffType, 'continue', 'none', false, '当前没有业务线或任务上下文，不需要过渡处理。');
   }
 
   if (preservation.status === 'needs_user_decision') {
-    return transition(input, preservation, 'ask_before_transition', 'none', true, preservation.reason);
+    return transition(input, preservation, handoffType, 'ask_before_transition', 'none', true, preservation.reason);
   }
 
   if (preservation.status === 'keep_context') {
     return transition(
       input,
       preservation,
+      handoffType,
       input.preferCompact ? 'compact' : 'block_transition',
       input.preferCompact ? chooseCompactStrategy(input.runtimeCapabilities ?? null) : 'none',
       false,
@@ -75,6 +82,7 @@ export function evaluateContextTransition(input: ContextTransitionInput): Contex
     return transition(
       input,
       preservation,
+      handoffType,
       handoffIntent ? 'create_handoff' : 'preserve_and_reset',
       resetStrategy,
       true,
@@ -83,14 +91,14 @@ export function evaluateContextTransition(input: ContextTransitionInput): Contex
   }
 
   if (input.intent === 'switch_task' || input.intent === 'phase_closeout') {
-    return transition(input, preservation, 'create_handoff', resetStrategy, false, '上下文已保全，可以交接并重新装配目标任务上下文。');
+    return transition(input, preservation, handoffType, 'create_handoff', resetStrategy, false, '上下文已保全，可以交接并重新装配目标上下文。');
   }
 
   if (input.intent === 'resume_run') {
-    return transition(input, preservation, 'preserve_and_reset', resetStrategy, false, '恢复运行前应从持久上下文重新装配任务。');
+    return transition(input, preservation, handoffType, 'preserve_and_reset', resetStrategy, false, '恢复运行前应从持久上下文重新装配任务。');
   }
 
-  return transition(input, preservation, 'preserve_and_reset', resetStrategy, false, '上下文已保全，可以刷新当前任务会话。');
+  return transition(input, preservation, handoffType, 'preserve_and_reset', resetStrategy, false, '上下文已保全，可以刷新当前会话。');
 }
 
 export function chooseContextResetStrategy(params: {
@@ -112,6 +120,7 @@ function chooseCompactStrategy(capabilities: AgentRuntimeAdapterCapabilities | n
 function transition(
   input: ContextTransitionInput,
   preservation: ContextPreservationEvaluation,
+  handoffType: HandoffV2Type,
   action: ContextTransitionAction,
   resetStrategy: ContextResetStrategy,
   requiresUserConfirmation: boolean,
@@ -120,10 +129,26 @@ function transition(
   return {
     action,
     canProceedAfterWrites: action === 'preserve_and_reset' || action === 'create_handoff' || action === 'continue',
+    handoffType,
     intent: input.intent,
     preservation,
     reason,
     resetStrategy,
     requiresUserConfirmation,
   };
+}
+
+function defaultTransitionHandoffType(input: ContextTransitionInput): HandoffV2Type | null {
+  switch (input.intent) {
+    case 'context_refresh':
+      return null;
+    case 'leave_task_context':
+    case 'start_global_conversation':
+      return input.hasBusinessLineContext || input.hasTaskContext ? null : 'ephemeral_session_handoff';
+    case 'resume_run':
+      return 'runtime_or_subagent_handoff';
+    case 'phase_closeout':
+    case 'switch_task':
+      return 'next_action_handoff';
+  }
 }

@@ -13,6 +13,7 @@ describe('context transition', () => {
       chatMessageCount: 0,
     })).toMatchObject({
       action: 'continue',
+      handoffType: 'ephemeral_session_handoff',
       resetStrategy: 'none',
       requiresUserConfirmation: false,
     });
@@ -28,6 +29,7 @@ describe('context transition', () => {
     })).toMatchObject({
       action: 'preserve_and_reset',
       canProceedAfterWrites: true,
+      handoffType: 'next_action_handoff',
       requiresUserConfirmation: true,
       resetStrategy: 'product_transcript_reset',
       preservation: expect.objectContaining({
@@ -45,8 +47,48 @@ describe('context transition', () => {
       ],
     })).toMatchObject({
       action: 'create_handoff',
+      handoffType: 'next_action_handoff',
       requiresUserConfirmation: true,
       resetStrategy: 'product_transcript_reset',
+    });
+  });
+
+  it('defaults business-line context refresh to durable business handoff', () => {
+    expect(evaluateContextTransition({
+      intent: 'context_refresh',
+      hasBusinessLineContext: true,
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '业务线刷新：下一步补来源，风险是记录缺少 evidence pointer。' },
+      ],
+    })).toMatchObject({
+      action: 'preserve_and_reset',
+      handoffType: 'durable_business_handoff',
+      preservation: expect.objectContaining({
+        requiredWriteIntents: expect.arrayContaining([
+          expect.objectContaining({ targetSurface: 'business_record' }),
+        ]),
+      }),
+    });
+  });
+
+  it('can explicitly model a durable business handoff before context clearing', () => {
+    expect(evaluateContextTransition({
+      intent: 'context_refresh',
+      handoffType: 'durable_business_handoff',
+      hasBusinessLineContext: true,
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '业务线交接：下一步复核来源，风险是记录缺少 evidence pointer。' },
+      ],
+    })).toMatchObject({
+      action: 'preserve_and_reset',
+      handoffType: 'durable_business_handoff',
+      preservation: expect.objectContaining({
+        requiredWriteIntents: expect.arrayContaining([
+          expect.objectContaining({ targetSurface: 'business_record' }),
+        ]),
+      }),
     });
   });
 

@@ -8,6 +8,7 @@ import {
 import type { TaskMemoryGuidanceState } from './task-memory-guidance-state.js';
 import type { SubtaskStartEvaluationInput } from './subtask-start-evaluator.js';
 import type { TaskCloseoutEvaluation } from './task-closeout-evaluator.js';
+import type { HandoffV2Type } from './context-preservation.js';
 
 export type RuntimeHandoffIntent =
   | 'context_refresh'
@@ -30,6 +31,7 @@ export type RuntimeHandoffAction =
 export type RuntimeHandoff = {
   intent: RuntimeHandoffIntent;
   action: RuntimeHandoffAction;
+  handoffType: HandoffV2Type;
   fromTaskId: string | null;
   toTaskId: string | null;
   requiresArchive: boolean;
@@ -74,6 +76,7 @@ type BaseInput = {
   archived?: boolean;
   fromTaskId?: string | null;
   hasBlocker?: boolean;
+  handoffType?: HandoffV2Type;
   hasOpenDecision?: boolean;
   hasPendingRecoveryGuidance?: boolean;
   hasSpecificHandoffSignal?: boolean;
@@ -396,6 +399,7 @@ function base(input: BaseInput & { intent: RuntimeHandoffIntent }, action: Runti
   return {
     intent: input.intent,
     action,
+    handoffType: input.handoffType ?? inferRuntimeHandoffType(input.intent),
     fromTaskId: input.fromTaskId ?? null,
     toTaskId: input.toTaskId ?? null,
     requiresArchive: false,
@@ -406,6 +410,20 @@ function base(input: BaseInput & { intent: RuntimeHandoffIntent }, action: Runti
     notice: '',
     recordPath: input.recordPath ?? null,
   };
+}
+
+function inferRuntimeHandoffType(intent: RuntimeHandoffIntent): HandoffV2Type {
+  switch (intent) {
+    case 'context_refresh':
+    case 'leave_task_context':
+    case 'start_global_conversation':
+      return 'ephemeral_session_handoff';
+    case 'resume_run':
+      return 'runtime_or_subagent_handoff';
+    case 'phase_closeout':
+    case 'switch_task':
+      return 'next_action_handoff';
+  }
 }
 
 function blocked(input: BaseInput & { intent: RuntimeHandoffIntent }, reason: string | null | undefined): RuntimeHandoff {

@@ -106,6 +106,38 @@ usefulness:
 Do not duplicate the same fact across multiple surfaces unless each surface has
 a distinct recovery job.
 
+## Handoff V2 Memory Contract
+
+Handoff is a recovery boundary, not a transcript archive. Every handoff should
+name its type before deciding where to write:
+
+| Type | Memory Job | Default Write Surface |
+| --- | --- | --- |
+| `ephemeral_session_handoff` | Preserve just enough working-state recovery for compact, clear, restart, or session refresh. | Temporary file, context-clear archive, or no durable write when signals are already covered. |
+| `durable_business_handoff` | Preserve business-line state, rationale, source/review summary, record gap, learning, or future context. | Business Record, with pointers to Reviews, SOP revisions, Decisions, Sources, Runs, files, and artifacts. |
+| `next_action_handoff` | Transfer execution state for one active Next Action, child/successor task, resumed task, or legacy task. | Structured task state, Task.md update, or Task Record. |
+| `runtime_or_subagent_handoff` | Evaluate runtime, tool, verifier, scheduler probe, or subagent output before writeback. | Run Step, runtime result, temporary file, or writeback proposal; durable writes happen only after service gates. |
+
+Minimum handoff fields:
+
+- source and target;
+- reason;
+- current state;
+- next safe action;
+- constraints and Decisions;
+- evidence pointers to records, Runs, files, Decisions, sources, artifacts, or
+  reviews;
+- what not to duplicate, including transcripts, stdout, hidden prompts,
+  unrelated prior context, and stale reasoning;
+- target surface: Business Record, Task Record, Run Step, temporary file, or no
+  write.
+
+Do not assume every handoff becomes a Task Record. Business-line recovery goes
+to Business Records. Next Action execution recovery may use Task.md or Task
+Records. Runtime/subagent handoff must be evaluated before proposed writes are
+applied. Ephemeral session handoff may remain temporary when durable memory is
+already sufficient.
+
 ## Business-Line Read Order
 
 Default read order for business-line execution:
@@ -320,6 +352,26 @@ Use before clearing chat when useful signals exist.
 
 Never store the full chat transcript by default.
 
+### Handoff Record Minimum Shape
+
+Use only when the handoff has recovery value.
+
+- Type: `ephemeral_session_handoff`, `durable_business_handoff`,
+  `next_action_handoff`, or `runtime_or_subagent_handoff`.
+- Source / Target: business line, Next Action/task, session, runtime, subagent,
+  scheduler probe, or verifier.
+- Reason: why this handoff is needed now.
+- Current State: what is true, incomplete, blocked, or invalidated.
+- Next Safe Action: first continuation step.
+- Constraints / Decisions: approvals, risks, dependencies, blockers, or open
+  questions.
+- Evidence Pointers: Business Records, Task Records, Reviews, SOP revisions,
+  Runs, Run Steps, files, Decisions, Source Context, artifacts, PRs, or URLs.
+- Exclusions: transcript portions, raw output, duplicate facts, or unrelated
+  context intentionally not copied.
+- Surface: Business Record, Task Record, Run Step, temporary file, or no durable
+  write.
+
 ### Failure Review Record
 
 Use when failure affects future execution.
@@ -386,21 +438,26 @@ After a completed run, meaningful correction, failure, or user review:
 Before closing a phase:
 
 1. Verify evidence against criteria and user intent.
-2. Decide whether the durable memory belongs in a Business Record, Review,
-   Task.md, Task Record, Decision, source digest, artifact, or no write.
-3. Preserve important files, Decisions, Runs, source digests, artifacts, risks,
+2. Classify any handoff as `durable_business_handoff`,
+   `next_action_handoff`, `runtime_or_subagent_handoff`, or
+   `ephemeral_session_handoff`.
+3. Decide whether the durable memory belongs in a Business Record, Review,
+   Task.md, Task Record, Decision, Run Step, source digest, artifact,
+   temporary file, or no write.
+4. Preserve important files, Decisions, Runs, source digests, artifacts, risks,
    and next actions.
-4. Hand off to an existing business line, Next Action, child task, or successor
+5. Hand off to an existing business line, Next Action, child task, or successor
    when available; otherwise ask or propose before creating new structure.
 
 ### Focus Switch
 
 Before switching away from business line or task A:
 
-1. Preserve useful handoff information only if it has recovery value.
-2. Avoid carrying unrelated chat from A into B.
-3. Rebuild B context from B memory surfaces.
-4. Confirm B has a clean and sufficient runtime context before execution.
+1. Classify the handoff type.
+2. Preserve useful handoff information only if it has recovery value.
+3. Avoid carrying unrelated chat from A into B.
+4. Rebuild B context from B memory surfaces.
+5. Confirm B has a clean and sufficient runtime context before execution.
 
 ### Context Clearing
 
@@ -474,6 +531,8 @@ Avoid:
 - treating Task.md as the whole business-line memory;
 - writing every chat turn into Business Records or Task Records;
 - making BusinessLineContextPack, Task.md, or Task Records full transcript logs;
+- treating every handoff as a Task Record;
+- applying runtime/subagent write proposals before evaluating the handoff;
 - relying on Task Dynamics as the only recovery source;
 - classifying AI output as source material unless it is a synthesized digest;
 - creating new records, Decisions, SOP revisions, folders, or prompts when one

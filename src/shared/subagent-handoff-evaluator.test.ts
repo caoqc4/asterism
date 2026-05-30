@@ -27,6 +27,7 @@ describe('subagent handoff evaluator', () => {
 
     expect(result).toMatchObject({
       allowed: true,
+      handoffType: 'runtime_or_subagent_handoff',
       tone: 'pass',
       errorCount: 0,
       warningCount: 0,
