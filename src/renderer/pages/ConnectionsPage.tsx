@@ -3,6 +3,7 @@ import type { CapabilityRegistryEntry } from '@shared/capability-registry';
 import { DEFAULT_EXTERNAL_ACCESS_SOURCE_CATALOGUE_ITEMS } from '@shared/capability-product-surfaces';
 import type { ConnectorSourceIngestionPlan } from '@shared/connector-source-ingestion';
 import type { ExternalAccessConnectorRecord } from '@shared/external-access-status';
+import type { ExternalAccessBusinessLineRecordCandidate } from '@shared/types/external-access-source-ingestion';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskListItemRecord } from '@shared/types/task';
 import { CapabilitySafetyStrip } from '../components/CapabilitySafetyStrip';
@@ -55,6 +56,7 @@ export function ConnectionsPage() {
   const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [sourcePlans, setSourcePlans] = useState<ConnectorSourceIngestionPlan[]>([]);
+  const [businessRecordCandidates, setBusinessRecordCandidates] = useState<ExternalAccessBusinessLineRecordCandidate[]>([]);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [sourceReviewBusy, setSourceReviewBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -116,6 +118,7 @@ export function ConnectionsPage() {
     try {
       const result = await window.api.previewExternalAccessSourceIngestion({ taskId: selectedTaskId });
       setSourcePlans(result.plans);
+      setBusinessRecordCandidates(result.businessLineRecordCandidates);
       setSelectedPlanIds(result.plans
         .filter((plan) => plan.decision !== 'skip')
         .map((plan) => plan.planId));
@@ -147,8 +150,9 @@ export function ConnectionsPage() {
         confirmed: true,
       });
       setSourcePlans((plans) => plans.filter((plan) => !selectedPlanIds.includes(plan.planId)));
+      setBusinessRecordCandidates((candidates) => candidates.filter((candidate) => !selectedPlanIds.includes(candidate.planId)));
       setSelectedPlanIds([]);
-      setActionMessage(`已写入 ${result.created.length} 条来源，跳过 ${result.skippedPlanIds.length} 条。`);
+      setActionMessage(`已写入 ${result.created.length} 条来源、${result.createdBusinessRecords.length} 条业务线记录，跳过 ${result.skippedPlanIds.length} 条。`);
     } catch (error) {
       setActionMessage(error instanceof Error ? error.message : '外部来源入库失败。');
     } finally {
@@ -289,6 +293,7 @@ export function ConnectionsPage() {
             onChange={(event) => {
               setSelectedTaskId(event.target.value);
               setSourcePlans([]);
+              setBusinessRecordCandidates([]);
               setSelectedPlanIds([]);
             }}
           >
@@ -320,6 +325,15 @@ export function ConnectionsPage() {
             </label>
           ))}
         </div>
+        {businessRecordCandidates.length > 0 && (
+          <div className="connections-review-business-records">
+            <strong>业务线记录候选</strong>
+            {businessRecordCandidates.map((candidate) => (
+              <span key={candidate.planId}>{candidate.summary}</span>
+            ))}
+            <p>这些候选只在确认后成为 business record，且默认不会进入 future context。</p>
+          </div>
+        )}
         <div className="connections-review-footer">
           <span>{selectedPlanIds.length} 条已选择</span>
           <button

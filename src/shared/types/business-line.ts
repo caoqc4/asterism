@@ -191,6 +191,43 @@ export type BusinessLineTodaySuggestion = {
   taskId: string | null;
 };
 
+export type BusinessLineAutomationKind = 'scheduled' | 'event' | 'routine';
+
+export type BusinessLineAutomationStatus = 'active' | 'paused' | 'blocked';
+
+export type BusinessLineAutomation = {
+  id: string;
+  businessLineId: string;
+  taskId: string;
+  kind: BusinessLineAutomationKind;
+  title: string;
+  summary: string | null;
+  triggerLabel: string;
+  status: BusinessLineAutomationStatus;
+  risk: {
+    level: TaskRiskLevel;
+    note: string | null;
+  };
+  mutationBoundary: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BusinessLineSensorStatus = 'watching' | 'needs_review' | 'paused';
+
+export type BusinessLineSensor = {
+  id: string;
+  businessLineId: string;
+  sourceType: 'scheduled_task' | 'event_task' | 'external_access';
+  sourceLabel: string;
+  title: string;
+  status: BusinessLineSensorStatus;
+  readOnly: true;
+  reviewBoundary: string;
+  sourceTaskId?: string | null;
+  sourceRecordIds?: string[];
+};
+
 export type BusinessLineContextPack = {
   businessSummary: string | null;
   currentGoal: string | null;
@@ -217,6 +254,10 @@ export type BusinessLineWorkspace = {
   records: BusinessLineRecord[];
   sourceRecords: SourceContextRecord[];
   nextActions: TaskListItemRecord[];
+  automations: {
+    automations: BusinessLineAutomation[];
+    sensors: BusinessLineSensor[];
+  };
   learning: {
     reviews: BusinessLineReview[];
     skillRevisions: BusinessLineSkillRevision[];

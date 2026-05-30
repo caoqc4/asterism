@@ -638,7 +638,9 @@ describe('registerIpcHandlers', () => {
   it('previews External Access source ingestion without emitting task change events', async () => {
     servicesMock.externalAccessSourceIngestionService.preview.mockResolvedValue({
       taskId: 'task_1',
+      businessLineId: null,
       plans: [],
+      businessLineRecordCandidates: [],
       createCount: 0,
       reviewCount: 0,
       skipCount: 0,
@@ -660,6 +662,7 @@ describe('registerIpcHandlers', () => {
   it('commits confirmed External Access source ingestion and emits task.changed when memory was written', async () => {
     servicesMock.externalAccessSourceIngestionService.commit.mockResolvedValue({
       taskId: 'task_1',
+      businessLineId: null,
       created: [{
         id: 'source_context_1',
         taskId: 'task_1',
@@ -674,6 +677,7 @@ describe('registerIpcHandlers', () => {
         updatedAt: '2026-01-01T00:00:00.000Z',
         archivedAt: null,
       }],
+      createdBusinessRecords: [],
       skippedPlanIds: [],
     });
     const handler = getRegisteredHandler<
@@ -694,6 +698,40 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
     expect(result.created).toHaveLength(1);
+  });
+
+  it('emits business-line change events when confirmed external ingestion creates reviewed business records', async () => {
+    servicesMock.externalAccessSourceIngestionService.commit.mockResolvedValue({
+      taskId: 'task_1',
+      businessLineId: 'business_line_product',
+      created: [],
+      createdBusinessRecords: [{
+        id: 'business_line_record_external_1',
+        type: 'signal',
+        businessLineId: 'business_line_product',
+        source: 'external_access:gmail:reviewed_preview',
+        summary: 'External signal reviewed from Gmail.',
+        confidence: 80,
+        linkedActionId: 'task_1',
+        linkedDecisionId: null,
+        shouldAffectFutureContext: false,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }],
+      skippedPlanIds: [],
+    });
+    const handler = getRegisteredHandler<
+      [{ taskId: string; planIds: string[]; confirmed: boolean }],
+      Awaited<ReturnType<typeof servicesMock.externalAccessSourceIngestionService.commit>>
+    >('externalAccess:sourceIngestionCommit');
+
+    await handler({}, {
+      taskId: 'task_1',
+      planIds: ['connector:gmail:message_1'],
+      confirmed: true,
+    });
+
+    expect(emitAppEventMock).toHaveBeenCalledWith('businessLine.changed', 'business_line_product');
+    expect(emitAppEventMock).toHaveBeenCalledWith('brief.changed');
   });
 
   it('applies saved AI behavior preferences to chat prompts', async () => {

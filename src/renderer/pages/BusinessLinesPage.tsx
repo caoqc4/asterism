@@ -439,6 +439,36 @@ function OverviewTab({ workspace, onOpenBusinessLinePanel }: {
       </section>
 
       <section className="business-section">
+        <h3>Automations & Sensors</h3>
+        {workspace.automations.automations.length === 0 && workspace.automations.sensors.length === 0 ? (
+          <p className="muted">暂无业务线自动化或只读传感器。</p>
+        ) : (
+          <div className="business-automation-list">
+            {workspace.automations.automations.map((automation) => (
+              <div key={automation.id} className="business-automation">
+                <div className="business-record-header">
+                  <span className="tag">{automation.kind}</span>
+                  <span className={`risk-pill risk-${automation.risk.level}`}>{automation.risk.level}</span>
+                </div>
+                <strong>{automation.title}</strong>
+                <span>{automation.triggerLabel} · {automation.status}</span>
+              </div>
+            ))}
+            {workspace.automations.sensors.map((sensor) => (
+              <div key={sensor.id} className="business-automation">
+                <div className="business-record-header">
+                  <span className="tag">read-only</span>
+                  <span className="risk-pill risk-low">{sensor.status}</span>
+                </div>
+                <strong>{sensor.title}</strong>
+                <span>{sensor.reviewBoundary}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="business-section">
         <h3>Missing Context</h3>
         <CompactList items={workspace.overview.missingContext} empty="当前 context pack 足够推进下一步。" />
       </section>

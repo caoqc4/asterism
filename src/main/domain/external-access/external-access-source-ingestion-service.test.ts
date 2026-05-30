@@ -57,6 +57,65 @@ describe('ExternalAccessSourceIngestionService', () => {
     expect(writer.createSourceContext).not.toHaveBeenCalled();
   });
 
+  it('returns reviewable business-line record candidates without writing during preview', async () => {
+    const plan = planConnectorSourceIngestion({
+      taskId: 'task_1',
+      connectorId: 'gmail',
+      connectorName: 'Gmail',
+      externalId: 'message_1',
+      title: '客户确认邮件',
+      uri: 'gmail://message/message_1',
+      capturedAt: '2026-05-17T09:00:00.000Z',
+      credibility: 'verified',
+    });
+    const writer = { createSourceContext: vi.fn() };
+    const businessWriter = { createRecord: vi.fn() };
+    const service = new ExternalAccessSourceIngestionService(
+      { planSourceIngestion: vi.fn().mockResolvedValue([plan]) },
+      writer,
+      null,
+      { resolveBusinessLineForTask: vi.fn().mockResolvedValue('business_line_product') },
+      businessWriter,
+    );
+
+    await expect(service.preview({ taskId: 'task_1' })).resolves.toMatchObject({
+      businessLineId: 'business_line_product',
+      businessLineRecordCandidates: [{
+        businessLineId: 'business_line_product',
+        planId: plan.planId,
+        shouldAffectFutureContext: false,
+        reviewRequired: true,
+      }],
+    });
+    expect(writer.createSourceContext).not.toHaveBeenCalled();
+    expect(businessWriter.createRecord).not.toHaveBeenCalled();
+  });
+
+  it('rejects preview business-line targets that do not match the task owner', async () => {
+    const plan = planConnectorSourceIngestion({
+      taskId: 'task_1',
+      connectorId: 'gmail',
+      connectorName: 'Gmail',
+      externalId: 'message_1',
+      title: '客户确认邮件',
+      uri: 'gmail://message/message_1',
+      capturedAt: '2026-05-17T09:00:00.000Z',
+    });
+    const writer = { createSourceContext: vi.fn() };
+    const service = new ExternalAccessSourceIngestionService(
+      { planSourceIngestion: vi.fn().mockResolvedValue([plan]) },
+      writer,
+      null,
+      { resolveBusinessLineForTask: vi.fn().mockResolvedValue('business_line_actual') },
+    );
+
+    await expect(service.preview({
+      taskId: 'task_1',
+      businessLineId: 'business_line_other',
+    })).rejects.toThrow('business-line target does not match');
+    expect(writer.createSourceContext).not.toHaveBeenCalled();
+  });
+
   it('requires explicit confirmation before creating source contexts', async () => {
     const plan = planConnectorSourceIngestion({
       taskId: 'task_1',
@@ -129,6 +188,98 @@ describe('ExternalAccessSourceIngestionService', () => {
     });
     expect(writer.createSourceContext).toHaveBeenNthCalledWith(1, createPlan.sourceContext);
     expect(writer.createSourceContext).toHaveBeenNthCalledWith(2, reviewPlan.sourceContext);
+  });
+
+  it('creates reviewed business-line records on confirmed external source ingestion without future-context promotion', async () => {
+    const plan = planConnectorSourceIngestion({
+      taskId: 'task_1',
+      connectorId: 'gmail',
+      connectorName: 'Gmail',
+      externalId: 'message_1',
+      title: '客户确认邮件',
+      uri: 'gmail://message/message_1',
+      capturedAt: '2026-05-17T09:00:00.000Z',
+      credibility: 'verified',
+    });
+    const writer = {
+      createSourceContext: vi.fn().mockResolvedValue(sourceRecord({
+        id: 'source_1',
+        businessLineId: 'business_line_product',
+        batchId: plan.sourceContext.batchId,
+      })),
+    };
+    const businessWriter = {
+      createRecord: vi.fn().mockResolvedValue({
+        id: 'business_line_record_external_1',
+        businessLineId: 'business_line_product',
+        type: 'signal',
+        source: 'external_access:gmail:reviewed_preview',
+        summary: 'External signal reviewed from Gmail:message_1',
+        confidence: 80,
+        linkedActionId: 'task_1',
+        linkedDecisionId: null,
+        shouldAffectFutureContext: false,
+        createdAt: '2026-05-17T09:02:00.000Z',
+      }),
+    };
+    const service = new ExternalAccessSourceIngestionService(
+      { planSourceIngestion: vi.fn().mockResolvedValue([plan]) },
+      writer,
+      null,
+      { resolveBusinessLineForTask: vi.fn().mockResolvedValue('business_line_product') },
+      businessWriter,
+    );
+
+    await expect(service.commit({
+      taskId: 'task_1',
+      planIds: [plan.planId],
+      confirmed: true,
+    })).resolves.toMatchObject({
+      businessLineId: 'business_line_product',
+      created: [{ businessLineId: 'business_line_product' }],
+      createdBusinessRecords: [{
+        businessLineId: 'business_line_product',
+        shouldAffectFutureContext: false,
+      }],
+    });
+    expect(writer.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: 'business_line_product',
+    }));
+    expect(businessWriter.createRecord).toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: 'business_line_product',
+      source: 'external_access:gmail:reviewed_preview',
+      shouldAffectFutureContext: false,
+    }));
+  });
+
+  it('rejects commit business-line targets that do not match the task owner', async () => {
+    const plan = planConnectorSourceIngestion({
+      taskId: 'task_1',
+      connectorId: 'gmail',
+      connectorName: 'Gmail',
+      externalId: 'message_1',
+      title: '客户确认邮件',
+      uri: 'gmail://message/message_1',
+      capturedAt: '2026-05-17T09:00:00.000Z',
+    });
+    const writer = { createSourceContext: vi.fn() };
+    const businessWriter = { createRecord: vi.fn() };
+    const service = new ExternalAccessSourceIngestionService(
+      { planSourceIngestion: vi.fn().mockResolvedValue([plan]) },
+      writer,
+      null,
+      { resolveBusinessLineForTask: vi.fn().mockResolvedValue('business_line_actual') },
+      businessWriter,
+    );
+
+    await expect(service.commit({
+      taskId: 'task_1',
+      businessLineId: 'business_line_other',
+      planIds: [plan.planId],
+      confirmed: true,
+    })).rejects.toThrow('business-line target does not match');
+    expect(writer.createSourceContext).not.toHaveBeenCalled();
+    expect(businessWriter.createRecord).not.toHaveBeenCalled();
   });
 
   it('never writes connector plans that quality evaluation marked as skip', async () => {

@@ -115,6 +115,8 @@ const externalAccessSourceIngestionService = new ExternalAccessSourceIngestionSe
   externalAccessStatusService,
   taskService,
   taskService,
+  businessLineRepository,
+  businessLineRepository,
 );
 const agentToolRegistry = new AgentToolRegistry(
   artifactRepository,

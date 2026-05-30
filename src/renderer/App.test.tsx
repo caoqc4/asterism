@@ -143,6 +143,10 @@ function buildBusinessLineWorkspace(partial: Partial<BusinessLineWorkspace> = {}
     records,
     sourceRecords: partial.sourceRecords ?? [],
     nextActions,
+    automations: partial.automations ?? {
+      automations: [],
+      sensors: [],
+    },
     learning: partial.learning ?? {
       reviews: [],
       skillRevisions: [{
@@ -649,9 +653,11 @@ function createMockApi() {
     }),
     previewExternalAccessSourceIngestion: vi.fn().mockResolvedValue({
       taskId: 'task_risk',
+      businessLineId: null,
       createCount: 1,
       reviewCount: 1,
       skipCount: 0,
+      businessLineRecordCandidates: [],
       plans: [{
         planId: 'connector:gmail:message_1',
         decision: 'create',
@@ -724,7 +730,9 @@ function createMockApi() {
     }),
     commitExternalAccessSourceIngestion: vi.fn().mockResolvedValue({
       taskId: 'task_risk',
+      businessLineId: null,
       created: [],
+      createdBusinessRecords: [],
       skippedPlanIds: [],
     }),
     listTasks: vi.fn().mockResolvedValue(tasks),
@@ -1779,6 +1787,57 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/draft output · artifact · confidence 70/)).toBeTruthy();
     expect(screen.getByText('memory only')).toBeTruthy();
     expect(screen.getByText(/excluded from default future context/)).toBeTruthy();
+  });
+
+  it('shows business-line automations and read-only external sensors without capability matrices', async () => {
+    const line = buildBusinessLineListItem({
+      id: 'business_line_automation',
+      title: 'Automation product',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      automations: {
+        automations: [{
+          id: 'automation_task_gmail_watch',
+          businessLineId: line.id,
+          taskId: 'task_gmail_watch',
+          kind: 'scheduled',
+          title: 'Watch Gmail for customer escalation signals',
+          summary: 'Read-only Gmail monitoring loop.',
+          triggerLabel: 'Scheduled loop',
+          status: 'active',
+          risk: { level: 'low', note: null },
+          mutationBoundary: 'Uses global MCP/runtime/external authorization; mutations require Decision gate.',
+          createdAt: now,
+          updatedAt: now,
+        }],
+        sensors: [{
+          id: 'external:gmail',
+          businessLineId: line.id,
+          sourceType: 'external_access',
+          sourceLabel: 'gmail',
+          title: 'External Access watch: gmail',
+          status: 'needs_review',
+          readOnly: true,
+          reviewBoundary: 'External evidence stays out of future context unless reviewed or confirmed.',
+          sourceTaskId: 'task_gmail_watch',
+          sourceRecordIds: ['business_line_record_external'],
+        }],
+      },
+    });
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    expect(await screen.findByText('Automations & Sensors')).toBeTruthy();
+    expect(screen.getByText('Watch Gmail for customer escalation signals')).toBeTruthy();
+    expect(screen.getByText(/Scheduled loop · active/)).toBeTruthy();
+    expect(screen.getByText('External Access watch: gmail')).toBeTruthy();
+    expect(screen.getByText(/External evidence stays out of future context/)).toBeTruthy();
+    expect(screen.queryByText(/provider matrix/i)).toBeNull();
+    expect(screen.queryByText(/runtime matrix/i)).toBeNull();
   });
 
   it('shows SOP revision lifecycle provenance, Decision gate, and rollback actions', async () => {

@@ -8,10 +8,12 @@ import { BusinessLineRepository } from '../../db/repositories/business-line-repo
 import type {
   AcceptBusinessLineSkillRevisionInput,
   BusinessLine,
+  BusinessLineAutomation,
   BusinessLineCreationTemplate,
   BusinessLineContextPack,
   BusinessLineListItem,
   BusinessLineRecord,
+  BusinessLineSensor,
   BusinessLineSkillRevision,
   BusinessLineTodaySuggestion,
   BusinessLineWorkspace,
@@ -37,6 +39,43 @@ function isBusinessLineLegacyTask(task: TaskListItemRecord): boolean {
     facets.includes('project') ||
     facets.includes('routine')
   );
+}
+
+function isAutomationTask(task: TaskListItemRecord): boolean {
+  if (task.state === 'completed' || task.state === 'archived') return false;
+  const facets = task.taskFacets ?? [];
+  return task.taskType === 'scheduled'
+    || task.taskType === 'event'
+    || task.taskType === 'routine'
+    || facets.includes('scheduled')
+    || facets.includes('event')
+    || facets.includes('routine');
+}
+
+function automationKindForTask(task: TaskListItemRecord): BusinessLineAutomation['kind'] {
+  const facets = task.taskFacets ?? [];
+  if (task.taskType === 'event') return 'event';
+  if (task.taskType === 'scheduled') return 'scheduled';
+  if (task.taskType === 'routine') return 'routine';
+  if (facets.includes('event')) return 'event';
+  if (facets.includes('scheduled')) return 'scheduled';
+  if (facets.includes('routine')) return 'routine';
+  return 'scheduled';
+}
+
+function automationTriggerLabel(kind: BusinessLineAutomation['kind']): string {
+  if (kind === 'event') return 'Event-triggered sensor';
+  if (kind === 'routine') return 'Routine loop';
+  return 'Scheduled loop';
+}
+
+function connectorLabelForSource(source: SourceContextRecord): string | null {
+  if (source.batchId?.startsWith('connector:')) {
+    return source.batchId.split(':')[1] || 'external_access';
+  }
+  const connectorNote = source.note?.match(/Connector source:\s*([^\n]+)/i)?.[1]?.trim();
+  if (connectorNote) return connectorNote.split(':')[0] || connectorNote;
+  return null;
 }
 
 function newestFirst<T extends { updatedAt?: string; createdAt: string }>(items: T[]): T[] {
@@ -149,7 +188,13 @@ export class BusinessLineService {
     const legacyDetail = businessLine.legacyTaskId
       ? await this.taskService.getDetail(businessLine.legacyTaskId)
       : null;
-    const sourceRecords = legacyDetail?.sourceContexts ?? [];
+    const sourceRecords = await this.businessLineRepository.listSourceContextsForBusinessLine(businessLine.id);
+    const automationSnapshot = await this.automationSnapshotForBusinessLine({
+      businessLine,
+      tasks,
+      sourceRecords,
+      nativeRecords: records,
+    });
     const memoryRecords = await this.memoryRecordsForBusinessLine({
       businessLine,
       nativeRecords: records,
@@ -206,6 +251,8 @@ export class BusinessLineService {
       ],
       permissionBoundaries: [
         'Risky skill/SOP updates stay proposed until accepted or routed through Decisions.',
+        'Business-line sensors are read-only; local, external, public, or money-affecting mutations require a Decision-approved action.',
+        'External Access previews can create reviewable business records, but preview evidence stays out of future context until reviewed or confirmed.',
       ],
       missingContext,
     };
@@ -231,6 +278,7 @@ export class BusinessLineService {
       records: memoryRecords,
       sourceRecords,
       nextActions,
+      automations: automationSnapshot,
       learning: {
         reviews,
         skillRevisions: enrichedSkillRevisions,
@@ -872,6 +920,132 @@ export class BusinessLineService {
         && task.state !== 'completed'
         && task.state !== 'archived';
     }));
+  }
+
+  private async automationSnapshotForBusinessLine(params: {
+    businessLine: BusinessLine;
+    tasks: TaskListItemRecord[];
+    sourceRecords: SourceContextRecord[];
+    nativeRecords: BusinessLineRecord[];
+  }): Promise<BusinessLineWorkspace['automations']> {
+    const linkedActionIds = new Set(await this.businessLineRepository.listActionTaskIds(params.businessLine.id));
+    const businessLineTasks = params.tasks.filter((task) =>
+      this.taskBelongsToBusinessLine(task, params.businessLine, linkedActionIds));
+    const automationTasks = newestFirst(businessLineTasks.filter(isAutomationTask));
+    const automations = automationTasks.map((task) =>
+      this.projectAutomationTask(params.businessLine.id, task));
+    const automationSensors = automationTasks.map((task) =>
+      this.projectAutomationSensor(params.businessLine.id, task));
+    const externalSensors = this.projectExternalSensors({
+      businessLineId: params.businessLine.id,
+      sourceRecords: params.sourceRecords,
+      nativeRecords: params.nativeRecords,
+    });
+
+    return {
+      automations,
+      sensors: [...automationSensors, ...externalSensors],
+    };
+  }
+
+  private taskBelongsToBusinessLine(
+    task: TaskListItemRecord,
+    businessLine: BusinessLine,
+    linkedActionIds: Set<string>,
+  ): boolean {
+    if (task.businessLineId === businessLine.id) return true;
+    if (linkedActionIds.has(task.id)) return true;
+    if (!businessLine.legacyTaskId) return false;
+    return task.id === businessLine.legacyTaskId || task.parentTaskId === businessLine.legacyTaskId;
+  }
+
+  private projectAutomationTask(businessLineId: string, task: TaskListItemRecord): BusinessLineAutomation {
+    const kind = automationKindForTask(task);
+    return {
+      id: `automation:${task.id}`,
+      businessLineId,
+      taskId: task.id,
+      kind,
+      title: task.title,
+      summary: task.summary,
+      triggerLabel: automationTriggerLabel(kind),
+      status: task.state === 'waiting_external'
+        ? 'paused'
+        : task.activeBlocker || task.riskLevel === 'high'
+        ? 'blocked'
+        : 'active',
+      risk: {
+        level: task.riskLevel,
+        note: task.riskNote,
+      },
+      mutationBoundary: 'Uses global MCP/runtime/external authorization; any local, external, public, or money-affecting mutation must pass an action-level Decision gate.',
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+    };
+  }
+
+  private projectAutomationSensor(businessLineId: string, task: TaskListItemRecord): BusinessLineSensor {
+    const kind = automationKindForTask(task);
+    return {
+      id: `sensor:${task.id}`,
+      businessLineId,
+      sourceType: kind === 'event' ? 'event_task' : 'scheduled_task',
+      sourceLabel: task.title,
+      title: `${automationTriggerLabel(kind)}: ${task.title}`,
+      status: task.state === 'waiting_external' ? 'paused' : 'watching',
+      readOnly: true,
+      reviewBoundary: 'Read-only sensor output becomes a candidate record first; mutations require a Decision-approved action.',
+      sourceTaskId: task.id,
+      sourceRecordIds: [],
+    };
+  }
+
+  private projectExternalSensors(params: {
+    businessLineId: string;
+    sourceRecords: SourceContextRecord[];
+    nativeRecords: BusinessLineRecord[];
+  }): BusinessLineSensor[] {
+    const sensors = new Map<string, BusinessLineSensor>();
+    for (const source of params.sourceRecords) {
+      const connectorLabel = connectorLabelForSource(source);
+      if (!connectorLabel) continue;
+      const key = `external:${connectorLabel}`;
+      const existing = sensors.get(key);
+      const status: BusinessLineSensor['status'] = source.containsSensitiveData || source.credibility === 'low'
+        ? 'needs_review'
+        : 'watching';
+      sensors.set(key, {
+        id: key,
+        businessLineId: params.businessLineId,
+        sourceType: 'external_access',
+        sourceLabel: connectorLabel,
+        title: `External Access watch: ${connectorLabel}`,
+        status: existing?.status === 'needs_review' || status === 'needs_review' ? 'needs_review' : 'watching',
+        readOnly: true,
+        reviewBoundary: 'External evidence stays out of future context unless a source or business record is explicitly reviewed or confirmed.',
+        sourceTaskId: source.taskId,
+        sourceRecordIds: [...new Set([...(existing?.sourceRecordIds ?? []), `source_context:${source.id}`])],
+      });
+    }
+    for (const record of params.nativeRecords) {
+      if (!record.source.startsWith('external_access:')) continue;
+      const connectorLabel = record.source.split(':')[1] || 'external_access';
+      const key = `external:${connectorLabel}`;
+      const existing = sensors.get(key);
+      sensors.set(key, {
+        id: key,
+        businessLineId: params.businessLineId,
+        sourceType: 'external_access',
+        sourceLabel: connectorLabel,
+        title: `External Access watch: ${connectorLabel}`,
+        status: 'needs_review',
+        readOnly: true,
+        reviewBoundary: 'Reviewed external previews create business records that remain excluded from future context until explicitly promoted.',
+        sourceTaskId: record.linkedActionId,
+        sourceRecordIds: [...new Set([...(existing?.sourceRecordIds ?? []), record.id])],
+      });
+    }
+    return [...sensors.values()];
   }
 
   private deriveMissingContext(params: {

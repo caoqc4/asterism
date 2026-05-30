@@ -365,6 +365,10 @@ export function registerIpcHandlers(): void {
     if (result.created.length > 0) {
       emitAppEvent('task.changed', result.taskId);
     }
+    if (result.businessLineId && result.createdBusinessRecords.length > 0) {
+      emitAppEvent('businessLine.changed', result.businessLineId);
+      emitAppEvent('brief.changed');
+    }
     return result;
   });
 

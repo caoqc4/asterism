@@ -1059,4 +1059,65 @@ describe('BusinessLineService', () => {
     const archivedWorkspace = await service.getWorkspace(created.id);
     expect(archivedWorkspace?.nextActions.map((task) => task.id)).not.toContain(archivedActionTaskId);
   });
+
+  it('projects scheduled/event tasks and external previews as business-line automations and read-only sensors', async () => {
+    const created = await service.create({
+      title: 'Business-line automation loop',
+      goal: 'Continuously watch customer signals',
+      kind: 'software_product',
+    });
+    const scheduledTask = await taskService.create({
+      title: 'Watch Gmail for customer escalation signals',
+      summary: 'Read-only Gmail monitoring loop.',
+      taskType: 'scheduled',
+      taskFacets: ['scheduled', 'routine'],
+      businessLineId: created.id,
+    });
+    await new SourceContextRepository().create({
+      taskId: scheduledTask.id,
+      businessLineId: created.id,
+      title: 'Gmail escalation candidate',
+      kind: 'doc',
+      uri: 'gmail://message/escalation_1',
+      note: 'Connector source: Gmail:escalation_1',
+      batchId: 'connector:gmail:escalation_1',
+      credibility: 'verified',
+    });
+    const externalRecord = await businessLineRepository.createRecord({
+      businessLineId: created.id,
+      type: 'signal',
+      source: 'external_access:gmail:reviewed_preview',
+      summary: 'External signal reviewed from Gmail: escalation candidate.',
+      confidence: 80,
+      linkedActionId: scheduledTask.id,
+      shouldAffectFutureContext: false,
+    });
+
+    const workspace = await service.getWorkspace(created.id);
+
+    expect(workspace?.automations.automations).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        taskId: scheduledTask.id,
+        kind: 'scheduled',
+        triggerLabel: 'Scheduled loop',
+        mutationBoundary: expect.stringContaining('Decision gate'),
+      }),
+    ]));
+    expect(workspace?.automations.sensors).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        sourceType: 'scheduled_task',
+        readOnly: true,
+        reviewBoundary: expect.stringContaining('candidate record'),
+      }),
+      expect.objectContaining({
+        sourceType: 'external_access',
+        sourceLabel: 'gmail',
+        readOnly: true,
+      }),
+    ]));
+    expect(workspace?.records.map((record) => record.id)).toContain(externalRecord.id);
+    expect(workspace?.contextPack.latestRecords.map((record) => record.id)).not.toContain(externalRecord.id);
+    expect(workspace?.contextPack.permissionBoundaries.join('\n')).toContain('Business-line sensors are read-only');
+    expect(workspace?.contextPack.permissionBoundaries.join('\n')).toContain('External Access previews');
+  });
 });
