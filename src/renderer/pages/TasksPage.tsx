@@ -355,6 +355,7 @@ export type TaskWorkspaceSelectionContext = {
 interface Task {
   id: string;
   title: string;
+  businessLineId?: string | null;
   lane: Lane;
   status: TaskStatus;
   type: TaskType;
@@ -885,6 +886,7 @@ function toTaskListItemRecord(task: Task): TaskListItemRecord {
   return {
     id: task.id,
     title: task.title,
+    businessLineId: task.businessLineId ?? null,
     summary: task.whyNow ?? null,
     state: task.state,
     nextStep: task.nextStep ?? null,
@@ -1238,6 +1240,7 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
   return {
     id: r.id,
     title: r.title,
+    businessLineId: r.businessLineId ?? null,
     lane: derivelane(r),
     status: deriveStatus(r),
     type,
@@ -3199,7 +3202,7 @@ function resetCaptureDraft() {
     <div className="tasks-page" onClick={closeContextMenu}>
       <aside className="lenses-rail task-resource-explorer">
         <div className="task-explorer-head">
-          <span>Tasks</span>
+          <span>Legacy Tasks</span>
           <button
             className="task-new-button"
             aria-label="+ 新建任务"
@@ -4362,6 +4365,7 @@ function TaskTimelineView({
             {writebackApprovals.slice(0, 4).map((item) => {
               const busy = applyingWritebackApprovalId === item.id;
               const evidenceChips = writebackApprovalEvidenceChips(item);
+              const targetChips = writebackApprovalTargetChips(item, task);
               return (
                 <div className="task-writeback-approval" key={item.id}>
                   <div className="task-writeback-approval-main">
@@ -4371,6 +4375,13 @@ function TaskTimelineView({
                     </div>
                     <p>{item.summary}</p>
                     <small>{truncateRuntimeApprovalDetail(item.detail)}</small>
+                    {targetChips.length > 0 && (
+                      <div className="task-writeback-evidence-chips" aria-label={`${item.kind} approval target`}>
+                        {targetChips.map((chip) => (
+                          <span key={chip}>{chip}</span>
+                        ))}
+                      </div>
+                    )}
                     {evidenceChips.length > 0 && (
                       <div className="task-writeback-evidence-chips" aria-label={`${item.kind} approval evidence`}>
                         {evidenceChips.map((chip) => (
@@ -4492,9 +4503,26 @@ function truncateRuntimeApprovalDetail(value: string): string {
 }
 
 function writebackApprovalSourceLabel(item: TaskplaneWritebackApprovalItem): string {
-  if (item.source === 'task_memory_guidance') return '任务记忆';
+  if (item.source === 'task_memory_guidance') return 'Legacy task memory';
   if (item.source === 'scheduler_decision_proposal') return '调度提案';
   return 'Write Intent';
+}
+
+function writebackApprovalBusinessOwnerId(item: TaskplaneWritebackApprovalItem, task: Pick<Task, 'businessLineId'>): string | null {
+  const input = item.plan.input as { businessLineId?: string | null } | undefined;
+  const businessLineId = input?.businessLineId?.trim() || task.businessLineId?.trim();
+  return businessLineId || null;
+}
+
+export function writebackApprovalTargetChips(item: TaskplaneWritebackApprovalItem, task: Pick<Task, 'businessLineId' | 'title'>): string[] {
+  const businessOwnerId = writebackApprovalBusinessOwnerId(item, task);
+  const carrierKind = businessOwnerId || task.businessLineId ? 'Next Action' : 'Legacy Task';
+  const carrier = `Execution carrier: ${carrierKind} / ${task.title}`;
+  if (!businessOwnerId) return [`Writeback target: Legacy Task / ${task.title}`];
+  return [
+    `Business owner: ${businessOwnerId}`,
+    carrier,
+  ];
 }
 
 function formatRuntimeReplayGroupTimeRange(group: RuntimeReplayGroup): string {

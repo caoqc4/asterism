@@ -3978,17 +3978,17 @@ export function RightPanel({
         : 'Runtime 未选择';
   const contextLabel = activeBusinessLineId
     ? activeTaskId
-      ? `Context: Business / ${activeBusinessLineTitle ?? activeBusinessLineId} / Next Action / ${title ?? activeTaskId}`
-      : `Context: Business / ${activeBusinessLineTitle ?? activeBusinessLineId}`
+      ? `Context: Business Line / ${activeBusinessLineTitle ?? activeBusinessLineId} / Next Action / ${title ?? activeTaskId}`
+      : `Context: Business Line / ${activeBusinessLineTitle ?? activeBusinessLineId}`
     : activeTaskId
-    ? `Context: Task / ${title ?? activeTaskId}`
+    ? `Context: Legacy Task / ${title ?? activeTaskId}`
     : 'Context: Global';
   const writebackTargetLabel = activeBusinessLineId
     ? activeTaskId
-      ? `Writeback: Business / ${activeBusinessLineTitle ?? activeBusinessLineId} / Next Action / ${title ?? activeTaskId}`
-      : `Writeback: Business / ${activeBusinessLineTitle ?? activeBusinessLineId}`
+      ? `Writeback: Business Line / ${activeBusinessLineTitle ?? activeBusinessLineId} / Next Action / ${title ?? activeTaskId}`
+      : `Writeback: Business Line / ${activeBusinessLineTitle ?? activeBusinessLineId}`
     : activeTaskId
-    ? `Writeback: Task / ${title ?? activeTaskId}`
+    ? `Writeback: Legacy Task / ${title ?? activeTaskId}`
     : 'Writeback: Global / capture proposal';
   const hasSessionActivity = Boolean(activeBusinessLineId || activeTaskId || messages.length > 0 || input.trim());
   const pendingMemoryGuidanceLookupKey = activeTaskId
@@ -4174,6 +4174,11 @@ export function RightPanel({
             <div className="panel-file-proposal-head">
               <strong>业务线执行复盘提案</strong>
               <span>确认后只写入业务线复盘；来源、产物和 Decision 仍需在各自写回卡片中单独确认</span>
+            </div>
+            <div className="panel-refresh-reason">
+              Review target: Business Line / {activeBusinessLineTitle ?? businessLineRunReview.businessLineId}
+              {businessLineRunReview.sourceRunId ? ` / Run/Review / ${businessLineRunReview.sourceRunId}` : ''}
+              {activeTaskId ? ` / Next Action / ${title ?? activeTaskId}` : ''}
             </div>
             <div className="panel-refresh-reason">
               {businessLineRunReview.writebackOptions.map((option) => (

@@ -30,6 +30,7 @@ import {
   buildProjectDecompositionConfirmationApplyPlan,
   projectDecompositionPromotionEvidenceChips,
   writebackApprovalEvidenceChips,
+  writebackApprovalTargetChips,
 } from './pages/TasksPage';
 import {
   createManualWorkHabit,
@@ -1970,7 +1971,7 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
 
-    expect(await screen.findByText(/Context: Business \/ GoalPilot product \/ Next Action/)).toBeTruthy();
+    expect(await screen.findByText(/Context: Business Line \/ GoalPilot product \/ Next Action/)).toBeTruthy();
     const input = screen.getByRole('textbox');
     await user.clear(input);
     await user.type(input, '下一步怎么推进？');
@@ -2027,7 +2028,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
-    expect(await screen.findByText(/Context: Business \/ GoalPilot product \/ Next Action/)).toBeTruthy();
+    expect(await screen.findByText(/Context: Business Line \/ GoalPilot product \/ Next Action/)).toBeTruthy();
     const input = screen.getByRole('textbox');
     await user.clear(input);
     await user.type(input, '开始执行当前任务');
@@ -2139,6 +2140,7 @@ describe('App redesign v1', () => {
       }));
     });
     expect(await screen.findByText('业务线执行复盘提案')).toBeTruthy();
+    expect(screen.getByText(/Review target: Business Line \/ Execution product \/ Run\/Review \/ run_business_line_execution \/ Next Action \/ Run launch evidence check/)).toBeTruthy();
     expect(screen.getByText('Business record')).toBeTruthy();
     expect(screen.getByText('Next action')).toBeTruthy();
     await user.clear(screen.getByLabelText('业务线复盘结果'));
@@ -2160,6 +2162,85 @@ describe('App redesign v1', () => {
         skillUpdateSuggestions: ['Review launch evidence before ranking this business line.'],
       }));
     });
+  });
+
+  it('separates business owner and execution carrier on writeback approval cards', async () => {
+    const user = userEvent.setup();
+    const task = buildTask({
+      id: 'task_business_owner_card',
+      title: 'Review onboarding signal',
+      businessLineId: 'business_line_owner',
+      state: 'planned',
+    });
+    harness.tasks.unshift(task);
+    harness.details[task.id] = buildTaskDetail(task);
+    harness.runs.unshift(buildRun({
+      id: 'run_business_owner_card',
+      businessLineId: 'business_line_owner',
+      output: JSON.stringify({
+        type: 'TASKPLANE_WRITE_INTENTS',
+        intents: [{
+          type: 'business_record.create',
+          businessLineId: 'business_line_owner',
+          recordType: 'signal',
+          summary: 'Onboarding signal is ready for the business line.',
+        }],
+      }),
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: task.id,
+      type: 'agent',
+    }));
+    window.location.hash = 'tasks';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'Review onboarding signal' }));
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
+
+    expect(await screen.findByText('Business owner: business_line_owner')).toBeTruthy();
+    expect(screen.getByText('Execution carrier: Next Action / Review onboarding signal')).toBeTruthy();
+  });
+
+  it('falls back to the task business owner on task-only writeback approval targets', () => {
+    const chips = writebackApprovalTargetChips({
+      detail: 'Task-only memory guidance.',
+      id: 'approval_task_only',
+      kind: 'task_memory',
+      plan: {
+        action: 'task_file.create',
+        input: {
+          content: '# Memory',
+          kind: 'file',
+          name: 'fallback-memory.md',
+          path: 'Task Records/fallback-memory.md',
+          taskId: 'task_business_owner_fallback',
+        },
+        requiredApi: 'createTaskFile',
+        successMessage: '已确认并写入任务文件：Task Records/fallback-memory.md。',
+        taskId: 'task_business_owner_fallback',
+        timeline: {
+          type: 'panel.task_file_written',
+          payload: {
+            businessLineId: null,
+            path: 'Task Records/fallback-memory.md',
+          },
+        },
+      },
+      runId: 'run_business_owner_fallback',
+      source: 'task_memory_guidance',
+      summary: '旧 run 只产生 task memory guidance，但 carrier 已属于业务线。',
+      taskId: 'task_business_owner_fallback',
+      title: '创建任务记录',
+    }, {
+      businessLineId: 'business_line_owner_fallback',
+      title: 'Capture fallback memory',
+    });
+
+    expect(chips).toEqual([
+      'Business owner: business_line_owner_fallback',
+      'Execution carrier: Next Action / Capture fallback memory',
+    ]);
   });
 
   it('shows scheduled/event sweep status in Brief when scheduler is enabled', async () => {
