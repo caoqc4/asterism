@@ -29,8 +29,9 @@ the current task.
 
 - `Taskplane Agent Operating Principles` defines what Agents must do.
 - This document defines how Agent output should appear to the user.
-- `taskplane.task-memory-spec.v1` defines durable task memory and recovery
-  rules; this contract defines when those memory mechanics should be visible.
+- `taskplane.task-memory-spec.v1` defines durable business memory, task
+  execution memory, and recovery rules; this contract defines when those memory
+  mechanics should be visible.
 - Runtime harness phases must declare an output contract before invoking AI.
 
 ## First Principles
@@ -50,7 +51,7 @@ the current task.
    over a long checklist that shifts planning work back to the user.
 
 4. Separate conversation from persistence.
-   The Agent may decide to record task dynamics or synthesize task memory
+   The Agent may decide to record task dynamics or synthesize business/task memory
    through the harness, but ordinary conversation should not repeatedly ask the
    user to approve internal record-keeping. User confirmation is reserved for
    meaningful writes, structural changes, external effects, or risky decisions.

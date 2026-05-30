@@ -71,7 +71,7 @@ const SURFACE_POLICY: Record<RuntimeSurfaceKind, Omit<MemorySurfacePolicy, 'file
     requiresExplicitCreation: true,
     requiresQualityMetadata: false,
     label: '任务说明',
-    reason: 'Task.md 是当前任务恢复、目标、进度和下一步的主记忆面。',
+    reason: 'Task.md 是一个 Next Action 或 legacy task 的执行恢复面，不是完整业务线记忆。',
   },
   task_record: {
     category: 'recovery_memory',
@@ -81,7 +81,7 @@ const SURFACE_POLICY: Record<RuntimeSurfaceKind, Omit<MemorySurfacePolicy, 'file
     requiresExplicitCreation: true,
     requiresQualityMetadata: false,
     label: '任务记录',
-    reason: 'Task Records 只保存有恢复价值的交接、阶段结论、纠正、决策依据或失败复盘。',
+    reason: 'Task Records 保存有恢复价值的任务级交接、阶段结论、纠正、决策依据或失败复盘；业务级记忆应写入 Business Records。',
   },
   source_material: {
     category: 'evidence_source',

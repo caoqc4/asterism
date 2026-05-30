@@ -22,8 +22,8 @@ line, choose a Next Action, execute, review, persist, learn, hand off, or pause.
   `docs/specs/agent-operating-principles.md`
 - User-visible chat, progress, drafts, proposals, files, or summaries:
   `docs/specs/agent-output-contract.md`
-- Task memory, Task.md, Task Records, Source Context, context refresh, or
-  recovery:
+- Business memory, Business Records, Reviews, SOP revisions, Task.md, Task
+  Records, Source Context, context refresh, or recovery:
   `docs/specs/task-memory-spec.md`
 - Compact, reset, clear, handoff, task switch, phase closeout, or preservation
   proof:

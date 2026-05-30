@@ -83,6 +83,7 @@ describe('task memory retrieval', () => {
   it('demotes resolved blockers and dependencies below current recovery records', () => {
     const results = retrieveTaskExecutionMemory({
       currentTask: task(),
+      now: '2026-05-18T00:00:00.000Z',
       taskFiles: [
         taskFile({ id: 'file_task_md', name: 'Task.md', path: 'Task.md' }),
         taskFile({ id: 'file_record_current', name: 'Current record', path: 'Task Records/current.md' }),

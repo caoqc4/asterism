@@ -55,6 +55,12 @@ describe('capability product surfaces', () => {
       'native.runtime_orchestration',
       'decision.writeback_orchestration',
     ]);
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[3]).toMatchObject({
+      name: 'Business Memory Spec',
+      path: 'docs/specs/task-memory-spec.md',
+    });
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[3]?.desc).toContain('Business Records');
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[3]?.desc).toContain('BusinessLineContextPack');
     expect(PRODUCT_RUNTIME_RULE_ITEMS[6]).toMatchObject({
       name: 'Native Agent Capability Mapping',
       path: 'docs/specs/native-agent-capability-mapping.md',

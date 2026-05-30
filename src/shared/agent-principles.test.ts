@@ -17,6 +17,9 @@ describe('Taskplane Agent product principles', () => {
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Phase-based reference: docs/specs/task-memory-spec.md');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Phase-based reference: docs/specs/agent-output-contract.md');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('GoalPilot decides when this document should load.');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Business Line state and BusinessLineContextPack');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Business Records, Reviews, accepted SOPs');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Task.md and Task Records only when the active Next Action or legacy task recovery needs them');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## First Principles And Simplicity');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('identify the real object being managed');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Runtime Entrypoint Gate Protocol');

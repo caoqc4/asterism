@@ -1,50 +1,56 @@
-# Taskplane Task Memory Spec
+# Taskplane Business Memory Spec
 
 Document id: `taskplane.task-memory-spec.v1`
 Owner: Taskplane product design
 Layer: skill / memory rules plus hook-backed gates
-Load: task resume, memory read/write, task switch, context clear, closeout, handoff, recovery sufficiency
-Scope: durable task memory and recovery
-Authority: required when loaded; deterministic memory gates enforce must-follow rules
+Load: business or task resume, memory read/write, focus switch, context clear,
+closeout, handoff, recovery sufficiency
+Scope: durable business memory, Next Action execution memory, and legacy task
+recovery
+Authority: required when loaded; deterministic memory gates enforce must-follow
+rules
 Status: Product runtime specification
 
 ## Purpose
 
-Taskplane assumes that long chat context should not be the primary task memory.
-The product can clear or refresh chat context only when durable task memory is
-sufficient for an Agent to recover the task with high quality.
+Taskplane assumes that chat is temporary working memory. The product can clear or
+refresh chat only when durable memory is sufficient for an Agent to recover the
+business line, active Next Action, or legacy task with high quality.
 
-This spec defines where task information belongs, how much should be recorded,
-what must be read before execution, and what must be persisted before task
-handoff, closeout, or context clearing.
+Business Line is the durable owner for long-lived business, product, content,
+workflow, or automation work. Tasks remain execution units and Next Action
+carriers. Task.md and Task Records remain valid for active Next Action execution
+and historical task recovery; they are not the default durable owner for
+business-line work.
 
 The goal is not to record everything. The goal is to preserve the smallest
 durable memory that lets a future Agent answer:
 
-1. What is the task trying to achieve?
-2. What is the current state?
-3. What is the next safe action?
-4. Why did the task reach this state?
-5. What constraints, risks, blockers, dependencies, or pending decisions matter?
-6. What has the user already approved, rejected, or corrected?
-7. Where are important sources, files, runs, and outputs?
-8. Can chat context be cleared without losing task quality?
+1. What business line, Next Action, or legacy task is being advanced?
+2. What is the current state and next safe action?
+3. Why did the work reach this state?
+4. What constraints, risks, blockers, dependencies, sources, files, runs, and
+   pending Decisions matter?
+5. What has the user approved, rejected, corrected, or taught the system?
+6. Which records, reviews, SOPs, sources, artifacts, or task files are needed for
+   recovery?
+7. Can chat context be cleared without losing business or execution quality?
 
 ## Relationship To Agent Operating Principles
 
-The Agent Operating Principles define required Agent behavior. This Task Memory
-Spec defines the memory contract that behavior must use.
+The Agent Operating Principles define required Agent behavior. This spec defines
+the memory contract that behavior must use.
 
 Agents must follow this spec when they:
 
-- start or resume a task;
-- switch between tasks or subtasks;
-- update task state;
-- write Task.md, Task Records, files, sources, artifacts, Decisions, or Runs;
-- evaluate phase closeout;
-- evaluate task completion;
-- clear or refresh chat context;
-- create handoff material for another Agent or future session.
+- start or resume a business line, Next Action, task, or legacy task;
+- switch between business lines, Next Actions, tasks, subtasks, or sessions;
+- update business-line state, Next Action state, or task state;
+- write Business Records, Reviews, Skills/SOP revisions, Task.md, Task Records,
+  files, sources, artifacts, Decisions, Runs, or Work Habits;
+- evaluate phase closeout, post-action review, completion, context refresh, or
+  handoff;
+- decide whether chat can be cleared.
 
 If this spec conflicts with a transient chat instruction, this spec wins unless
 the user explicitly changes the product rule.
@@ -53,265 +59,116 @@ the user explicitly changes the product rule.
 
 | Surface | Write Standard | Read / Reuse Standard |
 | --- | --- | --- |
-| Structured Task State | Write through task services and mutation gates. Use structured fields for status, hierarchy, blockers, dependencies, criteria, next step, and dates. | Treat as authoritative current state before reading narrative memory. |
-| Task.md | Write through the dedicated Task.md update evaluator. Keep only concise recovery fields and important references. | Read for task resume, context assembly, handoff, and context-clear checks. |
-| Task Records | Write only when Task Record worthiness is met: handoff, closeout, correction, option rationale, failure review, source digest, or durable state change. | Read as recovery history and rationale, with recent and relevant records preferred. |
+| Business Line | Write through business-line services and ownership gates. Use it for durable owner identity, scope, status, goals, active Next Actions, accepted SOPs, and business-level settings. | Read first for business-line work; it establishes ownership before task memory. |
+| BusinessLineContextPack | Assemble through business-line services from records, sources, Next Actions, reviews, SOPs, decisions, and recent runs. Do not hand-edit as a durable record. | Read as the compact business memory pack for chat/run context; use source ids and why-now/risk fields for traceability. |
+| Business Records | Write through business-line record services. Use for durable business memory: observations, source digests, decisions rationale, review summaries, customer/product/context changes, and business handoff. | Read as the main business-line recovery history, preferring recent, relevant, and future-context-enabled records. |
+| Reviews | Write through post-action review services after execution, run completion, correction, or learning-worthy outcome. | Read for what worked, what failed, suggested Next Actions, and learning candidates. |
+| Skills/SOP Revisions | Write through learning/SOP revision services and Decision gates for risky updates. | Read accepted revisions as business-line operating guidance; proposed/rejected/expired revisions are evidence, not active rules. |
+| Next Action / Structured Task State | Write through task services and mutation gates. Use structured fields for execution status, hierarchy, blockers, dependencies, criteria, next step, dates, and run linkage. | Read when executing, verifying, or resuming a concrete action inside the business line. |
+| Task.md | Write through the dedicated Task.md update evaluator. Keep concise execution recovery fields and important references for one active task / Next Action. | Read for active Next Action execution and legacy task recovery; do not treat as the whole business memory. |
+| Task Records | Write only when Task Record worthiness is met for task-scoped handoff, closeout, correction, option rationale, failure review, source digest, or context archive. | Read as task-scoped recovery history, especially for legacy project/routine tasks. |
 | Task Dynamics | Write from structured runtime, timeline, run, decision, file, source, artifact, and handoff events. Do not edit as user files. | Read for replay, audit, verification, and explaining what happened. |
 | Runs / Run Steps | Write through Run services, tool execution, checkpoint, verification, and recovery-guidance writers. | Read for execution replay, debugging, and evidence; promote only the smallest durable recovery summary when needed. |
 | Decisions | Write through Decision services or checkpoint approval boundaries. Never hide required user judgment only in chat. | Block or guide execution until resolved; read for approval effects and rationale. |
-| Source Materials | Write through explicit source capture with role, captured-at time, origin, credibility, duplicate, and sensitive-data metadata when known. | Read as evidence only after freshness, traceability, credibility, duplicate, and sensitivity checks. |
+| Source Context | Write through explicit source capture with role, captured-at time, origin, credibility, duplicate, and sensitive-data metadata when known. | Read as evidence only after freshness, traceability, credibility, duplicate, and sensitivity checks. |
 | AI Output | Write as generated context or run output, not as external evidence. | Read as generated context or recovery clue, with lower authority than user/source evidence. |
-| Artifacts | Write through artifact writers or explicit artifact metadata. Do not infer artifact status from a folder name alone. | Read as produced output reference; link from Task.md or Task Records when needed for recovery. |
-| Task Files | Write as ordinary task-bound support files. Reserved Task.md and Task Records paths are not ordinary file paths. | Read when selected, referenced, or relevant to the current task. |
-| Work Habits | Write through proposal/confirmation for cross-task rules. Do not infer durable habits from one task fact. | Read only when applicable to the current task or execution mode. |
+| Artifacts / Task Files | Write artifacts through artifact writers and ordinary task files through file writers. Reserved Task.md and Task Records paths are not ordinary file paths. | Read as produced output or support files when selected, referenced, or relevant; link from Business Records, Task.md, or Task Records when needed. |
+| Work Habits | Write through proposal/confirmation for cross-business or cross-task behavior. Do not infer durable habits from one task fact. | Read only when applicable to the current business line, task, or execution mode. |
 | Discussion | Do not persist by default. Persist only after routing decides it belongs to another surface. | Keep as temporary working context until captured, dismissed, or cleared. |
 
-### Structured Task State
-
-Structured task state is the authoritative current state.
-
-Use it for:
-
-- title, summary, task type, lane, status, parent and child relationships;
-- dependencies and blockers;
-- completion criteria;
-- next step;
-- important dates or scheduling fields;
-- counts and relationships that the UI or runtime must compute reliably.
-
-Do not hide authoritative state only inside chat, Task Records, or arbitrary
-files. If structured state exists, treat it as authoritative until the user
-confirms a correction.
-
-### Task.md
-
-Task.md is the primary recovery file for one task.
-
-Use it for the concise current recovery summary:
-
-- goal and scope;
-- current progress;
-- current next step;
-- constraints, risks, blockers, and dependencies;
-- open questions;
-- user decisions that affect future execution;
-- important files, source batches, artifacts, or records needed for recovery.
-
-Keep Task.md short and current. Do not turn it into a transcript, a full event
-history, or a dumping ground for every generated output.
-
-Update Task.md when durable task state changes enough that a future Agent would
-otherwise resume incorrectly.
-
-### Task Records
-
-Task Records are time-bound recovery notes.
-
-Create a Task Record only when the information materially helps future recovery
-or execution.
-
-Good reasons:
-
-- phase closeout or milestone summary;
-- task-to-task or Agent-to-Agent handoff;
-- user correction that changes future behavior;
-- option comparison or rejected-option rationale;
-- decision rationale;
-- failure review or rollback explanation;
-- context-clear archive;
-- important external signal that changes the task plan;
-- compact source digest that explains a batch of evidence.
-
-Do not create a Task Record for every chat turn, minor status update, generic
-summary, or duplicate fact already preserved elsewhere.
-
-Task Records may include more detail than Task.md, but they should still be
-selective. They should explain why recovery should proceed a certain way.
-
-### Task Dynamics
-
-Task Dynamics are structured facts about what happened to the task.
-
-Use them for:
-
-- task creation and state changes;
-- Run and Run step events;
-- task completion checks, including passed checks and explicit user overrides;
-- Decision creation or resolution events;
-- file, source, artifact, or Task Record writes;
-- context refresh, task switch, and handoff events;
-- replay or audit projections.
-
-Task Dynamics are not user files and are not the primary recovery summary.
-They support audit, replay, and verification. A future Agent may read them when
-useful, but should not rely on them as the only source of task state.
-
-### Runs And Run Steps
-
-Runs and Run steps are execution evidence.
-
-Use them for:
-
-- tool calls and model execution;
-- step outcomes;
-- failures and recovery attempts;
-- checkpoints;
-- run-level verification and self-checks;
-- artifacts or source materials produced by execution.
-
-Runs explain what execution did. They should not replace Task.md or Task Records
-when a durable recovery summary or rationale is needed.
-
-### Run Detail Routing
-
-Run detail is structured execution detail, not a Task Record by default.
-
-Persist or project Run detail by recovery value:
-
-- Write to Task.md only when the run changes the current goal, state, next
-  step, blocker, risk, completion criteria, or important file reference.
-- Write to a Task Record only when the run produces durable rationale or
-  recovery material: failure review, rollback explanation, phase closeout,
-  handoff, context-clear archive, decision rationale, or source digest.
-- Show in Task Dynamics when the information explains what happened but does
-  not need a user file: run started, step completed, verification result,
-  checkpoint, tool action, file write, artifact creation, or replay grouping.
-- Keep only as Run or Run step detail when it is useful for audit or debugging
-  but not needed for normal task recovery.
-- Drop transient execution noise when it has no recovery, audit, verification,
-  source, or user-facing value.
-
-Do not copy a full Run detail into Task Records. If a future Agent needs it,
-write the smallest recovery summary and link or reference the relevant run,
-step, file, source, or artifact.
-
-### Decisions
-
-Decisions preserve user judgment and authorization.
-
-Use them for:
-
-- meaningful choices;
-- risky or irreversible operations;
-- external writes;
-- completion approvals;
-- rejected options;
-- paused approvals that block task progress.
-
-Do not bury user approval only in chat. If execution depends on user judgment,
-create or surface a Decision.
-
-### Source Materials
-
-Source materials are inputs or evidence.
-
-Use them for:
-
-- web pages, documents, messages, external connector records, pasted evidence,
-  or captured notes that influence the task;
-- source digests when a run collects many items.
-
-Every recorded source should preserve a captured-at time, source role, and the
-best available origin label. When known, also preserve credibility, duplicate,
-and sensitive-data signals. Unknown credibility should stay explicit as
-`unknown`; do not treat missing metadata as verified evidence.
-
-Do not record every transient snippet or duplicate source.
-
-Promote a source into a Task Record, task file, or artifact only when it has
-been synthesized into durable task knowledge, rationale, or output.
-
-### Artifacts, AI Output, And Task Files
-
-Artifacts and AI outputs are produced work. Task files are task-specific working
-or output files.
-
-Use them for:
-
-- drafts, reports, implementation files, designs, evidence files, and generated
-  outputs;
-- files the user needs to inspect, edit, export, or reuse.
-
-Do not require a default output folder. Use natural task-relevant organization.
-
-Reference important outputs from Task.md or a Task Record when they are needed
-for future recovery.
-
-### Work Habits
-
-Work Habits are cross-task preferences or recurring working rules.
-
-Use them for:
-
-- user preferences that apply across tasks;
-- repeated corrections;
-- reusable process expectations.
-
-Do not store cross-task behavior only in task files. Task files may mention a
-task-specific constraint, but durable cross-task behavior belongs in Work
-Habits through the confirmation or learning flow.
-
-## Read Contract
-
-Before task execution, the Agent must assemble enough context to recover safely.
-
-Default read order:
-
-1. Product Agent Operating Principles.
-2. This Task Memory Spec.
-3. Selected task summary and structured state.
-4. Task.md when present, or create/read a minimal recovery substitute when
-   missing.
-5. Relevant Task Records when the task is ambiguous, long-running, recently
-   cleared, being handed off, or explicitly references prior records.
-6. Selected, referenced, or necessary working files.
-7. Relevant Decisions, Runs, Run steps, artifacts, source materials, and Task
-   Dynamics.
-8. Applicable Work Habits.
-
-For subtask start, read parent context only for scope, order, shared
-constraints, risks, and pending decisions that materially affect the subtask.
-Do not reload the entire parent project history by default.
-
-For context refresh recovery, prefer Task.md, the context-clear Task Record,
-recent handoff records, open Decisions, and the latest structured state before
-reading older Task Dynamics.
-
-## Write Contract
-
-When new information appears, write it to the smallest durable surface that
-preserves future usefulness.
-
-Use this routing:
-
-- current authoritative state -> structured task state;
-- concise recovery summary -> Task.md;
-- time-bound rationale, handoff, closeout, correction, or recovery archive ->
-  Task Record;
-- system fact that an action happened -> Task Dynamics;
-- execution evidence -> Run or Run step;
-- user judgment or approval -> Decision;
-- raw input evidence -> Source material;
-- produced work -> Artifact, AI output, or task file;
-- cross-task preference -> Work Habit proposal.
+## Surface Routing
+
+Route new information to the smallest durable surface that preserves future
+usefulness:
+
+- business-line identity, goals, settings, active SOPs, and ownership ->
+  Business Line;
+- compact business context for a run or chat -> BusinessLineContextPack;
+- durable business observation, source digest, rationale, status change,
+  handoff, or future-context note -> Business Record;
+- post-action result, lesson, next-action suggestion, or failure analysis ->
+  Review;
+- reusable business-line procedure or rule -> Skills/SOP revision, with
+  Decisions for risky activation;
+- current execution status, blocker, dependency, criteria, or next step -> Next
+  Action / structured task state;
+- concise one-task execution recovery -> Task.md;
+- task-scoped rationale, task handoff, phase closeout, correction, failure
+  review, or context archive -> Task Record;
+- user judgment or approval boundary -> Decision;
+- raw input evidence, external facts, connector material, or source digest input
+  -> Source Context;
+- produced deliverable or support file -> Artifact / Task File;
+- repeated cross-business or cross-task preference -> Work Habit proposal;
+- ordinary brainstorming, duplicated facts, and low-value chat -> Discussion
+  only.
 
 Do not duplicate the same fact across multiple surfaces unless each surface has
 a distinct recovery job.
 
+## Business-Line Read Order
+
+Default read order for business-line execution:
+
+1. Product Agent Operating Principles and this spec.
+2. Business Line structured state: scope, goals, active Next Actions, accepted
+   SOPs, settings, and ownership.
+3. BusinessLineContextPack for the current business line, including why-now,
+   source, risk, records, reviews, decisions, and accepted SOP guidance.
+4. Current Next Action / task structured state when execution is concrete.
+5. Task.md only when the active Next Action has one or when legacy recovery needs
+   it.
+6. Relevant Business Records and Reviews, preferring recent, future-context, and
+   source-linked records.
+7. Relevant Task Records when the active action is long-running, ambiguous,
+   recently cleared, handed off, or legacy.
+8. Source Context, Decisions, Runs, Run steps, artifacts, task files, Task
+   Dynamics, applicable Work Habits, and process templates as needed.
+
+For subtask start, read parent context only for scope, order, shared constraints,
+risks, pending Decisions, and handoff notes that materially affect the subtask.
+Do not reload the whole business-line or parent-project history by default.
+
+For context refresh recovery, prefer BusinessLineContextPack, recent Business
+Records, Reviews, open Decisions, active Next Action state, Task.md when
+relevant, and context-clear records before reading older Task Dynamics.
+
+## Legacy Task Recovery Read Order
+
+Use this order when no canonical business line is available yet, or when a user
+explicitly opens historical project/routine task recovery:
+
+1. Product Agent Operating Principles and this spec.
+2. Legacy task summary, structured state, parent/child relationships, blockers,
+   dependencies, criteria, and next step.
+3. Task.md when present, or a minimal recovery substitute from structured state.
+4. Relevant Task Records for handoff, closeout, correction, context clear, or
+   historical rationale.
+5. Source Context, Decisions, Runs, artifacts, task files, Task Dynamics, Work
+   Habits, and process templates as needed.
+6. Resolve or create the corresponding Business Line before new durable
+   business-level writes whenever possible.
+
+Legacy task recovery is compatibility support. It should not silently become a
+new task-first product model.
+
 ## Context Clearing Contract
 
 Chat context is temporary working memory. It may be cleared only after useful
-task knowledge has been preserved in durable task memory.
+business or task knowledge has been preserved in durable memory.
 
-Before clearing a task-bound chat context, the runtime or Agent must evaluate:
+Before clearing business-line or task-bound chat, the runtime or Agent must
+evaluate:
 
-1. Is there task-bound discussion worth preserving?
+1. Is there discussion worth preserving?
 2. Is there a specific handoff signal, confirmed conclusion, unresolved
-   question, decision rationale, correction, risk, next action, or constraint?
-3. Has that signal been written to Task.md, a Task Record, Decision, Run, source
-   digest, artifact reference, or other correct memory surface?
-4. Can a future Agent answer the recovery questions in this spec without the
-   old chat window?
+   question, decision rationale, correction, risk, next action, review lesson, or
+   constraint?
+3. Has that signal been written to a Business Record, Review, SOP revision,
+   Task.md, Task Record, Decision, Run, Source Context, artifact reference, or
+   other correct memory surface?
+4. Can a future Agent answer the recovery questions in this spec without the old
+   chat window?
 
 If the answer is no, do not clear automatically. Ask for the missing conclusion,
 option, unresolved question, constraint, or next action.
@@ -320,57 +177,58 @@ Automatic mode may suggest or perform clearing only after the memory coverage
 check passes. Manual mode must show or summarize what was archived before the
 user confirms clearing. Reminder-only mode must never clear automatically.
 
-Clearing context, leaving task context, switching tasks, and starting a new
-conversation are separate actions.
-
-When a context transition is needed, load the Context Transition Policy. It
-owns the preservation proof shape, reset strategy, compact/handoff distinction,
-and native runtime capability boundary. This spec owns the durable memory
-surfaces and recovery coverage check.
+Clearing context, leaving business-line context, switching tasks, and starting a
+new conversation are separate actions. When a transition is needed, load the
+Context Transition Policy; this spec owns the durable memory surfaces and
+recovery coverage check.
 
 ## Memory Coverage Check
 
-A task is memory-covered when the following are available or intentionally not
-needed:
+A business line is memory-covered when the following are available or
+intentionally not needed:
 
-- current structured task state;
-- current next step;
-- completion criteria or explicit reason they are not yet available;
+- current Business Line state and scope;
+- BusinessLineContextPack or equivalent compact business recovery summary;
+- current Next Action and next safe step when execution is expected;
 - relevant blockers, dependencies, risks, and pending Decisions;
-- Task.md or equivalent concise recovery summary;
-- relevant Task Records for recent handoff, closeout, correction, or context
-  refresh;
+- relevant Business Records or Reviews for recent handoff, correction, source
+  digest, learning, or context refresh;
+- accepted Skills/SOP guidance that should affect future execution;
+- Task.md or Task Records only when active Next Action / legacy recovery needs
+  them;
 - important files, sources, artifacts, or source digests needed for continuation;
 - recent execution evidence when work was run and not invalidated by later
-  completion-criteria changes;
-- completion-check evidence when the user or runtime explicitly confirmed
-  completion despite missing run evidence, provided the check is not older than
-  the latest completion-criteria update;
+  criteria or business-state changes;
 - applicable Work Habits.
+
+A legacy task is memory-covered when structured task state, next step,
+completion criteria or an explicit reason for absence, relevant blockers,
+Decisions, Task.md or equivalent concise recovery, relevant Task Records, and
+needed evidence/files are present or intentionally not needed.
 
 The check should be lightweight. It should prevent unsafe clearing or execution,
 not force busywork.
 
 ## Memory Coverage Outcomes
 
-Every task-memory coverage check should return one of these outcomes:
+Every memory coverage check should return one of these outcomes:
 
 - `pass`: required recovery information is present or intentionally not needed.
-  The runtime may proceed with execution, task switch, closeout, or context
+  The runtime may proceed with execution, focus switch, closeout, or context
   clearing according to the relevant confirmation boundary.
-- `needs_memory_write`: the task can proceed after a small durable memory update,
-  such as updating Task.md, writing one Task Record, linking an important output,
-  or recording a Decision.
+- `needs_memory_write`: the work can proceed after a small durable memory update,
+  such as writing one Business Record, recording a Review, updating Task.md,
+  writing one Task Record, linking an important output, or recording a Decision.
 - `needs_user_clarification`: the missing information is not knowable from
-  existing task memory. Ask the user for the missing conclusion, choice, scope,
+  existing memory. Ask the user for the missing conclusion, choice, scope,
   constraint, next action, or acceptance boundary before proceeding.
 - `blocked`: unresolved blocker, dependency, pending Decision, unsafe operation,
-  or contradictory task state prevents safe execution or clearing.
+  or contradictory state prevents safe execution or clearing.
 - `not_applicable`: the action is global, empty, exploratory, or unrelated to a
-  task-bound memory surface.
+  durable memory surface.
 
 Prefer the smallest next action that changes the outcome. Do not generate new
-tasks, new folders, new records, or new prompts when one field update, one
+tasks, folders, records, prompts, or SOP revisions when one field update, one
 concise record, or one user clarification is enough.
 
 ## Minimum Record Shapes
@@ -378,165 +236,179 @@ concise record, or one user clarification is enough.
 These shapes are minimum recovery structures, not rigid templates. Omit fields
 that are not relevant. Add detail only when it improves future recovery.
 
+### Business Record Minimum Shape
+
+Use for durable business-line memory.
+
+- Business Line: the owner and current scope.
+- Signal: observation, source digest, status change, decision rationale,
+  handoff, review summary, or context-refresh archive.
+- Why It Matters: effect on future recovery, execution, source interpretation,
+  risk, or prioritization.
+- Evidence: source ids, Runs, Decisions, files, artifacts, or task ids.
+- Future Context: whether it should affect future BusinessLineContextPack
+  assembly.
+
+### Review Minimum Shape
+
+Use after an execution, correction, failure, or learning-worthy outcome.
+
+- Action Reviewed: Next Action, run, task, artifact, or source event.
+- Outcome: what happened and whether it helped.
+- What Worked / Failed: concrete lesson with uncertainty if needed.
+- Suggested Next Actions: executable follow-ups, not only rule text.
+- Learning Candidate: whether a Skill/SOP revision should be proposed.
+- Risk: whether a Decision gate is needed before activation.
+
+### SOP Revision Minimum Shape
+
+Use for reusable business-line operating guidance.
+
+- Business Line: owner and scope.
+- Proposed Rule / Procedure: the reusable behavior.
+- Provenance: review id, run id, source record, user correction, or Decision.
+- Applicability: when it should and should not apply.
+- Risk: low/medium/high plus required Decision status for risky activation.
+- Status: proposed, active, rejected, superseded, disabled, or expired.
+
 ### Task.md Minimum Shape
 
-Task.md should let a future Agent resume without reading the old chat first.
+Task.md should let a future Agent resume one active Next Action or legacy task
+without reading the old chat first.
 
-Minimum useful sections:
-
-- Goal: the task outcome and current scope.
+- Goal: execution outcome and current scope.
 - Current Progress: what is already true.
 - Next Step: the next safe action.
-- Key Context: important facts, constraints, blockers, dependencies, or open
-  questions.
-- Decisions: durable user approvals, rejections, or choices that affect
-  execution.
-- Important Files: files, source digests, artifacts, or records needed for
-  recovery.
+- Key Context: constraints, blockers, dependencies, risks, or open questions.
+- Decisions: approvals, rejections, or choices that affect execution.
+- Important Files: files, source digests, artifacts, records, or Business
+  Records needed for recovery.
 - Recent Records: where to look for recent handoff, closeout, or recovery notes.
 
-Keep sections concise. If a section would become historical, move the detail to
-a Task Record and leave only the current recovery pointer in Task.md.
+Keep sections concise. If a section becomes historical, move detail to a
+Business Record or Task Record and leave only the current recovery pointer in
+Task.md.
 
-### Phase Closeout Record
+### Task Record Minimum Shape
 
-Use when a phase or meaningful work segment ends.
+Use when a task-scoped phase or meaningful work segment needs recovery value.
 
-Minimum useful fields:
-
-- Phase: what phase or work segment closed.
+- Phase / Task: what work segment closed or changed.
 - Completed: outputs, files, criteria, or decisions completed.
 - Verification: quality checks performed and remaining evidence gaps.
 - Carry Forward: risks, unresolved questions, constraints, or next actions.
-- Handoff Target: next task, child task, successor task, or reason no handoff is
-  needed.
-- Links: important files, Decisions, Runs, sources, or artifacts.
+- Handoff Target: business line, Next Action, child task, successor task, or
+  reason no handoff is needed.
+- Links: Business Records, Decisions, Runs, sources, files, or artifacts.
 
-Do not use phase closeout to invent new subtasks when a valid project
-decomposition already exists. If the next task is unclear, ask or create a draft
-proposal instead of silently mutating structure.
+Do not use a Task Record to replace a Business Record when the information is
+durable business-line memory.
 
 ### Context-Clear Archive
 
-Use before clearing a task-bound chat context when useful task signals exist.
-
-Minimum useful fields:
+Use before clearing chat when useful signals exist.
 
 - Trigger: why clearing or refresh is being considered.
 - Preserved Signals: confirmed conclusions, corrections, options, constraints,
-  risks, or unresolved questions extracted from the conversation.
-- Memory Updates: Task.md, Task Records, Decisions, files, source digests, or
-  artifacts written or referenced before clearing.
+  risks, unresolved questions, review lessons, or handoff notes.
+- Memory Updates: Business Records, Reviews, SOP revisions, Task.md, Task
+  Records, Decisions, files, source digests, or artifacts written or referenced
+  before clearing.
 - Resume Point: what the next Agent should do first after refresh.
 - Exclusions: chat details intentionally not preserved because they were
   exploratory, duplicate, or low value.
 
 Never store the full chat transcript by default.
 
-### Handoff Record
-
-Use when responsibility or execution moves from one task, Agent, or session to
-another.
-
-Minimum useful fields:
-
-- From: source task, phase, Agent, or session.
-- To: target task, child task, successor, Agent, or session.
-- Why: reason for the handoff.
-- Current State: what is ready, paused, blocked, or waiting.
-- Next Action: first action for the receiver.
-- Risks And Dependencies: blockers, pending Decisions, related tasks, or
-  constraints.
-- Evidence: important files, Runs, Decisions, sources, or artifacts.
-
 ### Failure Review Record
 
 Use when failure affects future execution.
 
-Minimum useful fields:
-
 - Failure: what failed and where.
-- Impact: what task state, output, timeline, or user expectation was affected.
+- Impact: what business state, task state, output, timeline, or user expectation
+  was affected.
 - Cause: known or likely cause, with uncertainty if needed.
 - Recovery: what was tried, what worked, and what remains unresolved.
-- Prevention: future constraint, check, or Work Habit candidate if repeated.
-- Links: logs, Runs, files, patches, Decisions, or artifacts.
+- Prevention: SOP revision or Work Habit candidate if repeated.
+- Links: logs, Runs, files, patches, Decisions, sources, or artifacts.
 
 Do not create a failure review for harmless transient noise that has no recovery
 value.
 
-### Decision Rationale Record
-
-Use only when the rationale is more important than the Decision status alone.
-
-Minimum useful fields:
-
-- Decision: what was approved, rejected, deferred, or selected.
-- Options: considered alternatives when relevant.
-- Rationale: why this choice was made.
-- Consequences: constraints, risks, follow-up work, or acceptance boundary.
-- Links: Decision record, source evidence, Runs, files, or artifacts.
-
-If a simple Decision record already preserves enough context, do not create an
-extra Task Record.
-
 ## Lifecycle Memory Procedures
 
-### Starting Or Resuming A Task
+### Starting Or Resuming A Business Line
 
 1. Read Agent Operating Principles and this spec.
-2. Read structured task state and Task.md.
-3. Read relevant Task Records only when the task is long-running, ambiguous,
-   recently cleared, handed off, or explicitly references them.
-4. Read selected or necessary files, Decisions, Runs, sources, artifacts, and
-   Work Habits as needed.
-5. Verify context cleanliness before context sufficiency.
-6. If memory is insufficient, request or load the smallest missing context before
+2. Read Business Line state and BusinessLineContextPack.
+3. Read the active Next Action / task state when execution is concrete.
+4. Read relevant Business Records, Reviews, accepted SOPs, and Decisions.
+5. Read Task.md or Task Records only when the active action or legacy recovery
+   needs them.
+6. Read selected files, sources, Runs, artifacts, Task Dynamics, Work Habits, and
+   templates as needed.
+7. Verify context cleanliness before context sufficiency.
+8. If memory is insufficient, request or load the smallest missing context before
    execution.
 
-### Starting A Subtask
+### Starting Or Resuming A Legacy Task
 
-Read the target subtask first. Read the parent only for scope alignment, order,
-shared constraints, risks, pending Decisions, and handoff notes. Read siblings
-only when they are dependencies or blockers.
-
-Do not replan the whole parent project when the user is simply starting the next
-known subtask.
+1. Read structured task state and Task.md.
+2. Read relevant Task Records only when the task is long-running, ambiguous,
+   recently cleared, handed off, or explicitly references them.
+3. Read files, Decisions, Runs, sources, artifacts, Task Dynamics, and Work
+   Habits as needed.
+4. Resolve a business line before new durable business-level writes when
+   possible.
+5. If memory is insufficient, request or load the smallest missing context before
+   execution.
 
 ### During Execution
 
-Record execution facts as Runs, Run steps, Task Dynamics, Decisions, sources, or
-artifacts according to their surface. Update Task.md or Task Records only when
-future recovery would otherwise lose important state or rationale.
+Record execution facts as Runs, Run steps, Task Dynamics, Decisions, Source
+Context, artifacts, or task files according to their surface. Write Business
+Records, Reviews, Task.md, or Task Records only when future recovery would
+otherwise lose important state, rationale, or learning.
+
+### Post-Action Review And Learning
+
+After a completed run, meaningful correction, failure, or user review:
+
+1. Record a Review when the outcome affects future execution.
+2. Create real Next Action suggestions only when they are executable.
+3. Propose a Skills/SOP revision when the lesson is reusable for the business
+   line.
+4. Require a Decision before activating risky SOP updates.
+5. Keep rejected or expired SOP revisions as evidence, not active guidance.
 
 ### Phase Closeout
 
 Before closing a phase:
 
-1. Verify completion evidence against criteria and user intent.
-2. Decide whether Task.md needs a concise current-state update.
-3. Decide whether a Phase Closeout Record has recovery value.
-4. Preserve important files, Decisions, Runs, source digests, artifacts, risks,
+1. Verify evidence against criteria and user intent.
+2. Decide whether the durable memory belongs in a Business Record, Review,
+   Task.md, Task Record, Decision, source digest, artifact, or no write.
+3. Preserve important files, Decisions, Runs, source digests, artifacts, risks,
    and next actions.
-5. Hand off to an existing child or successor task when available; otherwise ask
-   or propose before creating new structure.
+4. Hand off to an existing business line, Next Action, child task, or successor
+   when available; otherwise ask or propose before creating new structure.
 
-### Task Switch
+### Focus Switch
 
-Before switching away from task A:
+Before switching away from business line or task A:
 
-1. Preserve useful task A handoff information only if it has recovery value.
-2. Avoid carrying unrelated task A chat into task B.
-3. Rebuild task B context from task B memory surfaces.
-4. Confirm task B has a clean and sufficient runtime context before execution.
+1. Preserve useful handoff information only if it has recovery value.
+2. Avoid carrying unrelated chat from A into B.
+3. Rebuild B context from B memory surfaces.
+4. Confirm B has a clean and sufficient runtime context before execution.
 
 ### Context Clearing
 
-When the context is long, repetitive, or quality appears to be degrading:
+When context is long, repetitive, or degrading:
 
 1. Run a memory coverage check.
-2. If the outcome is `needs_memory_write`, perform the smallest memory write
-   needed to preserve recovery.
+2. If the outcome is `needs_memory_write`, perform the smallest durable memory
+   write needed to preserve recovery.
 3. If the outcome is `needs_user_clarification`, ask before clearing.
 4. If the outcome is `blocked`, do not clear as a way to bypass the blocker.
 5. If the outcome is `pass`, clear or refresh according to the selected mode.
@@ -544,122 +416,105 @@ When the context is long, repetitive, or quality appears to be degrading:
 Automatic mode may act only after coverage passes. Manual mode must show or
 summarize the archive before clearing. Reminder-only mode must not clear.
 
-### Task Completion
-
-Before marking a task complete:
-
-1. Verify completion criteria and residual risks.
-2. Record the completion check result when completing through a confirmation
-   flow, including explicit user overrides.
-3. Preserve important final outputs and Decisions.
-4. Update Task.md or write a final Task Record only when future recovery,
-   auditing, or follow-up work would benefit.
-5. Avoid creating a completion note when structured state, Runs, and existing
-   records already preserve enough recovery context.
-
 ## Write Thresholds
 
 Use these thresholds to prevent over-recording:
 
-- Write structured task state when the current authoritative state changes.
-- Update Task.md when a future Agent would otherwise resume with the wrong goal,
-  scope, next step, constraint, blocker, open question, Decision, or important
-  file reference.
-- Create a Task Record when future recovery needs rationale, handoff, closeout,
-  correction, failure review, context-clear archive, or external signal context.
+- Write Business Line state when durable owner identity, scope, goals, settings,
+  active Next Actions, or active SOP bindings change.
+- Write a Business Record when future business recovery needs observation,
+  source digest, rationale, handoff, correction, context-refresh archive, or
+  external signal context.
+- Write a Review when execution outcome, failure, correction, or learning should
+  affect future actions.
+- Propose a Skills/SOP revision when a reusable business-line behavior should be
+  learned.
+- Write structured task state when current execution state changes.
+- Update Task.md when a future Agent would otherwise resume the active Next
+  Action or legacy task with the wrong goal, scope, next step, constraint,
+  blocker, open question, Decision, or important file reference.
+- Create a Task Record when task-scoped recovery needs rationale, handoff,
+  closeout, correction, failure review, context-clear archive, or source digest.
 - Record Task Dynamics for system facts even when no user-readable record is
   needed.
 - Record Runs and Run steps for execution evidence.
-- Create Decisions for user judgment and approval, not for ordinary notes.
-- Record sources when evidence affects planning, verification, ranking, or
-  decisions.
+- Create Decisions for user judgment and approval, not ordinary notes.
+- Record Source Context when evidence affects planning, verification, ranking,
+  or decisions.
 - Record artifacts or task files when produced work needs inspection, reuse, or
   export.
-- Propose Work Habits only when the information applies across tasks.
+- Propose Work Habits only when the behavior applies across business lines or
+  tasks.
 
 Do not write durable memory when the information is exploratory, duplicate,
 minor, already represented by the correct surface, or unlikely to affect future
 execution.
 
+## Cross-Business Memory Reuse
+
+Cross-business memory reuse must be explicit and proposed. Do not silently load a
+Business Record, Review, SOP, Work Habit, source, artifact, or task record from
+another business line as active guidance.
+
+Allowed reuse paths:
+
+- accepted Work Habit that explicitly applies across businesses or task types;
+- SOP revision intentionally promoted or copied through a Decision/proposal;
+- source, artifact, or record linked as evidence with provenance and caution;
+- legacy task recovery that resolves into the current business line.
+
+If reuse is uncertain, surface a proposal or Decision instead of silently
+changing context.
+
 ## Anti-Patterns
 
 Avoid:
 
-- treating chat history as the only task memory;
-- writing every chat turn into Task Records;
-- making Task.md a full history log;
+- treating chat history as durable memory;
+- treating Task.md as the whole business-line memory;
+- writing every chat turn into Business Records or Task Records;
+- making BusinessLineContextPack, Task.md, or Task Records full transcript logs;
 - relying on Task Dynamics as the only recovery source;
-- classifying AI output as source material unless it represents synthesized
-  evidence or digest;
-- creating new folders, task records, Decisions, or prompts when one existing
-  memory update would preserve recovery;
+- classifying AI output as source material unless it is a synthesized digest;
+- creating new records, Decisions, SOP revisions, folders, or prompts when one
+  existing memory update would preserve recovery;
 - replacing an existing Task.md with a fresh template when only a small memory
   supplement is needed;
 - clearing context because the message count is high without checking memory
   coverage;
-- carrying unrelated previous-task chat into the next task.
+- carrying unrelated previous-business or previous-task chat into the next
+  business line or task.
 
 ## Implementation Notes
 
-Runtime evaluators should gradually converge on a shared
-`TaskMemoryCoverageEvaluation` that can be used before context clearing, task
-start, task switching, phase closeout, task completion, and run start.
+Existing task-memory evaluators such as `TaskMemoryCoverageEvaluation`,
+Task.md guidance, Task Record worthiness, and task-memory write proposals remain
+valid for active Next Action and legacy task recovery. They should not be
+weakened while business-memory gates are added.
 
-Automatic context clearing should consume a runtime readiness verdict derived
-from task memory coverage. It should not use a fixed message-count rule. Message
-count may trigger inspection, but clearing is allowed only when the verdict says
-the current task chat can be discarded without reducing task recovery quality.
+Business-memory evaluators should converge on the same boundary style: coverage
+checks before context clearing, focus switch, run start, phase closeout, review,
+SOP activation, and completion claims.
 
-Persisted task-memory guidance, such as a Run Step titled `任务记忆建议`, is not
-the same as a completed memory write. Runtime should treat the latest guidance
-as pending until a matching Task.md or Task Record write exists after that
-guidance. This prevents automatic clearing from mistaking "please update memory"
-for "memory has been updated."
+Persisted memory guidance is not the same as a completed memory write. A Review
+or Run Step that says "update memory" remains pending until the matching
+Business Record, SOP revision, Task.md, Task Record, Decision, or source record
+exists after that guidance.
 
-When runtime finds pending task-memory guidance, it may prepare a minimal write
-proposal for the missing surface. A proposal is not a write. It must name the
-target (`Task.md` or Task Record), operation, path, reason, and content template,
-and it must still pass the normal confirmation/write boundary before durable
-task memory is changed. Prefer the smallest write that satisfies recovery:
-update existing `Task.md` when the concise recovery file is missing information,
-or create one Task Record when detailed handoff, rationale, correction, or
-context archive material is required.
+When runtime finds pending memory guidance, it may prepare a minimal write
+proposal. A proposal is not a write. It must name the surface, operation, reason,
+target business line or task, and content template, and it must pass the normal
+confirmation/write boundary before durable memory is changed.
 
-When updating an existing `Task.md`, the update must preserve current content by
-default. Append or surgically update the smallest recovery section needed. Do not
-overwrite the file with a new scaffold unless the existing file is empty or the
-user explicitly asks for a rewrite.
+When updating an existing Task.md, preserve current content by default. Append or
+surgically update the smallest recovery section needed. Do not overwrite the
+file with a new scaffold unless it is empty or the user explicitly asks.
 
-Task switching should follow the same memory boundary for the task being left:
-if the current task has unresolved task-memory guidance, runtime must block or
-ask before leaving that task context, instead of silently carrying the gap into
-another task.
+Task switching, run start, phase closeout, paused Run resume, and approved
+Decision checkpoint resume must check unresolved memory guidance before
+execution continues. Do not compound missing recovery context by starting more
+work on top of it.
 
-Run start follows the same boundary for the task being executed. If the latest
-task-memory guidance for that task still requires Task.md or Task Record writes,
-runtime must block new execution until the smallest required memory write is
-completed. This prevents a new Run from compounding missing recovery context.
-
-Phase closeout follows the same boundary. A closeout record may satisfy pending
-Task Record guidance, but if the latest guidance still requires Task.md or
-another Task Record after closeout persistence, runtime must pause before
-refreshing chat or handing off to the next task.
-
-Writing a closeout record does not make an unresolved closeout result safe. If
-the closeout result still indicates a blocker, dependency, required user
-confirmation, or follow-up confirmation, runtime must preserve the current task
-context and wait for that boundary to be handled before clearing chat or handing
-off.
-
-Paused Run resume also follows this boundary. Resuming from a checkpoint may
-execute tools, so unresolved task-memory guidance must be handled before the
-checkpoint continuation runs.
-
-Approved Decision checkpoint resume follows the same boundary, because approving
-the Decision can resume a pending tool, browser, command, or patch checkpoint.
-Runtime must check unresolved task-memory guidance before executing that
-continuation.
-
-UI may display Task Dynamics as structured task replay, but that display is not
-required for this memory contract to hold. The contract is about durable task
-recovery first and presentation second.
+UI may display Task Dynamics or Business Records as structured replay, but that
+display is not required for this memory contract to hold. The contract is about
+durable business recovery first and presentation second.

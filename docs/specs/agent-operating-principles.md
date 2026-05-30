@@ -29,7 +29,7 @@ Load the Agent Operating Principles when the selected movement involves:
   runtime entrypoint gates;
 - verifying completion, closing a task, handing off work, or resuming after a
   checkpoint;
-- deciding whether task memory or context cleanup is safe.
+- deciding whether business/task memory or context cleanup is safe.
 
 Do not load the full execution rules for every ordinary chat turn. GoalPilot
 should first choose the movement, then load this document only when the movement
@@ -42,7 +42,7 @@ needs execution-level constraints.
 - Agent Output Contract loads when the movement renders user-visible or
   product-surface output.
 - Task Memory Spec loads when the movement reads, writes, clears, or evaluates
-  durable task memory.
+  durable business memory or task execution memory.
 - Decision Layer Writeback Orchestration loads when execution output must be
   interpreted into Write Intent, proposal cards, hooks, gates, or product
   feature impact audit entries.
