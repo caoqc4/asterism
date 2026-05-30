@@ -4,6 +4,7 @@ import {
   evaluateRuntimeContextReadiness,
   formatRuntimeContextReadinessForStep,
 } from './runtime-context-readiness.js';
+import { classifyRunScope } from './run-scope.js';
 import type { TaskDetail } from './types/task.js';
 
 describe('evaluateRuntimeContextReadiness', () => {
@@ -407,6 +408,37 @@ describe('evaluateRuntimeContextReadiness', () => {
       decision: 'ready',
       movement: 'execute',
       shouldAskUser: false,
+    });
+  });
+
+  it('surfaces business line run scope, context pack, and task execution memory evidence', () => {
+    const runScope = classifyRunScope({
+      businessLineId: 'business_line_product',
+      taskId: 'task_1',
+    });
+    const evaluation = evaluateRuntimeContextReadiness({
+      prompt: 'Continue this Next Action.',
+      runScope,
+      task: buildReadinessTask(),
+    });
+
+    expect(evaluation.runScope).toMatchObject({
+      kind: 'next_action_execution',
+      businessLineContextPack: 'included',
+      taskExecutionMemory: 'included',
+    });
+    expect(formatRuntimeContextReadinessForStep(evaluation)).toContain('runScope=next_action_execution');
+    expect(formatRuntimeContextReadinessForStep(evaluation)).toContain('businessLineContextPack=included');
+    expect(formatRuntimeContextReadinessForStep(evaluation)).toContain('taskExecutionMemory=included');
+  });
+
+  it('classifies global chat and one-off non-durable action scopes separately', () => {
+    expect(classifyRunScope({}).kind).toBe('global_chat');
+    expect(classifyRunScope({ taskId: 'task_1' })).toMatchObject({
+      kind: 'one_off_non_durable_action',
+      businessLineContextPack: 'not_applicable',
+      durableBusinessReview: 'not_applicable',
+      taskExecutionMemory: 'included',
     });
   });
 });

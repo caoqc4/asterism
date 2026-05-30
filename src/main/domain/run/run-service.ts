@@ -17,6 +17,10 @@ import {
   formatRuntimeContextReadinessForStep,
 } from '../../../shared/runtime-context-readiness.js';
 import {
+  classifyRunScope,
+  runScopeRequiresBusinessLine,
+} from '../../../shared/run-scope.js';
+import {
   groupRuntimeEventsForReplay,
   projectRuntimeEvents,
 } from '../../../shared/runtime-event-record.js';
@@ -47,6 +51,7 @@ import type {
   CreateRunInput,
   RunDetailRecord,
   RunRecord,
+  RunScope,
 } from '../../../shared/types/run.js';
 import type { SandboxPatchPromotionRecord } from '../../../shared/types/sandbox-patch-promotion.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
@@ -116,6 +121,14 @@ function summarizeTerminalRunEvidence(run: Pick<RunRecord, 'failureReason' | 'ou
   return null;
 }
 
+function attachRunScope<T extends RunRecord>(run: T, scope: RunScope): T {
+  return {
+    ...run,
+    businessLineId: scope.businessLineId ?? run.businessLineId ?? null,
+    scope,
+  };
+}
+
 export class RunService {
   constructor(
     private readonly runRepository: RunRepository,
@@ -158,8 +171,25 @@ export class RunService {
     const taskMemory = await this.buildTaskMemoryForRunDetail(run.taskId, steps);
     const taskMemoryGuidance = taskMemory.guidance;
     const taskDetail = taskMemory.taskDetail;
+    const detailOwnership = await this.resolveBusinessLineOwnershipForRunScope({
+      explicitBusinessLineId: run.businessLineId ?? null,
+      runId: run.id,
+      taskId: run.taskId,
+      allowOneOff: !run.businessLineId,
+    });
+    const detailScope = classifyRunScope({
+      businessLineId: detailOwnership?.status === 'resolved'
+        ? detailOwnership.businessLineId
+        : run.businessLineId ?? null,
+      ownership: detailOwnership,
+      taskBusinessLineId: taskDetail?.businessLineId,
+      taskFacets: taskDetail?.taskFacets,
+      taskId: run.taskId,
+      taskType: taskDetail?.taskType,
+    });
+    const scopedRun = attachRunScope(run, detailScope);
     const detail = {
-      ...run,
+      ...scopedRun,
       artifacts: await this.artifactRepository.listForRun(runId),
       steps,
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
@@ -191,8 +221,8 @@ export class RunService {
       runtimeEvents,
       runtimeReplayGroups: groupRuntimeEventsForReplay(runtimeEvents),
       businessLinePostRunReview: buildBusinessLinePostRunReviewOptions({
-        output: run.output,
-        run,
+        output: scopedRun.output,
+        run: scopedRun,
         taskTitle: taskDetail?.title ?? null,
       }),
       taskMemoryGuidance,
@@ -244,8 +274,9 @@ export class RunService {
 
     const explicitBusinessLineId = input.businessLineId ?? null;
     let businessLineId = explicitBusinessLineId || task.businessLineId || null;
+    let ownership: BusinessLineOwnershipResolution | null = null;
     if (this.businessLineContextProvider?.resolveOwnership) {
-      const ownership = await this.businessLineContextProvider.resolveOwnership({
+      ownership = await this.businessLineContextProvider.resolveOwnership({
         explicitBusinessLineId,
         taskId: task.id,
         allowOneOff: !explicitBusinessLineId,
@@ -259,6 +290,19 @@ export class RunService {
         throw new Error(`Business line not found: ${explicitBusinessLineId}`);
       }
       businessLineId = ownership.status === 'resolved' ? ownership.businessLineId : null;
+    }
+    const runScope = classifyRunScope({
+      businessLineId,
+      ownership,
+      requestedScopeKind: input.scopeKind,
+      requestSurface: input.requestSurface,
+      taskBusinessLineId: task.businessLineId,
+      taskFacets: task.taskFacets,
+      taskId: task.id,
+      taskType: task.taskType,
+    });
+    if (runScopeRequiresBusinessLine(runScope.kind) && !runScope.businessLineId) {
+      throw new Error(`Business line scope requires an owner: ${runScope.kind}`);
     }
     const businessLineWorkspace = businessLineId && this.businessLineContextProvider
       ? await this.businessLineContextProvider.getWorkspace(businessLineId)
@@ -290,8 +334,10 @@ export class RunService {
       runInput.instructions = runInstructions;
     }
     const created = await this.runRepository.create(runInput);
+    const createdWithScope = attachRunScope(created, runScope);
     const contextReadiness = evaluateRuntimeContextReadiness({
       prompt: runInput.instructions ?? '',
+      runScope,
       task: taskForExecution,
     });
     await this.runStepRepository.create({
@@ -316,13 +362,13 @@ export class RunService {
     const result =
       input.type === 'agent'
         ? await this.runOrchestrator.executeAgentRun({
-            run: created,
+            run: createdWithScope,
             task: taskForExecution,
             input: runInput,
             applicableWorkHabitSummaries: applicableWorkHabits.summaries,
           })
         : await this.runOrchestrator.executeTextRun({
-            run: created,
+            run: createdWithScope,
             task: taskForExecution,
             input: runInput,
             applicableWorkHabitSummaries: applicableWorkHabits.summaries,
@@ -333,18 +379,19 @@ export class RunService {
 
     if (result.status === 'completed') {
       const completed = await this.runRepository.updateResult(created.id, 'completed', result.output, 'ai');
+      const completedWithScope = attachRunScope(completed, runScope);
       if (result.output?.trim()) {
-        this.assertRunOutputArtifactWriteAllowed(completed, result.output);
+        this.assertRunOutputArtifactWriteAllowed(completedWithScope, result.output);
         const artifact = await this.artifactRepository.createFromRun({
           taskId: input.taskId,
-          runId: completed.id,
+          runId: completedWithScope.id,
           runType: input.type,
           content: result.output,
         });
         await persistRunArtifactMemoryGuidanceStep(this.runStepRepository, {
           artifactId: artifact.id,
           output: result.output,
-          runId: completed.id,
+          runId: completedWithScope.id,
           taskId: input.taskId,
         });
       }
@@ -352,51 +399,51 @@ export class RunService {
         input.taskId,
         input.type,
         Boolean(result.output?.trim()),
-        completed.id,
+        completedWithScope.id,
       );
-      await this.persistTerminalRunVerifications(completed, applicableWorkHabits.summaries);
+      await this.persistTerminalRunVerifications(completedWithScope, applicableWorkHabits.summaries);
       await this.recordAgentApiExecutionPromotionReadiness({
         capabilities,
         contextReadiness,
         input: runInput,
         phase: 'post_run',
-        run: completed,
+        run: completedWithScope,
         runtimeAction: actionEvaluation,
         task: taskForExecution,
         taskMemoryCoverage,
         taskMemoryGuidance,
       });
-      return completed;
+      return completedWithScope;
     }
 
     if (result.status === 'needs_confirmation') {
-      return this.runRepository.updateResult(
+      return attachRunScope(await this.runRepository.updateResult(
         created.id,
         'needs_confirmation',
         result.message,
         'system',
-      );
+      ), runScope);
     }
 
     if (result.status === 'paused') {
-      const paused = await this.runRepository.updateResult(
+      const paused = attachRunScope(await this.runRepository.updateResult(
         created.id,
         'paused',
         result.message,
         'system',
         null,
-      );
+      ), runScope);
       await this.taskService.annotateRunPaused(input.taskId, result.message, paused.id);
       return paused;
     }
 
-    const failed = await this.runRepository.updateResult(
+    const failed = attachRunScope(await this.runRepository.updateResult(
       created.id,
       'failed',
       result.message,
       'system',
       result.message,
-    );
+    ), runScope);
     await this.taskService.annotateRunFailed(input.taskId, result.message, failed.id);
     await this.persistTerminalRunVerifications(failed, applicableWorkHabits.summaries);
     await this.recordAgentApiExecutionPromotionReadiness({
@@ -411,6 +458,17 @@ export class RunService {
       taskMemoryGuidance,
     });
     return failed;
+  }
+
+  private async resolveBusinessLineOwnershipForRunScope(
+    input: BusinessLineOwnershipInput,
+  ): Promise<BusinessLineOwnershipResolution | null> {
+    if (!this.businessLineContextProvider?.resolveOwnership) return null;
+    try {
+      return await this.businessLineContextProvider.resolveOwnership(input);
+    } catch {
+      return null;
+    }
   }
 
   private async buildTaskMemoryGuidance(

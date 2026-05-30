@@ -13,6 +13,7 @@ export function buildBusinessLinePostRunReviewOptions(params: {
   const businessLineId = params.run.businessLineId?.trim();
   const output = (params.output ?? params.run.output ?? '').trim();
   if (!businessLineId || params.run.status !== 'completed' || !output) return null;
+  if (params.run.scope?.durableBusinessReview === 'not_applicable') return null;
 
   const proposals = buildTaskplaneWritebackProposalsFromText({
     businessLineId,

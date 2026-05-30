@@ -4,6 +4,7 @@ import {
   evaluateRuntimeResearchIntent,
 } from './runtime-research-intent.js';
 import type { SourceContextRecord } from './types/source-context.js';
+import type { RunScope } from './types/run.js';
 import type { TaskDetail } from './types/task.js';
 
 export type RuntimeContextReadinessDecision =
@@ -33,6 +34,7 @@ export type RuntimeContextReadinessEvaluation = {
   movement: RuntimeContextReadinessMovement;
   reasons: string[];
   recommendedMode: RuntimeContextReadinessMode;
+  runScope?: RunScope | null;
   shouldAskUser: boolean;
   shouldSelfResearch: boolean;
   shouldUsePlanMode: boolean;
@@ -65,6 +67,7 @@ export function evaluateRuntimeContextReadiness(params: {
   contextAssembly?: RuntimeContextAssemblyPolicy | null;
   now?: Date | string;
   prompt: string;
+  runScope?: RunScope | null;
   task: RuntimeContextReadinessTask;
 }): RuntimeContextReadinessEvaluation {
   const prompt = normalizeText(params.prompt);
@@ -83,6 +86,7 @@ export function evaluateRuntimeContextReadiness(params: {
       movement: 'pause',
       reasons: [params.contextAssembly.summary],
       recommendedMode: 'runtime_blocked',
+      runScope: params.runScope,
     });
   }
 
@@ -93,6 +97,7 @@ export function evaluateRuntimeContextReadiness(params: {
       movement: 'ask',
       reasons: ['Task is blocked or waiting, so execution needs an unblock signal first.'],
       recommendedMode: 'manual_decision',
+      runScope: params.runScope,
     });
   }
 
@@ -103,6 +108,7 @@ export function evaluateRuntimeContextReadiness(params: {
       movement: 'ask',
       reasons: ['The user request names a decision, approval, external side effect, credential, or irreversible boundary.'],
       recommendedMode: 'manual_decision',
+      runScope: params.runScope,
     });
   }
 
@@ -115,6 +121,7 @@ export function evaluateRuntimeContextReadiness(params: {
       movement: 'ask',
       reasons: ['The task and prompt do not yet identify a concrete goal, deliverable, or next movement.'],
       recommendedMode: 'manual_decision',
+      runScope: params.runScope,
     });
   }
 
@@ -134,6 +141,7 @@ export function evaluateRuntimeContextReadiness(params: {
       movement: 'research',
       reasons: ['The next step depends on public, current, official, or example-based information that can be researched before asking the user.'],
       recommendedMode: 'native_research',
+      runScope: params.runScope,
     });
   }
 
@@ -146,6 +154,7 @@ export function evaluateRuntimeContextReadiness(params: {
       movement: 'plan',
       reasons: ['This resembles code or repository work that benefits from read-only exploration and an approval-ready plan before writes.'],
       recommendedMode: 'native_plan',
+      runScope: params.runScope,
     });
   }
 
@@ -155,6 +164,7 @@ export function evaluateRuntimeContextReadiness(params: {
     movement: 'execute',
     reasons: ['The goal, owner task, and next reversible movement are clear enough to proceed.'],
     recommendedMode: 'read_only_execute',
+    runScope: params.runScope,
   });
 }
 
@@ -168,10 +178,14 @@ export function formatRuntimeContextReadinessForStep(
     `askUser=${evaluation.shouldAskUser ? 'yes' : 'no'}`,
     `selfResearch=${evaluation.shouldSelfResearch ? 'yes' : 'no'}`,
     `planFirst=${evaluation.shouldUsePlanMode ? 'yes' : 'no'}`,
+    evaluation.runScope ? `runScope=${evaluation.runScope.kind}` : null,
+    evaluation.runScope ? `businessLineId=${evaluation.runScope.businessLineId ?? 'none'}` : null,
+    evaluation.runScope ? `businessLineContextPack=${evaluation.runScope.businessLineContextPack}` : null,
+    evaluation.runScope ? `taskExecutionMemory=${evaluation.runScope.taskExecutionMemory}` : null,
     evaluation.missing.length ? `missing=${evaluation.missing.join(',')}` : 'missing=none',
     `reasons=${evaluation.reasons.join(' | ')}`,
     `summary=${evaluation.summary}`,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 function buildReadiness(params: {
@@ -180,9 +194,11 @@ function buildReadiness(params: {
   movement: RuntimeContextReadinessMovement;
   reasons: string[];
   recommendedMode: RuntimeContextReadinessMode;
+  runScope?: RunScope | null;
 }): RuntimeContextReadinessEvaluation {
   return {
     ...params,
+    runScope: params.runScope ?? null,
     shouldAskUser: params.decision === 'ask_user',
     shouldSelfResearch: params.decision === 'self_research',
     shouldUsePlanMode: params.decision === 'plan_first',

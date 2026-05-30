@@ -7,6 +7,7 @@ import type { TaskMemoryWriteProposal } from '../task-memory-write-proposal.js';
 import type { AgentCliRuntimeId } from '../agent-cli-runtime-status.js';
 import type { PilotDecisionSnapshot } from '../pilot-decision-contract.js';
 import type { BusinessLinePostRunReviewOptions } from './business-line.js';
+import type { BusinessLineOwnershipSource } from './business-line.js';
 
 export type RunType = 'draft' | 'summarize' | 'agent';
 
@@ -19,11 +20,32 @@ export type RunCheckpointStatus = 'open' | 'resolved' | 'cancelled';
 export type RunVerificationTargetType = 'run' | 'step';
 export type RunVerificationTone = 'pass' | 'warn' | 'fail' | 'pending';
 export type RunVerificationSource = 'lightweight_rule_engine' | 'ai_verifier';
+export type RunScopeKind =
+  | 'global_chat'
+  | 'business_line_chat'
+  | 'next_action_execution'
+  | 'scheduler_loop_carrier'
+  | 'legacy_task_recovery'
+  | 'one_off_non_durable_action';
+export type RunScopeContextStatus = 'included' | 'not_applicable';
+export type RunScopeDurableReviewStatus = 'eligible' | 'not_applicable';
+
+export type RunScope = {
+  kind: RunScopeKind;
+  businessLineId: string | null;
+  taskId: string | null;
+  ownershipSource: BusinessLineOwnershipSource | 'none';
+  legacyBusinessLineOwner: boolean;
+  businessLineContextPack: RunScopeContextStatus;
+  taskExecutionMemory: RunScopeContextStatus;
+  durableBusinessReview: RunScopeDurableReviewStatus;
+};
 
 export type RunRecord = {
   id: string;
   taskId: string;
   businessLineId?: string | null;
+  scope?: RunScope;
   type: RunType;
   status: RunStatus;
   instructions: string | null;
@@ -102,6 +124,7 @@ export type CreateRunInput = {
   allowTaskMutationTools?: boolean;
   pilotDecision?: PilotDecisionSnapshot | null;
   requestSurface?: RunRequestSurface;
+  scopeKind?: RunScopeKind | null;
 };
 
 export type CodeAgentAllowedCheck = 'test' | 'lint';

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import { BusinessLineRepository } from '../../db/repositories/business-line-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
@@ -20,6 +21,7 @@ import { WaitingItemRepository } from '../../db/repositories/waiting-item-reposi
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../../db/client.js';
 import { makeTempDir } from '../../test-utils.js';
 import { TaskService } from '../task/task-service.js';
+import { BusinessLineService } from '../business-line/business-line-service.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 import { RunService } from './run-service.js';
 
@@ -219,6 +221,109 @@ describe('RunService integration', () => {
         }),
       ]),
     );
+  });
+
+  it('classifies a canonical Next Action on a migrated legacy business line as execution', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const processTemplateRepository = new ProcessTemplateRepository();
+    const taskProcessBindingRepository = new TaskProcessBindingRepository();
+    const blockerRepository = new BlockerRepository();
+    const taskDependencyRepository = new TaskDependencyRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskFileRepository = new TaskFileRepository();
+    const runRepository = new RunRepository();
+    const runStepRepository = new RunStepRepository();
+    const runCheckpointRepository = new RunCheckpointRepository();
+    const decisionRepository = new DecisionRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+      processTemplateRepository,
+      taskProcessBindingRepository,
+      blockerRepository,
+      taskDependencyRepository,
+      completionCriteriaRepository,
+      taskFileRepository,
+    );
+    const businessLineService = new BusinessLineService(
+      new BusinessLineRepository(),
+      taskService,
+      {
+        create: vi.fn(),
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+    );
+    const service = new RunService(
+      runRepository,
+      taskService,
+      artifactRepository,
+      {
+        getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
+        resolveRuntimeConfig: vi.fn().mockResolvedValue({
+          provider: 'openai-compatible',
+          model: 'local-alpha-model',
+          apiKey: 'test-key',
+        }),
+      } as never,
+      { execute: vi.fn().mockResolvedValue('Canonical migrated action output') } as never,
+      {
+        select: vi.fn().mockResolvedValue({
+          shouldUse: false,
+          selectedTemplates: [],
+          reason: 'No process template needed.',
+        }),
+      } as never,
+      runStepRepository,
+      null,
+      runCheckpointRepository,
+      undefined,
+      undefined,
+      undefined,
+      null,
+      null,
+      businessLineService,
+    );
+    const legacyProject = await taskService.create({
+      title: 'Migrated product line',
+      summary: 'Older project that becomes a business line.',
+      taskType: 'project',
+      taskFacets: ['project'],
+    });
+    const [line] = await businessLineService.list();
+    expect(line).toMatchObject({
+      legacyTaskId: legacyProject.id,
+    });
+    const nextAction = await taskService.create({
+      title: 'Canonical launch Next Action',
+      summary: 'New action created after business-line migration.',
+      businessLineId: line!.id,
+    });
+    await createTaskMd(taskFileRepository, nextAction.id, nextAction.title);
+
+    const run = await service.trigger({
+      taskId: nextAction.id,
+      businessLineId: line!.id,
+      type: 'draft',
+      instructions: 'Execute the canonical Next Action.',
+    });
+    const detail = await service.getDetail(run.id);
+
+    expect(run.scope).toMatchObject({
+      kind: 'next_action_execution',
+      legacyBusinessLineOwner: true,
+      taskExecutionMemory: 'included',
+    });
+    expect(detail?.scope).toMatchObject({
+      kind: 'next_action_execution',
+      legacyBusinessLineOwner: true,
+      taskExecutionMemory: 'included',
+    });
+    expect(detail?.businessLinePostRunReview?.businessLineId).toBe(line!.id);
   });
 
   it('runs an opted-in task mutation agent path through persisted task detail', async () => {

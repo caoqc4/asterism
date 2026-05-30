@@ -451,13 +451,21 @@ describe('RunService', () => {
       businessLineContextProvider as never,
     );
 
-    await service.trigger({
+    const result = await service.trigger({
       taskId: 'task_1',
       businessLineId: 'business_line_product',
       type: 'draft',
       instructions: 'Please draft this',
     });
 
+    expect(result.scope).toMatchObject({
+      businessLineContextPack: 'included',
+      businessLineId: 'business_line_product',
+      durableBusinessReview: 'eligible',
+      kind: 'next_action_execution',
+      taskExecutionMemory: 'included',
+      taskId: 'task_1',
+    });
     const createInput = vi.mocked(runRepository.create).mock.calls[0]![0];
     expect(createInput.instructions).toContain('BusinessLineContextPack');
     expect(createInput.instructions).toContain('Update Today trust layer');
@@ -473,6 +481,265 @@ describe('RunService', () => {
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('BusinessLineContextPack'),
+      output: expect.stringContaining('runScope=next_action_execution'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: expect.stringContaining('businessLineContextPack=included'),
+    }));
+  });
+
+  it('classifies scheduled business line carriers without changing runtime provider behavior', async () => {
+    const createdRun = {
+      ...buildRunRecord('running'),
+      businessLineId: 'business_line_product',
+    };
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(createdRun),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        businessLineId: 'business_line_product',
+        output: 'Scheduled output',
+        outputSource: 'ai',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('running'),
+        businessLineId: 'business_line_product',
+        taskFacets: ['scheduled' as const, 'event' as const],
+        taskType: 'routine' as const,
+      }),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      buildArtifactRepositoryMock({
+        createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
+      }) as never,
+      {
+        getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
+        resolveRuntimeConfig: vi.fn().mockResolvedValue({
+          provider: 'anthropic',
+          model: 'claude-3-5-sonnet-latest',
+          apiKey: 'secret',
+        }),
+      } as never,
+      { execute: vi.fn().mockResolvedValue('Scheduled output') } as never,
+      {
+        select: vi.fn().mockResolvedValue({
+          shouldUse: false,
+          selectedTemplates: [],
+          reason: 'No matching template.',
+        }),
+      } as never,
+      runStepRepository as never,
+      null,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      null,
+      null,
+      {
+        getWorkspace: vi.fn().mockResolvedValue({
+          businessLine: {
+            id: 'business_line_product',
+            title: 'GoalPilot product',
+            summary: 'Business-line centered workbench',
+            goal: 'Close the learning loop',
+            kind: 'software_product',
+            legacyTaskId: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+          overview: {
+            nextSuggestion: null,
+            recentChanges: [],
+            blockedDecisions: [],
+            missingContext: [],
+            latestResult: null,
+            latestImprovement: null,
+          },
+          records: [],
+          sourceRecords: [],
+          nextActions: [],
+          learning: {
+            reviews: [],
+            skillRevisions: [],
+            acceptedSkills: [],
+          },
+          contextPack: {
+            businessSummary: 'Business-line centered workbench',
+            currentGoal: 'Close the learning loop',
+            recentChanges: [],
+            activeDecisions: [],
+            openNextActions: [],
+            latestRecords: [],
+            acceptedSkills: [],
+            knownConstraints: [],
+            permissionBoundaries: [],
+            missingContext: [],
+          },
+        }),
+      } as never,
+    );
+
+    const result = await service.trigger({
+      taskId: 'task_1',
+      businessLineId: 'business_line_product',
+      type: 'draft',
+      instructions: 'Run scheduled refresh.',
+      requestSurface: 'scheduled_event_agent_trigger',
+    });
+
+    expect(result.scope).toMatchObject({
+      kind: 'scheduler_loop_carrier',
+      businessLineId: 'business_line_product',
+      taskExecutionMemory: 'included',
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: expect.stringContaining('runScope=scheduler_loop_carrier'),
+    }));
+  });
+
+  it('classifies new canonical Next Actions under migrated legacy business lines as execution, not recovery', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue({
+        ...buildRunRecord('running'),
+        businessLineId: 'business_line_product',
+      }),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        businessLineId: 'business_line_product',
+        output: 'Canonical action output',
+        outputSource: 'ai',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('running'),
+        businessLineId: 'business_line_product',
+      }),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      buildArtifactRepositoryMock({
+        createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
+      }) as never,
+      {
+        getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
+        resolveRuntimeConfig: vi.fn().mockResolvedValue({
+          provider: 'anthropic',
+          model: 'claude-3-5-sonnet-latest',
+          apiKey: 'secret',
+        }),
+      } as never,
+      { execute: vi.fn().mockResolvedValue('Canonical action output') } as never,
+      {
+        select: vi.fn().mockResolvedValue({
+          shouldUse: false,
+          selectedTemplates: [],
+          reason: 'No matching template.',
+        }),
+      } as never,
+      runStepRepository as never,
+      null,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      null,
+      null,
+      {
+        getWorkspace: vi.fn().mockResolvedValue({
+          businessLine: {
+            id: 'business_line_product',
+            title: 'Migrated product',
+            summary: 'Migrated from an older project task',
+            goal: 'Keep the loop durable',
+            kind: 'software_product',
+            legacyTaskId: 'task_legacy_project',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+          overview: {
+            nextSuggestion: null,
+            recentChanges: [],
+            blockedDecisions: [],
+            missingContext: [],
+            latestResult: null,
+            latestImprovement: null,
+          },
+          records: [],
+          sourceRecords: [],
+          nextActions: [],
+          learning: {
+            reviews: [],
+            skillRevisions: [],
+            acceptedSkills: [],
+          },
+          contextPack: {
+            businessSummary: 'Migrated from an older project task',
+            currentGoal: 'Keep the loop durable',
+            recentChanges: [],
+            activeDecisions: [],
+            openNextActions: [],
+            latestRecords: [],
+            acceptedSkills: [],
+            knownConstraints: [],
+            permissionBoundaries: [],
+            missingContext: [],
+          },
+        }),
+        resolveOwnership: vi.fn().mockResolvedValue({
+          status: 'resolved',
+          businessLineId: 'business_line_product',
+          source: 'explicit',
+          legacy: true,
+          explicitBusinessLineId: 'business_line_product',
+          taskId: 'task_1',
+          runId: null,
+          decisionId: null,
+          sourceContextId: null,
+          artifactId: null,
+          taskFileId: null,
+        }),
+      } as never,
+    );
+
+    const result = await service.trigger({
+      taskId: 'task_1',
+      businessLineId: 'business_line_product',
+      type: 'draft',
+      instructions: 'Execute canonical next action.',
+    });
+
+    expect(result.scope).toMatchObject({
+      kind: 'next_action_execution',
+      legacyBusinessLineOwner: true,
+      ownershipSource: 'explicit',
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: expect.stringContaining('runScope=next_action_execution'),
     }));
   });
 
@@ -600,6 +867,45 @@ describe('RunService', () => {
     expect(businessLineContextProvider.getWorkspace).not.toHaveBeenCalled();
   });
 
+  it('blocks explicit business line chat scope without an owner before advancing planned tasks', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      buildArtifactRepositoryMock() as never,
+      {
+        getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {} as never,
+      { select: vi.fn() } as never,
+      buildRunStepRepositoryMock() as never,
+    );
+
+    await expect(service.trigger({
+      taskId: 'task_1',
+      type: 'draft',
+      instructions: 'Refresh business context.',
+      scopeKind: 'business_line_chat',
+    })).rejects.toThrow('Business line scope requires an owner: business_line_chat');
+    expect(taskService.transitionIfAllowed).not.toHaveBeenCalled();
+    expect(runRepository.create).not.toHaveBeenCalled();
+  });
+
   it('returns post-run business line review options from completed run detail', async () => {
     const runRepository = {
       list: vi.fn(),
@@ -665,6 +971,94 @@ describe('RunService', () => {
         expect.objectContaining({ type: 'proposed_sop_revision' }),
       ]),
     });
+  });
+
+  it('classifies completed legacy business line recovery runs from ownership evidence', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        businessLineId: 'business_line_product',
+        output: 'Legacy task recovery output',
+        outputSource: 'ai',
+      }),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      { getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')) } as never,
+      buildArtifactRepositoryMock() as never,
+      {} as never,
+      {} as never,
+      undefined,
+      buildRunStepRepositoryMock() as never,
+      null,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      undefined,
+      undefined,
+      null,
+      null,
+      {
+        getWorkspace: vi.fn(),
+        resolveOwnership: vi.fn().mockResolvedValue({
+          status: 'resolved',
+          businessLineId: 'business_line_product',
+          source: 'legacy_task',
+          legacy: true,
+          explicitBusinessLineId: 'business_line_product',
+          taskId: 'task_1',
+          runId: 'run_1',
+          decisionId: null,
+          sourceContextId: null,
+          artifactId: null,
+          taskFileId: null,
+        }),
+      } as never,
+    );
+
+    const detail = await service.getDetail('run_1');
+
+    expect(detail?.scope).toMatchObject({
+      kind: 'legacy_task_recovery',
+      legacyBusinessLineOwner: true,
+      ownershipSource: 'legacy_task',
+    });
+    expect(detail?.businessLinePostRunReview?.businessLineId).toBe('business_line_product');
+  });
+
+  it('does not expose durable post-run business review options for one-off runs', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        output: 'One-off output',
+        outputSource: 'ai',
+      }),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      { getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')) } as never,
+      buildArtifactRepositoryMock() as never,
+      {} as never,
+      {} as never,
+      undefined,
+      buildRunStepRepositoryMock() as never,
+      null,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+    );
+
+    const detail = await service.getDetail('run_1');
+
+    expect(detail?.scope).toMatchObject({
+      kind: 'one_off_non_durable_action',
+      durableBusinessReview: 'not_applicable',
+    });
+    expect(detail?.businessLinePostRunReview).toBeNull();
   });
 
   it('returns run detail with execution steps, checkpoints, and agent sessions', async () => {
