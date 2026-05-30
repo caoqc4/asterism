@@ -88,8 +88,8 @@ export function SettingsPage() {
 
         <div className="settings-toggle-row">
           <div className="settings-toggle-info">
-            <span className="settings-label">Run / Task 自检查</span>
-            <span className="settings-hint">控制 Run 级验证和任务完成确认；Step 级轻量对照始终保留</span>
+            <span className="settings-label">Run / Next Action 自检查</span>
+            <span className="settings-hint">控制 Run 级验证和 Next Action 完成确认；Step 级轻量对照始终保留</span>
           </div>
           <Toggle value={selfCheck} onChange={setSelfCheck} />
         </div>
@@ -103,7 +103,7 @@ export function SettingsPage() {
         </div>
 
         <div className="settings-behavior-note">
-          Step 级检查是执行质量基线，通过时静默，只在失败时留下说明；Run / Task 检查只在失败、等待拍板或完成确认时提示。自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Work Habits 展示，可停用或删除。
+          Step 级检查是执行质量基线，通过时静默，只在失败时留下说明；Run / Next Action 检查只在失败、等待拍板或完成确认时提示。自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Work Habits 展示，可停用或删除。
         </div>
 
         <div className="settings-field" style={{ marginTop: 16 }}>
@@ -114,7 +114,7 @@ export function SettingsPage() {
             labels={COMMUNICATION_STYLE_LABELS}
             onChange={setCommunicationStyle}
           />
-          <p className="settings-hint">影响 AI 的回答密度和展开程度；不改变任务生命周期。</p>
+          <p className="settings-hint">影响 AI 的回答密度和展开程度；不改变业务线、Records 或 Next Actions 的生命周期。</p>
         </div>
 
         <div className="settings-field" style={{ marginTop: 16 }}>
@@ -161,7 +161,7 @@ export function SettingsPage() {
             onChange={(e) => setCtxCompress(Number(e.target.value))}
             className="settings-range"
           />
-          <p className="settings-hint">用于右侧任务对话的刷新建议；推荐 40–50%。真正压缩前会先保留关键决策、偏好变化和未解决问题。</p>
+          <p className="settings-hint">用于业务线和 Next Action 对话的刷新建议；推荐 40–50%。真正压缩前会先保留关键决策、偏好变化和未解决问题。</p>
         </div>
       </section>
 

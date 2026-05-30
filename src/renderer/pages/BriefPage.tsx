@@ -203,7 +203,7 @@ function schedulerSweepMissingPortsLabel(summary: string): string | null {
 function focusAttentionLabel(task: FocusTask): string {
   if (task.attentionLane === 'unblock_or_decide') return '需要先解除阻塞、拍板或确认依赖。';
   if (task.attentionLane === 'review_evidence') return '有新的来源或产出可能影响下一步。';
-  if (task.attentionLane === 'external_signal') return '外部信号需要确认后才进入任务上下文。';
+  if (task.attentionLane === 'external_signal') return '外部信号需要确认后才进入业务线 Records 或 Next Action 上下文。';
   if (task.attentionLane === 'recent_outcome') return '近期结果或接近完成状态需要复核。';
   return '这是共享优先队列中的下一项可行动任务。';
 }

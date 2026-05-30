@@ -43,8 +43,8 @@ const DEFAULT_OPTIONAL_SOURCES: Array<{ id: string; type: SourceType; label: str
 const AVAILABLE_SOURCES: Array<{ type: SourceType; label: string; desc: string }> = [
   { type: 'calendar', label: 'Calendar', desc: '授权后识别会议、截止时间和日程变更' },
   { type: 'github', label: 'GitHub', desc: '授权后同步 PR、Issue 和代码协作信号' },
-  { type: 'notion', label: 'Notion', desc: '授权后同步页面和数据库作为任务来源' },
-  { type: 'slack', label: 'Slack', desc: '授权后提取频道里的任务信号' },
+  { type: 'notion', label: 'Notion', desc: '授权后同步页面和数据库作为业务线 Records 候选' },
+  { type: 'slack', label: 'Slack', desc: '授权后提取频道里的业务线信号' },
   { type: 'linear', label: 'Linear', desc: '授权后同步 Issue 和项目进度' },
   { type: 'jira', label: 'Jira', desc: '授权后同步 Ticket 状态' },
 ];
@@ -124,7 +124,7 @@ export function ConnectionsPage() {
         .map((plan) => plan.planId));
       setActionMessage(result.plans.length > 0
         ? `找到 ${result.createCount} 条可写入、${result.reviewCount} 条需复核、${result.skipCount} 条跳过。`
-        : '当前任务没有可入库的新外部来源。');
+        : '当前 Next Action 没有可入库的新外部来源。');
     } catch (error) {
       setActionMessage(error instanceof Error ? error.message : '外部来源预览失败。');
     } finally {
@@ -139,7 +139,7 @@ export function ConnectionsPage() {
       || selectedPlanIds.length === 0
       || !window.api?.commitExternalAccessSourceIngestion
     ) return;
-    const confirmed = window.confirm('将选中的外部来源写入当前任务记忆。写入后会作为任务上下文来源被后续 AI 读取。是否继续？');
+    const confirmed = window.confirm('将选中的外部来源写入当前 Next Action，并在有业务线归属时生成 Records 候选。写入后会作为业务线/行动上下文来源被后续 AI 读取。是否继续？');
     if (!confirmed) return;
     setSourceReviewBusy(true);
     setActionMessage(null);
@@ -188,7 +188,7 @@ export function ConnectionsPage() {
         <div className="ctx-section-header">
           <div>
             <div className="ctx-section-title">已连接来源</div>
-            <div className="ctx-section-desc">连接成功后，AI 只在任务上下文需要时引用相关信号</div>
+            <div className="ctx-section-desc">连接成功后，AI 只在业务线或 Next Action 上下文需要时引用相关信号</div>
           </div>
           <button className="btn sm primary" disabled title="请从下方系统默认可选功能授权">从下方授权</button>
         </div>
@@ -250,14 +250,14 @@ export function ConnectionsPage() {
             <div className="ctx-empty">
               <p>尚未连接任何来源。</p>
               <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                连接后 AI 只会把相关新信号带入 Brief 和任务上下文，等待你确认。
+                连接后 AI 只会把相关新信号带入 Today、业务线 Records 或 Next Action 上下文，等待你确认。
               </p>
             </div>
           )}
         </div>
         {actionMessage && <div className="connections-boundary-note">{actionMessage}</div>}
         <div className="connections-boundary-note">
-          未授权的来源不会进入 AI 上下文；只有连接成功且产生新信号时，外部信息才会出现在 Brief 和任务上下文里。
+          未授权的来源不会进入 AI 上下文；只有连接成功且产生新信号时，外部信息才会出现在 Today、业务线 Records 或 Next Action 上下文里。
         </div>
         <CapabilitySafetyStrip
           safety={externalSafety}
@@ -274,7 +274,7 @@ export function ConnectionsPage() {
         <div className="ctx-section-header">
           <div>
             <div className="ctx-section-title">来源入库复核</div>
-            <div className="ctx-section-desc">先按任务预览外部信号，再确认写入任务记忆</div>
+            <div className="ctx-section-desc">先按 Next Action 预览外部信号，再确认写入行动证据和业务线 Records</div>
           </div>
           <button
             className="btn sm"
@@ -285,7 +285,7 @@ export function ConnectionsPage() {
           </button>
         </div>
         <div className="connections-review-controls">
-          <label htmlFor="external-source-task">目标任务</label>
+          <label htmlFor="external-source-task">目标 Next Action</label>
           <select
             id="external-source-task"
             className="source-kind-select"
@@ -306,7 +306,7 @@ export function ConnectionsPage() {
             <div className="ctx-empty">
               <p>尚未预览外部来源。</p>
               <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                预览只读取候选信号，不会写入任务记忆。
+                预览只读取候选信号，不会写入行动证据或业务线 Records。
               </p>
             </div>
           ) : sourcePlans.map((plan) => (
@@ -331,7 +331,7 @@ export function ConnectionsPage() {
             {businessRecordCandidates.map((candidate) => (
               <span key={candidate.planId}>{candidate.summary}</span>
             ))}
-            <p>这些候选只在确认后成为 business record，且默认不会进入 future context。</p>
+            <p>这些候选只在确认后成为 business-line Record，且默认不会进入 future context。</p>
           </div>
         )}
         <div className="connections-review-footer">

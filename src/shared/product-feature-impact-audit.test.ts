@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
   PRODUCT_FEATURE_IMPACT_AUDIT,
+  findBusinessLineFirstProductAuditIssues,
   findProductFeatureImpactAuditIssues,
 } from './product-feature-impact-audit.js';
 
@@ -22,6 +24,66 @@ describe('product feature impact audit', () => {
 
   it('keeps every feature family routed through GoalPilot and boundary gates', () => {
     expect(findProductFeatureImpactAuditIssues()).toEqual([]);
+  });
+
+  it('tracks business-line-first readiness separately from task-shell compatibility', () => {
+    expect(BUSINESS_LINE_FIRST_PRODUCT_AUDIT.map((check) => check.id)).toEqual([
+      'primary_language',
+      'canonical_ownership',
+      'learning_loop_smoke',
+      'risky_learning_decision_gate',
+      'historical_task_recovery',
+      'external_signal_projection',
+    ]);
+    expect(findBusinessLineFirstProductAuditIssues()).toEqual([]);
+
+    const canonicalOwnership = BUSINESS_LINE_FIRST_PRODUCT_AUDIT.find((check) => check.id === 'canonical_ownership');
+    const historicalRecovery = BUSINESS_LINE_FIRST_PRODUCT_AUDIT.find((check) => check.id === 'historical_task_recovery');
+    const learningLoop = BUSINESS_LINE_FIRST_PRODUCT_AUDIT.find((check) => check.id === 'learning_loop_smoke');
+
+    expect(canonicalOwnership?.status).toBe('ready');
+    expect(canonicalOwnership?.evidence.join(' ')).toContain('without relying on legacy_task_id');
+    expect(historicalRecovery?.status).toBe('recoverable');
+    expect(historicalRecovery?.evidence.join(' ')).toContain('Legacy Tasks Explorer');
+    expect(learningLoop?.evidence.join(' ')).toContain('creates a business line');
+    expect(learningLoop?.evidence.join(' ')).toContain('next Today suggestion changes');
+  });
+
+  it('blocks business-line-first readiness when canonical ownership evidence is missing', () => {
+    const canonicalOwnership = BUSINESS_LINE_FIRST_PRODUCT_AUDIT.find((check) => check.id === 'canonical_ownership');
+    expect(canonicalOwnership).toBeDefined();
+
+    expect(findBusinessLineFirstProductAuditIssues([
+      {
+        ...canonicalOwnership!,
+        evidence: [],
+      },
+    ])).toEqual([
+      {
+        featureId: 'business_line_first:canonical_ownership',
+        issue: 'Business-line-first readiness check must cite evidence.',
+      },
+      {
+        featureId: 'business_line_first:primary_language',
+        issue: 'Missing required business-line-first readiness check.',
+      },
+      {
+        featureId: 'business_line_first:learning_loop_smoke',
+        issue: 'Missing required business-line-first readiness check.',
+      },
+      {
+        featureId: 'business_line_first:risky_learning_decision_gate',
+        issue: 'Missing required business-line-first readiness check.',
+      },
+      {
+        featureId: 'business_line_first:historical_task_recovery',
+        issue: 'Missing required business-line-first readiness check.',
+      },
+      {
+        featureId: 'business_line_first:external_signal_projection',
+        issue: 'Missing required business-line-first readiness check.',
+      },
+    ]);
   });
 
   it('does not let deferred contracts count as covered product completion', () => {

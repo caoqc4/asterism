@@ -63,14 +63,107 @@ export type ProductFeatureImpactAuditIssue = {
   issue: string;
 };
 
+export type BusinessLineFirstAuditStatus = 'ready' | 'recoverable' | 'blocked';
+
+export type BusinessLineFirstAuditCheck = {
+  id: string;
+  label: string;
+  status: BusinessLineFirstAuditStatus;
+  evidence: string[];
+  gaps: string[];
+  nextActions: string[];
+};
+
 const DEFERRED_COMPLETION_SIGNALS = [
   /\b(?:deferred|diagnostic-only|unimplemented|not yet|pending until)\b/i,
   /future (?:agent api|api|provider-visible|scheduled|background|execution|workspace-write)/i,
 ];
 
+const REQUIRED_BUSINESS_LINE_FIRST_CHECK_IDS = [
+  'primary_language',
+  'canonical_ownership',
+  'learning_loop_smoke',
+  'risky_learning_decision_gate',
+  'historical_task_recovery',
+  'external_signal_projection',
+] as const;
+
 function isClosedRuntimeClosure(closure: ProductFeatureRuntimeClosure): boolean {
   return closure === 'supported' || closure === 'not_applicable';
 }
+
+export const BUSINESS_LINE_FIRST_PRODUCT_AUDIT: BusinessLineFirstAuditCheck[] = [
+  {
+    id: 'primary_language',
+    label: 'Primary product language and work navigation',
+    status: 'ready',
+    evidence: [
+      'Work navigation exposes Today, Business, Chat, and Decisions as primary routes while Tasks is only available as Legacy Tasks Explorer recovery.',
+      'Business workspace uses Overview, Records, Next Actions, Learning, Skills/SOPs, and Settings as business-line surfaces.',
+      'Today renders business-line suggestions with why now, source, risk, effort, confidence, and business-line target metadata.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'canonical_ownership',
+    label: 'Canonical business-line ownership',
+    status: 'ready',
+    evidence: [
+      'Business lines can own action tasks directly through businessLineId without relying on legacy_task_id.',
+      'Repository resolvers map runs, source context, artifacts, task files, and Decisions back to the owning business line.',
+      'Canonical action membership is persisted on task ownership and remains visible after display-window business records are paged out.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'learning_loop_smoke',
+    label: 'Business-line learning loop smoke',
+    status: 'ready',
+    evidence: [
+      'Smoke coverage creates a business line, receives a Today progress suggestion, records execution evidence on the next action, completes that action, records a post-action review, creates the next action, accepts a safe SOP revision, and verifies the next Today suggestion changes to the reviewed action with SOP source evidence.',
+      'Review memory is canonicalized through BusinessLineReview projection so the same post-action review is not double-counted as native business records.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'risky_learning_decision_gate',
+    label: 'Risky learning Decision gate',
+    status: 'ready',
+    evidence: [
+      'Risky canonical business-line SOP revisions create business-line scoped policy_change Decisions.',
+      'Accepting a risky SOP revision is blocked until the linked Decision is approved.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'historical_task_recovery',
+    label: 'Historical task data recovery',
+    status: 'recoverable',
+    evidence: [
+      'Legacy project and routine tasks are adapted into business lines through legacy_task_id.',
+      'Legacy child tasks under old projects resolve business-line ownership through their parent task.',
+      'The hidden Tasks compatibility route remains reachable through Legacy Tasks Explorer for historical task, run, file, and artifact recovery.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'external_signal_projection',
+    label: 'External access and automation projection',
+    status: 'ready',
+    evidence: [
+      'Scheduled/event tasks project into business-line Automations & Sensors instead of a separate per-business runtime matrix.',
+      'External Access previews create reviewable business record candidates and confirmed records stay out of future context unless reviewed or confirmed.',
+      'External source ingestion rejects mismatched businessLineId targets that do not match the selected task ownership.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+];
 
 export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
   {
@@ -817,6 +910,47 @@ export function findProductFeatureImpactAuditIssues(
       issues.push({
         featureId: item.id,
         issue: 'Covered feature audit item must not have partial or missing runtime closure.',
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function findBusinessLineFirstProductAuditIssues(
+  checks: BusinessLineFirstAuditCheck[] = BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const check of checks) {
+    if (ids.has(check.id)) {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Duplicate business-line-first audit check id.' });
+    }
+    ids.add(check.id);
+
+    if (check.status === 'blocked') {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Business-line-first readiness check is blocked.' });
+    }
+
+    if (check.evidence.length === 0) {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Business-line-first readiness check must cite evidence.' });
+    }
+
+    if (check.status !== 'ready' && check.status !== 'recoverable') {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Business-line-first readiness check must be ready or recoverable for Goal 10.' });
+    }
+
+    if (check.gaps.length > 0 && check.nextActions.length === 0) {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Business-line-first readiness gap must declare next actions.' });
+    }
+  }
+
+  for (const requiredId of REQUIRED_BUSINESS_LINE_FIRST_CHECK_IDS) {
+    if (!ids.has(requiredId)) {
+      issues.push({
+        featureId: `business_line_first:${requiredId}`,
+        issue: 'Missing required business-line-first readiness check.',
       });
     }
   }

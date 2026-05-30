@@ -298,6 +298,128 @@ describe('BusinessLineService', () => {
     });
   });
 
+  it('smoke-tests the business-line-first journey without depending on a task shell', async () => {
+    const created = await service.create({
+      title: 'Migration smoke product',
+      goal: 'Prove Business is the primary work owner.',
+      kind: 'software_product',
+      template: 'custom',
+      initialRecords: ['Initial market signal should guide execution.'],
+      initialNextActions: ['Run the first business-line action.'],
+      proposedSops: ['Use reviewed evidence before ranking the next business-line action.'],
+    });
+    expect(created.legacyTaskId).toBeNull();
+
+    const initialWorkspace = await service.getWorkspace(created.id);
+    const initialAction = initialWorkspace!.nextActions[0]!;
+    expect(initialWorkspace?.businessLine).toMatchObject({
+      id: created.id,
+      legacyTaskId: null,
+    });
+    expect(initialAction).toMatchObject({
+      businessLineId: created.id,
+      nextStep: 'Run the first business-line action.',
+    });
+
+    const initialToday = await service.listTodaySuggestions();
+    expect(initialToday[0]).toMatchObject({
+      businessLineId: created.id,
+      taskId: initialAction.id,
+      type: 'progress',
+      nextStep: 'Run the first business-line action.',
+    });
+
+    const runRepository = new RunRepository();
+    const run = await runRepository.create({
+      taskId: initialAction.id,
+      businessLineId: created.id,
+      type: 'agent',
+      instructions: 'Execute the first business-line action.',
+    });
+    await runRepository.updateResult(
+      run.id,
+      'completed',
+      'Execution produced a reviewed business outcome.',
+      'system',
+    );
+    await new TaskRepository().transition({ id: initialAction.id, nextState: 'completed' });
+
+    const reviewed = await service.recordReview({
+      businessLineId: created.id,
+      sourceActionId: initialAction.id,
+      sourceRunId: run.id,
+      resultSummary: 'Completed action changed the next business recommendation.',
+      evidenceItems: [`Run ${run.id} completed.`],
+      recordSuggestions: [{
+        type: 'result',
+        source: `run:${run.id}`,
+        summary: 'Execution evidence supports a new next action.',
+        confidence: 84,
+        shouldAffectFutureContext: true,
+      }],
+      nextActionSuggestions: ['Follow the reviewed result with the next business action.'],
+      skillUpdateSuggestions: ['When execution changes priority, cite the reviewed result before suggesting the next action.'],
+      confidence: 84,
+    });
+
+    const reviewedAction = reviewed.nextActions.find((action) =>
+      action.nextStep === 'Follow the reviewed result with the next business action.')!;
+    expect(reviewedAction).toMatchObject({
+      businessLineId: created.id,
+      parentTaskId: null,
+    });
+    expect(reviewed.nextActions.map((action) => action.id)).not.toContain(initialAction.id);
+    expect(reviewed.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'review',
+        linkedActionId: initialAction.id,
+        provenance: expect.objectContaining({ sourceType: 'review' }),
+      }),
+      expect.objectContaining({
+        type: 'result',
+        linkedActionId: initialAction.id,
+        source: `run:${run.id}`,
+      }),
+    ]));
+
+    const accepted = await service.acceptSkillRevision({
+      revisionId: reviewed.learning.skillRevisions.find((revision) =>
+        revision.nextContent === 'When execution changes priority, cite the reviewed result before suggesting the next action.')!.id,
+      approvedBy: 'tester',
+    });
+    expect(accepted.learning.acceptedSkills[0]?.nextContent).toContain('cite the reviewed result');
+
+    const changedToday = await service.listTodaySuggestions();
+    expect(changedToday[0]).toMatchObject({
+      businessLineId: created.id,
+      taskId: reviewedAction.id,
+      type: 'progress',
+      nextStep: 'Follow the reviewed result with the next business action.',
+    });
+    expect(changedToday[0]?.taskId).not.toBe(initialAction.id);
+    expect(changedToday[0]?.sourceRecords.join(' ')).toContain('cite the reviewed result');
+
+    const riskyReview = await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'Risky learning should wait for a Decision.',
+      skillUpdateSuggestions: ['Change pricing and publishing policy without further review.'],
+      requiresDecision: true,
+    });
+    const riskyRevision = riskyReview.learning.skillRevisions.find((revision) =>
+      revision.nextContent === 'Change pricing and publishing policy without further review.')!;
+    expect(decisionService.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'policy_change',
+      businessLineId: created.id,
+      scope: 'business_line',
+      taskId: null,
+      sourceId: riskyRevision.sourceReviewId,
+    }));
+    await expect(service.acceptSkillRevision({
+      revisionId: riskyRevision.id,
+      approvedBy: 'tester',
+    })).rejects.toThrow(/requires an approved Decision/);
+  });
+
   it('accepts non-risky skill revisions inline', async () => {
     const created = await service.create({
       title: 'Canonical non-risky business line',

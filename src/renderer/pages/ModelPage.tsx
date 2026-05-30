@@ -1046,7 +1046,7 @@ function AgentCliRuntimeSection({
               onChange={(event) => onWorkspaceRootChange(event.target.value)}
             />
           </div>
-          <p className="settings-hint">通常保持自动即可；具体文件读取会在任务上下文里决定。</p>
+          <p className="settings-hint">通常保持自动即可；具体文件读取会在业务线或 Next Action 上下文里决定。</p>
         </div>
         <div className="agent-cli-counts" aria-label="Agent CLI runtime counts">
           <span>{detectedCount} detected</span>

@@ -122,8 +122,8 @@ export function WorkHabitsPage() {
     <div className="context-page">
       <div className="context-page-head">
         <h2 className="context-page-title">Work Habits</h2>
-        <p className="context-page-subtitle">跨任务工作习惯与 AI 行为偏好 — 确认后才会影响后续执行</p>
-        <p className="context-page-boundary">任务文件和产物在 Tasks 中管理；这里仅沉淀跨任务规则、偏好和 SOP 习惯。</p>
+        <p className="context-page-subtitle">跨业务线和 Next Actions 的工作习惯与 AI 行为偏好 — 确认后才会影响后续执行</p>
+        <p className="context-page-boundary">业务线 Records、Next Actions 与 Skills/SOPs 是主工作面；Legacy Tasks Explorer 仅用于历史任务、文件和产物恢复。</p>
       </div>
 
       <section className="ctx-section">
@@ -139,10 +139,10 @@ export function WorkHabitsPage() {
 
         <div className="ctx-list">
           <div className="ctx-learning-output-note">
-            待确认规则只作为提议展示，不会自动改变后续执行流程。显著流程、步骤顺序和工具选择必须提议确认；SOP 模板只由你主动保存。停用、删除和覆盖已有规则都由你主动操作。只在 Step/Run/Task 完成、你编辑 AI 产物、或会话压缩前提取学习信号，不做持续行为监控。
+            待确认规则只作为提议展示，不会自动改变后续执行流程。显著流程、步骤顺序和工具选择必须提议确认；SOP 模板只由你主动保存。停用、删除和覆盖已有规则都由你主动操作。只在 Step/Run/Next Action 完成、你编辑 AI 产物、或会话压缩前提取学习信号，不做持续行为监控。
           </div>
           <div className="ctx-learning-output-note">
-            已确认工作习惯会进入适用任务的执行上下文；定时、事件触发和例行任务的 L2 有限自主行动授权在 Tasks 的 Standing Approval 卡片中确认，Work Habits 不直接启动 scheduler 或写入工作区。
+            已确认工作习惯会进入适用业务线或 Next Action 的执行上下文；定时、事件触发和例行动作的 L2 有限自主行动授权仍走兼容 Standing Approval 卡片，Work Habits 不直接启动 scheduler 或写入工作区。
           </div>
           <div className="ctx-habit-stats">
             <span>来源分布</span>

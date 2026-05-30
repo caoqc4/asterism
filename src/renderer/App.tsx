@@ -19,7 +19,7 @@ const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Today',
   business: 'Business',
   chat: 'Chat',
-  tasks: 'Tasks',
+  tasks: 'Legacy Tasks',
   decisions: 'Decisions',
   'work-habits': 'Work Habits',
   skills: 'Skills',

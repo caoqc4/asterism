@@ -1517,6 +1517,9 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('连接器状态')).toBeTruthy();
     expect(screen.getByText('仅手动')).toBeTruthy();
     expect(screen.getByText('先质检，再确认')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /Legacy Tasks Explorer/ }));
+    expect(await screen.findByText('Legacy Tasks')).toBeTruthy();
   });
 
   it('opens full Chat with context and writeback target, and keeps sidebar recovery controls', async () => {
@@ -5204,7 +5207,7 @@ describe('App redesign v1', () => {
         content: expect.stringContaining('Playwright'),
       }));
     });
-    expect(await screen.findByText('全局')).toBeTruthy();
+    expect(await screen.findByText('Context: Global')).toBeTruthy();
     expect(await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/)).toBeTruthy();
     expect(screen.queryByPlaceholderText(/关于「董事会材料修订」/)).toBeNull();
   });
@@ -5558,8 +5561,12 @@ describe('App redesign v1', () => {
     window.location.hash = 'tasks';
     render(<App />);
 
-    const cards = Array.from(document.querySelectorAll('.execution-queue-card')) as HTMLElement[];
-    const orderedTitles = cards.map((card) => card.textContent ?? '').filter((text) => text.includes('小程序'));
+    let orderedTitles: string[] = [];
+    await waitFor(() => {
+      const cards = Array.from(document.querySelectorAll('.execution-queue-card')) as HTMLElement[];
+      orderedTitles = cards.map((card) => card.textContent ?? '').filter((text) => text.includes('小程序'));
+      expect(orderedTitles.some((text) => text.includes('开发小程序'))).toBe(true);
+    });
     expect(orderedTitles.some((text) => text.includes('开发小程序'))).toBe(true);
     expect(orderedTitles.some((text) => text.includes('小程序资料归档'))).toBe(true);
     expect(orderedTitles.some((text) => text.includes('小程序前后端开发与联调'))).toBe(false);
@@ -6316,9 +6323,9 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Settings/ }));
     expect(await screen.findByText(/不做持续行为监控/)).toBeTruthy();
-    expect(screen.getByText('Run / Task 自检查')).toBeTruthy();
+    expect(screen.getByText('Run / Next Action 自检查')).toBeTruthy();
     expect(screen.getByText(/Step 级检查是执行质量基线/)).toBeTruthy();
-    expect(screen.getByText(/Run \/ Task 检查只在失败、等待拍板或完成确认时提示/)).toBeTruthy();
+    expect(screen.getByText(/Run \/ Next Action 检查只在失败、等待拍板或完成确认时提示/)).toBeTruthy();
     expect(screen.getByText(/完成、覆盖、SOP 提取等节点提炼工作习惯/)).toBeTruthy();
     expect(screen.getByText(/关闭后不生成新的习惯提议/)).toBeTruthy();
     expect(screen.getByText(/Work Habits 展示，可停用或删除/)).toBeTruthy();
@@ -6519,8 +6526,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/外部账号与数据源授权/)).toBeTruthy();
     expect(screen.getByText(/授权后只处理相关新信号/)).toBeTruthy();
     expect(screen.getByText('已连接来源')).toBeTruthy();
-    expect(screen.getByText(/只在任务上下文需要时引用相关信号/)).toBeTruthy();
-    expect(screen.getByText(/相关新信号带入 Brief 和任务上下文，等待你确认/)).toBeTruthy();
+    expect(screen.getByText(/只在业务线或 Next Action 上下文需要时引用相关信号/)).toBeTruthy();
+    expect(screen.getByText(/相关新信号带入 Today、业务线 Records 或 Next Action 上下文，等待你确认/)).toBeTruthy();
     expect(screen.getByText(/未授权的来源不会进入 AI 上下文/)).toBeTruthy();
     expect(screen.getByText('系统默认可选功能')).toBeTruthy();
     expect(screen.getByText(/默认展示，不会自动授权、探测或同步/)).toBeTruthy();
@@ -6533,7 +6540,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('EMAIL')).toBeTruthy();
     expect(screen.getByText('CAL')).toBeTruthy();
     expect(screen.getByText('GIT')).toBeTruthy();
-    expect(screen.getByText(/授权后提取频道里的任务信号/)).toBeTruthy();
+    expect(screen.getByText(/授权后提取频道里的业务线信号/)).toBeTruthy();
   });
 
   it('shows an empty task-file prompt before a task is selected', async () => {
@@ -9104,10 +9111,10 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/显著流程、步骤顺序和工具选择必须提议确认/)).toBeTruthy();
     expect(screen.getByText(/SOP 模板只由你主动保存/)).toBeTruthy();
     expect(screen.getByText(/停用、删除和覆盖已有规则都由你主动操作/)).toBeTruthy();
-    expect(screen.getByText(/只在 Step\/Run\/Task 完成、你编辑 AI 产物、或会话压缩前提取学习信号/)).toBeTruthy();
+    expect(screen.getByText(/只在 Step\/Run\/Next Action 完成、你编辑 AI 产物、或会话压缩前提取学习信号/)).toBeTruthy();
     expect(screen.getByText(/不做持续行为监控/)).toBeTruthy();
-    expect(screen.getByText(/已确认工作习惯会进入适用任务的执行上下文/)).toBeTruthy();
-    expect(screen.getByText(/L2 有限自主行动授权在 Tasks 的 Standing Approval 卡片中确认/)).toBeTruthy();
+    expect(screen.getByText(/已确认工作习惯会进入适用业务线或 Next Action 的执行上下文/)).toBeTruthy();
+    expect(screen.getByText(/L2 有限自主行动授权仍走兼容 Standing Approval 卡片/)).toBeTruthy();
     expect(screen.getByText(/Work Habits 不直接启动 scheduler 或写入工作区/)).toBeTruthy();
     expect(screen.getByText('来源分布')).toBeTruthy();
     expect(screen.getByText('提议确认 1')).toBeTruthy();

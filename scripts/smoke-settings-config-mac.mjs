@@ -103,7 +103,7 @@ async function openSettings(page) {
 
 async function saveSettings(page) {
   await openSettings(page);
-  await page.getByText('Run / Task 自检查').waitFor();
+  await page.getByText('Run / Next Action 自检查').waitFor();
   await page.getByText('自学习（Self-Learn）').waitFor();
   await page.getByText('当前 AI 配置').waitFor();
   await page.getByText('配置安全边界').waitFor();
@@ -132,7 +132,7 @@ async function saveSettings(page) {
 
 async function assertPersistedSettings(page) {
   await openSettings(page);
-  await page.getByText('Run / Task 自检查').waitFor();
+  await page.getByText('Run / Next Action 自检查').waitFor();
   await page.getByText('自学习（Self-Learn）').waitFor();
   await page.getByText('skills.catalogue').waitFor();
   await page.getByText('mcp.servers').waitFor();

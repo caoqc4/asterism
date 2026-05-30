@@ -62,16 +62,27 @@ try {
   });
 
   const {
+    BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
     PRODUCT_FEATURE_IMPACT_AUDIT,
+    findBusinessLineFirstProductAuditIssues,
     findProductFeatureImpactAuditIssues,
   } = await import(pathToFileURL(bundledPath).href);
-  const issues = findProductFeatureImpactAuditIssues(PRODUCT_FEATURE_IMPACT_AUDIT);
+  const issues = [
+    ...findProductFeatureImpactAuditIssues(PRODUCT_FEATURE_IMPACT_AUDIT),
+    ...findBusinessLineFirstProductAuditIssues(BUSINESS_LINE_FIRST_PRODUCT_AUDIT),
+  ];
+  const businessLineFirstBlocked = idsFor(
+    BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
+    (check) => check.status === 'blocked',
+  );
+  const businessLineFirstReady = businessLineFirstBlocked === '<none>';
 
   console.log('Taskplane product feature impact audit');
   console.log(`features=${PRODUCT_FEATURE_IMPACT_AUDIT.length}`);
   console.log(`status ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'status'))}`);
   console.log(`cliOnlyClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'cliOnlyClosure'))}`);
   console.log(`futureApiClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'futureApiClosure'))}`);
+  console.log(`businessLineFirst readiness=${businessLineFirstReady ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_PRODUCT_AUDIT.length} ${formatCounts(countBy(BUSINESS_LINE_FIRST_PRODUCT_AUDIT, 'status'))} blocked=${businessLineFirstBlocked}`);
   const p0CliPartial = p0CliPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   const p0FutureApiPartial = p0FutureApiPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   console.log(`summary mainlineCliP0=${p0CliPartial === '<none>' ? 'ready' : 'blocked'} p0CliPartial=${p0CliPartial} p0FutureApiDeferred=${p0FutureApiPartial}`);
@@ -85,6 +96,10 @@ try {
 
   for (const item of PRODUCT_FEATURE_IMPACT_AUDIT) {
     console.log(`${item.priority} ${item.status} cli=${item.cliOnlyClosure} api=${item.futureApiClosure} ${item.id}`);
+  }
+  console.log('businessLineFirstChecks');
+  for (const check of BUSINESS_LINE_FIRST_PRODUCT_AUDIT) {
+    console.log(`${check.status} ${check.id}`);
   }
 
   if (includeNextActions) {
