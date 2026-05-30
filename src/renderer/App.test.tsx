@@ -1531,6 +1531,22 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeTruthy();
   });
 
+  it('keeps the active right-panel session when moving into full Chat', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByTitle('AI 对话（⌘K）'));
+    const dockedInput = await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/) as HTMLTextAreaElement;
+    await user.type(dockedInput, 'Preserve this pending writeback');
+
+    await user.click(screen.getByRole('button', { name: 'Chat' }));
+
+    const chatInput = await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/) as HTMLTextAreaElement;
+    expect(chatInput.value).toBe('Preserve this pending writeback');
+    expect(document.querySelectorAll('.right-panel').length).toBe(1);
+    expect(screen.getByText('Writeback: Global / capture proposal')).toBeTruthy();
+  });
+
   it('renders Brief attention count and inclusion reasons from shared projection data', async () => {
     const task = buildTask({
       id: 'task_attention',

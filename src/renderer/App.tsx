@@ -71,14 +71,17 @@ export function App() {
     setRoute(r);
     setTaskFocusId(null);
     setBusinessFocusId(null);
-    if (r === 'chat') {
+    if (route === 'chat' && r !== 'chat') {
       setPanelOpen(false);
+      setPanelSuspended(true);
+    }
+    if (r === 'chat') {
       setPanelSuspended(false);
     }
     if (r !== 'tasks') {
       setWorkspaceSelection({ taskId: null, taskTitle: null, parentTaskId: null, childTaskIds: [], selectedFile: null });
     }
-  }, []);
+  }, [route]);
 
   const openTaskInTasks = useCallback((taskId: string) => {
     setRouteState('tasks');
@@ -181,8 +184,12 @@ export function App() {
     setPanelAutoSendDraftPrompt(false);
   }, [panelOpen, panelSuspended, panelTaskId, route, workspaceSelection]);
 
+  const isChatRoute = route === 'chat';
+  const showDockedPanel = !isChatRoute && panelOpen;
+  const shouldMountPanel = isChatRoute || panelOpen || panelSuspended;
+
   return (
-    <div className={`app sidebar-${sidebarMode}${panelOpen ? ' panel-open' : ''}`}>
+    <div className={`app sidebar-${sidebarMode}${showDockedPanel ? ' panel-open' : ''}${isChatRoute ? ' chat-route' : ''}`}>
       <Sidebar route={route} mode={sidebarMode} onModeChange={setSidebarMode} onNavigate={navigate} />
       <div className="main">
         <Topbar
@@ -220,22 +227,6 @@ export function App() {
               focusBusinessLineId={businessFocusId}
             />
           )}
-          {route === 'chat' && (
-            <ChatPage
-              taskId={panelTaskId}
-              taskTitleHint={panelTaskTitle}
-              businessLineId={panelBusinessLineId}
-              businessLineTitleHint={panelBusinessLineTitle}
-              selectedFile={panelSelectedFile}
-              onOpenTask={openTaskInTasks}
-              onClearTask={() => {
-                setPanelTaskId(null);
-                setPanelTaskTitle(null);
-                setPanelDraftPrompt(null);
-                setPanelSelectedFile(null);
-              }}
-            />
-          )}
           {route === 'tasks' && (
             <TasksPage
               onOpenPanel={openPanelForTask}
@@ -258,7 +249,7 @@ export function App() {
           {route === 'settings' && <SettingsPage />}
         </div>
       </div>
-      {route !== 'chat' && (panelOpen || panelSuspended) && (
+      {shouldMountPanel && (
         <RightPanel
           key={panelSessionKey}
           taskId={panelTaskId}
@@ -268,7 +259,8 @@ export function App() {
           draftPrompt={panelDraftPrompt}
           autoSendDraftPrompt={panelAutoSendDraftPrompt}
           selectedFile={panelSelectedFile}
-          hidden={!panelOpen}
+          surface={isChatRoute ? 'page' : 'panel'}
+          hidden={!isChatRoute && !panelOpen}
           onTaskCaptured={(taskId) => setPanelTaskId(taskId)}
           onOpenTask={openTaskInTasks}
           onClose={(hasSession) => {
@@ -283,40 +275,6 @@ export function App() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-function ChatPage({
-  businessLineId,
-  businessLineTitleHint,
-  onClearTask,
-  onOpenTask,
-  selectedFile,
-  taskId,
-  taskTitleHint,
-}: {
-  businessLineId: string | null;
-  businessLineTitleHint: string | null;
-  onClearTask: () => void;
-  onOpenTask: (taskId: string) => void;
-  selectedFile: TaskWorkspaceSelectionContext['selectedFile'];
-  taskId: string | null;
-  taskTitleHint: string | null;
-}) {
-  return (
-    <div className="chat-page">
-      <RightPanel
-        taskId={taskId}
-        taskTitleHint={taskTitleHint}
-        businessLineId={businessLineId}
-        businessLineTitleHint={businessLineTitleHint}
-        selectedFile={selectedFile}
-        surface="page"
-        onOpenTask={onOpenTask}
-        onClose={() => undefined}
-        onClearTask={onClearTask}
-      />
     </div>
   );
 }
