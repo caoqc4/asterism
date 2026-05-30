@@ -92,6 +92,25 @@ export type BusinessLineFirstRuleLayerAuditCheck = {
   forbiddenOwnershipPatterns?: RegExp[];
 };
 
+export type BusinessLineFirstImplementationSourceId =
+  | 'app_ui'
+  | 'business_line_service'
+  | 'run_service'
+  | 'writeback_apply_plan'
+  | 'writeback_dispatch_service'
+  | 'writeback_proposal';
+
+export type BusinessLineFirstImplementationSourceInput = Partial<Record<BusinessLineFirstImplementationSourceId, string>>;
+
+export type BusinessLineFirstImplementationAuditCheck = {
+  id: string;
+  label: string;
+  sourceId: BusinessLineFirstImplementationSourceId;
+  requiredFragments: string[];
+  forbiddenPatterns?: RegExp[];
+  allowsLegacyTaskRecovery?: boolean;
+};
+
 const DEFERRED_COMPLETION_SIGNALS = [
   /\b(?:deferred|diagnostic-only|unimplemented|not yet|pending until)\b/i,
   /future (?:agent api|api|provider-visible|scheduled|background|execution|workspace-write)/i,
@@ -114,6 +133,16 @@ const REQUIRED_BUSINESS_LINE_FIRST_RULE_LAYER_CHECK_IDS = [
   'priority_business_attention',
   'scheduler_business_line_loops',
   'legacy_task_recovery_documented',
+] as const;
+
+const REQUIRED_BUSINESS_LINE_FIRST_IMPLEMENTATION_CHECK_IDS = [
+  'durable_business_writes_resolve_owner',
+  'run_service_business_line_scope',
+  'writeback_proposal_preserves_business_line_id',
+  'writeback_apply_plan_preserves_business_line_id',
+  'writeback_dispatch_enforces_business_line_owner',
+  'primary_ui_routes_business_first',
+  'legacy_tasks_explorer_labeled',
 ] as const;
 
 const TASK_FIRST_OWNERSHIP_DRIFT_PATTERNS = [
@@ -199,6 +228,111 @@ export const BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT: BusinessLineFirstRuleLayerAud
       'legacy task recovery',
       'recover business line before durable writes when possible',
     ],
+  },
+];
+
+export const BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT: BusinessLineFirstImplementationAuditCheck[] = [
+  {
+    id: 'durable_business_writes_resolve_owner',
+    label: 'Durable business writes resolve business-line owner before persistence',
+    sourceId: 'business_line_service',
+    requiredFragments: [
+      'async createBusinessLineRecord',
+      'explicitBusinessLineId: input.businessLineId',
+      'Business line write requires a resolved business line owner.',
+      'businessLineId: ownership.businessLineId',
+      'async createBusinessLineNextAction',
+      'businessLineId: businessLine.id',
+      'async proposeBusinessLineSopRevision',
+      'businessLineId: ownership.businessLineId',
+    ],
+  },
+  {
+    id: 'run_service_business_line_scope',
+    label: 'RunService preserves business-line scope and context pack',
+    sourceId: 'run_service',
+    requiredFragments: [
+      'explicitBusinessLineId: run.businessLineId ?? null',
+      'let businessLineId = explicitBusinessLineId || task.businessLineId || null',
+      'runScopeRequiresBusinessLine(runScope.kind) && !runScope.businessLineId',
+      'Business line scope requires an owner',
+      'appendBusinessLineContextPackToPrompt',
+      'attachRunScope(created, runScope)',
+    ],
+  },
+  {
+    id: 'writeback_proposal_preserves_business_line_id',
+    label: 'Writeback proposal preserves businessLineId in business-line-native proposals',
+    sourceId: 'writeback_proposal',
+    requiredFragments: [
+      'const businessLineId = intent.businessLineId ?? fallbackBusinessLineId ?? null',
+      'businessLineId,',
+      'intent: { ...intent, businessLineId }',
+      'business_record.create',
+      'business_review.record',
+      'business_next_action.create',
+      'business_sop_revision.propose',
+      'business_handoff.record',
+    ],
+  },
+  {
+    id: 'writeback_apply_plan_preserves_business_line_id',
+    label: 'Writeback apply plan carries businessLineId into inputs and timeline',
+    sourceId: 'writeback_apply_plan',
+    requiredFragments: [
+      'const businessLineId = params.proposal.businessLineId ?? null',
+      'businessLineId,',
+      'const basePayload = {',
+      'payload: basePayload',
+      'business_record.create',
+      'business_review.record',
+      'business_next_action.create',
+      'business_sop_revision.propose',
+      'business_handoff.record',
+    ],
+  },
+  {
+    id: 'writeback_dispatch_enforces_business_line_owner',
+    label: 'Main-side writeback dispatch enforces business-line ownership',
+    sourceId: 'writeback_dispatch_service',
+    requiredFragments: [
+      'const explicitBusinessLineId = getPlanBusinessLineId(params.plan)',
+      'const businessLineNative = isBusinessLineNativePlan(params.plan)',
+      'this.businessLineOwnershipResolver.resolveOwnership',
+      "allowOneOff: !businessLineNative && !explicitBusinessLineId",
+      'ownership.status === \'mismatch\'',
+      'Write Intent 已暂停：业务线写入缺少可解析的业务线归属。',
+      'taskFileId: params.plan.input.id',
+    ],
+  },
+  {
+    id: 'primary_ui_routes_business_first',
+    label: 'Primary Work navigation stays business-line-first',
+    sourceId: 'app_ui',
+    requiredFragments: [
+      '<div className="nav-zone-label">Work</div>',
+      'label="Today"',
+      'label="Business"',
+      'label="Chat"',
+      'label="Decisions"',
+      'Legacy Tasks Explorer',
+    ],
+    forbiddenPatterns: [
+      /label="Tasks"\s+active=\{route === 'tasks'\}/,
+      /<NavItem[^>]+label="Tasks"[^>]+onClick=\{\(\) => onNavigate\('tasks'\)\}/,
+    ],
+  },
+  {
+    id: 'legacy_tasks_explorer_labeled',
+    label: 'Legacy task recovery remains legal only when explicitly labeled',
+    sourceId: 'app_ui',
+    requiredFragments: [
+      'className="sidebar-recovery-link"',
+      'title="Open legacy Tasks explorer recovery route"',
+      'aria-label="Legacy Tasks Explorer"',
+      'Legacy Tasks Explorer',
+    ],
+    allowsLegacyTaskRecovery: true,
   },
 ];
 
@@ -1123,6 +1257,59 @@ export function findBusinessLineFirstRuleLayerAuditIssues(
       issues.push({
         featureId: `business_line_first_rule:${requiredId}`,
         issue: 'Missing required business-line-first rule-layer audit check.',
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function findBusinessLineFirstImplementationAuditIssues(
+  sources: BusinessLineFirstImplementationSourceInput,
+  checks: BusinessLineFirstImplementationAuditCheck[] = BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const check of checks) {
+    if (ids.has(check.id)) {
+      issues.push({ featureId: `business_line_first_implementation:${check.id}`, issue: 'Duplicate business-line-first implementation audit check id.' });
+    }
+    ids.add(check.id);
+
+    const content = sources[check.sourceId] ?? '';
+    if (!content.trim()) {
+      issues.push({
+        featureId: `business_line_first_implementation:${check.id}`,
+        issue: `Missing implementation source content for ${check.sourceId}.`,
+      });
+      continue;
+    }
+
+    for (const fragment of check.requiredFragments) {
+      if (!includesNormalizedFragment(content, fragment)) {
+        issues.push({
+          featureId: `business_line_first_implementation:${check.id}`,
+          issue: `Missing required implementation evidence: ${fragment}`,
+        });
+      }
+    }
+
+    for (const pattern of check.forbiddenPatterns ?? []) {
+      if (pattern.test(content)) {
+        issues.push({
+          featureId: `business_line_first_implementation:${check.id}`,
+          issue: 'Implementation re-promotes Tasks as a primary durable Work owner.',
+        });
+      }
+    }
+  }
+
+  for (const requiredId of REQUIRED_BUSINESS_LINE_FIRST_IMPLEMENTATION_CHECK_IDS) {
+    if (!ids.has(requiredId)) {
+      issues.push({
+        featureId: `business_line_first_implementation:${requiredId}`,
+        issue: 'Missing required business-line-first implementation audit check.',
       });
     }
   }

@@ -62,9 +62,11 @@ try {
   });
 
   const {
+    BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT,
     BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
     BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
     PRODUCT_FEATURE_IMPACT_AUDIT,
+    findBusinessLineFirstImplementationAuditIssues,
     findBusinessLineFirstProductAuditIssues,
     findBusinessLineFirstRuleLayerAuditIssues,
     findProductFeatureImpactAuditIssues,
@@ -77,20 +79,37 @@ try {
     priority_routing: fs.readFileSync(path.join(process.cwd(), 'docs/specs/priority-attention-routing.md'), 'utf8'),
     runtime_orchestration: fs.readFileSync(path.join(process.cwd(), 'docs/specs/native-agent-runtime-orchestration.md'), 'utf8'),
   };
+  const implementationSources = {
+    app_ui: fs.readFileSync(path.join(process.cwd(), 'src/renderer/App.tsx'), 'utf8'),
+    business_line_service: fs.readFileSync(path.join(process.cwd(), 'src/main/domain/business-line/business-line-service.ts'), 'utf8'),
+    run_service: fs.readFileSync(path.join(process.cwd(), 'src/main/domain/run/run-service.ts'), 'utf8'),
+    writeback_apply_plan: fs.readFileSync(path.join(process.cwd(), 'src/shared/taskplane-writeback-apply-plan.ts'), 'utf8'),
+    writeback_dispatch_service: fs.readFileSync(path.join(process.cwd(), 'src/main/domain/writeback/taskplane-writeback-dispatch-service.ts'), 'utf8'),
+    writeback_proposal: fs.readFileSync(path.join(process.cwd(), 'src/shared/taskplane-writeback-proposal.ts'), 'utf8'),
+  };
   const businessLineFirstRuleLayerIssues = findBusinessLineFirstRuleLayerAuditIssues(
     ruleLayerDocs,
     BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
+  );
+  const businessLineFirstImplementationIssues = findBusinessLineFirstImplementationAuditIssues(
+    implementationSources,
+    BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT,
   );
   const issues = [
     ...findProductFeatureImpactAuditIssues(PRODUCT_FEATURE_IMPACT_AUDIT),
     ...findBusinessLineFirstProductAuditIssues(BUSINESS_LINE_FIRST_PRODUCT_AUDIT),
     ...businessLineFirstRuleLayerIssues,
+    ...businessLineFirstImplementationIssues,
   ];
   const businessLineFirstBlocked = idsFor(
     BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
     (check) => check.status === 'blocked',
   );
-  const businessLineFirstReady = businessLineFirstBlocked === '<none>' && businessLineFirstRuleLayerIssues.length === 0;
+  const businessLineFirstReady = (
+    businessLineFirstBlocked === '<none>' &&
+    businessLineFirstRuleLayerIssues.length === 0 &&
+    businessLineFirstImplementationIssues.length === 0
+  );
 
   console.log('Taskplane product feature impact audit');
   console.log(`features=${PRODUCT_FEATURE_IMPACT_AUDIT.length}`);
@@ -99,6 +118,7 @@ try {
   console.log(`futureApiClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'futureApiClosure'))}`);
   console.log(`businessLineFirst readiness=${businessLineFirstReady ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_PRODUCT_AUDIT.length} ${formatCounts(countBy(BUSINESS_LINE_FIRST_PRODUCT_AUDIT, 'status'))} blocked=${businessLineFirstBlocked}`);
   console.log(`businessLineFirstRules readiness=${businessLineFirstRuleLayerIssues.length === 0 ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT.length} issues=${businessLineFirstRuleLayerIssues.length}`);
+  console.log(`businessLineFirstImplementation readiness=${businessLineFirstImplementationIssues.length === 0 ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT.length} issues=${businessLineFirstImplementationIssues.length}`);
   const p0CliPartial = p0CliPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   const p0FutureApiPartial = p0FutureApiPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   console.log(`summary mainlineCliP0=${p0CliPartial === '<none>' ? 'ready' : 'blocked'} p0CliPartial=${p0CliPartial} p0FutureApiDeferred=${p0FutureApiPartial}`);
@@ -120,6 +140,10 @@ try {
   console.log('businessLineFirstRuleChecks');
   for (const check of BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT) {
     console.log(`ready ${check.id} doc=${check.docId}`);
+  }
+  console.log('businessLineFirstImplementationChecks');
+  for (const check of BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT) {
+    console.log(`ready ${check.id} source=${check.sourceId}`);
   }
 
   if (includeNextActions) {

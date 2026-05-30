@@ -5,11 +5,19 @@ import goalpilotDoc from '../../docs/specs/goalpilot-task-advancement-framework.
 import runtimeOrchestrationDoc from '../../docs/specs/native-agent-runtime-orchestration.md?raw';
 import priorityRoutingDoc from '../../docs/specs/priority-attention-routing.md?raw';
 import memorySpecDoc from '../../docs/specs/task-memory-spec.md?raw';
+import appUiSource from '../../src/renderer/App.tsx?raw';
+import businessLineServiceSource from '../../src/main/domain/business-line/business-line-service.ts?raw';
+import runServiceSource from '../../src/main/domain/run/run-service.ts?raw';
+import writebackApplyPlanSource from '../../src/shared/taskplane-writeback-apply-plan.ts?raw';
+import writebackDispatchServiceSource from '../../src/main/domain/writeback/taskplane-writeback-dispatch-service.ts?raw';
+import writebackProposalSource from '../../src/shared/taskplane-writeback-proposal.ts?raw';
 
 import {
+  BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT,
   BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
   BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
   PRODUCT_FEATURE_IMPACT_AUDIT,
+  findBusinessLineFirstImplementationAuditIssues,
   findBusinessLineFirstProductAuditIssues,
   findBusinessLineFirstRuleLayerAuditIssues,
   findProductFeatureImpactAuditIssues,
@@ -73,6 +81,118 @@ describe('product feature impact audit', () => {
     const priority = BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT.find((check) => check.id === 'priority_business_attention');
     expect(goalpilot?.requiredFragments).toContain('A Task is the execution unit and Next Action carrier');
     expect(priority?.requiredFragments).toContain('legacy task recovery compatibility input');
+  });
+
+  it('audits businessLineFirst architecture implementation readiness separately from product and rule-layer readiness', () => {
+    expect(BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT.map((check) => check.id)).toEqual([
+      'durable_business_writes_resolve_owner',
+      'run_service_business_line_scope',
+      'writeback_proposal_preserves_business_line_id',
+      'writeback_apply_plan_preserves_business_line_id',
+      'writeback_dispatch_enforces_business_line_owner',
+      'primary_ui_routes_business_first',
+      'legacy_tasks_explorer_labeled',
+    ]);
+    expect(findBusinessLineFirstImplementationAuditIssues(readBusinessLineFirstImplementationSources()))
+      .toEqual([]);
+  });
+
+  it('blocks businessLineFirst architecture readiness when durable business writes drop businessLineId ownership', () => {
+    const sources = readBusinessLineFirstImplementationSources();
+    expect(findBusinessLineFirstImplementationAuditIssues({
+      ...sources,
+      business_line_service: sources.business_line_service
+        ?.replaceAll('explicitBusinessLineId: input.businessLineId', 'explicitBusinessLineId: null')
+        .replaceAll('businessLineId: ownership.businessLineId', 'businessLineId: input.businessLineId ?? null'),
+    })).toEqual(expect.arrayContaining([
+      {
+        featureId: 'business_line_first_implementation:durable_business_writes_resolve_owner',
+        issue: 'Missing required implementation evidence: explicitBusinessLineId: input.businessLineId',
+      },
+      {
+        featureId: 'business_line_first_implementation:durable_business_writes_resolve_owner',
+        issue: 'Missing required implementation evidence: businessLineId: ownership.businessLineId',
+      },
+    ]));
+  });
+
+  it('blocks businessLineFirst architecture readiness when RunService silently loses business-line scope', () => {
+    const sources = readBusinessLineFirstImplementationSources();
+    expect(findBusinessLineFirstImplementationAuditIssues({
+      ...sources,
+      run_service: sources.run_service
+        ?.replace('runScopeRequiresBusinessLine(runScope.kind) && !runScope.businessLineId', 'false')
+        .replace('attachRunScope(created, runScope)', 'created'),
+    })).toEqual(expect.arrayContaining([
+      {
+        featureId: 'business_line_first_implementation:run_service_business_line_scope',
+        issue: 'Missing required implementation evidence: runScopeRequiresBusinessLine(runScope.kind) && !runScope.businessLineId',
+      },
+      {
+        featureId: 'business_line_first_implementation:run_service_business_line_scope',
+        issue: 'Missing required implementation evidence: attachRunScope(created, runScope)',
+      },
+    ]));
+  });
+
+  it('blocks businessLineFirst architecture readiness when writeback proposal, apply, or dispatch drops businessLineId', () => {
+    const sources = readBusinessLineFirstImplementationSources();
+    expect(findBusinessLineFirstImplementationAuditIssues({
+      ...sources,
+      writeback_proposal: sources.writeback_proposal
+        ?.replace('const businessLineId = intent.businessLineId ?? fallbackBusinessLineId ?? null', 'const businessLineId = null'),
+      writeback_apply_plan: sources.writeback_apply_plan
+        ?.replace('const businessLineId = params.proposal.businessLineId ?? null', 'const businessLineId = null'),
+      writeback_dispatch_service: sources.writeback_dispatch_service
+        ?.replace('const explicitBusinessLineId = getPlanBusinessLineId(params.plan)', 'const explicitBusinessLineId = null'),
+    })).toEqual(expect.arrayContaining([
+      {
+        featureId: 'business_line_first_implementation:writeback_proposal_preserves_business_line_id',
+        issue: 'Missing required implementation evidence: const businessLineId = intent.businessLineId ?? fallbackBusinessLineId ?? null',
+      },
+      {
+        featureId: 'business_line_first_implementation:writeback_apply_plan_preserves_business_line_id',
+        issue: 'Missing required implementation evidence: const businessLineId = params.proposal.businessLineId ?? null',
+      },
+      {
+        featureId: 'business_line_first_implementation:writeback_dispatch_enforces_business_line_owner',
+        issue: 'Missing required implementation evidence: const explicitBusinessLineId = getPlanBusinessLineId(params.plan)',
+      },
+    ]));
+  });
+
+  it('blocks businessLineFirst architecture readiness when primary Work routing promotes Tasks again while allowing labeled legacy recovery', () => {
+    const sources = readBusinessLineFirstImplementationSources();
+    expect(findBusinessLineFirstImplementationAuditIssues({
+      ...sources,
+      app_ui: sources.app_ui?.replace(
+        '<NavItem icon={<IconBusiness />} label="Business" active={route === \'business\'} onClick={() => onNavigate(\'business\')} />',
+        '<NavItem icon={<IconBusiness />} label="Tasks" active={route === \'tasks\'} onClick={() => onNavigate(\'tasks\')} />',
+      ),
+    })).toEqual(expect.arrayContaining([
+      {
+        featureId: 'business_line_first_implementation:primary_ui_routes_business_first',
+        issue: 'Missing required implementation evidence: label="Business"',
+      },
+      {
+        featureId: 'business_line_first_implementation:primary_ui_routes_business_first',
+        issue: 'Implementation re-promotes Tasks as a primary durable Work owner.',
+      },
+    ]));
+
+    expect(findBusinessLineFirstImplementationAuditIssues({
+      ...sources,
+      app_ui: sources.app_ui?.replaceAll('Legacy Tasks Explorer', 'Tasks'),
+    })).toEqual(expect.arrayContaining([
+      {
+        featureId: 'business_line_first_implementation:primary_ui_routes_business_first',
+        issue: 'Missing required implementation evidence: Legacy Tasks Explorer',
+      },
+      {
+        featureId: 'business_line_first_implementation:legacy_tasks_explorer_labeled',
+        issue: 'Missing required implementation evidence: Legacy Tasks Explorer',
+      },
+    ]));
   });
 
   it('allows provisional GoalPilot naming while blocking task-first durable ownership drift', () => {
@@ -2001,5 +2121,16 @@ function readBusinessLineFirstRuleDocs() {
     handoff_policy: handoffPolicyDoc,
     priority_routing: priorityRoutingDoc,
     runtime_orchestration: runtimeOrchestrationDoc,
+  };
+}
+
+function readBusinessLineFirstImplementationSources() {
+  return {
+    app_ui: appUiSource,
+    business_line_service: businessLineServiceSource,
+    run_service: runServiceSource,
+    writeback_apply_plan: writebackApplyPlanSource,
+    writeback_dispatch_service: writebackDispatchServiceSource,
+    writeback_proposal: writebackProposalSource,
   };
 }

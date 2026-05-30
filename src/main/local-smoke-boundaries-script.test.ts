@@ -649,7 +649,7 @@ describe('local smoke script default boundaries', () => {
     expect(scripts['diagnostics:canonical-data:optional']).not.toContain('--db ');
   });
 
-  it('keeps product progress audit read-only and source-backed', () => {
+  it('keeps product progress audit read-only and businessLineFirst architecture source-backed', () => {
     const scripts = readPackageScripts();
     const script = fs.readFileSync(path.join(process.cwd(), 'scripts/product-feature-impact-audit-summary.mjs'), 'utf8');
     const result = runScript('scripts/product-feature-impact-audit-summary.mjs');
@@ -659,6 +659,13 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('src/shared/product-feature-impact-audit.ts');
     expect(script).toContain('findProductFeatureImpactAuditIssues');
     expect(script).toContain('findBusinessLineFirstRuleLayerAuditIssues');
+    expect(script).toContain('findBusinessLineFirstImplementationAuditIssues');
+    expect(script).toContain('src/main/domain/business-line/business-line-service.ts');
+    expect(script).toContain('src/main/domain/run/run-service.ts');
+    expect(script).toContain('src/shared/taskplane-writeback-apply-plan.ts');
+    expect(script).toContain('src/main/domain/writeback/taskplane-writeback-dispatch-service.ts');
+    expect(script).toContain('src/shared/taskplane-writeback-proposal.ts');
+    expect(script).toContain('src/renderer/App.tsx');
     expect(script).toContain('Taskplane product feature impact audit');
     expect(script).toContain('process.argv.includes');
     expect(script).not.toContain('better-sqlite3');
@@ -671,12 +678,17 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('futureApiClosure ');
     expect(result.output).toContain('businessLineFirst readiness=ready checks=6 ready=5 recoverable=1 blocked=<none>');
     expect(result.output).toContain('businessLineFirstRules readiness=ready checks=7 issues=0');
+    expect(result.output).toContain('businessLineFirstImplementation readiness=ready checks=7 issues=0');
     expect(result.output).toContain('businessLineFirstChecks');
     expect(result.output).toContain('businessLineFirstRuleChecks');
+    expect(result.output).toContain('businessLineFirstImplementationChecks');
     expect(result.output).toContain('ready canonical_ownership');
     expect(result.output).toContain('recoverable historical_task_recovery');
     expect(result.output).toContain('ready agents_business_line_owner doc=agents_adapter');
     expect(result.output).toContain('ready scheduler_business_line_loops doc=runtime_orchestration');
+    expect(result.output).toContain('ready durable_business_writes_resolve_owner source=business_line_service');
+    expect(result.output).toContain('ready writeback_dispatch_enforces_business_line_owner source=writeback_dispatch_service');
+    expect(result.output).toContain('ready legacy_tasks_explorer_labeled source=app_ui');
     expect(result.output).toContain(
       'summary mainlineCliP0=ready p0CliPartial=<none> p0FutureApiDeferred=right_panel_agent_run,task_creation_and_project_decomposition,decisions_checkpoints_completion,task_files_artifacts_local_writes,capabilities_external_skills_mcp',
     );
