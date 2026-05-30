@@ -7,6 +7,7 @@ Related:
 - `docs/plans/2026-05-29-business-line-centered-redesign.md`
 - `docs/plans/2026-05-29-business-line-learning-loop-mvp.md`
 - `docs/plans/2026-05-30-business-line-first-execution-plan.md`
+- `docs/plans/2026-05-30-business-line-architecture-migration-plan.md`
 
 ## Purpose
 
