@@ -38,6 +38,308 @@ A user may choose Codex CLI, Claude Code, or Agent API as the default Agent sche
 
 Rules are still the first control layer, but "rules first" means rules decide whether AI is needed and which gate applies. It does not mean non-execution phases are forced to a fixed backend that ignores the user's selected Agent scheme.
 
+## Reference Review
+
+This plan intentionally borrows architecture patterns without copying another
+product's product model.
+
+### OpenClaw / Pi Agent
+
+Reference:
+
+- `https://docs.openclaw.ai/pi`
+- `https://www.openclawbook.xyz/en/ch01-understanding-openclaw/1.2-core-architecture-overview`
+
+Relevant pattern:
+
+- A runtime/gateway layer can unify external agent backends and tool access.
+- The gateway should own backend capability routing, not product memory.
+- If copied too literally, this becomes a platform rebuild before Taskplane has
+  shipped its first complete product loop.
+
+Taskplane take:
+
+```text
+Keep a thin Agent Capability Gateway.
+Do not build a full Pi-style runtime platform now.
+```
+
+### Multica / Local Daemon Native CLI Pattern
+
+Reference:
+
+- `https://multica.ai/docs/how-multica-works`
+
+Relevant pattern:
+
+- A local daemon can run native coding agents, preserve their strengths, and
+  expose them through a product surface.
+- This validates the CLI-first move: native CLIs already implement many hard
+  runtime behaviors better than Taskplane can rebuild quickly.
+
+Taskplane take:
+
+```text
+Use Codex CLI / Claude Code as first production runtimes.
+Taskplane should provide context, scope, gates, and writeback.
+It should not reimplement the inner agent loop first.
+```
+
+### Claude / Codex Native Agent Layering
+
+References:
+
+- `https://code.claude.com/docs/en/features-overview`
+- `https://code.claude.com/docs/en/skills`
+- `https://code.claude.com/docs/en/hooks`
+- `https://code.claude.com/docs/en/sub-agents`
+- `https://developers.openai.com/codex/cli`
+
+Relevant pattern:
+
+- Mature native agent environments separate memory, project rules, scoped rules,
+  skills, tools, hooks, subagents, and review/eval.
+- The key lesson is not "put everything in one prompt". The lesson is to place
+  each type of instruction or constraint at the layer where it belongs.
+
+Taskplane take:
+
+```text
+Taskplane product rules live in specs, services, gates, and tests.
+Runtime-specific adapters translate those rules into AGENTS.md / CLAUDE.md /
+skills / hooks / CLI arguments only when needed.
+```
+
+### MCP
+
+Reference:
+
+- `https://modelcontextprotocol.io/docs/getting-started/intro`
+
+Relevant pattern:
+
+- MCP is a standard connector/tool protocol.
+- It should not become the product's business memory or permission model.
+
+Taskplane take:
+
+```text
+MCP is capability plumbing.
+Business-line ownership, write gates, and decisions remain Taskplane-owned.
+```
+
+### AIHero Handoff
+
+Reference:
+
+- `https://www.aihero.dev/skills-handoff`
+
+Relevant pattern:
+
+- Handoff is useful because it compresses a session into a portable context
+  packet for another agent/session.
+- Raw transcript transfer is less useful than typed recovery: objective,
+  decisions, constraints, changed files, evidence, blockers, and next steps.
+
+Taskplane take:
+
+```text
+Handoff is a typed recovery artifact.
+It may become a Business Record, Next Action handoff, or runtime/subagent
+handoff, but it should not bypass Taskplane write gates.
+```
+
+### Wanman-Style Coordination
+
+Reference:
+
+- Current public material is treated as product inspiration rather than a
+  dependency. The useful idea is a matrix/coordination layer that can route work
+  across multiple workers.
+
+Relevant pattern:
+
+- A matrix runtime is useful for delegated missions.
+- It is dangerous if it becomes the product's source of truth.
+
+Taskplane take:
+
+```text
+Taskplane coordination is multi-task / multi-business-line coordination.
+Wanman-style matrix execution is a future runtime backend below Pilot, not the
+default control layer.
+```
+
+### YC Self-Improving Company Frame
+
+Reference:
+
+- User-provided YC notes on AI-native and self-improving companies.
+
+Relevant pattern:
+
+- The durable asset is business context, not the software shell on top.
+- Loops improve when sensors, decisions, tools, gates, and learning are closed.
+
+Taskplane take:
+
+```text
+The product loop is:
+Business Line -> Context -> Next Action -> Runtime Evidence -> Review ->
+Business Record / SOP Revision -> Better Next Action.
+```
+
+Do not overbuild an autonomous company brain. First prove one business line can
+learn from one completed action.
+
+## Revised Architecture Thesis
+
+The previous implementation had two competing instincts:
+
+1. build a full runtime gateway and Agent API/native-agent platform;
+2. ship quickly by leaning on native CLI runtimes.
+
+The revised thesis is a synthesis:
+
+```text
+Taskplane should build a product control plane plus a thin Agent Capability
+Gateway. The gateway routes AI-assisted movements to the user's selected agent
+scheme when that scheme has the required capability. Native CLIs are the first
+production runtimes. Agent API and matrix runtimes remain same-level future
+backends behind explicit capability and evidence gates.
+```
+
+This prevents two failure modes:
+
+- overbuilding a gateway before the product loop is proven;
+- hardcoding Codex/Claude CLI so deeply that future API or matrix backends
+  require another rewrite.
+
+## Agent Capability Stack
+
+Taskplane's bottom-layer agent architecture should be expressed as seven layers.
+
+### Layer 1: Product Control Plane
+
+Owns:
+
+- Business Lines
+- Next Actions / execution carriers
+- Business Records
+- Source Context
+- Decisions
+- SOP revisions
+- Runs, reviews, verification, write gates
+
+This layer is not replaceable by a runtime.
+
+### Layer 2: Agent Capability Gateway
+
+Owns runtime-neutral capability selection:
+
+- user-selected agent scheme;
+- runtime need;
+- capability probe;
+- fallback policy;
+- context manifest;
+- permission/write boundary;
+- evidence contract.
+
+This is not a heavy runtime platform. It is a typed gateway that answers:
+
+```text
+Can the selected scheme safely satisfy this movement now?
+What context is allowed?
+What may it do?
+What evidence must come back?
+What write gate applies?
+```
+
+### Layer 3: Runtime Adapters
+
+Own concrete invocation details:
+
+- Codex CLI adapter;
+- Claude Code adapter;
+- future Agent API adapter;
+- future matrix-runtime adapter.
+
+Adapters may translate Taskplane context into native runtime affordances:
+
+- `AGENTS.md` / project rules;
+- `CLAUDE.md`;
+- native skill references;
+- CLI flags;
+- MCP server availability;
+- hooks;
+- subagent instructions;
+- compact / resume / handoff packets.
+
+Adapters do not own durable Taskplane state.
+
+### Layer 4: Capability Scaffolding
+
+Owns what the selected runtime can access:
+
+- MCP tools;
+- skills;
+- external access connectors;
+- local file scopes;
+- browser / computer-use permissions;
+- hooks and deterministic pre/post checks.
+
+These are mostly global capabilities with per-action and per-business-line
+scope gates. Do not create a full per-business-line MCP/runtime matrix unless a
+real permission problem appears.
+
+### Layer 5: Coordination / Pilot
+
+Owns bounded routing decisions:
+
+- clarify;
+- research;
+- shape;
+- decompose;
+- execute;
+- verify;
+- persist;
+- review;
+- handoff;
+- pause.
+
+Rules are default. AI-assisted routing is allowed only as a bounded movement
+through the Agent Capability Gateway. The selected user agent scheme should be
+preferred when it can satisfy the need. Fallbacks must be explicit and visible.
+
+### Layer 6: Scheduler / Loop Carrier
+
+Owns time/event triggering as a carrier, not product truth:
+
+- sensors;
+- scheduled routines;
+- event triggers;
+- standing approval checks;
+- readiness gates;
+- post-run review triggers.
+
+Scheduler should create or carry business-line Next Actions. It should not
+mutate durable business state without the same write gates as interactive runs.
+
+### Layer 7: Evaluation / Review / Learning
+
+Owns closed-loop improvement:
+
+- interpret runtime evidence;
+- create Business Records;
+- propose or apply Next Actions;
+- propose SOP revisions;
+- send risky changes to Decisions;
+- produce typed handoff packets;
+- update future context only after acceptance.
+
+This layer is the product's main differentiation. Runtime execution is useful,
+but durable learning is the moat.
+
 ## Product Roles
 
 ### 1. Taskplane Control Plane
@@ -269,7 +571,521 @@ Do not promote "API configured" into "API execution ready".
 - Do not hide Agent API entirely; show it as same-level but partial/gated.
 - Do not require API parity before shipping CLI-first execution.
 
-## Step Plan
+## Detailed Step Plan
+
+Use this detailed queue for the next implementation pass. It supersedes the
+legacy coarse goal queue later in this document.
+
+### Architecture Goal 0: Boundary Drift Audit
+
+#### Objective
+
+Audit current code and docs against the seven-layer stack:
+
+- Product Control Plane
+- Agent Capability Gateway
+- Runtime Adapters
+- Capability Scaffolding
+- Pilot / Coordination
+- Scheduler / Loop Carrier
+- Evaluation / Review / Learning
+
+#### Acceptance
+
+- Add or update an implementation drift appendix.
+- Classify each finding as:
+  - aligned;
+  - naming drift;
+  - compatibility adapter;
+  - needs gateway boundary;
+  - needs runtime adapter change;
+  - needs UI wording change;
+  - should not change now.
+- No product behavior changes.
+
+#### Verification
+
+```bash
+rg -n "runtimeMode|DecisionBackend|backendPlan|agent_api|codex|claude|executionRuntime|Pilot|Scheduler|Write Intent|BusinessLineContextPack|handoff|MCP|skills|capability" src/main src/shared src/renderer docs/specs docs/plans
+npm run audit:product-progress -- --next
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 0 only - boundary drift audit.
+
+Read:
+- AGENTS.md
+- docs/specs/goalpilot-task-advancement-framework.md
+- docs/specs/native-agent-runtime-orchestration.md
+- docs/specs/native-agent-capability-mapping.md
+- docs/specs/pilot-decision-contract.md
+- docs/specs/decision-layer-writeback-orchestration.md
+- docs/specs/task-memory-spec.md
+- docs/specs/context-transition-policy.md
+- docs/plans/2026-05-31-runtime-capability-architecture-plan.md
+
+Audit the current implementation against the seven-layer architecture:
+1. Product Control Plane
+2. Agent Capability Gateway
+3. Runtime Adapters
+4. Capability Scaffolding
+5. Pilot / Coordination
+6. Scheduler / Loop Carrier
+7. Evaluation / Review / Learning
+
+Update the plan with an implementation drift appendix. Classify findings as aligned, naming drift, compatibility adapter, needs gateway boundary, needs runtime adapter change, needs UI wording change, or should not change now.
+
+Do not change product behavior. Stop at a checkpoint.
+```
+
+### Architecture Goal 1: Agent Capability Gateway Taxonomy
+
+#### Objective
+
+Introduce the smallest shared taxonomy that prevents `runtimeMode` from being
+used as the answer to every AI capability question.
+
+#### Acceptance
+
+- Shared code distinguishes:
+  - user-selected agent scheme;
+  - runtime need;
+  - execution runtime;
+  - decision backend;
+  - capability probe;
+  - fallback policy;
+  - permission/write gate.
+- The selected user agent scheme is preferred for AI-assisted movement when it
+  can satisfy the required capability.
+- Deterministic rules and human review remain valid non-model control paths.
+- Agent API configuration does not imply task execution readiness.
+- Fallback is explicit, visible, and recorded.
+
+#### Verification
+
+```bash
+npm test -- src/shared src/main/domain/decision src/main/domain/run -t "runtime|backend|Pilot|Agent API|CLI|capability|fallback|selected scheme"
+npm run lint
+npm run build:main
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 1 only - Agent Capability Gateway taxonomy.
+
+Add the smallest shared taxonomy needed to separate:
+- user-selected agent scheme
+- runtime need
+- execution runtime
+- Pilot decision backend
+- provider capability probe
+- fallback policy
+- write/permission gate
+
+Preserve existing behavior. Do not promote Agent API execution. Do not rename user-facing product broadly.
+
+Add focused tests proving:
+- The selected Agent scheme is preferred for AI-assisted movement when capability gates allow it.
+- CLI-first remains the supported production execution path.
+- Agent API remains same-level but gated.
+- Rules/human review remain valid non-model control paths.
+- Fallback is explicit and recorded instead of silently switching schemes.
+
+Run focused tests, lint, build:main, and git diff --check. Stop at a checkpoint.
+```
+
+### Architecture Goal 2: Native CLI Adapter Contract
+
+#### Objective
+
+Make native CLI execution an explicit adapter contract, not ad hoc process
+launching.
+
+#### Acceptance
+
+- Codex CLI and Claude Code share a runtime-neutral run envelope:
+  - business-line scope;
+  - Next Action / one-off carrier;
+  - context manifest;
+  - allowed file/tool/MCP surface;
+  - run steps / evidence stream;
+  - Write Intent output contract;
+  - post-run review hook;
+  - reset / compact / handoff behavior.
+- Adapter output is evidence, never direct product state mutation.
+- RightPanel and Business Next Action execution can explain selected Agent CLI
+  runtime, context pack, business-line owner, carrier, and writeback path.
+- Agent API remains visible as partial/gated when selected.
+
+#### Verification
+
+```bash
+npm test -- src/main/domain/run/run-service.test.ts src/renderer/App.test.tsx src/renderer/pages/BusinessLinesPage.test.tsx -t "business line|runtime|CLI|RightPanel|Next Action|context pack|Write Intent"
+npm run audit:product-progress -- --next
+npm run lint
+npm run build
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 2 only - native CLI adapter contract.
+
+Make native CLI execution an explicit adapter contract:
+- selected CLI runtime
+- businessLineId
+- Next Action / task carrier
+- one-off scope when there is no durable business owner
+- context manifest/context pack
+- allowed tool/file/MCP surface
+- run evidence
+- Write Intent proposal
+- post-run review
+- compact/handoff behavior
+
+Do not broaden Agent API execution. If runtimeMode=api appears, it must remain partial/gated for task execution unless existing readiness gates pass.
+
+Update tests and audit evidence only as needed. Stop at a checkpoint.
+```
+
+### Architecture Goal 3: Capability Scaffolding Surface
+
+#### Objective
+
+Separate global capabilities from scoped runtime access.
+
+#### Acceptance
+
+- MCP, skills, external access, hooks, browser/computer-use, and local file
+  scopes are modeled as capability surfaces.
+- Capability surfaces can be global, but each action/run receives a scoped
+  allowance.
+- Business-line-specific SOP/skills remain business memory, not global runtime
+  configuration.
+- No per-business-line MCP/runtime matrix is introduced unless a real permission
+  boundary requires it.
+
+#### Verification
+
+```bash
+npm test -- src/shared src/main/domain/run src/renderer/App.test.tsx -t "MCP|skills|capability|external access|permission|business line"
+npm run lint
+npm run build:main
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 3 only - capability scaffolding surface.
+
+Separate capability surfaces from runtime state:
+- MCP/tools
+- skills
+- external access
+- hooks
+- browser/computer-use
+- local file scopes
+
+Keep global configuration global, but ensure each action/run receives an explicit scoped allowance. Keep business-line SOP/skills as business memory, not broad runtime configuration.
+
+Do not build a per-business-line MCP/runtime/provider matrix unless a failing test proves the need. Stop at a checkpoint.
+```
+
+### Architecture Goal 4: Handoff And Context Transition Contract
+
+#### Objective
+
+Turn handoff into a typed recovery artifact for cross-session, subagent, and
+runtime transitions.
+
+#### Acceptance
+
+- Handoff packets distinguish:
+  - ephemeral session handoff;
+  - durable business handoff;
+  - Next Action handoff;
+  - runtime/subagent handoff.
+- Handoff includes objective, current state, decisions, constraints, changed
+  files/artifacts, evidence, exclusions, blockers, next step, and writeback
+  target.
+- Handoff never copies raw transcript as product truth.
+- Runtime compact/reset/restart behavior is documented and tested.
+
+#### Verification
+
+```bash
+npm test -- src/shared/context-transition.test.ts src/shared/context-preservation.test.ts src/main/domain/business-line/business-line-service.test.ts src/renderer/App.test.tsx -t "handoff|compact|context transition|business record|Next Action"
+npm run lint
+npm run build:main
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 4 only - handoff and context transition contract.
+
+Make handoff a typed recovery artifact:
+- ephemeral_session_handoff
+- durable_business_handoff
+- next_action_handoff
+- runtime_or_subagent_handoff
+
+Ensure handoff records objective, decisions, constraints, evidence, exclusions, blockers, next step, and writeback target. It must not become a raw transcript dump and must not bypass Taskplane write gates.
+
+Add focused tests and stop at a checkpoint.
+```
+
+### Architecture Goal 5: Bounded Pilot Backend Contract
+
+#### Objective
+
+Ensure coordination can use AI without becoming a hidden persistent agent.
+
+#### Acceptance
+
+- Pilot decision records include operation mode, backend, trigger, max turns,
+  fallback, and executor choice.
+- Rules are default.
+- Bounded AI decision backend uses the selected user agent scheme when supported.
+- Fallback backend is explicit and visible.
+- No persistent Pilot/autopilot loop is introduced.
+
+#### Verification
+
+```bash
+npm test -- src/main/domain/decision src/shared -t "Pilot|DecisionBackend|bounded|product_control_layer|persistent_ai_pilot_reserved|fallback|selected scheme"
+npm run lint
+npm run build:main
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 5 only - bounded Pilot backend contract.
+
+Harden the Pilot decision backend boundary:
+- product_control_layer is default
+- bounded_decision_backend may use selected CLI/API/rules/human review when explicitly selected and capability-gated
+- persistent_ai_pilot_reserved remains future-only
+- backend choice is recorded as evidence, not durable state mutation
+- fallback is explicit, visible, and permissioned
+
+Do not implement persistent Pilot. Do not expand scheduler automation. Stop at a checkpoint.
+```
+
+### Architecture Goal 6: Scheduler Loop Backend Boundary
+
+#### Objective
+
+Clarify scheduler as business-line loop carrier, not product owner.
+
+#### Acceptance
+
+- Scheduled/event/routine tasks resolve business-line owner before durable writes.
+- Scheduler proposals use Decision/Standing Approval gates.
+- CLI-first scheduled execution remains supported.
+- Future API scheduler remains deferred unless existing gates pass.
+- Read-only sensors may create reviewable Business Record candidates.
+- Mutating automations create Next Actions or Decision-gated write proposals.
+
+#### Verification
+
+```bash
+npm test -- src/shared/agent-orchestration.test.ts src/shared/scheduler-decision-proposal.test.ts src/main/domain/business-line/business-line-service.test.ts -t "business-line loop|scheduler|standing approval|scheduled|event|sensor|automation"
+npm run audit:product-progress -- --next
+npm run lint
+npm run build:main
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 6 only - scheduler loop backend boundary.
+
+Ensure scheduler/sensor/automation paths remain business-line loop carriers:
+- resolve businessLineId
+- carry execution through Next Action/task when needed
+- require Standing Approval or Decision gate for mutation
+- keep CLI-first execution supported
+- keep future API scheduler paths deferred unless all readiness gates pass
+
+Do not turn scheduler into a separate product owner. Stop at a checkpoint.
+```
+
+### Architecture Goal 7: Matrix Runtime Boundary
+
+#### Objective
+
+Reserve Wanman-style matrix execution as a future runtime backend, not the
+default Taskplane coordinator.
+
+#### Acceptance
+
+- Matrix runtime is represented as an executor/backend capability, not product
+  owner.
+- It can receive scoped missions with context manifests and write boundaries.
+- It cannot create Business Records, Decisions, SOPs, or completions directly.
+- No matrix runtime is invoked in production paths yet.
+
+#### Verification
+
+```bash
+npm test -- src/shared/agent-orchestration.test.ts src/shared/product-feature-impact-audit.test.ts -t "matrix|wanman|runtime|executor|business line"
+npm run audit:product-progress -- --next
+npm run lint
+npm run build:main
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 7 only - matrix runtime boundary.
+
+Represent Wanman-style matrix execution as a future runtime backend below Pilot:
+- scoped mission
+- context manifest
+- tool/file/MCP surface
+- evidence return
+- Write Intent only
+
+Do not implement matrix execution. Do not turn it into the product coordinator. Stop at a checkpoint.
+```
+
+### Architecture Goal 8: Agent API Deferred Contract Cleanup
+
+#### Objective
+
+Keep Agent API visible and configurable without implying production readiness for
+task execution.
+
+#### Acceptance
+
+- Agent API UI/status distinguishes configured, partial, read-only/proposal-capable, and execution-ready.
+- Product audit remains strict: provider configuration does not equal execution readiness.
+- Right-panel / decomposition / patch apply future API gaps remain explicit until each evidence chain is real.
+- Agent API promotion is per movement and per entrypoint, not global.
+
+#### Verification
+
+```bash
+npm test -- src/shared/product-feature-impact-audit.test.ts src/shared/capability-registry.test.ts src/renderer/App.test.tsx -t "Agent API|runtime|deferred|readiness|configured|promotion"
+node scripts/agent-api-promotion-readiness-smoke.mjs
+node scripts/agent-api-decomposition-promotion-readiness-smoke.mjs
+npm run audit:product-progress -- --next
+npm run lint
+npm run build
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 8 only - Agent API deferred contract cleanup.
+
+Keep Agent API as a same-level future runtime, but make its partial/gated state explicit:
+- configured provider is not execution readiness
+- provider tool/search probe is not task execution readiness
+- right-panel execution, decomposition, scheduler, and patch apply each need separate evidence chains
+
+Do not remove Agent API. Do not promote it globally. Stop at a checkpoint.
+```
+
+### Architecture Goal 9: CLI-First End-To-End Runtime Smoke
+
+#### Objective
+
+Prove the first-version path as a real product loop, not just type boundaries.
+
+#### Acceptance
+
+- A local smoke creates or uses a business line.
+- It creates or selects a Next Action.
+- It routes through selected Agent CLI runtime.
+- It records run evidence.
+- It proposes at least one business-line-native Write Intent.
+- It requires the correct confirmation/Decision gate.
+- It creates review output and a future Next Action or SOP proposal.
+- No Agent API or matrix backend is required.
+
+#### Verification
+
+```bash
+npm test -- src/main/domain/business-line/business-line-service.test.ts src/main/domain/run/run-service.test.ts src/renderer/App.test.tsx -t "business line|CLI|run|review|Write Intent|Next Action"
+npm run audit:product-progress -- --next
+npm run lint
+npm run build
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 9 only - CLI-first end-to-end runtime smoke.
+
+Add or harden a local first-version smoke that proves:
+Business Line -> Next Action -> selected Agent CLI -> run evidence -> Write Intent -> confirmation/Decision gate -> review -> Business Record/SOP/Next Action.
+
+Do not require Agent API. Do not add broad UI polish. Stop at a checkpoint.
+```
+
+### Architecture Goal 10: Closeout Audit
+
+#### Objective
+
+Verify the architecture now supports CLI-first execution while keeping API-later,
+matrix-later, handoff, scheduler, and coordination boundaries clean.
+
+#### Acceptance
+
+- Product audit still reports CLI P0 ready.
+- Business-line-first checks remain ready.
+- Agent API future deferred items are explicit and not confused with first-release blockers.
+- No test expectation still says task-first product ownership.
+- No spec says MCP/skills/external access own business memory.
+- No spec says Pilot/scheduler/matrix runtime owns durable state.
+- Handoff and review create typed recovery/learning artifacts, not transcript dumps.
+
+#### Verification
+
+```bash
+npm run audit:product-progress -- --next
+npm run lint
+npm run build
+git diff --check
+```
+
+#### Codex Prompt
+
+```text
+Goal: Complete Architecture Goal 10 only - closeout audit.
+
+Verify the runtime capability architecture after Goals 0-9:
+- CLI-first execution is the first-release path.
+- Agent API remains same-level but partial/gated.
+- Matrix runtime remains future-only below Pilot.
+- Pilot coordination is bounded and backend-neutral.
+- Scheduler is a business-line loop carrier.
+- Handoff is typed recovery, not raw transcript.
+- Writeback stays product-controlled.
+
+Fix only audit/test/doc drift. Do not start a new feature. Stop at a checkpoint.
+```
+
+## Legacy Coarse Step Plan
+
+The section below is retained as historical context from the earlier, coarser
+runtime plan. Prefer the detailed goals above when creating new Codex goals.
 
 ### Runtime Architecture Goal 0: Capability Boundary Audit
 
@@ -556,7 +1372,7 @@ Verify the runtime capability architecture after Goals 0-5:
 Fix only audit/test/doc drift. Do not start a new feature. Stop at a checkpoint.
 ```
 
-## Recommended Execution Order
+## Legacy Coarse Execution Order
 
 Run these goals in order:
 
