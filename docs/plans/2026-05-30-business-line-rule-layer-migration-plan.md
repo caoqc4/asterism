@@ -208,6 +208,106 @@ Classify each task-first reference as:
 Run the verification commands and stop with a checkpoint.
 ```
 
+### Inventory Checkpoint - 2026-05-30
+
+This checkpoint is inventory-only. It does not rewrite the core specs or change
+runtime behavior. The references below are grouped by rule surface, because many
+`src/shared` matches are implementation fields such as `taskId` and should not be
+treated as product-language drift by themselves.
+
+Classification key:
+
+- `valid execution-unit language`: keep task wording when it names an executable
+  unit, a run target, a child/parent execution relationship, task-scoped files,
+  or legacy task recovery.
+- `product-language drift`: wording makes Task the durable product owner or the
+  default user/agent mental model; migrate to business line, records, next
+  actions, learning, and SOPs.
+- `architecture follow-up`: the wording encodes scheduler, handoff, priority, or
+  writeback behavior that needs a later rule or implementation slice, not only a
+  rename.
+
+Summary:
+
+| Class | Count | Main action |
+| --- | ---: | --- |
+| Valid execution-unit language | 5 | Keep as-is for now; preserve task ids and child tasks as run/write targets. |
+| Product-language drift | 5 | Reframe in Rule Goals 1-3 so Business is durable owner and Task is execution unit. |
+| Architecture follow-up | 7 | Split later scheduler, priority, handoff, memory, and writeback behavior goals. |
+
+#### Valid Execution-Unit Language
+
+| Surface | References | Classification | Action bucket | Notes |
+| --- | --- | --- | --- | --- |
+| Task as Next Action carrier | This plan lines 28-31 and 41-44 | Valid execution-unit language | Keep as-is | The migration plan already says tasks remain execution units and task state should be interpreted as next-action execution state. |
+| Native runtime selected target | `docs/specs/native-agent-runtime-orchestration.md` lines 430-490, 523-533 | Valid execution-unit language | Keep as-is | `taskId`, `parentTaskId`, and selected target validation are still needed for runtime result evidence and reversible write intent. |
+| Shared Write Intent validators | `src/shared/taskplane-write-intent.ts` lines 138-190 | Valid execution-unit language | Keep as-is | These validators guard concrete task-bound write targets. Later business-line write intents should add explicit `businessLineId`, not remove task target checks. |
+| Task files and reserved memory paths | `src/shared/task-memory-path.ts`; `src/shared/runtime-surface-routing.test.ts`; `src/shared/task-memory-write-proposal.test.ts`; `src/shared/task-memory-coverage.test.ts` | Valid execution-unit language | Keep as compatibility | Task files, `Task.md`, and `Task Records/` are still concrete legacy/execution surfaces and need compatibility until business memory write paths are first-class. |
+| Legacy task recovery audit | `src/shared/product-feature-impact-audit.ts` lines 87, 95, 143, 920-958 | Valid execution-unit language | Keep as recoverable compatibility | `historical_task_recovery` is correctly recoverable rather than blocking business-line-first readiness. |
+
+#### Product-Language Drift To Reframe
+
+| Surface | References | Classification | Action bucket | Notes |
+| --- | --- | --- | --- | --- |
+| Native adapter ownership statement | `AGENTS.md` lines 6-15 and 24-35 | Product-language drift | Rename/reframe only in Rule Goal 1 | AGENTS still says Taskplane owns durable task state and GoalPilot is a task router. It should say business-line state, business memory, records, decisions, evidence, and learning are durable owners; task remains execution unit. |
+| GoalPilot title, id, layer, purpose, core question, control sequence | `docs/specs/goalpilot-task-advancement-framework.md` lines 1-23, 53-86, 98-115, 147-165 | Product-language drift | Rule behavior update in Rule Goal 1 | The always-loaded router is task-named and asks for owner task/focus task. It should route business-line advancement first, then choose a Next Action/task when execution is needed. |
+| Shared GoalPilot mirror | `src/shared/task-advancement-framework.ts` lines 1-120 | Product-language drift | Rule Goal 1 test/code mirror update | The shared constant mirrors the spec. When the spec is reframed, this mirror and related tests must update together to keep product/runtime prompts aligned. |
+| Task Memory Spec as primary memory model | `docs/specs/task-memory-spec.md` lines 1-31, 38-67, 86-147, 165-186, 304-370, 381-428, 488-517, 555-650 | Product-language drift | Rule behavior update in Rule Goal 2 | The spec treats Task.md and Task Records as the primary durable memory model. It should introduce Business Records, BusinessLineContextPack, reviews, Learning/SOP revisions, and Next Action execution memory before legacy task memory. |
+| Context transition write surfaces | `docs/specs/context-transition-policy.md` lines 19-33, 49-61, 81-107, 122-130 | Product-language drift | Rule Goal 3 handoff/memory reframe | The policy preserves task-bound chat into Task.md/Task Records by default. It needs a business handoff path, with task handoff retained for active Next Actions and legacy recovery. |
+
+#### Architecture Follow-Ups
+
+| Surface | References | Classification | Action bucket | Notes |
+| --- | --- | --- | --- | --- |
+| Priority and Brief focus | `docs/specs/priority-attention-routing.md` lines 5-20, 41-78 | Architecture follow-up | Priority rule behavior update | The current output is `focusTaskId`. The business-line-first version should rank business lines, record gaps, decisions, and Next Actions, then return an execution task only when a concrete action is selected. |
+| Pilot multi-task coordination | `docs/specs/pilot-decision-contract.md` lines 41-58, 71-93, 110-119, 135-156 | Architecture follow-up | Pilot/priority follow-up | Pilot currently coordinates across tasks and missions. It should coordinate across business lines and next actions while preserving executor task identity for runtime calls. |
+| Decision/writeback owner model | `docs/specs/decision-layer-writeback-orchestration.md` lines 57-66, 108-168, 187-223 | Architecture follow-up | Writeback rule behavior update | The closed loop still names task state, Task.md, Task Records, and task-scoped intents as the product control model. Business records, reviews, SOP revisions, source records, and Next Action creation need explicit Write Intent/writeback targets. |
+| Native runtime state authority | `docs/specs/native-agent-runtime-orchestration.md` lines 30-39, 112-170, 193-370, 430-533 | Architecture follow-up | Runtime identity split | The spec should distinguish business-line source-of-truth identity from execution task identity. Runtime runs can stay task-bound, but context, source ownership, and learning writeback must be business-line-aware. |
+| Scheduler and standing approval | `docs/specs/native-agent-runtime-orchestration.md` lines 791-907; `src/shared/agent-orchestration.ts` lines 796 and 1285; `src/shared/product-feature-impact-audit.ts` lines 728-797 | Architecture follow-up | Scheduler/loop rule goal | Scheduled/event/routine work is currently modeled as scheduled/event tasks. The rule layer should describe business-line automations, sensors, standing approval, run limits, review gates, and loop scheduler health. |
+| Task memory implementation gates | `src/shared/task-memory-coverage.ts`; `src/shared/task-memory-guidance-state.ts`; `src/shared/task-memory-write-proposal.ts`; `src/shared/context-preservation.ts`; `src/shared/auto-context-clear-readiness.ts` | Architecture follow-up | Memory implementation follow-up | These gates correctly protect existing task memory writes. Later implementation should add business memory gates rather than weakening the current task-memory safety checks. |
+| Product compliance/audit matrices | `src/shared/agent-principles-compliance.ts`; `src/shared/product-feature-impact-audit.ts` lines 403, 728-797, 920-958 | Architecture follow-up | Audit follow-up | Compliance evidence still records many task-memory and task-dynamics surfaces. Add a future audit that prevents core rule docs from reintroducing task-first product ownership language while allowing execution-unit `taskId`. |
+
+#### Term Decision Map
+
+Keep these terms when they describe execution infrastructure:
+
+- `taskId`, `parentTaskId`, `child task`, `subtask`, `target task`, and
+  `selected task` for runtime calls, run evidence, write-intent validation,
+  parent/child decomposition, and legacy task recovery.
+- `Task.md`, `Task Records`, `Task Files`, and `Task Dynamics` while referring
+  to existing compatibility surfaces or active Next Action execution memory.
+- `scheduled/event task` only when naming the current implementation boundary or
+  compatibility tests.
+
+Replace or reframe these terms when they describe product ownership:
+
+- `task router` -> `business-line advancement router`.
+- `task memory` as the default durable memory -> `business memory`, `Business
+  Records`, `Learning/SOPs`, and `BusinessLineContextPack`, with task memory as
+  execution/legacy support.
+- `multi-task ranking` -> `business-line and next-action ranking`.
+- `owner task` / `focus task` as the default control object -> `business line`
+  first, then `Next Action` / execution task when needed.
+- `task scheduler` / `scheduled/event task` as the product loop -> business-line
+  loop scheduler, automation, sensor, standing approval, and review gate.
+
+#### Suggested Goal Split
+
+1. Rule Goal 1 should reframe `AGENTS.md`, GoalPilot, and the shared GoalPilot
+   mirror so the always-loaded rule starts from business-line advancement.
+2. Rule Goal 2 should introduce business memory rules before legacy Task.md /
+   Task Records, then map existing task-memory gates to compatibility support.
+3. Rule Goal 3 should split handoff into durable business handoff, next-action
+   execution handoff, session transition, and runtime/subagent handoff.
+4. Rule Goal 4 should migrate Priority/Pilot routing from task queues to
+   business lines, record gaps, decisions, and Next Actions.
+5. Rule Goal 5 should update writeback and runtime orchestration contracts with
+   explicit business-line targets while preserving task/run evidence targets.
+6. Rule Goal 6 should update scheduler language from scheduled/event tasks to
+   business-line loops, sensors, automations, and standing approval gates.
+7. Rule Goal 7 should add audit coverage for task-first rule-layer drift, with
+   allowlists for execution-unit terms.
+
 ## Rule Goal 1: AGENTS And GoalPilot Business Advancement
 
 ### Objective
