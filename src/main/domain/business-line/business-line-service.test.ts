@@ -18,6 +18,8 @@ import { TaskProcessBindingRepository } from '../../db/repositories/task-process
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { formatBusinessLineContextPackForPrompt } from '../../../shared/business-line-context-pack.js';
+import { buildTaskplaneWritebackApprovalItems } from '../../../shared/taskplane-writeback-approval.js';
+import { dispatchTaskplaneWritebackApplyPlan } from '../../../shared/taskplane-writeback-dispatch.js';
 import { makeTempDir } from '../../test-utils.js';
 import { TaskService } from '../task/task-service.js';
 import { BusinessLineService } from './business-line-service.js';
@@ -300,7 +302,7 @@ describe('BusinessLineService', () => {
     });
   });
 
-  it('smoke-tests the business-line-first journey without depending on a task shell', async () => {
+  it('smoke-tests the full business-line architecture learning loop through post-run approval, Decision gates, and Today', async () => {
     const created = await service.create({
       title: 'Migration smoke product',
       goal: 'Prove Business is the primary work owner.',
@@ -308,7 +310,6 @@ describe('BusinessLineService', () => {
       template: 'custom',
       initialRecords: ['Initial market signal should guide execution.'],
       initialNextActions: ['Run the first business-line action.'],
-      proposedSops: ['Use reviewed evidence before ranking the next business-line action.'],
     });
     expect(created.legacyTaskId).toBeNull();
 
@@ -330,47 +331,116 @@ describe('BusinessLineService', () => {
       type: 'progress',
       nextStep: 'Run the first business-line action.',
     });
+    const runPromptContext = formatBusinessLineContextPackForPrompt(initialWorkspace!);
+    expect(runPromptContext).toContain('BusinessLineContextPack');
+    expect(runPromptContext).toContain('Run the first business-line action.');
 
+    const runtimeOutput = JSON.stringify({
+      type: 'TASKPLANE_WRITE_INTENTS',
+      intents: [
+        {
+          type: 'business_record.create',
+          summary: 'Runtime evidence changed the business-line recommendation.',
+          recordType: 'result',
+          shouldAffectFutureContext: true,
+          confidence: 86,
+        },
+        {
+          type: 'business_next_action.create',
+          title: 'Follow the runtime evidence',
+          nextStep: 'Follow the runtime evidence with the next business action.',
+          summary: 'The approved runtime writeback created the next executable carrier.',
+        },
+        {
+          type: 'business_sop_revision.propose',
+          nextContent: 'When runtime evidence changes priority, cite the approved business record before suggesting the next action.',
+          changeReason: 'Runtime evidence changed priority.',
+          requiresDecision: false,
+        },
+      ],
+    });
     const runRepository = new RunRepository();
     const run = await runRepository.create({
       taskId: initialAction.id,
       businessLineId: created.id,
       type: 'agent',
-      instructions: 'Execute the first business-line action.',
+      instructions: `Execute the first business-line action.\n\n${runPromptContext}`,
     });
-    await runRepository.updateResult(
+    const completedRun = await runRepository.updateResult(
       run.id,
       'completed',
-      'Execution produced a reviewed business outcome.',
-      'system',
+      runtimeOutput,
+      'ai',
     );
+    expect(completedRun.instructions).toContain('BusinessLineContextPack');
+    expect(completedRun.businessLineId).toBe(created.id);
     await new TaskRepository().transition({ id: initialAction.id, nextState: 'completed' });
+
+    const approvalItems = buildTaskplaneWritebackApprovalItems({
+      runDetails: [completedRun],
+      taskId: initialAction.id,
+      taskTitle: initialAction.title,
+    });
+    expect(approvalItems.filter((item) => item.kind === 'business_line').map((item) => item.plan.action)).toEqual([
+      'business_record.create',
+      'business_next_action.create',
+      'business_sop_revision.propose',
+    ]);
+    for (const item of approvalItems.filter((candidate) => candidate.kind === 'business_line')) {
+      await expect(dispatchTaskplaneWritebackApplyPlan({
+        taskId: initialAction.id,
+        plan: item.plan,
+        ports: {
+          createBusinessLineRecord: (input) => service.createBusinessLineRecord(input),
+          createBusinessLineNextAction: (input) => service.createBusinessLineNextAction(input),
+          proposeBusinessLineSopRevision: (input) => service.proposeBusinessLineSopRevision(input),
+          recordTimelineEvent: (taskId, type, payload) => taskService.recordTimelineEvent({ taskId, type, payload }),
+        },
+      })).resolves.toMatchObject({
+        action: item.plan.action,
+        status: 'completed',
+      });
+    }
+
+    const afterWriteback = await service.getWorkspace(created.id);
+    const writebackAction = afterWriteback!.nextActions.find((action) =>
+      action.nextStep === 'Follow the runtime evidence with the next business action.')!;
+    const nonRiskyRevision = afterWriteback!.learning.skillRevisions.find((revision) =>
+      revision.nextContent === 'When runtime evidence changes priority, cite the approved business record before suggesting the next action.')!;
+    expect(afterWriteback?.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'result',
+        linkedActionId: initialAction.id,
+        summary: 'Runtime evidence changed the business-line recommendation.',
+      }),
+    ]));
+    expect(writebackAction).toMatchObject({
+      businessLineId: created.id,
+      parentTaskId: null,
+    });
+    expect(nonRiskyRevision).toMatchObject({
+      businessLineId: created.id,
+      status: 'proposed',
+    });
 
     const reviewed = await service.recordReview({
       businessLineId: created.id,
       sourceActionId: initialAction.id,
       sourceRunId: run.id,
-      resultSummary: 'Completed action changed the next business recommendation.',
+      resultSummary: 'Post-run review recorded the approved runtime outcome.',
       evidenceItems: [`Run ${run.id} completed.`],
       recordSuggestions: [{
         type: 'result',
         source: `run:${run.id}`,
-        summary: 'Execution evidence supports a new next action.',
+        summary: 'Review confirmed that approved runtime evidence should shape future context.',
         confidence: 84,
         shouldAffectFutureContext: true,
       }],
-      nextActionSuggestions: ['Follow the reviewed result with the next business action.'],
-      skillUpdateSuggestions: ['When execution changes priority, cite the reviewed result before suggesting the next action.'],
+      skillUpdateSuggestions: ['Change pricing and publishing policy without further review.'],
       confidence: 84,
+      requiresDecision: true,
     });
 
-    const reviewedAction = reviewed.nextActions.find((action) =>
-      action.nextStep === 'Follow the reviewed result with the next business action.')!;
-    expect(reviewedAction).toMatchObject({
-      businessLineId: created.id,
-      parentTaskId: null,
-    });
-    expect(reviewed.nextActions.map((action) => action.id)).not.toContain(initialAction.id);
     expect(reviewed.records).toEqual(expect.arrayContaining([
       expect.objectContaining({
         type: 'review',
@@ -381,33 +451,27 @@ describe('BusinessLineService', () => {
         type: 'result',
         linkedActionId: initialAction.id,
         source: `run:${run.id}`,
+        summary: 'Review confirmed that approved runtime evidence should shape future context.',
       }),
     ]));
 
     const accepted = await service.acceptSkillRevision({
-      revisionId: reviewed.learning.skillRevisions.find((revision) =>
-        revision.nextContent === 'When execution changes priority, cite the reviewed result before suggesting the next action.')!.id,
+      revisionId: nonRiskyRevision.id,
       approvedBy: 'tester',
     });
-    expect(accepted.learning.acceptedSkills[0]?.nextContent).toContain('cite the reviewed result');
+    expect(accepted.learning.acceptedSkills[0]?.nextContent).toContain('approved business record');
 
     const changedToday = await service.listTodaySuggestions();
     expect(changedToday[0]).toMatchObject({
       businessLineId: created.id,
-      taskId: reviewedAction.id,
+      taskId: writebackAction.id,
       type: 'progress',
-      nextStep: 'Follow the reviewed result with the next business action.',
+      nextStep: 'Follow the runtime evidence with the next business action.',
     });
     expect(changedToday[0]?.taskId).not.toBe(initialAction.id);
-    expect(changedToday[0]?.sourceRecords.join(' ')).toContain('cite the reviewed result');
+    expect(changedToday[0]?.sourceRecords.join(' ')).toContain('approved business record');
 
-    const riskyReview = await service.recordReview({
-      businessLineId: created.id,
-      resultSummary: 'Risky learning should wait for a Decision.',
-      skillUpdateSuggestions: ['Change pricing and publishing policy without further review.'],
-      requiresDecision: true,
-    });
-    const riskyRevision = riskyReview.learning.skillRevisions.find((revision) =>
+    const riskyRevision = reviewed.learning.skillRevisions.find((revision) =>
       revision.nextContent === 'Change pricing and publishing policy without further review.')!;
     expect(decisionService.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'policy_change',
@@ -420,6 +484,10 @@ describe('BusinessLineService', () => {
       revisionId: riskyRevision.id,
       approvedBy: 'tester',
     })).rejects.toThrow(/requires an approved Decision/);
+    const finalWorkspace = await service.getWorkspace(created.id);
+    const finalContext = formatBusinessLineContextPackForPrompt(finalWorkspace!);
+    expect(finalContext).toContain('approved business record');
+    expect(finalContext).not.toContain('Change pricing and publishing policy without further review.');
   });
 
   it('accepts non-risky skill revisions inline', async () => {

@@ -65,6 +65,24 @@ describe('product feature impact audit', () => {
     expect(learningLoop?.evidence.join(' ')).toContain('next Today suggestion changes');
   });
 
+  it('keeps business-line architecture readiness distinct from future API deferred paths', () => {
+    expect(findBusinessLineFirstProductAuditIssues()).toEqual([]);
+    expect(findBusinessLineFirstRuleLayerAuditIssues(readBusinessLineFirstRuleDocs())).toEqual([]);
+    expect(findBusinessLineFirstImplementationAuditIssues(readBusinessLineFirstImplementationSources())).toEqual([]);
+
+    const futureDeferred = PRODUCT_FEATURE_IMPACT_AUDIT
+      .filter((item) => item.futureApiClosure === 'partial')
+      .map((item) => item.id);
+    expect(futureDeferred).toEqual(expect.arrayContaining([
+      'right_panel_agent_run',
+      'task_creation_and_project_decomposition',
+      'decisions_checkpoints_completion',
+      'task_files_artifacts_local_writes',
+      'capabilities_external_skills_mcp',
+    ]));
+    expect(BUSINESS_LINE_FIRST_PRODUCT_AUDIT.find((check) => check.id === 'learning_loop_smoke')?.status).toBe('ready');
+  });
+
   it('audits core rule docs for business-line-first readiness without banning task execution language', () => {
     expect(BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT.map((check) => check.id)).toEqual([
       'agents_business_line_owner',
