@@ -77,7 +77,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     status: 'partial',
     priority: 'p0',
     implementedBy: [
-      'TASKPLANE_CORE_AGENT_CONTEXT injects the always-loaded GoalPilot Task Advancement Framework into chat, decomposition, TextExecutor, and working context flows while phase-specific specs remain on-demand.',
+      'TASKPLANE_CORE_AGENT_CONTEXT injects the always-loaded GoalPilot Business Advancement Framework into chat, decomposition, TextExecutor, and working context flows while phase-specific specs remain on-demand.',
       'BriefAttentionBoundary keeps Brief as a capped attention projection over shared priority ordering, not an independent task-management surface.',
       'HomeBriefData exposes BriefAttentionBoundary lanes and reasons beside recommendedActions while retaining the existing Brief layout contract.',
       'BriefFocusProjection keeps Brief task-card inclusion, de-duplication, and parent/child filtering in shared projection data instead of page-local ordering logic.',

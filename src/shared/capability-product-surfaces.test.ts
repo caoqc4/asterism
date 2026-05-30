@@ -41,7 +41,7 @@ describe('capability product surfaces', () => {
     expect(PRODUCT_RUNTIME_RULE_ITEMS).toHaveLength(9);
     expect(PRODUCT_RUNTIME_RULE_ITEMS[0]).toMatchObject({
       id: 'goalpilot.task_router',
-      name: 'GoalPilot Task Router',
+      name: 'GoalPilot Business Advancement Router',
       path: 'docs/specs/goalpilot-task-advancement-framework.md',
     });
     expect(PRODUCT_RUNTIME_RULE_ITEMS.map((rule) => rule.id)).toEqual([

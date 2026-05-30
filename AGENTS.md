@@ -4,16 +4,17 @@ This file is a thin native Codex CLI adapter. It points Codex to Taskplane's
 canonical runtime rules without duplicating long specs.
 
 Taskplane is the product control layer. Native CLIs execute work and return
-evidence; Taskplane owns durable task state, task memory, source context,
-decisions, verification, and write gates.
+evidence; Taskplane owns durable business-line state, business memory, records,
+decisions, source context, verification, learning, and write gates. Tasks remain
+execution units and Next Action carriers inside that control layer.
 
 ## Always Read
 
 - `docs/specs/goalpilot-task-advancement-framework.md`
 
-GoalPilot is the always-loaded task router. Use it to choose the smallest useful
-movement: clarify, research, shape, decompose, execute, verify, persist, hand
-off, or pause.
+GoalPilot is the always-loaded business-line advancement router. Use it to
+choose the smallest useful movement: clarify, research, shape, create a business
+line, choose a Next Action, execute, review, persist, learn, hand off, or pause.
 
 ## Load On Demand
 

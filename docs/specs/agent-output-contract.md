@@ -81,7 +81,7 @@ Taskplane should choose the surface before rendering content:
 
 ### Advancement Move Output Contracts
 
-Use this section after the GoalPilot Task Advancement Framework chooses the
+Use this section after the GoalPilot Business Advancement Framework chooses the
 primary movement. These contracts define output shape; they do not decide the
 movement.
 

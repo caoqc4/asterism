@@ -63,6 +63,26 @@ Use these rules whenever a goal requires a design choice.
    Do not rely on prose alone for durable writes, risky activations, context
    clearing, external effects, scheduler starts, or cross-business reuse.
 
+7. Separate product semantics from naming/brand migration.
+   This migration should change what the rules mean, not rename the product.
+   Treat `GoalPilot` as a provisional internal name for the always-loaded router
+   until a dedicated naming goal exists. Do not combine business-line-first rule
+   migration with broad file, module, document-id, or UI brand renames.
+
+## Naming Boundary
+
+`GoalPilot` may be renamed later. That decision is intentionally out of scope for
+these rule goals.
+
+During this migration:
+
+- keep `GoalPilot` references when they identify the always-loaded routing layer;
+- reframe `GoalPilot` from task advancement to business-line advancement;
+- avoid broad rename churn in filenames, module names, document ids, tests, and
+  snapshots unless a directly edited user-facing label is actively misleading;
+- if a name is confusing but not blocking, add a short note that the name is
+  provisional and leave final naming to a later Brand/Naming goal.
+
 ## How To Run This With Codex
 
 Run one goal at a time. After each goal, ask Codex for:
@@ -106,6 +126,8 @@ Known rule-layer gaps:
 
 - `AGENTS.md` still describes Taskplane as owning durable task state first;
 - `GoalPilot Task Advancement Framework` is still task-named and task-scoped;
+- `GoalPilot` is still the provisional router name; this is acceptable during
+  rule migration and should not trigger a broad rename;
 - `Task Memory Spec` still treats Task.md and Task Records as the primary
   durable memory model;
 - `Priority Attention Routing` still ranks active tasks rather than business
@@ -134,7 +156,9 @@ This rule-layer migration is done when:
 - writeback rules route business records, reviews, next actions, SOP
   revisions, source contexts, artifacts, and decisions through service gates;
 - audit/tests can catch regressions where core specs reintroduce task-first
-  language as the product default.
+  language as the product default;
+- any later product or router naming change is captured as a separate
+  Brand/Naming goal rather than mixed into the rule-layer migration.
 
 ## Rule Goal 0: Inventory And Drift Map
 
@@ -323,9 +347,10 @@ Update only:
 - `docs/specs/goalpilot-task-advancement-framework.md`;
 - directly related tests or references.
 
-Do not rename files unless the change is low-risk and all references are
-updated. It is acceptable for the file path to remain task-named during this
-slice if the content clearly states the new business-line-first model.
+Do not broadly rename `GoalPilot`, files, document ids, modules, or UI brand
+labels in this slice. It is acceptable for the file path and router name to
+remain task-named or GoalPilot-named during this migration if the content clearly
+states the new business-line-first model.
 
 ### Required Behavior
 
@@ -345,6 +370,8 @@ slice if the content clearly states the new business-line-first model.
 - The spec still preserves small-movement routing and does not become a bulky
   total manual.
 - Existing references to GoalPilot remain valid.
+- GoalPilot is treated as a provisional internal router name, not a final brand
+  decision.
 
 ### Verification
 
@@ -368,11 +395,13 @@ Requirements:
 - Business line is the durable owner.
 - Task is the execution unit / Next Action carrier.
 - GoalPilot remains small and always-loaded.
+- Do not broadly rename GoalPilot yet. Treat GoalPilot as the provisional
+  internal name for the always-loaded business-line advancement router.
 - Preserve the phase-loaded rule hierarchy.
 - Add business-line situations: creation, Today suggestion, Next Action
   execution, review, learning/SOP update, scheduler loop, and legacy recovery.
 
-Do not perform runtime architecture changes.
+Do not perform runtime architecture changes or broad brand/file/module renames.
 Run verification and stop with a checkpoint.
 ```
 
@@ -734,7 +763,9 @@ Update:
 
 Do not make the audit brittle by banning all uses of the word "task". Task is
 still a valid execution unit. The audit should catch task-first ownership
-language in the always-loaded and core rule docs.
+language in the always-loaded and core rule docs. The audit should not require a
+final product/router rename; `GoalPilot` remains an allowed provisional router
+name until a dedicated Brand/Naming goal changes it.
 
 ### Required Behavior
 
@@ -747,6 +778,8 @@ Audit checks should assert:
 - Priority routing includes business-line attention;
 - Scheduler/orchestration includes business-line loops;
 - legacy task recovery remains documented.
+- `GoalPilot` naming is not treated as drift by itself when the surrounding rule
+  language is business-line-first.
 
 ### Acceptance
 
@@ -754,6 +787,8 @@ Audit checks should assert:
   ownership drift.
 - `businessLineFirst readiness` remains ready.
 - A missing required rule-layer section produces a clear failure.
+- The audit allows provisional `GoalPilot` naming while failing task-first
+  product ownership language.
 
 ### Verification
 
@@ -770,6 +805,9 @@ Goal: Complete Rule Goal 7 only - add product audit coverage for
 business-line-first rule-layer readiness.
 
 Do not ban all task language. Task remains valid as an execution unit.
+Do not fail or rename provisional GoalPilot naming by itself; fail only when the
+surrounding rule language makes Task the durable product owner or default mental
+model.
 
 Required audit checks:
 - AGENTS uses business-line durable ownership language;

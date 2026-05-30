@@ -70,9 +70,9 @@ export const DEFAULT_SKILL_CATALOGUE_ITEMS: DefaultSkillCatalogueItem[] = [
 export const PRODUCT_RUNTIME_RULE_ITEMS: ProductRuntimeRuleItem[] = [
   {
     id: 'goalpilot.task_router',
-    name: 'GoalPilot Task Router',
+    name: 'GoalPilot Business Advancement Router',
     invokeId: 'goalpilot.task_router',
-    desc: '任务推进总则：判断目标、阶段、下一步、上下文清洁度，并索引需要按需加载的规则或工具。',
+    desc: '业务线推进总则：判断业务线、Next Action、阶段、上下文清洁度，并索引需要按需加载的规则或工具。',
     layer: 'Always-loaded router',
     load: '每次 Taskplane 控制的 Agent runtime 上下文都会加载',
     enforcement: 'Prompt rule + product routing gates',

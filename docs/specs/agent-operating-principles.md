@@ -10,8 +10,8 @@ Authority: required when loaded; deterministic gates still enforce must-follow r
 ## Purpose
 
 This document classifies the Agent Operating Principles in the Taskplane runtime
-layer stack. It is not the always-loaded task router. GoalPilot decides when
-these execution rules are relevant.
+layer stack. It is not the always-loaded business-line advancement router.
+GoalPilot decides when these execution rules are relevant.
 
 The runtime prompt copy currently lives in
 `src/shared/agent-principles.ts` so product tests can verify the exact injected
@@ -37,7 +37,8 @@ needs execution-level constraints.
 
 ## Relationship To Other Specs
 
-- GoalPilot is always loaded and routes the task movement.
+- GoalPilot is always loaded and routes business-line advancement before
+  execution rules take over.
 - Agent Output Contract loads when the movement renders user-visible or
   product-surface output.
 - Task Memory Spec loads when the movement reads, writes, clears, or evaluates
