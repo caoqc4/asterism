@@ -124,7 +124,8 @@ function normalizeRevisionStatus(value: string | null | undefined): BusinessLine
     value === 'active' ||
     value === 'rejected' ||
     value === 'disabled' ||
-    value === 'superseded'
+    value === 'superseded' ||
+    value === 'expired'
   ) {
     return value;
   }

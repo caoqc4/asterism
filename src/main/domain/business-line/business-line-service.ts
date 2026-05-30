@@ -236,9 +236,8 @@ export class BusinessLineService {
         needsReview,
       };
     });
-    const acceptedSkills = enrichedSkillRevisions.filter((revision) =>
-      revision.status === 'active' && !revision.isExpired);
-    const latestRecords = memoryRecords.filter((record) => record.shouldAffectFutureContext).slice(0, 10);
+    const acceptedSkills = this.acceptedContextSkills(enrichedSkillRevisions);
+    const latestRecords = this.futureContextRecords(memoryRecords).slice(0, 10);
     const missingContext = this.deriveMissingContext({
       businessLine,
       nextActions,
@@ -733,7 +732,7 @@ export class BusinessLineService {
         source: `business_line:${params.sourceBusinessLine!.id}:structure`,
         summary: item.summary,
         confidence: item.confidence,
-        shouldAffectFutureContext: true,
+        shouldAffectFutureContext: false,
       });
     }
     for (const item of initialRecords) {
@@ -824,6 +823,15 @@ export class BusinessLineService {
   private async inheritedActiveSops(businessLine: BusinessLine): Promise<BusinessLineSkillRevision[]> {
     return (await this.businessLineRepository.listSkillRevisions(businessLine.id))
       .filter((revision) => revision.status === 'active' && !isPastIso(revision.expiresAt));
+  }
+
+  private acceptedContextSkills<T extends BusinessLineSkillRevision>(revisions: T[]): T[] {
+    return revisions.filter((revision) =>
+      revision.status === 'active' && !isPastIso(revision.expiresAt));
+  }
+
+  private futureContextRecords(records: BusinessLineRecord[]): BusinessLineRecord[] {
+    return records.filter((record) => record.shouldAffectFutureContext);
   }
 
   private async activeSkillRevisionForScope(

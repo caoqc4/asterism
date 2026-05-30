@@ -1,7 +1,9 @@
 import fs from 'node:fs';
+import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { closeDatabase, setDatabaseUserDataPathForTests } from '../../db/client.js';
+import { closeDatabase, initDatabase, setDatabaseUserDataPathForTests } from '../../db/client.js';
+import { businessLineSkillRevisions } from '../../db/schema.js';
 import { BusinessLineRepository } from '../../db/repositories/business-line-repository.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
@@ -790,8 +792,11 @@ describe('BusinessLineService', () => {
       expect.objectContaining({
         source: `business_line:${source.id}:structure`,
         summary: expect.stringContaining('Structure:'),
+        shouldAffectFutureContext: false,
       }),
     ]));
+    expect(workspace?.contextPack.latestRecords.map((record) => record.source))
+      .not.toContain(`business_line:${source.id}:structure`);
     expect(workspace?.learning.acceptedSkills).toHaveLength(0);
     expect(workspace?.contextPack.acceptedSkills).toHaveLength(0);
     expect(workspace?.records.some((record) => record.type === 'rule')).toBe(false);
@@ -802,6 +807,88 @@ describe('BusinessLineService', () => {
         changeReason: 'Inherited from Source web product; explicit acceptance required before active use.',
       }),
     ]));
+  });
+
+  it('keeps non-future records and inactive or expired SOP revisions out of the default context pack', async () => {
+    const created = await service.create({
+      title: 'Context boundary line',
+      goal: 'Only approved and eligible memory reaches context.',
+      kind: 'software_product',
+    });
+    const futureRecord = await businessLineRepository.createRecord({
+      businessLineId: created.id,
+      type: 'signal',
+      source: 'manual:future',
+      summary: 'Future eligible business record.',
+      shouldAffectFutureContext: true,
+    });
+    const evidenceOnlyRecord = await businessLineRepository.createRecord({
+      businessLineId: created.id,
+      type: 'signal',
+      source: 'manual:evidence_only',
+      summary: 'Evidence-only business record.',
+      shouldAffectFutureContext: false,
+    });
+    const acceptedReview = await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'Accepted SOP emerged.',
+      skillUpdateSuggestions: ['Use only non-expired accepted SOPs in context.'],
+    });
+    const accepted = await service.acceptSkillRevision({
+      revisionId: acceptedReview.learning.skillRevisions[0]!.id,
+      approvedBy: 'tester',
+    });
+    const acceptedRevision = accepted.learning.acceptedSkills[0]!;
+    await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'Proposed SOP should stay evidence-only.',
+      skillUpdateSuggestions: ['Proposed SOP should not enter context.'],
+    });
+    const rejectedReview = await service.recordReview({
+      businessLineId: created.id,
+      resultSummary: 'Rejected SOP should stay evidence-only.',
+      skillUpdateSuggestions: ['Rejected SOP should not enter context.'],
+    });
+    const rejectedRevision = rejectedReview.learning.skillRevisions.find((revision) =>
+      revision.nextContent === 'Rejected SOP should not enter context.')!;
+    await service.rejectSkillRevision({
+      revisionId: rejectedRevision.id,
+      rejectedBy: 'tester',
+    });
+
+    const beforeExpiry = await service.getWorkspace(created.id);
+    expect(beforeExpiry?.records.map((record) => record.id)).toEqual(expect.arrayContaining([
+      futureRecord.id,
+      evidenceOnlyRecord.id,
+    ]));
+    expect(beforeExpiry?.contextPack.latestRecords.map((record) => record.id)).toContain(futureRecord.id);
+    expect(beforeExpiry?.contextPack.latestRecords.map((record) => record.id)).not.toContain(evidenceOnlyRecord.id);
+    expect(beforeExpiry?.contextPack.acceptedSkills.map((revision) => revision.nextContent)).toEqual([
+      'Use only non-expired accepted SOPs in context.',
+    ]);
+    expect(beforeExpiry?.contextPack.acceptedSkills.map((revision) => revision.nextContent))
+      .not.toContain('Proposed SOP should not enter context.');
+    expect(beforeExpiry?.contextPack.acceptedSkills.map((revision) => revision.nextContent))
+      .not.toContain('Rejected SOP should not enter context.');
+
+    await initDatabase()
+      .update(businessLineSkillRevisions)
+      .set({
+        expiresAt: '2000-01-01T00:00:00.000Z',
+      })
+      .where(eq(businessLineSkillRevisions.id, acceptedRevision.id));
+
+    const afterExpiry = await service.getWorkspace(created.id);
+    const expiredRevision = afterExpiry?.learning.skillRevisions.find((revision) =>
+      revision.id === acceptedRevision.id);
+    expect(expiredRevision).toMatchObject({
+      status: 'active',
+      isExpired: true,
+    });
+    expect(afterExpiry?.learning.acceptedSkills.map((revision) => revision.id))
+      .not.toContain(acceptedRevision.id);
+    expect(afterExpiry?.contextPack.acceptedSkills.map((revision) => revision.id))
+      .not.toContain(acceptedRevision.id);
   });
 
   it('routes risky canonical business-line learning through a global Decision', async () => {

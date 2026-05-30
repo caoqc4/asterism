@@ -17,7 +17,13 @@ export type BusinessLineRecordType =
   | 'review'
   | 'rule';
 
-export type BusinessLineSkillRevisionStatus = 'proposed' | 'active' | 'rejected' | 'disabled' | 'superseded';
+export type BusinessLineSkillRevisionStatus =
+  | 'proposed'
+  | 'active'
+  | 'rejected'
+  | 'disabled'
+  | 'superseded'
+  | 'expired';
 
 export type BusinessLineSkillRevisionApprovalSourceType = 'operator' | 'decision' | 'rollback';
 
