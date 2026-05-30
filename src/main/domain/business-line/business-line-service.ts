@@ -58,6 +58,30 @@ function isPastIso(value: string | null | undefined, now = new Date()): boolean 
   return Number.isFinite(parsed) && parsed <= now.getTime();
 }
 
+type ScoredBusinessLineSuggestion = {
+  suggestion: BusinessLineTodaySuggestion;
+  score: number;
+  updatedAt: string;
+};
+
+function sourceRecordIds(records: BusinessLineRecord[], limit = 3): string[] {
+  return records
+    .map((record) => record.id)
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function sourceRecordSummaries(records: BusinessLineRecord[], limit = 3): string[] {
+  return records
+    .map((record) => record.summary)
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function clampConfidence(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
 export class BusinessLineService {
   constructor(
     private readonly businessLineRepository: BusinessLineRepository,
@@ -188,14 +212,15 @@ export class BusinessLineService {
     return {
       businessLine,
       overview: {
-        nextSuggestion: this.suggestionForBusinessLine(
+        nextSuggestion: this.suggestionForBusinessLine({
           businessLine,
           nextActions,
-          memoryRecords,
-          sourceRecords.length,
-          blockedDecisions.length,
-          acceptedSkills,
-        ),
+          records: memoryRecords,
+          sourceRecordCount: sourceRecords.length,
+          pendingDecisionCount: blockedDecisions.length,
+          activeSkills: acceptedSkills,
+          stableOrder: 0,
+        })?.suggestion ?? null,
         recentChanges: contextPack.recentChanges,
         blockedDecisions,
         missingContext,
@@ -220,13 +245,19 @@ export class BusinessLineService {
       this.businessLineRepository.list(),
       this.taskService.list(),
     ]);
-    const suggestions = await Promise.all(businessLines.map(async (businessLine) => {
-      const [records, reviews, skillRevisions, decisions] = await Promise.all([
+    const decisions = await this.decisionService.list();
+    const scoredSuggestions = await Promise.all(businessLines.map(async (businessLine, index) => {
+      const [nativeRecords, reviews, skillRevisions] = await Promise.all([
         this.businessLineRepository.listRecords(businessLine.id, 10),
         this.businessLineRepository.listReviews(businessLine.id),
         this.businessLineRepository.listSkillRevisions(businessLine.id),
-        this.decisionService.list(),
       ]);
+      const memoryRecords = await this.memoryRecordsForBusinessLine({
+        businessLine,
+        nativeRecords,
+        reviews,
+        decisions,
+      });
       const reviewIds = new Set(reviews.map((review) => review.id));
       const sourceRecordCount = businessLine.legacyTaskId
         ? (await this.taskService.getDetail(businessLine.legacyTaskId))?.sourceContexts.length ?? 0
@@ -237,17 +268,23 @@ export class BusinessLineService {
       const reviewDecisionCount = decisions.filter((decision) =>
         decision.status === 'pending' && decision.sourceId && reviewIds.has(decision.sourceId)).length;
       const pendingDecisionCount = taskDecisionCount + reviewDecisionCount;
-      return this.suggestionForBusinessLine(
+      return this.suggestionForBusinessLine({
         businessLine,
-        await this.nextActionsForBusinessLine(businessLine, tasks),
-        records,
+        nextActions: await this.nextActionsForBusinessLine(businessLine, tasks),
+        records: memoryRecords,
         sourceRecordCount,
         pendingDecisionCount,
-        skillRevisions.filter((revision) => revision.status === 'active' && !isPastIso(revision.expiresAt)),
-      );
+        activeSkills: skillRevisions.filter((revision) => revision.status === 'active' && !isPastIso(revision.expiresAt)),
+        stableOrder: index,
+      });
     }));
-    return suggestions
-      .filter((suggestion): suggestion is BusinessLineTodaySuggestion => Boolean(suggestion))
+    return scoredSuggestions
+      .filter((item): item is ScoredBusinessLineSuggestion => Boolean(item))
+      .sort((left, right) =>
+        right.score - left.score
+        || right.updatedAt.localeCompare(left.updatedAt)
+        || left.suggestion.businessLineId.localeCompare(right.suggestion.businessLineId))
+      .map((item) => item.suggestion)
       .slice(0, 8);
   }
 
@@ -832,65 +869,158 @@ export class BusinessLineService {
     ].filter((item): item is string => Boolean(item)).slice(0, 4);
   }
 
-  private suggestionForBusinessLine(
-    businessLine: BusinessLine,
-    nextActions: TaskListItemRecord[],
-    records: BusinessLineRecord[],
-    sourceRecordCount: number,
-    pendingDecisionCount: number,
-    activeSkills: BusinessLineSkillRevision[] = [],
-  ): BusinessLineTodaySuggestion | null {
+  private suggestionForBusinessLine(params: {
+    businessLine: BusinessLine;
+    nextActions: TaskListItemRecord[];
+    records: BusinessLineRecord[];
+    sourceRecordCount: number;
+    pendingDecisionCount: number;
+    activeSkills?: BusinessLineSkillRevision[];
+    stableOrder: number;
+  }): ScoredBusinessLineSuggestion | null {
+    const activeSkills = params.activeSkills ?? [];
     const activeSkill = activeSkills[0] ?? null;
-    if (nextActions[0]) {
-      const task = nextActions[0];
+    const latestContextRecords = params.records
+      .filter((record) => record.shouldAffectFutureContext)
+      .slice(0, 3);
+    const latestRecord = latestContextRecords[0] ?? params.records[0] ?? null;
+    const latestReview = params.records.find((record) => record.type === 'review') ?? null;
+    const pendingDecisionRecord = params.records.find((record) =>
+      record.type === 'decision' && record.summary.includes('(pending)')) ?? null;
+
+    if (params.nextActions[0]) {
+      const task = params.nextActions[0];
+      const sourceIds = [
+        activeSkill?.sourceReviewId ? `review:${activeSkill.sourceReviewId}` : null,
+        pendingDecisionRecord?.id ?? null,
+        ...sourceRecordIds(latestContextRecords),
+      ].filter((item): item is string => Boolean(item));
+      const sourceLabels = [
+        activeSkill?.nextContent,
+        pendingDecisionRecord?.summary,
+        ...sourceRecordSummaries(latestContextRecords),
+        params.sourceRecordCount > 0 ? `${params.sourceRecordCount} source records on the legacy task` : null,
+      ].filter((item): item is string => Boolean(item));
+      const whyNow = task.activeBlocker
+        ? `Current blocker: ${task.activeBlocker.title}`
+        : task.waitingReason
+        ? `Waiting reason: ${task.waitingReason}`
+        : params.pendingDecisionCount > 0
+        ? 'A pending Decision affects this business line before or during the next action.'
+        : activeSkill
+        ? `Accepted learning should shape this action: ${activeSkill.nextContent}`
+        : latestReview
+        ? `Recent review changed the next action context: ${latestReview.summary}`
+        : task.nextStep ?? 'This is the current open next action for the business line.';
+      const effortLevel = task.activeBlocker || task.riskLevel === 'high'
+        ? 'high'
+        : task.riskLevel === 'medium' || task.waitingReason
+        ? 'medium'
+        : 'low';
       return {
-        id: `business-line-progress:${businessLine.id}:${task.id}`,
-        type: 'progress',
-        businessLineId: businessLine.id,
-        businessLineTitle: businessLine.title,
-        whyNow: task.activeBlocker
-          ? `Current blocker: ${task.activeBlocker.title}`
-          : task.waitingReason
-          ? `Waiting reason: ${task.waitingReason}`
-          : activeSkill
-          ? `Accepted learning should shape this action: ${activeSkill.nextContent}`
-          : task.nextStep ?? 'This is the current open next action for the business line.',
-        nextStep: task.nextStep ?? `Open next action: ${task.title}`,
-        sourceRecords: [
-          activeSkill?.nextContent,
-          records[0]?.summary,
-          sourceRecordCount > 0 ? `${sourceRecordCount} source records on the legacy task` : null,
-        ].filter((item): item is string => Boolean(item)),
-        risk: { level: task.riskLevel, note: task.riskNote },
-        requiresDecision: pendingDecisionCount > 0,
-        taskId: task.id,
+        suggestion: {
+          id: `business-line-progress:${params.businessLine.id}:${task.id}`,
+          type: 'progress',
+          businessLineId: params.businessLine.id,
+          businessLineTitle: params.businessLine.title,
+          whyNow,
+          expectedImpact: `Move ${params.businessLine.title} forward by completing its current Next Action.`,
+          effort: {
+            level: effortLevel,
+            note: task.activeBlocker ? 'Includes blocker resolution.' : task.waitingReason ? 'Depends on waiting context.' : 'One focused execution step.',
+          },
+          confidence: clampConfidence(70 + (task.nextStep ? 10 : 0) + (latestRecord ? 5 : 0) + (activeSkill ? 5 : 0) - (params.pendingDecisionCount > 0 ? 5 : 0)),
+          nextStep: task.nextStep ?? `Open next action: ${task.title}`,
+          sourceRecords: sourceLabels.slice(0, 4),
+          sourceRecordIds: [...new Set(sourceIds)].slice(0, 4),
+          risk: { level: task.riskLevel, note: task.riskNote },
+          requiresDecision: params.pendingDecisionCount > 0,
+          taskId: task.id,
+        },
+        score: 100
+          + (params.pendingDecisionCount > 0 ? 20 : 0)
+          + (task.activeBlocker ? 15 : 0)
+          + (task.riskLevel === 'high' ? 10 : task.riskLevel === 'medium' ? 5 : 0)
+          + (activeSkill ? 5 : 0)
+          - params.stableOrder,
+        updatedAt: task.updatedAt,
       };
     }
-    if (activeSkill) {
+
+    if (params.records.length === 0 || !params.businessLine.goal) {
+      const missingGoal = !params.businessLine.goal;
       return {
-        id: `business-line-improvement:${businessLine.id}:${activeSkill.id}`,
-        type: 'improvement',
-        businessLineId: businessLine.id,
-        businessLineTitle: businessLine.title,
-        whyNow: 'Accepted learning is available, but no executable next action is attached yet.',
-        nextStep: 'Create or choose the next business-line action using the accepted learning.',
-        sourceRecords: [activeSkill.nextContent],
+        suggestion: {
+          id: `business-line-record-gap:${params.businessLine.id}`,
+          type: 'record_gap',
+          businessLineId: params.businessLine.id,
+          businessLineTitle: params.businessLine.title,
+          whyNow: missingGoal
+            ? 'This business line does not yet have an explicit goal, so Today cannot rank executable work confidently.'
+            : 'This business line lacks enough recent records to make a trustworthy next recommendation.',
+          expectedImpact: 'Improve future suggestion quality by adding the missing business context before selecting work.',
+          effort: { level: 'low', note: 'Context capture only; not executable delivery work.' },
+          confidence: params.records.length === 0 ? 45 : 55,
+          nextStep: missingGoal
+            ? 'Capture the business-line goal before choosing executable work.'
+            : 'Capture a short business record before choosing executable work.',
+          sourceRecords: sourceRecordSummaries(params.records, 2),
+          sourceRecordIds: sourceRecordIds(params.records, 2),
+          risk: { level: 'low', note: null },
+          requiresDecision: false,
+          taskId: null,
+        },
+        score: 45 + (params.records.length === 0 ? 10 : 0) - params.stableOrder,
+        updatedAt: latestRecord?.createdAt ?? params.businessLine.updatedAt,
+      };
+    }
+
+    if (activeSkill) {
+      const sourceIds = [
+        activeSkill.sourceReviewId ? `review:${activeSkill.sourceReviewId}` : null,
+        ...sourceRecordIds(latestContextRecords),
+      ].filter((item): item is string => Boolean(item));
+      return {
+        suggestion: {
+          id: `business-line-improvement:${params.businessLine.id}:${activeSkill.id}`,
+          type: 'improvement',
+          businessLineId: params.businessLine.id,
+          businessLineTitle: params.businessLine.title,
+          whyNow: 'Accepted learning is available, but no executable Next Action is attached yet.',
+          expectedImpact: 'Turn accepted learning into a concrete next action for this business line.',
+          effort: { level: 'low', note: 'Planning step to choose or create the next action.' },
+          confidence: clampConfidence(65 + (latestRecord ? 10 : 0)),
+          nextStep: 'Create or choose the next business-line action using the accepted learning.',
+          sourceRecords: [activeSkill.nextContent, ...sourceRecordSummaries(latestContextRecords, 2)],
+          sourceRecordIds: [...new Set(sourceIds)].slice(0, 3),
+          risk: { level: 'low', note: null },
+          requiresDecision: false,
+          taskId: null,
+        },
+        score: 70 + (latestRecord ? 5 : 0) - params.stableOrder,
+        updatedAt: activeSkill.updatedAt,
+      };
+    }
+
+    return {
+      suggestion: {
+        id: `business-line-record-gap:${params.businessLine.id}`,
+        type: 'record_gap',
+        businessLineId: params.businessLine.id,
+        businessLineTitle: params.businessLine.title,
+        whyNow: 'This business line has records, but no open Next Action or accepted learning to turn into executable work.',
+        expectedImpact: 'Clarify whether the current records imply a new next action before Today treats it as work.',
+        effort: { level: 'low', note: 'Review and context capture only.' },
+        confidence: 60,
+        nextStep: 'Review the latest business records and decide whether a Next Action is needed.',
+        sourceRecords: sourceRecordSummaries(params.records, 2),
+        sourceRecordIds: sourceRecordIds(params.records, 2),
         risk: { level: 'low', note: null },
         requiresDecision: false,
-        taskId: businessLine.legacyTaskId,
-      };
-    }
-    return {
-      id: `business-line-record-gap:${businessLine.id}`,
-      type: 'record_gap',
-      businessLineId: businessLine.id,
-      businessLineTitle: businessLine.title,
-      whyNow: 'This business line lacks enough recent records to make a trustworthy next recommendation.',
-      nextStep: 'Capture a short record or define the next action before execution.',
-      sourceRecords: records.map((record) => record.summary).slice(0, 2),
-      risk: { level: 'low', note: null },
-      requiresDecision: false,
-      taskId: businessLine.legacyTaskId,
+        taskId: null,
+      },
+      score: 50 - params.stableOrder,
+      updatedAt: latestRecord?.createdAt ?? params.businessLine.updatedAt,
     };
   }
 }

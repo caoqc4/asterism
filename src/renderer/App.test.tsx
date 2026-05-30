@@ -124,8 +124,12 @@ function buildBusinessLineWorkspace(partial: Partial<BusinessLineWorkspace> = {}
         businessLineId: line.id,
         businessLineTitle: line.title,
         whyNow: 'Template creation generated the first next action.',
+        expectedImpact: 'Move the business line forward by completing the current next action.',
+        effort: { level: 'medium', note: null },
+        confidence: 75,
         nextStep: nextActions[0]!.nextStep ?? nextActions[0]!.title,
         sourceRecords: records.map((record) => record.summary),
+        sourceRecordIds: records.map((record) => record.id),
         risk: { level: 'low', note: null },
         requiresDecision: false,
         taskId: nextActions[0]!.id,
@@ -1570,8 +1574,12 @@ describe('App redesign v1', () => {
       businessLineId: 'business_line_task_product',
       businessLineTitle: 'GoalPilot product',
       whyNow: 'Accepted learning changed the next recommendation.',
+      expectedImpact: 'Move the business line forward by completing the current next action.',
+      effort: { level: 'medium', note: 'One focused execution step.' },
+      confidence: 82,
       nextStep: 'Update Today suggestion trust layer.',
       sourceRecords: ['review: navigation model changed', 'rule: anchor to learning loop'],
+      sourceRecordIds: ['review:business_line_review_navigation'],
       risk: {
         level: 'medium',
         note: 'Touches navigation model',
@@ -1587,7 +1595,11 @@ describe('App redesign v1', () => {
     expect(screen.getByText('GoalPilot product')).toBeTruthy();
     expect(screen.getByText('Update Today suggestion trust layer.')).toBeTruthy();
     expect(screen.getByText('Accepted learning changed the next recommendation.')).toBeTruthy();
+    expect(screen.getByText(/Impact: Move the business line forward/)).toBeTruthy();
+    expect(screen.getByText(/Effort: medium/)).toBeTruthy();
+    expect(screen.getByText(/Confidence 82/)).toBeTruthy();
     expect(screen.getByText('review: navigation model changed')).toBeTruthy();
+    expect(screen.queryByText(/Source ids: review:business_line_review_navigation/)).toBeNull();
     expect(screen.getByText('medium')).toBeTruthy();
     expect(screen.getByText('Decision')).toBeTruthy();
   });
@@ -1835,8 +1847,12 @@ describe('App redesign v1', () => {
       businessLineId: 'business_line_task_product',
       businessLineTitle: 'GoalPilot product',
       whyNow: 'Accepted learning changed the next recommendation.',
+      expectedImpact: 'Move the business line forward by completing the current next action.',
+      effort: { level: 'medium', note: 'One focused execution step.' },
+      confidence: 82,
       nextStep: 'Update Today suggestion trust layer.',
       sourceRecords: ['review: navigation model changed'],
+      sourceRecordIds: ['review:business_line_review_navigation'],
       risk: {
         level: 'medium',
         note: null,
@@ -1874,8 +1890,12 @@ describe('App redesign v1', () => {
       businessLineId: 'business_line_task_product',
       businessLineTitle: 'GoalPilot product',
       whyNow: 'Accepted learning changed the next recommendation.',
+      expectedImpact: 'Move the business line forward by completing the current next action.',
+      effort: { level: 'medium', note: 'One focused execution step.' },
+      confidence: 82,
       nextStep: 'Update Today suggestion trust layer.',
       sourceRecords: ['review: navigation model changed'],
+      sourceRecordIds: ['review:business_line_review_navigation'],
       risk: {
         level: 'medium',
         note: null,
@@ -7964,10 +7984,11 @@ describe('App redesign v1', () => {
       typeConfirmed: true,
     });
 
+    window.location.hash = 'tasks';
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
     const currentSuggestions = () => screen.getByRole('button', { name: /当前建议/ });
+    await waitFor(() => expect(currentSuggestions().textContent).toMatch(/\d/));
     const initialCountText = currentSuggestions().textContent;
 
     await user.click(screen.getByRole('button', { name: /项目型/ }));

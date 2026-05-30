@@ -388,6 +388,112 @@ describe('BusinessLineService', () => {
     })).rejects.toThrow(/Expired business-line skill revision/);
   });
 
+  it('generates deterministic Today suggestions with impact, effort, confidence, source ids, and non-executable record gaps', async () => {
+    const progressLine = await service.create({
+      title: 'Progress business line',
+      goal: 'Ship the next useful increment.',
+      kind: 'software_product',
+    });
+    const progressTask = await taskService.create({
+      title: 'Progress action',
+      businessLineId: progressLine.id,
+    });
+    await taskService.update({
+      id: progressTask.id,
+      nextStep: 'Run the customer evidence review.',
+      riskLevel: 'medium',
+      riskNote: 'Touches customer-facing prioritization.',
+    });
+    const progressRecord = await businessLineRepository.createRecord({
+      businessLineId: progressLine.id,
+      type: 'signal',
+      source: 'manual:evidence',
+      summary: 'Customer evidence changed the release priority.',
+      shouldAffectFutureContext: true,
+    });
+
+    const improvementLine = await service.create({
+      title: 'Improvement business line',
+      goal: 'Turn learning into action.',
+      kind: 'software_product',
+    });
+    const improvementReview = await service.recordReview({
+      businessLineId: improvementLine.id,
+      resultSummary: 'Post-action review changed the operating rule.',
+      skillUpdateSuggestions: ['Review customer evidence before choosing the next action.'],
+    });
+    await service.acceptSkillRevision({
+      revisionId: improvementReview.learning.skillRevisions[0]!.id,
+      approvedBy: 'tester',
+    });
+
+    const gapLine = await service.create({
+      title: 'Record gap business line',
+      kind: 'software_product',
+    });
+
+    const suggestions = await service.listTodaySuggestions();
+    const progress = suggestions.find((suggestion) => suggestion.businessLineId === progressLine.id)!;
+    const improvement = suggestions.find((suggestion) => suggestion.businessLineId === improvementLine.id)!;
+    const gap = suggestions.find((suggestion) => suggestion.businessLineId === gapLine.id)!;
+
+    expect(suggestions.map((suggestion) => suggestion.type).slice(0, 3)).toEqual([
+      'progress',
+      'improvement',
+      'record_gap',
+    ]);
+    expect(progress).toMatchObject({
+      type: 'progress',
+      businessLineId: progressLine.id,
+      taskId: progressTask.id,
+      nextStep: 'Run the customer evidence review.',
+      expectedImpact: expect.stringContaining('Move Progress business line forward'),
+      effort: {
+        level: 'medium',
+        note: 'One focused execution step.',
+      },
+      risk: {
+        level: 'medium',
+        note: 'Touches customer-facing prioritization.',
+      },
+      requiresDecision: false,
+    });
+    expect(progress.confidence).toBeGreaterThanOrEqual(80);
+    expect(progress.sourceRecordIds).toContain(progressRecord.id);
+    expect(progress.sourceRecords.join(' ')).toContain('Customer evidence changed the release priority.');
+
+    expect(improvement).toMatchObject({
+      type: 'improvement',
+      businessLineId: improvementLine.id,
+      taskId: null,
+      nextStep: 'Create or choose the next business-line action using the accepted learning.',
+      expectedImpact: expect.stringContaining('Turn accepted learning into a concrete next action'),
+      effort: {
+        level: 'low',
+        note: 'Planning step to choose or create the next action.',
+      },
+      requiresDecision: false,
+    });
+    expect(improvement.sourceRecordIds).toContain(`review:${improvementReview.learning.reviews[0]!.id}`);
+    expect(improvement.sourceRecords.join(' ')).toContain('Review customer evidence before choosing the next action.');
+
+    expect(gap).toMatchObject({
+      type: 'record_gap',
+      businessLineId: gapLine.id,
+      taskId: null,
+      nextStep: 'Capture the business-line goal before choosing executable work.',
+      expectedImpact: expect.stringContaining('before selecting work'),
+      effort: {
+        level: 'low',
+        note: 'Context capture only; not executable delivery work.',
+      },
+      confidence: 45,
+      sourceRecordIds: [],
+      sourceRecords: [],
+      requiresDecision: false,
+    });
+  });
+
   it('creates a Web Product template business line with initial structure, review prompts, proposed SOPs, and actions', async () => {
     const created = await service.create({
       title: 'Activation web product',

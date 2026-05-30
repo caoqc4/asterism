@@ -137,8 +137,15 @@ export type BusinessLineTodaySuggestion = {
   businessLineId: string;
   businessLineTitle: string;
   whyNow: string;
+  expectedImpact: string;
+  effort: {
+    level: 'low' | 'medium' | 'high';
+    note: string | null;
+  };
+  confidence: number;
   nextStep: string;
   sourceRecords: string[];
+  sourceRecordIds: string[];
   risk: {
     level: TaskRiskLevel;
     note: string | null;

@@ -422,6 +422,14 @@ export function BriefPage({ onOpenTask, onOpenBusinessLine, onOpenDecision, onOp
                 </div>
                 <h3>{suggestion.nextStep}</h3>
                 <p>{suggestion.whyNow}</p>
+                <small>
+                  Impact: {suggestion.expectedImpact}
+                  {' · '}
+                  Effort: {suggestion.effort.level}
+                  {suggestion.effort.note ? ` (${suggestion.effort.note})` : ''}
+                  {' · '}
+                  Confidence {suggestion.confidence}
+                </small>
                 <div className="business-source-list">
                   {(suggestion.sourceRecords.length > 0 ? suggestion.sourceRecords : ['missing-context']).map((source) => (
                     <span key={source}>{source}</span>
@@ -436,7 +444,7 @@ export function BriefPage({ onOpenTask, onOpenBusinessLine, onOpenDecision, onOp
                     onClick={() => onOpenBusinessLinePanel(
                       suggestion.businessLineId,
                       suggestion.businessLineTitle,
-                      `请围绕这个业务线建议推进下一步。\n\n业务线：${suggestion.businessLineTitle}\n为什么现在：${suggestion.whyNow}\n来源：${suggestion.sourceRecords.join(' / ') || 'missing context'}\n风险：${suggestion.risk.level}${suggestion.risk.note ? ` - ${suggestion.risk.note}` : ''}`,
+                      `请围绕这个业务线建议推进下一步。\n\n业务线：${suggestion.businessLineTitle}\n为什么现在：${suggestion.whyNow}\n预期影响：${suggestion.expectedImpact}\n工作量：${suggestion.effort.level}${suggestion.effort.note ? ` - ${suggestion.effort.note}` : ''}\n信心：${suggestion.confidence}\n来源：${suggestion.sourceRecords.join(' / ') || 'missing context'}\n来源 ID：${suggestion.sourceRecordIds.join(' / ') || 'none'}\n风险：${suggestion.risk.level}${suggestion.risk.note ? ` - ${suggestion.risk.note}` : ''}`,
                       suggestion.taskId,
                     )}
                   >
