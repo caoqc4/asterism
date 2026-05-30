@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import agentsAdapterDoc from '../../AGENTS.md?raw';
+import handoffPolicyDoc from '../../docs/specs/context-transition-policy.md?raw';
+import goalpilotDoc from '../../docs/specs/goalpilot-task-advancement-framework.md?raw';
+import runtimeOrchestrationDoc from '../../docs/specs/native-agent-runtime-orchestration.md?raw';
+import priorityRoutingDoc from '../../docs/specs/priority-attention-routing.md?raw';
+import memorySpecDoc from '../../docs/specs/task-memory-spec.md?raw';
 
 import {
   BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
+  BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
   PRODUCT_FEATURE_IMPACT_AUDIT,
   findBusinessLineFirstProductAuditIssues,
+  findBusinessLineFirstRuleLayerAuditIssues,
   findProductFeatureImpactAuditIssues,
 } from './product-feature-impact-audit.js';
 
@@ -47,6 +55,55 @@ describe('product feature impact audit', () => {
     expect(historicalRecovery?.evidence.join(' ')).toContain('Legacy Tasks Explorer');
     expect(learningLoop?.evidence.join(' ')).toContain('creates a business line');
     expect(learningLoop?.evidence.join(' ')).toContain('next Today suggestion changes');
+  });
+
+  it('audits core rule docs for business-line-first readiness without banning task execution language', () => {
+    expect(BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT.map((check) => check.id)).toEqual([
+      'agents_business_line_owner',
+      'goalpilot_business_advancement',
+      'memory_business_surfaces',
+      'handoff_v2_terms',
+      'priority_business_attention',
+      'scheduler_business_line_loops',
+      'legacy_task_recovery_documented',
+    ]);
+    expect(findBusinessLineFirstRuleLayerAuditIssues(readBusinessLineFirstRuleDocs())).toEqual([]);
+
+    const goalpilot = BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT.find((check) => check.id === 'goalpilot_business_advancement');
+    const priority = BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT.find((check) => check.id === 'priority_business_attention');
+    expect(goalpilot?.requiredFragments).toContain('A Task is the execution unit and Next Action carrier');
+    expect(priority?.requiredFragments).toContain('legacy task recovery compatibility input');
+  });
+
+  it('allows provisional GoalPilot naming while blocking task-first durable ownership drift', () => {
+    const docs = readBusinessLineFirstRuleDocs();
+    expect(findBusinessLineFirstRuleLayerAuditIssues({
+      ...docs,
+      goalpilot: docs.goalpilot?.replace(
+        'A Business Line is the durable product object. A Task is the execution unit and Next Action carrier.',
+        'Task is the durable product object. GoalPilot keeps its provisional name.',
+      ),
+    })).toEqual(expect.arrayContaining([
+      {
+        featureId: 'business_line_first_rule:goalpilot_business_advancement',
+        issue: 'Missing required rule-layer evidence: A Business Line is the durable product object',
+      },
+      {
+        featureId: 'business_line_first_rule:goalpilot_business_advancement',
+        issue: 'Rule-layer language makes Task the durable product owner or default product model.',
+      },
+    ]));
+  });
+
+  it('reports a clear rule-layer failure when a required section is missing', () => {
+    const docs = readBusinessLineFirstRuleDocs();
+    expect(findBusinessLineFirstRuleLayerAuditIssues({
+      ...docs,
+      handoff_policy: docs.handoff_policy?.replace('durable_business_handoff', 'durable_missing_handoff'),
+    })).toEqual([{
+      featureId: 'business_line_first_rule:handoff_v2_terms',
+      issue: 'Missing required rule-layer evidence: durable_business_handoff',
+    }]);
   });
 
   it('blocks business-line-first readiness when canonical ownership evidence is missing', () => {
@@ -1935,3 +1992,14 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('subtask dependency identity chain');
   });
 });
+
+function readBusinessLineFirstRuleDocs() {
+  return {
+    agents_adapter: agentsAdapterDoc,
+    goalpilot: goalpilotDoc,
+    memory_spec: memorySpecDoc,
+    handoff_policy: handoffPolicyDoc,
+    priority_routing: priorityRoutingDoc,
+    runtime_orchestration: runtimeOrchestrationDoc,
+  };
+}

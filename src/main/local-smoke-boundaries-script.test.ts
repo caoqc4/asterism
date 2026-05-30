@@ -658,6 +658,7 @@ describe('local smoke script default boundaries', () => {
     expect(scripts['audit:product-progress']).toBe('node scripts/product-feature-impact-audit-summary.mjs');
     expect(script).toContain('src/shared/product-feature-impact-audit.ts');
     expect(script).toContain('findProductFeatureImpactAuditIssues');
+    expect(script).toContain('findBusinessLineFirstRuleLayerAuditIssues');
     expect(script).toContain('Taskplane product feature impact audit');
     expect(script).toContain('process.argv.includes');
     expect(script).not.toContain('better-sqlite3');
@@ -669,9 +670,13 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('cliOnlyClosure ');
     expect(result.output).toContain('futureApiClosure ');
     expect(result.output).toContain('businessLineFirst readiness=ready checks=6 ready=5 recoverable=1 blocked=<none>');
+    expect(result.output).toContain('businessLineFirstRules readiness=ready checks=7 issues=0');
     expect(result.output).toContain('businessLineFirstChecks');
+    expect(result.output).toContain('businessLineFirstRuleChecks');
     expect(result.output).toContain('ready canonical_ownership');
     expect(result.output).toContain('recoverable historical_task_recovery');
+    expect(result.output).toContain('ready agents_business_line_owner doc=agents_adapter');
+    expect(result.output).toContain('ready scheduler_business_line_loops doc=runtime_orchestration');
     expect(result.output).toContain(
       'summary mainlineCliP0=ready p0CliPartial=<none> p0FutureApiDeferred=right_panel_agent_run,task_creation_and_project_decomposition,decisions_checkpoints_completion,task_files_artifacts_local_writes,capabilities_external_skills_mcp',
     );
@@ -689,7 +694,7 @@ describe('local smoke script default boundaries', () => {
     );
     expect(result.output).toContain('right_panel_agent_run');
     expect(result.output).toContain('smoke_tests_runtime_readiness_recovery');
-    expect(result.output).not.toContain('issues');
+    expect(result.output).not.toContain('\nissues\n');
     expect(result.output).not.toContain('openNextActions');
     expect(nextResult.status).toBe(0);
     const openNextActions = (nextResult.output.split('openNextActions')[1] ?? '').split('optionalCompatibilityEvidence')[0] ?? '';

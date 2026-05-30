@@ -74,6 +74,24 @@ export type BusinessLineFirstAuditCheck = {
   nextActions: string[];
 };
 
+export type BusinessLineFirstRuleLayerDocId =
+  | 'agents_adapter'
+  | 'goalpilot'
+  | 'memory_spec'
+  | 'handoff_policy'
+  | 'priority_routing'
+  | 'runtime_orchestration';
+
+export type BusinessLineFirstRuleLayerDocInput = Partial<Record<BusinessLineFirstRuleLayerDocId, string>>;
+
+export type BusinessLineFirstRuleLayerAuditCheck = {
+  id: string;
+  label: string;
+  docId: BusinessLineFirstRuleLayerDocId;
+  requiredFragments: string[];
+  forbiddenOwnershipPatterns?: RegExp[];
+};
+
 const DEFERRED_COMPLETION_SIGNALS = [
   /\b(?:deferred|diagnostic-only|unimplemented|not yet|pending until)\b/i,
   /future (?:agent api|api|provider-visible|scheduled|background|execution|workspace-write)/i,
@@ -88,8 +106,109 @@ const REQUIRED_BUSINESS_LINE_FIRST_CHECK_IDS = [
   'external_signal_projection',
 ] as const;
 
+const REQUIRED_BUSINESS_LINE_FIRST_RULE_LAYER_CHECK_IDS = [
+  'agents_business_line_owner',
+  'goalpilot_business_advancement',
+  'memory_business_surfaces',
+  'handoff_v2_terms',
+  'priority_business_attention',
+  'scheduler_business_line_loops',
+  'legacy_task_recovery_documented',
+] as const;
+
+const TASK_FIRST_OWNERSHIP_DRIFT_PATTERNS = [
+  /\bTask\s+is\s+the\s+durable\s+product\s+object\b/i,
+  /\bTasks?\s+(?:are|is|remain|stays?|becomes?|acts?\s+as)\s+the\s+(?:durable|default|primary|canonical)\s+(?:product\s+)?(?:owner|object|model)\b/i,
+  /\bTask\.md\s+(?:is|remain|stays?|becomes?|acts?\s+as)\s+the\s+(?:whole|primary|default|canonical)\s+business\s+memory\b/i,
+  /\btask\s+queue\s+(?:is|becomes?|acts?\s+as)\s+the\s+(?:durable|default|primary)\s+product\s+(?:model|owner)\b/i,
+];
+
+export const BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT: BusinessLineFirstRuleLayerAuditCheck[] = [
+  {
+    id: 'agents_business_line_owner',
+    label: 'AGENTS adapter names business-line durable ownership',
+    docId: 'agents_adapter',
+    requiredFragments: [
+      'Taskplane owns durable business-line state',
+      'business memory, records',
+      'Tasks remain execution units and Next Action carriers',
+    ],
+  },
+  {
+    id: 'goalpilot_business_advancement',
+    label: 'GoalPilot is business advancement oriented',
+    docId: 'goalpilot',
+    requiredFragments: [
+      'GoalPilot Business Advancement Framework',
+      'business-line advancement',
+      'A Business Line is the durable product object',
+      'A Task is the execution unit and Next Action carrier',
+    ],
+  },
+  {
+    id: 'memory_business_surfaces',
+    label: 'Memory spec includes business records, context, and learning surfaces',
+    docId: 'memory_spec',
+    requiredFragments: [
+      'BusinessLineContextPack',
+      'Business Records',
+      'Reviews',
+      'Skills/SOP Revisions',
+      'Tasks remain execution units and Next Action',
+    ],
+  },
+  {
+    id: 'handoff_v2_terms',
+    label: 'Handoff V2 terms exist',
+    docId: 'handoff_policy',
+    requiredFragments: [
+      'ephemeral_session_handoff',
+      'durable_business_handoff',
+      'next_action_handoff',
+      'runtime_or_subagent_handoff',
+    ],
+  },
+  {
+    id: 'priority_business_attention',
+    label: 'Priority routing is business-line attention oriented',
+    docId: 'priority_routing',
+    requiredFragments: [
+      'business-line attention',
+      'The primary ranking object is the Business Line',
+      'The executable target is a Next Action',
+      'legacy task recovery compatibility input',
+    ],
+  },
+  {
+    id: 'scheduler_business_line_loops',
+    label: 'Scheduler and orchestration define business-line loops',
+    docId: 'runtime_orchestration',
+    requiredFragments: [
+      'business-line loop is the product-level scheduler object',
+      'A sensor is read-only loop observation',
+      'An automation is a bounded loop action',
+      'scheduled/event carriers',
+    ],
+  },
+  {
+    id: 'legacy_task_recovery_documented',
+    label: 'Legacy task recovery remains documented',
+    docId: 'goalpilot',
+    requiredFragments: [
+      'Legacy task recovery remains supported',
+      'legacy task recovery',
+      'recover business line before durable writes when possible',
+    ],
+  },
+];
+
 function isClosedRuntimeClosure(closure: ProductFeatureRuntimeClosure): boolean {
   return closure === 'supported' || closure === 'not_applicable';
+}
+
+function includesNormalizedFragment(content: string, fragment: string): boolean {
+  const normalize = (value: string) => value.replace(/\s+/g, ' ').trim();
+  return normalize(content).includes(normalize(fragment));
 }
 
 export const BUSINESS_LINE_FIRST_PRODUCT_AUDIT: BusinessLineFirstAuditCheck[] = [
@@ -951,6 +1070,59 @@ export function findBusinessLineFirstProductAuditIssues(
       issues.push({
         featureId: `business_line_first:${requiredId}`,
         issue: 'Missing required business-line-first readiness check.',
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function findBusinessLineFirstRuleLayerAuditIssues(
+  docs: BusinessLineFirstRuleLayerDocInput,
+  checks: BusinessLineFirstRuleLayerAuditCheck[] = BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const check of checks) {
+    if (ids.has(check.id)) {
+      issues.push({ featureId: `business_line_first_rule:${check.id}`, issue: 'Duplicate business-line-first rule-layer audit check id.' });
+    }
+    ids.add(check.id);
+
+    const content = docs[check.docId] ?? '';
+    if (!content.trim()) {
+      issues.push({
+        featureId: `business_line_first_rule:${check.id}`,
+        issue: `Missing rule-layer document content for ${check.docId}.`,
+      });
+      continue;
+    }
+
+    for (const fragment of check.requiredFragments) {
+      if (!includesNormalizedFragment(content, fragment)) {
+        issues.push({
+          featureId: `business_line_first_rule:${check.id}`,
+          issue: `Missing required rule-layer evidence: ${fragment}`,
+        });
+      }
+    }
+
+    for (const pattern of [...TASK_FIRST_OWNERSHIP_DRIFT_PATTERNS, ...(check.forbiddenOwnershipPatterns ?? [])]) {
+      if (pattern.test(content)) {
+        issues.push({
+          featureId: `business_line_first_rule:${check.id}`,
+          issue: 'Rule-layer language makes Task the durable product owner or default product model.',
+        });
+      }
+    }
+  }
+
+  for (const requiredId of REQUIRED_BUSINESS_LINE_FIRST_RULE_LAYER_CHECK_IDS) {
+    if (!ids.has(requiredId)) {
+      issues.push({
+        featureId: `business_line_first_rule:${requiredId}`,
+        issue: 'Missing required business-line-first rule-layer audit check.',
       });
     }
   }

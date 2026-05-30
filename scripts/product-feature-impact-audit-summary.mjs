@@ -63,19 +63,34 @@ try {
 
   const {
     BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
+    BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
     PRODUCT_FEATURE_IMPACT_AUDIT,
     findBusinessLineFirstProductAuditIssues,
+    findBusinessLineFirstRuleLayerAuditIssues,
     findProductFeatureImpactAuditIssues,
   } = await import(pathToFileURL(bundledPath).href);
+  const ruleLayerDocs = {
+    agents_adapter: fs.readFileSync(path.join(process.cwd(), 'AGENTS.md'), 'utf8'),
+    goalpilot: fs.readFileSync(path.join(process.cwd(), 'docs/specs/goalpilot-task-advancement-framework.md'), 'utf8'),
+    memory_spec: fs.readFileSync(path.join(process.cwd(), 'docs/specs/task-memory-spec.md'), 'utf8'),
+    handoff_policy: fs.readFileSync(path.join(process.cwd(), 'docs/specs/context-transition-policy.md'), 'utf8'),
+    priority_routing: fs.readFileSync(path.join(process.cwd(), 'docs/specs/priority-attention-routing.md'), 'utf8'),
+    runtime_orchestration: fs.readFileSync(path.join(process.cwd(), 'docs/specs/native-agent-runtime-orchestration.md'), 'utf8'),
+  };
+  const businessLineFirstRuleLayerIssues = findBusinessLineFirstRuleLayerAuditIssues(
+    ruleLayerDocs,
+    BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
+  );
   const issues = [
     ...findProductFeatureImpactAuditIssues(PRODUCT_FEATURE_IMPACT_AUDIT),
     ...findBusinessLineFirstProductAuditIssues(BUSINESS_LINE_FIRST_PRODUCT_AUDIT),
+    ...businessLineFirstRuleLayerIssues,
   ];
   const businessLineFirstBlocked = idsFor(
     BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
     (check) => check.status === 'blocked',
   );
-  const businessLineFirstReady = businessLineFirstBlocked === '<none>';
+  const businessLineFirstReady = businessLineFirstBlocked === '<none>' && businessLineFirstRuleLayerIssues.length === 0;
 
   console.log('Taskplane product feature impact audit');
   console.log(`features=${PRODUCT_FEATURE_IMPACT_AUDIT.length}`);
@@ -83,6 +98,7 @@ try {
   console.log(`cliOnlyClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'cliOnlyClosure'))}`);
   console.log(`futureApiClosure ${formatCounts(countBy(PRODUCT_FEATURE_IMPACT_AUDIT, 'futureApiClosure'))}`);
   console.log(`businessLineFirst readiness=${businessLineFirstReady ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_PRODUCT_AUDIT.length} ${formatCounts(countBy(BUSINESS_LINE_FIRST_PRODUCT_AUDIT, 'status'))} blocked=${businessLineFirstBlocked}`);
+  console.log(`businessLineFirstRules readiness=${businessLineFirstRuleLayerIssues.length === 0 ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT.length} issues=${businessLineFirstRuleLayerIssues.length}`);
   const p0CliPartial = p0CliPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   const p0FutureApiPartial = p0FutureApiPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   console.log(`summary mainlineCliP0=${p0CliPartial === '<none>' ? 'ready' : 'blocked'} p0CliPartial=${p0CliPartial} p0FutureApiDeferred=${p0FutureApiPartial}`);
@@ -100,6 +116,10 @@ try {
   console.log('businessLineFirstChecks');
   for (const check of BUSINESS_LINE_FIRST_PRODUCT_AUDIT) {
     console.log(`${check.status} ${check.id}`);
+  }
+  console.log('businessLineFirstRuleChecks');
+  for (const check of BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT) {
+    console.log(`ready ${check.id} doc=${check.docId}`);
   }
 
   if (includeNextActions) {
