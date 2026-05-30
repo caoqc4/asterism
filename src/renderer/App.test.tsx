@@ -1520,7 +1520,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('先质检，再确认')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: /Legacy Tasks Explorer/ }));
-    expect(await screen.findByText('Legacy Tasks')).toBeTruthy();
+    expect(await screen.findByText('Legacy Tasks', { selector: '.current' })).toBeTruthy();
   });
 
   it('opens full Chat with context and writeback target, and keeps sidebar recovery controls', async () => {
