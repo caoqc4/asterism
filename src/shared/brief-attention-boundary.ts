@@ -41,8 +41,8 @@ export function projectBriefAttention<T extends PriorityRecommendationCandidate>
     displayLimit: projection.displayLimit,
     truncated: projection.truncated,
     summary: projection.truncated
-      ? `Brief shows ${projection.displayedCount} of ${projection.totalCount} attention items; Tasks owns the full queue.`
-      : `Brief shows ${projection.displayedCount} attention items using the shared priority order.`,
+      ? `Brief shows ${projection.displayedCount} of ${projection.totalCount} business-line attention items; Today/Pilot share the full why-now queue.`
+      : `Brief shows ${projection.displayedCount} business-line attention items using the shared why-now order.`,
   };
 }
 
@@ -78,7 +78,7 @@ export function briefAttentionReasonForCandidate(candidate: PriorityRecommendati
   const lane = briefAttentionLaneForCandidate(candidate);
   if (lane === 'unblock_or_decide') return 'Needs a decision, unblock, risk review, or dependency check before work can continue.';
   if (lane === 'review_evidence') return 'New or important evidence may change the next action.';
-  if (lane === 'external_signal') return 'External signal needs review before it affects task context.';
+  if (lane === 'external_signal') return 'External signal needs review before it affects business-line context.';
   if (lane === 'recent_outcome') return 'Recent completion or near-completion state deserves a short review.';
-  return 'Shared priority order says this is the next actionable task.';
+  return 'Shared why-now order says this is the next actionable business-line move.';
 }

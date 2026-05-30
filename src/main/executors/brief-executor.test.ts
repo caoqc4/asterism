@@ -145,7 +145,7 @@ describe('buildFallbackBrief', () => {
           displayedCount: 2,
           displayLimit: 2,
           truncated: true,
-          summary: 'Brief shows 2 of 6 attention items; Tasks owns the full queue.',
+          summary: 'Brief shows 2 of 6 business-line attention items; Today/Pilot share the full why-now queue.',
         },
         recentActivity: [
           {
@@ -166,7 +166,7 @@ describe('buildFallbackBrief', () => {
 
     expect(brief).toContain('继续推进/复核：');
     expect(brief).toContain('Brief 注意力边界：');
-    expect(brief).toContain('Brief shows 2 of 6 attention items; Tasks owns the full queue.');
+    expect(brief).toContain('Brief shows 2 of 6 business-line attention items; Today/Pilot share the full why-now queue.');
     expect(brief).toContain('display=2/6 limit=2 truncated=yes');
     expect(brief).toContain('action_escalate | lane=unblock_or_decide');
     expect(brief).not.toContain('优先升级阻塞项');

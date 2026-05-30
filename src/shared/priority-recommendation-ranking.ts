@@ -2,13 +2,18 @@ import type { PriorityLane } from './types/brief.js';
 import { isStaleBlocker } from './working-context/blocker.js';
 
 export type PriorityRecommendationPriority = 'high' | 'medium' | 'low';
+export type PrioritySuggestionType = 'progress' | 'record_gap' | 'improvement';
 
 export type PriorityRecommendationCandidate = {
   id: string;
+  businessLineId?: string | null;
+  nextActionTaskId?: string | null;
+  suggestionType?: PrioritySuggestionType | null;
   taskId: string | null;
   lane: PriorityLane;
   priority: PriorityRecommendationPriority;
   order: number;
+  whyNow?: string | null;
 };
 
 export type PriorityRecommendationTaskSignal = {
@@ -41,11 +46,15 @@ export type PriorityAttentionProjection<T extends PriorityRecommendationCandidat
 export type PriorityRouteMovement = 'ask' | 'research' | 'shape' | 'execute' | 'verify' | 'persist' | 'pause';
 
 export type PriorityRoute = {
+  executableTaskId: string | null;
+  focusBusinessLineId: string | null;
   focusTaskId: string | null;
   lane: PriorityLane;
   reason: string;
   recommendedMovement: PriorityRouteMovement;
   escalationRequired: boolean;
+  suggestionType: PrioritySuggestionType | null;
+  whyNow: string;
 };
 
 export const PRIORITY_RECOMMENDATION_LANE_ORDER: Record<PriorityLane, number> = {
@@ -110,6 +119,12 @@ export function rankPriorityRecommendation(
   } else if (action.id.startsWith('source-context:blocker:')) {
     actionabilityRank = 2;
     score += 82;
+  } else if (action.suggestionType === 'record_gap' || action.id.startsWith('business-line-record-gap:')) {
+    actionabilityRank = 3;
+    score += 76;
+  } else if (action.suggestionType === 'improvement' || action.id.startsWith('business-line-improvement:')) {
+    actionabilityRank = 4;
+    score += 73;
   } else if (action.id.startsWith('completion-ready:')) {
     actionabilityRank = 4;
     score += 74;
@@ -122,6 +137,9 @@ export function rankPriorityRecommendation(
   } else if (action.id.startsWith('source-context:next-step:')) {
     actionabilityRank = 6;
     score += 60;
+  } else if (action.suggestionType === 'progress' || action.id.startsWith('business-line-progress:')) {
+    actionabilityRank = 6;
+    score += 64;
   } else if (action.id.startsWith('next-step:')) {
     actionabilityRank = 6;
     score += 62;
@@ -239,35 +257,61 @@ export function routePriorityAttention<T extends PriorityRecommendationCandidate
 
   if (!focus) {
     return {
+      executableTaskId: null,
       escalationRequired: false,
+      focusBusinessLineId: null,
       focusTaskId: null,
       lane: 'steady',
-      reason: 'No competing task attention signals are present.',
+      reason: 'No competing business-line attention signals are present.',
       recommendedMovement: 'pause',
+      suggestionType: null,
+      whyNow: 'No competing business-line attention signals are present.',
     };
   }
 
+  const whyNow = priorityRouteWhyNow(focus);
   return {
+    executableTaskId: focus.nextActionTaskId ?? focus.taskId,
     escalationRequired: focus.lane === 'escalate_now',
+    focusBusinessLineId: focus.businessLineId ?? null,
     focusTaskId: focus.taskId,
     lane: focus.lane,
-    reason: priorityRouteReason(focus),
+    reason: whyNow,
     recommendedMovement: priorityRouteMovement(focus),
+    suggestionType: focus.suggestionType ?? null,
+    whyNow,
   };
 }
 
-function priorityRouteReason(candidate: PriorityRecommendationCandidate & { reason?: string | null }): string {
+function priorityRouteWhyNow(candidate: PriorityRecommendationCandidate & { reason?: string | null }): string {
+  const whyNow = candidate.whyNow?.trim();
+  if (whyNow) {
+    return whyNow;
+  }
+
   const candidateReason = candidate.reason?.trim();
   if (candidateReason) {
     return candidateReason;
   }
 
-  return `Shared priority route selected ${candidate.id} in lane ${candidate.lane}.`;
+  return `Shared business-line attention selected ${candidate.id} in lane ${candidate.lane}.`;
 }
 
 function priorityRouteMovement(candidate: PriorityRecommendationCandidate): PriorityRouteMovement {
   if (candidate.lane === 'escalate_now' || candidate.id.startsWith('risk:')) {
     return 'pause';
+  }
+
+  if (candidate.suggestionType === 'record_gap') {
+    return 'shape';
+  }
+
+  if (candidate.suggestionType === 'improvement') {
+    return 'persist';
+  }
+
+  if (candidate.suggestionType === 'progress') {
+    return candidate.nextActionTaskId || candidate.taskId ? 'execute' : 'verify';
   }
 
   if (

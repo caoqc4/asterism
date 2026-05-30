@@ -7,7 +7,7 @@ import {
 import { projectPriorityAttention, type PriorityRecommendationCandidate } from './priority-recommendation-ranking.js';
 
 describe('brief attention boundary', () => {
-  it('keeps Brief display limits separate from the full Tasks queue', () => {
+  it('keeps Brief display limits separate from the full business-line why-now queue', () => {
     const projection = projectPriorityAttention({
       candidates: [
         candidate({ id: 'decision:task_1', lane: 'unblock_or_decide', priority: 'high', order: 1 }),
@@ -29,7 +29,7 @@ describe('brief attention boundary', () => {
       displayLimit: 2,
       truncated: true,
     });
-    expect(brief.summary).toContain('Tasks owns the full queue');
+    expect(brief.summary).toContain('Today/Pilot share the full why-now queue');
   });
 
   it('maps priority candidates into explicit Brief inclusion lanes', () => {

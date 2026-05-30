@@ -71,6 +71,8 @@ describe('capability product surfaces', () => {
     });
     expect(PRODUCT_RUNTIME_RULE_ITEMS[4]?.desc).toContain('operation mode');
     expect(PRODUCT_RUNTIME_RULE_ITEMS[4]?.desc).toContain('backendPlan');
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[5]?.desc).toContain('Today/Brief/Pilot');
+    expect(PRODUCT_RUNTIME_RULE_ITEMS[5]?.desc).toContain('record_gap');
   });
 
   it('keeps default MCP catalogue data disconnected until a real service connects', () => {

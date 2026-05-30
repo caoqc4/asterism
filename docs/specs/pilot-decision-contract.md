@@ -3,9 +3,9 @@
 Document id: `taskplane.pilot-decision-contract.v1`
 Owner: Taskplane product architecture
 Layer: phase-loaded architecture skill / Pilot role contract
-Load: Pilot routing, multi-task focus, message priority, executor selection,
+Load: Pilot routing, business-line focus, message priority, executor selection,
 DecisionBackend selection, escalation, and run handoff
-Scope: GoalPilot, Brief priority routing, native CLI/API runtimes, future
+Scope: GoalPilot, Brief/Today priority routing, native CLI/API runtimes, future
 matrix executors, human review
 Authority: implementation-guiding; Taskplane gates and write services remain
 authoritative
@@ -52,7 +52,7 @@ This is a dual-role product model, not a mandatory two-agent or two-process arch
 Phase 2 means rules still decide first. A bounded backend is requested only
 when the rule layer sees a coordination trigger:
 
-- competing tasks need priority selection;
+- competing business lines or Next Actions need priority selection;
 - the user is steering or correcting the current path;
 - a blocked state is ambiguous but a runtime can inspect context;
 - a task has context but no usable priority lane.
@@ -81,7 +81,8 @@ A Pilot decision should answer:
 - What movement should happen next: ask, research, shape, decompose, execute,
   verify, persist, handoff, or pause?
 - Is the user message a follow-up, steer, or escalation?
-- Which priority lane applies when tasks compete?
+- Which priority lane applies when business lines or Next Actions compete, and
+  what shared "why now" explains it?
 - Which executor should handle the next action?
 - Which product rules, hooks, gates, and evidence surfaces are required?
 - Which operation mode is being used: product control layer, bounded decision
