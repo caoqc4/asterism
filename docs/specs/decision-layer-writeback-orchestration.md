@@ -13,8 +13,8 @@ Status: Architecture decision, implementation-guiding
 ## Purpose
 
 Taskplane can support native Agent CLIs, future Agent APIs, or both. The product
-must still have one closed loop from execution evidence to durable Taskplane
-state.
+must still have one closed loop from execution evidence to durable business-line
+state, with tasks acting as Next Action execution carriers inside that loop.
 
 This document defines the middle layer between runtime output and product data.
 It uses the same mental model as skills and hooks:
@@ -44,7 +44,8 @@ Taskplane assembles context
 -> Hook/Gate validates scope, phase, schema, risk, and confirmation need
 -> Proposal card or automatic low-risk write
 -> Taskplane service persists
--> Timeline, Run step, task dynamics, and memory surfaces record evidence
+-> Timeline, Run step, business records, Next Action state, and memory surfaces
+   record evidence
 ```
 
 If no API runtime is configured, semantic decision work can use a bounded
@@ -60,9 +61,12 @@ No backend may bypass Taskplane write gates.
 
 Owns durable truth:
 
-- task state, hierarchy, blockers, dependencies, completion criteria;
-- Task.md, Task Records, Source Context, Decisions, Work Habits;
-- run records, run steps, task dynamics, verification evidence;
+- business-line state, records, reviews, skills/SOP revisions, and context pack;
+- Next Action task state, hierarchy, blockers, dependencies, completion
+  criteria, and task memory;
+- Source Context, Decisions, Work Habits, artifacts, and task files;
+- run records, run steps, task dynamics, verification evidence, and handoff
+  records;
 - confirmation and write authority.
 
 ### Runtime Layer
@@ -85,7 +89,8 @@ Interprets evidence into product-level proposals:
 - judge memory worthiness;
 - judge source quality and freshness;
 - verify completion evidence;
-- detect blockers, follow-up tasks, decisions, or context-refresh needs.
+- detect blockers, follow-up Next Actions, decisions, reviews, learning
+  proposals, or context-refresh needs.
 
 Decision skills should be narrow and phase-loaded. They are not global prompt
 bulk.
@@ -136,12 +141,12 @@ Use hooks and gates for fixed product constraints:
 | --- | --- |
 | Runtime entrypoint gate | Whether a UI/service path may start execution or mutate state |
 | Context readiness gate | Whether the next move is execute, research, plan, ask, or pause |
-| Write intent validator | Type schema, target task, required evidence, phase permission |
+| Write intent validator | Type schema, business-line ownership, executable task when required, evidence, phase permission |
 | Confirmation gate | Whether a proposal must be approved before persistence |
-| Memory gate | Whether Task.md, Task Record, or Source Context is the right surface |
+| Memory gate | Whether Business Record, review, SOP revision, Task.md, Task Record, or Source Context is the right surface |
 | Source gate | Freshness, credibility, duplication, and traceability |
 | Completion gate | Criteria, evidence, unresolved blockers, and user approval |
-| Context clear gate | Recovery sufficiency before clearing or switching task context |
+| Context clear gate | Recovery sufficiency before clearing or switching business-line or Next Action context |
 
 Hooks should be deterministic and testable. They can call a decision skill only
 for semantic classification, then still enforce the final rule locally.
@@ -152,20 +157,38 @@ Runtime output may contain explicit `TASKPLANE_WRITE_INTENTS`, legacy structured
 blocks, or plain text evidence. The extractor normalizes these into candidate
 intents.
 
-Write Intent may describe:
+Write Intent may describe business-line and execution-carrier targets:
 
-- `task_record.create`;
-- `source_context.create`;
-- `decision.create`;
-- `subtask.propose`;
-- `task_file.propose`;
-- `artifact.propose`;
-- `task.update_next_step`;
-- `task.mark_blocked`;
-- `task.complete.propose`;
+- `business_record.create` for durable business memory and rationale;
+- `business_review.record` for a post-action or post-run business-line review;
+- `next_action.create` or `next_action.update` for executable follow-up work;
+- `source_context.create` for evidence owned by the business line and, when
+  applicable, the executor task/run;
+- `artifact.propose` and `task_file.propose` for work products and reviewable
+  files;
+- `decision.create` or `decision.action` for approval boundaries;
+- `sop_revision.propose` for reusable skill/SOP learning;
+- `handoff_record.propose` for durable business handoff or Next Action handoff;
+- compatibility intents such as `task_record.create`, `subtask.propose`,
+  `task.update_next_step`, `task.mark_blocked`, and `task.complete.propose`
+  when the target is an active Next Action or legacy task recovery surface.
 
 Write Intent is a proposal. Persistence happens only after validation and,
 where required, confirmation.
+
+Business-line Write Intent must carry or resolve a business-line owner before
+durable persistence. If an executable task is also present, service validation
+must prove that the task belongs to the same business line or reject the write.
+Cross-business reuse is not inferred from similar text, source overlap, or
+runtime suggestions; it must be an explicit proposal with source evidence,
+target business lines, and the required approval path.
+
+Risky learning, SOP activation, external/public writes, money-affecting writes,
+permission changes, and writes that broaden scope beyond the current business
+line must go through a Decision path before becoming active context or causing
+external side effects. Preview or proposal surfaces must appear before external
+or public persistence. Runtime output may propose these writes, but only
+Taskplane services apply them.
 
 ## File Boundary Map
 
@@ -179,7 +202,7 @@ Keep the rule documents small and layered:
 | Priority Attention Routing | Ranking skill | Business-line attention, Today/Brief/Pilot why-now language, suggestion type, escalation ranking | Write formats |
 | Agent Operating Principles | Execution skill | Execution safety, tools, subagents, task mutation principles | Memory surface formats |
 | Agent Output Contract | Output skill | Chat, cards, drafts, proposals, summaries | State authority rules |
-| Task Memory Spec | Memory skill | Task.md, Records, Source Context, refresh and recovery | Runtime adapter design |
+| Task Memory Spec | Memory skill | Business Records, reviews, SOP revisions, Task.md, Records, Source Context, refresh and recovery | Runtime adapter design |
 | Native Agent Capability Mapping | Architecture skill | Native plan, goal, memory, compact, skills, hooks, subagents, status, review mapping | Durable write formats |
 | Native Runtime Orchestration | Runtime architecture | CLI/API boundaries and runtime result contract | Product-wide writeback details |
 | This document | Decision and writeback architecture | Decision skills, hooks, Write Intent closure, feature audit | Vendor-specific runtime behavior |
@@ -203,7 +226,7 @@ Audit each feature with these questions:
 4. Which Write Intent types can appear?
 5. Which hook/gate validates the action?
 6. Does the user need a confirmation card?
-7. What evidence appears in Run steps, Timeline, task dynamics, or memory?
+7. What evidence appears in Run steps, Timeline, business records, task dynamics, or memory?
 8. Can it still work when only CLI runtime is available?
 9. Can it still work when only API runtime is available in the future?
 10. What test or smoke path proves the boundary?
@@ -211,7 +234,9 @@ Audit each feature with these questions:
 High-priority audit areas:
 
 - right-panel chat, run start, run progress, and run completion;
-- task creation, decomposition, subtask start, and task switching;
+- business record creation, business-line review, SOP revision proposal, and
+  handoff record proposal;
+- Next Action creation/update, decomposition, subtask start, and task switching;
 - Task.md, Task Records, Source Context, and context clearing;
 - Decisions, checkpoints, completion, blockers, and next-step changes;
 - task files, artifacts, local writes, and sandbox promotion;
