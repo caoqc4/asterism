@@ -132,6 +132,7 @@ export class TaskplaneWritebackDispatchService {
     const ownership = await this.businessLineOwnershipResolver.resolveOwnership({
       explicitBusinessLineId,
       taskId: params.taskId,
+      ...(params.plan.action === 'task_file.update' ? { taskFileId: params.plan.input.id } : {}),
       allowOneOff: !explicitBusinessLineId,
     });
     if (ownership.status === 'mismatch') {
