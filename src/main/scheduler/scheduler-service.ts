@@ -66,6 +66,7 @@ export type ScheduledEventAgentTimelinePort = {
 };
 
 export type SchedulerDecisionProposalInput = {
+  businessLineId?: string | null;
   evidenceRunId?: string | null;
   localRecoveryCompleted?: boolean;
   localRecoveryRunId?: string | null;
@@ -94,6 +95,7 @@ export type ScheduledEventAgentTaskInput = Pick<
   | 'activeBlocker'
   | 'activeDependency'
   | 'activeWaitingItem'
+  | 'businessLineId'
   | 'completionCriteria'
   | 'id'
   | 'nextStep'
@@ -974,6 +976,7 @@ export class SchedulerService {
         surface: 'task_dynamics',
       },
       evidenceRunId: input.evidenceRunId ?? null,
+      businessLineId: input.businessLineId ?? null,
       operatorConfirmation: {
         confirmed: input.operatorConfirmed === true,
         operatorId: input.operatorId ?? null,
@@ -1028,6 +1031,8 @@ export class SchedulerService {
       payload: {
         approvalQueueSurface: 'task_dynamics',
         authorization: readiness.authorizations.join(','),
+        businessLineId: readiness.businessLineId,
+        decisionScope: readiness.decisionScope,
         evidenceRunId: input.evidenceRunId?.trim() || null,
         localRecoveryCompleted: input.localRecoveryCompleted === true,
         localRecoveryRunId: input.localRecoveryRunId?.trim() || null,
@@ -1272,6 +1277,7 @@ export class SchedulerService {
 
     return this.proposeSchedulerDecision({
       evidenceRunId: run.id,
+      businessLineId: task.businessLineId ?? null,
       options: [
         '暂停自动巡检并等待人工处理',
         '保留自动巡检但先修复失败原因',
@@ -1352,6 +1358,7 @@ export class SchedulerService {
     }
 
     return this.proposeSchedulerDecision({
+      businessLineId: task.businessLineId ?? null,
       options: [
         '等待下一次运行窗口',
         '调整 Standing Approval 每日运行上限',
@@ -1385,6 +1392,7 @@ export class SchedulerService {
     }
 
     return this.proposeSchedulerDecision({
+      businessLineId: task.businessLineId ?? null,
       options: [
         '暂停自动触发并修复触发服务',
         '人工启动一次受控 Agent run',
@@ -1420,6 +1428,7 @@ export class SchedulerService {
 
     return this.proposeSchedulerDecision({
       evidenceRunId: run.id,
+      businessLineId: task.businessLineId ?? null,
       options: [
         '人工复核 Run 并补录终态证据',
         '重新运行一次以生成可复核输出',
@@ -1455,6 +1464,7 @@ export class SchedulerService {
     }
 
     return this.proposeSchedulerDecision({
+      businessLineId: task.businessLineId ?? null,
       options: [
         '暂停自动巡检并修复运行计数证据',
         '人工复核今日运行记录后重试',
@@ -1492,6 +1502,7 @@ export class SchedulerService {
       : 'unknown';
 
     return this.proposeSchedulerDecision({
+      businessLineId: task.businessLineId ?? null,
       options: [
         '补齐任务上下文后下次 sweep 再运行',
         '暂停该任务的自动触发并人工处理',
@@ -1526,6 +1537,7 @@ export class SchedulerService {
     }
 
     return this.proposeSchedulerDecision({
+      businessLineId: task.businessLineId ?? null,
       options: [
         '修复任务来源去重后下次 sweep 再运行',
         '保留本次首个 Run 并人工复核候选来源',
@@ -1560,6 +1572,7 @@ export class SchedulerService {
     }
 
     return this.proposeSchedulerDecision({
+      businessLineId: task.businessLineId ?? null,
       options: [
         '暂停自动触发并人工复核调度器',
         '修复触发服务后重试下一次 sweep',
@@ -1596,6 +1609,7 @@ export class SchedulerService {
 
     return this.proposeSchedulerDecision({
       evidenceRunId: run.id,
+      businessLineId: task.businessLineId ?? null,
       options: [
         '暂停自动触发并修复 timeline 证据写入',
         '保留已启动 Run 并人工补录证据',
@@ -1632,6 +1646,7 @@ export class SchedulerService {
 
     return this.proposeSchedulerDecision({
       evidenceRunId: run.id,
+      businessLineId: task.businessLineId ?? null,
       options: [
         '暂停自动触发并人工复核运行归属',
         '保留 Run 证据但重新生成目标任务运行',
@@ -1663,6 +1678,7 @@ export class SchedulerService {
 
     return this.proposeSchedulerDecision({
       evidenceRunId: run.id,
+      businessLineId: run.businessLineId ?? null,
       localRecoveryCompleted: true,
       localRecoveryRunId: run.id,
       localRecoveryTaskId: run.taskId,
@@ -1704,6 +1720,8 @@ export class SchedulerService {
         runStatus: run.status,
         terminalRunEvidenceStatus: scheduledEventRunTerminalEvidenceStatus(run),
         triggerRunEvidenceStatus: scheduledEventTriggerRunEvidenceStatus(scheduledEventRunTerminalEvidenceStatus(run)),
+        businessLineId: plan.businessLineLoop.businessLineId,
+        businessLineLoopSummary: plan.businessLineLoop.summary,
         targetTaskId: task.id,
         planSummary: plan.summary,
         standingApprovalPolicyId: plan.policy?.id ?? null,

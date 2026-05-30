@@ -177,6 +177,7 @@ function matureAutomationTask() {
     activeBlocker: null,
     activeDependency: null,
     activeWaitingItem: null,
+    businessLineId: 'business_line_scheduled_event_trigger_readiness_smoke',
     completionCriteria: [{
       createdAt: '2026-01-01T00:00:00.000Z',
       id: 'criterion_1',

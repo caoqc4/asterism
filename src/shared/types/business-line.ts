@@ -292,6 +292,8 @@ export type BusinessLineAutomationStatus = 'active' | 'paused' | 'blocked';
 export type BusinessLineAutomation = {
   id: string;
   businessLineId: string;
+  loopId?: string;
+  carrierTaskId?: string;
   taskId: string;
   kind: BusinessLineAutomationKind;
   title: string;
@@ -303,6 +305,15 @@ export type BusinessLineAutomation = {
     note: string | null;
   };
   mutationBoundary: string;
+  readinessEvidence?: {
+    businessLineId: string;
+    carrierTaskId: string;
+    runtime: 'runtime_gate_required';
+    standingApproval: 'required';
+    runLimit: 'required';
+    reviewBoundary: 'post_step_review_required';
+    evidence: string[];
+  };
   createdAt: string;
   updatedAt: string;
 };
@@ -317,6 +328,7 @@ export type BusinessLineSensor = {
   title: string;
   status: BusinessLineSensorStatus;
   readOnly: true;
+  confirmationBoundary?: 'confirmation_or_valid_loop_policy';
   reviewBoundary: string;
   sourceTaskId?: string | null;
   sourceRecordIds?: string[];

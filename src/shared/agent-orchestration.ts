@@ -203,6 +203,36 @@ export type AgentScheduledEventRuntimeStartRequirement =
   | 'selected_runtime_identity'
   | 'run_limit_count';
 
+export type AgentBusinessLineLoopReadinessRequirement =
+  | 'business_line'
+  | 'carrier_task'
+  | 'runtime'
+  | 'standing_approval'
+  | 'run_limit'
+  | 'review_boundary';
+
+export function businessLineLoopReadinessRequirements(): AgentBusinessLineLoopReadinessRequirement[] {
+  return [
+    'business_line',
+    'carrier_task',
+    'runtime',
+    'standing_approval',
+    'run_limit',
+    'review_boundary',
+  ];
+}
+
+export type AgentBusinessLineLoopReadiness = {
+  status: 'ready' | 'blocked';
+  businessLineId: string | null;
+  carrierTaskId: string;
+  reviewBoundary: 'post_step_review_required';
+  missingRequirements: AgentBusinessLineLoopReadinessRequirement[];
+  satisfiedRequirements: AgentBusinessLineLoopReadinessRequirement[];
+  evidence: string[];
+  summary: string;
+};
+
 export function scheduledEventRuntimeStartRequirements(): AgentScheduledEventRuntimeStartRequirement[] {
   return [
     'trigger_plan_ready',
@@ -223,9 +253,11 @@ export type AgentScheduledEventTriggerPlan = {
     | 'task_memory_coverage'
     | 'task_memory_guidance'
     | 'subtask_start'
+    | 'business_line_loop'
     | 'run_limit_count'
     | 'post_step'
   >;
+  businessLineLoop: AgentBusinessLineLoopReadiness;
   policy: AgentStandingApprovalPolicy | null;
   runLimit: {
     maxRunsPerDay: number | null;
@@ -267,6 +299,7 @@ export type AgentScheduledEventTriggerServiceEvidence = {
     | 'activeBlocker'
     | 'activeDependency'
     | 'activeWaitingItem'
+    | 'businessLineId'
     | 'completionCriteria'
     | 'id'
     | 'nextStep'
@@ -706,6 +739,7 @@ export function evaluateSkillInformedAutomationReadiness(params: {
     | 'activeBlocker'
     | 'activeDependency'
     | 'activeWaitingItem'
+    | 'businessLineId'
     | 'completionCriteria'
     | 'nextStep'
     | 'processTemplates'
@@ -1105,6 +1139,7 @@ export function planScheduledEventAgentTrigger(params: {
     | 'activeBlocker'
     | 'activeDependency'
     | 'activeWaitingItem'
+    | 'businessLineId'
     | 'completionCriteria'
     | 'id'
     | 'nextStep'
@@ -1174,6 +1209,21 @@ export function planScheduledEventAgentTrigger(params: {
     blockedReasons.push('Scheduled/event trigger runtime start requires daily run-limit accounting.');
   }
 
+  const businessLineLoop = evaluateBusinessLineLoopReadiness({
+    businessLineId: params.task.businessLineId ?? null,
+    carrierTaskId: params.task.id,
+    runtimeReady: snapshot.runtime.status === 'ready',
+    runLimitReady: runLimitCountReady,
+    standingApprovalReady: standingApproval.accepted,
+  });
+  evidence.push(...businessLineLoop.evidence);
+  if (
+    businessLineLoop.missingRequirements.includes('business_line')
+    || businessLineLoop.missingRequirements.includes('carrier_task')
+  ) {
+    blockedReasons.push('Scheduled/event business-line loop requires business line, carrier task, runtime, Standing Approval, run limit, and post-step review boundary evidence.');
+  }
+
   const status = blockedReasons.length === 0 ? 'ready' : 'blocked';
   const runtimeStartAllowed = status === 'ready' && schedulerTriggerServiceConnected;
   const runtimeStartRequirements = scheduledEventRuntimeStartRequirements();
@@ -1198,9 +1248,11 @@ export function planScheduledEventAgentTrigger(params: {
       'task_memory_coverage',
       'task_memory_guidance',
       'subtask_start',
+      'business_line_loop',
       'run_limit_count',
       'post_step',
     ],
+    businessLineLoop,
     policy,
     runLimit: {
       maxRunsPerDay: policy?.maxRunsPerDay ?? null,
@@ -1225,7 +1277,8 @@ export function planScheduledEventAgentTrigger(params: {
       `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
       `schedulerTriggerServiceConnected=${schedulerTriggerServiceConnected ? 'true' : 'false'}`,
       `selectedRuntimeIdentity=${selectedRuntimeIdentityReady ? runtimeId : 'missing'}`,
-      'triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step',
+      'triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,business_line_loop,run_limit_count,post_step',
+      businessLineLoop.summary,
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
       `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
     ].join(' / '),
@@ -1262,14 +1315,84 @@ export function planScheduledEventAgentTriggerFromEvidence(
       : null,
     runtimeId: evidence.runtimeId,
     schedulerTriggerServiceConnected: evidence.schedulerTriggerService?.connected === true,
-    task: {
-      ...evidence.task,
-      timeline: [
+      task: {
+        ...evidence.task,
+        timeline: [
         ...evidence.task.timeline,
         ...standingApprovalTimeline,
       ],
     },
   });
+}
+
+function evaluateBusinessLineLoopReadiness(params: {
+  businessLineId: string | null;
+  carrierTaskId: string;
+  runtimeReady: boolean;
+  standingApprovalReady: boolean;
+  runLimitReady: boolean;
+}): AgentBusinessLineLoopReadiness {
+  const requirements = businessLineLoopReadinessRequirements();
+  const missingRequirements: AgentBusinessLineLoopReadinessRequirement[] = [];
+  const evidence: string[] = [];
+  const businessLineId = params.businessLineId?.trim() || null;
+  const carrierTaskId = params.carrierTaskId.trim();
+
+  if (businessLineId) {
+    evidence.push(`businessLine=${businessLineId}`);
+  } else {
+    missingRequirements.push('business_line');
+  }
+
+  if (carrierTaskId) {
+    evidence.push(`carrierTask=${carrierTaskId}`);
+  } else {
+    missingRequirements.push('carrier_task');
+  }
+
+  if (params.runtimeReady) {
+    evidence.push('loopRuntime=ready');
+  } else {
+    missingRequirements.push('runtime');
+  }
+
+  if (params.standingApprovalReady) {
+    evidence.push('loopStandingApproval=ready');
+  } else {
+    missingRequirements.push('standing_approval');
+  }
+
+  if (params.runLimitReady) {
+    evidence.push('loopRunLimit=ready');
+  } else {
+    missingRequirements.push('run_limit');
+  }
+
+  evidence.push('reviewBoundary=post_step_review_required');
+
+  const missingSet = new Set(missingRequirements);
+  const satisfiedRequirements = requirements.filter((requirement) => !missingSet.has(requirement));
+  const status = missingRequirements.length === 0 ? 'ready' : 'blocked';
+
+  return {
+    status,
+    businessLineId,
+    carrierTaskId,
+    reviewBoundary: 'post_step_review_required',
+    missingRequirements,
+    satisfiedRequirements,
+    evidence,
+    summary: [
+      'Business-line loop readiness',
+      `businessLineLoop=${status}`,
+      `businessLineLoopOwner=${businessLineId ?? 'missing'}`,
+      `businessLineLoopCarrier=${carrierTaskId || 'missing'}`,
+      `businessLineLoopRequirements=${satisfiedRequirements.length}/${requirements.length}`,
+      `businessLineLoopSatisfiedRequirements=${satisfiedRequirements.length ? satisfiedRequirements.join(',') : 'none'}`,
+      `businessLineLoopMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+      'reviewBoundary=post_step_review_required',
+    ].join(' / '),
+  };
 }
 
 function isRiskAllowedByStandingApproval(

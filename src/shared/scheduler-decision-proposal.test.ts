@@ -544,4 +544,39 @@ describe('scheduler decision proposal contract', () => {
     expect(ready.summary).toContain('standingApprovalActive=yes');
     expect(ready.summary).toContain('standingApprovalScopeMatched=yes');
   });
+
+  it('uses business-line scope for scheduler Decision proposals when a business-line owner is available', () => {
+    const plan = planSchedulerDecisionProposalFromEvidence({
+      approvalQueue: {
+        connected: true,
+        surface: 'task_dynamics',
+      },
+      businessLineId: 'bl_scheduler_1',
+      operatorConfirmation: {
+        confirmed: true,
+        operatorId: 'operator_1',
+      },
+      proposal: {
+        options: ['Pause loop', 'Keep watching'],
+        proposedOutcome: 'Pause loop',
+        rationale: 'The scheduled sensor found a risky mismatch.',
+        title: 'Confirm business-line scheduler response',
+      },
+      standingApproval: {
+        active: true,
+        policyId: 'policy_1',
+        scopeTaskId: 'task_scheduler_1',
+      },
+      targetTaskId: 'task_scheduler_1',
+    });
+
+    expect(plan).toMatchObject({
+      status: 'ready',
+      businessLineId: 'bl_scheduler_1',
+      decisionScope: 'business_line',
+      targetTaskId: 'task_scheduler_1',
+    });
+    expect(plan.summary).toContain('decisionScope=business_line');
+    expect(plan.summary).toContain('businessLineId=bl_scheduler_1');
+  });
 });

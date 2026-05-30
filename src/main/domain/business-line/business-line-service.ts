@@ -1110,6 +1110,8 @@ export class BusinessLineService {
     return {
       id: `automation:${task.id}`,
       businessLineId,
+      loopId: `business_line_loop:${businessLineId}:${task.id}`,
+      carrierTaskId: task.id,
       taskId: task.id,
       kind,
       title: task.title,
@@ -1124,7 +1126,23 @@ export class BusinessLineService {
         level: task.riskLevel,
         note: task.riskNote,
       },
-      mutationBoundary: 'Uses global MCP/runtime/external authorization; any local, external, public, or money-affecting mutation must pass an action-level Decision gate.',
+      mutationBoundary: 'Business-line automation carrier; runtime start requires Standing Approval, run-limit evidence, and post-step review/writeback boundary. Any local, external, public, or money-affecting mutation must pass an action-level Decision gate.',
+      readinessEvidence: {
+        businessLineId,
+        carrierTaskId: task.id,
+        runtime: 'runtime_gate_required',
+        standingApproval: 'required',
+        runLimit: 'required',
+        reviewBoundary: 'post_step_review_required',
+        evidence: [
+          `businessLine=${businessLineId}`,
+          `carrierTask=${task.id}`,
+          'runtime=required',
+          'standingApproval=required',
+          'runLimit=required',
+          'reviewBoundary=post_step_review_required',
+        ],
+      },
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
     };
@@ -1140,7 +1158,8 @@ export class BusinessLineService {
       title: `${automationTriggerLabel(kind)}: ${task.title}`,
       status: task.state === 'waiting_external' ? 'paused' : 'watching',
       readOnly: true,
-      reviewBoundary: 'Read-only sensor output becomes a candidate record first; mutations require a Decision-approved action.',
+      confirmationBoundary: 'confirmation_or_valid_loop_policy',
+      reviewBoundary: 'Read-only sensor output becomes a candidate record first; mutations require operator confirmation or a valid business-line loop policy plus Decision-approved action.',
       sourceTaskId: task.id,
       sourceRecordIds: [],
     };

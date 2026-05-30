@@ -859,6 +859,7 @@ describe('agent orchestration snapshot', () => {
       now: new Date('2026-05-26T11:00:00.000Z'),
       task: {
         ...task,
+        businessLineId: 'bl_1',
         id: 'task_1',
         timeline: [{
           id: 'timeline_approval',
@@ -893,9 +894,16 @@ describe('agent orchestration snapshot', () => {
         'task_memory_coverage',
         'task_memory_guidance',
         'subtask_start',
+        'business_line_loop',
         'run_limit_count',
         'post_step',
       ],
+      businessLineLoop: {
+        businessLineId: 'bl_1',
+        carrierTaskId: 'task_1',
+        missingRequirements: ['run_limit'],
+        reviewBoundary: 'post_step_review_required',
+      },
       policy: {
         id: 'standing_approval:task_1:coding:local_sandbox',
       },
@@ -910,8 +918,10 @@ describe('agent orchestration snapshot', () => {
     expect(plan.summary).toContain('runtimeStartMissingRequirements=scheduler_trigger_service,run_limit_count');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=false');
     expect(plan.summary).toContain('selectedRuntimeIdentity=local_sandbox');
-    expect(plan.summary).toContain('triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,run_limit_count,post_step');
+    expect(plan.summary).toContain('triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,business_line_loop,run_limit_count,post_step');
+    expect(plan.summary).toContain('businessLineLoopOwner=bl_1');
     expect(plan.evidence).toContain('targetTask=task_1');
+    expect(plan.evidence).toContain('businessLine=bl_1');
     expect(plan.summary).toContain('runLimit=not_counted/3');
   });
 
@@ -944,6 +954,7 @@ describe('agent orchestration snapshot', () => {
       schedulerTriggerServiceConnected: true,
       task: {
         ...task,
+        businessLineId: 'bl_1',
         id: 'task_1',
         timeline: [{
           id: 'timeline_approval',
@@ -1244,6 +1255,7 @@ describe('agent orchestration snapshot', () => {
     });
     const taskWithIdentity = {
       ...task,
+      businessLineId: 'bl_1',
       id: 'task_1',
       timeline: [],
     };
@@ -1315,8 +1327,22 @@ describe('agent orchestration snapshot', () => {
         'selected_runtime_identity',
         'run_limit_count',
       ],
+      businessLineLoop: {
+        status: 'ready',
+        businessLineId: 'bl_1',
+        carrierTaskId: 'task_1',
+        satisfiedRequirements: [
+          'business_line',
+          'carrier_task',
+          'runtime',
+          'standing_approval',
+          'run_limit',
+          'review_boundary',
+        ],
+      },
     });
     expect(ready.evidence).toContain('targetTask=task_1');
+    expect(ready.evidence).toContain('businessLine=bl_1');
     expect(ready.evidence).toContain('runLimit=0/3');
     expect(ready.summary).toContain('runtimeStartRequirements=4/4');
     expect(ready.summary).toContain('runtimeStartSatisfiedRequirements=trigger_plan_ready,scheduler_trigger_service,selected_runtime_identity,run_limit_count');

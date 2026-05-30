@@ -300,11 +300,16 @@ describe('Taskplane writeback approval items', () => {
         type: 'panel.scheduler_decision_proposed',
         payload: JSON.stringify({
           evidenceRunId: 'run_scheduler_1',
+          businessLineId: 'bl_scheduler_1',
           operatorConfirmed: true,
           operatorId: 'operator_1',
           options: ['继续自动巡检', '暂停自动巡检'],
           proposedOutcome: '继续自动巡检',
-          proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1', 'run_scheduler_1'),
+          proposalReadinessSummary: [
+            schedulerDecisionReadinessSummary('task_1', 'run_scheduler_1'),
+            'decisionScope=business_line',
+            'businessLineId=bl_scheduler_1',
+          ].join(' / '),
           rationale: '最近一次自动巡检已经生成可审核证据，需要确认后续策略。',
           targetTaskId: 'task_1',
           title: '确认自动巡检策略',
@@ -323,6 +328,8 @@ describe('Taskplane writeback approval items', () => {
         input: {
           sourceId: 'run_scheduler_1',
           sourceLabel: 'Scheduler/background Decision proposal',
+          businessLineId: 'bl_scheduler_1',
+          scope: 'business_line',
           taskId: 'task_1',
           title: '确认自动巡检策略',
         },
@@ -755,6 +762,69 @@ describe('Taskplane writeback approval items', () => {
           proposedOutcome: '继续自动巡检',
           proposalReadinessSummary: schedulerDecisionReadinessSummary('task_1', 'run_other'),
           rationale: 'producer summary 的 Run 来源身份必须和 payload 证据一致。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
+  it('blocks scheduler Decision proposal timeline events when business-line owner evidence diverges', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_wrong_business_line',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          businessLineId: 'bl_a',
+          evidenceRunId: 'run_scheduler_1',
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          proposalReadinessSummary: [
+            schedulerDecisionReadinessSummary('task_1', 'run_scheduler_1'),
+            'decisionScope=business_line',
+            'businessLineId=bl_b',
+          ].join(' / '),
+          rationale: 'producer summary 的业务线 owner 必须和 payload 一致。',
+          targetTaskId: 'task_1',
+          title: '确认自动巡检策略',
+        }),
+        createdAt: '2026-05-25T00:01:00.000Z',
+      }],
+    });
+
+    expect(items).toEqual([]);
+  });
+
+  it('blocks task-scoped scheduler Decision proposal timeline events when producer summary carries a business-line owner', () => {
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+      timeline: [{
+        id: 'timeline_scheduler_unexpected_business_line',
+        taskId: 'task_1',
+        type: 'panel.scheduler_decision_proposed',
+        payload: JSON.stringify({
+          evidenceRunId: 'run_scheduler_1',
+          operatorConfirmed: true,
+          operatorId: 'operator_1',
+          options: ['继续自动巡检', '暂停自动巡检'],
+          proposedOutcome: '继续自动巡检',
+          proposalReadinessSummary: [
+            schedulerDecisionReadinessSummary('task_1', 'run_scheduler_1'),
+            'decisionScope=task',
+            'businessLineId=bl_unexpected',
+          ].join(' / '),
+          rationale: 'payload 没有业务线 owner 时，summary 不能暗带业务线 owner。',
           targetTaskId: 'task_1',
           title: '确认自动巡检策略',
         }),

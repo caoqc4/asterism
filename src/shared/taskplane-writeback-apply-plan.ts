@@ -574,7 +574,7 @@ export function buildStructuredWritebackApplyPlan(params: {
               reason: intent.rationale,
             }
           : null,
-        scope: 'task',
+        scope: params.proposal.businessLineId ? 'business_line' : 'task',
         sourceId: params.sourceId ?? intent.evidenceRunId,
         sourceLabel: params.sourceLabel ?? 'Agent CLI Write Intent',
         sourceType: params.sourceType ?? 'run',

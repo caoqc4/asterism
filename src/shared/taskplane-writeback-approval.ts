@@ -232,6 +232,8 @@ export function buildTaskplaneWritebackApprovalItems(params: {
 
 type SchedulerDecisionProposalTimelinePayload = {
   authorization?: 'local_recovery' | 'operator_confirmation' | 'standing_approval' | string;
+  businessLineId?: string | null;
+  decisionScope?: 'business_line' | 'task' | string;
   evidenceRunId?: string | null;
   localRecoveryCompleted?: boolean;
   localRecoveryRunId?: string | null;
@@ -265,6 +267,10 @@ function buildSchedulerDecisionApprovalItem(params: {
   if (
     schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'proposalReady') !== 'yes'
     || schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'approvalQueueSurface') !== 'task_dynamics'
+    || !schedulerDecisionScopeEvidenceMatches({
+      businessLineId: payload.businessLineId ?? null,
+      summary: proposalReadinessSummary,
+    })
     || schedulerDecisionReadinessSummaryValue(proposalReadinessSummary, 'targetTask') !== targetTaskId
     || !schedulerDecisionProducerSourceEvidenceMatches({
       evidenceRunId: payloadEvidenceRunId,
@@ -282,6 +288,7 @@ function buildSchedulerDecisionApprovalItem(params: {
       connected: true,
       surface: 'task_dynamics',
     },
+    businessLineId: payload.businessLineId ?? null,
     evidenceRunId: payloadEvidenceRunId || null,
     operatorConfirmation: {
       confirmed: payload.operatorConfirmed === true,
@@ -313,6 +320,7 @@ function buildSchedulerDecisionApprovalItem(params: {
   const evidenceRunId = payload.evidenceRunId?.trim() || params.event.id;
   const approvalSourceId = payload.evidenceRunId?.trim() || schedulerDecisionSystemApprovalSourceId(params.taskId, decisionPayload.title);
   const intent: TaskplaneDecisionCreateIntent = {
+    businessLineId: readiness.businessLineId,
     evidenceRunId,
     options: decisionPayload.options,
     proposedOutcome: decisionPayload.proposedOutcome,
@@ -322,6 +330,7 @@ function buildSchedulerDecisionApprovalItem(params: {
     type: 'decision.create',
   };
   const proposal: TaskplaneStructuredWritebackProposal = {
+    businessLineId: readiness.businessLineId,
     detail: intent.rationale,
     evidenceRunId,
     intent,
@@ -357,6 +366,20 @@ function buildSchedulerDecisionApprovalItem(params: {
     taskId: params.taskId,
     title: proposal.title,
   };
+}
+
+function schedulerDecisionScopeEvidenceMatches(params: {
+  businessLineId?: string | null;
+  summary: string;
+}): boolean {
+  const payloadBusinessLineId = params.businessLineId?.trim() || null;
+  const summaryBusinessLineId = schedulerDecisionReadinessSummaryValue(params.summary, 'businessLineId');
+  const expectedScope = payloadBusinessLineId ? 'business_line' : 'task';
+  const summaryScope = schedulerDecisionReadinessSummaryValue(params.summary, 'decisionScope');
+  const scopeMatches = summaryScope ? summaryScope === expectedScope : expectedScope === 'task';
+  if (!scopeMatches) return false;
+  if (payloadBusinessLineId) return summaryBusinessLineId === payloadBusinessLineId;
+  return !summaryBusinessLineId || summaryBusinessLineId === 'missing';
 }
 
 function schedulerDecisionProducerSourceEvidenceMatches(params: {

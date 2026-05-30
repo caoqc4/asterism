@@ -7,6 +7,8 @@ export type SchedulerDecisionProposalPlan = {
   status: 'ready' | 'blocked';
   approvalItemAllowed: boolean;
   approvalQueueSurface: 'task_dynamics' | 'right_panel' | 'unknown' | null;
+  businessLineId: string | null;
+  decisionScope: 'business_line' | 'task';
   decisionPersistenceAllowed: false;
   evidenceRunId: string | null;
   evidenceSourceIdentityChain: 'ready' | 'missing';
@@ -35,6 +37,7 @@ export type SchedulerDecisionProposalServiceEvidence = {
     connected: boolean;
     surface?: 'task_dynamics' | 'right_panel' | 'unknown';
   } | null;
+  businessLineId?: string | null;
   operatorConfirmation?: {
     confirmed: boolean;
     operatorId?: string | null;
@@ -71,6 +74,7 @@ export function schedulerDecisionProposalRequirements(): SchedulerDecisionPropos
 export function planSchedulerDecisionProposal(params: {
   approvalQueueConnected?: boolean;
   approvalQueueSurface?: 'task_dynamics' | 'right_panel' | 'unknown' | null;
+  businessLineId?: string | null;
   evidenceRunId?: string | null;
   operatorId?: string | null;
   operatorConfirmed?: boolean;
@@ -86,6 +90,8 @@ export function planSchedulerDecisionProposal(params: {
   targetTaskId?: string | null;
   title?: string | null;
 } = {}): SchedulerDecisionProposalPlan {
+  const businessLineId = params.businessLineId?.trim() || null;
+  const decisionScope = businessLineId ? 'business_line' : 'task';
   const targetTaskId = params.targetTaskId?.trim() || null;
   const title = normalizeDecisionProposalText(params.title);
   const rationale = normalizeDecisionProposalText(params.rationale);
@@ -176,6 +182,8 @@ export function planSchedulerDecisionProposal(params: {
     status,
     approvalItemAllowed,
     approvalQueueSurface,
+    businessLineId,
+    decisionScope,
     decisionPersistenceAllowed: false,
     evidenceRunId,
     evidenceSourceIdentityChain,
@@ -212,6 +220,8 @@ export function planSchedulerDecisionProposal(params: {
       `decisionProposedOutcome=${proposedOutcomeInput ? 'present' : 'missing'}`,
       `decisionProposedOutcomeKey=${proposedOutcomeIdentityKey || 'missing'}`,
       `decisionProposedOutcomeMatchesOption=${proposedOutcomeMatched ? 'yes' : 'no'}`,
+      `decisionScope=${decisionScope}`,
+      `businessLineId=${businessLineId ?? 'missing'}`,
       `targetTask=${targetTaskId ?? 'missing'}`,
       `evidenceSourceType=${evidenceSourceType}`,
       `evidenceRunId=${evidenceRunId ?? 'missing'}`,
@@ -262,6 +272,7 @@ export function planSchedulerDecisionProposalFromEvidence(
   return planSchedulerDecisionProposal({
     approvalQueueConnected: evidence.approvalQueue?.connected === true,
     approvalQueueSurface: evidence.approvalQueue?.surface ?? null,
+    businessLineId: evidence.businessLineId ?? null,
     evidenceRunId: evidence.evidenceRunId ?? null,
     operatorId: evidence.operatorConfirmation?.operatorId ?? null,
     operatorConfirmed,

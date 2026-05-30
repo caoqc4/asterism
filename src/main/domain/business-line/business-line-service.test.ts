@@ -1452,16 +1452,28 @@ describe('BusinessLineService', () => {
 
     expect(workspace?.automations.automations).toEqual(expect.arrayContaining([
       expect.objectContaining({
+        businessLineId: created.id,
+        loopId: `business_line_loop:${created.id}:${scheduledTask.id}`,
+        carrierTaskId: scheduledTask.id,
         taskId: scheduledTask.id,
         kind: 'scheduled',
         triggerLabel: 'Scheduled loop',
-        mutationBoundary: expect.stringContaining('Decision gate'),
+        mutationBoundary: expect.stringContaining('Standing Approval'),
+        readinessEvidence: expect.objectContaining({
+          businessLineId: created.id,
+          carrierTaskId: scheduledTask.id,
+          runtime: 'runtime_gate_required',
+          standingApproval: 'required',
+          runLimit: 'required',
+          reviewBoundary: 'post_step_review_required',
+        }),
       }),
     ]));
     expect(workspace?.automations.sensors).toEqual(expect.arrayContaining([
       expect.objectContaining({
         sourceType: 'scheduled_task',
         readOnly: true,
+        confirmationBoundary: 'confirmation_or_valid_loop_policy',
         reviewBoundary: expect.stringContaining('candidate record'),
       }),
       expect.objectContaining({

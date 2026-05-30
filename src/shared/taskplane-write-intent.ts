@@ -44,6 +44,7 @@ export type TaskplaneArtifactProposeIntent = {
 };
 
 export type TaskplaneDecisionCreateIntent = {
+  businessLineId?: string | null;
   evidenceRunId: string;
   options?: string[];
   proposedOutcome?: string;
