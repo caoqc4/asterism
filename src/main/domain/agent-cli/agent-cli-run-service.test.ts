@@ -2643,6 +2643,7 @@ function buildPilotDecisionSnapshot(
     backend: 'codex_cli',
     backendPlan: {
       backend: 'codex_cli',
+      fallback: null,
       maxTurns: 1,
       outputContract: 'pilot_decision_summary',
       reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',

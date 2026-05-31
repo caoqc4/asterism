@@ -1528,6 +1528,7 @@ describe('ai runtime invocation contract', () => {
         backend: 'agent_api',
         backendPlan: {
           backend: 'agent_api',
+          fallback: null,
           maxTurns: 1,
           outputContract: 'pilot_decision_summary',
           reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',

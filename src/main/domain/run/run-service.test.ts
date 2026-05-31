@@ -11,6 +11,7 @@ function buildAgentApiPilotDecision() {
     backend: 'agent_api' as const,
     backendPlan: {
       backend: 'agent_api' as const,
+      fallback: null,
       maxTurns: 1,
       outputContract: 'pilot_decision_summary' as const,
       reason: 'Explicit execution request.',
@@ -1487,6 +1488,7 @@ describe('RunService', () => {
         backend: 'agent_api',
         backendPlan: {
           backend: 'agent_api',
+          fallback: null,
           maxTurns: 1,
           outputContract: 'pilot_decision_summary',
           reason: 'Explicit execution request.',

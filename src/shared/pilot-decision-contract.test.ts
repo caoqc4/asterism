@@ -126,6 +126,59 @@ describe('Pilot Decision Contract', () => {
     })).toBe('claude_cli');
   });
 
+  it('prefers the selected Agent scheme for bounded Pilot judgment when capability gates allow it', () => {
+    const decision = evaluatePilotDecision({
+      availableDecisionBackends: ['rules', 'agent_api', 'codex_cli'],
+      entrypoint: 'right_panel_chat',
+      hasTaskContext: true,
+      multiTaskCandidateCount: 3,
+      prompt: '现在应该先推进哪个任务？',
+      runtime: { agentCliReady: true, apiRuntimeReady: true },
+      selectedAgentScheme: 'codex',
+      selectedCliRuntime: 'codex',
+      task: {
+        nextStep: '选择当前焦点。',
+        title: '多任务排序',
+      },
+    });
+
+    expect(decision.backend).toBe('codex_cli');
+    expect(decision.operationMode).toBe('bounded_decision_backend');
+    expect(decision.backendPlan).toMatchObject({
+      backend: 'codex_cli',
+      fallback: null,
+      status: 'requested',
+    });
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('fallback=none');
+  });
+
+  it('records explicit fallback when the selected Agent scheme cannot satisfy Pilot judgment', () => {
+    const decision = evaluatePilotDecision({
+      availableDecisionBackends: ['rules', 'agent_api'],
+      entrypoint: 'right_panel_chat',
+      hasTaskContext: true,
+      multiTaskCandidateCount: 2,
+      prompt: '现在应该先推进哪个任务？',
+      runtime: { agentCliReady: false, apiRuntimeReady: true },
+      selectedAgentScheme: 'codex',
+      task: {
+        nextStep: '选择当前焦点。',
+        title: '多任务排序',
+      },
+    });
+
+    expect(decision.backend).toBe('agent_api');
+    expect(decision.backendPlan).toMatchObject({
+      backend: 'agent_api',
+      fallback: {
+        from: 'codex',
+        to: 'agent_api',
+      },
+      status: 'requested',
+    });
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('fallback=codex->agent_api');
+  });
+
   it('keeps context refresh as a local handoff movement with memory rules', () => {
     const decision = evaluatePilotDecision({
       entrypoint: 'context_refresh',

@@ -10,22 +10,17 @@ import { evaluateTaskAdvancement } from './task-advancement-orchestrator.js';
 import type { RuntimeEntrypointGate } from './runtime-entrypoint-coverage.js';
 import type { PriorityLane } from './types/brief.js';
 import { comparePriorityLanes } from './working-context/priority-lanes.js';
+import {
+  resolveAgentCapabilityGateway,
+  type AgentCapabilityGatewayFallback,
+  type AgentDecisionBackend,
+  type AgentExecutionRuntime,
+  type UserSelectedAgentScheme,
+} from './agent-capability-gateway.js';
 
-export type PilotDecisionBackend =
-  | 'rules'
-  | 'agent_api'
-  | 'codex_cli'
-  | 'claude_cli'
-  | 'wanman_matrix'
-  | 'human_review';
+export type PilotDecisionBackend = AgentDecisionBackend;
 
-export type PilotExecutor =
-  | 'local_rule'
-  | 'human'
-  | 'agent_api'
-  | 'codex_cli'
-  | 'claude_cli'
-  | 'wanman_matrix';
+export type PilotExecutor = AgentExecutionRuntime;
 
 export type PilotMessagePriority = 'follow_up' | 'steer' | 'escalate';
 
@@ -44,6 +39,7 @@ export type PilotDecisionBackendTrigger =
 
 export type PilotDecisionBackendPlan = {
   backend: PilotDecisionBackend;
+  fallback: AgentCapabilityGatewayFallback | null;
   maxTurns: 1;
   outputContract: 'pilot_decision_summary';
   reason: string;
@@ -93,6 +89,7 @@ export type PilotDecisionInput = {
   priorityLane?: PriorityLane | null;
   prompt: string;
   runtime?: TaskAdvancementRuntimeAvailability;
+  selectedAgentScheme?: UserSelectedAgentScheme | null;
   selectedCliRuntime?: 'codex' | 'claude' | null;
   task?: TaskAdvancementTask | null;
 };
@@ -127,6 +124,7 @@ export function evaluatePilotDecision(input: PilotDecisionInput): PilotDecision 
     availableBackends: input.availableDecisionBackends,
     needsModelJudgment,
     runtime: input.runtime,
+    selectedAgentScheme: input.selectedAgentScheme,
     selectedCliRuntime: input.selectedCliRuntime,
   });
   const executor = selectPilotExecutor({
@@ -138,6 +136,14 @@ export function evaluatePilotDecision(input: PilotDecisionInput): PilotDecision 
   });
   const backendPlan = buildPilotDecisionBackendPlan({
     backend,
+    fallback: resolvePilotBackendFallback({
+      availableBackends: input.availableDecisionBackends,
+      backend,
+      needsModelJudgment,
+      runtime: input.runtime,
+      selectedAgentScheme: input.selectedAgentScheme,
+      selectedCliRuntime: input.selectedCliRuntime,
+    }),
     needsModelJudgment,
     triggers: backendTriggers,
   });
@@ -206,8 +212,10 @@ export function formatPilotDecisionBackendPlanForStep(plan: PilotDecisionBackend
     `outputContract=${plan.outputContract}`,
     `maxTurns=${plan.maxTurns}`,
     plan.triggers.length ? `triggers=${plan.triggers.join(',')}` : 'triggers=none',
+    plan.fallback ? `fallback=${plan.fallback.from}->${plan.fallback.to}` : 'fallback=none',
+    plan.fallback ? `fallbackReason=${plan.fallback.reason}` : null,
     `reason=${plan.reason}`,
-  ].join('\n');
+  ].filter((line): line is string => line !== null).join('\n');
 }
 
 export function buildBoundedPilotDecisionPrompt(params: {
@@ -254,33 +262,40 @@ export function selectPilotDecisionBackend(params: {
   availableBackends?: PilotDecisionBackend[];
   needsModelJudgment: boolean;
   runtime?: TaskAdvancementRuntimeAvailability;
+  selectedAgentScheme?: UserSelectedAgentScheme | null;
   selectedCliRuntime?: 'codex' | 'claude' | null;
 }): PilotDecisionBackend {
   if (!params.needsModelJudgment) {
     return 'rules';
   }
 
-  const available = new Set<PilotDecisionBackend>(params.availableBackends ?? inferredBackends(params));
-  const preferredCli = params.selectedCliRuntime === 'claude' ? 'claude_cli' : 'codex_cli';
-
-  for (const candidate of ['agent_api', preferredCli, 'codex_cli', 'claude_cli', 'wanman_matrix', 'human_review'] as const) {
-    if (available.has(candidate)) {
-      return candidate;
-    }
-  }
-
-  return available.has('rules') ? 'rules' : 'human_review';
+  return resolveAgentCapabilityGateway({
+    availableDecisionBackends: params.availableBackends,
+    runtime: params.runtime,
+    runtimeNeed: 'decision',
+    selectedAgentScheme: params.selectedAgentScheme,
+    selectedCliRuntime: params.selectedCliRuntime,
+  }).decisionBackend;
 }
 
-function inferredBackends(params: {
+function resolvePilotBackendFallback(params: {
+  availableBackends?: PilotDecisionBackend[];
+  backend: PilotDecisionBackend;
+  needsModelJudgment: boolean;
   runtime?: TaskAdvancementRuntimeAvailability;
+  selectedAgentScheme?: UserSelectedAgentScheme | null;
   selectedCliRuntime?: 'codex' | 'claude' | null;
-}): PilotDecisionBackend[] {
-  const backends: PilotDecisionBackend[] = ['rules'];
-  if (params.runtime?.apiRuntimeReady) backends.push('agent_api');
-  if (params.runtime?.agentCliReady) backends.push(params.selectedCliRuntime === 'claude' ? 'claude_cli' : 'codex_cli');
-  backends.push('human_review');
-  return backends;
+}): AgentCapabilityGatewayFallback | null {
+  if (!params.needsModelJudgment) return null;
+  const selection = resolveAgentCapabilityGateway({
+    availableDecisionBackends: params.availableBackends,
+    runtime: params.runtime,
+    runtimeNeed: 'decision',
+    selectedAgentScheme: params.selectedAgentScheme,
+    selectedCliRuntime: params.selectedCliRuntime,
+  });
+  if (selection.decisionBackend !== params.backend) return null;
+  return selection.fallback;
 }
 
 function derivePilotPriorityLane(task?: TaskAdvancementTask | null): PriorityLane | null {
@@ -375,12 +390,14 @@ function confidenceForBackend(
 
 function buildPilotDecisionBackendPlan(params: {
   backend: PilotDecisionBackend;
+  fallback: AgentCapabilityGatewayFallback | null;
   needsModelJudgment: boolean;
   triggers: PilotDecisionBackendTrigger[];
 }): PilotDecisionBackendPlan {
   if (!params.needsModelJudgment) {
     return {
       backend: 'rules',
+      fallback: null,
       maxTurns: 1,
       outputContract: PILOT_DECISION_OUTPUT_CONTRACT,
       reason: 'Deterministic Pilot rules are enough; no bounded model judgment is needed.',
@@ -392,6 +409,7 @@ function buildPilotDecisionBackendPlan(params: {
   if (params.backend === 'human_review') {
     return {
       backend: params.backend,
+      fallback: params.fallback,
       maxTurns: 1,
       outputContract: PILOT_DECISION_OUTPUT_CONTRACT,
       reason: 'The missing decision belongs to the user or an explicit review lane.',
@@ -403,6 +421,7 @@ function buildPilotDecisionBackendPlan(params: {
   if (params.backend === 'rules') {
     return {
       backend: params.backend,
+      fallback: params.fallback,
       maxTurns: 1,
       outputContract: PILOT_DECISION_OUTPUT_CONTRACT,
       reason: 'A bounded model decision would help, but no usable backend is available; stay conservative.',
@@ -413,6 +432,7 @@ function buildPilotDecisionBackendPlan(params: {
 
   return {
     backend: params.backend,
+    fallback: params.fallback,
     maxTurns: 1,
     outputContract: PILOT_DECISION_OUTPUT_CONTRACT,
     reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',

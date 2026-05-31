@@ -2362,6 +2362,7 @@ function buildPilotDecisionSnapshotForTest() {
     backend: 'agent_api' as const,
     backendPlan: {
       backend: 'agent_api' as const,
+      fallback: null,
       maxTurns: 1 as const,
       outputContract: 'pilot_decision_summary' as const,
       reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',
