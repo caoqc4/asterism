@@ -1338,6 +1338,8 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `pilotDecisionBackendPlanStatus=${pilotDecisionBackendPlan?.status ?? 'missing'}`,
       `pilotDecisionBackendPlanTriggers=${pilotDecisionBackendPlan?.triggers.length ? pilotDecisionBackendPlan.triggers.join(',') : 'none'}`,
       `pilotDecisionBackendPlanMaxTurns=${pilotDecisionBackendPlan?.maxTurns ?? 'missing'}`,
+      `pilotDecisionBackendPlanSelectedScheme=${pilotDecisionBackendPlan?.selectedAgentScheme ?? 'missing'}`,
+      `pilotDecisionBackendPlanPermissionGate=${pilotDecisionBackendPlan?.permissionGate ?? 'missing'}`,
       `pilotDecisionBackendPlanFallback=${pilotDecisionBackendPlan?.fallback ? `${pilotDecisionBackendPlan.fallback.from}->${pilotDecisionBackendPlan.fallback.to}` : 'none'}`,
       `runId=${runEvidenceId || 'missing'}`,
       `writeIntentRun=${writeIntentRunId || 'missing'}`,

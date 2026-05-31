@@ -35,6 +35,8 @@ describe('Pilot Decision Contract', () => {
       backend: 'codex_cli',
       maxTurns: 1,
       outputContract: 'pilot_decision_summary',
+      permissionGate: 'decision_backend',
+      selectedAgentScheme: 'codex',
     });
     expect(decision.backendPlan.triggers).toContain('user_steer');
     expect(shouldRunBoundedPilotDecisionBackend(decision)).toBe(true);
@@ -147,8 +149,12 @@ describe('Pilot Decision Contract', () => {
     expect(decision.backendPlan).toMatchObject({
       backend: 'codex_cli',
       fallback: null,
+      permissionGate: 'decision_backend',
+      selectedAgentScheme: 'codex',
       status: 'requested',
     });
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('selectedAgentScheme=codex');
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('permissionGate=decision_backend');
     expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('fallback=none');
   });
 
@@ -174,8 +180,12 @@ describe('Pilot Decision Contract', () => {
         from: 'codex',
         to: 'agent_api',
       },
+      permissionGate: 'decision_backend',
+      selectedAgentScheme: 'codex',
       status: 'requested',
     });
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('selectedAgentScheme=codex');
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('permissionGate=decision_backend');
     expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('fallback=codex->agent_api');
   });
 

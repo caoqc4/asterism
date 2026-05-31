@@ -1531,7 +1531,9 @@ describe('ai runtime invocation contract', () => {
           fallback: null,
           maxTurns: 1,
           outputContract: 'pilot_decision_summary',
+          permissionGate: 'decision_backend',
           reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',
+          selectedAgentScheme: 'agent_api',
           status: 'requested',
           triggers: ['multi_task_priority'],
         },
@@ -1759,7 +1761,9 @@ describe('ai runtime invocation contract', () => {
           fallback: null,
           maxTurns: 1,
           outputContract: 'pilot_decision_summary',
+          permissionGate: 'decision_backend',
           reason: 'Explicit execution request.',
+          selectedAgentScheme: 'agent_api',
           status: 'requested',
           triggers: ['user_steer'],
         },
@@ -1845,6 +1849,8 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('pilotDecisionBackendPlanStatus=requested');
     expect(partial.summary).toContain('pilotDecisionBackendPlanTriggers=user_steer');
     expect(partial.summary).toContain('pilotDecisionBackendPlanMaxTurns=1');
+    expect(partial.summary).toContain('pilotDecisionBackendPlanSelectedScheme=agent_api');
+    expect(partial.summary).toContain('pilotDecisionBackendPlanPermissionGate=decision_backend');
     expect(partial.summary).toContain('pilotDecisionBackendPlanFallback=none');
     expect(partial.summary).toContain('runId=missing');
     expect(partial.summary).toContain('writeIntentRun=missing');
@@ -2134,7 +2140,9 @@ describe('ai runtime invocation contract', () => {
           },
           maxTurns: 1,
           outputContract: 'pilot_decision_summary',
+          permissionGate: 'decision_backend',
           reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',
+          selectedAgentScheme: 'agent_api',
           status: 'requested',
           triggers: ['user_steer'],
         },
@@ -3318,7 +3326,9 @@ function completeAgentApiExecutionPromotionEvidence() {
         fallback: null,
         maxTurns: 1 as const,
         outputContract: 'pilot_decision_summary' as const,
+        permissionGate: 'decision_backend' as const,
         reason: 'Explicit execution request.',
+        selectedAgentScheme: 'agent_api' as const,
         status: 'requested' as const,
         triggers: ['user_steer' as const],
       },

@@ -4,9 +4,30 @@ import {
   decisionBackendForAgentScheme,
   inferSelectedAgentScheme,
   resolveAgentCapabilityGateway,
+  selectedAgentSchemeForRuntimeMode,
 } from './agent-capability-gateway.js';
 
 describe('Agent Capability Gateway taxonomy', () => {
+  it('maps the user default runtime mode without treating it as execution readiness', () => {
+    expect(selectedAgentSchemeForRuntimeMode('api')).toBe('agent_api');
+    expect(selectedAgentSchemeForRuntimeMode('codex')).toBe('codex');
+    expect(selectedAgentSchemeForRuntimeMode('claude')).toBe('claude');
+    expect(selectedAgentSchemeForRuntimeMode(null)).toBeNull();
+
+    const apiSelection = resolveAgentCapabilityGateway({
+      availableDecisionBackends: ['rules', 'agent_api', 'codex_cli'],
+      runtime: { agentCliReady: true, apiRuntimeReady: true },
+      runtimeNeed: 'task_execution',
+      selectedAgentScheme: selectedAgentSchemeForRuntimeMode('api'),
+    });
+
+    expect(apiSelection.selectedAgentScheme).toBe('agent_api');
+    expect(apiSelection.providerCapabilityProbe.agentApiConfigured).toBe(true);
+    expect(apiSelection.providerCapabilityProbe.agentApiExecutionReady).toBe(false);
+    expect(apiSelection.providerCapabilityProbe.selectedSchemeSupportsNeed).toBe(false);
+    expect(apiSelection.executionRuntime).toBe('codex_cli');
+  });
+
   it('keeps the selected Agent scheme separate from runtime need and backend ids', () => {
     expect(inferSelectedAgentScheme({
       agentCliReady: true,

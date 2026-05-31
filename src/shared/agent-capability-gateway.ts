@@ -1,7 +1,11 @@
+import type { AiRuntimeMode } from './types/settings.js';
+
 export type UserSelectedAgentScheme =
   | 'agent_api'
   | 'claude'
   | 'codex';
+
+export type UserDefaultRuntimeMode = AiRuntimeMode;
 
 export type AgentRuntimeNeed =
   | 'none'
@@ -51,6 +55,11 @@ export type AgentPermissionGate =
   | 'runtime_entrypoint'
   | 'write_permission';
 
+export type RuntimeNeed = AgentRuntimeNeed;
+export type ExecutionRuntime = AgentExecutionRuntime;
+export type DecisionBackend = AgentDecisionBackend;
+export type ProviderCapabilityProbe = AgentProviderCapabilityProbe;
+
 export type AgentCapabilityGatewayFallback = {
   from: UserSelectedAgentScheme | 'none';
   policy: AgentFallbackPolicy;
@@ -75,6 +84,15 @@ export function agentSchemeForCliRuntime(
 ): UserSelectedAgentScheme | null {
   if (runtimeId === 'claude') return 'claude';
   if (runtimeId === 'codex') return 'codex';
+  return null;
+}
+
+export function selectedAgentSchemeForRuntimeMode(
+  runtimeMode: UserDefaultRuntimeMode | null | undefined,
+): UserSelectedAgentScheme | null {
+  if (runtimeMode === 'api') return 'agent_api';
+  if (runtimeMode === 'claude') return 'claude';
+  if (runtimeMode === 'codex') return 'codex';
   return null;
 }
 

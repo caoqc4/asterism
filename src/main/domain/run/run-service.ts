@@ -105,6 +105,8 @@ function formatAgentApiExecutionPromotionReadinessInput(params: {
           backendPlan: {
             fallback: params.pilotDecision.backendPlan.fallback,
             maxTurns: params.pilotDecision.backendPlan.maxTurns,
+            permissionGate: params.pilotDecision.backendPlan.permissionGate,
+            selectedAgentScheme: params.pilotDecision.backendPlan.selectedAgentScheme,
             status: params.pilotDecision.backendPlan.status,
             triggers: params.pilotDecision.backendPlan.triggers,
           },
