@@ -1654,6 +1654,28 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('enabling provider-native tool calls does not imply a live provider-native web/search session without payload-owned providerCallIds and provider-owned web/search tool-name declaration evidence');
   });
 
+  it('records wanman matrix runtime as future executor backend below Pilot for business line missions', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+    const evidence = capabilities?.evidence.join(' ');
+
+    expect(evidence).toContain('Wanman matrix runtime is reserved as a future executor backend below Pilot');
+    expect(evidence).toContain('matrixRuntime=wanman_matrix');
+    expect(evidence).toContain('runtimeRole=future_runtime_backend_below_pilot');
+    expect(evidence).toContain('runtimeExecutable=no');
+    expect(evidence).toContain('productCoordinator=false');
+    expect(evidence).toContain('productionInvocationAllowed=false');
+    expect(evidence).toContain('scoped business-line mission');
+    expect(evidence).toContain('required context manifest');
+    expect(evidence).toContain('scoped tool/file/MCP surface');
+    expect(evidence).toContain('evidence return');
+    expect(evidence).toContain('writeBoundary=write_intent_only');
+    expect(evidence).toContain('productWriteGate=required');
+    expect(evidence).toContain('directBusinessRecord=false');
+    expect(evidence).toContain('directDecision=false');
+    expect(evidence).toContain('directSop=false');
+    expect(evidence).toContain('directCompletion=false');
+  });
+
   it('records provider-native session readiness chips and smoke evidence', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
     const evidence = capabilities?.evidence.join(' ');

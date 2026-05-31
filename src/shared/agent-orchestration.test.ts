@@ -8,6 +8,7 @@ import {
   buildStandingApprovalConfirmationDraft,
   evaluateStandingApprovalForAutomation,
   evaluateSkillInformedAutomationReadiness,
+  planMatrixRuntimeBoundary,
   planScheduledEventAgentTrigger,
   planScheduledEventAgentTriggerFromEvidence,
   projectAgentRunLifecycle,
@@ -1561,6 +1562,134 @@ describe('agent orchestration snapshot', () => {
     expect(unsafeBoundary.summary).toContain('schedulerTriggerServiceConnected=true');
     expect(unsafeBoundary.summary).toContain('runtimeStartSatisfiedRequirements=scheduler_trigger_service');
     expect(unsafeBoundary.summary).not.toContain('standingApprovalReady=yes');
+  });
+
+  it('represents wanman matrix runtime as a future executor backend below Pilot for a scoped business line mission', () => {
+    const plan = planMatrixRuntimeBoundary({
+      allowedFileScopes: ['docs/brief.md', 'src/shared/**', 'src/shared/**'],
+      allowedMcpServers: ['source-context'],
+      allowedTools: ['read_file', 'search_workspace'],
+      businessLineId: 'bl_growth',
+      carrierTaskId: 'task_next_action',
+      contextManifestRefs: ['context-manifest:run_1'],
+      evidenceReturnChannels: ['runtime_events', 'artifact_references', 'write_intent_summary'],
+      missionId: 'mission_matrix_review',
+      objective: 'Review candidate context and return evidence for Pilot.',
+      requestedWriteIntentTypes: ['source_context.create', 'business_record.create', 'decision.create'],
+    });
+
+    expect(plan).toMatchObject({
+      status: 'ready',
+      decisionBackend: 'wanman_matrix',
+      executionRuntime: 'wanman_matrix',
+      role: 'future_runtime_backend_below_pilot',
+      productCoordinator: false,
+      productionInvocationAllowed: false,
+      scopedMission: {
+        businessLineId: 'bl_growth',
+        carrierTaskId: 'task_next_action',
+        missionId: 'mission_matrix_review',
+      },
+      contextManifest: {
+        required: true,
+        references: ['context-manifest:run_1'],
+        status: 'present',
+      },
+      allowedSurface: {
+        tools: {
+          ids: ['read_file', 'search_workspace'],
+          status: 'scoped',
+        },
+        files: {
+          scopes: ['docs/brief.md', 'src/shared/**'],
+          status: 'scoped',
+        },
+        mcp: {
+          serverIds: ['source-context'],
+          status: 'scoped',
+        },
+        globalSurfaceAllowed: false,
+      },
+      evidenceReturn: {
+        required: true,
+        channels: ['runtime_events', 'artifact_references', 'write_intent_summary'],
+        writeIntentEvidenceRequired: true,
+      },
+      writeBoundary: {
+        mode: 'write_intent_only',
+        allowedWriteIntentTypes: ['source_context.create', 'business_record.create', 'decision.create'],
+        directBusinessRecordAllowed: false,
+        directDecisionAllowed: false,
+        directSopRevisionAllowed: false,
+        directCompletionAllowed: false,
+        productWriteGateRequired: true,
+      },
+      missingRequirements: [],
+    });
+    expect(plan.satisfiedRequirements).toEqual([
+      'scoped_mission',
+      'context_manifest',
+      'tool_surface',
+      'file_surface',
+      'mcp_surface',
+      'evidence_return',
+      'write_intent_boundary',
+      'product_control_plane',
+      'production_invocation_closed',
+    ]);
+    expect(plan.evidence).toContain('matrixRuntime=wanman_matrix');
+    expect(plan.evidence).toContain('productCoordinator=false');
+    expect(plan.evidence).toContain('productionInvocationAllowed=false');
+    expect(plan.evidence).toContain('scopedMission=business_line_task_mission');
+    expect(plan.evidence).toContain('contextManifest=present');
+    expect(plan.evidence).toContain('toolSurface=scoped');
+    expect(plan.evidence).toContain('fileSurface=scoped');
+    expect(plan.evidence).toContain('mcpSurface=scoped');
+    expect(plan.evidence).toContain('writeBoundary=write_intent_only');
+    expect(plan.evidence).toContain('directBusinessRecord=false');
+    expect(plan.evidence).toContain('directDecision=false');
+    expect(plan.evidence).toContain('directSop=false');
+    expect(plan.evidence).toContain('directCompletion=false');
+    expect(plan.summary).toContain('runtimeExecutable=no');
+    expect(plan.summary).toContain('role=future_runtime_backend_below_pilot');
+  });
+
+  it('blocks wanman matrix runtime executor readiness when a business line mission lacks manifest, surface, evidence, or Write Intent boundary', () => {
+    const plan = planMatrixRuntimeBoundary({
+      businessLineId: 'bl_growth',
+      carrierTaskId: 'task_next_action',
+      missionId: 'mission_matrix_review',
+      objective: 'Review candidate context and return evidence for Pilot.',
+    });
+
+    expect(plan.status).toBe('blocked');
+    expect(plan.productCoordinator).toBe(false);
+    expect(plan.productionInvocationAllowed).toBe(false);
+    expect(plan.missingRequirements).toEqual([
+      'context_manifest',
+      'tool_surface',
+      'file_surface',
+      'mcp_surface',
+      'evidence_return',
+      'write_intent_boundary',
+    ]);
+    expect(plan.blockedReasons).toContain('Wanman matrix runtime missions require an explicit context manifest.');
+    expect(plan.blockedReasons).toContain('Wanman matrix runtime missions require an explicit scoped tool surface, even when empty.');
+    expect(plan.blockedReasons).toContain('Wanman matrix runtime missions require an explicit scoped file surface, even when empty.');
+    expect(plan.blockedReasons).toContain('Wanman matrix runtime missions require an explicit scoped MCP surface, even when empty.');
+    expect(plan.blockedReasons).toContain('Wanman matrix runtime missions must declare evidence return channels.');
+    expect(plan.blockedReasons).toContain('Wanman matrix runtime missions must declare the Write Intent-only boundary, even when no writes are expected.');
+    expect(plan.summary).toContain('runtime=wanman_matrix');
+    expect(plan.summary).toContain('contextManifest=required:missing');
+    expect(plan.summary).toContain('toolSurface=missing');
+    expect(plan.summary).toContain('fileSurface=missing');
+    expect(plan.summary).toContain('mcpSurface=missing');
+    expect(plan.summary).toContain('evidenceReturn=missing');
+    expect(plan.summary).toContain('writeBoundary=write_intent_only');
+    expect(plan.summary).toContain('directBusinessRecord=false');
+    expect(plan.summary).toContain('directDecision=false');
+    expect(plan.summary).toContain('directSop=false');
+    expect(plan.summary).toContain('directCompletion=false');
   });
 });
 

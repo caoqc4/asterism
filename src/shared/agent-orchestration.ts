@@ -19,6 +19,7 @@ import {
   type UserSelectedAgentScheme,
 } from './agent-capability-gateway.js';
 import type { AgentCliRuntimeRecord } from './agent-cli-runtime-status.js';
+import type { TaskplaneWriteIntent } from './taskplane-write-intent.js';
 import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput, RunStatus } from './types/run.js';
 import type { AiConfigStatus } from './types/settings.js';
 import type { TaskDetail, TaskExecutionType } from './types/task.js';
@@ -262,6 +263,241 @@ export type AgentSchedulerLoopRuntimeGateway = {
   status: AgentCapabilityGatewaySelection['status'];
   summary: string;
 };
+
+export type AgentMatrixRuntimeBoundaryRequirement =
+  | 'scoped_mission'
+  | 'context_manifest'
+  | 'tool_surface'
+  | 'file_surface'
+  | 'mcp_surface'
+  | 'evidence_return'
+  | 'write_intent_boundary'
+  | 'product_control_plane'
+  | 'production_invocation_closed';
+
+export type AgentMatrixRuntimeWriteIntentKind = TaskplaneWriteIntent['type'];
+
+export type AgentMatrixRuntimeBoundaryPlan = {
+  status: 'ready' | 'blocked';
+  decisionBackend: Extract<AgentDecisionBackend, 'wanman_matrix'>;
+  executionRuntime: Extract<AgentExecutionRuntime, 'wanman_matrix'>;
+  role: 'future_runtime_backend_below_pilot';
+  productCoordinator: false;
+  productionInvocationAllowed: false;
+  scopedMission: {
+    businessLineId: string | null;
+    carrierTaskId: string | null;
+    missionId: string | null;
+    objective: string | null;
+  };
+  contextManifest: {
+    required: true;
+    references: string[];
+    status: 'present' | 'missing';
+  };
+  allowedSurface: {
+    tools: {
+      ids: string[];
+      status: 'scoped' | 'missing';
+    };
+    files: {
+      scopes: string[];
+      status: 'scoped' | 'missing';
+    };
+    mcp: {
+      serverIds: string[];
+      status: 'scoped' | 'missing';
+    };
+    globalSurfaceAllowed: false;
+  };
+  evidenceReturn: {
+    required: true;
+    channels: string[];
+    writeIntentEvidenceRequired: true;
+  };
+  writeBoundary: {
+    mode: 'write_intent_only';
+    allowedWriteIntentTypes: AgentMatrixRuntimeWriteIntentKind[];
+    directBusinessRecordAllowed: false;
+    directDecisionAllowed: false;
+    directSopRevisionAllowed: false;
+    directCompletionAllowed: false;
+    productWriteGateRequired: true;
+  };
+  missingRequirements: AgentMatrixRuntimeBoundaryRequirement[];
+  satisfiedRequirements: AgentMatrixRuntimeBoundaryRequirement[];
+  blockedReasons: string[];
+  evidence: string[];
+  summary: string;
+};
+
+export function planMatrixRuntimeBoundary(params: {
+  allowedFileScopes?: string[];
+  allowedMcpServers?: string[];
+  allowedTools?: string[];
+  businessLineId?: string | null;
+  carrierTaskId?: string | null;
+  contextManifestRefs?: string[];
+  evidenceReturnChannels?: string[];
+  missionId?: string | null;
+  objective?: string | null;
+  requestedWriteIntentTypes?: AgentMatrixRuntimeWriteIntentKind[];
+}): AgentMatrixRuntimeBoundaryPlan {
+  const requirements: AgentMatrixRuntimeBoundaryRequirement[] = [
+    'scoped_mission',
+    'context_manifest',
+    'tool_surface',
+    'file_surface',
+    'mcp_surface',
+    'evidence_return',
+    'write_intent_boundary',
+    'product_control_plane',
+    'production_invocation_closed',
+  ];
+  const businessLineId = normalizeOptionalToken(params.businessLineId);
+  const carrierTaskId = normalizeOptionalToken(params.carrierTaskId);
+  const missionId = normalizeOptionalToken(params.missionId);
+  const objective = normalizeOptionalText(params.objective);
+  const contextManifestRefs = normalizeStringList(params.contextManifestRefs ?? []);
+  const allowedTools = normalizeStringList(params.allowedTools ?? []);
+  const allowedFileScopes = normalizeStringList(params.allowedFileScopes ?? []);
+  const allowedMcpServers = normalizeStringList(params.allowedMcpServers ?? []);
+  const evidenceReturnChannels = normalizeStringList(params.evidenceReturnChannels ?? []);
+  const requestedWriteIntentTypes = normalizeStringList(
+    params.requestedWriteIntentTypes ?? [],
+  ) as AgentMatrixRuntimeWriteIntentKind[];
+  const missingRequirements: AgentMatrixRuntimeBoundaryRequirement[] = [];
+  const blockedReasons: string[] = [];
+
+  if (!businessLineId || !carrierTaskId || !missionId || !objective) {
+    missingRequirements.push('scoped_mission');
+    blockedReasons.push('Wanman matrix runtime missions must be scoped to a business line, carrier task, mission id, and objective.');
+  }
+  if (contextManifestRefs.length === 0) {
+    missingRequirements.push('context_manifest');
+    blockedReasons.push('Wanman matrix runtime missions require an explicit context manifest.');
+  }
+  if (!Array.isArray(params.allowedTools)) {
+    missingRequirements.push('tool_surface');
+    blockedReasons.push('Wanman matrix runtime missions require an explicit scoped tool surface, even when empty.');
+  }
+  if (!Array.isArray(params.allowedFileScopes)) {
+    missingRequirements.push('file_surface');
+    blockedReasons.push('Wanman matrix runtime missions require an explicit scoped file surface, even when empty.');
+  }
+  if (!Array.isArray(params.allowedMcpServers)) {
+    missingRequirements.push('mcp_surface');
+    blockedReasons.push('Wanman matrix runtime missions require an explicit scoped MCP surface, even when empty.');
+  }
+  if (evidenceReturnChannels.length === 0) {
+    missingRequirements.push('evidence_return');
+    blockedReasons.push('Wanman matrix runtime missions must declare evidence return channels.');
+  }
+  if (!Array.isArray(params.requestedWriteIntentTypes)) {
+    missingRequirements.push('write_intent_boundary');
+    blockedReasons.push('Wanman matrix runtime missions must declare the Write Intent-only boundary, even when no writes are expected.');
+  }
+
+  const missingRequirementSet = new Set(missingRequirements);
+  const satisfiedRequirements = requirements.filter((requirement) => !missingRequirementSet.has(requirement));
+  const status = missingRequirements.length === 0 ? 'ready' : 'blocked';
+
+  return {
+    status,
+    decisionBackend: 'wanman_matrix',
+    executionRuntime: 'wanman_matrix',
+    role: 'future_runtime_backend_below_pilot',
+    productCoordinator: false,
+    productionInvocationAllowed: false,
+    scopedMission: {
+      businessLineId,
+      carrierTaskId,
+      missionId,
+      objective,
+    },
+    contextManifest: {
+      required: true,
+      references: contextManifestRefs,
+      status: contextManifestRefs.length > 0 ? 'present' : 'missing',
+    },
+    allowedSurface: {
+      tools: {
+        ids: allowedTools,
+        status: Array.isArray(params.allowedTools) ? 'scoped' : 'missing',
+      },
+      files: {
+        scopes: allowedFileScopes,
+        status: Array.isArray(params.allowedFileScopes) ? 'scoped' : 'missing',
+      },
+      mcp: {
+        serverIds: allowedMcpServers,
+        status: Array.isArray(params.allowedMcpServers) ? 'scoped' : 'missing',
+      },
+      globalSurfaceAllowed: false,
+    },
+    evidenceReturn: {
+      required: true,
+      channels: evidenceReturnChannels,
+      writeIntentEvidenceRequired: true,
+    },
+    writeBoundary: {
+      mode: 'write_intent_only',
+      allowedWriteIntentTypes: requestedWriteIntentTypes,
+      directBusinessRecordAllowed: false,
+      directDecisionAllowed: false,
+      directSopRevisionAllowed: false,
+      directCompletionAllowed: false,
+      productWriteGateRequired: true,
+    },
+    missingRequirements,
+    satisfiedRequirements,
+    blockedReasons,
+    evidence: [
+      'matrixRuntime=wanman_matrix',
+      'runtimeRole=future_runtime_backend_below_pilot',
+      'productCoordinator=false',
+      'productionInvocationAllowed=false',
+      `scopedMission=${businessLineId && carrierTaskId && missionId && objective ? 'business_line_task_mission' : 'missing'}`,
+      `businessLine=${businessLineId ?? 'missing'}`,
+      `carrierTask=${carrierTaskId ?? 'missing'}`,
+      `contextManifest=${contextManifestRefs.length > 0 ? 'present' : 'missing'}`,
+      `toolSurface=${Array.isArray(params.allowedTools) ? 'scoped' : 'missing'}`,
+      `fileSurface=${Array.isArray(params.allowedFileScopes) ? 'scoped' : 'missing'}`,
+      `mcpSurface=${Array.isArray(params.allowedMcpServers) ? 'scoped' : 'missing'}`,
+      `evidenceReturn=${evidenceReturnChannels.length > 0 ? 'required' : 'missing'}`,
+      'writeBoundary=write_intent_only',
+      'directBusinessRecord=false',
+      'directDecision=false',
+      'directSop=false',
+      'directCompletion=false',
+      'productWriteGate=required',
+      `requirements=${satisfiedRequirements.length}/${requirements.length}`,
+      `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+    ],
+    summary: [
+      'MatrixRuntimeBoundary',
+      'runtime=wanman_matrix',
+      `status=${status}`,
+      'role=future_runtime_backend_below_pilot',
+      'runtimeExecutable=no',
+      'productCoordinator=false',
+      'productionInvocationAllowed=false',
+      `scopedMission=${businessLineId && carrierTaskId && missionId && objective ? 'business_line_task_mission' : 'missing'}`,
+      `contextManifest=required:${contextManifestRefs.length > 0 ? 'present' : 'missing'}`,
+      `toolSurface=${Array.isArray(params.allowedTools) ? 'scoped' : 'missing'}`,
+      `fileSurface=${Array.isArray(params.allowedFileScopes) ? 'scoped' : 'missing'}`,
+      `mcpSurface=${Array.isArray(params.allowedMcpServers) ? 'scoped' : 'missing'}`,
+      `evidenceReturn=${evidenceReturnChannels.length > 0 ? 'required' : 'missing'}`,
+      'writeBoundary=write_intent_only',
+      'directBusinessRecord=false',
+      'directDecision=false',
+      'directSop=false',
+      'directCompletion=false',
+      `requirements=${satisfiedRequirements.length}/${requirements.length}`,
+      `missingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
+    ].join(' / '),
+  };
+}
 
 export function scheduledEventRuntimeStartRequirements(): AgentScheduledEventRuntimeStartRequirement[] {
   return [
@@ -1600,6 +1836,20 @@ function mapRunStatusToLifecycleStage(runStatus: RunStatus): AgentRunLifecycleSt
 function normalizeRequestedChecks(checks: CodeAgentAllowedCheck[]): CodeAgentAllowedCheck[] {
   return checks.filter((check, index) =>
     (check === 'test' || check === 'lint') && checks.indexOf(check) === index);
+}
+
+function normalizeOptionalToken(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeOptionalText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim().replace(/\s+/g, ' ');
+  return trimmed ? trimmed : null;
+}
+
+function normalizeStringList(values: string[]): string[] {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 }
 
 function isOrchestrationLane(value: unknown): value is AgentExecutionOrchestrationLane {
