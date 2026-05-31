@@ -824,6 +824,10 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('schedulerLoopApiDeferred');
     expect(workHabits?.evidence.join(' ')).toContain('selected Agent API scheduler paths remain deferred');
     expect(workHabits?.evidence.join(' ')).toContain('selected CLI readiness preserves CLI-first scheduler-loop evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('schedulerProductOwner=false');
+    expect(workHabits?.evidence.join(' ')).toContain('loopCarrier=business_line_next_action');
+    expect(workHabits?.evidence.join(' ')).toContain('mutationGate=standing_approval_or_decision');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduler/sensor/automation paths remain carriers for business-line Next Action execution');
     expect(workHabits?.evidence.join(' ')).toContain('CapabilityRegistry now includes scheduled/event trigger runtime-start readiness');
     expect(workHabits?.evidence.join(' ')).toContain('runtime.scheduler summary through planScheduledEventAgentTriggerFromEvidence');
     expect(workHabits?.evidence.join(' ')).toContain('ConfigurationSafetyReport shows trigger-plan, scheduler-trigger-service, and run-limit-count gaps');

@@ -902,8 +902,11 @@ describe('agent orchestration snapshot', () => {
       businessLineLoop: {
         businessLineId: 'bl_1',
         carrierTaskId: 'task_1',
+        loopCarrier: 'business_line_next_action',
         missingRequirements: ['run_limit'],
+        mutationGate: 'standing_approval_or_decision',
         reviewBoundary: 'post_step_review_required',
+        schedulerProductOwner: false,
       },
       policy: {
         id: 'standing_approval:task_1:coding:local_sandbox',
@@ -921,6 +924,12 @@ describe('agent orchestration snapshot', () => {
     expect(plan.summary).toContain('selectedRuntimeIdentity=local_sandbox');
     expect(plan.summary).toContain('triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,business_line_loop,run_limit_count,post_step');
     expect(plan.summary).toContain('businessLineLoopOwner=bl_1');
+    expect(plan.summary).toContain('schedulerProductOwner=false');
+    expect(plan.summary).toContain('loopCarrier=business_line_next_action');
+    expect(plan.summary).toContain('mutationGate=standing_approval_or_decision');
+    expect(plan.businessLineLoop.evidence).toContain('schedulerProductOwner=false');
+    expect(plan.businessLineLoop.evidence).toContain('loopCarrier=business_line_next_action');
+    expect(plan.businessLineLoop.evidence).toContain('mutationGate=standing_approval_or_decision');
     expect(plan.evidence).toContain('targetTask=task_1');
     expect(plan.evidence).toContain('businessLine=bl_1');
     expect(plan.summary).toContain('runLimit=not_counted/3');
@@ -1165,6 +1174,9 @@ describe('agent orchestration snapshot', () => {
     expect(plan.summary).toContain('schedulerLoopExecutionRuntime=codex_cli');
     expect(plan.summary).toContain('schedulerLoopCliFirstSupported=true');
     expect(plan.summary).toContain('schedulerLoopApiDeferred=false');
+    expect(plan.summary).toContain('schedulerProductOwner=false');
+    expect(plan.summary).toContain('loopCarrier=business_line_next_action');
+    expect(plan.summary).toContain('mutationGate=standing_approval_or_decision');
   });
 
   it('blocks scheduled/event runtime start when trigger service lacks run-limit accounting', () => {

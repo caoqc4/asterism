@@ -237,7 +237,10 @@ export type AgentBusinessLineLoopReadiness = {
   status: 'ready' | 'blocked';
   businessLineId: string | null;
   carrierTaskId: string;
+  loopCarrier: 'business_line_next_action';
+  mutationGate: 'standing_approval_or_decision';
   reviewBoundary: 'post_step_review_required';
+  schedulerProductOwner: false;
   missingRequirements: AgentBusinessLineLoopReadinessRequirement[];
   satisfiedRequirements: AgentBusinessLineLoopReadinessRequirement[];
   evidence: string[];
@@ -1730,6 +1733,9 @@ function evaluateBusinessLineLoopReadiness(params: {
   }
 
   evidence.push('reviewBoundary=post_step_review_required');
+  evidence.push('schedulerProductOwner=false');
+  evidence.push('loopCarrier=business_line_next_action');
+  evidence.push('mutationGate=standing_approval_or_decision');
 
   const missingSet = new Set(missingRequirements);
   const satisfiedRequirements = requirements.filter((requirement) => !missingSet.has(requirement));
@@ -1739,7 +1745,10 @@ function evaluateBusinessLineLoopReadiness(params: {
     status,
     businessLineId,
     carrierTaskId,
+    loopCarrier: 'business_line_next_action',
+    mutationGate: 'standing_approval_or_decision',
     reviewBoundary: 'post_step_review_required',
+    schedulerProductOwner: false,
     missingRequirements,
     satisfiedRequirements,
     evidence,
@@ -1748,6 +1757,9 @@ function evaluateBusinessLineLoopReadiness(params: {
       `businessLineLoop=${status}`,
       `businessLineLoopOwner=${businessLineId ?? 'missing'}`,
       `businessLineLoopCarrier=${carrierTaskId || 'missing'}`,
+      'schedulerProductOwner=false',
+      'loopCarrier=business_line_next_action',
+      'mutationGate=standing_approval_or_decision',
       `businessLineLoopRequirements=${satisfiedRequirements.length}/${requirements.length}`,
       `businessLineLoopSatisfiedRequirements=${satisfiedRequirements.length ? satisfiedRequirements.join(',') : 'none'}`,
       `businessLineLoopMissingRequirements=${missingRequirements.length ? missingRequirements.join(',') : 'none'}`,
