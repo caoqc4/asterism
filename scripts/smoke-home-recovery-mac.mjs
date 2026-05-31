@@ -67,8 +67,8 @@ function seedHomeRecoveryFixture() {
           'planned',
           'Review packaged Home source recovery.',
           null,
-          'none',
-          null,
+          'high',
+          'Packaged Home recovery smoke should appear in Today focus.',
           '2026-05-02T10:00:00.000Z',
           '2026-05-02T10:20:00.000Z',
         );
@@ -123,19 +123,19 @@ async function assertSourceContextFocused(page) {
 }
 
 async function assertHomeSourceCardRecovery(page) {
-  await page.getByRole('button', { name: 'Brief' }).click();
+  await page.getByRole('button', { name: 'Today' }).click();
   await page.getByText('内部信息').waitFor();
   await page.getByText('外部信号', { exact: true }).waitFor();
   await page.getByText('暂无外部信号。').waitFor();
   await page.locator('.focus-card', { hasText: 'Packaged Home recovery fixture' }).waitFor();
-  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
   await page.locator('.task-row', { hasText: 'Packaged Home recovery fixture' }).click();
   await assertSourceContextFocused(page);
 }
 
 async function assertHomeResumeContextRecovery(page) {
-  await page.getByRole('button', { name: 'Brief' }).click();
+  await page.getByRole('button', { name: 'Today' }).click();
   await page.locator('.focus-card', { hasText: 'Packaged Home recovery fixture' }).waitFor();
   await page.getByText('内部信息').waitFor();
 }

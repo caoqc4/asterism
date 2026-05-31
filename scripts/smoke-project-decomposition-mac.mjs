@@ -330,26 +330,23 @@ async function installProjectAttributes(page) {
 }
 
 async function assertFreshProjectDoesNotCreateTemplateChildren(page) {
-  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
   await page.getByRole('button', { name: '+ 新建任务' }).click();
   await page.getByPlaceholder(/任务标题/).fill('打包验收新项目');
   await page.getByRole('button', { name: '创建' }).click();
   await page.getByText('✓ 已创建').waitFor();
 
-  await page.getByRole('button', { name: '任务目录' }).click();
-  const freshProjectGroup = page.locator('.task-directory-group', { hasText: '打包验收新项目' });
-  await freshProjectGroup.locator('.task-row', { hasText: '打包验收新项目' }).click();
   await page.getByRole('heading', { name: '打包验收新项目' }).waitFor();
   await page.getByText('0/0').first().waitFor();
   await page.getByText('在 AI 面板确认拆解方案后，这里会显示子任务和完成标准；确认前不会写入真实任务。').waitFor();
-  const childRows = await freshProjectGroup.locator('.task-directory-child-row').count();
+  const childRows = await page.locator('.project-child-card').count();
   if (childRows !== 0) {
     throw new Error(`Fresh project unexpectedly rendered ${childRows} child rows before decomposition confirmation.`);
   }
 }
 
 async function assertConfirmedProjectStructure(page) {
-  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
   await page.getByRole('button', { name: /项目型/ }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
 
@@ -367,7 +364,7 @@ async function assertConfirmedProjectStructure(page) {
 }
 
 async function assertCompletionHandoff(page) {
-  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
   await page.getByRole('button', { name: /项目型/ }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
 

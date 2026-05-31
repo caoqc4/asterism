@@ -104,9 +104,9 @@ async function assertContextLearningUi(page) {
   await page.getByRole('button', { name: 'Work Habits' }).click();
   await page.getByRole('heading', { name: 'Work Habits' }).waitFor();
   await page.getByText('工作习惯记录', { exact: true }).first().waitFor();
-  await page.getByText(/任务文件和产物在 Tasks 中管理/).waitFor();
+  await page.getByText(/已确认工作习惯会进入适用业务线或 Next Action 的执行上下文/).waitFor();
   await page.getByText(/待确认规则只作为提议展示，不会自动改变后续执行流程/).waitFor();
-  await page.getByText(/只在 Step\/Run\/Task 完成、你编辑 AI 产物、或会话压缩前提取学习信号/).first().waitFor();
+  await page.getByText(/只在 Step\/Run\/Next Action 完成、你编辑 AI 产物、或会话压缩前提取学习信号/).first().waitFor();
 
   await page.getByText('发布前只跑最小 packaged smoke').waitFor();
   await page.getByText(/与已确认规则冲突：发布前先跑完整 packaged smoke/).waitFor();
@@ -124,7 +124,7 @@ async function assertContextLearningUi(page) {
 }
 
 async function assertSopSuggestionUsesPersistedHabits(page) {
-  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
   await page.getByRole('button', { name: '+ 新建任务' }).click();
   await page.getByPlaceholder(/任务标题/).fill('项目拆解验收任务');
   await page.getByText('可参考流程模板', { exact: true }).waitFor();

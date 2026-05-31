@@ -126,7 +126,7 @@ function queryTimelineEvents() {
 }
 
 async function openTaskPanel(page) {
-  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
   await page.locator('.task-row', { hasText: 'Packaged context refresh fixture' }).click();
   await page.getByRole('heading', { name: 'Packaged context refresh fixture' }).waitFor();
@@ -169,13 +169,13 @@ try {
   const page = await app.firstWindow({ timeout: timeoutMs });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await openTaskPanel(page);
-  await page.getByRole('button', { name: '手动确认' }).click();
 
-  await sendPanelMessage(page, '这轮决定保留 Playwright 作为动态页面验收候选，并在刷新前保存这个交接判断。');
-  await page.getByRole('button', { name: '整理归档' }).click();
-  await page.getByText(/已整理并归档当前任务讨论的关键记录/).waitFor({ timeout: timeoutMs });
-  await page.getByRole('button', { name: '确认刷新' }).click();
-  await page.getByText(/已切换到任务上下文/).waitFor({ timeout: timeoutMs });
+  const handoffSignal = '这轮决定保留 Playwright 作为动态页面验收候选，并在刷新前保存这个交接判断。';
+  await sendPanelMessage(page, handoffSignal);
+  await sendPanelMessage(page, handoffSignal);
+  await sendPanelMessage(page, handoffSignal);
+  await page.getByRole('button', { name: '整理并刷新' }).click();
+  await page.getByText(/已整理并刷新/).waitFor({ timeout: timeoutMs });
 
   await waitFor(() => (
     queryTaskFiles().some((file) => (

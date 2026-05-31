@@ -223,6 +223,40 @@ function seedTaskFileFixture() {
           now,
         );
 
+      const insertRunStep = database.prepare(`
+        INSERT INTO run_steps (
+          id, run_id, step_index, kind, status, title, input, output, error,
+          created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      insertRunStep.run(
+        'run_step_packaged_patch_apply_runtime',
+        runId,
+        0,
+        'runtime_contract',
+        'completed',
+        'selected runtime contract',
+        null,
+        'runtime=codex\nsandbox=read-only',
+        null,
+        now,
+        now,
+      );
+      insertRunStep.run(
+        'run_step_packaged_patch_blocked_runtime',
+        blockedRunId,
+        0,
+        'runtime_contract',
+        'completed',
+        'selected runtime contract',
+        null,
+        'runtime=codex\nsandbox=read-only',
+        null,
+        now,
+        now,
+      );
+
       database
         .prepare(`
           INSERT INTO artifacts (
@@ -488,7 +522,7 @@ function assertPatchPromotionBlocked() {
 }
 
 async function assertTaskFileWorkspace(page) {
-  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
   await page.locator('.task-row', { hasText: 'Packaged Task files fixture' }).click();
   await page.getByRole('heading', { name: 'Packaged Task files fixture' }).waitFor();

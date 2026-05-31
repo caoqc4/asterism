@@ -200,6 +200,14 @@ async function assertTaskDynamicsShowsNativeGoalAudit(page) {
   await page.getByText('Codex CLI Native Goal 未透传').first().waitFor({ timeout: timeoutMs });
 }
 
+async function assertAgentCliRuntimeChipReady(page) {
+  await page
+    .locator('.panel-runtime-chip')
+    .filter({ hasText: /Codex CLI(?: · (?:只读|原生能力))?/ })
+    .first()
+    .waitFor({ timeout: timeoutMs });
+}
+
 if (process.platform !== 'darwin') {
   fail('macOS packaged Agent CLI task smoke requires macOS.');
 }
@@ -249,7 +257,7 @@ try {
   const page = await app.firstWindow({ timeout: timeoutMs });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await openTaskPanel(page);
-  await page.getByText(/(?:任务 Agent · )?Codex CLI · 只读/).waitFor();
+  await assertAgentCliRuntimeChipReady(page);
 
   await sendPanelMessage(page, [
     '/goal Complete packaged Agent CLI task smoke',
@@ -266,7 +274,7 @@ try {
 
   await sendPanelMessage(page, 'Hold for cancellation.');
   await waitFor(() => queryRunRows().length >= 1, 'created cancellable Agent CLI run');
-  await page.getByRole('button', { name: '取消 Codex CLI run' }).click();
+  await page.getByRole('button', { name: /取消(?: Codex CLI run|运行)/ }).click();
   await waitFor(() => {
     const [run] = queryRunRows();
     return run?.status === 'failed';
@@ -285,7 +293,7 @@ try {
   if (cancelledSteps.some((step) => step.title === '任务记忆建议')) {
     throw new Error('Cancellation must not create a task memory proposal.');
   }
-  await page.getByText(/(?:任务 Agent · )?Codex CLI · 只读/).waitFor({ timeout: timeoutMs });
+  await assertAgentCliRuntimeChipReady(page);
 
   await sendPanelMessage(page, 'Run the packaged Agent CLI smoke.');
   try {
@@ -297,8 +305,6 @@ try {
     const rows = queryRunRows();
     return rows.length >= 2 && rows[1]?.status === 'completed';
   }, 'completed Agent CLI run');
-  await page.getByText(/Codex CLI run 已完成/).waitFor({ timeout: timeoutMs });
-
   const completedRun = queryRunRows()[1];
   const completedSteps = queryRunStepRows(completedRun.id);
   if (!completedSteps.some((step) => step.title === 'agent cli run accepted')) {
