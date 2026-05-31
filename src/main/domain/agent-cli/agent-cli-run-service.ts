@@ -19,6 +19,10 @@ import {
   type RuntimeContextManifest,
 } from '../../../shared/runtime-context.js';
 import {
+  buildNativeCliAdapterContract,
+  formatNativeCliAdapterContractForStep,
+} from '../../../shared/native-cli-adapter-contract.js';
+import {
   buildRunGoalContract,
   formatRunGoalContractForPrompt,
   formatRunGoalContractForStep,
@@ -46,6 +50,7 @@ import {
   type TaskMemoryGuidanceState,
 } from '../../../shared/task-memory-guidance-state.js';
 import { isTaskMdPath } from '../../../shared/task-memory-path.js';
+import { classifyRunScope, runScopeRequiresBusinessLine } from '../../../shared/run-scope.js';
 import {
   agentCliRuntimeCapabilities,
   type AgentCliRuntimeId,
@@ -62,6 +67,7 @@ import type {
   RecordRuntimeNativeGoalRequestInput,
   RunOutputSource,
   RunRecord,
+  RunScope,
   RunStepKind,
   RunStatus,
 } from '../../../shared/types/run.js';
@@ -282,6 +288,16 @@ export class AgentCliRunService {
     }
     const runtimeCapabilities = agentCliRuntimeCapabilities(runtime);
     const businessLineId = request.businessLineId ?? task.businessLineId ?? null;
+    const runScope = classifyRunScope({
+      businessLineId,
+      taskBusinessLineId: task.businessLineId,
+      taskFacets: task.taskFacets,
+      taskId: task.id,
+      taskType: task.taskType,
+    });
+    if (runScopeRequiresBusinessLine(runScope.kind) && !runScope.businessLineId) {
+      throw new Error(`Business line scope requires an owner: ${runScope.kind}`);
+    }
     const businessLineWorkspace = businessLineId && this.businessLineContextProvider
       ? await this.businessLineContextProvider.getWorkspace(businessLineId)
       : null;
@@ -396,6 +412,37 @@ export class AgentCliRunService {
       sandboxMode,
       task,
     });
+    const contextBridge = buildAgentCliContextBridge({
+      capabilityMode,
+      contract: runContract,
+      businessLineWorkspace,
+      manifest: contextManifest,
+      readinessSummary: formatRuntimeContextReadinessForStep(contextReadiness),
+      task,
+      taskFilesForContext,
+    });
+    const execution = adapter.buildExecution({
+      capabilityMode,
+      contextSummary: contextBridge,
+      prompt: runtimePrompt,
+      sandboxMode,
+      task,
+      workspaceRoot,
+    });
+    const adapterContract = buildNativeCliAdapterContract({
+      capabilityMode,
+      commandPreview: execution.commandPreview,
+      contextManifest,
+      runId: run.id,
+      runScope,
+      runtimeCapabilities,
+      runtimeId,
+      runtimeLabel: adapter.runtimeLabel,
+      sandboxMode,
+      taskId: task.id,
+      taskTitle: task.title,
+      workspaceRoot,
+    });
 
     await this.runStepRepository.create({
       runId: run.id,
@@ -447,22 +494,13 @@ export class AgentCliRunService {
       input: JSON.stringify(runContract, null, 2),
       output: formatRunGoalContractForStep(runContract),
     });
-
-    const execution = adapter.buildExecution({
-      capabilityMode,
-      contextSummary: buildAgentCliContextBridge({
-        capabilityMode,
-        contract: runContract,
-        businessLineWorkspace,
-        manifest: contextManifest,
-        readinessSummary: formatRuntimeContextReadinessForStep(contextReadiness),
-        task,
-        taskFilesForContext,
-      }),
-      prompt: runtimePrompt,
-      sandboxMode,
-      task,
-      workspaceRoot,
+    await this.runStepRepository.create({
+      runId: run.id,
+      kind: 'plan',
+      status: 'completed',
+      title: 'Native CLI adapter contract',
+      input: JSON.stringify(adapterContract, null, 2),
+      output: formatNativeCliAdapterContractForStep(adapterContract),
     });
     const abortController = new AbortController();
     const workloadLease = this.workloadTracker.start(runtimeId, run.id, (reason) => {
@@ -483,7 +521,7 @@ export class AgentCliRunService {
       workspaceRoot,
     });
 
-    return run;
+    return attachAgentCliRunScope(run, runScope);
   }
 
   async cancel(input: CancelAgentCliRunInput): Promise<CancelAgentCliRunResult> {
@@ -923,6 +961,14 @@ function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): NormalizedAge
     sandboxMode: 'read-only',
     taskId: input.taskId?.trim() ?? '',
     pilotDecision: input.pilotDecision ?? null,
+  };
+}
+
+function attachAgentCliRunScope<T extends RunRecord>(run: T, scope: RunScope): T {
+  return {
+    ...run,
+    businessLineId: scope.businessLineId ?? run.businessLineId ?? null,
+    scope,
   };
 }
 

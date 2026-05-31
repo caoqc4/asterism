@@ -73,6 +73,22 @@ describe('AgentCliRunService', () => {
       output: expect.stringContaining('taskGoal=active'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'completed',
+      title: 'Native CLI adapter contract',
+      input: expect.stringContaining('"adapterKind": "native_cli"'),
+      output: expect.stringContaining('selected_cli_runtime=codex'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Native CLI adapter contract',
+      input: expect.stringContaining('"directProductMutationAllowed": false'),
+      output: expect.stringContaining('writeIntent=TASKPLANE_WRITE_INTENTS'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Native CLI adapter contract',
+      output: expect.stringContaining('oneOffScope=yes'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'decision',
       status: 'completed',
       title: 'Pilot 决策辅助计划',
@@ -101,6 +117,11 @@ describe('AgentCliRunService', () => {
     }));
     expect(result).toMatchObject({
       id: 'run_agent_cli_1',
+      scope: {
+        businessLineId: null,
+        kind: 'one_off_non_durable_action',
+        taskId: 'task_1',
+      },
       status: 'running',
     });
     await vi.waitFor(() => {
@@ -229,6 +250,15 @@ describe('AgentCliRunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Agent CLI 目标契约',
       input: expect.stringContaining('BusinessLineContextPack'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Native CLI adapter contract',
+      input: expect.stringContaining('"businessLineId": "business_line_product"'),
+      output: expect.stringContaining('businessLineId=business_line_product'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Native CLI adapter contract',
+      output: expect.stringContaining('businessLineContextPack=included'),
     }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('BusinessLineContextPack'),

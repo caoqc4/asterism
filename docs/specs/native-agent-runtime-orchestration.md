@@ -220,6 +220,10 @@ Taskplane currently has a working native CLI execution backend:
 - Agent CLI run records preserve a trimmed Pilot decision snapshot as
   `Pilot 决策辅助计划`, so backend choice and fallback status remain visible
   after execution.
+- Agent CLI run records also preserve a `Native CLI adapter contract` step that
+  names the selected CLI runtime, business-line owner or one-off scope, Next
+  Action carrier, context manifest, allowed file/tool/MCP surface, run evidence,
+  Write Intent proposal boundary, post-run review, and compact/handoff policy.
 - Agent API chat invocations preserve the same trimmed Pilot decision snapshot
   in invocation provenance, keeping phase-2 auditability runtime-neutral.
 - Shared AI Runtime invocation provenance includes a skipped `execution_run`
