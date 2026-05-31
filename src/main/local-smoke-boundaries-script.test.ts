@@ -660,12 +660,15 @@ describe('local smoke script default boundaries', () => {
     expect(script).toContain('findProductFeatureImpactAuditIssues');
     expect(script).toContain('findBusinessLineFirstRuleLayerAuditIssues');
     expect(script).toContain('findBusinessLineFirstImplementationAuditIssues');
+    expect(script).toContain('findRuntimeArchitectureCloseoutAuditIssues');
     expect(script).toContain('src/main/domain/business-line/business-line-service.ts');
     expect(script).toContain('src/main/domain/run/run-service.ts');
     expect(script).toContain('src/shared/taskplane-writeback-apply-plan.ts');
     expect(script).toContain('src/main/domain/writeback/taskplane-writeback-dispatch-service.ts');
     expect(script).toContain('src/shared/taskplane-writeback-proposal.ts');
     expect(script).toContain('src/renderer/App.tsx');
+    expect(script).toContain('docs/specs/pilot-decision-contract.md');
+    expect(script).toContain('docs/specs/decision-layer-writeback-orchestration.md');
     expect(script).toContain('Taskplane product feature impact audit');
     expect(script).toContain('process.argv.includes');
     expect(script).not.toContain('better-sqlite3');
@@ -679,9 +682,11 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('businessLineFirst readiness=ready checks=6 ready=5 recoverable=1 blocked=<none>');
     expect(result.output).toContain('businessLineFirstRules readiness=ready checks=7 issues=0');
     expect(result.output).toContain('businessLineFirstImplementation readiness=ready checks=7 issues=0');
+    expect(result.output).toContain('runtimeArchitectureCloseout readiness=ready checks=10 issues=0');
     expect(result.output).toContain('businessLineFirstChecks');
     expect(result.output).toContain('businessLineFirstRuleChecks');
     expect(result.output).toContain('businessLineFirstImplementationChecks');
+    expect(result.output).toContain('runtimeArchitectureCloseoutChecks');
     expect(result.output).toContain('ready canonical_ownership');
     expect(result.output).toContain('recoverable historical_task_recovery');
     expect(result.output).toContain('ready agents_business_line_owner doc=agents_adapter');
@@ -689,6 +694,16 @@ describe('local smoke script default boundaries', () => {
     expect(result.output).toContain('ready durable_business_writes_resolve_owner source=business_line_service');
     expect(result.output).toContain('ready writeback_dispatch_enforces_business_line_owner source=writeback_dispatch_service');
     expect(result.output).toContain('ready legacy_tasks_explorer_labeled source=app_ui');
+    expect(result.output).toContain('ready cli_first_business_line_loop source=product_feature_audit');
+    expect(result.output).toContain('ready agent_api_future_deferred source=product_feature_audit');
+    expect(result.output).toContain('ready matrix_future_below_pilot source=product_feature_audit');
+    expect(result.output).toContain('ready capability_surfaces_do_not_own_business_memory source=runtime_orchestration');
+    expect(result.output).toContain('ready pilot_bounded_backend_neutral source=pilot_decision');
+    expect(result.output).toContain('ready scheduler_business_line_carrier source=runtime_orchestration');
+    expect(result.output).toContain('ready handoff_typed_recovery source=context_transition');
+    expect(result.output).toContain('ready review_learning_typed_artifacts source=task_memory');
+    expect(result.output).toContain('ready writeback_product_controlled source=decision_writeback');
+    expect(result.output).toContain('ready tests_guard_architecture_drift source=product_feature_audit_test');
     expect(result.output).toContain(
       'summary mainlineCliP0=ready p0CliPartial=<none> p0FutureApiDeferred=right_panel_agent_run,task_creation_and_project_decomposition,decisions_checkpoints_completion,task_files_artifacts_local_writes,capabilities_external_skills_mcp',
     );

@@ -37,6 +37,29 @@ function isOptionalCompatibilityEvidence(item) {
   return /optional|secondary compatibility|not (?:a )?mainline blocker|not as a mainline blocker/i.test(text);
 }
 
+function formatProductFeatureAuditEvidenceSource(productItems, businessLineChecks) {
+  return [
+    ...productItems.flatMap((item) => [
+      item.id,
+      item.label,
+      item.status,
+      item.cliOnlyClosure,
+      item.futureApiClosure,
+      ...item.evidence,
+      ...item.gaps,
+      ...item.nextActions,
+    ]),
+    ...businessLineChecks.flatMap((check) => [
+      check.id,
+      check.label,
+      check.status,
+      ...check.evidence,
+      ...check.gaps,
+      ...check.nextActions,
+    ]),
+  ].join('\n');
+}
+
 function p0CliPartialIds(items) {
   return idsFor(
     items,
@@ -66,10 +89,12 @@ try {
     BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
     BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
     PRODUCT_FEATURE_IMPACT_AUDIT,
+    RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT,
     findBusinessLineFirstImplementationAuditIssues,
     findBusinessLineFirstProductAuditIssues,
     findBusinessLineFirstRuleLayerAuditIssues,
     findProductFeatureImpactAuditIssues,
+    findRuntimeArchitectureCloseoutAuditIssues,
   } = await import(pathToFileURL(bundledPath).href);
   const ruleLayerDocs = {
     agents_adapter: fs.readFileSync(path.join(process.cwd(), 'AGENTS.md'), 'utf8'),
@@ -87,6 +112,20 @@ try {
     writeback_dispatch_service: fs.readFileSync(path.join(process.cwd(), 'src/main/domain/writeback/taskplane-writeback-dispatch-service.ts'), 'utf8'),
     writeback_proposal: fs.readFileSync(path.join(process.cwd(), 'src/shared/taskplane-writeback-proposal.ts'), 'utf8'),
   };
+  const closeoutSources = {
+    product_feature_audit: formatProductFeatureAuditEvidenceSource(
+      PRODUCT_FEATURE_IMPACT_AUDIT,
+      BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
+    ),
+    product_feature_audit_test: fs.readFileSync(path.join(process.cwd(), 'src/shared/product-feature-impact-audit.test.ts'), 'utf8'),
+    goalpilot: ruleLayerDocs.goalpilot,
+    runtime_orchestration: ruleLayerDocs.runtime_orchestration,
+    capability_mapping: fs.readFileSync(path.join(process.cwd(), 'docs/specs/native-agent-capability-mapping.md'), 'utf8'),
+    pilot_decision: fs.readFileSync(path.join(process.cwd(), 'docs/specs/pilot-decision-contract.md'), 'utf8'),
+    decision_writeback: fs.readFileSync(path.join(process.cwd(), 'docs/specs/decision-layer-writeback-orchestration.md'), 'utf8'),
+    task_memory: ruleLayerDocs.memory_spec,
+    context_transition: ruleLayerDocs.handoff_policy,
+  };
   const businessLineFirstRuleLayerIssues = findBusinessLineFirstRuleLayerAuditIssues(
     ruleLayerDocs,
     BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
@@ -95,11 +134,16 @@ try {
     implementationSources,
     BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT,
   );
+  const runtimeArchitectureCloseoutIssues = findRuntimeArchitectureCloseoutAuditIssues(
+    closeoutSources,
+    RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT,
+  );
   const issues = [
     ...findProductFeatureImpactAuditIssues(PRODUCT_FEATURE_IMPACT_AUDIT),
     ...findBusinessLineFirstProductAuditIssues(BUSINESS_LINE_FIRST_PRODUCT_AUDIT),
     ...businessLineFirstRuleLayerIssues,
     ...businessLineFirstImplementationIssues,
+    ...runtimeArchitectureCloseoutIssues,
   ];
   const businessLineFirstBlocked = idsFor(
     BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
@@ -119,6 +163,7 @@ try {
   console.log(`businessLineFirst readiness=${businessLineFirstReady ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_PRODUCT_AUDIT.length} ${formatCounts(countBy(BUSINESS_LINE_FIRST_PRODUCT_AUDIT, 'status'))} blocked=${businessLineFirstBlocked}`);
   console.log(`businessLineFirstRules readiness=${businessLineFirstRuleLayerIssues.length === 0 ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT.length} issues=${businessLineFirstRuleLayerIssues.length}`);
   console.log(`businessLineFirstImplementation readiness=${businessLineFirstImplementationIssues.length === 0 ? 'ready' : 'blocked'} checks=${BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT.length} issues=${businessLineFirstImplementationIssues.length}`);
+  console.log(`runtimeArchitectureCloseout readiness=${runtimeArchitectureCloseoutIssues.length === 0 ? 'ready' : 'blocked'} checks=${RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT.length} issues=${runtimeArchitectureCloseoutIssues.length}`);
   const p0CliPartial = p0CliPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   const p0FutureApiPartial = p0FutureApiPartialIds(PRODUCT_FEATURE_IMPACT_AUDIT);
   console.log(`summary mainlineCliP0=${p0CliPartial === '<none>' ? 'ready' : 'blocked'} p0CliPartial=${p0CliPartial} p0FutureApiDeferred=${p0FutureApiPartial}`);
@@ -143,6 +188,10 @@ try {
   }
   console.log('businessLineFirstImplementationChecks');
   for (const check of BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT) {
+    console.log(`ready ${check.id} source=${check.sourceId}`);
+  }
+  console.log('runtimeArchitectureCloseoutChecks');
+  for (const check of RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT) {
     console.log(`ready ${check.id} source=${check.sourceId}`);
   }
 

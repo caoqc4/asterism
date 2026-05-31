@@ -111,6 +111,27 @@ export type BusinessLineFirstImplementationAuditCheck = {
   allowsLegacyTaskRecovery?: boolean;
 };
 
+export type RuntimeArchitectureCloseoutSourceId =
+  | 'product_feature_audit'
+  | 'product_feature_audit_test'
+  | 'goalpilot'
+  | 'runtime_orchestration'
+  | 'capability_mapping'
+  | 'pilot_decision'
+  | 'decision_writeback'
+  | 'task_memory'
+  | 'context_transition';
+
+export type RuntimeArchitectureCloseoutSourceInput = Partial<Record<RuntimeArchitectureCloseoutSourceId, string>>;
+
+export type RuntimeArchitectureCloseoutAuditCheck = {
+  id: string;
+  label: string;
+  sourceId: RuntimeArchitectureCloseoutSourceId;
+  requiredFragments: string[];
+  forbiddenPatterns?: RegExp[];
+};
+
 const DEFERRED_COMPLETION_SIGNALS = [
   /\b(?:deferred|diagnostic-only|unimplemented|not yet|pending until)\b/i,
   /future (?:agent api|api|provider-visible|scheduled|background|execution|workspace-write)/i,
@@ -145,11 +166,45 @@ const REQUIRED_BUSINESS_LINE_FIRST_IMPLEMENTATION_CHECK_IDS = [
   'legacy_tasks_explorer_labeled',
 ] as const;
 
+const REQUIRED_RUNTIME_ARCHITECTURE_CLOSEOUT_CHECK_IDS = [
+  'cli_first_business_line_loop',
+  'agent_api_future_deferred',
+  'matrix_future_below_pilot',
+  'capability_surfaces_do_not_own_business_memory',
+  'pilot_bounded_backend_neutral',
+  'scheduler_business_line_carrier',
+  'handoff_typed_recovery',
+  'review_learning_typed_artifacts',
+  'writeback_product_controlled',
+  'tests_guard_architecture_drift',
+] as const;
+
 const TASK_FIRST_OWNERSHIP_DRIFT_PATTERNS = [
   /\bTask\s+is\s+the\s+durable\s+product\s+object\b/i,
   /\bTasks?\s+(?:are|is|remain|stays?|becomes?|acts?\s+as)\s+the\s+(?:durable|default|primary|canonical)\s+(?:product\s+)?(?:owner|object|model)\b/i,
   /\bTask\.md\s+(?:is|remain|stays?|becomes?|acts?\s+as)\s+the\s+(?:whole|primary|default|canonical)\s+business\s+memory\b/i,
   /\btask\s+queue\s+(?:is|becomes?|acts?\s+as)\s+the\s+(?:durable|default|primary)\s+product\s+(?:model|owner)\b/i,
+];
+
+const BUSINESS_MEMORY_OWNER_DRIFT_PATTERNS = [
+  /\b(?:MCP|skills?|External Access|external access)\s+(?:owns?|owning|owned)\s+(?:durable\s+)?business memory\b/i,
+  /\bbusiness memory\s+(?:is|are|becomes?|stays?|remains?)\s+owned by\s+(?:MCP|skills?|External Access|external access)\b/i,
+];
+
+const DURABLE_STATE_OWNER_DRIFT_PATTERNS = [
+  /\b(?:Pilot|Scheduler|scheduler|matrix runtime|matrix runtimes|wanman_matrix|Wanman)\s+(?:owns?|owning|owned)\s+durable state\b/i,
+  /\bit\s+owns\s+durable state\b/i,
+  /\bdurable state\s+(?:is|are|becomes?|stays?|remains?)\s+owned by\s+(?:Pilot|Scheduler|scheduler|matrix runtime|matrix runtimes|wanman_matrix|Wanman)\b/i,
+];
+
+const RAW_TRANSCRIPT_PRODUCT_TRUTH_DRIFT_PATTERNS = [
+  /\braw transcripts?\s+(?:is|are|becomes?|stays?|remains?)\s+(?:product truth|durable memory|the recovery artifact)\b/i,
+  /\braw transcripts?\s+as\s+product truth\b/i,
+  /\btranscript dumps?\s+(?:is|are|becomes?|stays?|remains?)\s+(?:product truth|durable memory|the recovery artifact)\b/i,
+];
+
+const TEST_EXPECTATION_TASK_FIRST_DRIFT_PATTERNS = [
+  /\.(?:toContain|toMatch)\(\s*['"`][^'"`]*(?:Task is the durable product object|Tasks are the durable product owner|task-first product ownership)/i,
 ];
 
 export const BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT: BusinessLineFirstRuleLayerAuditCheck[] = [
@@ -333,6 +388,126 @@ export const BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT: BusinessLineFirstImplemen
       'Legacy Tasks Explorer',
     ],
     allowsLegacyTaskRecovery: true,
+  },
+];
+
+export const RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT: RuntimeArchitectureCloseoutAuditCheck[] = [
+  {
+    id: 'cli_first_business_line_loop',
+    label: 'CLI-first execution is the first-release product loop',
+    sourceId: 'product_feature_audit',
+    requiredFragments: [
+      'CLI-first business-line runtime smoke now proves Business Line -> Next Action -> selected Codex CLI native adapter contract',
+      'business-line Write Intent approval',
+      'confirmation-gated Business Record/Next Action/SOP proposal writeback',
+      'future Next Action and SOP source evidence',
+    ],
+  },
+  {
+    id: 'agent_api_future_deferred',
+    label: 'Agent API remains same-level, partial, and gated',
+    sourceId: 'product_feature_audit',
+    requiredFragments: [
+      'Agent API Runtime capability summaries now expose a deferred contract layer',
+      'runtimeLevel=same_level_future',
+      'executionReady=no',
+      'globalAgentApiPromotionAllowed=false',
+    ],
+  },
+  {
+    id: 'matrix_future_below_pilot',
+    label: 'Matrix runtime remains future-only below Pilot',
+    sourceId: 'product_feature_audit',
+    requiredFragments: [
+      'Wanman matrix runtime is reserved as a future executor backend below Pilot',
+      'runtimeExecutable=no',
+      'productCoordinator=false',
+      'productionInvocationAllowed=false',
+      'writeBoundary=write_intent_only',
+    ],
+    forbiddenPatterns: DURABLE_STATE_OWNER_DRIFT_PATTERNS,
+  },
+  {
+    id: 'capability_surfaces_do_not_own_business_memory',
+    label: 'MCP, skills, and external access stay scoped capabilities',
+    sourceId: 'runtime_orchestration',
+    requiredFragments: [
+      'MCP tools, skills, external access, hooks, browser/computer-use, and local',
+      'SOPs/skills remain business memory',
+      'records whether a surface is context-only, read-only, runtime-native gated, or blocked',
+    ],
+  },
+  {
+    id: 'pilot_bounded_backend_neutral',
+    label: 'Pilot is bounded, backend-neutral product coordination',
+    sourceId: 'pilot_decision',
+    requiredFragments: [
+      "Pilot is Taskplane's product-side decision posture",
+      'does not own durable state',
+      'does not replace executor runtimes',
+      'Taskplane remains the business-line and mission control layer',
+    ],
+    forbiddenPatterns: DURABLE_STATE_OWNER_DRIFT_PATTERNS,
+  },
+  {
+    id: 'scheduler_business_line_carrier',
+    label: 'Scheduler remains a business-line loop carrier',
+    sourceId: 'runtime_orchestration',
+    requiredFragments: [
+      'business-line loop is the product-level scheduler object',
+      'Scheduled, event-triggered, and routine tasks are execution carriers',
+      'not the durable scheduler owner',
+      'Standing Approval',
+    ],
+    forbiddenPatterns: DURABLE_STATE_OWNER_DRIFT_PATTERNS,
+  },
+  {
+    id: 'handoff_typed_recovery',
+    label: 'Handoff is typed recovery, not transcript dumping',
+    sourceId: 'context_transition',
+    requiredFragments: [
+      'Handoff is a boundary, not a transcript dump',
+      'typed `handoff_recovery_artifact`',
+      'gated writeback target',
+      'rawTranscriptIncluded=false',
+    ],
+    forbiddenPatterns: RAW_TRANSCRIPT_PRODUCT_TRUTH_DRIFT_PATTERNS,
+  },
+  {
+    id: 'review_learning_typed_artifacts',
+    label: 'Review and learning produce typed artifacts',
+    sourceId: 'task_memory',
+    requiredFragments: [
+      'Review Minimum Shape',
+      'Learning Candidate',
+      'SOP Revision Minimum Shape',
+      'Provenance: review id, run id, source record, user correction, or Decision',
+      'Post-Action Review And Learning',
+    ],
+    forbiddenPatterns: RAW_TRANSCRIPT_PRODUCT_TRUTH_DRIFT_PATTERNS,
+  },
+  {
+    id: 'writeback_product_controlled',
+    label: 'Writeback stays product-controlled',
+    sourceId: 'decision_writeback',
+    requiredFragments: [
+      'No backend may bypass Taskplane write gates',
+      'Write Intent is a proposal',
+      'Persistence happens only after validation',
+      'Business-line Write Intent must carry or resolve a business-line owner',
+    ],
+  },
+  {
+    id: 'tests_guard_architecture_drift',
+    label: 'Tests guard task-first and deferred-runtime drift',
+    sourceId: 'product_feature_audit_test',
+    requiredFragments: [
+      'allows provisional GoalPilot naming while blocking task-first durable ownership drift',
+      'does not let deferred contracts count as covered product completion',
+      'keeps business-line architecture readiness distinct from future API deferred paths',
+      'records Agent API execution pilot-decision readiness chips',
+    ],
+    forbiddenPatterns: TEST_EXPECTATION_TASK_FIRST_DRIFT_PATTERNS,
   },
 ];
 
@@ -1320,6 +1495,62 @@ export function findBusinessLineFirstImplementationAuditIssues(
       issues.push({
         featureId: `business_line_first_implementation:${requiredId}`,
         issue: 'Missing required business-line-first implementation audit check.',
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function findRuntimeArchitectureCloseoutAuditIssues(
+  sources: RuntimeArchitectureCloseoutSourceInput,
+  checks: RuntimeArchitectureCloseoutAuditCheck[] = RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const check of checks) {
+    if (ids.has(check.id)) {
+      issues.push({ featureId: `runtime_architecture_closeout:${check.id}`, issue: 'Duplicate runtime architecture closeout audit check id.' });
+    }
+    ids.add(check.id);
+
+    const content = sources[check.sourceId] ?? '';
+    if (!content.trim()) {
+      issues.push({
+        featureId: `runtime_architecture_closeout:${check.id}`,
+        issue: `Missing runtime architecture closeout source content for ${check.sourceId}.`,
+      });
+      continue;
+    }
+
+    for (const fragment of check.requiredFragments) {
+      if (!includesNormalizedFragment(content, fragment)) {
+        issues.push({
+          featureId: `runtime_architecture_closeout:${check.id}`,
+          issue: `Missing required runtime architecture closeout evidence: ${fragment}`,
+        });
+      }
+    }
+
+    for (const pattern of [
+      ...BUSINESS_MEMORY_OWNER_DRIFT_PATTERNS,
+      ...(check.forbiddenPatterns ?? []),
+    ]) {
+      if (pattern.test(content)) {
+        issues.push({
+          featureId: `runtime_architecture_closeout:${check.id}`,
+          issue: 'Runtime architecture closeout source reassigns product memory, durable state, or ownership outside Taskplane gates.',
+        });
+      }
+    }
+  }
+
+  for (const requiredId of REQUIRED_RUNTIME_ARCHITECTURE_CLOSEOUT_CHECK_IDS) {
+    if (!ids.has(requiredId)) {
+      issues.push({
+        featureId: `runtime_architecture_closeout:${requiredId}`,
+        issue: 'Missing required runtime architecture closeout audit check.',
       });
     }
   }

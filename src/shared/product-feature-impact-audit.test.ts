@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import agentsAdapterDoc from '../../AGENTS.md?raw';
+import capabilityMappingDoc from '../../docs/specs/native-agent-capability-mapping.md?raw';
 import handoffPolicyDoc from '../../docs/specs/context-transition-policy.md?raw';
+import decisionWritebackDoc from '../../docs/specs/decision-layer-writeback-orchestration.md?raw';
 import goalpilotDoc from '../../docs/specs/goalpilot-task-advancement-framework.md?raw';
+import pilotDecisionDoc from '../../docs/specs/pilot-decision-contract.md?raw';
 import runtimeOrchestrationDoc from '../../docs/specs/native-agent-runtime-orchestration.md?raw';
 import priorityRoutingDoc from '../../docs/specs/priority-attention-routing.md?raw';
 import memorySpecDoc from '../../docs/specs/task-memory-spec.md?raw';
@@ -17,11 +20,14 @@ import {
   BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
   BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
   PRODUCT_FEATURE_IMPACT_AUDIT,
+  RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT,
   findBusinessLineFirstImplementationAuditIssues,
   findBusinessLineFirstProductAuditIssues,
   findBusinessLineFirstRuleLayerAuditIssues,
   findProductFeatureImpactAuditIssues,
+  findRuntimeArchitectureCloseoutAuditIssues,
 } from './product-feature-impact-audit.js';
+import productFeatureAuditTestSource from './product-feature-impact-audit.test.ts?raw';
 
 describe('product feature impact audit', () => {
   it('covers the high-priority execution and writeback feature families', () => {
@@ -113,6 +119,63 @@ describe('product feature impact audit', () => {
     ]);
     expect(findBusinessLineFirstImplementationAuditIssues(readBusinessLineFirstImplementationSources()))
       .toEqual([]);
+  });
+
+  it('audits runtime architecture closeout boundaries after CLI-first goals', () => {
+    expect(RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT.map((check) => check.id)).toEqual([
+      'cli_first_business_line_loop',
+      'agent_api_future_deferred',
+      'matrix_future_below_pilot',
+      'capability_surfaces_do_not_own_business_memory',
+      'pilot_bounded_backend_neutral',
+      'scheduler_business_line_carrier',
+      'handoff_typed_recovery',
+      'review_learning_typed_artifacts',
+      'writeback_product_controlled',
+      'tests_guard_architecture_drift',
+    ]);
+    expect(findRuntimeArchitectureCloseoutAuditIssues(readRuntimeArchitectureCloseoutSources()))
+      .toEqual([]);
+  });
+
+  it('blocks runtime architecture closeout drift in deferred runtime and ownership docs', () => {
+    const sources = readRuntimeArchitectureCloseoutSources();
+
+    expect(findRuntimeArchitectureCloseoutAuditIssues({
+      ...sources,
+      product_feature_audit: sources.product_feature_audit
+        ?.replace('executionReady=no', 'executionReady=yes')
+        .replace('productionInvocationAllowed=false', 'productionInvocationAllowed=true'),
+      pilot_decision: sources.pilot_decision
+        ?.replace('does not own durable state and does not replace executor runtimes', 'owns durable state and replaces executor runtimes'),
+      context_transition: sources.context_transition
+        ?.replace('Handoff is a boundary, not a transcript dump', 'Handoff may use raw transcripts as product truth'),
+    })).toEqual(expect.arrayContaining([
+      {
+        featureId: 'runtime_architecture_closeout:agent_api_future_deferred',
+        issue: 'Missing required runtime architecture closeout evidence: executionReady=no',
+      },
+      {
+        featureId: 'runtime_architecture_closeout:matrix_future_below_pilot',
+        issue: 'Missing required runtime architecture closeout evidence: productionInvocationAllowed=false',
+      },
+      {
+        featureId: 'runtime_architecture_closeout:pilot_bounded_backend_neutral',
+        issue: 'Missing required runtime architecture closeout evidence: does not own durable state',
+      },
+      {
+        featureId: 'runtime_architecture_closeout:pilot_bounded_backend_neutral',
+        issue: 'Runtime architecture closeout source reassigns product memory, durable state, or ownership outside Taskplane gates.',
+      },
+      {
+        featureId: 'runtime_architecture_closeout:handoff_typed_recovery',
+        issue: 'Missing required runtime architecture closeout evidence: Handoff is a boundary, not a transcript dump',
+      },
+      {
+        featureId: 'runtime_architecture_closeout:handoff_typed_recovery',
+        issue: 'Runtime architecture closeout source reassigns product memory, durable state, or ownership outside Taskplane gates.',
+      },
+    ]));
   });
 
   it('blocks businessLineFirst architecture readiness when durable business writes drop businessLineId ownership', () => {
@@ -2204,4 +2267,41 @@ function readBusinessLineFirstImplementationSources() {
     writeback_dispatch_service: writebackDispatchServiceSource,
     writeback_proposal: writebackProposalSource,
   };
+}
+
+function readRuntimeArchitectureCloseoutSources() {
+  return {
+    product_feature_audit: formatProductFeatureAuditEvidenceSource(),
+    product_feature_audit_test: productFeatureAuditTestSource,
+    goalpilot: goalpilotDoc,
+    runtime_orchestration: runtimeOrchestrationDoc,
+    capability_mapping: capabilityMappingDoc,
+    pilot_decision: pilotDecisionDoc,
+    decision_writeback: decisionWritebackDoc,
+    task_memory: memorySpecDoc,
+    context_transition: handoffPolicyDoc,
+  };
+}
+
+function formatProductFeatureAuditEvidenceSource() {
+  return [
+    ...PRODUCT_FEATURE_IMPACT_AUDIT.flatMap((item) => [
+      item.id,
+      item.label,
+      item.status,
+      item.cliOnlyClosure,
+      item.futureApiClosure,
+      ...item.evidence,
+      ...item.gaps,
+      ...item.nextActions,
+    ]),
+    ...BUSINESS_LINE_FIRST_PRODUCT_AUDIT.flatMap((check) => [
+      check.id,
+      check.label,
+      check.status,
+      ...check.evidence,
+      ...check.gaps,
+      ...check.nextActions,
+    ]),
+  ].join('\n');
 }
