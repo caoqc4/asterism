@@ -1754,6 +1754,15 @@ describe('ai runtime invocation contract', () => {
       },
       pilotDecision: {
         backend: 'agent_api',
+        backendPlan: {
+          backend: 'agent_api',
+          fallback: null,
+          maxTurns: 1,
+          outputContract: 'pilot_decision_summary',
+          reason: 'Explicit execution request.',
+          status: 'requested',
+          triggers: ['user_steer'],
+        },
         executor: 'agent_api',
         messagePriority: 'steer',
         movement: 'execute',
@@ -1833,6 +1842,10 @@ describe('ai runtime invocation contract', () => {
     expect(partial.summary).toContain('pilotDecisionBackend=agent_api');
     expect(partial.summary).toContain('pilotDecisionMessagePriority=steer');
     expect(partial.summary).toContain('pilotDecisionPriorityLane=continue_or_review');
+    expect(partial.summary).toContain('pilotDecisionBackendPlanStatus=requested');
+    expect(partial.summary).toContain('pilotDecisionBackendPlanTriggers=user_steer');
+    expect(partial.summary).toContain('pilotDecisionBackendPlanMaxTurns=1');
+    expect(partial.summary).toContain('pilotDecisionBackendPlanFallback=none');
     expect(partial.summary).toContain('runId=missing');
     expect(partial.summary).toContain('writeIntentRun=missing');
     expect(partial.summary).toContain('writeIntentRunEvidenceChain=missing');
@@ -2111,6 +2124,20 @@ describe('ai runtime invocation contract', () => {
       ...completeAgentApiExecutionPromotionEvidence(),
       pilotDecision: {
         backend: 'codex_cli',
+        backendPlan: {
+          backend: 'codex_cli',
+          fallback: {
+            from: 'agent_api',
+            policy: { allowed: true, visibility: 'explicit' },
+            reason: 'Selected Agent scheme cannot satisfy decision; using explicit fallback.',
+            to: 'codex_cli',
+          },
+          maxTurns: 1,
+          outputContract: 'pilot_decision_summary',
+          reason: 'A short model-assisted Pilot judgment may resolve ambiguous routing before execution.',
+          status: 'requested',
+          triggers: ['user_steer'],
+        },
         executor: 'codex_cli',
         messagePriority: 'steer',
         movement: 'execute',
@@ -3286,6 +3313,15 @@ function completeAgentApiExecutionPromotionEvidence() {
     },
     pilotDecision: {
       backend: 'agent_api' as const,
+      backendPlan: {
+        backend: 'agent_api' as const,
+        fallback: null,
+        maxTurns: 1 as const,
+        outputContract: 'pilot_decision_summary' as const,
+        reason: 'Explicit execution request.',
+        status: 'requested' as const,
+        triggers: ['user_steer' as const],
+      },
       executor: 'agent_api' as const,
       messagePriority: 'steer' as const,
       movement: 'execute' as const,

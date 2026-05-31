@@ -1614,6 +1614,12 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution promotion readiness',
+        input: expect.stringContaining('"triggers":["user_steer"]'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
         output: expect.stringContaining('pilotDecisionEvidenceChain=ready'),
       }),
     );
@@ -1621,6 +1627,18 @@ describe('RunService', () => {
       expect.objectContaining({
         title: 'Agent API execution promotion readiness',
         output: expect.stringContaining('pilotDecisionExecutor=agent_api'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
+        output: expect.stringContaining('pilotDecisionBackendPlanTriggers=user_steer'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
+        output: expect.stringContaining('pilotDecisionBackendPlanMaxTurns=1'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(

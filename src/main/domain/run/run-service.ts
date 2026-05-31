@@ -102,6 +102,12 @@ function formatAgentApiExecutionPromotionReadinessInput(params: {
     params.pilotDecision
       ? `pilotDecision=${JSON.stringify({
           backend: params.pilotDecision.backend,
+          backendPlan: {
+            fallback: params.pilotDecision.backendPlan.fallback,
+            maxTurns: params.pilotDecision.backendPlan.maxTurns,
+            status: params.pilotDecision.backendPlan.status,
+            triggers: params.pilotDecision.backendPlan.triggers,
+          },
           executor: params.pilotDecision.executor,
           messagePriority: params.pilotDecision.messagePriority,
           movement: params.pilotDecision.movement,
@@ -638,6 +644,7 @@ export class RunService {
       pilotDecision: params.input.pilotDecision
         ? {
             backend: params.input.pilotDecision.backend,
+            backendPlan: params.input.pilotDecision.backendPlan,
             executor: params.input.pilotDecision.executor,
             messagePriority: params.input.pilotDecision.messagePriority,
             movement: params.input.pilotDecision.movement,

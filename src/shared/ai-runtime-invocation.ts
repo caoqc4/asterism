@@ -207,7 +207,7 @@ export type AgentApiExecutionPromotionServiceEvidence = {
   } | null;
   pilotDecision?: Pick<
     PilotDecisionSnapshot,
-    'backend' | 'executor' | 'messagePriority' | 'movement' | 'operationMode' | 'priorityLane'
+    'backend' | 'backendPlan' | 'executor' | 'messagePriority' | 'movement' | 'operationMode' | 'priorityLane'
   > | null;
   reviewedPatchApplyBoundary?: {
     appliedPromotionStatus?: 'applied' | 'blocked' | 'not_required' | 'pending' | null;
@@ -1019,6 +1019,7 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
     );
   const configuredProvider = evidence.providerVisiblePreflight?.configuredProvider?.trim() || '';
   const pilotDecision = evidence.pilotDecision;
+  const pilotDecisionBackendPlan = pilotDecision?.backendPlan ?? null;
   const providerPreflightRunId = evidence.providerVisiblePreflight?.runId?.trim() || '';
   const providerPreflightTaskId = evidence.providerVisiblePreflight?.taskId?.trim() || '';
   const verifier = evidence.postStepVerification?.verifier?.trim() || '';
@@ -1334,6 +1335,10 @@ export function evaluateAgentApiExecutionPromotionReadinessFromEvidence(
       `pilotDecisionBackend=${pilotDecision?.backend ?? 'missing'}`,
       `pilotDecisionMessagePriority=${pilotDecision?.messagePriority ?? 'missing'}`,
       `pilotDecisionPriorityLane=${pilotDecision?.priorityLane ?? 'missing'}`,
+      `pilotDecisionBackendPlanStatus=${pilotDecisionBackendPlan?.status ?? 'missing'}`,
+      `pilotDecisionBackendPlanTriggers=${pilotDecisionBackendPlan?.triggers.length ? pilotDecisionBackendPlan.triggers.join(',') : 'none'}`,
+      `pilotDecisionBackendPlanMaxTurns=${pilotDecisionBackendPlan?.maxTurns ?? 'missing'}`,
+      `pilotDecisionBackendPlanFallback=${pilotDecisionBackendPlan?.fallback ? `${pilotDecisionBackendPlan.fallback.from}->${pilotDecisionBackendPlan.fallback.to}` : 'none'}`,
       `runId=${runEvidenceId || 'missing'}`,
       `writeIntentRun=${writeIntentRunId || 'missing'}`,
       `writeIntentRunEvidenceChain=${writeIntentRunEvidenceChainReady ? 'ready' : 'missing'}`,
