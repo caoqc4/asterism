@@ -218,6 +218,10 @@ describe('Agent API provider tool readiness', () => {
       ],
     });
     expect(readiness.summary).toContain('providerToolReadiness=not_declared');
+    expect(readiness.summary).toContain('providerToolProbeScope=provider_tool_search_declaration');
+    expect(readiness.summary).toContain('providerToolProbeTaskExecutionReadiness=not_evaluated');
+    expect(readiness.summary).toContain('providerToolProbePromotesExecutionRun=no');
+    expect(readiness.summary).toContain('providerToolProbeSeparateExecutionChain=execution_run_promotion');
     expect(readiness.summary).toContain('requirements=3/5');
     expect(readiness.summary).toContain('configuredProvider=openai');
     expect(readiness.summary).toContain('configuredProviderEvidenceChain=ready');
@@ -420,6 +424,10 @@ describe('Agent API provider tool readiness', () => {
       ],
     });
     expect(readiness.summary).toContain('providerToolReadiness=declared');
+    expect(readiness.summary).toContain('providerToolProbeScope=provider_tool_search_declaration');
+    expect(readiness.summary).toContain('providerToolProbeTaskExecutionReadiness=not_evaluated');
+    expect(readiness.summary).toContain('providerToolProbePromotesExecutionRun=no');
+    expect(readiness.summary).toContain('providerToolProbeSeparateExecutionChain=execution_run_promotion');
     expect(readiness.summary).toContain('requirements=5/5');
     expect(readiness.summary).toContain('providerMetadataOwner=openai');
     expect(readiness.summary).toContain('providerMetadataPackage=@openai/agents');

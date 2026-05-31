@@ -165,6 +165,10 @@ function agentApiProviderToolEvidence(summary?: string | null): {
   providerOwnedMetadata: string | null;
   providerConfigured: string | null;
   providerToolMissingRequirements: string | null;
+  providerToolProbePromotesExecutionRun: string | null;
+  providerToolProbeScope: string | null;
+  providerToolProbeSeparateExecutionChain: string | null;
+  providerToolProbeTaskExecutionReadiness: string | null;
   providerToolRequirements: string | null;
   providerNativeFlag: string | null;
   providerNativePayloadProvider: string | null;
@@ -203,6 +207,10 @@ function agentApiProviderToolEvidence(summary?: string | null): {
     providerOwnedMetadata: scalarValue(text, 'providerOwnedMetadata'),
     providerConfigured: scalarValue(text, 'providerConfigured'),
     providerToolMissingRequirements: scalarValue(text, 'providerToolMissingRequirements'),
+    providerToolProbePromotesExecutionRun: scalarValue(text, 'providerToolProbePromotesExecutionRun'),
+    providerToolProbeScope: scalarValue(text, 'providerToolProbeScope'),
+    providerToolProbeSeparateExecutionChain: scalarValue(text, 'providerToolProbeSeparateExecutionChain'),
+    providerToolProbeTaskExecutionReadiness: scalarValue(text, 'providerToolProbeTaskExecutionReadiness'),
     providerToolRequirements: scalarValue(text, 'providerToolRequirements'),
     providerNativeFlag: scalarValue(text, 'providerNativeFlag'),
     providerNativePayloadProvider: scalarValue(text, 'providerNativePayloadProvider'),
@@ -953,6 +961,18 @@ function AgentCliRuntimeSection({
                 <span>{`providerToolReadiness=${apiProviderToolReadiness}`}</span>
                 {apiProviderToolStatus && (
                   <span>{`providerToolStatus=${apiProviderToolStatus}`}</span>
+                )}
+                {apiProviderToolEvidence.providerToolProbeScope && (
+                  <span>{`providerToolProbeScope=${apiProviderToolEvidence.providerToolProbeScope}`}</span>
+                )}
+                {apiProviderToolEvidence.providerToolProbeTaskExecutionReadiness && (
+                  <span>{`providerToolProbeTaskExecutionReadiness=${apiProviderToolEvidence.providerToolProbeTaskExecutionReadiness}`}</span>
+                )}
+                {apiProviderToolEvidence.providerToolProbePromotesExecutionRun && (
+                  <span>{`providerToolProbePromotesExecutionRun=${apiProviderToolEvidence.providerToolProbePromotesExecutionRun}`}</span>
+                )}
+                {apiProviderToolEvidence.providerToolProbeSeparateExecutionChain && (
+                  <span>{`providerToolProbeSeparateExecutionChain=${apiProviderToolEvidence.providerToolProbeSeparateExecutionChain}`}</span>
                 )}
                 {apiProviderToolEvidence.providerToolRequirements && (
                   <span>{`providerToolRequirements=${apiProviderToolEvidence.providerToolRequirements}`}</span>

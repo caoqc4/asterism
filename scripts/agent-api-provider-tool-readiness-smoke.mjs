@@ -152,6 +152,10 @@ export async function runAgentApiProviderToolReadinessSmoke() {
   console.log(`requiresApproval=${String(agentApiRuntime.requiresApproval)}`);
   console.log(`providerToolReadiness=${scalarValue(agentApiRuntime.summary, 'providerToolReadiness') ?? 'missing'}`);
   console.log(`providerToolStatus=${providerToolStatus}`);
+  console.log(`providerToolProbeScope=${scalarValue(agentApiRuntime.summary, 'providerToolProbeScope') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeScope') ?? 'missing'}`);
+  console.log(`providerToolProbeTaskExecutionReadiness=${scalarValue(agentApiRuntime.summary, 'providerToolProbeTaskExecutionReadiness') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeTaskExecutionReadiness') ?? 'missing'}`);
+  console.log(`providerToolProbePromotesExecutionRun=${scalarValue(agentApiRuntime.summary, 'providerToolProbePromotesExecutionRun') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbePromotesExecutionRun') ?? 'missing'}`);
+  console.log(`providerToolProbeSeparateExecutionChain=${scalarValue(agentApiRuntime.summary, 'providerToolProbeSeparateExecutionChain') ?? serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeSeparateExecutionChain') ?? 'missing'}`);
   console.log(`providerToolRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolRequirements') ?? 'missing'}`);
   console.log(`providerToolMissingRequirements=${scalarValue(agentApiRuntime.summary, 'providerToolMissingRequirements') ?? 'missing'}`);
   console.log(`providerNativeSessionReady=${scalarValue(agentApiRuntime.summary, 'providerNativeSessionReady') ?? 'missing'}`);
@@ -212,6 +216,10 @@ export async function runAgentApiProviderToolReadinessSmoke() {
 
   console.log(`serviceEvidenceProviderToolStatus=${serviceEvidenceReadiness.status}`);
   console.log(`serviceEvidenceProviderToolReadiness=${serviceEvidenceReadiness.toolReadiness}`);
+  console.log(`serviceEvidenceProviderToolProbeScope=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeScope') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderToolProbeTaskExecutionReadiness=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeTaskExecutionReadiness') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderToolProbePromotesExecutionRun=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbePromotesExecutionRun') ?? 'missing'}`);
+  console.log(`serviceEvidenceProviderToolProbeSeparateExecutionChain=${serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeSeparateExecutionChain') ?? 'missing'}`);
   console.log(`serviceEvidenceProviderToolRequirements=${serviceEvidenceReadiness.satisfiedRequirements.length}/5`);
   console.log(`serviceEvidenceProviderToolMissingRequirements=${serviceEvidenceReadiness.missingRequirements.join(',') || 'none'}`);
   console.log(`serviceEvidenceSelectedApiRuntime=${serviceScalarValue(serviceEvidenceReadiness.summary, 'selectedApiRuntime') ?? 'missing'}`);
@@ -267,6 +275,10 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     agentApiRuntime.requiresApproval !== true ? 'requires_approval' : null,
     !agentApiRuntime.summary.includes('providerToolReadiness=not_declared') ? 'provider_tool_readiness' : null,
     providerToolStatus !== 'not_declared' ? 'provider_tool_status' : null,
+    !agentApiRuntime.summary.includes('providerToolProbeScope=provider_tool_search_declaration') ? 'provider_tool_probe_scope' : null,
+    !agentApiRuntime.summary.includes('providerToolProbeTaskExecutionReadiness=not_evaluated') ? 'provider_tool_probe_task_execution_readiness' : null,
+    !agentApiRuntime.summary.includes('providerToolProbePromotesExecutionRun=no') ? 'provider_tool_probe_promotes_execution_run' : null,
+    !agentApiRuntime.summary.includes('providerToolProbeSeparateExecutionChain=execution_run_promotion') ? 'provider_tool_probe_separate_execution_chain' : null,
     !agentApiRuntime.summary.includes('providerToolRequirements=4/5') ? 'provider_tool_requirements' : null,
     !agentApiRuntime.summary.includes('providerToolMissingRequirements=explicit_tool_declaration') ? 'provider_tool_missing_requirements' : null,
     !agentApiRuntime.summary.includes('providerNativeSessionReady=no') ? 'provider_native_session_ready' : null,
@@ -331,6 +343,10 @@ export async function runAgentApiProviderToolReadinessSmoke() {
     !agentApiRuntime.summary.includes('startupProbe=never') ? 'startup_probe' : null,
     !agentApiRuntime.summary.includes('executionRun=deferred') ? 'execution_run' : null,
     serviceEvidenceReadiness.status !== 'not_declared' ? 'service_status' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeScope') !== 'provider_tool_search_declaration' ? 'service_provider_tool_probe_scope' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeTaskExecutionReadiness') !== 'not_evaluated' ? 'service_provider_tool_probe_task_execution_readiness' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbePromotesExecutionRun') !== 'no' ? 'service_provider_tool_probe_promotes_execution_run' : null,
+    serviceScalarValue(serviceEvidenceReadiness.summary, 'providerToolProbeSeparateExecutionChain') !== 'execution_run_promotion' ? 'service_provider_tool_probe_separate_execution_chain' : null,
     serviceEvidenceReadiness.satisfiedRequirements.length !== 4 ? 'service_requirement_count' : null,
     serviceEvidenceReadiness.missingRequirements.includes('provider_owned_metadata') ? 'service_provider_owned_metadata_missing' : null,
     !serviceEvidenceReadiness.missingRequirements.includes('explicit_tool_declaration') ? 'service_explicit_tool_declaration_missing' : null,

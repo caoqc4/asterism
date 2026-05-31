@@ -1491,6 +1491,10 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('decompositionPromotionMissingRequirements=...');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolReadiness=not_declared');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus=blocked|not_declared|declared');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolProbeScope=provider_tool_search_declaration');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolProbeTaskExecutionReadiness=not_evaluated');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolProbePromotesExecutionRun=no');
+    expect(capabilities?.evidence.join(' ')).toContain('providerToolProbeSeparateExecutionChain=execution_run_promotion');
     expect(capabilities?.evidence.join(' ')).toContain('selectedApiRuntime');
     expect(capabilities?.evidence.join(' ')).toContain('providerConfigured');
     expect(capabilities?.evidence.join(' ')).toContain('configuredProvider');
@@ -1504,6 +1508,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('mismatched provider metadata');
     expect(capabilities?.evidence.join(' ')).toContain('mismatched declaration package identity');
     expect(capabilities?.evidence.join(' ')).toContain('provider tool/search readiness is not implied');
+    expect(capabilities?.evidence.join(' ')).toContain('cannot promote execution_run without the separate execution_run_promotion chain');
     expect(capabilities?.evidence.join(' ')).toContain('Agent API execution_run readiness chips');
     expect(capabilities?.evidence.join(' ')).toContain('promotion ready state');
     expect(capabilities?.evidence.join(' ')).toContain('promotion satisfied requirement list');
@@ -1521,7 +1526,7 @@ describe('product feature impact audit', () => {
     expect(capabilities?.evidence.join(' ')).toContain('promotion satisfied requirement list');
     expect(capabilities?.evidence.join(' ')).toContain('missing requirement list visible');
     expect(capabilities?.evidence.join(' ')).toContain('promotion missing requirement list visible');
-    expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolRequirements, providerToolMissingRequirements');
+    expect(capabilities?.evidence.join(' ')).toContain('Agent API provider tool readiness, providerToolStatus, providerToolProbeScope, providerToolProbeTaskExecutionReadiness, providerToolProbePromotesExecutionRun, providerToolProbeSeparateExecutionChain');
     expect(capabilities?.evidence.join(' ')).toContain('providerNativeProviderCallIdIdentity');
     expect(capabilities?.evidence.join(' ')).toContain('providerToolStatus');
     expect(capabilities?.evidence.join(' ')).toContain('evaluateAgentApiProviderToolReadinessFromEvidence');
@@ -1711,6 +1716,10 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('runtimeLevel=same_level_future');
     expect(evidence).toContain('configuredProviderIsExecutionReady=no');
     expect(evidence).toContain('providerToolProbeIsTaskExecutionReady=not_declared|no');
+    expect(evidence).toContain('providerToolProbeScope=provider_tool_search_declaration');
+    expect(evidence).toContain('providerToolProbeTaskExecutionReadiness=not_evaluated');
+    expect(evidence).toContain('providerToolProbePromotesExecutionRun=no');
+    expect(evidence).toContain('providerToolProbeSeparateExecutionChain=execution_run_promotion');
     expect(evidence).toContain('readOnlyProposalCapable=partial');
     expect(evidence).toContain('executionReady=no');
     expect(evidence).toContain('promotionScope=per_movement_per_entrypoint');
@@ -1720,6 +1729,7 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('patchApplyEvidenceChain=sandbox_patch_promotion');
     expect(evidence).toContain('globalAgentApiPromotionAllowed=false');
     expect(evidence).toContain('configured providers, provider tool/search probes, right-panel execution, decomposition, scheduler, and patch apply cannot collapse into one global Agent API readiness flag');
+    expect(evidence).toContain('cannot promote execution_run without the separate execution_run_promotion chain');
   });
 
   it('records deduplicated Agent API provider tool declaration evidence', () => {

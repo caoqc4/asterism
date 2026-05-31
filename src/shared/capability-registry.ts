@@ -615,6 +615,18 @@ function agentApiRuntimeCapability(snapshot: RuntimeCapabilitySnapshot | null): 
       agentApiDecompositionPromotionSummary(),
       `providerToolReadiness=${providerToolReadiness.toolReadiness}`,
       `providerToolStatus=${providerToolReadiness.status}`,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerToolProbeScope')
+        ? `providerToolProbeScope=${scalarSummaryValue(providerToolReadiness.summary, 'providerToolProbeScope')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerToolProbeTaskExecutionReadiness')
+        ? `providerToolProbeTaskExecutionReadiness=${scalarSummaryValue(providerToolReadiness.summary, 'providerToolProbeTaskExecutionReadiness')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerToolProbePromotesExecutionRun')
+        ? `providerToolProbePromotesExecutionRun=${scalarSummaryValue(providerToolReadiness.summary, 'providerToolProbePromotesExecutionRun')}`
+        : null,
+      scalarSummaryValue(providerToolReadiness.summary, 'providerToolProbeSeparateExecutionChain')
+        ? `providerToolProbeSeparateExecutionChain=${scalarSummaryValue(providerToolReadiness.summary, 'providerToolProbeSeparateExecutionChain')}`
+        : null,
       `providerToolRequirements=${providerToolReadiness.satisfiedRequirements.length}/${providerToolReadiness.satisfiedRequirements.length + providerToolReadiness.missingRequirements.length}`,
       `providerToolMissingRequirements=${providerToolReadiness.missingRequirements.join(',') || 'none'}`,
       `providerNativeSessionReady=${providerNativeSessionReadiness.ready ? 'yes' : 'no'}`,

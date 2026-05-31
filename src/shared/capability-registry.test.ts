@@ -190,7 +190,7 @@ describe('capability registry', () => {
       visibility: 'hidden',
       access: 'mutating',
       requiredGate: 'runtime_pre_step',
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolProbeScope=provider_tool_search_declaration / providerToolProbeTaskExecutionReadiness=not_evaluated / providerToolProbePromotesExecutionRun=no / providerToolProbeSeparateExecutionChain=execution_run_promotion / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
     });
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionReady=no');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionMissingRequirements=feature_flag,provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls,provider_web_search_declaration');
@@ -198,6 +198,10 @@ describe('capability registry', () => {
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('runtimeLevel=same_level_future');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('configuredProviderIsExecutionReady=no');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbeIsTaskExecutionReady=not_declared');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbeScope=provider_tool_search_declaration');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbeTaskExecutionReadiness=not_evaluated');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbePromotesExecutionRun=no');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbeSeparateExecutionChain=execution_run_promotion');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('readOnlyProposalCapable=partial');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('executionReady=no');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('promotionScope=per_movement_per_entrypoint');
@@ -306,12 +310,14 @@ describe('capability registry', () => {
       status: 'available',
       configured: true,
       missingReason: null,
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolProbeScope=provider_tool_search_declaration / providerToolProbeTaskExecutionReadiness=not_evaluated / providerToolProbePromotesExecutionRun=no / providerToolProbeSeparateExecutionChain=execution_run_promotion / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
     });
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionRequirements=1/7');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeFlag=disabled');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('configuredProviderIsExecutionReady=no');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbeIsTaskExecutionReady=not_declared');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbeTaskExecutionReadiness=not_evaluated');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbePromotesExecutionRun=no');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('promotionScope=per_movement_per_entrypoint');
     expect(RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'run.triggerAgentApi.future')?.requiredGates)
       .toEqual(expect.arrayContaining(['runtime_context_assembly', 'context_readiness', 'task_memory_coverage', 'task_memory_guidance', 'pre_step', 'subtask_start', 'post_step']));
@@ -331,7 +337,7 @@ describe('capability registry', () => {
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')).toMatchObject({
       status: 'disabled',
       configured: false,
-      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=blocked / providerToolRequirements=1/5 / providerToolMissingRequirements=selected_api_runtime,provider_configured,provider_owned_metadata,explicit_tool_declaration'),
+      summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=blocked / providerToolProbeScope=provider_tool_search_declaration / providerToolProbeTaskExecutionReadiness=not_evaluated / providerToolProbePromotesExecutionRun=no / providerToolProbeSeparateExecutionChain=execution_run_promotion / providerToolRequirements=1/5 / providerToolMissingRequirements=selected_api_runtime,provider_configured,provider_owned_metadata,explicit_tool_declaration'),
     });
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('configuredProviderIsExecutionReady=missing');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('executionReady=no');

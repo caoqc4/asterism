@@ -199,7 +199,7 @@ describe('configuration safety report', () => {
 
     expect(report.surfaces.find((surface) => surface.id === 'agent_api.runtime')).toMatchObject({
       state: 'approval_required',
-      reason: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
+      reason: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=not_declared / providerToolProbeScope=provider_tool_search_declaration / providerToolProbeTaskExecutionReadiness=not_evaluated / providerToolProbePromotesExecutionRun=no / providerToolProbeSeparateExecutionChain=execution_run_promotion / providerToolRequirements=4/5 / providerToolMissingRequirements=explicit_tool_declaration'),
       requiresApproval: true,
       startupProbePolicy: 'never',
     });
