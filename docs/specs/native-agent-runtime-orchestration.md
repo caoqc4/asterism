@@ -804,6 +804,12 @@ Current implementation:
   evidence, and feeds records or SOP updates back through Taskplane gates.
   Scheduled, event-triggered, and routine tasks are execution carriers inside
   that loop, not the durable scheduler owner.
+- Business-line loop readiness evidence must keep the scheduler boundary
+  explicit: `schedulerProductOwner=false`,
+  `loopCarrier=business_line_next_action`, and
+  `mutationGate=standing_approval_or_decision`. Scheduler, sensor, and
+  automation paths are carriers for business-line Next Action execution; they
+  do not become product owners or bypass Standing Approval / Decision gates.
 - A sensor is read-only loop observation. It can inspect time, external events,
   source changes, run health, or task state and return evidence, but it cannot
   mutate Taskplane data or start a runtime by itself.
@@ -853,9 +859,10 @@ Current implementation:
   count evidence is present, a ready plan may return
   `runtimeStartAllowed=true`. The plan exposes runtime-start satisfied and
   missing requirement lists plus
-  `runtimeStartReady`, `runtimeStartRequirements=x/3`, and
+  `runtimeStartReady`, `runtimeStartRequirements=x/4`, and
   `runtimeStartMissingRequirements=...` evidence for trigger-plan readiness,
-  scheduler trigger service connection, and run-limit count. The plan also carries the
+  scheduler trigger service connection, selected runtime identity, and
+  run-limit count. The plan also carries the
   trigger Run evidence contract: context readiness, target business-line
   evidence when available, target-task identity, task-memory coverage,
   task-memory guidance, subtask-start, run-limit count, and post-step evidence.

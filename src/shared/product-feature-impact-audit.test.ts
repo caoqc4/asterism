@@ -145,7 +145,10 @@ describe('product feature impact audit', () => {
       ...sources,
       product_feature_audit: sources.product_feature_audit
         ?.replace('executionReady=no', 'executionReady=yes')
+        .replace('providerToolProbePromotesExecutionRun=no', 'providerToolProbePromotesExecutionRun=yes')
         .replace('productionInvocationAllowed=false', 'productionInvocationAllowed=true'),
+      runtime_orchestration: sources.runtime_orchestration
+        ?.replace('schedulerProductOwner=false', 'schedulerProductOwner=true'),
       pilot_decision: sources.pilot_decision
         ?.replace('does not own durable state and does not replace executor runtimes', 'owns durable state and replaces executor runtimes'),
       context_transition: sources.context_transition
@@ -156,8 +159,16 @@ describe('product feature impact audit', () => {
         issue: 'Missing required runtime architecture closeout evidence: executionReady=no',
       },
       {
+        featureId: 'runtime_architecture_closeout:agent_api_future_deferred',
+        issue: 'Missing required runtime architecture closeout evidence: providerToolProbePromotesExecutionRun=no',
+      },
+      {
         featureId: 'runtime_architecture_closeout:matrix_future_below_pilot',
         issue: 'Missing required runtime architecture closeout evidence: productionInvocationAllowed=false',
+      },
+      {
+        featureId: 'runtime_architecture_closeout:scheduler_business_line_carrier',
+        issue: 'Missing required runtime architecture closeout evidence: schedulerProductOwner=false',
       },
       {
         featureId: 'runtime_architecture_closeout:pilot_bounded_backend_neutral',
