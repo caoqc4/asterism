@@ -1626,6 +1626,24 @@ describe('product feature impact audit', () => {
     expect(evidence).toContain('missing or mismatched selected-runtime provider identity');
   });
 
+  it('records Agent API deferred contract cleanup as per-entrypoint readiness evidence', () => {
+    const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
+    const evidence = capabilities?.evidence.join(' ');
+
+    expect(evidence).toContain('runtimeLevel=same_level_future');
+    expect(evidence).toContain('configuredProviderIsExecutionReady=no');
+    expect(evidence).toContain('providerToolProbeIsTaskExecutionReady=not_declared|no');
+    expect(evidence).toContain('readOnlyProposalCapable=partial');
+    expect(evidence).toContain('executionReady=no');
+    expect(evidence).toContain('promotionScope=per_movement_per_entrypoint');
+    expect(evidence).toContain('rightPanelExecutionEvidenceChain=execution_run_promotion');
+    expect(evidence).toContain('decompositionEvidenceChain=decomposition_promotion');
+    expect(evidence).toContain('schedulerEvidenceChain=runtime_scheduler');
+    expect(evidence).toContain('patchApplyEvidenceChain=sandbox_patch_promotion');
+    expect(evidence).toContain('globalAgentApiPromotionAllowed=false');
+    expect(evidence).toContain('configured providers, provider tool/search probes, right-panel execution, decomposition, scheduler, and patch apply cannot collapse into one global Agent API readiness flag');
+  });
+
   it('records deduplicated Agent API provider tool declaration evidence', () => {
     const capabilities = PRODUCT_FEATURE_IMPACT_AUDIT.find((item) => item.id === 'capabilities_external_skills_mcp');
 

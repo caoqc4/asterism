@@ -116,6 +116,35 @@ function agentApiProviderToolStatus(summary?: string | null): string | null {
   return scalarValue(summary ?? '', 'providerToolStatus');
 }
 
+function agentApiDeferredContractEvidence(summary?: string | null): {
+  configuredProviderIsExecutionReady: string | null;
+  decompositionEvidenceChain: string | null;
+  executionReady: string | null;
+  globalAgentApiPromotionAllowed: string | null;
+  patchApplyEvidenceChain: string | null;
+  promotionScope: string | null;
+  providerToolProbeIsTaskExecutionReady: string | null;
+  readOnlyProposalCapable: string | null;
+  rightPanelExecutionEvidenceChain: string | null;
+  runtimeLevel: string | null;
+  schedulerEvidenceChain: string | null;
+} {
+  const text = summary ?? '';
+  return {
+    configuredProviderIsExecutionReady: scalarValue(text, 'configuredProviderIsExecutionReady'),
+    decompositionEvidenceChain: scalarValue(text, 'decompositionEvidenceChain'),
+    executionReady: scalarValue(text, 'executionReady'),
+    globalAgentApiPromotionAllowed: scalarValue(text, 'globalAgentApiPromotionAllowed'),
+    patchApplyEvidenceChain: scalarValue(text, 'patchApplyEvidenceChain'),
+    promotionScope: scalarValue(text, 'promotionScope'),
+    providerToolProbeIsTaskExecutionReady: scalarValue(text, 'providerToolProbeIsTaskExecutionReady'),
+    readOnlyProposalCapable: scalarValue(text, 'readOnlyProposalCapable'),
+    rightPanelExecutionEvidenceChain: scalarValue(text, 'rightPanelExecutionEvidenceChain'),
+    runtimeLevel: scalarValue(text, 'runtimeLevel'),
+    schedulerEvidenceChain: scalarValue(text, 'schedulerEvidenceChain'),
+  };
+}
+
 function agentApiProviderToolEvidence(summary?: string | null): {
   declaredToolCount: string | null;
   declaredWebSearchToolCount: string | null;
@@ -700,6 +729,7 @@ function AgentCliRuntimeSection({
   const hasReadyRuntime = readyCount > 0;
   const apiExecutionReadiness = agentApiExecutionReadiness(apiCapability?.summary ?? apiSafety?.reason);
   const apiDecompositionReadiness = agentApiDecompositionReadiness(apiCapability?.summary ?? apiSafety?.reason);
+  const apiDeferredContract = agentApiDeferredContractEvidence(apiCapability?.summary ?? apiSafety?.reason);
   const apiProviderToolReadiness = agentApiProviderToolReadiness(apiCapability?.summary ?? apiSafety?.reason);
   const apiProviderToolStatus = agentApiProviderToolStatus(apiCapability?.summary ?? apiSafety?.reason);
   const apiProviderToolEvidence = agentApiProviderToolEvidence(apiCapability?.summary ?? apiSafety?.reason);
@@ -881,6 +911,41 @@ function AgentCliRuntimeSection({
               )}
               {apiDecompositionReadiness.promotionMissingRequirementList && (
                 <span>{`promotionMissingRequirementList=${apiDecompositionReadiness.promotionMissingRequirementList}`}</span>
+              )}
+            </div>
+            <div className="agent-api-execution-readiness" aria-label="Agent API deferred contract">
+              {apiDeferredContract.runtimeLevel && (
+                <span>{`runtimeLevel=${apiDeferredContract.runtimeLevel}`}</span>
+              )}
+              {apiDeferredContract.configuredProviderIsExecutionReady && (
+                <span>{`configuredProviderIsExecutionReady=${apiDeferredContract.configuredProviderIsExecutionReady}`}</span>
+              )}
+              {apiDeferredContract.providerToolProbeIsTaskExecutionReady && (
+                <span>{`providerToolProbeIsTaskExecutionReady=${apiDeferredContract.providerToolProbeIsTaskExecutionReady}`}</span>
+              )}
+              {apiDeferredContract.readOnlyProposalCapable && (
+                <span>{`readOnlyProposalCapable=${apiDeferredContract.readOnlyProposalCapable}`}</span>
+              )}
+              {apiDeferredContract.executionReady && (
+                <span>{`executionReady=${apiDeferredContract.executionReady}`}</span>
+              )}
+              {apiDeferredContract.promotionScope && (
+                <span>{`promotionScope=${apiDeferredContract.promotionScope}`}</span>
+              )}
+              {apiDeferredContract.rightPanelExecutionEvidenceChain && (
+                <span>{`rightPanelExecutionEvidenceChain=${apiDeferredContract.rightPanelExecutionEvidenceChain}`}</span>
+              )}
+              {apiDeferredContract.decompositionEvidenceChain && (
+                <span>{`decompositionEvidenceChain=${apiDeferredContract.decompositionEvidenceChain}`}</span>
+              )}
+              {apiDeferredContract.schedulerEvidenceChain && (
+                <span>{`schedulerEvidenceChain=${apiDeferredContract.schedulerEvidenceChain}`}</span>
+              )}
+              {apiDeferredContract.patchApplyEvidenceChain && (
+                <span>{`patchApplyEvidenceChain=${apiDeferredContract.patchApplyEvidenceChain}`}</span>
+              )}
+              {apiDeferredContract.globalAgentApiPromotionAllowed && (
+                <span>{`globalAgentApiPromotionAllowed=${apiDeferredContract.globalAgentApiPromotionAllowed}`}</span>
               )}
             </div>
             {apiProviderToolReadiness && (

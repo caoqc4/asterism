@@ -195,6 +195,17 @@ describe('capability registry', () => {
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionReady=no');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionMissingRequirements=feature_flag,provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls,provider_web_search_declaration');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSelectedProvider=anthropic');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('runtimeLevel=same_level_future');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('configuredProviderIsExecutionReady=no');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbeIsTaskExecutionReady=not_declared');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('readOnlyProposalCapable=partial');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('executionReady=no');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('promotionScope=per_movement_per_entrypoint');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('rightPanelExecutionEvidenceChain=execution_run_promotion');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('decompositionEvidenceChain=decomposition_promotion');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('schedulerEvidenceChain=runtime_scheduler');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('patchApplyEvidenceChain=sandbox_patch_promotion');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('globalAgentApiPromotionAllowed=false');
     expect(registry.find((entry) => entry.id === 'browser.operator')).toMatchObject({
       status: 'available',
       visibility: 'policy_gated',
@@ -299,6 +310,9 @@ describe('capability registry', () => {
     });
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeSessionRequirements=1/7');
     expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerNativeFlag=disabled');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('configuredProviderIsExecutionReady=no');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('providerToolProbeIsTaskExecutionReady=not_declared');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('promotionScope=per_movement_per_entrypoint');
     expect(RUNTIME_ENTRYPOINT_COVERAGE.find((entry) => entry.id === 'run.triggerAgentApi.future')?.requiredGates)
       .toEqual(expect.arrayContaining(['runtime_context_assembly', 'context_readiness', 'task_memory_coverage', 'task_memory_guidance', 'pre_step', 'subtask_start', 'post_step']));
   });
@@ -319,6 +333,8 @@ describe('capability registry', () => {
       configured: false,
       summary: expect.stringContaining('providerToolReadiness=not_declared / providerToolStatus=blocked / providerToolRequirements=1/5 / providerToolMissingRequirements=selected_api_runtime,provider_configured,provider_owned_metadata,explicit_tool_declaration'),
     });
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('configuredProviderIsExecutionReady=missing');
+    expect(registry.find((entry) => entry.id === 'agent_api.runtime')?.summary).toContain('executionReady=no');
   });
 
   it('keeps product surfaces hidden when they are not connected or ready', () => {
