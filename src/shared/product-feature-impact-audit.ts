@@ -644,6 +644,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     evidence: [
       'SubtaskStartEvaluation covers target boundary, blockers, decisions, handoff, context cleanliness, and context sufficiency.',
       'RuntimeHandoff is shared across task switch and context refresh flows.',
+      'ContextTransitionEvaluation now carries a typed handoff_recovery_artifact for task switch and handoff movements, including objective, current state, decisions, constraints, evidence, exclusions, blockers, next step, and writeback target without copying raw transcripts.',
     ],
     gaps: [
       'Future explicit task-enter actions must keep using SubtaskStartEvaluation before execution.',
@@ -678,6 +679,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     futureApiClosure: 'supported',
     evidence: [
       'TaskMemoryCoverageEvaluation and AutoContextClearReadiness block unsafe context clearing.',
+      'ContextPreservationEvaluation builds a digest-only HandoffRecoveryArtifact for ephemeral session, durable business, Next Action, and runtime/subagent handoff types; writeback targets remain gated through Taskplane memory, Run step, or temporary proof surfaces.',
       'SourceContext creation carries source-quality metadata before persistence.',
       'Manual task-session refresh now asks shared TaskAdvancementOrchestrator for a context-refresh handoff movement before existing memory and clearing gates run.',
       'TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation and suppresses generic pending-memory guidance before durable Task Records are proposed.',

@@ -48,6 +48,15 @@ describe('context transition', () => {
     })).toMatchObject({
       action: 'create_handoff',
       handoffType: 'next_action_handoff',
+      recoveryArtifact: {
+        artifactKind: 'handoff_recovery_artifact',
+        handoffType: 'next_action_handoff',
+        rawTranscriptIncluded: false,
+        writebackTarget: {
+          requiresTaskplaneGate: true,
+          surface: 'task_record',
+        },
+      },
       requiresUserConfirmation: true,
       resetStrategy: 'product_transcript_reset',
     });
@@ -118,6 +127,35 @@ describe('context transition', () => {
   it('chooses runtime-native reset only when the adapter owns a persistent session', () => {
     expect(chooseContextResetStrategy({
       runtimeCapabilities: {
+        id: 'codex',
+        label: 'Codex CLI',
+        executionKind: 'cli',
+        supportsSingleRun: true,
+        supportsPersistentSession: false,
+        supportsNativeClear: true,
+        supportsNativeCompact: true,
+        supportsNativeGoalMode: false,
+        supportsPauseGoal: false,
+        supportsResumeGoal: false,
+        supportsClearGoal: false,
+        supportsStructuredProgressEvents: false,
+        supportsWorkspaceWrite: false,
+        defaultPermissionMode: 'read_only',
+        nativeGoalMode: {
+          availability: 'unsupported',
+          minimumVersion: null,
+          reason: 'not verified',
+        },
+        commandRouting: {
+          productOwned: [],
+          runtimeNative: [],
+          passthroughRequiresExplicitNamespace: true,
+        },
+      },
+    })).toBe('product_transcript_reset');
+
+    expect(chooseContextResetStrategy({
+      runtimeCapabilities: {
         id: 'claude',
         label: 'Claude Code',
         executionKind: 'cli',
@@ -174,5 +212,34 @@ describe('context transition', () => {
         },
       },
     })).toBe('runtime_compact');
+
+    expect(chooseContextResetStrategy({
+      runtimeCapabilities: {
+        id: 'claude',
+        label: 'Claude Code',
+        executionKind: 'cli',
+        supportsSingleRun: true,
+        supportsPersistentSession: true,
+        supportsNativeClear: false,
+        supportsNativeCompact: false,
+        supportsNativeGoalMode: false,
+        supportsPauseGoal: false,
+        supportsResumeGoal: false,
+        supportsClearGoal: false,
+        supportsStructuredProgressEvents: false,
+        supportsWorkspaceWrite: false,
+        defaultPermissionMode: 'plan',
+        nativeGoalMode: {
+          availability: 'unsupported',
+          minimumVersion: null,
+          reason: 'not verified',
+        },
+        commandRouting: {
+          productOwned: [],
+          runtimeNative: [],
+          passthroughRequiresExplicitNamespace: true,
+        },
+      },
+    })).toBe('runtime_restart');
   });
 });

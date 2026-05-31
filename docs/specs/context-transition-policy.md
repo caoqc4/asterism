@@ -96,6 +96,13 @@ records and produced evidence over copying full chat, stdout, or hidden prompts.
 Do not treat every handoff as a Task Record: choose the surface from the type
 and recovery job.
 
+Implementation should expose this as a typed `handoff_recovery_artifact` rather
+than loose prose. The artifact must carry the handoff type, objective, current
+state, Decisions, constraints, changed files or artifacts, evidence pointers,
+exclusions, blockers, next safe action, and the gated writeback target. It must
+also record `rawTranscriptIncluded=false`; transcript text is only a source for
+small digest signals, never product truth.
+
 ## Reset Strategy
 
 Taskplane chooses reset strategy from the runtime capability envelope:

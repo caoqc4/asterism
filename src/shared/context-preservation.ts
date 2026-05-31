@@ -64,6 +64,34 @@ export type ContextPreservationWriteIntent = {
   summary: string;
 };
 
+export type HandoffRecoveryWriteIntentType =
+  | 'business_handoff.record'
+  | 'runtime_evidence.record'
+  | 'task_record.create'
+  | 'temporary_handoff.proof';
+
+export type HandoffRecoveryArtifact = {
+  artifactKind: 'handoff_recovery_artifact';
+  blockers: string[];
+  changedFilesOrArtifacts: string[];
+  constraints: string[];
+  currentState: string;
+  decisions: string[];
+  evidence: string[];
+  exclusions: string[];
+  handoffType: HandoffV2Type;
+  nextStep: string | null;
+  objective: string | null;
+  rawTranscriptIncluded: false;
+  source: 'context_preservation_evaluation';
+  transcriptPolicy: 'digest_only';
+  writebackTarget: {
+    requiresTaskplaneGate: true;
+    surface: Exclude<ContextPreservationSurface, 'discard'>;
+    writeIntentType: HandoffRecoveryWriteIntentType;
+  };
+};
+
 export type ContextPreservationInput = {
   chatMessageCount?: number;
   handoffType?: HandoffV2Type;
@@ -81,6 +109,7 @@ export type ContextPreservationInput = {
 
 export type ContextPreservationEvaluation = {
   discardRationale: string[];
+  handoffArtifact: HandoffRecoveryArtifact | null;
   handoffType: HandoffV2Type | null;
   hasValuableSignals: boolean;
   missingCoverage: string[];
@@ -224,6 +253,9 @@ export function buildContextPreservationRecordContent(params: {
   const discarded = params.evaluation.discardRationale.length
     ? params.evaluation.discardRationale.map((item) => `- ${item}`)
     : ['- 未记录寒暄、重复表达或已被结构化状态覆盖的临时文本。'];
+  const handoffArtifact = params.evaluation.handoffArtifact
+    ? formatHandoffRecoveryArtifactForRecord(params.evaluation.handoffArtifact)
+    : ['- 无结构化交接 artifact。'];
 
   return [
     '# Record: 上下文保全证明',
@@ -254,9 +286,55 @@ export function buildContextPreservationRecordContent(params: {
     '## Discarded',
     ...discarded,
     '',
+    '## Handoff Recovery Artifact',
+    ...handoffArtifact,
+    '',
     '## Next',
     '- 刷新后从 Taskplane 业务线/任务结构化状态、Business Records、Task.md、Task Records、Source Context 和 Run evidence 重新装配上下文。',
   ].join('\n');
+}
+
+export function buildHandoffRecoveryArtifact(params: {
+  evaluation: Pick<ContextPreservationEvaluation, 'discardRationale' | 'handoffType' | 'missingCoverage' | 'reason' | 'requiredWriteIntents' | 'status' | 'valuableSignals'>;
+}): HandoffRecoveryArtifact | null {
+  const handoffType = params.evaluation.handoffType;
+  if (!handoffType) return null;
+  const signals = params.evaluation.valuableSignals;
+  const objective = firstSignalSummary(signals, 'goal');
+  const nextStep = firstSignalSummary(signals, 'next_step') ?? firstSignalSummary(signals, 'handoff');
+  const decisions = signalSummaries(signals, 'decision');
+  const constraints = [
+    ...signalSummaries(signals, 'constraint'),
+    ...signalSummaries(signals, 'risk'),
+  ];
+  const changedFilesOrArtifacts = signalSummaries(signals, 'artifact');
+  const evidence = [
+    ...signalSummaries(signals, 'source'),
+    ...changedFilesOrArtifacts,
+  ];
+  const blockers = signalSummaries(signals, 'risk');
+  const exclusions = params.evaluation.discardRationale.length
+    ? params.evaluation.discardRationale
+    : ['Raw transcript, duplicate chat, hidden prompts, and unrelated context are excluded.'];
+  const writebackTarget = resolveHandoffWritebackTarget(params.evaluation);
+
+  return {
+    artifactKind: 'handoff_recovery_artifact',
+    blockers,
+    changedFilesOrArtifacts,
+    constraints,
+    currentState: params.evaluation.reason,
+    decisions,
+    evidence,
+    exclusions,
+    handoffType,
+    nextStep,
+    objective,
+    rawTranscriptIncluded: false,
+    source: 'context_preservation_evaluation',
+    transcriptPolicy: 'digest_only',
+    writebackTarget,
+  };
 }
 
 function result(
@@ -271,14 +349,24 @@ function result(
   },
 ): ContextPreservationEvaluation {
   const valuableSignals = params.signals.filter((signal) => signal.targetSurface !== 'discard');
-  return {
+  const draftEvaluation = {
     discardRationale: params.discardRationale ?? [],
     handoffType: params.handoffType ?? null,
-    hasValuableSignals: valuableSignals.length > 0,
     missingCoverage: params.missingCoverage ?? [],
     reason: params.reason,
-    recoveryCheck: params.recoveryCheck,
     requiredWriteIntents: buildRequiredWriteIntents(status, valuableSignals),
+    status,
+    valuableSignals,
+  };
+  return {
+    discardRationale: draftEvaluation.discardRationale,
+    handoffArtifact: buildHandoffRecoveryArtifact({ evaluation: draftEvaluation }),
+    handoffType: draftEvaluation.handoffType,
+    hasValuableSignals: valuableSignals.length > 0,
+    missingCoverage: draftEvaluation.missingCoverage,
+    reason: draftEvaluation.reason,
+    recoveryCheck: params.recoveryCheck,
+    requiredWriteIntents: draftEvaluation.requiredWriteIntents,
     status,
     valuableSignals,
   };
@@ -503,6 +591,72 @@ function formatGroupedSignals(grouped: Map<ContextPreservationSurface, ContextPr
 
 function yesNo(value: boolean): string {
   return value ? '是' : '否';
+}
+
+function firstSignalSummary(
+  signals: ContextPreservationSignal[],
+  kind: ContextPreservationSignalKind,
+): string | null {
+  return signals.find((signal) => signal.kind === kind)?.summary ?? null;
+}
+
+function signalSummaries(
+  signals: ContextPreservationSignal[],
+  kind: ContextPreservationSignalKind,
+): string[] {
+  return signals.filter((signal) => signal.kind === kind).map((signal) => signal.summary);
+}
+
+function resolveHandoffWritebackTarget(
+  evaluation: Pick<ContextPreservationEvaluation, 'handoffType'>,
+): HandoffRecoveryArtifact['writebackTarget'] {
+  const surface = defaultHandoffSurface(evaluation.handoffType);
+  return {
+    requiresTaskplaneGate: true,
+    surface,
+    writeIntentType: writeIntentTypeForHandoffSurface(surface),
+  };
+}
+
+function defaultHandoffSurface(
+  handoffType: HandoffV2Type | null,
+): Exclude<ContextPreservationSurface, 'discard'> {
+  switch (handoffType) {
+    case 'durable_business_handoff': return 'business_record';
+    case 'ephemeral_session_handoff': return 'temporary_file';
+    case 'runtime_or_subagent_handoff': return 'run_step';
+    case 'next_action_handoff':
+    default:
+      return 'task_record';
+  }
+}
+
+function writeIntentTypeForHandoffSurface(
+  surface: Exclude<ContextPreservationSurface, 'discard'>,
+): HandoffRecoveryWriteIntentType {
+  if (surface === 'business_record') return 'business_handoff.record';
+  if (surface === 'run_step') return 'runtime_evidence.record';
+  if (surface === 'temporary_file') return 'temporary_handoff.proof';
+  return 'task_record.create';
+}
+
+function formatHandoffRecoveryArtifactForRecord(artifact: HandoffRecoveryArtifact): string[] {
+  return [
+    `- kind: ${artifact.artifactKind}`,
+    `- handoffType: ${artifact.handoffType}`,
+    `- objective: ${artifact.objective ?? 'none'}`,
+    `- currentState: ${artifact.currentState}`,
+    `- nextStep: ${artifact.nextStep ?? 'none'}`,
+    `- writebackTarget: ${artifact.writebackTarget.surface} / ${artifact.writebackTarget.writeIntentType}`,
+    `- rawTranscriptIncluded: ${artifact.rawTranscriptIncluded ? 'yes' : 'no'}`,
+    `- transcriptPolicy: ${artifact.transcriptPolicy}`,
+    artifact.decisions.length ? `- decisions: ${artifact.decisions.join(' | ')}` : '- decisions: none',
+    artifact.constraints.length ? `- constraints: ${artifact.constraints.join(' | ')}` : '- constraints: none',
+    artifact.blockers.length ? `- blockers: ${artifact.blockers.join(' | ')}` : '- blockers: none',
+    artifact.changedFilesOrArtifacts.length ? `- changedFilesOrArtifacts: ${artifact.changedFilesOrArtifacts.join(' | ')}` : '- changedFilesOrArtifacts: none',
+    artifact.evidence.length ? `- evidence: ${artifact.evidence.join(' | ')}` : '- evidence: none',
+    artifact.exclusions.length ? `- exclusions: ${artifact.exclusions.join(' | ')}` : '- exclusions: none',
+  ];
 }
 
 function normalizeLine(value: string, limit = 120): string {

@@ -3,6 +3,7 @@ import {
   evaluateContextPreservation,
   type ContextPreservationEvaluation,
   type ContextPreservationInput,
+  type HandoffRecoveryArtifact,
   type HandoffV2Type,
 } from './context-preservation.js';
 
@@ -36,6 +37,7 @@ export type ContextTransitionEvaluation = {
   intent: ContextTransitionIntent;
   preservation: ContextPreservationEvaluation;
   reason: string;
+  recoveryArtifact: HandoffRecoveryArtifact | null;
   resetStrategy: ContextResetStrategy;
   requiresUserConfirmation: boolean;
 };
@@ -133,6 +135,7 @@ function transition(
     intent: input.intent,
     preservation,
     reason,
+    recoveryArtifact: preservation.handoffArtifact,
     resetStrategy,
     requiresUserConfirmation,
   };

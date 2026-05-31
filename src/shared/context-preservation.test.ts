@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildHandoffRecoveryArtifact,
   buildContextPreservationRecordContent,
   evaluateContextPreservation,
 } from './context-preservation.js';
@@ -72,6 +73,17 @@ describe('context preservation', () => {
       'source_context',
     ]));
     expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).not.toContain('task_record');
+    expect(result.handoffArtifact).toMatchObject({
+      artifactKind: 'handoff_recovery_artifact',
+      handoffType: 'durable_business_handoff',
+      rawTranscriptIncluded: false,
+      transcriptPolicy: 'digest_only',
+      writebackTarget: {
+        requiresTaskplaneGate: true,
+        surface: 'business_record',
+        writeIntentType: 'business_handoff.record',
+      },
+    });
   });
 
   it('routes runtime or subagent handoff signals to run steps before writes are applied', () => {
@@ -85,6 +97,88 @@ describe('context preservation', () => {
 
     expect(result.handoffType).toBe('runtime_or_subagent_handoff');
     expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toContain('run_step');
+    expect(result.handoffArtifact).toMatchObject({
+      handoffType: 'runtime_or_subagent_handoff',
+      nextStep: expect.stringContaining('runtime handoff'),
+      rawTranscriptIncluded: false,
+      writebackTarget: {
+        surface: 'run_step',
+        writeIntentType: 'runtime_evidence.record',
+      },
+    });
+  });
+
+  it('builds a typed recovery artifact with objective, state, decisions, constraints, evidence, exclusions, and writeback target', () => {
+    const evaluation = evaluateContextPreservation({
+      handoffType: 'next_action_handoff',
+      hasTaskContext: true,
+      messages: [
+        { role: 'user', text: '目标是完成 handoff contract；决定按 typed artifact 做；约束是不要保存 raw transcript。' },
+        { role: 'user', text: '下一步补测试，风险是 changed file evidence 没串起来，文件是 context-preservation.ts。' },
+      ],
+    });
+    const artifact = buildHandoffRecoveryArtifact({ evaluation });
+
+    expect(artifact).toMatchObject({
+      artifactKind: 'handoff_recovery_artifact',
+      handoffType: 'next_action_handoff',
+      rawTranscriptIncluded: false,
+      source: 'context_preservation_evaluation',
+      transcriptPolicy: 'digest_only',
+      writebackTarget: {
+        requiresTaskplaneGate: true,
+        surface: 'task_record',
+        writeIntentType: 'task_record.create',
+      },
+    });
+    expect(artifact?.objective).toContain('目标是完成 handoff contract');
+    expect(artifact?.currentState).toBe(evaluation.reason);
+    expect(artifact?.decisions.join(' ')).toContain('决定按 typed artifact');
+    expect(artifact?.constraints.join(' ')).toContain('不要保存 raw transcript');
+    expect(artifact?.changedFilesOrArtifacts.join(' ')).toContain('context-preservation.ts');
+    expect(artifact?.evidence.join(' ')).toContain('context-preservation.ts');
+    expect(artifact?.blockers.join(' ')).toContain('changed file evidence');
+    expect(artifact?.nextStep).toContain('下一步补测试');
+    expect(artifact?.exclusions.join(' ')).toContain('Raw transcript');
+  });
+
+  it('keeps source-only durable business handoff target on the business handoff surface', () => {
+    const result = evaluateContextPreservation({
+      handoffType: 'durable_business_handoff',
+      hasBusinessLineContext: true,
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '官方文档 https://example.com/source 需要作为来源保存。' },
+      ],
+    });
+
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toContain('source_context');
+    expect(result.handoffArtifact).toMatchObject({
+      evidence: expect.arrayContaining([expect.stringContaining('https://example.com/source')]),
+      writebackTarget: {
+        surface: 'business_record',
+        writeIntentType: 'business_handoff.record',
+      },
+    });
+  });
+
+  it('keeps source-only runtime handoff target on run-step evidence', () => {
+    const result = evaluateContextPreservation({
+      handoffType: 'runtime_or_subagent_handoff',
+      hasTaskContext: true,
+      messages: [
+        { role: 'user', text: 'runtime source https://example.com/runtime-doc 需要主 Agent 复核。' },
+      ],
+    });
+
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toContain('source_context');
+    expect(result.handoffArtifact).toMatchObject({
+      evidence: expect.arrayContaining([expect.stringContaining('https://example.com/runtime-doc')]),
+      writebackTarget: {
+        surface: 'run_step',
+        writeIntentType: 'runtime_evidence.record',
+      },
+    });
   });
 
   it('marks recovery covered after the preservation write has completed', () => {
@@ -143,5 +237,10 @@ describe('context preservation', () => {
       evaluation,
       taskTitle: '上下文管理',
     })).toContain('交接类型：next_action_handoff');
+    expect(buildContextPreservationRecordContent({
+      capturedAt: '2026-05-24T00:00:00.000Z',
+      evaluation,
+      taskTitle: '上下文管理',
+    })).toContain('rawTranscriptIncluded: no');
   });
 });
