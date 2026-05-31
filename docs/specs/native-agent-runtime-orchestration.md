@@ -871,8 +871,11 @@ Current implementation:
   scheduler sweep that only loads scheduled/event/routine candidates from a
   dedicated task-source port: both paths require an injected Code Agent trigger
   port, and the background sweep also requires the Task Dynamics timeline port
-  before any automatic start can run. The service reuses the same Standing
-  Approval and same-day run-limit checks, sets
+  before any automatic start can run. The shared trigger plan also records the
+  `scheduler_loop` Agent Capability Gateway decision: selected CLI schemes can
+  prove CLI-first scheduler-loop support, while selected Agent API scheduler
+  paths stay deferred and cannot silently use the compatibility trigger port.
+  The service reuses the same Standing Approval and same-day run-limit checks, sets
   `schedulerTriggerServiceConnected=true`, and only starts a Code Agent run when
   the plan is ready. The generated run request keeps `operatorConfirmed=true`
   because the confirmed Standing Approval is the operator confirmation boundary

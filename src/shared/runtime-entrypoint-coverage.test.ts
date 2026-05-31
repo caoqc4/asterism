@@ -299,6 +299,9 @@ describe('runtime entrypoint coverage', () => {
     expect(entry?.notes).toContain('requires the Task Dynamics timeline port');
     expect(entry?.notes).toContain('before any automatic start can run');
     expect(entry?.notes).toContain('Readiness diagnostics do not start Agent CLI/API runtimes');
+    expect(entry?.notes).toContain('scheduler_loop Agent Capability Gateway evidence');
+    expect(entry?.notes).toContain('schedulerLoopApiDeferred=true');
+    expect(entry?.notes).toContain('future API scheduler execution deferred');
     expect(entry?.notes).toContain('trigger timeline evidence preserves targetTaskId');
     expect(entry?.notes).toContain('automation readiness summary and satisfied/missing requirements');
     expect(entry?.notes).toContain('bounded Code Agent run request also carries automation readiness evidence');

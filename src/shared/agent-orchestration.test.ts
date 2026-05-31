@@ -1008,6 +1008,162 @@ describe('agent orchestration snapshot', () => {
     expect(plan.summary).toContain('runtimeStartMissingRequirements=none');
     expect(plan.summary).toContain('schedulerTriggerServiceConnected=true');
     expect(plan.summary).toContain('selectedRuntimeIdentity=local_sandbox');
+    expect(plan.summary).toContain('schedulerLoopCliFirstSupported=true');
+    expect(plan.summary).toContain('schedulerLoopApiDeferred=false');
+  });
+
+  it('keeps selected Agent API scheduler execution deferred behind scheduler-loop runtime gates', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+
+    const plan = planScheduledEventAgentTrigger({
+      aiStatus: readyAutomationAiStatus({
+        apiKeyStored: true,
+        configured: true,
+        runtimeMode: 'api',
+      }),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      runLimit: {
+        runsStartedToday: 0,
+      },
+      schedulerTriggerServiceConnected: true,
+      task: {
+        ...task,
+        businessLineId: 'bl_1',
+        id: 'task_1',
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: 'task_1',
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy: draft.policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:01:00.000Z',
+        }],
+      },
+    });
+
+    expect(plan).toMatchObject({
+      status: 'blocked',
+      runtimeStartAllowed: false,
+      schedulerLoopGateway: {
+        apiSchedulerDeferred: true,
+        cliFirstSupported: false,
+        executionRuntime: 'human',
+        selectedAgentScheme: 'agent_api',
+      },
+      runtimeStartMissingRequirements: [
+        'trigger_plan_ready',
+        'selected_runtime_identity',
+      ],
+    });
+    expect(plan.blockedReasons).toContain('Future Agent API scheduler execution remains deferred until the Agent API scheduler runtime gates are promoted.');
+    expect(plan.summary).toContain('schedulerLoopSelectedScheme=agent_api');
+    expect(plan.summary).toContain('schedulerLoopExecutionRuntime=human');
+    expect(plan.summary).toContain('schedulerLoopApiDeferred=true');
+    expect(plan.summary).toContain('selectedRuntimeIdentity=missing');
+  });
+
+  it('records selected CLI scheduler-loop gateway evidence when CLI readiness is available', () => {
+    const task = matureAutomationTask({
+      taskFacets: ['scheduled'],
+      taskType: 'routine',
+    });
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot: readyAutomationSnapshot(),
+      task,
+    });
+    const draft = buildStandingApprovalConfirmationDraft({
+      now: new Date('2026-05-26T10:00:00.000Z'),
+      readiness,
+      task: {
+        id: 'task_1',
+        riskLevel: 'low',
+        taskFacets: ['scheduled'],
+        taskType: 'routine',
+      },
+    });
+
+    const plan = planScheduledEventAgentTrigger({
+      aiStatus: readyAutomationAiStatus({
+        agentCliRuntimeStatus: {
+          catalogueCount: 1,
+          detectedCount: 1,
+          errorCount: 0,
+          manualRunCount: 1,
+          readyCount: 1,
+          readyManualRunCount: 1,
+          runningCount: 0,
+          runtimes: [{
+            authState: 'ready',
+            command: 'codex',
+            executionSupport: 'manual_run',
+            id: 'codex',
+            installed: true,
+            label: 'Codex CLI',
+            missingReason: null,
+            version: 'codex 1.0.0',
+            workload: 'idle',
+          }],
+          updatedAt: '2026-05-26T10:00:00.000Z',
+        },
+        runtimeMode: 'codex',
+      }),
+      now: new Date('2026-05-26T11:00:00.000Z'),
+      runLimit: {
+        runsStartedToday: 0,
+      },
+      schedulerTriggerServiceConnected: true,
+      task: {
+        ...task,
+        businessLineId: 'bl_1',
+        id: 'task_1',
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: 'task_1',
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy: draft.policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:01:00.000Z',
+        }],
+      },
+    });
+
+    expect(plan).toMatchObject({
+      status: 'ready',
+      runtimeStartAllowed: true,
+      schedulerLoopGateway: {
+        apiSchedulerDeferred: false,
+        cliFirstSupported: true,
+        executionRuntime: 'codex_cli',
+        selectedAgentScheme: 'codex',
+      },
+    });
+    expect(plan.summary).toContain('schedulerLoopSelectedScheme=codex');
+    expect(plan.summary).toContain('schedulerLoopExecutionRuntime=codex_cli');
+    expect(plan.summary).toContain('schedulerLoopCliFirstSupported=true');
+    expect(plan.summary).toContain('schedulerLoopApiDeferred=false');
   });
 
   it('blocks scheduled/event runtime start when trigger service lacks run-limit accounting', () => {
@@ -1408,7 +1564,13 @@ describe('agent orchestration snapshot', () => {
   });
 });
 
-function readyAutomationAiStatus(): Pick<AiConfigStatus, 'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'> {
+function readyAutomationAiStatus(
+  overrides: Partial<Pick<
+    AiConfigStatus,
+    'agentCliRuntimeStatus' | 'apiKeyStored' | 'configured' | 'runtimeMode'
+  >> = {},
+): Pick<AiConfigStatus, 'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'>
+  & Partial<Pick<AiConfigStatus, 'agentCliRuntimeStatus' | 'apiKeyStored' | 'configured' | 'runtimeMode'>> {
   return {
     featureFlags: {
       enableScheduler: true,
@@ -1457,6 +1619,7 @@ function readyAutomationAiStatus(): Pick<AiConfigStatus, 'featureFlags' | 'sandb
     },
     toolScaffoldSummaries: [],
     workspaceRoot: '/tmp/workspace',
+    ...overrides,
   };
 }
 

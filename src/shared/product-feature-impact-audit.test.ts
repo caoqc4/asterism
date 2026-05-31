@@ -749,6 +749,12 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('selected_runtime_identity');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartSatisfiedRequirements=...');
     expect(workHabits?.evidence.join(' ')).toContain('runtimeStartMissingRequirements=...');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduler_loop Agent Capability Gateway evidence');
+    expect(workHabits?.evidence.join(' ')).toContain('schedulerLoopSelectedScheme');
+    expect(workHabits?.evidence.join(' ')).toContain('schedulerLoopExecutionRuntime');
+    expect(workHabits?.evidence.join(' ')).toContain('schedulerLoopApiDeferred');
+    expect(workHabits?.evidence.join(' ')).toContain('selected Agent API scheduler paths remain deferred');
+    expect(workHabits?.evidence.join(' ')).toContain('selected CLI readiness preserves CLI-first scheduler-loop evidence');
     expect(workHabits?.evidence.join(' ')).toContain('CapabilityRegistry now includes scheduled/event trigger runtime-start readiness');
     expect(workHabits?.evidence.join(' ')).toContain('runtime.scheduler summary through planScheduledEventAgentTriggerFromEvidence');
     expect(workHabits?.evidence.join(' ')).toContain('ConfigurationSafetyReport shows trigger-plan, scheduler-trigger-service, and run-limit-count gaps');
@@ -771,12 +777,14 @@ describe('product feature impact audit', () => {
     expect(workHabits?.evidence.join(' ')).toContain('SchedulerService.triggerScheduledEventAgentRun');
     expect(workHabits?.evidence.join(' ')).toContain('injected Code Agent trigger port');
     expect(workHabits?.evidence.join(' ')).toContain('schedulerTriggerServiceConnected=true');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduler_loop gateway evidence allows the selected runtime boundary');
     expect(workHabits?.evidence.join(' ')).toContain('operatorConfirmed=true');
     expect(workHabits?.evidence.join(' ')).toContain('target task id');
     expect(workHabits?.evidence.join(' ')).toContain('task-memory guidance');
     expect(workHabits?.evidence.join(' ')).toContain('first open completion criterion');
     expect(workHabits?.evidence.join(' ')).toContain('first source title');
     expect(workHabits?.evidence.join(' ')).toContain('automation readiness evidence including scheduledEventEntrypoint=available');
+    expect(workHabits?.evidence.join(' ')).toContain('scheduler_loop gateway summary evidence');
     expect(workHabits?.evidence.join(' ')).toContain('Standing Approval policy id and scope');
     expect(workHabits?.evidence.join(' ')).toContain('runtime-start requirement evidence');
     expect(workHabits?.evidence.join(' ')).toContain('run-limit evidence');

@@ -144,6 +144,7 @@ function buildScheduledEventCodeAgentRunInput(
       `Automation readiness: ${plan.readiness.summary}.`,
       `Standing Approval policy: ${plan.policy?.id ?? 'unknown'}.`,
       `Standing Approval scope: ${formatScheduledEventStandingApprovalScope(plan)}`,
+      `Scheduler loop runtime gateway: ${plan.schedulerLoopGateway.summary}.`,
       `Runtime start requirements: ${plan.runtimeStartSatisfiedRequirements.join(',')}.`,
       `Trigger evidence: ${plan.triggerRunEvidenceRequired.join(',')}.`,
       `Run limit: ${plan.runLimit.runsStartedToday ?? 'unknown'}/${plan.runLimit.maxRunsPerDay ?? 'unknown'}.`,
@@ -206,7 +207,14 @@ function normalizeSchedulerDecisionText(value: string): string {
 function planScheduledEventAgentTriggerFromServiceEvidence(params: {
   aiStatus: Pick<
     AiConfigStatus,
-    'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'
+    | 'agentCliRuntimeStatus'
+    | 'apiKeyStored'
+    | 'configured'
+    | 'featureFlags'
+    | 'runtimeMode'
+    | 'sandboxBackendStatus'
+    | 'toolScaffoldSummaries'
+    | 'workspaceRoot'
   > | null;
   now: Date;
   runCountsStartedTodayByTaskId: Record<string, number>;

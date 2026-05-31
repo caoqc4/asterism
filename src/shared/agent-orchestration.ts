@@ -9,6 +9,16 @@ import {
   validateOperatorStartedRunRequest,
   type OperatorStartedRunRequest,
 } from './types/operator-started-run.js';
+import {
+  resolveAgentCapabilityGateway,
+  type AgentCapabilityGatewayFallback,
+  type AgentCapabilityGatewaySelection,
+  type AgentDecisionBackend,
+  type AgentExecutionRuntime,
+  type AgentPermissionGate,
+  type UserSelectedAgentScheme,
+} from './agent-capability-gateway.js';
+import type { AgentCliRuntimeRecord } from './agent-cli-runtime-status.js';
 import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput, RunStatus } from './types/run.js';
 import type { AiConfigStatus } from './types/settings.js';
 import type { TaskDetail, TaskExecutionType } from './types/task.js';
@@ -233,6 +243,26 @@ export type AgentBusinessLineLoopReadiness = {
   summary: string;
 };
 
+type AgentSchedulerLoopAiStatus = Pick<
+  AiConfigStatus,
+  'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'
+> & Partial<Pick<
+  AiConfigStatus,
+  'agentCliRuntimeStatus' | 'apiKeyStored' | 'configured' | 'runtimeMode'
+>>;
+
+export type AgentSchedulerLoopRuntimeGateway = {
+  apiSchedulerDeferred: boolean;
+  cliFirstSupported: boolean;
+  decisionBackend: AgentDecisionBackend;
+  executionRuntime: AgentExecutionRuntime;
+  fallback: AgentCapabilityGatewayFallback | null;
+  permissionGate: AgentPermissionGate;
+  selectedAgentScheme: UserSelectedAgentScheme | null;
+  status: AgentCapabilityGatewaySelection['status'];
+  summary: string;
+};
+
 export function scheduledEventRuntimeStartRequirements(): AgentScheduledEventRuntimeStartRequirement[] {
   return [
     'trigger_plan_ready',
@@ -247,6 +277,7 @@ export type AgentScheduledEventTriggerPlan = {
   triggerPlanReady: boolean;
   runtimeStartAllowed: boolean;
   schedulerTriggerServiceConnected: boolean;
+  schedulerLoopGateway: AgentSchedulerLoopRuntimeGateway;
   triggerRunEvidenceRequired: Array<
     | 'context_readiness'
     | 'target_task_identity'
@@ -273,10 +304,7 @@ export type AgentScheduledEventTriggerPlan = {
 };
 
 export type AgentScheduledEventTriggerServiceEvidence = {
-  aiStatus: Pick<
-    AiConfigStatus,
-    'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'
-  > | null;
+  aiStatus: AgentSchedulerLoopAiStatus | null;
   lane?: AgentExecutionOrchestrationLane;
   now: Date;
   runLimit?: {
@@ -390,10 +418,7 @@ const RESERVED_CONNECTOR_FAMILIES: AgentToolScaffoldFamily[] = [
 ];
 
 export function buildAgentExecutionOrchestrationSnapshot(
-  aiStatus: Pick<
-    AiConfigStatus,
-    'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'
-  > | null,
+  aiStatus: AgentSchedulerLoopAiStatus | null,
 ): AgentExecutionOrchestrationSnapshot {
   const runtime = buildLocalSandboxRuntimeSnapshot(aiStatus);
   const profile = buildManualCodeAgentProfileSnapshot();
@@ -1123,10 +1148,7 @@ export function buildStandingApprovalConfirmationDraft(params: {
 }
 
 export function planScheduledEventAgentTrigger(params: {
-  aiStatus: Pick<
-    AiConfigStatus,
-    'featureFlags' | 'sandboxBackendStatus' | 'toolScaffoldSummaries' | 'workspaceRoot'
-  > | null;
+  aiStatus: AgentSchedulerLoopAiStatus | null;
   lane?: AgentExecutionOrchestrationLane;
   now: Date;
   runLimit?: {
@@ -1158,6 +1180,10 @@ export function planScheduledEventAgentTrigger(params: {
   const schedulerTriggerServiceConnected = params.schedulerTriggerServiceConnected === true;
   const snapshot = buildAgentExecutionOrchestrationSnapshot(params.aiStatus);
   const runtimeId = params.runtimeId ?? snapshot.runtime.id;
+  const schedulerLoopGateway = resolveSchedulerLoopRuntimeGateway({
+    aiStatus: params.aiStatus,
+    snapshot,
+  });
   const readiness = evaluateSkillInformedAutomationReadiness({
     scheduledEventEntrypointAvailable: schedulerTriggerServiceConnected,
     snapshot,
@@ -1181,6 +1207,7 @@ export function planScheduledEventAgentTrigger(params: {
     ...standingApproval.evidence,
     `targetTask=${params.task.id}`,
     `runtime=${snapshot.runtime.status}`,
+    schedulerLoopGateway.summary,
   ];
 
   if (!isScheduledEventOrRoutineTask(params.task)) {
@@ -1209,6 +1236,15 @@ export function planScheduledEventAgentTrigger(params: {
     blockedReasons.push('Scheduled/event trigger runtime start requires daily run-limit accounting.');
   }
 
+  if (schedulerLoopGateway.apiSchedulerDeferred) {
+    blockedReasons.push('Future Agent API scheduler execution remains deferred until the Agent API scheduler runtime gates are promoted.');
+  } else if (
+    schedulerLoopGateway.selectedAgentScheme
+    && !schedulerLoopGateway.cliFirstSupported
+  ) {
+    blockedReasons.push('Selected Agent scheme cannot satisfy scheduler_loop through the CLI-first runtime gateway.');
+  }
+
   const businessLineLoop = evaluateBusinessLineLoopReadiness({
     businessLineId: params.task.businessLineId ?? null,
     carrierTaskId: params.task.id,
@@ -1228,7 +1264,9 @@ export function planScheduledEventAgentTrigger(params: {
   const runtimeStartAllowed = status === 'ready' && schedulerTriggerServiceConnected;
   const runtimeStartRequirements = scheduledEventRuntimeStartRequirements();
   const runtimeStartMissingRequirements: AgentScheduledEventRuntimeStartRequirement[] = [];
-  const selectedRuntimeIdentityReady = Boolean(policy?.allowedRuntimeIds.includes(runtimeId));
+  const selectedRuntimeIdentityReady = Boolean(policy?.allowedRuntimeIds.includes(runtimeId))
+    && !schedulerLoopGateway.apiSchedulerDeferred
+    && (!schedulerLoopGateway.selectedAgentScheme || schedulerLoopGateway.cliFirstSupported);
   if (status !== 'ready') runtimeStartMissingRequirements.push('trigger_plan_ready');
   if (!schedulerTriggerServiceConnected) runtimeStartMissingRequirements.push('scheduler_trigger_service');
   if (!selectedRuntimeIdentityReady) runtimeStartMissingRequirements.push('selected_runtime_identity');
@@ -1261,6 +1299,7 @@ export function planScheduledEventAgentTrigger(params: {
         : null,
     },
     readiness,
+    schedulerLoopGateway,
     standingApproval,
     runtimeStartMissingRequirements,
     runtimeStartSatisfiedRequirements,
@@ -1277,6 +1316,7 @@ export function planScheduledEventAgentTrigger(params: {
       `runtimeStartMissingRequirements=${runtimeStartMissingRequirements.length ? runtimeStartMissingRequirements.join(',') : 'none'}`,
       `schedulerTriggerServiceConnected=${schedulerTriggerServiceConnected ? 'true' : 'false'}`,
       `selectedRuntimeIdentity=${selectedRuntimeIdentityReady ? runtimeId : 'missing'}`,
+      schedulerLoopGateway.summary,
       'triggerRunEvidence=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,business_line_loop,run_limit_count,post_step',
       businessLineLoop.summary,
       `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
@@ -1323,6 +1363,91 @@ export function planScheduledEventAgentTriggerFromEvidence(
       ],
     },
   });
+}
+
+function resolveSchedulerLoopRuntimeGateway(params: {
+  aiStatus: AgentSchedulerLoopAiStatus | null;
+  snapshot: AgentExecutionOrchestrationSnapshot;
+}): AgentSchedulerLoopRuntimeGateway {
+  const selectedAgentScheme = selectedAgentSchemeFromRuntimeMode(params.aiStatus?.runtimeMode);
+  const selectedCliRuntime = params.aiStatus?.runtimeMode === 'codex' || params.aiStatus?.runtimeMode === 'claude'
+    ? params.aiStatus.runtimeMode
+    : null;
+  const agentCliReady = selectedCliRuntime
+    ? selectedCliRuntimeReady(params.aiStatus, selectedCliRuntime)
+    : params.aiStatus?.runtimeMode
+      ? anyCliRuntimeReady(params.aiStatus)
+      : params.snapshot.runtime.status === 'ready';
+  const apiRuntimeReady = params.aiStatus?.runtimeMode === 'api'
+    && params.aiStatus.configured === true
+    && params.aiStatus.apiKeyStored === true;
+  const selection = resolveAgentCapabilityGateway({
+    runtime: {
+      agentCliReady,
+      apiRuntimeReady,
+    },
+    runtimeNeed: 'scheduler_loop',
+    selectedAgentScheme,
+    selectedCliRuntime,
+  });
+  const cliFirstSupported = selection.executionRuntime === 'codex_cli'
+    || selection.executionRuntime === 'claude_cli';
+  const apiSchedulerDeferred = selectedAgentScheme === 'agent_api';
+
+  return {
+    apiSchedulerDeferred,
+    cliFirstSupported,
+    decisionBackend: selection.decisionBackend,
+    executionRuntime: selection.executionRuntime,
+    fallback: selection.fallback,
+    permissionGate: selection.permissionGate,
+    selectedAgentScheme,
+    status: selection.status,
+    summary: [
+      'Scheduler loop runtime gateway',
+      `schedulerLoopGatewayStatus=${selection.status}`,
+      `schedulerLoopSelectedScheme=${selectedAgentScheme ?? 'none'}`,
+      `schedulerLoopExecutionRuntime=${selection.executionRuntime}`,
+      `schedulerLoopDecisionBackend=${selection.decisionBackend}`,
+      `schedulerLoopPermissionGate=${selection.permissionGate}`,
+      `schedulerLoopFallback=${selection.fallback ? `${selection.fallback.from}->${selection.fallback.to}` : 'none'}`,
+      `schedulerLoopCliFirstSupported=${cliFirstSupported ? 'true' : 'false'}`,
+      `schedulerLoopApiDeferred=${apiSchedulerDeferred ? 'true' : 'false'}`,
+    ].join(' / '),
+  };
+}
+
+function selectedAgentSchemeFromRuntimeMode(
+  runtimeMode: AgentSchedulerLoopAiStatus['runtimeMode'] | undefined,
+): UserSelectedAgentScheme | null {
+  if (runtimeMode === 'api') return 'agent_api';
+  if (runtimeMode === 'codex' || runtimeMode === 'claude') return runtimeMode;
+  return null;
+}
+
+function selectedCliRuntimeReady(
+  aiStatus: AgentSchedulerLoopAiStatus | null,
+  selectedCliRuntime: 'codex' | 'claude',
+): boolean {
+  const runtime = aiStatus?.agentCliRuntimeStatus?.runtimes.find((candidate) =>
+    candidate.id === selectedCliRuntime);
+  return cliRuntimeReady(runtime);
+}
+
+function anyCliRuntimeReady(aiStatus: AgentSchedulerLoopAiStatus | null): boolean {
+  return aiStatus?.agentCliRuntimeStatus?.runtimes.some(cliRuntimeReady) ?? false;
+}
+
+function cliRuntimeReady(
+  runtime: AgentCliRuntimeRecord | undefined,
+): boolean {
+  return Boolean(
+    runtime
+      && runtime.installed
+      && runtime.authState === 'ready'
+      && runtime.executionSupport === 'manual_run'
+      && runtime.workload !== 'blocked',
+  );
 }
 
 function evaluateBusinessLineLoopReadiness(params: {

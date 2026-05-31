@@ -99,6 +99,9 @@ describe('Native Agent Runtime Orchestration spec', () => {
     expect(content).toContain('Code Agent trigger');
     expect(content).toContain('Task Dynamics timeline port');
     expect(content).toContain('before any automatic start can run');
+    expect(content).toContain('`scheduler_loop` Agent Capability Gateway decision');
+    expect(content).toContain('selected Agent API scheduler');
+    expect(content).toContain('paths stay deferred');
     expect(content).toContain('operatorConfirmed=true');
     expect(content).toContain('automation readiness summary plus satisfied/missing requirements');
     expect(content).toContain('automationMissingRequirements');
