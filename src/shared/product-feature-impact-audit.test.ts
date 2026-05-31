@@ -557,6 +557,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('without starting Agent API execution');
     expect(rightPanel?.evidence.join(' ')).toContain('preserving operation mode');
     expect(rightPanel?.evidence.join(' ')).toContain('backendPlan');
+    expect(rightPanel?.evidence.join(' ')).toContain('backendChoiceEvidence=recorded');
+    expect(rightPanel?.evidence.join(' ')).toContain('durableStateMutationAllowed=no');
+    expect(rightPanel?.evidence.join(' ')).toContain('DecisionBackend choice stays auditable routing evidence instead of durable state mutation');
     expect(rightPanel?.evidence.join(' ')).toContain('Pilot 决策辅助计划');
     expect(rightPanel?.evidence.join(' ')).toContain('Agent API chat invocations preserve');
     expect(rightPanel?.evidence.join(' ')).toContain('RunService runs now record context.readiness.evaluate');

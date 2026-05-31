@@ -12,6 +12,35 @@ import {
 } from './pilot-decision-contract.js';
 
 describe('Pilot Decision Contract', () => {
+  it('keeps product control as the default and reserves persistent AI Pilot for the future', () => {
+    const decision = evaluatePilotDecision({
+      entrypoint: 'right_panel_chat',
+      hasTaskContext: true,
+      prompt: '继续检查下一步。',
+      runtime: { agentCliReady: true, apiRuntimeReady: true },
+      selectedCliRuntime: 'codex',
+      task: {
+        nextStep: '检查下一步。',
+        title: '默认规则判断',
+      },
+    });
+
+    expect(decision.backend).toBe('rules');
+    expect(decision.executor).toBe('codex_cli');
+    expect(decision.operationMode).toBe('product_control_layer');
+    expect(decision.operationMode).not.toBe('persistent_ai_pilot_reserved');
+    expect(decision.backendPlan).toMatchObject({
+      backend: 'rules',
+      fallback: null,
+      maxTurns: 1,
+      status: 'not_needed',
+      triggers: [],
+    });
+    expect(shouldRunBoundedPilotDecisionBackend(decision)).toBe(false);
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('backendChoiceEvidence=recorded');
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('durableStateMutationAllowed=no');
+  });
+
   it('treats user corrections as steer events without turning Pilot into the executor', () => {
     const decision = evaluatePilotDecision({
       entrypoint: 'right_panel_chat',
@@ -40,6 +69,8 @@ describe('Pilot Decision Contract', () => {
     });
     expect(decision.backendPlan.triggers).toContain('user_steer');
     expect(shouldRunBoundedPilotDecisionBackend(decision)).toBe(true);
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('backendChoiceEvidence=recorded');
+    expect(formatPilotDecisionBackendPlanForStep(decision.backendPlan)).toContain('durableStateMutationAllowed=no');
     expect(buildPilotDecisionSnapshot(decision)).toMatchObject({
       backend: 'codex_cli',
       operationMode: 'bounded_decision_backend',
@@ -116,6 +147,7 @@ describe('Pilot Decision Contract', () => {
 
     expect(apiDecision.backend).toBe('agent_api');
     expect(apiDecision.operationMode).toBe('bounded_decision_backend');
+    expect(apiDecision.operationMode).not.toBe('persistent_ai_pilot_reserved');
     expect(apiDecision.backendPlan.status).toBe('requested');
     expect(apiDecision.backendPlan.triggers).toContain('multi_task_priority');
     expect(apiDecision.requiredRules).toContain('priority.attention_routing');

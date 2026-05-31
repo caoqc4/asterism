@@ -103,9 +103,14 @@ function formatAgentApiExecutionPromotionReadinessInput(params: {
       ? `pilotDecision=${JSON.stringify({
           backend: params.pilotDecision.backend,
           backendPlan: {
+            backend: params.pilotDecision.backendPlan.backend,
+            durableStateMutationAllowed: false,
+            evidenceContract: 'backend_choice_evidence_only',
             fallback: params.pilotDecision.backendPlan.fallback,
             maxTurns: params.pilotDecision.backendPlan.maxTurns,
+            outputContract: params.pilotDecision.backendPlan.outputContract,
             permissionGate: params.pilotDecision.backendPlan.permissionGate,
+            reason: params.pilotDecision.backendPlan.reason,
             selectedAgentScheme: params.pilotDecision.backendPlan.selectedAgentScheme,
             status: params.pilotDecision.backendPlan.status,
             triggers: params.pilotDecision.backendPlan.triggers,

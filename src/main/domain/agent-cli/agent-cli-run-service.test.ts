@@ -100,6 +100,14 @@ describe('AgentCliRunService', () => {
       output: expect.stringContaining('triggers=user_steer'),
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Pilot 决策辅助计划',
+      output: expect.stringContaining('backendChoiceEvidence=recorded'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Pilot 决策辅助计划',
+      output: expect.stringContaining('durableStateMutationAllowed=no'),
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Agent CLI 目标契约',
       output: expect.stringContaining('objective=Review implementation path.'),
     }));

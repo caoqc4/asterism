@@ -216,6 +216,8 @@ export function formatPilotDecisionBackendPlanForStep(plan: PilotDecisionBackend
     plan.triggers.length ? `triggers=${plan.triggers.join(',')}` : 'triggers=none',
     `selectedAgentScheme=${plan.selectedAgentScheme ?? 'none'}`,
     `permissionGate=${plan.permissionGate}`,
+    'backendChoiceEvidence=recorded',
+    'durableStateMutationAllowed=no',
     plan.fallback ? `fallback=${plan.fallback.from}->${plan.fallback.to}` : 'fallback=none',
     plan.fallback ? `fallbackReason=${plan.fallback.reason}` : null,
     `reason=${plan.reason}`,

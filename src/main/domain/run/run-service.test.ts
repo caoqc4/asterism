@@ -1618,6 +1618,18 @@ describe('RunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Agent API execution promotion readiness',
+        input: expect.stringContaining('"evidenceContract":"backend_choice_evidence_only"'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
+        input: expect.stringContaining('"durableStateMutationAllowed":false'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
         input: expect.stringContaining('"triggers":["user_steer"]'),
       }),
     );
@@ -1643,6 +1655,18 @@ describe('RunService', () => {
       expect.objectContaining({
         title: 'Agent API execution promotion readiness',
         output: expect.stringContaining('pilotDecisionBackendPlanMaxTurns=1'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
+        output: expect.stringContaining('pilotDecisionBackendChoiceEvidence=recorded'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent API execution promotion readiness',
+        output: expect.stringContaining('pilotDecisionDurableStateMutationAllowed=no'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
