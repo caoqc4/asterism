@@ -286,6 +286,11 @@ Taskplane currently has a working native CLI execution backend:
 - The Run Goal Contract and Agent CLI context bridge pass those selected-runtime
   capability declarations into native CLI prompts before execution, so the
   runtime sees the same capability boundary shown in Taskplane UI.
+- Runtime context manifests carry a per-action scoped capability allowance for
+  MCP tools, skills, external access, hooks, browser/computer-use, and local
+  file scope. Global capability configuration remains global, business-line
+  SOPs/skills remain business memory, and each run records whether a surface is
+  context-only, read-only, runtime-native gated, or blocked.
 - Runtime JSONL or stream-json output is parsed into Run steps when possible.
 - Agent CLI stdout JSONL lines are projected into Run steps while the native
   process is still running. If a custom executor cannot stream lines, Taskplane

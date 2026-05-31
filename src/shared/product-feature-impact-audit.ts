@@ -900,6 +900,8 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
     futureApiClosure: 'partial',
     evidence: [
       'CapabilityRegistry keeps optional tools hidden until runtime gates expose model-visible tools.',
+      'RuntimeContextManifest now carries a per-action CapabilityScopedAllowance manifest for MCP tools, skills, external access, hooks, browser/computer-use, and local file scope, keeping global capability configuration global while recording context-only, read-only, runtime-native-gated, or blocked allowance for each run.',
+      'CapabilityScopedAllowance keeps business-line SOP/skills as business memory and records perBusinessLineMatrix=no, so business-specific process guidance stays in BusinessLineContextPack/context manifests instead of becoming a per-business-line runtime/MCP/provider matrix.',
       'Skills page separates product runtime rules from optional user skills.',
       'Agent CLI runtime status now carries adapter-level native capability declarations for structured events, runtime-dependent web/search, workspace read/write boundaries, hooks, subagents, and product-controlled memory/clear/compact.',
       'Agent CLI status probes parse lightweight provider help output for structured-event, hook-event, and native agent/subagent signals when the installed CLI exposes them.',

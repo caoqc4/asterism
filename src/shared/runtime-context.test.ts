@@ -209,6 +209,19 @@ describe('runtime context manifest', () => {
     expect(formatRuntimeContextManifestForStep(manifest)).toContain(
       'note=family=mcp / status=unconfigured / configured=0 / available=0 / blocked=1',
     );
+    expect(manifest.capabilityAllowance?.summary).toContain('perBusinessLineMatrix=no');
+    expect(manifest.capabilityAllowance?.surfaces.find((surface) => surface.surface === 'external_access')).toMatchObject({
+      allowance: 'context_only',
+    });
+    expect(manifest.capabilityAllowance?.surfaces.find((surface) => surface.surface === 'skills')).toMatchObject({
+      allowance: 'blocked',
+    });
+    expect(manifest.capabilityAllowance?.surfaces.find((surface) => surface.surface === 'mcp_tools')).toMatchObject({
+      allowance: 'blocked',
+    });
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('capability_allowance:external_access:context_only');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('capability_allowance:mcp_tools:blocked');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('businessLineSkills=business_memory_only');
     expect(manifest.userFacingSummary).toContain('运行能力状态');
   });
 
@@ -401,7 +414,10 @@ describe('runtime context manifest', () => {
 
     expect(manifest.items.map((item) => item.kind)).toEqual(['task_state', 'task_file', 'capability']);
     expect(manifest.summary).toContain('capabilities=1');
+    expect(manifest.summary).toContain('allowances=6');
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('capability:runtime_capabilities');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('capability_allowance:local_file_scope:read_only');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('capability_allowance:hooks:blocked');
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('selectedRuntime=Agent API Runtime');
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('runtimeExecutable=no');
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('supported provider-backed phases');
@@ -522,6 +538,8 @@ describe('runtime context manifest', () => {
     expect(formatted).toContain('capabilityAvailable=1');
     expect(formatted).toContain('capabilityModelVisible=1');
     expect(formatted).toContain('capabilityBlocked=1');
+    expect(formatted).toContain('capability_allowance:skills:blocked');
+    expect(formatted).toContain('capability_allowance:mcp_tools:blocked');
     expect(formatted).not.toContain('Brainstorming');
     expect(formatted).not.toContain('Playwright');
   });

@@ -1,5 +1,10 @@
 import type { AgentWorkingContext } from './types/agent-execution.js';
 import type { CapabilityRegistryEntry } from './capability-registry.js';
+import {
+  buildCapabilityScopedAllowanceManifest,
+  formatCapabilityScopedAllowanceManifestForStep,
+  type CapabilityScopedAllowanceManifest,
+} from './capability-scoped-allowance.js';
 import type { RuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 import { evaluateSelectedFileRelevance, type SelectedFileRelevanceReason } from './selected-file-relevance.js';
 import {
@@ -65,6 +70,7 @@ export type RuntimeContextSnapshot = {
 
 export type RuntimeContextManifest = {
   activeSurface: 'global' | 'task';
+  capabilityAllowance?: CapabilityScopedAllowanceManifest | null;
   items: RuntimeContextManifestItem[];
   memoryRetrieval?: RuntimeContextMemoryRetrievalSummary | null;
   summary: string;
@@ -550,11 +556,18 @@ export function buildRuntimeContextManifest(params: {
   items.push(...capabilityBridgeItems(params.capabilityRegistry ?? []));
 
   const activeSurface = task ? 'task' : 'global';
+  const capabilityAllowance = params.capabilities || params.capabilityRegistry?.length
+    ? buildCapabilityScopedAllowanceManifest({
+        capabilities: params.capabilities ?? null,
+        capabilityRegistry: params.capabilityRegistry ?? [],
+      })
+    : null;
   return {
     activeSurface,
+    capabilityAllowance,
     items,
     memoryRetrieval,
-    summary: formatRuntimeContextManifestSummary({ activeSurface, items, task }),
+    summary: formatRuntimeContextManifestSummary({ activeSurface, capabilityAllowance, items, task }),
     userFacingSummary: formatRuntimeContextManifestUserSummary({ activeSurface, items, task }),
   };
 }
@@ -700,6 +713,9 @@ export function buildRuntimeContextAssemblyPolicy(params: {
 export function formatRuntimeContextManifestForStep(manifest: RuntimeContextManifest): string {
   return [
     manifest.summary,
+    manifest.capabilityAllowance
+      ? formatCapabilityScopedAllowanceManifestForStep(manifest.capabilityAllowance)
+      : null,
     manifest.memoryRetrieval
       ? `memory_retrieval:total=${manifest.memoryRetrieval.totalCount}:included=${manifest.memoryRetrieval.includedCount}:caution=${manifest.memoryRetrieval.cautionCount}:excluded=${manifest.memoryRetrieval.excludedCount}:top=${manifest.memoryRetrieval.topResults.map((item) => `${item.kind}/${item.id}/${item.decision}/${item.reasons.join('+')}`).join('|')}`
       : null,
@@ -843,6 +859,7 @@ function runtimeWorkHabitsForRetrieval(habits: string[]) {
 
 function formatRuntimeContextManifestSummary(params: {
   activeSurface: RuntimeContextManifest['activeSurface'];
+  capabilityAllowance: CapabilityScopedAllowanceManifest | null;
   items: RuntimeContextManifestItem[];
   task: RuntimeContextManifestTask | null;
 }): string {
@@ -861,6 +878,7 @@ function formatRuntimeContextManifestSummary(params: {
     `timeline=${count('timeline')}`,
     `habits=${count('work_habit')}`,
     count('capability') ? `capabilities=${count('capability')}` : null,
+    params.capabilityAllowance ? `allowances=${params.capabilityAllowance.surfaces.length}` : null,
   ].filter(Boolean).join(' / ');
 }
 

@@ -48,6 +48,7 @@ export type NativeCliScopeContract = {
 
 export type NativeCliContextContract = {
   businessLineContextPack: 'included' | 'not_applicable';
+  capabilityAllowanceSummary: string | null;
   contextManifestItemCount: number;
   contextManifestSummary: string;
   contextPackBoundary: string;
@@ -139,6 +140,7 @@ export function buildNativeCliAdapterContract(params: {
     },
     context: {
       businessLineContextPack: params.runScope.businessLineContextPack,
+      capabilityAllowanceSummary: params.contextManifest.capabilityAllowance?.summary ?? null,
       contextManifestItemCount: params.contextManifest.items.length,
       contextManifestSummary: params.contextManifest.summary,
       contextPackBoundary: 'Taskplane assembles context; native CLI receives allowed context only.',
@@ -215,6 +217,7 @@ export function formatNativeCliAdapterContractForStep(contract: NativeCliAdapter
     `oneOffScope=${contract.scope.oneOffScope ? 'yes' : 'no'}`,
     `contextManifestItems=${contract.context.contextManifestItemCount}`,
     `businessLineContextPack=${contract.context.businessLineContextPack}`,
+    contract.context.capabilityAllowanceSummary ? `capabilityAllowance=${contract.context.capabilityAllowanceSummary}` : null,
     `fileSurface=${contract.allowedSurface.files.mode}`,
     `workspaceWriteAllowed=${contract.allowedSurface.files.workspaceWriteAllowed ? 'yes' : 'no'}`,
     `mcpSurface=${contract.allowedSurface.mcp.taskplaneManaged}`,
@@ -224,7 +227,7 @@ export function formatNativeCliAdapterContractForStep(contract: NativeCliAdapter
     `postRunReview=${contract.postRunReview.verificationStepTitle}`,
     `resetStrategy=${contract.compactAndHandoff.defaultResetStrategy}`,
     `handoff=${contract.compactAndHandoff.handoffType}`,
-  ].join('\n');
+  ].filter((line): line is string => line !== null).join('\n');
 }
 
 function executionRuntimeForNativeCli(runtimeId: AgentCliRuntimeId): AgentExecutionRuntime {
