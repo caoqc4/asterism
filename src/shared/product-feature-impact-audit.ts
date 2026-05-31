@@ -376,6 +376,7 @@ export const BUSINESS_LINE_FIRST_PRODUCT_AUDIT: BusinessLineFirstAuditCheck[] = 
     status: 'ready',
     evidence: [
       'Smoke coverage creates a business line, receives a Today progress suggestion, records execution evidence on the next action, completes that action, records a post-action review, creates the next action, accepts a safe SOP revision, and verifies the next Today suggestion changes to the reviewed action with SOP source evidence.',
+      'CLI-first business-line runtime smoke now proves Business Line -> Next Action -> selected Codex CLI native adapter contract -> run evidence -> business-line Write Intent approval -> confirmation-gated Business Record/Next Action/SOP proposal writeback -> post-run review -> future Next Action and SOP source evidence.',
       'Review memory is canonicalized through BusinessLineReview projection so the same post-action review is not double-counted as native business records.',
     ],
     gaps: [],
@@ -1084,6 +1085,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Codex CLI packaged smoke verifies account readiness, run completion, output capture, and fixture safety.',
       'The packaged Agent CLI live smoke harness now supports a default-skipped Claude Code mode through TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude, preserving the same isolated app data, temporary workspace, terminal-output, and no-workspace-change checks for future account-ready validation.',
       'Default-skipped packaged Agent CLI live smoke output now states accountReadiness=not-checked and manualEvidence=not-recorded, so skipped Codex/Claude runs cannot be mistaken for account-ready acceptance evidence.',
+      'The local CLI-first business-line runtime smoke runs inside BusinessLineService coverage without live provider calls, proving selected Codex CLI adapter contract evidence, read-only Native CLI boundary, terminal Run evidence, business-line-native Write Intents, confirmation-gated writeback, post-run review, future Next Action, and SOP proposal source evidence.',
       'The non-live smoke:agent-cli-web-research bridge smoke locks fresh/current trigger detection, mocked OpenAI web_search output, Source Context persistence, preparation Run progress, and renderer progress mapping without external network or provider calls.',
       'The manual Agent CLI native web/search smoke is default-skipped and reports skipReason=opt_in_required, cli=not-called, network=not-called, and workspace=unchanged unless explicitly enabled for one live native search request.',
       'The Codex native web/search smoke passed locally on 2026-05-27 with codex-cli 0.125.0, auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed.',

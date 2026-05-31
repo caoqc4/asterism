@@ -1541,6 +1541,11 @@ describe('product feature impact audit', () => {
     expect(smoke?.evidence.join(' ')).toContain('TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude');
     expect(smoke?.evidence.join(' ')).toContain('accountReadiness=not-checked');
     expect(smoke?.evidence.join(' ')).toContain('manualEvidence=not-recorded');
+    expect(smoke?.evidence.join(' ')).toContain('local CLI-first business-line runtime smoke');
+    expect(smoke?.evidence.join(' ')).toContain('selected Codex CLI adapter contract evidence');
+    expect(smoke?.evidence.join(' ')).toContain('business-line-native Write Intents');
+    expect(smoke?.evidence.join(' ')).toContain('confirmation-gated writeback');
+    expect(smoke?.evidence.join(' ')).toContain('future Next Action');
     expect(smoke?.evidence.join(' ')).toContain('smoke:agent-cli-web-research');
     expect(smoke?.evidence.join(' ')).toContain('mocked OpenAI web_search output');
     expect(smoke?.evidence.join(' ')).toContain('without external network or provider calls');

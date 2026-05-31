@@ -11,6 +11,7 @@ import { CompletionCriteriaRepository } from '../../db/repositories/completion-c
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
+import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
 import { TaskFileRepository } from '../../db/repositories/task-file-repository.js';
@@ -18,6 +19,11 @@ import { TaskProcessBindingRepository } from '../../db/repositories/task-process
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { formatBusinessLineContextPackForPrompt } from '../../../shared/business-line-context-pack.js';
+import {
+  buildNativeCliAdapterContract,
+  formatNativeCliAdapterContractForStep,
+} from '../../../shared/native-cli-adapter-contract.js';
+import { classifyRunScope } from '../../../shared/run-scope.js';
 import { buildTaskplaneWritebackApprovalItems } from '../../../shared/taskplane-writeback-approval.js';
 import { dispatchTaskplaneWritebackApplyPlan } from '../../../shared/taskplane-writeback-dispatch.js';
 import { makeTempDir } from '../../test-utils.js';
@@ -302,7 +308,7 @@ describe('BusinessLineService', () => {
     });
   });
 
-  it('smoke-tests the full business-line architecture learning loop through post-run approval, Decision gates, and Today', async () => {
+  it('smoke-tests the CLI-first business line runtime loop through Next Action, run evidence, Write Intent, review, SOP gate, and Today', async () => {
     const created = await service.create({
       title: 'Migration smoke product',
       goal: 'Prove Business is the primary work owner.',
@@ -360,11 +366,110 @@ describe('BusinessLineService', () => {
       ],
     });
     const runRepository = new RunRepository();
+    const runStepRepository = new RunStepRepository();
     const run = await runRepository.create({
       taskId: initialAction.id,
       businessLineId: created.id,
       type: 'agent',
-      instructions: `Execute the first business-line action.\n\n${runPromptContext}`,
+      instructions: [
+        'Agent CLI (Codex CLI) read-only: Execute the first business-line action.',
+        'selectedAgentScheme=codex',
+        'selectedCliRuntime=codex',
+        runPromptContext,
+      ].join('\n\n'),
+    });
+    const runScope = classifyRunScope({
+      businessLineId: created.id,
+      requestSurface: 'right_panel_task_progress_intent',
+      taskBusinessLineId: initialAction.businessLineId,
+      taskId: initialAction.id,
+    });
+    const nativeCliContract = buildNativeCliAdapterContract({
+      capabilityMode: 'native',
+      commandPreview: 'codex exec --json --sandbox read-only --cd /workspace -',
+      contextManifest: {
+        activeSurface: 'task',
+        capabilityAllowance: {
+          businessLineSkillPolicy: 'business_memory_only',
+          globalConfigurationPolicy: 'global_capability_configuration',
+          source: 'per_action_context_manifest',
+          surfaces: [],
+          summary: 'files=read_only tools=runtime_native writeback=write_intent_only',
+        },
+        items: [{
+          contentIncluded: true,
+          id: 'business-line-context-pack',
+          kind: 'task_state',
+          label: 'BusinessLineContextPack',
+        }],
+        summary: 'businessLineContextPack=attached / nextAction=attached / writeBoundary=proposal_only',
+        userFacingSummary: 'Business line context and Next Action are ready for the selected Agent CLI.',
+      },
+      runId: run.id,
+      runScope,
+      runtimeCapabilities: {
+        commandRouting: {
+          passthroughRequiresExplicitNamespace: true,
+          productOwned: ['/goal', '/status', '/cancel'],
+          runtimeNative: ['/codex goal'],
+        },
+        defaultPermissionMode: 'read_only',
+        defaultResetStrategy: 'product_transcript_reset',
+        executionKind: 'cli',
+        id: 'codex',
+        label: 'Codex CLI',
+        nativeGoalMode: {
+          availability: 'available',
+          minimumVersion: '0.133.0',
+          reason: 'Detected.',
+        },
+        supportsClearGoal: true,
+        supportsNativeCompact: false,
+        supportsNativeClear: false,
+        supportsNativeGoalMode: true,
+        supportsPauseGoal: false,
+        supportsResumeGoal: false,
+        supportsSingleRun: true,
+        supportsStructuredProgressEvents: true,
+        supportsWorkspaceWrite: false,
+      },
+      runtimeId: 'codex',
+      runtimeLabel: 'Codex CLI',
+      sandboxMode: 'read-only',
+      taskId: initialAction.id,
+      taskTitle: initialAction.title,
+      workspaceRoot: '/workspace',
+    });
+    await runStepRepository.create({
+      runId: run.id,
+      kind: 'plan',
+      title: 'agent cli run accepted',
+      output: 'Agent CLI run context assembly gate ready. selectedCliRuntime=codex businessLineContextPack=included nextActionCarrier=attached',
+    });
+    await runStepRepository.create({
+      runId: run.id,
+      kind: 'plan',
+      title: 'Native CLI adapter contract',
+      input: JSON.stringify(nativeCliContract),
+      output: formatNativeCliAdapterContractForStep(nativeCliContract),
+    });
+    await runStepRepository.create({
+      runId: run.id,
+      kind: 'model',
+      title: 'codex cli completed',
+      output: runtimeOutput,
+    });
+    await runStepRepository.create({
+      runId: run.id,
+      kind: 'decision',
+      title: '验收子 Agent 检查',
+      input: JSON.stringify({
+        decision: 'accept_for_review',
+        runtime: 'codex_cli',
+        businessLineId: created.id,
+        taskId: initialAction.id,
+      }),
+      output: 'Verdict: pass\nVerifier decision: accept_for_review\nCan mark task complete: no\nNext action: review_business_line_write_intents',
     });
     const completedRun = await runRepository.updateResult(
       run.id,
@@ -373,7 +478,32 @@ describe('BusinessLineService', () => {
       'ai',
     );
     expect(completedRun.instructions).toContain('BusinessLineContextPack');
+    expect(completedRun.instructions).toContain('selectedCliRuntime=codex');
     expect(completedRun.businessLineId).toBe(created.id);
+    const runSteps = await runStepRepository.listForRun(run.id);
+    expect(runSteps).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        title: 'agent cli run accepted',
+        output: expect.stringContaining('selectedCliRuntime=codex'),
+      }),
+      expect.objectContaining({
+        title: 'Native CLI adapter contract',
+        output: expect.stringContaining('selected_cli_runtime=codex'),
+      }),
+      expect.objectContaining({
+        title: 'codex cli completed',
+        output: expect.stringContaining('TASKPLANE_WRITE_INTENTS'),
+      }),
+      expect.objectContaining({
+        title: '验收子 Agent 检查',
+        input: expect.stringContaining('"runtime":"codex_cli"'),
+        output: expect.stringContaining('Verifier decision: accept_for_review'),
+      }),
+    ]));
+    expect(runSteps.find((step) => step.title === 'Native CLI adapter contract')?.output)
+      .toContain('directProductMutationAllowed=no');
+    expect(runSteps.find((step) => step.title === 'Native CLI adapter contract')?.output)
+      .toContain('postRunReview=agent_runtime_verification');
     await new TaskRepository().transition({ id: initialAction.id, nextState: 'completed' });
 
     const approvalItems = buildTaskplaneWritebackApprovalItems({
@@ -386,6 +516,12 @@ describe('BusinessLineService', () => {
       'business_next_action.create',
       'business_sop_revision.propose',
     ]);
+    expect(approvalItems.filter((item) => item.kind === 'business_line')).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        source: 'runtime_write_intent',
+        summary: expect.stringContaining('确认'),
+      }),
+    ]));
     for (const item of approvalItems.filter((candidate) => candidate.kind === 'business_line')) {
       await expect(dispatchTaskplaneWritebackApplyPlan({
         taskId: initialAction.id,
