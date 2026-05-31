@@ -552,6 +552,9 @@ describe('product feature impact audit', () => {
     expect(rightPanel?.evidence.join(' ')).toContain('even when web activity is also present');
     expect(rightPanel?.evidence.join(' ')).toContain('child-task advancement messages');
     expect(rightPanel?.evidence.join(' ')).toContain('context.readiness.evaluate');
+    expect(rightPanel?.evidence.join(' ')).toContain('completed Agent CLI summaries now surface Native CLI adapter contract evidence');
+    expect(rightPanel?.evidence.join(' ')).toContain('selected CLI runtime, businessLineId, Next Action carrier, context pack, run evidence, Write Intent marker, and post-run review');
+    expect(rightPanel?.evidence.join(' ')).toContain('without starting Agent API execution');
     expect(rightPanel?.evidence.join(' ')).toContain('preserving operation mode');
     expect(rightPanel?.evidence.join(' ')).toContain('backendPlan');
     expect(rightPanel?.evidence.join(' ')).toContain('Pilot 决策辅助计划');

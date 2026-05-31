@@ -909,6 +909,25 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
   if (!steps?.length) return null;
   const orderedSteps = [...steps].sort((left, right) => left.index - right.index);
   const lines: string[] = [];
+  const nativeCliContractStep = orderedSteps.find((step) => /Native CLI adapter contract/i.test(step.title));
+  if (nativeCliContractStep) {
+    const selectedRuntime = readStepKeyValue(nativeCliContractStep.output, 'selected_cli_runtime');
+    const businessLineId = readStepKeyValue(nativeCliContractStep.output, 'businessLineId');
+    const carrier = readStepKeyValue(nativeCliContractStep.output, 'carrier');
+    const contextPack = readStepKeyValue(nativeCliContractStep.output, 'businessLineContextPack');
+    const runEvidence = readStepKeyValue(nativeCliContractStep.output, 'runEvidence');
+    const writeIntent = readStepKeyValue(nativeCliContractStep.output, 'writeIntent');
+    const postRunReview = readStepKeyValue(nativeCliContractStep.output, 'postRunReview');
+    lines.push([
+      `CLI 执行证据：runtime=${selectedRuntime ?? 'unknown'}`,
+      `businessLineId=${businessLineId ?? 'none'}`,
+      carrier ? `carrier=${truncateAgentCliChatLine(carrier, 48)}` : null,
+      contextPack ? `contextPack=${contextPack}` : null,
+      runEvidence ? `runEvidence=${truncateAgentCliChatLine(runEvidence, 48)}` : null,
+      writeIntent ? `Write Intent=${writeIntent}` : null,
+      postRunReview ? `postRunReview=${postRunReview}` : null,
+    ].filter((part): part is string => Boolean(part)).join('；') + '。');
+  }
   const webPreparationStep = orderedSteps.find((step) => /Agent CLI 联网调研准备/i.test(step.title));
   if (webPreparationStep) {
     const status = readStepKeyValue(webPreparationStep.output, 'status');

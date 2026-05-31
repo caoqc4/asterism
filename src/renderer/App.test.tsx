@@ -2205,6 +2205,107 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('surfaces CLI-first harness evidence for a business-line Next Action run', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_cli_execution',
+      title: 'CLI Execution product',
+    });
+    const nextAction = buildTask({
+      id: 'task_cli_business_line_action',
+      title: 'Run CLI launch evidence check',
+      businessLineId: line.id,
+      nextStep: 'Check CLI launch evidence.',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [nextAction],
+    });
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    vi.mocked(harness.api.triggerAgentCliRun!).mockImplementationOnce(async (input) => {
+      const run = buildRun({
+        id: 'run_cli_business_line_execution',
+        businessLineId: input.businessLineId ?? null,
+        output: [
+          'Codex CLI run completed.',
+          '```json',
+          JSON.stringify({
+            type: 'TASKPLANE_WRITE_INTENTS',
+            intents: [{
+              type: 'business_record.create',
+              businessLineId: input.businessLineId,
+              summary: 'CLI evidence changed the next recommendation.',
+              recordType: 'result',
+            }],
+          }),
+          '```',
+        ].join('\n'),
+        outputSource: 'ai',
+        status: 'completed',
+        taskId: input.taskId,
+        type: 'agent',
+      }) as RunRecord & { steps: RunStepRecord[] };
+      run.steps = [
+        buildRunStep({
+          id: 'step_native_cli_contract',
+          runId: run.id,
+          index: 0,
+          kind: 'plan',
+          title: 'Native CLI adapter contract',
+          output: [
+            'adapter=native_cli',
+            'selected_cli_runtime=codex',
+            'execution_runtime=codex_cli',
+            `businessLineId=${line.id}`,
+            `carrier=next_action_task:${nextAction.id}`,
+            'businessLineContextPack=included',
+            'runEvidence=run_steps_when_available+run_output',
+            'writeIntent=TASKPLANE_WRITE_INTENTS',
+            'directProductMutationAllowed=no',
+            'postRunReview=agent_runtime_verification',
+          ].join('\n'),
+        }),
+        buildRunStep({
+          id: 'step_cli_completed',
+          runId: run.id,
+          index: 1,
+          kind: 'model',
+          title: 'codex cli completed',
+          output: 'TASKPLANE_WRITE_INTENTS parsed for review.',
+        }),
+      ];
+      harness.runs.push(run);
+      return run;
+    });
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'Next Actions' }));
+    await user.click(await screen.findByRole('button', { name: '执行' }));
+    const input = await screen.findByRole('textbox');
+    await user.clear(input);
+    await user.type(input, '用 Codex CLI 执行当前业务线 Next Action。');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerAgentCliRun).toHaveBeenCalledWith(expect.objectContaining({
+        businessLineId: line.id,
+        runtimeId: 'codex',
+        sandboxMode: 'read-only',
+        taskId: nextAction.id,
+      }));
+    });
+    expect(await screen.findByText(/CLI 执行证据：runtime=codex；businessLineId=business_line_cli_execution/)).toBeTruthy();
+    expect(screen.getByText(/carrier=next_action_task:task_cli_business_line_action/)).toBeTruthy();
+    expect(screen.getByText(/contextPack=included/)).toBeTruthy();
+    expect(screen.getByText(/runEvidence=run_steps_when_available\+run_output/)).toBeTruthy();
+    expect(screen.getByText(/Write Intent=TASKPLANE_WRITE_INTENTS/)).toBeTruthy();
+    expect(screen.getByText(/postRunReview=agent_runtime_verification/)).toBeTruthy();
+  });
+
   it('separates business owner and execution carrier on writeback approval cards', async () => {
     const user = userEvent.setup();
     const task = buildTask({

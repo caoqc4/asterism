@@ -638,6 +638,7 @@ export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
       'Agent CLI runs return runtime evidence and compact progress projection.',
       'Agent CLI runs record context.readiness.evaluate before native CLI execution and pass the verdict into the context bridge.',
       'Agent CLI runs record a Native CLI adapter contract step covering selected CLI runtime, business-line or one-off scope, Next Action carrier, context manifest, allowed file/tool/MCP surface, run evidence, Write Intent proposal boundary, post-run review, and compact/handoff policy.',
+      'Right-panel completed Agent CLI summaries now surface Native CLI adapter contract evidence for selected CLI runtime, businessLineId, Next Action carrier, context pack, run evidence, Write Intent marker, and post-run review without starting Agent API execution.',
       'Taskplane extracts Write Intent from runtime output before product writes.',
       'Shared writeback proposal builder normalizes runtime Write Intent into reusable product proposal surfaces.',
       'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',
