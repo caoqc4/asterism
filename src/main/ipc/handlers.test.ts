@@ -100,6 +100,7 @@ const {
     runService: {
       list: vi.fn(),
       getDetail: vi.fn(),
+      recordBusinessLineRunSteering: vi.fn(),
       trigger: vi.fn(),
       continuePausedRun: vi.fn(),
     },
@@ -1963,6 +1964,62 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
     expect(result.failureReason).toBe('Missing API key');
+  });
+
+  it('records business-line run steering through IPC as recoverable run evidence', async () => {
+    servicesMock.runService.recordBusinessLineRunSteering.mockResolvedValue({
+      plan: {
+        businessLineId: 'business_line_product',
+        gate: 'run_correction_event',
+        kind: 'steering',
+        runCorrectionEvent: {
+          businessLineId: 'business_line_product',
+          correction: 'Stay inside launch-copy evidence.',
+          evidenceItems: ['operator message'],
+          kind: 'business_line_run_correction',
+          riskLevel: 'medium',
+          riskNote: 'Scope correction',
+          runId: 'run_1',
+          sourceActionId: 'task_1',
+          writebackGate: 'run_correction_event',
+        },
+        runId: 'run_1',
+        status: 'ready',
+      },
+      step: {
+        id: 'run_step_steer',
+        runId: 'run_1',
+        index: 2,
+        kind: 'checkpoint',
+        status: 'completed',
+        title: 'Business-line run steering correction',
+        input: null,
+        output: null,
+        error: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    });
+
+    const handler = getRegisteredHandler<
+      [{ runId: string; correction: string }],
+      Awaited<ReturnType<typeof servicesMock.runService.recordBusinessLineRunSteering>>
+    >('run:recordBusinessLineSteering');
+
+    const result = await handler({}, {
+      correction: 'Stay inside launch-copy evidence.',
+      runId: 'run_1',
+    });
+
+    expect(servicesMock.runService.recordBusinessLineRunSteering).toHaveBeenCalledWith({
+      correction: 'Stay inside launch-copy evidence.',
+      runId: 'run_1',
+    });
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'businessLine.changed', 'business_line_product');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(4, 'brief.changed');
+    expect(result.step.id).toBe('run_step_steer');
   });
 
   it('does not trigger retained API runs when Agent CLI is the selected runtime', async () => {

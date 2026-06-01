@@ -8,6 +8,7 @@ import type { AgentCliRuntimeId } from '../agent-cli-runtime-status.js';
 import type { PilotDecisionSnapshot } from '../pilot-decision-contract.js';
 import type { BusinessLinePostRunReviewOptions } from './business-line.js';
 import type { BusinessLineOwnershipSource } from './business-line.js';
+import type { TaskRiskLevel } from './task.js';
 
 export type RunType = 'draft' | 'summarize' | 'agent';
 
@@ -82,6 +83,15 @@ export type RunDetailRecord = RunRecord & {
   businessLinePostRunReview?: BusinessLinePostRunReviewOptions | null;
   taskMemoryGuidance?: TaskMemoryGuidanceState;
   taskMemoryWriteProposals?: TaskMemoryWriteProposal[];
+};
+
+export type RecordBusinessLineRunSteeringInput = {
+  correction: string;
+  evidenceItems?: string[];
+  requestedWriteKinds?: string[];
+  riskLevel?: TaskRiskLevel | null;
+  riskNote?: string | null;
+  runId: string;
 };
 
 export type RunCheckpointRecord = {

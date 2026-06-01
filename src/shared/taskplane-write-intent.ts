@@ -118,6 +118,8 @@ export type TaskplaneBusinessNextActionCreateIntent = {
   businessLineId?: string | null;
   evidenceRunId: string;
   nextStep?: string | null;
+  riskLevel?: 'none' | 'low' | 'medium' | 'high' | null;
+  riskNote?: string | null;
   sourceActionId?: string | null;
   summary?: string | null;
   taskId?: string | null;
@@ -457,6 +459,8 @@ function normalizeWriteIntentValue(value: unknown, params: {
       businessLineId: readString(value.businessLineId) || null,
       evidenceRunId: readString(value.evidenceRunId, params.evidenceRunId),
       nextStep: readString(value.nextStep) || null,
+      riskLevel: normalizeRiskLevel(value.riskLevel),
+      riskNote: readString(value.riskNote) || null,
       sourceActionId: readString(value.sourceActionId) || readString(value.taskId) || params.taskId || null,
       summary: readString(value.summary) || null,
       taskId: readString(value.taskId) || params.taskId || null,
@@ -599,6 +603,19 @@ function normalizeStringArray(value: unknown): string[] | undefined {
     .filter(Boolean)
     .slice(0, 8);
   return items.length ? items : undefined;
+}
+
+function normalizeRiskLevel(value: unknown): 'none' | 'low' | 'medium' | 'high' | null {
+  const riskLevel = readString(value);
+  if (
+    riskLevel === 'none'
+    || riskLevel === 'low'
+    || riskLevel === 'medium'
+    || riskLevel === 'high'
+  ) {
+    return riskLevel;
+  }
+  return null;
 }
 
 function normalizeSourceCredibility(value: unknown): TaskplaneSourceContextCreateIntent['credibility'] {

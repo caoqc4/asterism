@@ -246,8 +246,15 @@ describe('Taskplane writeback approval items', () => {
       {
         plan: {
           action: 'business_next_action.create',
+          confirmationBoundary: 'taskplane_writeback_approval_queue',
           input: {
             businessLineId: 'business_line_product',
+            operatorConfirmed: true,
+            queuePolicy: {
+              currentRunStatus: 'completed',
+              queuePosition: 'behind_current_run',
+              requiredGate: 'taskplane_writeback_approval_queue',
+            },
             title: 'Draft onboarding checklist',
           },
         },

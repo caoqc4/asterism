@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { planBusinessLineRunControl } from './business-line-run-control.js';
 import { buildTaskplaneWritebackProposalsFromText } from './taskplane-writeback-proposal.js';
 
 describe('Taskplane writeback proposal builder', () => {
@@ -170,6 +171,66 @@ describe('Taskplane writeback proposal builder', () => {
       detail: 'Customer onboarding signal should guide the business line.',
       evidenceRunId: 'run_business',
       title: '业务记录写回提案',
+    });
+  });
+
+  it('plans queued Next Action writeback behind the current business-line run', () => {
+    const plan = planBusinessLineRunControl({
+      businessLineId: 'business_line_product',
+      evidenceItems: ['run output named a follow-up'],
+      kind: 'queue_next_action',
+      nextActionNextStep: 'Draft the queued launch checklist.',
+      nextActionSummary: 'Follow-up work after the active run finishes.',
+      nextActionTitle: 'Draft launch checklist',
+      riskLevel: 'medium',
+      riskNote: 'Needs source freshness check.',
+      runId: 'run_active',
+      runStatus: 'running',
+      sourceActionId: 'task_current',
+    });
+
+    expect(plan).toMatchObject({
+      businessLineId: 'business_line_product',
+      gate: 'taskplane_writeback_approval_queue',
+      kind: 'queue_next_action',
+      queuePolicy: {
+        currentRunStatus: 'running',
+        interruptCurrentRun: false,
+        queuePosition: 'behind_current_run',
+        requiredGate: 'taskplane_writeback_approval_queue',
+        riskLevel: 'medium',
+        riskNote: 'Needs source freshness check.',
+      },
+      status: 'ready',
+    });
+    expect(plan.status === 'ready' && plan.kind === 'queue_next_action' && plan.proposal).toMatchObject({
+      businessLineId: 'business_line_product',
+      evidenceRunId: 'run_active',
+      intent: {
+        sourceActionId: 'task_current',
+        title: 'Draft launch checklist',
+        type: 'business_next_action.create',
+      },
+      title: '排队业务线 Next Action：Draft launch checklist',
+    });
+  });
+
+  it('blocks steering from silently carrying SOP or Decision writes', () => {
+    const plan = planBusinessLineRunControl({
+      businessLineId: 'business_line_product',
+      correction: 'Stay inside the current launch-copy run.',
+      kind: 'steering',
+      requestedWriteKinds: ['business_sop_revision.propose'],
+      runId: 'run_active',
+      runStatus: 'running',
+      sourceActionId: 'task_current',
+    });
+
+    expect(plan).toMatchObject({
+      blockedReason: expect.stringContaining('Steering cannot silently apply business_sop_revision.propose'),
+      gate: 'taskplane_writeback_approval_queue',
+      kind: 'steering',
+      status: 'blocked',
     });
   });
 });

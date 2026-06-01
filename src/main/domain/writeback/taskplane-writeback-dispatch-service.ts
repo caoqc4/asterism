@@ -54,6 +54,7 @@ export type TaskplaneWritebackBusinessLineOwnershipResolverPort = {
 export type TaskplaneWritebackBusinessLineServicePort = Pick<
   BusinessLineService,
   | 'createBusinessLineNextAction'
+  | 'createQueuedBusinessLineNextAction'
   | 'createBusinessLineRecord'
   | 'proposeBusinessLineSopRevision'
   | 'recordReview'
@@ -121,6 +122,16 @@ export class TaskplaneWritebackDispatchService {
         createBlocker: (input): Promise<BlockerRecord> => this.taskService.createBlocker(input),
         createBusinessLineNextAction: (input): Promise<TaskListItemRecord> => {
           if (!this.businessLineService) throw new Error('Business line service unavailable.');
+          if (input.queuePolicy) {
+            return this.businessLineService.createQueuedBusinessLineNextAction({
+              ...input,
+              currentRunStatus: input.queuePolicy.currentRunStatus,
+              interruptCurrentRun: input.queuePolicy.interruptCurrentRun,
+              operatorConfirmed: true,
+              riskLevel: input.queuePolicy.riskLevel,
+              riskNote: input.queuePolicy.riskNote,
+            });
+          }
           return this.businessLineService.createBusinessLineNextAction(input);
         },
         createBusinessLineRecord: (input): Promise<BusinessLineRecord> => {

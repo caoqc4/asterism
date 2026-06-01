@@ -719,6 +719,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     };
     const businessLineService = {
       createBusinessLineNextAction: vi.fn(),
+      createQueuedBusinessLineNextAction: vi.fn(),
       createBusinessLineRecord: vi.fn().mockResolvedValue({ id: 'business_line_record_1' }),
       proposeBusinessLineSopRevision: vi.fn(),
       recordReview: vi.fn(),
@@ -779,6 +780,111 @@ describe('TaskplaneWritebackDispatchService', () => {
     });
   });
 
+  it('routes business-line Next Action writeback through the queued Next Action service path', async () => {
+    const taskService = {
+      create: vi.fn(),
+      createBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn(),
+      createTaskDependency: vi.fn(),
+      getDetail: vi.fn(),
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+      transition: vi.fn(),
+      update: vi.fn(),
+    };
+    const decisionService = {
+      create: vi.fn(),
+    };
+    const ownershipResolver = {
+      resolveOwnership: vi.fn().mockResolvedValue({
+        status: 'resolved',
+        businessLineId: 'business_line_product',
+        source: 'explicit',
+        legacy: false,
+        explicitBusinessLineId: 'business_line_product',
+        taskId: 'task_1',
+        runId: null,
+        decisionId: null,
+        sourceContextId: null,
+        artifactId: null,
+        taskFileId: null,
+      }),
+    };
+    const businessLineService = {
+      createBusinessLineNextAction: vi.fn(),
+      createQueuedBusinessLineNextAction: vi.fn().mockResolvedValue({ id: 'task_next' }),
+      createBusinessLineRecord: vi.fn(),
+      proposeBusinessLineSopRevision: vi.fn(),
+      recordReview: vi.fn(),
+      resolveOwnership: ownershipResolver.resolveOwnership,
+    };
+    const service = new TaskplaneWritebackDispatchService(
+      taskService,
+      decisionService,
+      taskFileRepository(),
+      artifactRepository(),
+      ownershipResolver,
+      businessLineService,
+    );
+
+    const result = await service.dispatch({
+      taskId: 'task_1',
+      plan: {
+        action: 'business_next_action.create',
+        confirmationBoundary: 'taskplane_writeback_approval_queue',
+        confirmationSurface: 'taskplane_writeback_approval_queue',
+        draftOnlyBeforeConfirmation: true,
+        input: {
+          businessLineId: 'business_line_product',
+          currentRunStatus: 'running',
+          evidenceRunId: 'run_business',
+          interruptCurrentRun: false,
+          nextStep: 'Draft launch checklist.',
+          operatorConfirmed: true,
+          queuePolicy: {
+            currentRunStatus: 'running',
+            evidenceItems: ['run:run_business'],
+            interruptCurrentRun: false,
+            queuePosition: 'behind_current_run',
+            requiredGate: 'taskplane_writeback_approval_queue',
+            riskLevel: 'low',
+            riskNote: 'Low-risk follow-up',
+          },
+          sourceActionId: 'task_1',
+          title: 'Draft launch checklist',
+        },
+        successMessage: '已确认并创建业务线 Next Action：Draft launch checklist。',
+        timeline: {
+          payload: {
+            businessLineId: 'business_line_product',
+            confirmationSurface: 'taskplane_writeback_approval_queue',
+            evidenceRunId: 'run_business',
+            queuePolicy: {
+              queuePosition: 'behind_current_run',
+            },
+          },
+          type: 'panel.business_next_action_written',
+        },
+      },
+    });
+
+    expect(businessLineService.createQueuedBusinessLineNextAction).toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: 'business_line_product',
+      currentRunStatus: 'running',
+      interruptCurrentRun: false,
+      operatorConfirmed: true,
+      riskLevel: 'low',
+      riskNote: 'Low-risk follow-up',
+      title: 'Draft launch checklist',
+    }));
+    expect(businessLineService.createBusinessLineNextAction).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      action: 'business_next_action.create',
+      createdTasks: [{ id: 'task_next' }],
+      status: 'completed',
+    });
+  });
+
   it('blocks business-line-native writeback when no business line owner can be resolved', async () => {
     const taskService = {
       create: vi.fn(),
@@ -803,6 +909,7 @@ describe('TaskplaneWritebackDispatchService', () => {
     };
     const businessLineService = {
       createBusinessLineNextAction: vi.fn(),
+      createQueuedBusinessLineNextAction: vi.fn(),
       createBusinessLineRecord: vi.fn(),
       proposeBusinessLineSopRevision: vi.fn(),
       recordReview: vi.fn(),

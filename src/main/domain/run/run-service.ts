@@ -41,6 +41,11 @@ import {
 } from '../../../shared/task-memory-write-proposal.js';
 import { appendBusinessLineContextPackToPrompt } from '../../../shared/business-line-context-pack.js';
 import { buildBusinessLinePostRunReviewOptions } from '../../../shared/business-line-post-run-review.js';
+import {
+  planBusinessLineRunControl,
+  type BusinessLineRunControlInput,
+  type BusinessLineRunControlPlan,
+} from '../../../shared/business-line-run-control.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   BusinessLineOwnershipInput,
@@ -49,9 +54,11 @@ import type {
 } from '../../../shared/types/business-line.js';
 import type {
   CreateRunInput,
+  RecordBusinessLineRunSteeringInput,
   RunDetailRecord,
   RunRecord,
   RunScope,
+  RunStepRecord,
 } from '../../../shared/types/run.js';
 import type { SandboxPatchPromotionRecord } from '../../../shared/types/sandbox-patch-promotion.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
@@ -241,6 +248,69 @@ export class RunService {
       taskMemoryGuidance,
       taskMemoryWriteProposals: taskMemory.writeProposals,
     };
+  }
+
+  async planBusinessLineRunControl(
+    input: Omit<
+      BusinessLineRunControlInput,
+      'businessLineId' | 'evidenceRunId' | 'runId' | 'runStatus' | 'sourceActionId'
+    > & {
+      evidenceRunId?: string | null;
+      runId: string;
+    },
+  ): Promise<BusinessLineRunControlPlan> {
+    const run = await this.runRepository.getDetail(input.runId);
+    if (!run) {
+      return planBusinessLineRunControl({
+        ...input,
+        businessLineId: null,
+        evidenceRunId: input.evidenceRunId ?? input.runId,
+        runId: input.runId,
+      });
+    }
+    return planBusinessLineRunControl({
+      ...input,
+      businessLineId: run.scope?.businessLineId ?? run.businessLineId ?? null,
+      evidenceRunId: input.evidenceRunId ?? run.id,
+      runId: run.id,
+      runStatus: run.status,
+      sourceActionId: run.taskId,
+    });
+  }
+
+  async recordBusinessLineRunSteering(input: RecordBusinessLineRunSteeringInput): Promise<{
+    plan: Extract<BusinessLineRunControlPlan, { kind: 'steering'; status: 'ready' }>;
+    step: RunStepRecord;
+  }> {
+    const plan = await this.planBusinessLineRunControl({
+      correction: input.correction,
+      evidenceItems: input.evidenceItems,
+      kind: 'steering',
+      requestedWriteKinds: input.requestedWriteKinds as BusinessLineRunControlInput['requestedWriteKinds'],
+      riskLevel: input.riskLevel ?? null,
+      riskNote: input.riskNote ?? null,
+      runId: input.runId,
+    });
+    if (plan.status === 'blocked') {
+      throw new Error(plan.blockedReason);
+    }
+    if (plan.kind !== 'steering') {
+      throw new Error('Steering planner returned an unexpected control plan.');
+    }
+    const step = await this.runStepRepository.create({
+      runId: input.runId,
+      kind: 'checkpoint',
+      status: 'completed',
+      title: 'Business-line run steering correction',
+      input: JSON.stringify({
+        businessLineId: plan.businessLineId,
+        gate: plan.gate,
+        requestedWriteKinds: input.requestedWriteKinds ?? [],
+        sourceActionId: plan.runCorrectionEvent.sourceActionId,
+      }),
+      output: JSON.stringify(plan.runCorrectionEvent),
+    });
+    return { plan, step };
   }
 
   async trigger(input: CreateRunInput): Promise<RunRecord> {

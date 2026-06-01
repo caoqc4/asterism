@@ -177,7 +177,10 @@ function buildBusinessLineWritebackProposal(
     case 'business_next_action.create':
       return {
         businessLineId,
-        detail: intent.summary ?? intent.nextStep ?? intent.title,
+        detail: [
+          intent.summary ?? intent.nextStep ?? intent.title,
+          intent.riskLevel ? `Risk: ${intent.riskLevel}${intent.riskNote ? ` - ${intent.riskNote}` : ''}` : null,
+        ].filter(Boolean).join('\n'),
         evidenceRunId: intent.evidenceRunId,
         intent: { ...intent, businessLineId },
         title: `业务下一步提案：${intent.title}`,

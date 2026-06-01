@@ -409,10 +409,25 @@ describe('Taskplane writeback dispatch', () => {
       },
       plan: {
         action: 'business_next_action.create',
+        confirmationBoundary: 'taskplane_writeback_approval_queue',
+        confirmationSurface: 'taskplane_writeback_approval_queue',
+        draftOnlyBeforeConfirmation: true,
         input: {
           businessLineId: 'business_line_product',
+          currentRunStatus: 'running',
           evidenceRunId: 'run_business',
+          interruptCurrentRun: false,
           nextStep: 'Draft onboarding checklist.',
+          operatorConfirmed: true,
+          queuePolicy: {
+            currentRunStatus: 'running',
+            evidenceItems: ['run:run_business'],
+            interruptCurrentRun: false,
+            queuePosition: 'behind_current_run',
+            requiredGate: 'taskplane_writeback_approval_queue',
+            riskLevel: null,
+            riskNote: null,
+          },
           title: 'Draft onboarding checklist',
         },
         successMessage: '已确认并创建业务线 Next Action：Draft onboarding checklist。',
@@ -420,7 +435,12 @@ describe('Taskplane writeback dispatch', () => {
           type: 'panel.business_next_action_written',
           payload: {
             businessLineId: 'business_line_product',
+            confirmationBoundary: 'taskplane_writeback_approval_queue',
+            confirmationSurface: 'taskplane_writeback_approval_queue',
             evidenceRunId: 'run_business',
+            queuePolicy: {
+              queuePosition: 'behind_current_run',
+            },
           },
         },
       },

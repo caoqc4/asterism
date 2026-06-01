@@ -302,6 +302,24 @@ describe('Taskplane writeback apply plans', () => {
         },
       },
     });
+    const nextActionPlan = buildBusinessLineWritebackApplyPlan({
+      confirmationSurface: 'taskplane_writeback_approval_queue',
+      runStatus: 'running',
+      proposal: {
+        businessLineId: 'business_line_product',
+        detail: 'Draft onboarding checklist.',
+        evidenceRunId: 'run_business',
+        title: '业务下一步提案：Draft onboarding checklist',
+        intent: {
+          businessLineId: 'business_line_product',
+          evidenceRunId: 'run_business',
+          nextStep: 'Draft the queued checklist.',
+          sourceActionId: 'task_current',
+          title: 'Draft onboarding checklist',
+          type: 'business_next_action.create',
+        },
+      },
+    });
 
     expect(recordPlan).toMatchObject({
       action: 'business_record.create',
@@ -341,6 +359,33 @@ describe('Taskplane writeback apply plans', () => {
       },
     });
     expect(sopPlan.action).not.toBe('decision.create');
+    expect(nextActionPlan).toMatchObject({
+      action: 'business_next_action.create',
+      confirmationBoundary: 'taskplane_writeback_approval_queue',
+      confirmationSurface: 'taskplane_writeback_approval_queue',
+      draftOnlyBeforeConfirmation: true,
+      input: {
+        businessLineId: 'business_line_product',
+        currentRunStatus: 'running',
+        interruptCurrentRun: false,
+        operatorConfirmed: true,
+        queuePolicy: {
+          currentRunStatus: 'running',
+          interruptCurrentRun: false,
+          queuePosition: 'behind_current_run',
+          requiredGate: 'taskplane_writeback_approval_queue',
+        },
+        sourceActionId: 'task_current',
+      },
+      timeline: {
+        payload: {
+          confirmationBoundary: 'taskplane_writeback_approval_queue',
+          queuePolicy: {
+            queuePosition: 'behind_current_run',
+          },
+        },
+      },
+    });
   });
 
   it('maps patch artifact proposals to run-backed patch artifacts', () => {

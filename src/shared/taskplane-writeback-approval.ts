@@ -162,6 +162,7 @@ export function buildTaskplaneWritebackApprovalItems(params: {
         const plan = buildBusinessLineWritebackApplyPlan({
           confirmationSurface: 'taskplane_writeback_approval_queue',
           proposal,
+          runStatus: detail.status,
         });
         items.push({
           detail: proposal.detail,

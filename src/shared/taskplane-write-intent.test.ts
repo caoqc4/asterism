@@ -156,6 +156,8 @@ describe('Taskplane write intent', () => {
             type: 'business_next_action.create',
             title: 'Draft onboarding checklist',
             nextStep: 'Draft onboarding checklist.',
+            riskLevel: 'medium',
+            riskNote: 'Needs source freshness check.',
           },
           {
             type: 'business_sop_revision.propose',
@@ -186,6 +188,12 @@ describe('Taskplane write intent', () => {
         summary: 'Customer onboarding signal.',
         taskId: 'task_scope',
         type: 'business_record.create',
+      }),
+      expect.objectContaining({
+        riskLevel: 'medium',
+        riskNote: 'Needs source freshness check.',
+        title: 'Draft onboarding checklist',
+        type: 'business_next_action.create',
       }),
       expect.objectContaining({
         nextContent: 'Verify onboarding evidence before launch copy.',

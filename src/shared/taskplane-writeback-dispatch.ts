@@ -125,6 +125,17 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
   }
 
   if (plan.action === 'business_next_action.create') {
+    const queuePolicy = plan.input.queuePolicy;
+    if (
+      plan.confirmationBoundary !== 'taskplane_writeback_approval_queue'
+      || plan.confirmationSurface !== 'taskplane_writeback_approval_queue'
+      || plan.draftOnlyBeforeConfirmation !== true
+      || !queuePolicy
+      || queuePolicy.requiredGate !== 'taskplane_writeback_approval_queue'
+      || queuePolicy.queuePosition !== 'behind_current_run'
+    ) {
+      return blocked(plan.action, '业务线 Next Action 排队提案已暂停：缺少已确认的 Taskplane queue 写入边界。');
+    }
     if (!ports.createBusinessLineNextAction) return blocked(plan.action, '业务线 Next Action 提案已暂停：当前环境不支持创建 Next Action。');
     const createdTask = await ports.createBusinessLineNextAction(plan.input);
     await recordTimeline(ports, taskId, plan.timeline);

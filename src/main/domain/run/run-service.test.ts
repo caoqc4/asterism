@@ -319,6 +319,177 @@ function buildPausedRunServiceWithPayload(payload: unknown) {
 }
 
 describe('RunService', () => {
+  it('plans steering as a bounded run correction event without durable writeback', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('running'),
+        businessLineId: 'business_line_product',
+      }),
+    };
+    const service = new RunService(
+      runRepository as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    const plan = await service.planBusinessLineRunControl({
+      correction: 'Keep the run on launch-copy evidence only.',
+      evidenceItems: ['operator message'],
+      kind: 'steering',
+      riskLevel: 'medium',
+      riskNote: 'Scope drift correction',
+      runId: 'run_1',
+    });
+
+    expect(plan).toMatchObject({
+      businessLineId: 'business_line_product',
+      gate: 'run_correction_event',
+      kind: 'steering',
+      runCorrectionEvent: {
+        correction: 'Keep the run on launch-copy evidence only.',
+        evidenceItems: ['operator message'],
+        kind: 'business_line_run_correction',
+        riskLevel: 'medium',
+        riskNote: 'Scope drift correction',
+        runId: 'run_1',
+        sourceActionId: 'task_1',
+        writebackGate: 'run_correction_event',
+      },
+      status: 'ready',
+    });
+  });
+
+  it('records steering as a recoverable run correction step', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('running'),
+        businessLineId: 'business_line_product',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const service = new RunService(
+      runRepository as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+    );
+
+    const result = await service.recordBusinessLineRunSteering({
+      correction: 'Keep the run on launch-copy evidence only.',
+      evidenceItems: ['operator message'],
+      riskLevel: 'medium',
+      riskNote: 'Scope drift correction',
+      runId: 'run_1',
+    });
+
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'checkpoint',
+      runId: 'run_1',
+      status: 'completed',
+      title: 'Business-line run steering correction',
+    }));
+    expect(JSON.parse(vi.mocked(runStepRepository.create).mock.calls[0]![0].output ?? '{}')).toMatchObject({
+      businessLineId: 'business_line_product',
+      correction: 'Keep the run on launch-copy evidence only.',
+      evidenceItems: ['operator message'],
+      kind: 'business_line_run_correction',
+      riskLevel: 'medium',
+      riskNote: 'Scope drift correction',
+      sourceActionId: 'task_1',
+      writebackGate: 'run_correction_event',
+    });
+    expect(result.step).toMatchObject({
+      kind: 'checkpoint',
+      title: 'Business-line run steering correction',
+    });
+  });
+
+  it('blocks queued Next Action from interrupting an active business-line run without confirmation', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('running'),
+        businessLineId: 'business_line_product',
+      }),
+    };
+    const service = new RunService(
+      runRepository as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    const plan = await service.planBusinessLineRunControl({
+      interruptCurrentRun: true,
+      kind: 'queue_next_action',
+      nextActionTitle: 'Follow up on launch metric gaps',
+      runId: 'run_1',
+    });
+
+    expect(plan).toMatchObject({
+      blockedReason: 'Queueing keeps follow-up work behind the current run; interruption requires a separate run transition.',
+      businessLineId: 'business_line_product',
+      gate: 'operator_confirmation',
+      kind: 'queue_next_action',
+      status: 'blocked',
+    });
+  });
+
+  it('blocks queued Next Action interrupt semantics even after a run is terminal or unknown', async () => {
+    const completedPlan = await new RunService(
+      {
+        list: vi.fn(),
+        getDetail: vi.fn().mockResolvedValue({
+          ...buildRunRecord('completed'),
+          businessLineId: 'business_line_product',
+        }),
+      } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    ).planBusinessLineRunControl({
+      interruptCurrentRun: true,
+      kind: 'queue_next_action',
+      nextActionTitle: 'Follow up after terminal run',
+      operatorConfirmed: true,
+      runId: 'run_1',
+    });
+    const unknownRunPlan = await new RunService(
+      {
+        list: vi.fn(),
+        getDetail: vi.fn().mockResolvedValue(null),
+      } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    ).planBusinessLineRunControl({
+      interruptCurrentRun: true,
+      kind: 'queue_next_action',
+      nextActionTitle: 'Follow up after unknown run',
+      operatorConfirmed: true,
+      runId: 'run_missing',
+    });
+
+    expect(completedPlan).toMatchObject({
+      blockedReason: 'Queueing keeps follow-up work behind the current run; interruption requires a separate run transition.',
+      status: 'blocked',
+    });
+    expect(unknownRunPlan).toMatchObject({
+      blockedReason: 'Business-line run control requires a resolved business-line owner.',
+      status: 'blocked',
+    });
+  });
+
   it('injects business line context pack into run instructions', async () => {
     const createdRun = {
       ...buildRunRecord('running'),

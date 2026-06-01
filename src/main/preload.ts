@@ -82,6 +82,7 @@ const api: ElectronApi = {
   rollbackBusinessLineSkillRevision: (input) => ipcRenderer.invoke('businessLine:rollbackSkillRevision', input),
   listRuns: () => ipcRenderer.invoke('run:list'),
   getRunDetail: (runId) => ipcRenderer.invoke('run:getDetail', runId),
+  recordBusinessLineRunSteering: (input) => ipcRenderer.invoke('run:recordBusinessLineSteering', input),
   triggerRun: (input) => ipcRenderer.invoke('run:trigger', input),
   triggerAgentCliRun: (input) => ipcRenderer.invoke('run:triggerAgentCli', input),
   recordRuntimeNativeGoalRequest: (input) => ipcRenderer.invoke('run:recordRuntimeNativeGoalRequest', input),

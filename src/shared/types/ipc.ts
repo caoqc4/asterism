@@ -160,9 +160,11 @@ import type {
   CreateAgentCliRunInput,
   CreateCodeAgentRunInput,
   CreateRunInput,
+  RecordBusinessLineRunSteeringInput,
   RecordRuntimeNativeGoalRequestInput,
   RunDetailRecord,
   RunRecord,
+  RunStepRecord,
 } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
@@ -405,6 +407,11 @@ export type ElectronApi = {
   ) => Promise<BusinessLineWorkspace>;
   listRuns: () => Promise<RunRecord[]>;
   getRunDetail: (runId: string) => Promise<RunDetailRecord | null>;
+  recordBusinessLineRunSteering?: (
+    input: RecordBusinessLineRunSteeringInput,
+  ) => Promise<{
+    step: RunStepRecord;
+  }>;
   triggerRun: (input: CreateRunInput) => Promise<RunRecord>;
   triggerAgentCliRun?: (input: CreateAgentCliRunInput) => Promise<RunRecord>;
   recordRuntimeNativeGoalRequest?: (input: RecordRuntimeNativeGoalRequestInput) => Promise<RunRecord>;

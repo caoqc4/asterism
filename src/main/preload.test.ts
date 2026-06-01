@@ -87,6 +87,7 @@ function getExposedApi() {
     createBusinessLineRecord?: (input: unknown) => Promise<unknown>;
     listRuns: () => Promise<unknown>;
     getRunDetail: (runId: string) => Promise<unknown>;
+    recordBusinessLineRunSteering?: (input: unknown) => Promise<unknown>;
     triggerRun: (input: unknown) => Promise<unknown>;
     triggerAgentCliRun?: (input: unknown) => Promise<unknown>;
     cancelAgentCliRun?: (input: unknown) => Promise<unknown>;
@@ -368,6 +369,10 @@ describe('preload bridge', () => {
     await api.createBusinessLineRecord?.(createBusinessLineRecordInput);
     await api.listRuns();
     await api.getRunDetail('run_1');
+    await api.recordBusinessLineRunSteering?.({
+      correction: 'Keep the run inside launch-copy evidence.',
+      runId: 'run_1',
+    });
     await api.triggerRun(createRunInput);
     await api.triggerAgentCliRun?.(createAgentCliRunInput);
     await api.recordRuntimeNativeGoalRequest?.(nativeGoalAuditInput);
@@ -450,6 +455,10 @@ describe('preload bridge', () => {
       ['businessLine:createRecord', createBusinessLineRecordInput],
       ['run:list'],
       ['run:getDetail', 'run_1'],
+      ['run:recordBusinessLineSteering', {
+        correction: 'Keep the run inside launch-copy evidence.',
+        runId: 'run_1',
+      }],
       ['run:trigger', createRunInput],
       ['run:triggerAgentCli', createAgentCliRunInput],
       ['run:recordRuntimeNativeGoalRequest', nativeGoalAuditInput],

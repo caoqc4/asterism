@@ -111,6 +111,65 @@ describe('BusinessLineService', () => {
     });
   });
 
+  it('blocks queued Next Action writes until the Taskplane writeback gate is confirmed', async () => {
+    await taskService.create({
+      title: 'GoalPilot product',
+      taskType: 'project',
+      taskFacets: ['project'],
+    });
+    const [line] = await service.list();
+    const before = await service.getWorkspace(line!.id);
+    const beforeActionIds = before?.contextPack.openNextActions.map((action) => action.id) ?? [];
+
+    await expect(service.createQueuedBusinessLineNextAction({
+      businessLineId: line!.id,
+      currentRunStatus: 'running',
+      evidenceRunId: 'run_queue',
+      nextStep: 'Draft the queued checklist.',
+      operatorConfirmed: false,
+      sourceActionId: line!.legacyTaskId,
+      title: 'Draft queued checklist',
+    })).rejects.toThrow('Queued Next Action write requires a confirmed Taskplane writeback gate.');
+
+    const workspace = await service.getWorkspace(line!.id);
+    expect(workspace?.contextPack.openNextActions.map((action) => action.id)).toEqual(beforeActionIds);
+  });
+
+  it('adds a queued Next Action behind the current run after writeback confirmation', async () => {
+    await taskService.create({
+      title: 'GoalPilot product',
+      taskType: 'project',
+      taskFacets: ['project'],
+    });
+    const [line] = await service.list();
+
+    const created = await service.createQueuedBusinessLineNextAction({
+      businessLineId: line!.id,
+      currentRunStatus: 'running',
+      evidenceRunId: 'run_queue',
+      nextStep: 'Draft the queued checklist.',
+      operatorConfirmed: true,
+      riskLevel: 'low',
+      sourceActionId: line!.legacyTaskId,
+      summary: 'Follow-up from the current run.',
+      title: 'Draft queued checklist',
+    });
+
+    expect(created).toMatchObject({
+      businessLineId: line!.id,
+      nextStep: 'Draft the queued checklist.',
+      parentTaskId: line!.legacyTaskId,
+      riskLevel: 'low',
+      title: 'Draft queued checklist',
+    });
+    const workspace = await service.getWorkspace(line!.id);
+    expect(workspace?.contextPack.openNextActions.map((action) => action.id)).toContain(created.id);
+    expect(workspace?.records.some((record) =>
+      record.type === 'action'
+      && record.linkedActionId === created.id
+      && record.source === 'run:run_queue')).toBe(true);
+  });
+
   it('records post-action review, proposes SOP revision, and loads accepted revision into context pack', async () => {
     await taskService.create({
       title: 'GoalPilot product',
@@ -529,7 +588,16 @@ describe('BusinessLineService', () => {
         plan: item.plan,
         ports: {
           createBusinessLineRecord: (input) => service.createBusinessLineRecord(input),
-          createBusinessLineNextAction: (input) => service.createBusinessLineNextAction(input),
+          createBusinessLineNextAction: (input) => input.queuePolicy
+            ? service.createQueuedBusinessLineNextAction({
+                ...input,
+                currentRunStatus: input.queuePolicy.currentRunStatus,
+                interruptCurrentRun: input.queuePolicy.interruptCurrentRun,
+                operatorConfirmed: true,
+                riskLevel: input.queuePolicy.riskLevel,
+                riskNote: input.queuePolicy.riskNote,
+              })
+            : service.createBusinessLineNextAction(input),
           proposeBusinessLineSopRevision: (input) => service.proposeBusinessLineSopRevision(input),
           recordTimelineEvent: (taskId, type, payload) => taskService.recordTimelineEvent({ taskId, type, payload }),
         },

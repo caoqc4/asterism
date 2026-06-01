@@ -4,6 +4,10 @@ import {
   buildBusinessLineCreationDraft,
   normalizeBusinessLineCreationLines,
 } from '../../../shared/business-line-creation-template.js';
+import {
+  planBusinessLineRunControl,
+  type BusinessLineRunControlInput,
+} from '../../../shared/business-line-run-control.js';
 import { retrieveBusinessMemory } from '../../../shared/task-memory-retrieval.js';
 import { BusinessLineRepository } from '../../db/repositories/business-line-repository.js';
 import type {
@@ -38,6 +42,15 @@ import type {
   TaskplaneBusinessNextActionCreateInput,
   TaskplaneBusinessSopRevisionProposeInput,
 } from '../../../shared/taskplane-writeback-apply-plan.js';
+
+export type CreateQueuedBusinessLineNextActionInput = TaskplaneBusinessNextActionCreateInput & {
+  currentRunStatus?: BusinessLineRunControlInput['runStatus'];
+  interruptCurrentRun?: boolean;
+  operatorConfirmed: boolean;
+  requiresDecision?: boolean;
+  riskLevel?: BusinessLineRunControlInput['riskLevel'];
+  riskNote?: string | null;
+};
 
 function isBusinessLineLegacyTask(task: TaskListItemRecord): boolean {
   const facets = task.taskFacets ?? [];
@@ -436,6 +449,54 @@ export class BusinessLineService {
       sourceRecordId: actionRecord.id,
     });
     return updatedTask;
+  }
+
+  async createQueuedBusinessLineNextAction(input: CreateQueuedBusinessLineNextActionInput): Promise<TaskListItemRecord> {
+    const plan = planBusinessLineRunControl({
+      businessLineId: input.businessLineId,
+      evidenceRunId: input.evidenceRunId ?? null,
+      interruptCurrentRun: input.interruptCurrentRun ?? false,
+      kind: 'queue_next_action',
+      nextActionNextStep: input.nextStep ?? null,
+      nextActionSummary: input.summary ?? null,
+      nextActionTitle: input.title,
+      operatorConfirmed: input.operatorConfirmed,
+      requiresDecision: input.requiresDecision ?? false,
+      riskLevel: input.riskLevel ?? null,
+      riskNote: input.riskNote ?? null,
+      runId: input.evidenceRunId ?? null,
+      runStatus: input.currentRunStatus ?? null,
+      sourceActionId: input.sourceActionId ?? null,
+    });
+    if (plan.status === 'blocked') {
+      throw new Error(plan.blockedReason);
+    }
+    if (plan.kind !== 'queue_next_action') {
+      throw new Error('Queued Next Action planner returned an unexpected control plan.');
+    }
+    if (input.operatorConfirmed !== true) {
+      throw new Error('Queued Next Action write requires a confirmed Taskplane writeback gate.');
+    }
+    const created = await this.createBusinessLineNextAction({
+      ...input,
+      nextStep: plan.proposal.intent.type === 'business_next_action.create'
+        ? plan.proposal.intent.nextStep
+        : input.nextStep,
+      summary: [
+        input.summary?.trim() || null,
+        'Queued behind the current business-line run.',
+        'Writeback gate: confirmed Taskplane queue approval.',
+        input.riskLevel ? `Risk: ${input.riskLevel}${input.riskNote ? ` - ${input.riskNote.trim()}` : ''}` : null,
+      ].filter(Boolean).join('\n'),
+    });
+    if (input.riskLevel || input.riskNote?.trim()) {
+      return this.taskService.update({
+        id: created.id,
+        riskLevel: input.riskLevel ?? created.riskLevel,
+        riskNote: input.riskNote?.trim() || created.riskNote,
+      });
+    }
+    return created;
   }
 
   async proposeBusinessLineSopRevision(input: TaskplaneBusinessSopRevisionProposeInput): Promise<BusinessLineSkillRevision> {

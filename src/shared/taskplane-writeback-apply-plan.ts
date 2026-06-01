@@ -4,10 +4,12 @@ import type { CreateSourceContextInput } from './types/source-context.js';
 import type { TaskListItemRecord, UpdateTaskInput } from './types/task.js';
 import type { CreateTaskFileInput, UpdateTaskFileInput } from './types/task-file.js';
 import type { PanelRuntimeTimelineEventType } from './runtime-panel-events.js';
+import { planBusinessLineRunControl, type BusinessLineRunQueuePolicy } from './business-line-run-control.js';
 import type {
   BusinessLineRecordType,
   RecordBusinessLineReviewInput,
 } from './types/business-line.js';
+import type { RunStatus } from './types/run.js';
 import type {
   TaskplaneArtifactWritebackProposal,
   TaskplaneBusinessLineWritebackProposal,
@@ -169,8 +171,14 @@ export type TaskplaneBusinessLineRecordCreateInput = {
 
 export type TaskplaneBusinessNextActionCreateInput = {
   businessLineId: string | null;
+  currentRunStatus?: RunStatus | null;
   evidenceRunId?: string | null;
+  interruptCurrentRun?: boolean;
   nextStep?: string | null;
+  operatorConfirmed?: boolean;
+  queuePolicy?: BusinessLineRunQueuePolicy | null;
+  riskLevel?: 'none' | 'low' | 'medium' | 'high' | null;
+  riskNote?: string | null;
   sourceActionId?: string | null;
   summary?: string | null;
   title: string;
@@ -203,6 +211,9 @@ export type TaskplaneBusinessLineWritebackApplyPlan =
     }
   | {
       action: 'business_next_action.create';
+      confirmationBoundary: 'taskplane_writeback_approval_queue';
+      confirmationSurface: TaskplaneDurableWritebackConfirmationSurface;
+      draftOnlyBeforeConfirmation: true;
       input: TaskplaneBusinessNextActionCreateInput;
       successMessage: string;
       timeline: TaskplaneWritebackTimelineDraft;
@@ -422,6 +433,7 @@ export function buildArtifactWritebackApplyPlan(params: {
 export function buildBusinessLineWritebackApplyPlan(params: {
   confirmationSurface?: TaskplaneDurableWritebackConfirmationSurface;
   proposal: TaskplaneBusinessLineWritebackProposal;
+  runStatus?: RunStatus | null;
 }): TaskplaneBusinessLineWritebackApplyPlan {
   const { intent } = params.proposal;
   const businessLineId = params.proposal.businessLineId ?? null;
@@ -477,12 +489,39 @@ export function buildBusinessLineWritebackApplyPlan(params: {
     };
   }
   if (intent.type === 'business_next_action.create') {
+    const queuePlan = planBusinessLineRunControl({
+      businessLineId,
+      evidenceRunId: intent.evidenceRunId,
+      interruptCurrentRun: false,
+      kind: 'queue_next_action',
+      nextActionNextStep: intent.nextStep ?? intent.title,
+      nextActionSummary: intent.summary ?? null,
+      nextActionTitle: intent.title,
+      operatorConfirmed: false,
+      riskLevel: intent.riskLevel ?? null,
+      riskNote: intent.riskNote ?? null,
+      runId: intent.evidenceRunId,
+      runStatus: params.runStatus ?? null,
+      sourceActionId: intent.sourceActionId ?? intent.taskId ?? null,
+    });
+    const queuePolicy = queuePlan.status === 'ready' && queuePlan.kind === 'queue_next_action'
+      ? queuePlan.queuePolicy
+      : null;
     return {
       action: 'business_next_action.create',
+      confirmationBoundary: 'taskplane_writeback_approval_queue',
+      confirmationSurface,
+      draftOnlyBeforeConfirmation: true,
       input: {
         businessLineId,
+        currentRunStatus: params.runStatus ?? null,
         evidenceRunId: intent.evidenceRunId,
+        interruptCurrentRun: false,
         nextStep: intent.nextStep ?? intent.title,
+        operatorConfirmed: true,
+        queuePolicy,
+        riskLevel: intent.riskLevel ?? queuePolicy?.riskLevel ?? null,
+        riskNote: intent.riskNote ?? queuePolicy?.riskNote ?? null,
         sourceActionId: intent.sourceActionId ?? intent.taskId ?? null,
         summary: intent.summary ?? null,
         title: intent.title,
@@ -492,6 +531,9 @@ export function buildBusinessLineWritebackApplyPlan(params: {
         type: 'panel.business_next_action_written',
         payload: {
           ...basePayload,
+          confirmationBoundary: 'taskplane_writeback_approval_queue',
+          draftOnlyBeforeConfirmation: true,
+          queuePolicy,
           title: intent.title,
         },
       },

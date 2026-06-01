@@ -40,6 +40,7 @@ import type {
   CreateAgentCliRunInput,
   CreateCodeAgentRunInput,
   CreateRunInput,
+  RecordBusinessLineRunSteeringInput,
   RecordRuntimeNativeGoalRequestInput,
 } from '../../shared/types/run.js';
 import type { AiConfigInput, FeatureFlags } from '../../shared/types/settings.js';
@@ -910,6 +911,17 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('run:getDetail', async (_event, runId: string) => {
     return getServices().runService.getDetail(runId);
+  });
+
+  ipcMain.handle('run:recordBusinessLineSteering', async (_event, input: RecordBusinessLineRunSteeringInput) => {
+    const result = await getServices().runService.recordBusinessLineRunSteering(input);
+    emitAppEvent('run.changed', input.runId);
+    if (result.plan.runCorrectionEvent.sourceActionId) {
+      emitAppEvent('task.changed', result.plan.runCorrectionEvent.sourceActionId);
+    }
+    emitAppEvent('businessLine.changed', result.plan.businessLineId);
+    emitAppEvent('brief.changed');
+    return result;
   });
 
   ipcMain.handle('run:trigger', async (_event, input: CreateRunInput) => {
