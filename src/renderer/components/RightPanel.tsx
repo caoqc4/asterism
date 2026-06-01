@@ -451,6 +451,8 @@ const GENERIC_ASSISTANT_REPLY_PATTERNS = [
   /建议下一步/,
   /当前任务处于正常推进中/,
   /需要我展开.*部分/,
+  /当前没有可用AIRuntime/,
+  /本地规则回复/,
 ];
 
 function hasTaskMdFile(task: TaskDetail | null): boolean | undefined {
@@ -4988,21 +4990,21 @@ function generateReply(input: string, taskId: string | null): string {
   const lower = input.toLowerCase();
   if (lower.includes('状态') || lower.includes('情况')) {
     return taskId
-      ? `当前任务处于正常推进中。根据最近的任务动态，上一次 Run 已完成主要步骤，等待你的进一步指令。\n\n建议下一步：确认输出方向后启动新 Run。`
-      : `从全局来看，今日有 3 件高优先级事项待处理，其中 1 件已在 Running 状态。`;
+      ? `当前没有可用 AI Runtime，本次只使用本地规则回复，不能代表真实 Run 结论。\n\n建议下一步：打开任务动态核对最近记录，或到 AI Runtime 页连接 Agent CLI / Provider 后再启动任务 Agent。`
+      : `当前没有可用 AI Runtime，本次只使用本地规则回复，不能代表真实 Today 状态。\n\n建议下一步：进入 Today、Business 或 Tasks 查看本地记录；需要 AI 协助时先连接 Agent CLI 或配置 Provider。`;
   }
   if (lower.includes('风险') || lower.includes('问题')) {
-    return `注意到以下潜在风险：\n\n1. 对方已等待超过 48 小时，回复优先级高\n2. 数据口径未确认，影响后续分析质量\n\n建议优先处理第 1 项。`;
+    return `当前没有可用 AI Runtime，本次只使用本地规则回复，无法判断真实风险。\n\n建议先查看任务动态、阻塞、依赖和 Decisions；需要 AI 评估时，请先连接 Agent CLI 或配置 Provider。`;
   }
   if (lower.includes('下一步') || lower.includes('怎么')) {
     return taskId
-      ? `建议下一步：\n\n1. 确认目标方向（5 分钟）\n2. 启动 Run，让 AI 完成初稿\n3. 审核输出后决策下一步行动`
-      : `建议按 Tasks 默认排序处理：先解决 Escalate 任务，再处理 Unblock 项。`;
+      ? `当前没有可用 AI Runtime，本次只使用本地规则回复。\n\n建议下一步：确认任务目标、完成标准和阻塞；如果要启动任务 Agent，请先到 AI Runtime 页完成 Agent CLI / Provider 配置。`
+      : `当前没有可用 AI Runtime，本次只使用本地规则回复。\n\n建议下一步：从 Business 或 Tasks 选择一个具体 Next Action；如果要让 AI 执行，请先完成 AI Runtime 配置。`;
   }
   if (lower.includes('总结') || lower.includes('摘要')) {
-    return `好的，我来整理一下当前任务的关键信息：\n\n**目标**：完成核心交付物\n**当前阻塞**：等待用户决策\n**下次行动**：拍板后可立即继续\n\n需要我展开某个部分吗？`;
+    return `当前没有可用 AI Runtime，本次只使用本地规则回复，无法可靠总结真实上下文。\n\n请先打开对应任务动态、Records 或文件查看已有记录；连接 Agent CLI / Provider 后可再生成可复核摘要。`;
   }
-  return `明白了。${taskId ? '我会结合这个任务的上下文来帮你分析。' : '让我从全局视角来看这个问题。'}\n\n你希望我重点关注哪个方向？`;
+  return `当前没有可用 AI Runtime，本次只使用本地规则回复。\n\n${taskId ? '可以先补充任务目标、完成标准或阻塞。' : '可以先捕获一个任务想法，或进入具体 Business / Next Action。'}需要 AI 执行时，请先连接 Agent CLI 或配置 Provider。`;
 }
 
 /* ─── Icons ─── */
