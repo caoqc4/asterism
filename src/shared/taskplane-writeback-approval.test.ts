@@ -256,6 +256,54 @@ describe('Taskplane writeback approval items', () => {
     ]);
   });
 
+  it('turns business handoff runtime intents into Business Record approval queue items', () => {
+    const run = buildRunDetail({
+      businessLineId: 'business_line_product',
+      output: [
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [
+            {
+              type: 'business_handoff.record',
+              currentState: 'Research is covered by source pointers.',
+              nextSafeAction: 'Write the onboarding checklist.',
+              reason: 'Keep future business-line recovery out of raw transcript.',
+            },
+          ],
+        }),
+        '```',
+      ].join('\n'),
+    });
+
+    const items = buildTaskplaneWritebackApprovalItems({
+      runDetails: [run],
+      taskId: 'task_1',
+      taskTitle: 'Codex 教程站',
+    });
+
+    expect(items).toMatchObject([
+      {
+        kind: 'business_line',
+        plan: {
+          action: 'business_handoff.record',
+          input: {
+            businessLineId: 'business_line_product',
+            shouldAffectFutureContext: true,
+            summary: expect.stringContaining('Research is covered by source pointers.'),
+          },
+          timeline: {
+            type: 'panel.business_handoff_written',
+            payload: {
+              confirmationSurface: 'taskplane_writeback_approval_queue',
+            },
+          },
+        },
+        summary: '确认后保存业务交接记录。',
+      },
+    ]);
+  });
+
   it('turns pending task memory guidance into the same writeback approval queue', () => {
     const run = buildRunDetail({
       taskMemoryWriteProposals: [{

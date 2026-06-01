@@ -81,6 +81,74 @@ describe('context transition', () => {
     });
   });
 
+  it('uses ContextOwner to choose durable business handoff for business-line refresh', () => {
+    expect(evaluateContextTransition({
+      intent: 'context_refresh',
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '业务线刷新：下一步补来源，风险是记录缺少 evidence pointer。' },
+      ],
+    })).toMatchObject({
+      action: 'preserve_and_reset',
+      handoffType: 'durable_business_handoff',
+      recoveryArtifact: {
+        rawTranscriptIncluded: false,
+        writebackTarget: {
+          surface: 'business_record',
+          writeIntentType: 'business_handoff.record',
+        },
+      },
+    });
+  });
+
+  it('keeps next-action owner refresh on business memory until execution recovery is needed', () => {
+    expect(evaluateContextTransition({
+      intent: 'context_refresh',
+      owner: {
+        actionId: 'action_1',
+        businessLineId: 'business_1',
+        kind: 'next_action',
+        taskId: 'task_1',
+      },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '目标是更新业务线判断，下一步补来源。' },
+      ],
+    })).toMatchObject({
+      action: 'preserve_and_reset',
+      handoffType: 'next_action_handoff',
+      recoveryArtifact: {
+        writebackTarget: {
+          surface: 'business_record',
+          writeIntentType: 'business_handoff.record',
+        },
+      },
+    });
+
+    expect(evaluateContextTransition({
+      executionRecoveryNeeded: true,
+      intent: 'context_refresh',
+      owner: {
+        actionId: 'action_1',
+        businessLineId: 'business_1',
+        kind: 'next_action',
+        taskId: 'task_1',
+      },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '目标是恢复实现任务，下一步继续验证。' },
+      ],
+    })).toMatchObject({
+      recoveryArtifact: {
+        writebackTarget: {
+          surface: 'task_record',
+          writeIntentType: 'task_record.create',
+        },
+      },
+    });
+  });
+
   it('can explicitly model a durable business handoff before context clearing', () => {
     expect(evaluateContextTransition({
       intent: 'context_refresh',

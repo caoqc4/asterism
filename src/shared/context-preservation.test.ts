@@ -86,6 +86,88 @@ describe('context preservation', () => {
     });
   });
 
+  it('routes business-line owners to Business Records without legacy task context flags', () => {
+    const result = evaluateContextPreservation({
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '业务线交接：目标保持 onboarding 增长，下一步补证据。' },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      handoffType: 'durable_business_handoff',
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      status: 'needs_write',
+    });
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toEqual(expect.arrayContaining([
+      'business_record',
+    ]));
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).not.toContain('task_md');
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).not.toContain('task_record');
+    expect(result.handoffArtifact).toMatchObject({
+      rawTranscriptIncluded: false,
+      writebackTarget: {
+        surface: 'business_record',
+        writeIntentType: 'business_handoff.record',
+      },
+    });
+  });
+
+  it('keeps next-action owner business signals on Business Records unless execution recovery is needed', () => {
+    const result = evaluateContextPreservation({
+      owner: {
+        actionId: 'action_1',
+        businessLineId: 'business_1',
+        kind: 'next_action',
+        taskId: 'task_1',
+      },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '目标是保持业务线增长实验，下一步补来源证据。' },
+      ],
+    });
+
+    expect(result.handoffType).toBe('next_action_handoff');
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toEqual(['business_record']);
+    expect(result.handoffArtifact).toMatchObject({
+      rawTranscriptIncluded: false,
+      writebackTarget: {
+        surface: 'business_record',
+        writeIntentType: 'business_handoff.record',
+      },
+    });
+  });
+
+  it('routes next-action execution recovery to Task.md or Task Records when explicitly needed', () => {
+    const result = evaluateContextPreservation({
+      executionRecoveryNeeded: true,
+      owner: {
+        actionId: 'action_1',
+        businessLineId: 'business_1',
+        kind: 'next_action',
+        taskId: 'task_1',
+      },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '目标是恢复实现任务，下一步继续验证，风险是测试还没跑。' },
+      ],
+    });
+
+    expect(result.handoffType).toBe('next_action_handoff');
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toEqual(expect.arrayContaining([
+      'task_md',
+      'task_record',
+    ]));
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).not.toContain('business_record');
+    expect(result.handoffArtifact).toMatchObject({
+      writebackTarget: {
+        surface: 'task_record',
+        writeIntentType: 'task_record.create',
+      },
+    });
+  });
+
   it('routes runtime or subagent handoff signals to run steps before writes are applied', () => {
     const result = evaluateContextPreservation({
       handoffType: 'runtime_or_subagent_handoff',
@@ -104,6 +186,55 @@ describe('context preservation', () => {
       writebackTarget: {
         surface: 'run_step',
         writeIntentType: 'runtime_evidence.record',
+      },
+    });
+  });
+
+  it('routes runtime or subagent owner handoffs to run-step evidence', () => {
+    const result = evaluateContextPreservation({
+      handoffType: 'runtime_or_subagent_handoff',
+      owner: {
+        actionId: 'action_1',
+        businessLineId: 'business_1',
+        kind: 'next_action',
+        taskId: 'task_1',
+      },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: 'runtime handoff：下一步主 Agent 复核，风险是验证还没跑。' },
+      ],
+    });
+
+    expect(result.requiredWriteIntents.map((intent) => intent.targetSurface)).toContain('run_step');
+    expect(result.handoffArtifact).toMatchObject({
+      rawTranscriptIncluded: false,
+      writebackTarget: {
+        surface: 'run_step',
+        writeIntentType: 'runtime_evidence.record',
+      },
+    });
+  });
+
+  it('uses temporary proof or no durable write for empty ephemeral session handoff', () => {
+    const result = evaluateContextPreservation({
+      handoffType: 'ephemeral_session_handoff',
+      owner: { kind: 'global' },
+      hasTaskContext: false,
+      chatMessageCount: 0,
+      messages: [],
+    });
+
+    expect(result).toMatchObject({
+      handoffType: 'ephemeral_session_handoff',
+      hasValuableSignals: false,
+      requiredWriteIntents: [],
+      status: 'not_applicable',
+    });
+    expect(result.handoffArtifact).toMatchObject({
+      rawTranscriptIncluded: false,
+      writebackTarget: {
+        surface: 'temporary_file',
+        writeIntentType: 'temporary_handoff.proof',
       },
     });
   });
