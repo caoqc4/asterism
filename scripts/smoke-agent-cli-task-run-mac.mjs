@@ -267,7 +267,7 @@ try {
     '- Run Goal Contract includes packaged smoke objective',
     '- Task memory proposal preserves packaged smoke conditions',
   ].join('\n'));
-  await page.getByText(/已设置 Taskplane Task Goal/).waitFor({ timeout: timeoutMs });
+  await page.getByText(/已设置 Task Goal/).waitFor({ timeout: timeoutMs });
   await waitFor(() => {
     const criteria = queryCompletionCriteriaRows();
     return criteria.some((item) => item.text === 'Run Goal Contract includes packaged smoke objective')

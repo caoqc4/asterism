@@ -191,26 +191,25 @@ describe('local smoke script default boundaries', () => {
   });
 
   it('documents why ordinary task-switch packaged smoke remains deferred', () => {
-    const matrix = fs.readFileSync(
-      path.join(process.cwd(), 'docs/plans/2026-05-17-acceptance-coverage-matrix.md'),
-      'utf8',
-    );
+    const testingDoc = fs.readFileSync(path.join(process.cwd(), 'docs/TESTING.md'), 'utf8');
 
-    expect(matrix).toContain('Ordinary task context switches are covered by renderer/runtime-handoff tests');
-    expect(matrix).toContain('deferred until the retained task detail UI exposes a stable cross-task navigation hook');
-    expect(matrix).toContain('instead of the context-switch safety boundary');
+    expect(testingDoc).toContain('This is a supplemental product-surface smoke, not the full UI surface list');
+    expect(testingDoc).toContain('Brief recovery is');
+    expect(testingDoc).toContain('covered by `accept:packaged-recovery:mac`');
+    expect(testingDoc).toContain('task-dynamics replay rendering is');
+    expect(testingDoc).toContain('covered by `smoke:release:mac` through `smoke:timeline-ui:mac`');
   });
 
   it('documents deferred Agent API execution as a contract rather than an alpha smoke path', () => {
-    const matrix = fs.readFileSync(
-      path.join(process.cwd(), 'docs/plans/2026-05-17-acceptance-coverage-matrix.md'),
-      'utf8',
-    );
+    const configurationDoc = fs.readFileSync(path.join(process.cwd(), 'docs/CONFIGURATION.md'), 'utf8');
+    const runtimeSpec = fs.readFileSync(path.join(process.cwd(), 'docs/specs/native-agent-runtime-orchestration.md'), 'utf8');
 
-    expect(matrix).toContain('Agent API execution is represented only as a deferred runtime-entrypoint contract');
-    expect(matrix).toContain('opt-in provider-visible preflight smoke');
-    expect(matrix).toContain('no packaged task execution smoke or IPC execution path in the first Agent CLI alpha');
-    expect(matrix).toContain('same `provider_visible_execution` harness gates as Agent CLI');
+    expect(configurationDoc).toContain('To verify the future Agent API Runtime');
+    expect(configurationDoc).toContain('without promoting task execution');
+    expect(configurationDoc).toContain('executionRun=deferred');
+    expect(configurationDoc).toContain('full task `execution_run` remains deferred');
+    expect(runtimeSpec).toContain('no provider-visible execution run starts');
+    expect(runtimeSpec).toContain('selected-runtime contract, target-task identity');
   });
 
   it('keeps relative Markdown links pointing to existing files', () => {
@@ -1479,7 +1478,7 @@ describe('local smoke script default boundaries', () => {
     expect(configurationDoc).toContain('Codex CLI adapter');
     expect(configurationDoc).toContain('Treat that smoke as optional');
     expect(configurationDoc).toContain('secondary adapter compatibility evidence');
-    expect(configurationDoc).toContain('Taskplane workspace safety');
+    expect(configurationDoc).toContain('asterism workspace safety');
   });
 
   it('keeps Claude smoke stream-json invocations verbose for current Claude Code', () => {
@@ -1568,38 +1567,22 @@ describe('local smoke script default boundaries', () => {
   });
 
   it('keeps the runtime harness plan aligned with stabilized first-version goal coverage', () => {
-    const plan = fs.readFileSync(path.join(process.cwd(), 'docs/plans/2026-05-19-agent-runtime-harness-and-goals.md'), 'utf8');
-    const runtimeDeepeningPlan = fs.readFileSync(
-      path.join(process.cwd(), 'docs/plans/2026-05-14-runtime-deepening-design.md'),
-      'utf8',
-    );
-    const matrix = fs.readFileSync(path.join(process.cwd(), 'docs/plans/2026-05-17-acceptance-coverage-matrix.md'), 'utf8');
+    const testingDoc = fs.readFileSync(path.join(process.cwd(), 'docs/TESTING.md'), 'utf8');
+    const configurationDoc = fs.readFileSync(path.join(process.cwd(), 'docs/CONFIGURATION.md'), 'utf8');
+    const runtimeSpec = fs.readFileSync(path.join(process.cwd(), 'docs/specs/native-agent-runtime-orchestration.md'), 'utf8');
 
-    expect(plan).toContain('The first-version Taskplane-owned goal loop is now stabilized for the Agent CLI path');
-    expect(plan).toContain('packaged-app Codex live smoke');
-    expect(plan).toContain('active task-bound Agent CLI run as a read-only execution card');
-    expect(plan).toContain('summarizes Task Memory write proposals before the editable draft');
-    expect(plan).toContain('pending-memory gate clearance in the panel message');
-    expect(plan).toContain('Remaining work should stay in preservation or deferred tracks');
-    expect(plan).not.toContain('Remaining next steps are hardening the Taskplane-owned goal loop');
-    expect(runtimeDeepeningPlan).toContain('The product-owned Agent CLI goal loop is now stable');
-    expect(runtimeDeepeningPlan).toContain('native forwarding should remain deferred');
-    expect(matrix).toContain('Updated: 2026-05-27');
-    expect(matrix).toContain('Agent API execution preflight');
-    expect(matrix).toContain('Scheduled/event Agent sweep');
-    expect(matrix).toContain('Runtime-native web/search');
-    expect(matrix).toContain('accept:scheduled-event-agent-sweep-smoke');
-    expect(matrix).toContain('persisted sweep summaries');
-    expect(matrix).toContain('disconnected-port skip evidence');
-    expect(matrix).toContain('in-flight skip evidence');
-    expect(matrix).toContain('trigger-port and task-source `sweep_failed` recovery evidence');
-    expect(matrix).toContain('timeline-failure started-run evidence');
-    expect(matrix).toContain('trigger-port failure, timeline failure, and task-source failure outcomes');
-    expect(matrix).toContain('proves `sweep_failed` recovery for trigger-port and task-source failure paths');
-    expect(matrix).toContain('proves timeline-failure started-run evidence is preserved');
-    expect(matrix).toContain('lastScheduledEventAgentSweepSummary');
-    expect(matrix).toContain('Packaged Codex live task run');
-    expect(matrix).toContain('Manual only; passed locally on 2026-05-20; default skipped');
+    expect(testingDoc).toContain('That smoke covers the first-version Agent CLI product loop inside the packaged');
+    expect(testingDoc).toContain('task-bound run creation, accepted and terminal run evidence');
+    expect(testingDoc).toContain('Contract/verifier/memory-proposal evidence');
+    expect(testingDoc).toContain('runtime-native goal audit requests that are recorded but not forwarded');
+    expect(testingDoc).toContain('On 2026-05-20, this packaged-app live smoke passed locally with Codex CLI');
+    expect(configurationDoc).toContain('Codex native Goal Mode is tracked separately from asterism Task Goal');
+    expect(configurationDoc).toContain('native-goal capable');
+    expect(configurationDoc).toContain('passthrough=closed');
+    expect(runtimeSpec).toContain('Taskplane `/goal` sets the durable Taskplane Task Goal');
+    expect(runtimeSpec).toContain('packaged smoke evidence');
+    expect(runtimeSpec).toContain('Native goal forwarding must stay explicit');
+    expect(runtimeSpec).toContain('Taskplane passthrough remains closed');
   });
 
   it('validates Agent CLI native-goal discovery runtime before candidate execution', () => {
