@@ -11,7 +11,7 @@ describe('evaluateRuntimeContextReadiness', () => {
   it('blocks when required context assembly is missing', () => {
     const evaluation = evaluateRuntimeContextReadiness({
       contextAssembly: {
-        activeSurface: 'task',
+        activeSurface: 'legacy_task',
         canExecuteTaskWork: false,
         missingRequired: ['task_md'],
         requirements: [],

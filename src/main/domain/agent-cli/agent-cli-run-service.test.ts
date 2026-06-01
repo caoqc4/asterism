@@ -211,7 +211,7 @@ describe('AgentCliRunService', () => {
     }));
   });
 
-  it('injects service-built business-line context into Agent CLI runs', async () => {
+  it('injects service-built business-line context pack into Agent CLI runs with a next_action manifest', async () => {
     const runRepository = buildRunRepository();
     const runStepRepository = buildRunStepRepository();
     const taskService = buildTaskService(buildTask({
@@ -268,12 +268,19 @@ describe('AgentCliRunService', () => {
       title: 'Native CLI adapter contract',
       output: expect.stringContaining('businessLineContextPack=included'),
     }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Native CLI adapter contract',
+      output: expect.stringContaining('contextManifestSummary=Runtime context manifest / surface=next_action'),
+    }));
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.stringContaining('BusinessLineContextPack'),
     }));
     const prompt = vi.mocked(executor).mock.calls[0]?.[0].input ?? '';
     expect(prompt).toContain('Business line: Product line (business_line_product)');
     expect(prompt).toContain('Accepted SOPs / skills:');
+    expect(prompt).toContain('Runtime context manifest');
+    expect(prompt).toContain('surface=next_action');
+    expect(prompt).toContain('business_line_context_pack:business_line_product:Product line:content=yes');
   });
 
   it('rejects missing business-line context before creating Agent CLI runs', async () => {

@@ -215,6 +215,7 @@ export function formatNativeCliAdapterContractForStep(contract: NativeCliAdapter
     `carrier=${contract.scope.carrier.kind}:${contract.scope.carrier.taskId}`,
     `runScope=${contract.scope.runScope.kind}`,
     `oneOffScope=${contract.scope.oneOffScope ? 'yes' : 'no'}`,
+    `contextManifestSummary=${contract.context.contextManifestSummary}`,
     `contextManifestItems=${contract.context.contextManifestItemCount}`,
     `businessLineContextPack=${contract.context.businessLineContextPack}`,
     contract.context.capabilityAllowanceSummary ? `capabilityAllowance=${contract.context.capabilityAllowanceSummary}` : null,

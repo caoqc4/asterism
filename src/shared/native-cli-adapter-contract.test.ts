@@ -9,7 +9,7 @@ import type { RuntimeContextManifest } from './runtime-context.js';
 import type { RunScope } from './types/run.js';
 
 describe('native CLI adapter contract', () => {
-  it('records the selected CLI runtime, business-line owner, carrier, context, evidence, and writeback boundary', () => {
+  it('records the selected CLI runtime, business-line owner, carrier, context manifest, context pack, evidence, and writeback boundary', () => {
     const contract = buildNativeCliAdapterContract({
       capabilityMode: 'native',
       commandPreview: 'codex exec --json --sandbox read-only --cd /repo -',
@@ -48,6 +48,7 @@ describe('native CLI adapter contract', () => {
       context: {
         businessLineContextPack: 'included',
         contextManifestItemCount: 2,
+        contextManifestSummary: 'Runtime context manifest / surface=next_action / contextPack=BusinessLineContextPack',
       },
       allowedSurface: {
         files: {
@@ -79,13 +80,16 @@ describe('native CLI adapter contract', () => {
     });
     expect(contract.writeIntent.acceptedIntentTypes).toContain('business_review.record');
     expect(contract.writeIntent.acceptedIntentTypes).toContain('task_record.create');
+    expect(formatNativeCliAdapterContractForStep(contract)).toContain(
+      'contextManifestSummary=Runtime context manifest / surface=next_action / contextPack=BusinessLineContextPack',
+    );
   });
 
   it('makes one-off non-durable scope explicit when no business-line owner exists', () => {
     const contract = buildNativeCliAdapterContract({
       capabilityMode: 'restricted',
       commandPreview: 'claude -p --permission-mode plan --output-format stream-json',
-      contextManifest: buildContextManifest({ summary: 'Task-only context' }),
+      contextManifest: buildContextManifest({ activeSurface: 'legacy_task', summary: 'Task-only context' }),
       runId: 'run_2',
       runScope: buildRunScope({
         businessLineId: null,
@@ -141,7 +145,8 @@ function buildRunScope(partial: Partial<RunScope>): RunScope {
 
 function buildContextManifest(partial: Partial<RuntimeContextManifest> = {}): RuntimeContextManifest {
   return {
-    activeSurface: 'task',
+    activeSurface: 'next_action',
+    exclusionReasons: [],
     items: [
       {
         contentIncluded: true,
@@ -156,7 +161,7 @@ function buildContextManifest(partial: Partial<RuntimeContextManifest> = {}): Ru
         label: 'Codex CLI',
       },
     ],
-    summary: 'Task context plus runtime capabilities.',
+    summary: 'Runtime context manifest / surface=next_action / contextPack=BusinessLineContextPack',
     userFacingSummary: 'Task context is ready.',
     ...partial,
   };

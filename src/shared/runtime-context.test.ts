@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AgentWorkingContext } from './types/agent-execution.js';
+import type { BusinessLineWorkspace } from './types/business-line.js';
 import { buildRuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 import {
   buildRuntimeContextAssemblyPolicy,
@@ -86,8 +87,58 @@ function buildWorkingContext(): AgentWorkingContext {
   };
 }
 
+function buildBusinessLineWorkspace(partial: Partial<BusinessLineWorkspace> = {}): BusinessLineWorkspace {
+  const businessLine: BusinessLineWorkspace['businessLine'] = {
+    id: 'business_line_product',
+    title: 'Product line',
+    summary: 'Grow the product launch motion.',
+    goal: 'Convert launch evidence into better next actions.',
+    kind: 'software_product',
+    legacyTaskId: null,
+    createdAt: '2026-05-19T00:00:00.000Z',
+    updatedAt: '2026-05-19T00:00:00.000Z',
+  };
+  const contextPack: BusinessLineWorkspace['contextPack'] = {
+    businessSummary: businessLine.summary,
+    currentGoal: businessLine.goal,
+    recentChanges: ['Launch evidence changed the next recommendation.'],
+    activeDecisions: [],
+    openNextActions: [],
+    latestRecords: [],
+    acceptedSkills: [],
+    knownConstraints: ['Do not bypass writeback confirmation.'],
+    permissionBoundaries: ['Runtime output proposes; Taskplane services persist.'],
+    missingContext: [],
+  };
+  return {
+    businessLine,
+    contextPack,
+    learning: {
+      acceptedSkills: [],
+      reviews: [],
+      skillRevisions: [],
+    },
+    nextActions: [],
+    overview: {
+      blockedDecisions: [],
+      latestImprovement: null,
+      latestResult: null,
+      missingContext: [],
+      nextSuggestion: null,
+      recentChanges: ['Launch evidence changed the next recommendation.'],
+    },
+    records: [],
+    sourceRecords: [],
+    automations: {
+      automations: [],
+      sensors: [],
+    },
+    ...partial,
+  };
+}
+
 describe('runtime context manifest', () => {
-  it('builds an explicit context snapshot for global, task, and task-file modes', () => {
+  it('builds an explicit context snapshot for global, business-line, next-action, legacy-task, and task-file modes', () => {
     expect(buildRuntimeContextSnapshot({})).toMatchObject({
       activeSurface: 'global',
       mode: 'global',
@@ -98,10 +149,32 @@ describe('runtime context manifest', () => {
     });
 
     expect(buildRuntimeContextSnapshot({
+      businessLineContextPack: buildBusinessLineWorkspace(),
+    })).toMatchObject({
+      activeSurface: 'business_line',
+      mode: 'business_line',
+      taskId: null,
+      conversationMode: 'business_line_bound',
+      isTaskBound: false,
+      summary: '业务线上下文：Product line',
+    });
+
+    expect(buildRuntimeContextSnapshot({
+      businessLineContextPack: buildBusinessLineWorkspace(),
       task: { id: 'task_1', title: 'Launch task', state: 'running' },
     })).toMatchObject({
-      activeSurface: 'task',
-      mode: 'task',
+      activeSurface: 'next_action',
+      mode: 'next_action',
+      taskId: 'task_1',
+      conversationMode: 'task_bound',
+      isTaskBound: true,
+    });
+
+    expect(buildRuntimeContextSnapshot({
+      task: { id: 'task_1', title: 'Launch task', state: 'running' },
+    })).toMatchObject({
+      activeSurface: 'legacy_task',
+      mode: 'legacy_task',
       taskId: 'task_1',
       selectedFilePath: null,
       conversationMode: 'task_bound',
@@ -113,7 +186,7 @@ describe('runtime context manifest', () => {
       selectedFile: { path: 'Task.md', kind: 'task_record' },
       task: { id: 'task_1', title: 'Launch task', state: 'running' },
     })).toMatchObject({
-      activeSurface: 'task',
+      activeSurface: 'task_file',
       mode: 'task_file',
       selectedFilePath: 'Task.md',
       selectedFileKind: 'task_record',
@@ -129,8 +202,8 @@ describe('runtime context manifest', () => {
     });
 
     expect(manifest).toMatchObject({
-      activeSurface: 'task',
-      summary: 'Runtime context manifest / surface=task / task=Launch task / items=8 / sources=1 / artifacts=1 / files=2 / timeline=1 / habits=1',
+      activeSurface: 'task_file',
+      summary: 'Runtime context manifest / surface=task_file / task=Launch task / items=8 / sources=1 / artifacts=1 / files=2 / timeline=1 / habits=1 / exclusions=none',
       userFacingSummary: '当前会读取：任务状态、当前选中文件、1 个来源、1 个产物、最近记录、适用工作习惯。',
     });
     expect(manifest.items.map((item) => item.kind)).toEqual([
@@ -149,6 +222,62 @@ describe('runtime context manifest', () => {
     expect(formatRuntimeContextManifestForStep(manifest)).toContain(
       'source_context:source_1:Launch source:content=yes:include=caution:reason=key_source',
     );
+  });
+
+  it('treats business-line context packs as first-class manifest surfaces', () => {
+    const manifest = buildRuntimeContextManifest({
+      businessLineContextPack: buildBusinessLineWorkspace({
+        contextPack: {
+          ...buildBusinessLineWorkspace().contextPack,
+          missingContext: ['Need pricing source.'],
+        },
+      }),
+    });
+
+    expect(manifest).toMatchObject({
+      activeSurface: 'business_line',
+      userFacingSummary: '业务线上下文：当前会读取：BusinessLineContextPack。',
+    });
+    expect(manifest.items).toEqual([
+      expect.objectContaining({
+        contentIncluded: true,
+        id: 'business_line_product',
+        kind: 'business_line_context_pack',
+        label: 'Product line',
+        note: expect.stringContaining('BusinessLineContextPack'),
+      }),
+    ]);
+    expect(manifest.summary).toContain('surface=business_line');
+    expect(manifest.summary).toContain('businessLine=Product line');
+    expect(manifest.summary).toContain('contextPack=BusinessLineContextPack');
+    expect(manifest.summary).toContain('packMissing=1');
+    expect(manifest.summary).toContain('exclusions=none');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain(
+      'business_line_context_pack:business_line_product:Product line:content=yes',
+    );
+  });
+
+  it('treats next actions as business-line task carriers while keeping task memory gates', () => {
+    const manifest = buildRuntimeContextManifest({
+      businessLineContextPack: buildBusinessLineWorkspace(),
+      task: { id: 'task_1', title: 'Launch task', state: 'running' },
+      taskFiles: [{ path: 'Task.md', kind: 'file', contentPreview: '# Task' }],
+    });
+    const policy = buildRuntimeContextAssemblyPolicy({ manifest });
+
+    expect(manifest.activeSurface).toBe('next_action');
+    expect(manifest.items.map((item) => item.kind)).toEqual([
+      'business_line_context_pack',
+      'task_state',
+      'task_file',
+    ]);
+    expect(manifest.summary).toContain('surface=next_action');
+    expect(manifest.userFacingSummary).toContain('BusinessLineContextPack、任务状态');
+    expect(policy).toMatchObject({
+      activeSurface: 'next_action',
+      canExecuteTaskWork: true,
+      missingRequired: [],
+    });
   });
 
   it('bridges optional capability surfaces as context-only boundaries', () => {
@@ -317,6 +446,7 @@ describe('runtime context manifest', () => {
       inclusionDecision: 'caution',
       inclusionReason: 'low_credibility',
     });
+    expect(manifest.summary).toContain('exclusions=source_context:source_duplicate:duplicate');
   });
 
   it('describes global context without task-bound durable inputs', () => {
@@ -332,7 +462,7 @@ describe('runtime context manifest', () => {
     const policy = buildRuntimeContextAssemblyPolicy({ manifest });
 
     expect(policy).toMatchObject({
-      activeSurface: 'task',
+      activeSurface: 'legacy_task',
       canExecuteTaskWork: true,
       missingRequired: [],
       summary: 'Runtime context assembly ready.',
@@ -592,6 +722,16 @@ describe('runtime context manifest', () => {
       inclusionReason: 'explicitly_selected',
     });
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('include=exclude:reason=stale');
+    expect(manifest.exclusionReasons).toEqual([
+      {
+        id: 'source_old',
+        kind: 'source_context',
+        label: '陈旧来源',
+        reason: 'stale',
+      },
+    ]);
+    expect(manifest.summary).toContain('exclusions=source_context:source_old:stale');
+    expect(formatRuntimeContextManifestForStep(manifest)).toContain('exclusion_reasons:source_context/source_old/stale');
   });
 
   it('combines source freshness with quality checks before including source context', () => {

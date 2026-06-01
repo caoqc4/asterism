@@ -1,4 +1,5 @@
 import type { AgentWorkingContext } from './types/agent-execution.js';
+import type { BusinessLineWorkspace } from './types/business-line.js';
 import type { CapabilityRegistryEntry } from './capability-registry.js';
 import {
   buildCapabilityScopedAllowanceManifest,
@@ -31,6 +32,7 @@ import type { TaskRiskLevel, TaskState } from './types/task.js';
 
 export type RuntimeContextManifestItemKind =
   | 'task_state'
+  | 'business_line_context_pack'
   | 'selected_file'
   | 'decision'
   | 'source_context'
@@ -51,30 +53,47 @@ export type RuntimeContextManifestItem = {
   note?: string | null;
 };
 
+export type RuntimeContextActiveSurface =
+  | 'global'
+  | 'business_line'
+  | 'next_action'
+  | 'legacy_task'
+  | 'task_file';
+
 export type RuntimeContextSnapshotMode =
   | 'global'
-  | 'task'
+  | 'business_line'
+  | 'next_action'
+  | 'legacy_task'
   | 'task_file';
 
 export type RuntimeContextSnapshot = {
-  activeSurface: 'global' | 'task';
+  activeSurface: RuntimeContextActiveSurface;
   mode: RuntimeContextSnapshotMode;
   taskId: string | null;
   taskTitle: string | null;
   selectedFilePath: string | null;
   selectedFileKind: string | null;
-  conversationMode: 'global' | 'task_bound';
+  conversationMode: 'global' | 'business_line_bound' | 'task_bound';
   isTaskBound: boolean;
   summary: string;
 };
 
 export type RuntimeContextManifest = {
-  activeSurface: 'global' | 'task';
+  activeSurface: RuntimeContextActiveSurface;
   capabilityAllowance?: CapabilityScopedAllowanceManifest | null;
+  exclusionReasons: RuntimeContextManifestExclusionReason[];
   items: RuntimeContextManifestItem[];
   memoryRetrieval?: RuntimeContextMemoryRetrievalSummary | null;
   summary: string;
   userFacingSummary: string;
+};
+
+export type RuntimeContextManifestExclusionReason = {
+  id: string;
+  kind: RuntimeContextManifestItemKind;
+  label: string;
+  reason: string;
 };
 
 export type RuntimeContextMemoryRetrievalSummary = {
@@ -116,7 +135,7 @@ export type RuntimeContextAssemblyRequirement = {
 };
 
 export type RuntimeContextAssemblyPolicy = {
-  activeSurface: 'global' | 'task';
+  activeSurface: RuntimeContextActiveSurface;
   canExecuteTaskWork: boolean;
   requirements: RuntimeContextAssemblyRequirement[];
   missingRequired: RuntimeContextAssemblyRequirementKind[];
@@ -172,21 +191,25 @@ type RuntimeContextSourceContext = {
 };
 
 export function buildRuntimeContextSnapshot(params: {
+  businessLineContextPack?: BusinessLineWorkspace | null;
   selectedFile?: RuntimeContextSelectedFile | null;
   task?: RuntimeContextManifestTask | null;
 }): RuntimeContextSnapshot {
   const task = params.task ?? null;
   const selectedFile = params.selectedFile ?? null;
-  const activeSurface = task ? 'task' : 'global';
-  const mode: RuntimeContextSnapshotMode = task
-    ? selectedFile?.path
-      ? 'task_file'
-      : 'task'
-    : 'global';
+  const businessLineContextPack = params.businessLineContextPack ?? null;
+  const activeSurface = inferRuntimeContextActiveSurface({
+    businessLineContextPack,
+    selectedFile,
+    task,
+  });
+  const mode: RuntimeContextSnapshotMode = activeSurface;
   const summary = task
     ? selectedFile?.path
       ? `任务上下文：${task.title} / 文件：${selectedFile.path}`
       : `任务上下文：${task.title}`
+    : businessLineContextPack
+      ? `业务线上下文：${businessLineContextPack.businessLine.title}`
     : '全局上下文';
 
   return {
@@ -196,7 +219,11 @@ export function buildRuntimeContextSnapshot(params: {
     taskTitle: task?.title ?? null,
     selectedFilePath: selectedFile?.path ?? null,
     selectedFileKind: selectedFile?.kind ?? null,
-    conversationMode: task ? 'task_bound' : 'global',
+    conversationMode: isTaskBoundSurface(activeSurface)
+      ? 'task_bound'
+      : activeSurface === 'business_line'
+        ? 'business_line_bound'
+        : 'global',
     isTaskBound: Boolean(task),
     summary,
   };
@@ -221,7 +248,9 @@ function sourceInclusionReason(
 }
 
 export function buildRuntimeContextManifest(params: {
+  activeSurface?: RuntimeContextActiveSurface | null;
   applicableWorkHabits?: string[];
+  businessLineContextPack?: BusinessLineWorkspace | null;
   capabilities?: RuntimeCapabilitySnapshot | null;
   capabilityRegistry?: CapabilityRegistryEntry[] | null;
   currentRunId?: string | null;
@@ -244,6 +273,22 @@ export function buildRuntimeContextManifest(params: {
       : null
   );
   const items: RuntimeContextManifestItem[] = [];
+  const businessLineContextPack = params.businessLineContextPack ?? null;
+  const activeSurface = params.activeSurface ?? inferRuntimeContextActiveSurface({
+    businessLineContextPack,
+    selectedFile: params.selectedFile ?? null,
+    task,
+  });
+
+  if (businessLineContextPack) {
+    items.push({
+      contentIncluded: true,
+      id: businessLineContextPack.businessLine.id,
+      kind: 'business_line_context_pack',
+      label: businessLineContextPack.businessLine.title,
+      note: formatBusinessLineContextPackManifestNote(businessLineContextPack),
+    });
+  }
 
   if (task) {
     items.push({
@@ -555,21 +600,68 @@ export function buildRuntimeContextManifest(params: {
   }
   items.push(...capabilityBridgeItems(params.capabilityRegistry ?? []));
 
-  const activeSurface = task ? 'task' : 'global';
   const capabilityAllowance = params.capabilities || params.capabilityRegistry?.length
     ? buildCapabilityScopedAllowanceManifest({
         capabilities: params.capabilities ?? null,
         capabilityRegistry: params.capabilityRegistry ?? [],
       })
     : null;
+  const exclusionReasons = collectRuntimeContextExclusionReasons(items);
   return {
     activeSurface,
     capabilityAllowance,
+    exclusionReasons,
     items,
     memoryRetrieval,
-    summary: formatRuntimeContextManifestSummary({ activeSurface, capabilityAllowance, items, task }),
-    userFacingSummary: formatRuntimeContextManifestUserSummary({ activeSurface, items, task }),
+    summary: formatRuntimeContextManifestSummary({
+      activeSurface,
+      businessLineContextPack,
+      capabilityAllowance,
+      exclusionReasons,
+      items,
+      task,
+    }),
+    userFacingSummary: formatRuntimeContextManifestUserSummary({
+      activeSurface,
+      businessLineContextPack,
+      items,
+      task,
+    }),
   };
+}
+
+function inferRuntimeContextActiveSurface(params: {
+  businessLineContextPack: BusinessLineWorkspace | null;
+  selectedFile?: RuntimeContextSelectedFile | null;
+  task: RuntimeContextManifestTask | null;
+}): RuntimeContextActiveSurface {
+  if (params.selectedFile?.path && params.task) return 'task_file';
+  if (params.businessLineContextPack && params.task) return 'next_action';
+  if (params.businessLineContextPack) return 'business_line';
+  if (params.task) return 'legacy_task';
+  return 'global';
+}
+
+function isTaskBoundSurface(activeSurface: RuntimeContextActiveSurface): boolean {
+  return activeSurface === 'next_action'
+    || activeSurface === 'legacy_task'
+    || activeSurface === 'task_file';
+}
+
+function formatBusinessLineContextPackManifestNote(workspace: BusinessLineWorkspace): string {
+  const pack = workspace.contextPack;
+  return [
+    'BusinessLineContextPack',
+    `businessLine=${workspace.businessLine.id}`,
+    `openNextActions=${pack.openNextActions.length}`,
+    `records=${pack.latestRecords.length}`,
+    `acceptedSOPs=${pack.acceptedSkills.length}`,
+    `activeDecisions=${pack.activeDecisions.length}`,
+    `recentChanges=${pack.recentChanges.length}`,
+    `constraints=${pack.knownConstraints.length}`,
+    `permissionBoundaries=${pack.permissionBoundaries.length}`,
+    `missingContext=${pack.missingContext.length}`,
+  ].join(' / ');
 }
 
 function capabilityBridgeItems(registry: CapabilityRegistryEntry[]): RuntimeContextManifestItem[] {
@@ -620,7 +712,9 @@ export function buildRuntimeContextAssemblyPolicy(params: {
   const items = params.manifest.items;
   const has = (kind: RuntimeContextManifestItemKind, predicate?: (item: RuntimeContextManifestItem) => boolean) =>
     items.some((item) => item.kind === kind && (!predicate || predicate(item)));
-  const taskBound = params.manifest.activeSurface === 'task';
+  const taskBound = isTaskBoundSurface(params.manifest.activeSurface);
+  const businessLineBound = params.manifest.activeSurface === 'business_line'
+    || params.manifest.activeSurface === 'next_action';
   const productPrinciplesIncluded = params.productPrinciplesIncluded !== false;
   const requirements: RuntimeContextAssemblyRequirement[] = [
     {
@@ -637,7 +731,9 @@ export function buildRuntimeContextAssemblyPolicy(params: {
         ? has('task_state')
           ? '已包含结构化任务状态。'
           : '任务上下文缺少结构化任务状态。'
-        : '全局上下文不绑定具体任务。',
+        : businessLineBound
+          ? '业务线上下文不一定绑定具体任务。'
+          : '全局上下文不绑定具体任务。',
     },
     {
       kind: 'task_md',
@@ -650,7 +746,9 @@ export function buildRuntimeContextAssemblyPolicy(params: {
         ? has('task_file', (item) => isTaskMdPath(item.label) || isTaskMdPath(item.id))
           ? '已包含 Task.md 主恢复文件。'
           : '任务执行前应读取或创建 Task.md 主恢复文件。'
-        : '全局上下文不读取任务恢复文件。',
+        : businessLineBound
+          ? '业务线上下文不直接读取任务恢复文件。'
+          : '全局上下文不读取任务恢复文件。',
     },
     {
       kind: 'task_records',
@@ -663,7 +761,9 @@ export function buildRuntimeContextAssemblyPolicy(params: {
         ? has('task_file', (item) => isTaskRecordPath(item.label) || isTaskRecordPath(item.id))
           ? '已包含相关 Task Records。'
           : '没有相关 Task Records；仅在任务含糊、长期运行、刚刷新或明确引用历史时必需。'
-        : '全局上下文不读取任务记录。',
+        : businessLineBound
+          ? '业务线上下文不直接读取任务记录。'
+          : '全局上下文不读取任务记录。',
     },
     {
       kind: 'selected_file',
@@ -672,19 +772,22 @@ export function buildRuntimeContextAssemblyPolicy(params: {
         ? '已包含当前选中文件上下文。'
         : taskBound
           ? '未选择文件；只有文件相关问题才必需。'
-          : '全局上下文没有选中文件要求。',
+          : businessLineBound
+            ? '业务线上下文没有选中文件要求。'
+            : '全局上下文没有选中文件要求。',
     },
     {
       kind: 'structured_signals',
-      status: taskBound && (
+      status: (taskBound || businessLineBound) && (
         has('decision') ||
         has('source_context') ||
         has('artifact') ||
         has('timeline') ||
-        has('process_template')
-      ) ? 'included' : taskBound ? 'optional' : 'not_applicable',
-      reason: taskBound
-        ? has('decision') || has('source_context') || has('artifact') || has('timeline') || has('process_template')
+        has('process_template') ||
+        has('business_line_context_pack')
+      ) ? 'included' : taskBound || businessLineBound ? 'optional' : 'not_applicable',
+      reason: taskBound || businessLineBound
+        ? has('decision') || has('source_context') || has('artifact') || has('timeline') || has('process_template') || has('business_line_context_pack')
           ? '已包含决策、来源、产物、时间线或流程模板等结构化信号。'
           : '当前没有结构化信号；执行复杂或有风险任务前应补充相关上下文。'
         : '全局上下文不要求任务结构化信号。',
@@ -713,6 +816,9 @@ export function buildRuntimeContextAssemblyPolicy(params: {
 export function formatRuntimeContextManifestForStep(manifest: RuntimeContextManifest): string {
   return [
     manifest.summary,
+    manifest.exclusionReasons.length
+      ? `exclusion_reasons:${manifest.exclusionReasons.map((item) => `${item.kind}/${item.id}/${item.reason}`).join('|')}`
+      : null,
     manifest.capabilityAllowance
       ? formatCapabilityScopedAllowanceManifestForStep(manifest.capabilityAllowance)
       : null,
@@ -859,7 +965,9 @@ function runtimeWorkHabitsForRetrieval(habits: string[]) {
 
 function formatRuntimeContextManifestSummary(params: {
   activeSurface: RuntimeContextManifest['activeSurface'];
+  businessLineContextPack: BusinessLineWorkspace | null;
   capabilityAllowance: CapabilityScopedAllowanceManifest | null;
+  exclusionReasons: RuntimeContextManifestExclusionReason[];
   items: RuntimeContextManifestItem[];
   task: RuntimeContextManifestTask | null;
 }): string {
@@ -869,8 +977,11 @@ function formatRuntimeContextManifestSummary(params: {
   return [
     'Runtime context manifest',
     `surface=${params.activeSurface}`,
+    params.businessLineContextPack ? `businessLine=${params.businessLineContextPack.businessLine.title}` : null,
     params.task ? `task=${params.task.title}` : null,
     `items=${params.items.length}`,
+    count('business_line_context_pack') ? `contextPack=BusinessLineContextPack` : null,
+    params.businessLineContextPack ? formatBusinessLineContextPackSummary(params.businessLineContextPack) : null,
     count('decision') ? `decisions=${count('decision')}` : null,
     `sources=${count('source_context')}`,
     `artifacts=${count('artifact')}`,
@@ -879,7 +990,34 @@ function formatRuntimeContextManifestSummary(params: {
     `habits=${count('work_habit')}`,
     count('capability') ? `capabilities=${count('capability')}` : null,
     params.capabilityAllowance ? `allowances=${params.capabilityAllowance.surfaces.length}` : null,
+    params.exclusionReasons.length
+      ? `exclusions=${params.exclusionReasons.map((item) => `${item.kind}:${item.id}:${item.reason}`).join(',')}`
+      : 'exclusions=none',
   ].filter(Boolean).join(' / ');
+}
+
+function collectRuntimeContextExclusionReasons(
+  items: RuntimeContextManifestItem[],
+): RuntimeContextManifestExclusionReason[] {
+  return items
+    .filter((item) => item.inclusionDecision === 'exclude' || (!item.contentIncluded && item.inclusionReason))
+    .map((item) => ({
+      id: item.id,
+      kind: item.kind,
+      label: item.label,
+      reason: item.inclusionReason ?? 'content_not_included',
+    }));
+}
+
+function formatBusinessLineContextPackSummary(workspace: BusinessLineWorkspace): string {
+  const pack = workspace.contextPack;
+  return [
+    `packActions=${pack.openNextActions.length}`,
+    `packRecords=${pack.latestRecords.length}`,
+    `packSOPs=${pack.acceptedSkills.length}`,
+    `packDecisions=${pack.activeDecisions.length}`,
+    `packMissing=${pack.missingContext.length}`,
+  ].join(':');
 }
 
 function formatRuntimeContextAssemblyPolicySummary(
@@ -893,6 +1031,7 @@ function formatRuntimeContextAssemblyPolicySummary(
 
 function formatRuntimeContextManifestUserSummary(params: {
   activeSurface: RuntimeContextManifest['activeSurface'];
+  businessLineContextPack: BusinessLineWorkspace | null;
   items: RuntimeContextManifestItem[];
   task: RuntimeContextManifestTask | null;
 }): string {
@@ -902,6 +1041,7 @@ function formatRuntimeContextManifestUserSummary(params: {
   const count = (kind: RuntimeContextManifestItemKind) =>
     params.items.filter((item) => item.kind === kind).length;
   const parts = [
+    count('business_line_context_pack') ? 'BusinessLineContextPack' : null,
     '任务状态',
     count('decision') ? `${count('decision')} 个判断事项` : null,
     count('selected_file') ? '当前选中文件' : null,
@@ -912,5 +1052,11 @@ function formatRuntimeContextManifestUserSummary(params: {
     count('capability') ? '运行能力状态' : null,
   ].filter(Boolean);
 
+  if (params.activeSurface === 'business_line') {
+    return `业务线上下文：当前会读取：${parts.filter((part) => part !== '任务状态').join('、')}。`;
+  }
+  if (params.activeSurface === 'next_action') {
+    return `业务线 Next Action 上下文：当前会读取：${parts.join('、')}。`;
+  }
   return `当前会读取：${parts.join('、')}。`;
 }

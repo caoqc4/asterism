@@ -54,7 +54,7 @@ describe('buildCodeAgentModelProducerPrompt', () => {
   it('includes retained runtime context as read-only Taskplane execution memory', () => {
     const prompt = buildCodeAgentModelProducerPrompt(request, {
       retainedContextManifest: [
-        'RuntimeContextManifest / surface=task / items=2 / task=Docs update',
+        'RuntimeContextManifest / surface=legacy_task / items=2 / task=Docs update',
         'memory_retrieval:total=2:included=2:caution=0:excluded=0:top=task_record/task_record_received_handoff/include/current_task_scope',
         'task_file:Task Records/2026-05-20-received-handoff.md:Task Records/2026-05-20-received-handoff.md:content=no',
       ].join('\n'),

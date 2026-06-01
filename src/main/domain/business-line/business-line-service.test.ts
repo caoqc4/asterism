@@ -388,7 +388,7 @@ describe('BusinessLineService', () => {
       capabilityMode: 'native',
       commandPreview: 'codex exec --json --sandbox read-only --cd /workspace -',
       contextManifest: {
-        activeSurface: 'task',
+        activeSurface: 'next_action',
         capabilityAllowance: {
           businessLineSkillPolicy: 'business_memory_only',
           globalConfigurationPolicy: 'global_capability_configuration',
@@ -396,6 +396,7 @@ describe('BusinessLineService', () => {
           surfaces: [],
           summary: 'files=read_only tools=runtime_native writeback=write_intent_only',
         },
+        exclusionReasons: [],
         items: [{
           contentIncluded: true,
           id: 'business-line-context-pack',

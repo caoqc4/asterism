@@ -358,6 +358,8 @@ export class AgentCliRunService {
     task = webResearchPreparation.task;
     const taskFilesForContext = buildAgentCliTaskFilesForContext(task);
     const contextManifest = buildRuntimeContextManifest({
+      activeSurface: runtimeContextSurfaceForRunScope(runScope.kind),
+      businessLineContextPack: businessLineWorkspace,
       capabilities: buildRuntimeCapabilitySnapshot({ aiStatus }),
       capabilityRegistry: aiStatus.capabilityRegistry ?? [],
       currentRunId: null,
@@ -946,6 +948,13 @@ export class AgentCliRunService {
       };
     }
   }
+}
+
+function runtimeContextSurfaceForRunScope(kind: RunScope['kind']): RuntimeContextManifest['activeSurface'] {
+  if (kind === 'business_line_chat') return 'business_line';
+  if (kind === 'next_action_execution' || kind === 'scheduler_loop_carrier') return 'next_action';
+  if (kind === 'legacy_task_recovery' || kind === 'one_off_non_durable_action') return 'legacy_task';
+  return 'global';
 }
 
 function normalizeAgentCliRunInput(input: CreateAgentCliRunInput): NormalizedAgentCliRunInput {

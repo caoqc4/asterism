@@ -6,7 +6,7 @@ describe('evaluateRuntimeContextAssemblyGate', () => {
   it('requires context assembly for provider-visible task execution', () => {
     expect(evaluateRuntimeContextAssemblyGate({
       contextAssembly: {
-        activeSurface: 'task',
+        activeSurface: 'legacy_task',
         canExecuteTaskWork: true,
         missingRequired: [],
         requirements: [],
@@ -38,7 +38,7 @@ describe('evaluateRuntimeContextAssemblyGate', () => {
 
     expect(evaluateRuntimeContextAssemblyGate({
       contextAssembly: {
-        activeSurface: 'task',
+        activeSurface: 'legacy_task',
         canExecuteTaskWork: false,
         missingRequired: ['task_md'],
         requirements: [],
