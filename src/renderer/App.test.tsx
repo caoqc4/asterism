@@ -587,6 +587,53 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
   };
 }
 
+function buildNoRuntimeAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
+  return buildAiStatus({
+    configured: false,
+    apiKeyStored: false,
+    apiKeySource: null,
+    configuredProviders: [],
+    provider: 'fal-openrouter',
+    model: 'google/gemini-2.5-flash',
+    runtimeMode: 'codex',
+    agentCliRuntimeStatus: {
+      catalogueCount: 2,
+      detectedCount: 0,
+      readyCount: 0,
+      runningCount: 0,
+      errorCount: 0,
+      manualRunCount: 0,
+      readyManualRunCount: 0,
+      updatedAt: '2026-05-19T00:00:00.000Z',
+      runtimes: [
+        {
+          id: 'codex',
+          label: 'Codex CLI',
+          command: 'codex',
+          installed: false,
+          version: null,
+          authState: 'unknown',
+          executionSupport: 'manual_run',
+          workload: 'blocked',
+          missingReason: 'codex was not found on PATH.',
+        },
+        {
+          id: 'claude',
+          label: 'Claude Code',
+          command: 'claude',
+          installed: false,
+          version: null,
+          authState: 'unknown',
+          executionSupport: 'manual_run',
+          workload: 'blocked',
+          missingReason: 'claude was not found on PATH.',
+        },
+      ],
+    },
+    ...partial,
+  });
+}
+
 function createMockApi() {
   const tasks = [
     buildTask({
@@ -1533,6 +1580,51 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: 'Legacy Tasks' }));
     expect(await screen.findByText('Legacy Tasks', { selector: '.current' })).toBeTruthy();
+  });
+
+  it('shows source-only AI Runtime guidance without blocking local Today Business or Tasks', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildNoRuntimeAiStatus());
+
+    render(<App />);
+
+    expect(await screen.findByText(/AI Runtime 尚未配置；本地记录、Today、Business、Tasks 可继续使用/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /前往 AI Runtime/ })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Today/ })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /Business/ }));
+    expect(await screen.findByText('业务线')).toBeTruthy();
+    expect(screen.getByText(/顶层 project \/ routine task 会自动适配成业务线/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Legacy Tasks' }));
+    expect(await screen.findByText('Legacy Tasks', { selector: '.current' })).toBeTruthy();
+    expect(screen.getAllByText('董事会材料修订').length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: /前往 AI Runtime/ }));
+    expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
+    expect(screen.getAllByText(/Recommended for source-only alpha: Agent CLI/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Provider\/API config is optional/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Agent API task execution is deferred/).length).toBeGreaterThan(0);
+  });
+
+  it('keeps no-runtime RightPanel fallback from fabricating real status', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildNoRuntimeAiStatus());
+
+    render(<App />);
+
+    await user.click(screen.getByTitle('AI 对话（⌘K）'));
+    const input = await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/) as HTMLTextAreaElement;
+    await user.type(input, '总结一下现在的状态');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    expect(await screen.findByText(/当前没有可用 AI Runtime，本次不会启动 Agent run/)).toBeTruthy();
+    expect(screen.getByText(/不会编造真实 Run evidence/)).toBeTruthy();
+    expect(screen.queryByText(/今日有 3 件高优先级事项/)).toBeNull();
+    expect(screen.queryByText(/上一次 Run 已完成主要步骤/)).toBeNull();
+    expect(harness.api.triggerRun).not.toHaveBeenCalled();
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(harness.api.chatWithAI).not.toHaveBeenCalled();
   });
 
   it('opens full Chat with context and writeback target, and keeps fixed sidebar navigation', async () => {
@@ -2602,6 +2694,9 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
     expect(screen.getByText(/Agent CLI 和 Agent API 是同级 AI 调用层/)).toBeTruthy();
+    expect(screen.getAllByText(/Recommended for source-only alpha: Agent CLI/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Codex CLI \/ Claude Code auth stays in the official CLI/)).toBeTruthy();
+    expect(screen.getAllByText(/Provider\/API config is optional/).length).toBeGreaterThan(0);
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
     expect(screen.getByText(/选择 asterism 各 AI 阶段的默认调用层/)).toBeTruthy();
     expect(screen.getByText('运行时状态')).toBeTruthy();
@@ -2634,7 +2729,7 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText(/Agent API Provider 配置/).length).toBeGreaterThan(0);
     expect(screen.getByText('Agent API Runtime')).toBeTruthy();
     expect(screen.getByText('部分可用')).toBeTruthy();
-    expect(screen.getByText(/当前问答 \/ 拆解 \/ 决策草稿等阶段走 Agent API/)).toBeTruthy();
+    expect(screen.getAllByText(/Agent API task execution is deferred/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/同级 AI 调用层/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/不是 Agent CLI 的隐式兜底/).length).toBeGreaterThan(0);
     expect(screen.getByText(/第一版优先打通 Agent CLI/)).toBeTruthy();
@@ -4463,7 +4558,8 @@ describe('App redesign v1', () => {
 
     expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
     expect(harness.api.chatWithAI).not.toHaveBeenCalled();
-    expect(await screen.findByText(/不会在未说明的情况下切换到另一条 AI Runtime/)).toBeTruthy();
+    expect(await screen.findByText(/不会编造真实 Run evidence/)).toBeTruthy();
+    expect(screen.getByText(/不会隐式切换到另一条 AI Runtime/)).toBeTruthy();
   });
 
   it('refreshes Codex CLI mode availability after AI Runtime settings change', async () => {

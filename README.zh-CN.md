@@ -114,6 +114,10 @@ npm run dev
 
 `dev` 命令会启动 Vite renderer server、Electron main-process TypeScript watcher，以及 Electron desktop shell。
 
+首次打开后，即使还没有配置 AI Runtime，也可以先使用本地记录、Business 和 Tasks。
+要执行 Agent run，需要在 AI Runtime 页连接已登录的 Codex CLI / Claude Code，
+或选择性配置 Provider/API。
+
 ## 常用命令
 
 ```bash

@@ -626,6 +626,7 @@ export function ModelPage() {
           <h2 className="model-page-title">AI Runtime</h2>
           <p className="model-page-subtitle">选择 asterism 调用 AI 的默认 Runtime。</p>
           <p className="model-page-boundary">Agent CLI 和 Agent API 是同级 AI 调用层；任务拆解、推进、验收、记忆等环节由 asterism harness 编排，再按所选 Runtime 调用。</p>
+          <p className="model-page-boundary">Recommended for source-only alpha: Agent CLI. Codex CLI / Claude Code auth stays in the official CLI. Provider/API config is optional, and Agent API task execution is deferred.</p>
         </div>
       </div>
 
@@ -747,7 +748,7 @@ function AgentCliRuntimeSection({
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">运行方式</div>
-          <p className="model-section-copy">选择 asterism 各 AI 阶段的默认调用层；当前优先打通 Codex / Claude CLI，Agent API 后续补齐同一套 harness 流程。</p>
+          <p className="model-section-copy">Recommended for source-only alpha: Agent CLI. 选择 asterism 各 AI 阶段的默认调用层；当前优先打通 Codex / Claude CLI，Provider/API 配置可选，Agent API task execution is deferred.</p>
         </div>
         <div className="agent-cli-head-actions">
           <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
@@ -817,9 +818,9 @@ function AgentCliRuntimeSection({
           <span className="agent-cli-runtime-row-version">{apiConfigured ? '部分可用' : '缺少 Provider'}</span>
           <span className="agent-cli-runtime-row-detail">
             {runtimeMode === 'api'
-              ? '当前问答 / 拆解 / 决策草稿等阶段走 Agent API；任务执行 run 仍待完善'
+              ? '当前问答 / 拆解 / 决策草稿等阶段走 Agent API；Agent API task execution is deferred'
               : apiConfigured
-                ? '可作为当前 AI 调用层；完整任务执行 run 仍待完善'
+                ? '可作为当前 AI 调用层；Agent API task execution is deferred'
                 : '先配置 Provider 密钥后才能选择'}
           </span>
           <div className="agent-cli-runtime-row-actions">
@@ -844,7 +845,7 @@ function AgentCliRuntimeSection({
             配置项
           </span>
           <span className="agent-cli-runtime-row-version">{apiProviderSummary ?? '未完成'}</span>
-          <span className="agent-cli-runtime-row-detail">供 Agent API Runtime 调用；不是 Agent CLI 的隐式兜底</span>
+          <span className="agent-cli-runtime-row-detail">Provider/API config is optional；供 Agent API Runtime 调用；不是 Agent CLI 的隐式兜底</span>
           <div className="agent-cli-runtime-row-actions">
             <button
               className={`btn sm${apiConfigured ? ' ghost' : ' primary'}`}

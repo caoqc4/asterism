@@ -142,6 +142,10 @@ npm run dev
 The dev command starts the Vite renderer server, the Electron main-process
 TypeScript watcher, and the Electron desktop shell.
 
+After first launch, local records, Business, and Tasks can be used without an
+AI runtime. Agent execution requires either a logged-in Codex CLI / Claude Code
+installation or an optional Provider/API configuration from the AI Runtime page.
+
 ## Common Commands
 
 ```bash

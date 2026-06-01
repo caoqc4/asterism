@@ -3682,16 +3682,22 @@ export function RightPanel({
               statusText: run.status === 'completed' ? '已完成' : run.status,
             });
       } else if (activeAgentCliRuntimeMode && !activeTaskId) {
-        replyText = [
-          '当前是全局助手会话。',
-          '请先进入具体任务后再发起任务 Agent run。',
-          'asterism 不会在未说明的情况下切换到另一条 AI Runtime。',
-        ].join('\n\n');
+        replyText = selectedAgentCliAvailable
+          ? [
+              '当前是全局助手会话。',
+              '请先进入具体任务后再发起任务 Agent run。',
+              'asterism 不会在未说明的情况下切换到另一条 AI Runtime。',
+            ].join('\n\n')
+          : [
+              '当前没有可用 AI Runtime，本次不会启动 Agent run。',
+              '全局助手会话仍可用于捕获任务想法；需要执行 Agent run，请先进入具体任务并在 AI Runtime 页连接 Agent CLI 或配置 Provider。',
+              'asterism 不会编造真实 Run evidence，也不会隐式切换到另一条 AI Runtime。',
+            ].join('\n\n');
       } else if (activeAgentCliRuntimeMode && activeTaskId && !shouldUseAgentCliRuntime) {
         replyText = [
-          '当前任务运行方式不可用，任务 Agent run 未启动。',
-          '请到 AI Runtime 页完成安装、登录或重新检测后再试。',
-          'asterism 不会在未说明的情况下切换到另一条 AI Runtime。',
+          '当前没有可用 AI Runtime，任务 Agent run 未启动。',
+          '请到 AI Runtime 页连接 Agent CLI 或配置 Provider 后再试。',
+          'asterism 不会编造真实 Run evidence，也不会隐式切换到另一条 AI Runtime。',
         ].join('\n\n');
       } else if (
         isAgentApiRuntimeMode
@@ -4213,6 +4219,9 @@ export function RightPanel({
   const activeAgentCliRuntimeMode: AgentCliRuntimeId | null = runtimeMode === 'codex' || runtimeMode === 'claude'
     ? runtimeMode
     : null;
+  const selectedAgentCliAvailable = activeAgentCliRuntimeMode
+    ? Boolean(agentCliAvailability[activeAgentCliRuntimeMode] && window.api?.triggerAgentCliRun)
+    : false;
   const isAgentApiRuntimeMode = runtimeMode === 'api';
   const shouldUseAgentCliRuntime = Boolean(
     activeAgentCliRuntimeMode && canUseAgentCliRuntime(activeAgentCliRuntimeMode),
