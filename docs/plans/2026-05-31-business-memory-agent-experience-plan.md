@@ -126,6 +126,46 @@ Chat transcript = temporary working context
 - Runtime context and retrieval naming can still imply that task memory is the
   primary memory surface.
 
+## Goal 0 Implementation Drift Appendix
+
+Date: 2026-06-01
+Scope: context clear, reset, compact, handoff, and retrieval implementation
+only. This appendix records drift; it does not authorize behavior changes.
+
+### Audit Summary
+
+The implementation already has several business-memory primitives: Handoff V2
+types, digest-only handoff artifacts, `BusinessLineContextPack`,
+`business_record.create`, `business_handoff.record`, and guarded Business Record
+dispatch. The remaining drift is mostly adapter and surface drift: RightPanel
+refresh, runtime handoff, auto-clear readiness, runtime context manifests, and
+retrieval still model the active owner as task/global first.
+
+### Findings
+
+| Area | Current implementation | Classification | Follow-up |
+| --- | --- | --- | --- |
+| Shared context preservation | `src/shared/context-preservation.ts` can infer `durable_business_handoff` when `hasBusinessLineContext=true` and `hasTaskContext=false`; it routes durable business handoff signals to `business_record`, runtime/subagent signals to `run_step`, ephemeral handoff to `temporary_file`, and Next Action handoff to `task_record`. | aligned | Keep this as the shared Handoff V2 baseline. Later goals should pass owner data into it instead of rebuilding classification in UI code. |
+| Shared context transition | `src/shared/context-transition.ts` chooses `product_transcript_reset` by default and only chooses native clear/compact when persistent-session adapter capability is present. Tests already cover business-line context refresh to durable business handoff. | aligned | Preserve the reset strategy rule. Future work should make this evaluator the owner-aware transition plan surface rather than adding another reset path. |
+| Business-line context pack | `src/main/domain/business-line/business-line-service.ts` builds `BusinessLineContextPack` from business line state, open Next Actions, future-context records, accepted SOPs, active Decisions, projected sources/artifacts/files, and reviews. | aligned | Use as the first business-line rehydration source. Do not turn raw transcript into a competing context source. |
+| Business-line prompt context | `src/shared/business-line-context-pack.ts` and Agent CLI paths append `BusinessLineContextPack` to runtime prompts when a business line owner is known. | aligned | Keep as rehydration evidence. Goal 4 should expose this in `RuntimeContextManifest` surfaces, not only as extra prompt text. |
+| Business-line writeback dispatch | Writeback proposal and dispatch paths include `business_record.create` and `business_handoff.record`, resolve business-line ownership, and block when no owner can be resolved. | aligned | Keep the owner gate. Business-only refresh needs to call this route instead of task-file archival. |
+| Native compact/clear capability display | Runtime status probing can detect compact/clear words, while reset selection still refuses native clear/compact without a persistent controlled session. | aligned | No behavior change needed now. Keep adapter evidence separate from product reset proof. |
+| Legacy task memory evaluators | `TaskMemoryCoverageEvaluation`, `Task.md`, Task Records, task-memory write proposals, and reserved path guards remain task-scoped and enforced for active tasks. | compatibility adapter | Keep intact for active Next Action execution and legacy task recovery. Do not weaken these checks while adding business-memory coverage. |
+| Task-bound Agent CLI runs | Agent CLI execution remains task-carrier based: it loads task detail, builds task-memory guidance, synthesizes read-only `Task.md` when absent, and appends business-line context when available. | compatibility adapter | Accept for current Next Action execution. Goal 4 can add first-class `business_line`/`next_action` manifest surfaces without removing task-carrier execution. |
+| Runtime handoff evaluator | `src/shared/runtime-handoff.ts` accepts `fromTaskId`/`toTaskId` but no owner model or `businessLineId`; `context_refresh`, `leave_task_context`, and `start_global_conversation` infer `ephemeral_session_handoff` and call auto-clear with `hasTaskContext=Boolean(fromTaskId)`. | needs owner change | Add `ContextOwner` or equivalent owner input. Business-line-only refresh should evaluate as business-line context, not as not-applicable/global. |
+| Auto context clear readiness | `src/shared/auto-context-clear-readiness.ts` returns `taskMemoryCoverage` and evaluates `evaluateTaskMemoryCoverage`; when `hasTaskContext=false` it returns `not_applicable` even if business-line context exists upstream. | needs owner change | Add `BusinessMemoryCoverageEvaluation` beside task coverage. Route by owner: global not-applicable, business-line business coverage, Next Action task/business combined coverage, legacy task task coverage. |
+| Runtime context manifest | `RuntimeContextManifest` and `RuntimeContextSnapshot` expose only `global`, `task`, and `task_file` active surfaces; assembly policy requires `task_state` and `Task.md` for task-bound work. | needs owner change | Add explicit `business_line`, `next_action`, and `legacy_task` surfaces. Keep `Task.md` required only for Next Action / legacy recovery that needs it. |
+| Task memory retrieval | `src/shared/task-memory-retrieval.ts` indexes `currentTask`, Task.md, Task Records, task files, task Decisions, blockers, dependencies, source contexts, artifacts, timeline, Work Habits, and process templates; owner filtering is `currentTask.id` or global and ranking places Task.md before broader business memory. | needs owner change | Add deterministic business-memory retrieval before RAG: owner filter, future-context flag, status, freshness/provenance, then query relevance. Include Business Records, Reviews, accepted SOPs, active Decisions, selected sources/artifacts, current Next Action, recent Run evidence, and Work Habits. |
+| RightPanel session archive | `preserveSessionRefreshMemory` requires `taskId`, writes a Source Context note and Task Record, and records `panel.context_refreshed`; `archiveTaskConversationIfNeeded` only archives when `activeTaskId` exists. | needs writeback routing change | Business-line-only refresh needs a Business Record or business handoff writeback proposal. Next Action refresh may still use Task Record / Task.md when execution recovery needs it. |
+| RightPanel refresh orchestration | `refreshTaskSessionWithPreservation`, `startNewConversation`, `leaveTaskContext`, and task switch confirmation call `evaluateRuntimeHandoff` with task ids only. Business-line context is considered in `evaluateTaskAdvancement`, but not in the handoff/archival write route. | needs writeback routing change | Route through owner-aware context transition and writeback target selection. Do not clear a business-line chat based only on task archival success or task non-applicability. |
+| Context preservation record text | `buildContextPreservationRecordContent` uses task wording such as `任务：...`; RightPanel history and refresh text say task session/task memory even when the active header may be Business Line only. | needs UI wording change | Use owner-neutral wording: owner, Business Line, Next Action, Legacy Task, Global; show target surface and recovery readiness in refresh preview. |
+| Refresh suggestion visibility | `sessionRefreshSuggestion` only appears when `activeTaskId` exists and says "这个任务的讨论". Business-line-only discussions can be long but have no equivalent preservation preview. | needs UI wording change | Show business-line-aware refresh affordance only after owner-aware coverage exists. Avoid implying Task Records are the only preservation target. |
+| Panel event labels | `runtime-panel-events.ts` labels `panel.context_refreshed` as task-session refresh. | needs UI wording change | Keep event type for compatibility, but future UI copy should render the owner-specific label. |
+| TasksPage completion handoff | Existing completion handoff and received handoff files under `Task Records/` are still task-to-task recovery records. | should not change now | Outside Goal 0 and still valid for execution handoff. Revisit only when Next Action ownership is explicitly normalized. |
+| Direct task-file and task-memory guards | Reserved-path guards keep ordinary file writes away from `Task.md` and `Task Records/`; task-memory proposal confirmation remains dedicated. | should not change now | These gates protect legacy and Next Action execution memory. Business-memory work should add parallel gates rather than loosen them. |
+| Business-memory retrieval vs semantic search | No vector/RAG business-memory retrieval exists in the inspected path; current retrieval is deterministic task-memory retrieval. | should not change now | This matches the plan's sequencing: implement deterministic owner-aware business retrieval first, and defer semantic retrieval until the corpus is clean and typed. |
+
 ## Codex Feature Translation
 
 These are design references, not copy targets. Official Codex docs describe
@@ -808,4 +848,3 @@ After these goals:
   `https://www.aihero.dev/skills-handoff`
 - User-provided Codex feature notes and screenshots in the design discussion.
 - User-provided YC self-improving company notes in the design discussion.
-
