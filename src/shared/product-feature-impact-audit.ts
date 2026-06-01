@@ -120,7 +120,8 @@ export type RuntimeArchitectureCloseoutSourceId =
   | 'pilot_decision'
   | 'decision_writeback'
   | 'task_memory'
-  | 'context_transition';
+  | 'context_transition'
+  | 'rc_test_plan';
 
 export type RuntimeArchitectureCloseoutSourceInput = Partial<Record<RuntimeArchitectureCloseoutSourceId, string>>;
 
@@ -176,6 +177,7 @@ const REQUIRED_RUNTIME_ARCHITECTURE_CLOSEOUT_CHECK_IDS = [
   'handoff_typed_recovery',
   'review_learning_typed_artifacts',
   'writeback_product_controlled',
+  'business_memory_rc_manual_chain',
   'tests_guard_architecture_drift',
 ] as const;
 
@@ -506,6 +508,22 @@ export const RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT: RuntimeArchitectureCloseoutAud
       'Write Intent is a proposal',
       'Persistence happens only after validation',
       'Business-line Write Intent must carry or resolve a business-line owner',
+    ],
+  },
+  {
+    id: 'business_memory_rc_manual_chain',
+    label: 'RC manual plan covers business-memory context recovery and review',
+    sourceId: 'rc_test_plan',
+    requiredFragments: [
+      'Business-Memory Closeout Path',
+      'Business-line discussion',
+      'Next Action execution',
+      'Context preservation/reset',
+      'Rehydration',
+      'Continue goal',
+      'Artifact/writeback review',
+      'Business Record / Review / SOP proposal',
+      'Agent API remains deferred/gated and must not satisfy CLI-first readiness',
     ],
   },
   {

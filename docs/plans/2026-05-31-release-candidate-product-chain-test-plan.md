@@ -101,7 +101,7 @@ Expected:
 
 - `mainlineCliP0=ready`.
 - `p0CliPartial=<none>`.
-- `runtimeArchitectureCloseout readiness=ready checks=10 issues=0`, when that
+- `runtimeArchitectureCloseout readiness=ready checks=11 issues=0`, when that
   closeout line is present.
 - Build may show the existing Vite chunk-size warning only.
 
@@ -282,6 +282,37 @@ find release -maxdepth 3 -name "*.app" -print
 15. Open runtime/settings/capability surfaces. Confirm configured CLI runtime,
     skills/MCP/external access, and Agent API status are understandable without
     implying that API execution is ready.
+
+### Business-Memory Closeout Path
+
+Run this chain during manual dogfood after the general checklist above. It is
+the Goal 10 closeout path for typed business memory and context recovery.
+
+1. Business-line discussion: in a real business line, discuss goal, constraint,
+   evidence, risk, and one concrete next step without starting from a legacy
+   task surface.
+2. Next Action execution: select or create one safe Next Action, start the
+   selected CLI-first run, and confirm run evidence is tied to the business
+   line plus the Next Action carrier.
+3. Context preservation/reset: trigger the context refresh/reset affordance
+   only after the preview shows the preservation target and recovery readiness;
+   confirm raw transcript is not treated as the durable recovery artifact.
+4. Rehydration: after refresh or app restart, reopen the same business line and
+   confirm the context rebuilds from `BusinessLineContextPack`, Business
+   Records, Reviews, accepted SOPs, Decisions, selected sources/artifacts, run
+   evidence, and current Next Action state.
+5. Continue goal: resume the same product goal or Next Action from the
+   rehydrated context and confirm the next safe action, verifier, and stop
+   condition are still visible.
+6. Artifact/writeback review: inspect generated files, artifacts, source
+   context, run evidence, verifier status, and writeback proposals in the side
+   panel before accepting any durable write.
+7. Business Record / Review / SOP proposal: accept or reject one Business
+   Record, record a post-run Review when useful, and propose an SOP/learning
+   update without making risky learning active before its Decision gate.
+8. CLI/API boundary: confirm the path above is CLI-first ready. Agent API
+   remains deferred/gated and must not satisfy CLI-first readiness or silently
+   replace the selected CLI execution path.
 
 ## Manual Failure Checks
 

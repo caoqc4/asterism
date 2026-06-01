@@ -125,6 +125,7 @@ try {
     decision_writeback: fs.readFileSync(path.join(process.cwd(), 'docs/specs/decision-layer-writeback-orchestration.md'), 'utf8'),
     task_memory: ruleLayerDocs.memory_spec,
     context_transition: ruleLayerDocs.handoff_policy,
+    rc_test_plan: fs.readFileSync(path.join(process.cwd(), 'docs/plans/2026-05-31-release-candidate-product-chain-test-plan.md'), 'utf8'),
   };
   const businessLineFirstRuleLayerIssues = findBusinessLineFirstRuleLayerAuditIssues(
     ruleLayerDocs,

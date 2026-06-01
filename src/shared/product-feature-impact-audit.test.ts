@@ -8,6 +8,7 @@ import pilotDecisionDoc from '../../docs/specs/pilot-decision-contract.md?raw';
 import runtimeOrchestrationDoc from '../../docs/specs/native-agent-runtime-orchestration.md?raw';
 import priorityRoutingDoc from '../../docs/specs/priority-attention-routing.md?raw';
 import memorySpecDoc from '../../docs/specs/task-memory-spec.md?raw';
+import rcTestPlanDoc from '../../docs/plans/2026-05-31-release-candidate-product-chain-test-plan.md?raw';
 import appUiSource from '../../src/renderer/App.tsx?raw';
 import businessLineServiceSource from '../../src/main/domain/business-line/business-line-service.ts?raw';
 import runServiceSource from '../../src/main/domain/run/run-service.ts?raw';
@@ -132,6 +133,7 @@ describe('product feature impact audit', () => {
       'handoff_typed_recovery',
       'review_learning_typed_artifacts',
       'writeback_product_controlled',
+      'business_memory_rc_manual_chain',
       'tests_guard_architecture_drift',
     ]);
     expect(findRuntimeArchitectureCloseoutAuditIssues(readRuntimeArchitectureCloseoutSources()))
@@ -185,6 +187,26 @@ describe('product feature impact audit', () => {
       {
         featureId: 'runtime_architecture_closeout:handoff_typed_recovery',
         issue: 'Runtime architecture closeout source reassigns product memory, durable state, or ownership outside Taskplane gates.',
+      },
+    ]));
+  });
+
+  it('blocks runtime architecture closeout when the RC manual plan loses the business-memory recovery chain', () => {
+    const sources = readRuntimeArchitectureCloseoutSources();
+
+    expect(findRuntimeArchitectureCloseoutAuditIssues({
+      ...sources,
+      rc_test_plan: sources.rc_test_plan
+        ?.replace('Business-Memory Closeout Path', 'Memory Smoke Path')
+        .replace('Business Record / Review / SOP proposal', 'Business Record proposal'),
+    })).toEqual(expect.arrayContaining([
+      {
+        featureId: 'runtime_architecture_closeout:business_memory_rc_manual_chain',
+        issue: 'Missing required runtime architecture closeout evidence: Business-Memory Closeout Path',
+      },
+      {
+        featureId: 'runtime_architecture_closeout:business_memory_rc_manual_chain',
+        issue: 'Missing required runtime architecture closeout evidence: Business Record / Review / SOP proposal',
       },
     ]));
   });
@@ -2311,6 +2333,7 @@ function readRuntimeArchitectureCloseoutSources() {
     decision_writeback: decisionWritebackDoc,
     task_memory: memorySpecDoc,
     context_transition: handoffPolicyDoc,
+    rc_test_plan: rcTestPlanDoc,
   };
 }
 
