@@ -22,6 +22,7 @@ To try it, clone the repository and run:
 
 ```bash
 npm install
+npm run rebuild:electron
 npm run dev
 ```
 
@@ -136,11 +137,14 @@ Use Node `20.19+` or `22.12+` with npm `10+`.
 
 ```bash
 npm install
+npm run rebuild:electron
 npm run dev
 ```
 
 The dev command starts the Vite renderer server, the Electron main-process
 TypeScript watcher, and the Electron desktop shell.
+If you later run Node/Vitest commands in the same checkout, switch native modules
+back with `npm run rebuild:node`.
 
 After first launch, local records, Business, and Tasks can be used without an
 AI runtime. Agent execution requires either a logged-in Codex CLI / Claude Code

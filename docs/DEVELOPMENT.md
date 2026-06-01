@@ -30,6 +30,7 @@ nvm use
 ## Run Locally
 
 ```bash
+npm run rebuild:electron
 npm run dev
 ```
 
@@ -47,8 +48,8 @@ Node mode.
 
 asterism uses native modules such as `better-sqlite3` and `keytar`.
 
-After changing Electron, Node, or native dependency versions, rebuild for
-Electron before testing the desktop app:
+After a fresh install, or after changing Electron, Node, or native dependency
+versions, rebuild for Electron before testing the desktop app:
 
 ```bash
 npm run rebuild:electron
