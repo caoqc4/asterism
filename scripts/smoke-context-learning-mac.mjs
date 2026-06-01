@@ -126,7 +126,7 @@ async function assertContextLearningUi(page) {
 }
 
 async function assertSopSuggestionUsesPersistedHabits(page) {
-  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks' }).click();
   await page.getByRole('button', { name: '+ 新建任务' }).click();
   await page.getByPlaceholder(/任务标题/).fill('项目拆解验收任务');
   await page.getByText('可参考流程模板', { exact: true }).waitFor();

@@ -524,7 +524,7 @@ function assertPatchPromotionBlocked() {
 }
 
 async function assertTaskFileWorkspace(page) {
-  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
   await page.locator('.task-row', { hasText: 'Packaged Task files fixture' }).click();
   await page.getByRole('heading', { name: 'Packaged Task files fixture' }).waitFor();

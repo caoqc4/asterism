@@ -332,7 +332,7 @@ async function installProjectAttributes(page) {
 }
 
 async function assertFreshProjectDoesNotCreateTemplateChildren(page) {
-  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks' }).click();
   await page.getByRole('button', { name: '+ 新建任务' }).click();
   await page.getByPlaceholder(/任务标题/).fill('打包验收新项目');
   await page.getByRole('button', { name: '创建' }).click();
@@ -348,7 +348,7 @@ async function assertFreshProjectDoesNotCreateTemplateChildren(page) {
 }
 
 async function assertConfirmedProjectStructure(page) {
-  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks' }).click();
   await page.getByRole('button', { name: /项目型/ }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
 
@@ -366,7 +366,7 @@ async function assertConfirmedProjectStructure(page) {
 }
 
 async function assertCompletionHandoff(page) {
-  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks' }).click();
   await page.getByRole('button', { name: /项目型/ }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
 

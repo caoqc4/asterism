@@ -128,7 +128,7 @@ function queryTimelineEvents() {
 }
 
 async function openTaskPanel(page) {
-  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
   await page.locator('.task-row', { hasText: 'Packaged context refresh fixture' }).click();
   await page.getByRole('heading', { name: 'Packaged context refresh fixture' }).waitFor();

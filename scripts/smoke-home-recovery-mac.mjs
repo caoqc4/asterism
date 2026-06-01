@@ -130,7 +130,7 @@ async function assertHomeSourceCardRecovery(page) {
   await page.getByText('外部信号', { exact: true }).waitFor();
   await page.getByText('暂无外部信号。').waitFor();
   await page.locator('.focus-card', { hasText: 'Packaged Home recovery fixture' }).waitFor();
-  await page.getByRole('button', { name: 'Legacy Tasks Explorer' }).click();
+  await page.getByRole('button', { name: 'Legacy Tasks' }).click();
   await page.getByRole('button', { name: '任务目录' }).click();
   await page.locator('.task-row', { hasText: 'Packaged Home recovery fixture' }).click();
   await assertSourceContextFocused(page);
