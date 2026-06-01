@@ -2,17 +2,24 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildTaskMemorySearchIndex,
+  retrieveBusinessMemory,
   retrieveTaskExecutionMemory,
 } from './task-memory-retrieval.js';
 import type { ArtifactRecord } from './types/artifact.js';
+import type {
+  BusinessLineRecord,
+  BusinessLineReview,
+  BusinessLineSkillRevision,
+} from './types/business-line.js';
 import type { BlockerRecord } from './types/blocker.js';
 import type { DecisionRecord } from './types/decision.js';
 import type { AppliedProcessTemplateRecord } from './types/process-template.js';
 import type { SourceContextRecord } from './types/source-context.js';
 import type { TaskFileRecord } from './types/task-file.js';
 import type { TaskDependencyRecord } from './types/task-dependency.js';
-import type { TaskRecord, TimelineEventRecord } from './types/task.js';
+import type { TaskListItemRecord, TaskRecord, TimelineEventRecord } from './types/task.js';
 import type { WorkHabitRecord } from './types/work-habit.js';
+import type { RunRecord } from './types/run.js';
 
 describe('task memory retrieval', () => {
   it('builds a deterministic searchable index across task memory surfaces', () => {
@@ -202,6 +209,134 @@ describe('task memory retrieval', () => {
       reasons: expect.arrayContaining(['query_match']),
     });
   });
+
+  it('retrieves business memory by owner with deterministic inclusion and exclusion reasons', () => {
+    const results = retrieveBusinessMemory({
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      records: [
+        businessRecord({ id: 'record_future', shouldAffectFutureContext: true }),
+        businessRecord({ id: 'record_draft', shouldAffectFutureContext: false }),
+        businessRecord({ id: 'record_other', businessLineId: 'business_2', shouldAffectFutureContext: true }),
+      ],
+      reviews: [
+        businessReview({ id: 'review_1' }),
+        businessReview({ id: 'review_other', businessLineId: 'business_2' }),
+      ],
+      skillRevisions: [
+        skillRevision({ id: 'sop_active', status: 'active' }),
+        skillRevision({ id: 'sop_proposed', status: 'proposed' }),
+        skillRevision({ id: 'sop_rejected', status: 'rejected' }),
+        skillRevision({ id: 'sop_expired', expiresAt: '2020-01-01T00:00:00.000Z', status: 'active' }),
+      ],
+      decisions: [
+        decision({ id: 'decision_active', businessLineId: 'business_1', status: 'pending' }),
+        decision({ id: 'decision_closed', businessLineId: 'business_1', status: 'approved' }),
+      ],
+      selectedSourceIds: ['source_selected'],
+      sources: [
+        sourceContext({ id: 'source_selected', businessLineId: 'business_1', isKey: true }),
+        sourceContext({ id: 'source_unselected', businessLineId: 'business_1' }),
+      ],
+      artifacts: [artifact({ id: 'artifact_1', businessLineId: 'business_1' })],
+      currentNextAction: task({ id: 'task_1', businessLineId: 'business_1' }) as TaskListItemRecord,
+      runs: [runRecord({ id: 'run_1', businessLineId: 'business_1', output: 'Evidence' })],
+      workHabits: [workHabit(), workHabit({ id: 'habit_pending', status: 'pending' })],
+    });
+
+    expect(results.find((item) => item.id === 'record_future')).toMatchObject({
+      decision: 'include',
+      kind: 'business_record',
+      reasons: expect.arrayContaining(['owner_scope', 'future_context_enabled']),
+    });
+    expect(results.find((item) => item.id === 'record_draft')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['future_context_disabled']),
+    });
+    expect(results.find((item) => item.id === 'record_other')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['cross_business_excluded']),
+    });
+    expect(results.find((item) => item.id === 'review:review_1')).toMatchObject({
+      decision: 'include',
+      kind: 'business_review',
+      reasons: expect.arrayContaining(['structured_review']),
+    });
+    expect(results.find((item) => item.id === 'sop_active')).toMatchObject({
+      decision: 'include',
+      reasons: expect.arrayContaining(['accepted_sop']),
+    });
+    expect(results.find((item) => item.id === 'sop_proposed')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['inactive_sop:proposed']),
+    });
+    expect(results.find((item) => item.id === 'sop_rejected')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['inactive_sop:rejected']),
+    });
+    expect(results.find((item) => item.id === 'sop_expired')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['expired_sop']),
+    });
+    expect(results.find((item) => item.id === 'decision_active')).toMatchObject({
+      decision: 'include',
+      kind: 'active_decision',
+      reasons: expect.arrayContaining(['active_decision']),
+    });
+    expect(results.find((item) => item.id === 'decision_closed')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['inactive_decision:approved']),
+    });
+    expect(results.find((item) => item.id === 'source_selected')).toMatchObject({
+      decision: 'include',
+      kind: 'selected_source',
+      reasons: expect.arrayContaining(['selected_source', 'traceable_source']),
+    });
+    expect(results.find((item) => item.id === 'source_unselected')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['not_selected_source']),
+    });
+    expect(results.find((item) => item.id === 'artifact_1')).toMatchObject({
+      decision: 'include',
+      kind: 'artifact',
+      reasons: expect.arrayContaining(['owner_scope', 'run_artifact']),
+    });
+    expect(results.find((item) => item.id === 'task_1')).toMatchObject({
+      decision: 'include',
+      kind: 'current_next_action',
+      reasons: expect.arrayContaining(['open_next_action', 'next_safe_action_present']),
+    });
+    expect(results.find((item) => item.id === 'run_1')).toMatchObject({
+      decision: 'include',
+      kind: 'run_evidence',
+      reasons: expect.arrayContaining(['terminal_run:completed', 'run_evidence_present']),
+    });
+    expect(results.find((item) => item.id === 'habit_1')).toMatchObject({
+      decision: 'include',
+      kind: 'work_habit',
+      reasons: expect.arrayContaining(['confirmed_work_habit']),
+    });
+  });
+
+  it('allows explicit business memory selection without enabling vector retrieval', () => {
+    const results = retrieveBusinessMemory({
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      explicitItemIds: ['record_draft'],
+      records: [
+        businessRecord({ id: 'record_draft', shouldAffectFutureContext: false }),
+        businessRecord({ id: 'record_other', businessLineId: 'business_2', shouldAffectFutureContext: true }),
+      ],
+    });
+
+    expect(results.find((item) => item.id === 'record_draft')).toMatchObject({
+      decision: 'include',
+      reasons: expect.arrayContaining(['explicit_non_future_context', 'explicitly_selected']),
+    });
+    expect(results.find((item) => item.id === 'record_other')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['cross_business_excluded']),
+    });
+    expect(results.map((item) => item.reasons.join(' ')).join(' ')).not.toMatch(/embedding|vector|rag/i);
+  });
 });
 
 function task(partial: Partial<TaskRecord> = {}): TaskRecord {
@@ -219,6 +354,78 @@ function task(partial: Partial<TaskRecord> = {}): TaskRecord {
     riskLevel: 'none',
     riskNote: null,
     createdAt: '2026-05-01T00:00:00.000Z',
+    updatedAt: '2026-05-17T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function businessRecord(partial: Partial<BusinessLineRecord> = {}): BusinessLineRecord {
+  return {
+    id: 'record_1',
+    type: 'signal',
+    businessLineId: 'business_1',
+    source: 'manual',
+    summary: 'Future context record',
+    confidence: 80,
+    linkedActionId: null,
+    linkedDecisionId: null,
+    shouldAffectFutureContext: true,
+    futureContextReason: 'Confirmed business memory.',
+    provenance: null,
+    createdAt: '2026-05-17T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function businessReview(partial: Partial<BusinessLineReview> = {}): BusinessLineReview {
+  return {
+    id: 'review_1',
+    businessLineId: 'business_1',
+    sourceActionId: 'task_1',
+    resultSummary: 'Review confirmed the next action.',
+    evidenceItems: ['run_1'],
+    hypothesisChange: null,
+    skillUpdateSuggestions: [],
+    nextActionSuggestions: [],
+    confidence: 85,
+    requiresDecision: false,
+    createdAt: '2026-05-17T01:00:00.000Z',
+    ...partial,
+  };
+}
+
+function skillRevision(partial: Partial<BusinessLineSkillRevision> = {}): BusinessLineSkillRevision {
+  return {
+    id: 'sop_1',
+    skillId: 'skill_1',
+    businessLineId: 'business_1',
+    scopePath: 'business-line/Business 1',
+    previousContent: null,
+    nextContent: 'Use deterministic retrieval before planning.',
+    changeReason: 'Review evidence',
+    sourceReviewId: 'review_1',
+    approvedBy: 'operator',
+    status: 'active',
+    effectiveAt: '2026-05-17T00:00:00.000Z',
+    rollbackTargetRevisionId: null,
+    createdAt: '2026-05-17T00:00:00.000Z',
+    updatedAt: '2026-05-17T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function runRecord(partial: Partial<RunRecord> = {}): RunRecord {
+  return {
+    id: 'run_1',
+    taskId: 'task_1',
+    businessLineId: 'business_1',
+    type: 'agent',
+    status: 'completed',
+    instructions: 'Run evidence.',
+    output: 'Completed run evidence.',
+    outputSource: 'ai',
+    failureReason: null,
+    createdAt: '2026-05-17T00:00:00.000Z',
     updatedAt: '2026-05-17T00:00:00.000Z',
     ...partial,
   };

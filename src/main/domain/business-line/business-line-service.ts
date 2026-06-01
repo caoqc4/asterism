@@ -4,6 +4,7 @@ import {
   buildBusinessLineCreationDraft,
   normalizeBusinessLineCreationLines,
 } from '../../../shared/business-line-creation-template.js';
+import { retrieveBusinessMemory } from '../../../shared/task-memory-retrieval.js';
 import { BusinessLineRepository } from '../../db/repositories/business-line-repository.js';
 import type {
   AcceptBusinessLineSkillRevisionInput,
@@ -237,7 +238,37 @@ export class BusinessLineService {
       };
     });
     const acceptedSkills = this.acceptedContextSkills(enrichedSkillRevisions);
-    const latestRecords = this.futureContextRecords(memoryRecords).slice(0, 10);
+    const businessMemoryRetrieval = retrieveBusinessMemory({
+      owner: { kind: 'business_line', businessLineId: businessLine.id },
+      records: memoryRecords,
+      reviews,
+      skillRevisions: enrichedSkillRevisions,
+      decisions,
+      sources: sourceRecords,
+      currentNextAction: nextActions[0] ?? null,
+    });
+    const includedMemory = businessMemoryRetrieval.filter((item) => item.decision === 'include');
+    const includedRecordIds = new Set(includedMemory
+      .filter((item) => item.kind === 'business_record')
+      .map((item) => item.id));
+    const latestRecords = memoryRecords
+      .filter((record) => includedRecordIds.has(record.id))
+      .slice(0, 10);
+    const activeDecisionIdsFromRetrieval = new Set(includedMemory
+      .filter((item) => item.kind === 'active_decision')
+      .map((item) => item.id));
+    const activeDecisionsFromRetrieval = activeDecisions
+      .filter((decision) => activeDecisionIdsFromRetrieval.has(decision.id));
+    const acceptedSkillIdsFromRetrieval = new Set(includedMemory
+      .filter((item) => item.kind === 'accepted_sop')
+      .map((item) => item.id));
+    const acceptedSkillsFromRetrieval = acceptedSkills
+      .filter((revision) => acceptedSkillIdsFromRetrieval.has(revision.id));
+    const openNextActionIdsFromRetrieval = new Set(includedMemory
+      .filter((item) => item.kind === 'current_next_action')
+      .map((item) => item.id));
+    const openNextActionsFromRetrieval = nextActions
+      .filter((action) => openNextActionIdsFromRetrieval.has(action.id));
     const missingContext = this.deriveMissingContext({
       businessLine,
       nextActions,
@@ -247,10 +278,10 @@ export class BusinessLineService {
       businessSummary: businessLine.summary,
       currentGoal: businessLine.goal,
       recentChanges: this.recentChangesForBusinessLine(businessLine, nextActions, latestRecords),
-      activeDecisions,
-      openNextActions: nextActions,
+      activeDecisions: activeDecisionsFromRetrieval.length ? activeDecisionsFromRetrieval : activeDecisions,
+      openNextActions: openNextActionsFromRetrieval.length ? openNextActionsFromRetrieval : nextActions,
       latestRecords,
-      acceptedSkills,
+      acceptedSkills: acceptedSkillsFromRetrieval.length ? acceptedSkillsFromRetrieval : acceptedSkills,
       knownConstraints: [
         'Cross-business records and skills are excluded unless explicitly selected.',
         'Durable writes must pass Taskplane service and Decision gates.',
