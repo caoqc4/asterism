@@ -147,7 +147,13 @@ function defaultTransitionHandoffType(input: ContextTransitionInput): HandoffV2T
       return null;
     case 'leave_task_context':
     case 'start_global_conversation':
-      return input.hasBusinessLineContext || input.hasTaskContext ? null : 'ephemeral_session_handoff';
+      return input.owner?.kind === 'business_line'
+        || input.owner?.kind === 'next_action'
+        || input.owner?.kind === 'legacy_task'
+        || input.hasBusinessLineContext
+        || input.hasTaskContext
+        ? null
+        : 'ephemeral_session_handoff';
     case 'resume_run':
       return 'runtime_or_subagent_handoff';
     case 'phase_closeout':

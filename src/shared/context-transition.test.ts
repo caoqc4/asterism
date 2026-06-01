@@ -102,6 +102,70 @@ describe('context transition', () => {
     });
   });
 
+  it('uses ContextOwner to choose durable business handoff when leaving business-line context', () => {
+    expect(evaluateContextTransition({
+      intent: 'leave_task_context',
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '业务线离开：目标保持增长实验，下一步更新判断。' },
+      ],
+    })).toMatchObject({
+      action: 'preserve_and_reset',
+      handoffType: 'durable_business_handoff',
+      recoveryArtifact: {
+        rawTranscriptIncluded: false,
+        writebackTarget: {
+          surface: 'business_record',
+          writeIntentType: 'business_handoff.record',
+        },
+      },
+    });
+  });
+
+  it('uses ContextOwner to choose durable business handoff before starting a global conversation', () => {
+    expect(evaluateContextTransition({
+      intent: 'start_global_conversation',
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      hasTaskContext: false,
+      messages: [
+        { role: 'user', text: '业务线转全局前：目标保留当前定位，下一步补决策记录。' },
+      ],
+    })).toMatchObject({
+      action: 'preserve_and_reset',
+      handoffType: 'durable_business_handoff',
+      recoveryArtifact: {
+        rawTranscriptIncluded: false,
+        writebackTarget: {
+          surface: 'business_record',
+          writeIntentType: 'business_handoff.record',
+        },
+      },
+    });
+  });
+
+  it('keeps ownerless global conversations ephemeral without durable writes', () => {
+    expect(evaluateContextTransition({
+      intent: 'start_global_conversation',
+      hasTaskContext: false,
+      chatMessageCount: 0,
+      messages: [],
+    })).toMatchObject({
+      action: 'continue',
+      handoffType: 'ephemeral_session_handoff',
+      preservation: {
+        requiredWriteIntents: [],
+      },
+      recoveryArtifact: {
+        rawTranscriptIncluded: false,
+        writebackTarget: {
+          surface: 'temporary_file',
+          writeIntentType: 'temporary_handoff.proof',
+        },
+      },
+    });
+  });
+
   it('keeps next-action owner refresh on business memory until execution recovery is needed', () => {
     expect(evaluateContextTransition({
       intent: 'context_refresh',
