@@ -746,6 +746,50 @@ the first release after deterministic retrieval exists.
 - Decide: defer, prototype behind flag, or implement minimal local index.
 - No production vector dependency unless explicitly approved.
 
+#### Goal 9 Checkpoint
+
+Date: 2026-06-01
+
+Recommendation: defer production RAG/wiki for first release. Optional post-RC
+local prototype behind a feature flag is acceptable only after eval evidence
+shows deterministic retrieval misses recoverable business memory that users
+expect to see.
+
+Current deterministic retrieval is sufficient for the first release because it
+already covers the recovery surfaces that first-release business memory depends
+on:
+
+- Business Records are owner-scoped, respect `shouldAffectFutureContext`, and
+  allow explicit non-future-context selection.
+- Reviews, accepted SOPs, pending Decisions, selected sources, artifacts,
+  current Next Action, terminal run evidence, and confirmed Work Habits are
+  represented as typed retrieval items with inclusion/exclusion reasons.
+- Cross-business memory remains excluded by default and can enter context only
+  through explicit selection.
+- Source and run items keep quality gates: selected source material must be
+  active and traceable; run evidence must be terminal and contain output or
+  failure evidence.
+- `BusinessLineContextPack` consumes the deterministic retrieval output by
+  including only `include` items in the active business-line context.
+
+Semantic retrieval would add fuzzy recall across loosely worded records,
+reviews, sources, and artifacts. That is useful only after the corpus has enough
+real examples to prove misses through evals; adding it now would increase
+ranking opacity before the owner, status, provenance, and explicit-selection
+rules have product evidence.
+
+Wiki/folder projection would add a human-readable derived view of business
+memory, but it should not become a second source of truth. If needed later, it
+should be generated from typed Business Records, Reviews, accepted SOPs,
+Decisions, selected sources, artifacts, and run evidence, then invalidated or
+rebuilt from those records.
+
+Do not implement production embeddings, vector storage, or a production RAG
+dependency for first release. If post-RC evidence shows deterministic retrieval
+is insufficient, prototype a local-only lexical/semantic index behind a feature
+flag, with eval fixtures that preserve owner scope, future-context,
+cross-business explicit selection, source traceability, and provenance gates.
+
 #### Verification
 
 ```bash
@@ -838,8 +882,10 @@ After these goals:
    after preview, or always require manual confirmation for the first release?
 3. Should Context Inspector be visible in the first release, or only available
    as debug/audit output?
-4. When deterministic retrieval works, should semantic retrieval be deferred or
-   prototyped behind a local-only feature flag?
+4. Goal 9 decided: defer production RAG/wiki for first release. A post-RC
+   local prototype behind a feature flag is allowed only after eval evidence
+   shows deterministic retrieval misses recoverable business memory that users
+   expect to see.
 
 ## Sources
 
