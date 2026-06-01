@@ -72,8 +72,8 @@ export function evaluateContextTransition(input: ContextTransitionInput): Contex
       input,
       preservation,
       handoffType,
-      input.preferCompact ? 'compact' : 'block_transition',
-      input.preferCompact ? chooseCompactStrategy(input.runtimeCapabilities ?? null) : 'none',
+      'block_transition',
+      'none',
       false,
       preservation.reason,
     );

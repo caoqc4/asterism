@@ -337,6 +337,67 @@ describe('task memory retrieval', () => {
     });
     expect(results.map((item) => item.reasons.join(' ')).join(' ')).not.toMatch(/embedding|vector|rag/i);
   });
+
+  it('allows explicit cross-business source, current Next Action, and run evidence selection', () => {
+    const results = retrieveBusinessMemory({
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      explicitItemIds: ['source_cross', 'task_cross', 'run_cross'],
+      sources: [
+        sourceContext({
+          id: 'source_cross',
+          businessLineId: 'business_2',
+          taskId: 'task_cross',
+        }),
+        sourceContext({
+          id: 'source_cross_unselected',
+          businessLineId: 'business_2',
+          taskId: 'task_cross',
+        }),
+      ],
+      currentNextAction: task({
+        id: 'task_cross',
+        businessLineId: 'business_2',
+      }) as TaskListItemRecord,
+      runs: [
+        runRecord({
+          id: 'run_cross',
+          businessLineId: 'business_2',
+          taskId: 'task_cross',
+          output: 'Cross-business run evidence selected by the operator.',
+        }),
+        runRecord({
+          id: 'run_cross_unselected',
+          businessLineId: 'business_2',
+          taskId: 'task_cross',
+          output: 'Cross-business run evidence was not selected.',
+        }),
+      ],
+    });
+
+    expect(results.find((item) => item.id === 'source_cross')).toMatchObject({
+      decision: 'include',
+      kind: 'selected_source',
+      reasons: expect.arrayContaining(['cross_business_excluded', 'explicitly_selected']),
+    });
+    expect(results.find((item) => item.id === 'source_cross_unselected')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['cross_business_excluded', 'not_selected_source']),
+    });
+    expect(results.find((item) => item.id === 'task_cross')).toMatchObject({
+      decision: 'include',
+      kind: 'current_next_action',
+      reasons: expect.arrayContaining(['cross_business_excluded', 'explicitly_selected']),
+    });
+    expect(results.find((item) => item.id === 'run_cross')).toMatchObject({
+      decision: 'include',
+      kind: 'run_evidence',
+      reasons: expect.arrayContaining(['cross_business_excluded', 'explicitly_selected']),
+    });
+    expect(results.find((item) => item.id === 'run_cross_unselected')).toMatchObject({
+      decision: 'exclude',
+      reasons: expect.arrayContaining(['cross_business_excluded']),
+    });
+  });
 });
 
 function task(partial: Partial<TaskRecord> = {}): TaskRecord {

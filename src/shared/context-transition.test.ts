@@ -233,7 +233,7 @@ describe('context transition', () => {
     });
   });
 
-  it('keeps short-term reasoning unless compact was explicitly preferred', () => {
+  it('keeps short-term reasoning even when compact was explicitly preferred', () => {
     expect(evaluateContextTransition({
       intent: 'context_refresh',
       hasTaskContext: true,
@@ -251,8 +251,8 @@ describe('context transition', () => {
       preferCompact: true,
       shortTermReasoningActive: true,
     })).toMatchObject({
-      action: 'compact',
-      resetStrategy: 'product_transcript_reset',
+      action: 'block_transition',
+      resetStrategy: 'none',
     });
   });
 

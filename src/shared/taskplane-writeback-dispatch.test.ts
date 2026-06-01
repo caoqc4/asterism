@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { dispatchTaskplaneWritebackApplyPlan } from './taskplane-writeback-dispatch.js';
-import type { TaskplaneStructuredWritebackApplyPlan } from './taskplane-writeback-apply-plan.js';
+import type {
+  TaskplaneStructuredWritebackApplyPlan,
+  TaskplaneWritebackApplyPlan,
+} from './taskplane-writeback-apply-plan.js';
 
 describe('Taskplane writeback dispatch', () => {
   it('dispatches source writes through provided ports and records timeline evidence', async () => {
@@ -496,6 +499,72 @@ describe('Taskplane writeback dispatch', () => {
     }));
   });
 
+  it('blocks queued business-line Next Action writes when the policy requests run interruption', async () => {
+    const createBusinessLineNextAction = vi.fn().mockResolvedValue({
+      id: 'task_next_action',
+      title: 'Draft onboarding checklist',
+    });
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createBusinessLineNextAction,
+      },
+      plan: businessNextActionPlan({
+        interruptCurrentRun: true,
+        queuePolicy: {
+          currentRunStatus: 'running',
+          evidenceItems: ['run:run_business'],
+          interruptCurrentRun: true,
+          queuePosition: 'behind_current_run',
+          requiredGate: 'taskplane_writeback_approval_queue',
+          riskLevel: null,
+          riskNote: null,
+        },
+      }),
+    });
+
+    expect(createBusinessLineNextAction).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      action: 'business_next_action.create',
+      message: '业务线 Next Action 排队提案已暂停：缺少已确认的 Taskplane queue 写入边界。',
+      status: 'blocked',
+    });
+  });
+
+  it('blocks queued business-line Next Action writes when the top-level input requests interruption', async () => {
+    const createBusinessLineNextAction = vi.fn().mockResolvedValue({
+      id: 'task_next_action',
+      title: 'Draft onboarding checklist',
+    });
+
+    const result = await dispatchTaskplaneWritebackApplyPlan({
+      taskId: 'task_1',
+      ports: {
+        createBusinessLineNextAction,
+      },
+      plan: businessNextActionPlan({
+        interruptCurrentRun: true,
+        queuePolicy: {
+          currentRunStatus: 'running',
+          evidenceItems: ['run:run_business'],
+          interruptCurrentRun: false,
+          queuePosition: 'behind_current_run',
+          requiredGate: 'taskplane_writeback_approval_queue',
+          riskLevel: null,
+          riskNote: null,
+        },
+      }),
+    });
+
+    expect(createBusinessLineNextAction).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      action: 'business_next_action.create',
+      message: '业务线 Next Action 排队提案已暂停：缺少已确认的 Taskplane queue 写入边界。',
+      status: 'blocked',
+    });
+  });
+
   it('blocks subtask creation when the operator confirmation surface is missing', async () => {
     const createSubtasks = vi.fn();
 
@@ -655,5 +724,48 @@ function schedulerDecisionPlan(): Extract<TaskplaneStructuredWritebackApplyPlan,
     },
     requiredApi: 'createDecision',
     successMessage: '已确认并创建 Decision：确认自动巡检策略。',
+  };
+}
+
+function businessNextActionPlan(
+  input: Partial<Extract<TaskplaneWritebackApplyPlan, { action: 'business_next_action.create' }>['input']> = {},
+): Extract<TaskplaneWritebackApplyPlan, { action: 'business_next_action.create' }> {
+  return {
+    action: 'business_next_action.create',
+    confirmationBoundary: 'taskplane_writeback_approval_queue',
+    confirmationSurface: 'taskplane_writeback_approval_queue',
+    draftOnlyBeforeConfirmation: true,
+    input: {
+      businessLineId: 'business_line_product',
+      currentRunStatus: 'running',
+      evidenceRunId: 'run_business',
+      interruptCurrentRun: false,
+      nextStep: 'Draft onboarding checklist.',
+      operatorConfirmed: true,
+      queuePolicy: {
+        currentRunStatus: 'running',
+        evidenceItems: ['run:run_business'],
+        interruptCurrentRun: false,
+        queuePosition: 'behind_current_run',
+        requiredGate: 'taskplane_writeback_approval_queue',
+        riskLevel: null,
+        riskNote: null,
+      },
+      title: 'Draft onboarding checklist',
+      ...input,
+    },
+    successMessage: '已确认并创建业务线 Next Action：Draft onboarding checklist。',
+    timeline: {
+      type: 'panel.business_next_action_written',
+      payload: {
+        businessLineId: 'business_line_product',
+        confirmationBoundary: 'taskplane_writeback_approval_queue',
+        confirmationSurface: 'taskplane_writeback_approval_queue',
+        evidenceRunId: 'run_business',
+        queuePolicy: {
+          queuePosition: 'behind_current_run',
+        },
+      },
+    },
   };
 }

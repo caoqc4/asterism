@@ -426,14 +426,15 @@ export function retrieveBusinessMemory(input: BusinessMemoryRetrievalInput): Bus
   for (const source of input.sources ?? []) {
     const sameOwner = ownerBusinessLineId !== null && source.businessLineId === ownerBusinessLineId;
     const sameTaskCarrier = ownerTaskId !== null && source.taskId === ownerTaskId;
-    const selected = selectedSourceIds.has(source.id) || explicitItemIds.has(source.id);
+    const explicit = selectedSourceIds.has(source.id) || explicitItemIds.has(source.id);
+    const selected = explicit;
     const active = source.status === 'active';
     const traceable = Boolean(source.uri || source.content || source.note);
     const includedScope = sameOwner || sameTaskCarrier;
     items.push(businessMemoryItem({
-      decision: includedScope && selected && active && traceable
+      decision: (includedScope || explicit) && selected && active && traceable
         ? 'include'
-        : includedScope && selected && active
+        : (includedScope || explicit) && selected && active
           ? 'caution'
           : 'exclude',
       id: source.id,
@@ -445,7 +446,8 @@ export function retrieveBusinessMemory(input: BusinessMemoryRetrievalInput): Bus
         selected ? 'selected_source' : 'not_selected_source',
         active ? 'active_source' : 'archived_source',
         traceable ? 'traceable_source' : 'missing_source_content',
-      ],
+        explicit ? 'explicitly_selected' : null,
+      ].filter((item): item is string => Boolean(item)),
       score: 760 + (source.isKey ? 80 : 0),
       title: source.title,
       updatedAt: source.updatedAt,
@@ -478,9 +480,10 @@ export function retrieveBusinessMemory(input: BusinessMemoryRetrievalInput): Bus
     const action = input.currentNextAction;
     const sameOwner = ownerBusinessLineId !== null && action.businessLineId === ownerBusinessLineId;
     const sameTaskCarrier = ownerTaskId !== null && action.id === ownerTaskId;
+    const explicit = explicitItemIds.has(action.id);
     const active = action.state !== 'completed' && action.state !== 'archived';
     items.push(businessMemoryItem({
-      decision: (sameOwner || sameTaskCarrier) && active ? 'include' : 'exclude',
+      decision: (sameOwner || sameTaskCarrier || explicit) && active ? 'include' : 'exclude',
       id: action.id,
       item: action,
       kind: 'current_next_action',
@@ -489,7 +492,8 @@ export function retrieveBusinessMemory(input: BusinessMemoryRetrievalInput): Bus
         sameOwner || sameTaskCarrier ? 'owner_scope' : 'cross_business_excluded',
         active ? 'open_next_action' : `inactive_next_action:${action.state}`,
         action.nextStep ? 'next_safe_action_present' : 'next_safe_action_missing',
-      ],
+        explicit ? 'explicitly_selected' : null,
+      ].filter((item): item is string => Boolean(item)),
       score: 860,
       title: action.title,
       updatedAt: action.updatedAt,
@@ -499,10 +503,11 @@ export function retrieveBusinessMemory(input: BusinessMemoryRetrievalInput): Bus
   for (const run of input.runs ?? []) {
     const sameOwner = ownerBusinessLineId !== null && run.businessLineId === ownerBusinessLineId;
     const sameTaskCarrier = ownerTaskId !== null && run.taskId === ownerTaskId;
+    const explicit = explicitItemIds.has(run.id);
     const hasEvidence = Boolean(run.output?.trim() || run.failureReason?.trim());
     const terminal = run.status === 'completed' || run.status === 'failed';
     items.push(businessMemoryItem({
-      decision: (sameOwner || sameTaskCarrier) && hasEvidence && terminal ? 'include' : 'exclude',
+      decision: (sameOwner || sameTaskCarrier || explicit) && hasEvidence && terminal ? 'include' : 'exclude',
       id: run.id,
       item: run,
       kind: 'run_evidence',
@@ -511,7 +516,8 @@ export function retrieveBusinessMemory(input: BusinessMemoryRetrievalInput): Bus
         sameOwner || sameTaskCarrier ? 'owner_scope' : 'cross_business_excluded',
         terminal ? `terminal_run:${run.status}` : `non_terminal_run:${run.status}`,
         hasEvidence ? 'run_evidence_present' : 'run_evidence_missing',
-      ],
+        explicit ? 'explicitly_selected' : null,
+      ].filter((item): item is string => Boolean(item)),
       score: 700,
       title: `Run ${run.id}`,
       updatedAt: run.updatedAt,

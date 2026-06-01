@@ -133,6 +133,8 @@ export async function dispatchTaskplaneWritebackApplyPlan(params: {
       || !queuePolicy
       || queuePolicy.requiredGate !== 'taskplane_writeback_approval_queue'
       || queuePolicy.queuePosition !== 'behind_current_run'
+      || queuePolicy.interruptCurrentRun !== false
+      || plan.input.interruptCurrentRun === true
     ) {
       return blocked(plan.action, '业务线 Next Action 排队提案已暂停：缺少已确认的 Taskplane queue 写入边界。');
     }
