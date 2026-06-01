@@ -170,6 +170,71 @@ describe('BusinessLineService', () => {
       && record.source === 'run:run_queue')).toBe(true);
   });
 
+  it('keeps a newer legacy shell behind the real Next Action in the context pack', async () => {
+    await taskService.create({
+      title: 'Migrated legacy product shell',
+      taskType: 'project',
+      taskFacets: ['project'],
+    });
+    const [line] = await service.list();
+    if (!line?.legacyTaskId) throw new Error('Expected legacy project task to migrate into a business line.');
+
+    const nextStep = 'Validate recovered typed memory before reset.';
+    const carrier = await service.createBusinessLineNextAction({
+      businessLineId: line.id,
+      evidenceRunId: 'run_context_pack_regression',
+      nextStep,
+      sourceActionId: line.legacyTaskId,
+      summary: 'Real Next Action carrier for recovered context.',
+      title: 'Validate recovered memory',
+    });
+
+    await taskService.update({
+      id: line.legacyTaskId,
+      summary: 'Legacy shell was touched after the real Next Action.',
+    });
+
+    const workspace = await service.getWorkspace(line.id);
+    if (!workspace) throw new Error('Expected migrated business-line workspace.');
+
+    expect(workspace.nextActions[0]?.id).toBe(carrier.id);
+    expect(workspace.nextActions[0]?.id).not.toBe(line.legacyTaskId);
+    expect(workspace.nextActions[0]?.nextStep).toBe(nextStep);
+    expect(workspace.contextPack.openNextActions[0]?.id).toBe(carrier.id);
+    expect(workspace.contextPack.openNextActions[0]?.nextStep).toBe(nextStep);
+    expect(workspace.overview.nextSuggestion).toMatchObject({
+      businessLineId: line.id,
+      nextStep,
+      taskId: carrier.id,
+      type: 'progress',
+    });
+
+    const contextPackWithCurrent = workspace.contextPack as unknown as {
+      currentNextAction?: { id: string; nextStep: string | null } | null;
+    };
+    if ('currentNextAction' in contextPackWithCurrent) {
+      expect(contextPackWithCurrent.currentNextAction?.id).toBe(carrier.id);
+      expect(contextPackWithCurrent.currentNextAction?.nextStep).toBe(nextStep);
+    }
+
+    const overviewWithCurrent = workspace.overview as unknown as {
+      currentNextAction?: { id: string; nextStep: string | null } | null;
+    };
+    if ('currentNextAction' in overviewWithCurrent) {
+      expect(overviewWithCurrent.currentNextAction?.id).toBe(carrier.id);
+      expect(overviewWithCurrent.currentNextAction?.nextStep).toBe(nextStep);
+    }
+
+    await expect(service.listTodaySuggestions()).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        businessLineId: line.id,
+        nextStep,
+        taskId: carrier.id,
+        type: 'progress',
+      }),
+    ]));
+  });
+
   it('records post-action review, proposes SOP revision, and loads accepted revision into context pack', async () => {
     await taskService.create({
       title: 'GoalPilot product',

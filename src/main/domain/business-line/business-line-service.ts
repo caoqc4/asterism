@@ -1160,7 +1160,12 @@ export class BusinessLineService {
       return task.parentTaskId === businessLine.legacyTaskId
         && task.state !== 'completed'
         && task.state !== 'archived';
-    }));
+    })).sort((left, right) => {
+      const leftIsLegacyShell = businessLine.legacyTaskId !== null && left.id === businessLine.legacyTaskId;
+      const rightIsLegacyShell = businessLine.legacyTaskId !== null && right.id === businessLine.legacyTaskId;
+      if (leftIsLegacyShell === rightIsLegacyShell) return 0;
+      return leftIsLegacyShell ? 1 : -1;
+    });
   }
 
   private async automationSnapshotForBusinessLine(params: {
