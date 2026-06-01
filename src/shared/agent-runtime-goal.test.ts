@@ -3,13 +3,17 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRunGoalContract,
   deriveTaskGoalLifecycleState,
+  evaluateGoalContextTransitionReadiness,
   evaluateRuntimeNativeGoalForwarding,
   formatRunGoalContractForPrompt,
   formatRunGoalContractForStep,
   parseAgentRuntimeSlashCommand,
   parseProductGoalDraft,
+  type RunGoalContract,
 } from './agent-runtime-goal.js';
 import { buildDefaultAgentCliRuntimeCapabilities } from './agent-cli-runtime-status.js';
+import { evaluateBusinessMemoryCoverage } from './business-memory-coverage.js';
+import { evaluateContextTransition } from './context-transition.js';
 import type { RuntimeContextManifest } from './runtime-context.js';
 import type { TaskDetail } from './types/task.js';
 import { evaluateNativeGoalForwardingReadiness } from './native-goal-forwarding-readiness.js';
@@ -278,4 +282,196 @@ describe('agent-runtime-goal', () => {
       'Task memory proposal is surfaced',
     ]);
   });
+
+  it('allows long goal compact only after owner coverage, verifier, preservation proof, run evidence, and next safe action pass', () => {
+    const owner = {
+      actionId: 'action_1',
+      businessLineId: 'business_1',
+      kind: 'next_action' as const,
+      taskId: 'task_1',
+    };
+    const result = evaluateGoalContextTransitionReadiness({
+      action: 'compact',
+      businessMemoryCoverage: evaluateBusinessMemoryCoverage({
+        action: 'context_compact',
+        owner,
+        hasBusinessLineState: true,
+        hasBusinessLineContextPack: true,
+        hasCurrentNextAction: true,
+        hasNextSafeAction: true,
+        hasRecentRunEvidence: true,
+        hasRelevantBusinessRecord: true,
+        hasSpecificHandoffSignal: true,
+        memoryWriteCompleted: true,
+      }),
+      contextTransition: evaluateContextTransition({
+        intent: 'context_refresh',
+        owner,
+        hasTaskContext: true,
+        hasSpecificHandoffSignal: true,
+        memoryWriteCompleted: true,
+        preferCompact: true,
+      }),
+      contract: buildContract(),
+      hasRecentRunEvidence: true,
+      nextSafeAction: 'Review the compacted recovery state, then continue the next action.',
+      owner,
+      stopCondition: {
+        description: 'Goal is still active until verification evidence is reviewed.',
+        status: 'not_met',
+      },
+      verifier: {
+        decision: 'accept_for_review',
+        evidence: ['stdout=present'],
+        missingEvidence: [],
+        reason: 'Verifier accepted run evidence for review.',
+        verdict: 'pass',
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'allowed',
+      canCompact: true,
+      canReset: false,
+      nextAction: 'compact_with_product_transcript_reset',
+      resetStrategy: 'product_transcript_reset',
+      nativeRuntimeMemoryCleared: false,
+      nativeRuntimeResetClaim: 'not_claimed',
+      ownerSummary: 'next_action:business_1:action=action_1:task=task_1',
+    });
+    expect(result.evidence).toEqual(expect.arrayContaining([
+      'businessCoverage=pass',
+      'preservationProof=ready',
+      'runEvidence=present',
+      'nextSafeAction=present',
+      'verifier=pass',
+      'stopCondition=not_met',
+      'resetStrategy=product_transcript_reset',
+    ]));
+  });
+
+  it('blocks goal reset with the smallest missing recovery action when coverage or decisions are unsafe', () => {
+    const owner = { kind: 'business_line' as const, businessLineId: 'business_1' };
+    const result = evaluateGoalContextTransitionReadiness({
+      action: 'reset',
+      businessMemoryCoverage: evaluateBusinessMemoryCoverage({
+        action: 'context_reset',
+        owner,
+        hasBusinessLineState: true,
+        hasBusinessLineContextPack: true,
+        hasNextSafeAction: true,
+        hasOpenDecision: true,
+        hasRelevantBusinessRecord: false,
+        hasSpecificHandoffSignal: true,
+      }),
+      contract: buildContract(),
+      hasPendingDecision: true,
+      hasRecentRunEvidence: true,
+      nextSafeAction: 'Resolve the pending Decision before resetting.',
+      owner,
+      stopCondition: { status: 'not_met' },
+      verifier: {
+        decision: 'accept_for_review',
+        evidence: ['stdout=present'],
+        missingEvidence: [],
+        reason: 'Verifier accepted evidence.',
+        verdict: 'pass',
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      canReset: false,
+      nextAction: 'resolve_pending_decision',
+      requiredWrites: ['decision'],
+    });
+    expect(result.missing).toEqual(expect.arrayContaining([
+      'A pending Decision must be resolved before compact/reset.',
+      'A pending Decision must be resolved before context transition.',
+    ]));
+  });
+
+  it('never claims native runtime memory was cleared unless adapter evidence exists', () => {
+    const owner = { kind: 'business_line' as const, businessLineId: 'business_1' };
+    const base = {
+      action: 'reset' as const,
+      businessMemoryCoverage: evaluateBusinessMemoryCoverage({
+        action: 'context_reset',
+        owner,
+        hasBusinessLineState: true,
+        hasBusinessLineContextPack: true,
+        hasNextSafeAction: true,
+        hasRecentRunEvidence: true,
+        hasRelevantBusinessRecord: true,
+        hasSpecificHandoffSignal: true,
+        memoryWriteCompleted: true,
+      }),
+      contract: buildContract(),
+      hasRecentRunEvidence: true,
+      nextSafeAction: 'Rehydrate from BusinessLineContextPack and continue.',
+      owner,
+      runtimeCapabilities: {
+        ...buildDefaultAgentCliRuntimeCapabilities('claude', 'Claude Code', 'claude-code 2.0.0'),
+        supportsPersistentSession: true,
+        supportsNativeClear: true,
+      },
+      stopCondition: { status: 'not_met' as const },
+      verifier: {
+        decision: 'accept_for_review' as const,
+        evidence: ['stdout=present'],
+        missingEvidence: [],
+        reason: 'Verifier accepted evidence.',
+        verdict: 'pass' as const,
+      },
+    };
+
+    expect(evaluateGoalContextTransitionReadiness(base)).toMatchObject({
+      status: 'allowed',
+      resetStrategy: 'runtime_native_clear',
+      nativeRuntimeMemoryCleared: false,
+      nativeRuntimeResetClaim: 'not_claimed',
+      nextAction: 'reset_with_runtime_native_clear',
+    });
+    expect(evaluateGoalContextTransitionReadiness({
+      ...base,
+      adapterEvidence: {
+        adapterEvidenceId: 'reset_event_1',
+        nativeClearCompleted: true,
+        runtimeSessionId: 'session_1',
+      },
+    })).toMatchObject({
+      nativeRuntimeMemoryCleared: true,
+      nativeRuntimeResetClaim: 'adapter_evidence_present',
+    });
+  });
 });
+
+function buildContract(partial: Partial<RunGoalContract> = {}): RunGoalContract {
+  return {
+    id: 'run_1',
+    taskId: 'task_1',
+    taskTitle: 'Runtime closure',
+    taskGoal: {
+      objective: 'Finish runtime goal closure.',
+      completionConditions: [],
+      previousObjective: null,
+      source: '/goal',
+      status: 'active',
+      updatedAt: '2026-05-20T00:00:00.000Z',
+    },
+    executionKind: 'cli',
+    runtimeId: 'codex',
+    runtimeLabel: 'Codex CLI',
+    sandboxMode: 'read-only',
+    userRequest: 'Check next step.',
+    objective: 'Finish runtime goal closure.',
+    completionConditions: ['Output is reviewable.'],
+    validationEvidence: ['Terminal output persisted.'],
+    constraints: ['Do not modify files.'],
+    runtimeCapabilities: ['workspace_write=unsupported'],
+    contextManifestSummary: 'manifest ready',
+    contextGateSummary: 'gate ready',
+    expectedOutput: ['Key findings'],
+    ...partial,
+  };
+}

@@ -18,6 +18,7 @@ import {
   type ContextOwner,
 } from './context-owner.js';
 import type { TaskMemoryGuidanceState } from './task-memory-guidance-state.js';
+import type { GoalContextTransitionEvaluation } from './agent-runtime-goal.js';
 
 export type AutoContextClearOutcome =
   | 'safe_to_clear'
@@ -46,6 +47,7 @@ export type AutoContextClearInput = {
   messages?: ContextPreservationMessage[];
   taskMemoryCoverage?: TaskMemoryCoverageEvaluation | TaskMemoryCoverageInput | null;
   taskMemoryGuidance?: TaskMemoryGuidanceState | null;
+  goalContextTransition?: GoalContextTransitionEvaluation | null;
   shortTermReasoningActive?: boolean;
 };
 
@@ -149,6 +151,15 @@ export function evaluateAutoContextClearReadiness(
     });
   }
 
+  if (input.goalContextTransition?.status === 'blocked') {
+    return result(goalBlockedOutcome(input.goalContextTransition), {
+      businessCoverage,
+      contextTransition,
+      coverage,
+      reason: input.goalContextTransition.reason,
+    });
+  }
+
   if (businessCoverage) {
     const ownerResult = resultFromBusinessCoverage(businessCoverage, {
       contextTransition,
@@ -199,6 +210,14 @@ export function evaluateAutoContextClearReadiness(
     coverage,
     reason: coverage.reason,
   });
+}
+
+function goalBlockedOutcome(
+  evaluation: GoalContextTransitionEvaluation,
+): AutoContextClearOutcome {
+  if (evaluation.nextAction === 'resolve_pending_decision') return 'needs_user_decision';
+  if (evaluation.requiredWrites.length || evaluation.nextAction === 'write_business_memory') return 'needs_memory_write';
+  return 'keep_context';
 }
 
 function result(

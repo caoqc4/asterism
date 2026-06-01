@@ -245,4 +245,38 @@ describe('auto context clear readiness', () => {
       reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
     });
   });
+
+  it('keeps context when a long goal compact/reset gate is blocked', () => {
+    expect(evaluateAutoContextClearReadiness({
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      hasTaskContext: false,
+      chatMessageCount: 2,
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasNextSafeAction: true,
+      hasRelevantBusinessRecord: true,
+      hasSpecificHandoffSignal: true,
+      memoryWriteCompleted: true,
+      goalContextTransition: {
+        action: 'reset',
+        canCompact: false,
+        canReset: false,
+        evidence: ['goal=present', 'verifier=missing'],
+        missing: ['A verifier result or stop condition is required before compact/reset.'],
+        nativeRuntimeMemoryCleared: false,
+        nativeRuntimeResetClaim: 'not_claimed',
+        nextAction: 'define_verifier_or_stop_condition',
+        ownerSummary: 'business_line:business_1',
+        reason: 'A verifier result or stop condition is required before compact/reset.',
+        requiredWrites: [],
+        resetStrategy: 'product_transcript_reset',
+        status: 'blocked',
+      },
+    })).toMatchObject({
+      outcome: 'keep_context',
+      shouldAutoClear: false,
+      shouldKeep: true,
+      reason: 'A verifier result or stop condition is required before compact/reset.',
+    });
+  });
 });

@@ -1,4 +1,13 @@
 import type { AgentCliRuntimeId } from './agent-cli-runtime-status.js';
+import {
+  chooseContextResetStrategy,
+  type ContextResetStrategy,
+  type ContextTransitionEvaluation,
+} from './context-transition.js';
+import type { ContextOwner } from './context-owner.js';
+import { formatContextOwnerForSummary } from './context-owner.js';
+import type { AgentRuntimeVerifierResult } from './agent-runtime-verifier.js';
+import type { BusinessMemoryCoverageEvaluation, BusinessMemoryRequiredWrite } from './business-memory-coverage.js';
 import type { RuntimeContextManifest } from './runtime-context.js';
 import type { AgentCliRunSandboxMode } from './types/run.js';
 import type { TaskDetail, TimelineEventRecord } from './types/task.js';
@@ -127,6 +136,77 @@ export type TaskGoalLifecycleState = {
 export type ProductGoalDraft = {
   objective: string;
   completionConditions: string[];
+};
+
+export type GoalContextTransitionAction = 'compact' | 'reset';
+
+export type GoalStopConditionStatus =
+  | 'met'
+  | 'missing'
+  | 'not_met';
+
+export type GoalContextTransitionStatus =
+  | 'allowed'
+  | 'blocked';
+
+export type GoalContextTransitionNextAction =
+  | 'compact_with_product_transcript_reset'
+  | 'compact_with_runtime_native_compact'
+  | 'reset_with_product_transcript_reset'
+  | 'reset_with_runtime_native_clear'
+  | 'restart_runtime_session'
+  | 'define_goal_objective'
+  | 'define_verifier_or_stop_condition'
+  | 'resolve_pending_decision'
+  | 'record_run_evidence'
+  | 'define_next_safe_action'
+  | 'complete_or_review_goal'
+  | 'write_business_memory'
+  | 'ask_for_recovery_clarification'
+  | 'preserve_context_first'
+  | 'keep_context';
+
+export type NativeRuntimeResetEvidence = {
+  nativeClearCompleted?: boolean;
+  nativeCompactCompleted?: boolean;
+  runtimeSessionId?: string | null;
+  adapterEvidenceId?: string | null;
+};
+
+export type GoalStopConditionInput = {
+  description?: string | null;
+  status: GoalStopConditionStatus;
+};
+
+export type GoalContextTransitionInput = {
+  action: GoalContextTransitionAction;
+  adapterEvidence?: NativeRuntimeResetEvidence | null;
+  businessMemoryCoverage: BusinessMemoryCoverageEvaluation;
+  contextTransition?: ContextTransitionEvaluation | null;
+  contract: RunGoalContract;
+  hasPendingDecision?: boolean;
+  hasRecentRunEvidence?: boolean;
+  nextSafeAction?: string | null;
+  owner: ContextOwner;
+  runtimeCapabilities?: AgentRuntimeAdapterCapabilities | null;
+  stopCondition?: GoalStopConditionInput | null;
+  verifier?: Pick<AgentRuntimeVerifierResult, 'verdict' | 'decision' | 'reason' | 'evidence' | 'missingEvidence'> | null;
+};
+
+export type GoalContextTransitionEvaluation = {
+  action: GoalContextTransitionAction;
+  canCompact: boolean;
+  canReset: boolean;
+  evidence: string[];
+  missing: string[];
+  nativeRuntimeMemoryCleared: boolean;
+  nativeRuntimeResetClaim: 'adapter_evidence_present' | 'not_claimed';
+  nextAction: GoalContextTransitionNextAction;
+  ownerSummary: string;
+  reason: string;
+  requiredWrites: BusinessMemoryRequiredWrite[];
+  resetStrategy: ContextResetStrategy;
+  status: GoalContextTransitionStatus;
 };
 
 export function parseAgentRuntimeSlashCommand(input: string): AgentRuntimeSlashCommand {
@@ -373,6 +453,138 @@ export function buildRunGoalContract(params: {
   };
 }
 
+export function evaluateGoalContextTransitionReadiness(
+  input: GoalContextTransitionInput,
+): GoalContextTransitionEvaluation {
+  const resetStrategy = chooseContextResetStrategy({
+    preferCompact: input.action === 'compact',
+    runtimeCapabilities: input.runtimeCapabilities ?? null,
+  });
+  const ownerSummary = formatContextOwnerForSummary(input.owner);
+  const evidence = [
+    `goal=${input.contract.objective ? 'present' : 'missing'}`,
+    `owner=${ownerSummary}`,
+    `businessCoverage=${input.businessMemoryCoverage.status}`,
+    `preservationProof=${input.businessMemoryCoverage.preservationProofReady ? 'ready' : 'missing'}`,
+    `pendingDecision=${input.hasPendingDecision ? 'yes' : 'no'}`,
+    `runEvidence=${input.hasRecentRunEvidence ? 'present' : 'missing'}`,
+    `nextSafeAction=${cleanGoal(input.nextSafeAction) ? 'present' : 'missing'}`,
+    `verifier=${input.verifier?.verdict ?? 'missing'}`,
+    `stopCondition=${input.stopCondition?.status ?? 'missing'}`,
+    `resetStrategy=${resetStrategy}`,
+  ];
+
+  const missing: string[] = [];
+  let nextAction: GoalContextTransitionNextAction | null = null;
+  const goalObjective = cleanGoal(input.contract.objective) ?? cleanGoal(input.contract.taskGoal.objective);
+  const hasVerifier = Boolean(input.verifier);
+  const stopConditionStatus = input.stopCondition?.status ?? 'missing';
+  const hasStopCondition = stopConditionStatus !== 'missing';
+  const nextSafeAction = cleanGoal(input.nextSafeAction);
+
+  if (!goalObjective) {
+    missing.push('Goal objective is missing.');
+    nextAction ??= 'define_goal_objective';
+  }
+  if (!hasVerifier && !hasStopCondition) {
+    missing.push('A verifier result or stop condition is required before compact/reset.');
+    nextAction ??= 'define_verifier_or_stop_condition';
+  }
+  if (input.verifier?.verdict === 'fail') {
+    missing.push(input.verifier.reason || 'Verifier failed; inspect run result before context transition.');
+    nextAction ??= 'keep_context';
+  }
+  if (input.verifier?.verdict === 'warn') {
+    missing.push(input.verifier.missingEvidence[0] ?? input.verifier.reason ?? 'Verifier warning still needs evidence.');
+    nextAction ??= 'record_run_evidence';
+  }
+  if (stopConditionStatus === 'met') {
+    missing.push('Goal stop condition is met; review or close the goal instead of compacting/resetting for continuation.');
+    nextAction ??= 'complete_or_review_goal';
+  }
+  if (input.hasPendingDecision) {
+    missing.push('A pending Decision must be resolved before compact/reset.');
+    nextAction ??= 'resolve_pending_decision';
+  }
+  if (!input.hasRecentRunEvidence) {
+    missing.push('Recent run evidence is required for goal continuation recovery.');
+    nextAction ??= 'record_run_evidence';
+  }
+  if (!nextSafeAction) {
+    missing.push('Next safe action is required for rehydration after compact/reset.');
+    nextAction ??= 'define_next_safe_action';
+  }
+  if (input.businessMemoryCoverage.status !== 'pass' || !input.businessMemoryCoverage.preservationProofReady) {
+    missing.push(...input.businessMemoryCoverage.missing);
+    nextAction ??= input.businessMemoryCoverage.requiredWrites.length
+      ? 'write_business_memory'
+      : input.businessMemoryCoverage.requiresUserClarification
+        ? 'ask_for_recovery_clarification'
+        : 'preserve_context_first';
+  }
+  if (input.contextTransition && input.contextTransition.preservation.status !== 'covered') {
+    missing.push(input.contextTransition.preservation.reason);
+    nextAction ??= 'preserve_context_first';
+  }
+
+  const nativeRuntimeMemoryCleared = Boolean(
+    resetStrategy === 'runtime_native_clear'
+    && input.adapterEvidence?.nativeClearCompleted
+    && cleanGoal(input.adapterEvidence.runtimeSessionId),
+  );
+  const nativeRuntimeCompactCompleted = Boolean(
+    resetStrategy === 'runtime_compact'
+    && input.adapterEvidence?.nativeCompactCompleted
+    && cleanGoal(input.adapterEvidence.runtimeSessionId),
+  );
+  const nativeRuntimeResetClaim = nativeRuntimeMemoryCleared || nativeRuntimeCompactCompleted
+    ? 'adapter_evidence_present'
+    : 'not_claimed';
+
+  if (missing.length > 0) {
+    return {
+      action: input.action,
+      canCompact: false,
+      canReset: false,
+      evidence: [
+        ...evidence,
+        `nativeRuntimeMemoryCleared=${nativeRuntimeMemoryCleared ? 'yes' : 'no'}`,
+        `nativeRuntimeResetClaim=${nativeRuntimeResetClaim}`,
+      ],
+      missing: uniqueCleanStrings(missing),
+      nativeRuntimeMemoryCleared,
+      nativeRuntimeResetClaim,
+      nextAction: nextAction ?? 'keep_context',
+      ownerSummary,
+      reason: uniqueCleanStrings(missing).join(' '),
+      requiredWrites: input.businessMemoryCoverage.requiredWrites,
+      resetStrategy,
+      status: 'blocked',
+    };
+  }
+
+  return {
+    action: input.action,
+    canCompact: input.action === 'compact',
+    canReset: input.action === 'reset',
+    evidence: [
+      ...evidence,
+      `nativeRuntimeMemoryCleared=${nativeRuntimeMemoryCleared ? 'yes' : 'no'}`,
+      `nativeRuntimeResetClaim=${nativeRuntimeResetClaim}`,
+      nextSafeAction ? `nextSafeActionText=${nextSafeAction}` : null,
+    ].filter((item): item is string => item !== null),
+    missing: [],
+    nativeRuntimeMemoryCleared,
+    nativeRuntimeResetClaim,
+    nextAction: goalContextNextActionForStrategy(input.action, resetStrategy),
+    ownerSummary,
+    reason: 'Goal context transition is safe: owner, verifier/stop condition, preservation proof, run evidence, and next safe action are recoverable.',
+    requiredWrites: [],
+    resetStrategy,
+    status: 'allowed',
+  };
+}
+
 export function formatRuntimeCapabilityDeclarations(
   capabilities: AgentRuntimeAdapterCapabilities | null | undefined,
 ): string[] {
@@ -400,6 +612,17 @@ export function formatRuntimeCapabilityDeclarations(
 function isChildTaskConversationRequest(prompt: string): boolean {
   const normalized = prompt.replace(/\s+/g, ' ').trim();
   return /推进子任务|正在推进子任务|当前子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
+}
+
+function goalContextNextActionForStrategy(
+  action: GoalContextTransitionAction,
+  resetStrategy: ContextResetStrategy,
+): GoalContextTransitionNextAction {
+  if (resetStrategy === 'runtime_compact') return 'compact_with_runtime_native_compact';
+  if (resetStrategy === 'runtime_native_clear') return 'reset_with_runtime_native_clear';
+  if (resetStrategy === 'runtime_restart') return 'restart_runtime_session';
+  if (action === 'compact') return 'compact_with_product_transcript_reset';
+  return 'reset_with_product_transcript_reset';
 }
 
 function parseGoalLifecyclePayload(payload: string | null): Record<string, unknown> {
