@@ -1,0 +1,160 @@
+import { and, desc, eq, gte, inArray, lt } from 'drizzle-orm';
+
+import type {
+  CreateRunInput,
+  RunOutputSource,
+  RunRecord,
+  RunStatus,
+} from '../../../shared/types/run.js';
+import { runs, timelineEvents } from '../schema.js';
+import { initDatabase } from '../client.js';
+import { generateId, nowIso } from './repository-utils.js';
+
+function toRecord(row: typeof runs.$inferSelect): RunRecord {
+  return {
+    id: row.id,
+    taskId: row.taskId,
+    businessLineId: row.businessLineId,
+    type: row.type as RunRecord['type'],
+    status: row.status as RunStatus,
+    instructions: row.instructions,
+    output: row.output,
+    outputSource: (row.outputSource as RunOutputSource | null) ?? null,
+    failureReason: row.failureReason,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export class RunRepository {
+  async list(): Promise<RunRecord[]> {
+    const db = initDatabase();
+    const rows = await db.select().from(runs).orderBy(desc(runs.updatedAt));
+    return rows.map(toRecord);
+  }
+
+  async getDetail(runId: string): Promise<RunRecord | null> {
+    const db = initDatabase();
+    const [row] = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
+    return row ? toRecord(row) : null;
+  }
+
+  async create(input: CreateRunInput): Promise<RunRecord> {
+    const db = initDatabase();
+    const id = generateId('run');
+    const timestamp = nowIso();
+
+    await db.insert(runs).values({
+      id,
+      taskId: input.taskId,
+      businessLineId: input.businessLineId?.trim() || null,
+      type: input.type,
+      status: 'running',
+      instructions: input.instructions?.trim() || null,
+      output: null,
+      outputSource: null,
+      failureReason: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+
+    await db.insert(timelineEvents).values({
+      id: generateId('timeline'),
+      taskId: input.taskId,
+      type: 'run.created',
+      payload: JSON.stringify({ runId: id, type: input.type }),
+      createdAt: timestamp,
+    });
+
+    const [created] = await db.select().from(runs).where(eq(runs.id, id)).limit(1);
+    return toRecord(created);
+  }
+
+  async updateResult(
+    runId: string,
+    status: RunStatus,
+    output: string | null,
+    outputSource: RunOutputSource,
+    failureReason: string | null = null,
+  ): Promise<RunRecord> {
+    const db = initDatabase();
+    const [current] = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
+
+    if (!current) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+
+    const timestamp = nowIso();
+
+    await db
+      .update(runs)
+      .set({
+        status,
+        output,
+        outputSource,
+        failureReason,
+        updatedAt: timestamp,
+      })
+      .where(eq(runs.id, runId));
+
+    await db.insert(timelineEvents).values({
+      id: generateId('timeline'),
+      taskId: current.taskId,
+      type:
+        status === 'failed'
+          ? 'run.failed'
+          : status === 'paused'
+            ? 'run.paused'
+            : status === 'needs_confirmation'
+              ? 'run.needs_confirmation'
+              : 'run.completed',
+      payload: JSON.stringify({ runId, status }),
+      createdAt: timestamp,
+    });
+
+    const [updated] = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
+    return toRecord(updated);
+  }
+
+  async listIncompleteOlderThan(olderThanIso: string): Promise<RunRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(runs)
+      .where(
+        and(
+          inArray(runs.status, ['pending', 'running']),
+          lt(runs.updatedAt, olderThanIso),
+        ),
+      )
+      .orderBy(desc(runs.updatedAt));
+
+    return rows.map(toRecord);
+  }
+
+  async countCreatedSinceByTask(taskIds: string[], sinceIso: string): Promise<Record<string, number>> {
+    const uniqueTaskIds = [...new Set(taskIds.filter((taskId) => taskId.trim()))];
+    if (!uniqueTaskIds.length) return {};
+
+    const db = initDatabase();
+    const rows = await db
+      .select({
+        id: runs.id,
+        taskId: runs.taskId,
+      })
+      .from(runs)
+      .where(
+        and(
+          inArray(runs.taskId, uniqueTaskIds),
+          gte(runs.createdAt, sinceIso),
+        ),
+      );
+
+    const initialCounts = Object.fromEntries(uniqueTaskIds.map((taskId) => [taskId, 0]));
+
+    return rows.reduce<Record<string, number>>((counts, row) => {
+      counts[row.taskId] = (counts[row.taskId] ?? 0) + 1;
+      return counts;
+    }, initialCounts);
+  }
+}

@@ -1,0 +1,269 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
+import {
+  findCheckpointBackedAgentSessionForSettlement,
+  findLatestCheckpointBackedAgentSession,
+  findLatestContinuableAgentSession,
+  projectAgentSessionSettlement,
+  updateCheckpointBackedAgentSessionStatus,
+} from './agent-session-continuation.js';
+
+function buildSession(partial: Partial<AgentSessionRecord>): AgentSessionRecord {
+  return {
+    id: partial.id ?? 'agent_session_1',
+    runId: partial.runId ?? 'run_1',
+    mode: partial.mode ?? 'agent',
+    status: partial.status ?? 'paused',
+    capabilities: partial.capabilities ?? {
+      fileContext: false,
+      longRunningSessions: false,
+      streaming: false,
+      structuredToolCalls: false,
+      taskMutationTools: false,
+      textOnlyPlanning: true,
+    },
+    metadata: partial.metadata ?? null,
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+describe('agent session continuation helper', () => {
+  it('finds the newest paused, confirmation, or running session', () => {
+    expect(findLatestContinuableAgentSession([
+      buildSession({
+        id: 'agent_session_completed',
+        status: 'completed',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_paused_old',
+        status: 'paused',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_confirmation_new',
+        status: 'needs_confirmation',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ])?.id).toBe('agent_session_confirmation_new');
+  });
+
+  it('uses created time as the recency tie-breaker for continuable sessions', () => {
+    expect(findLatestContinuableAgentSession([
+      buildSession({
+        id: 'agent_session_paused_old_created',
+        status: 'paused',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running_new_created',
+        status: 'running',
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+    ])?.id).toBe('agent_session_running_new_created');
+  });
+
+  it('returns null when every session is terminal', () => {
+    expect(findLatestContinuableAgentSession([
+      buildSession({ status: 'completed' }),
+      buildSession({ status: 'failed' }),
+      buildSession({ status: 'cancelled' }),
+    ])).toBeNull();
+  });
+
+  it('excludes stale running sessions when selecting a checkpoint-backed settlement target', () => {
+    expect(findLatestCheckpointBackedAgentSession([
+      buildSession({
+        id: 'agent_session_paused',
+        status: 'paused',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running_stale',
+        status: 'running',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_completed',
+        status: 'completed',
+        updatedAt: '2026-01-04T00:00:00.000Z',
+      }),
+    ])?.id).toBe('agent_session_paused');
+  });
+
+  it('uses created time as the recency tie-breaker for checkpoint-backed sessions', () => {
+    expect(findLatestCheckpointBackedAgentSession([
+      buildSession({
+        id: 'agent_session_paused_old_created',
+        status: 'paused',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_confirmation_new_created',
+        status: 'needs_confirmation',
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running_newer',
+        status: 'running',
+        createdAt: '2026-01-04T00:00:00.000Z',
+        updatedAt: '2026-01-04T00:00:00.000Z',
+      }),
+    ])?.id).toBe('agent_session_confirmation_new_created');
+  });
+
+  it('returns null for checkpoint-backed settlement when only running sessions remain', () => {
+    expect(findLatestCheckpointBackedAgentSession([
+      buildSession({ status: 'running' }),
+      buildSession({ status: 'completed' }),
+    ])).toBeNull();
+  });
+
+  it('uses checkpoint agent-session binding before falling back to latest checkpoint-backed session', () => {
+    const sessions = [
+      buildSession({
+        id: 'agent_session_paused_old',
+        status: 'paused',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_confirmation_new',
+        status: 'needs_confirmation',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running_latest',
+        status: 'running',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+    ];
+
+    expect(findCheckpointBackedAgentSessionForSettlement({
+      agentSessionId: 'agent_session_paused_old',
+      sessions,
+    })?.id).toBe('agent_session_paused_old');
+    expect(findCheckpointBackedAgentSessionForSettlement({
+      agentSessionId: 'agent_session_running_latest',
+      sessions,
+    })).toBeNull();
+    expect(findCheckpointBackedAgentSessionForSettlement({
+      sessions,
+    })?.id).toBe('agent_session_confirmation_new');
+  });
+
+  it('projects settlement boundaries without treating running sessions as resumable checkpoints', () => {
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_paused',
+      status: 'paused',
+    }))).toEqual({
+      action: 'checkpoint_backed_settlement',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: true,
+      sessionId: 'agent_session_paused',
+      status: 'paused',
+      summary: 'Agent session settlement / session=agent_session_paused / status=paused / action=checkpoint_backed_settlement / requiresOpenCheckpoint=yes / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_confirmation',
+      status: 'needs_confirmation',
+    }))).toEqual({
+      action: 'checkpoint_backed_settlement',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: true,
+      sessionId: 'agent_session_confirmation',
+      status: 'needs_confirmation',
+      summary: 'Agent session settlement / session=agent_session_confirmation / status=needs_confirmation / action=checkpoint_backed_settlement / requiresOpenCheckpoint=yes / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_running',
+      status: 'running',
+    }))).toEqual({
+      action: 'requires_executor_liveness',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: false,
+      sessionId: 'agent_session_running',
+      status: 'running',
+      summary: 'Agent session settlement / session=agent_session_running / status=running / action=requires_executor_liveness / requiresOpenCheckpoint=no / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_completed',
+      status: 'completed',
+    }))).toEqual({
+      action: 'inspect_terminal_evidence',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: false,
+      sessionId: 'agent_session_completed',
+      status: 'completed',
+      summary: 'Agent session settlement / session=agent_session_completed / status=completed / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_failed',
+      status: 'failed',
+    }))).toEqual({
+      action: 'inspect_terminal_evidence',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: false,
+      sessionId: 'agent_session_failed',
+      status: 'failed',
+      summary: 'Agent session settlement / session=agent_session_failed / status=failed / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_cancelled',
+      status: 'cancelled',
+    }))).toEqual({
+      action: 'inspect_terminal_evidence',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: false,
+      sessionId: 'agent_session_cancelled',
+      status: 'cancelled',
+      summary: 'Agent session settlement / session=agent_session_cancelled / status=cancelled / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
+    });
+  });
+
+  it('updates only checkpoint-backed agent sessions through the settlement store', async () => {
+    const sessions = [
+      buildSession({
+        id: 'agent_session_paused',
+        status: 'paused',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running',
+        status: 'running',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ];
+    const updateStatus = vi.fn();
+    const store = {
+      listForRun: vi.fn(async () => sessions),
+      updateStatus,
+    };
+
+    await expect(updateCheckpointBackedAgentSessionStatus({
+      agentSessionId: 'agent_session_running',
+      runId: 'run_1',
+      status: 'failed',
+      store,
+    })).resolves.toBeNull();
+    expect(updateStatus).not.toHaveBeenCalled();
+
+    await expect(updateCheckpointBackedAgentSessionStatus({
+      runId: 'run_1',
+      status: 'completed',
+      store,
+    })).resolves.toMatchObject({ id: 'agent_session_paused' });
+    expect(updateStatus).toHaveBeenCalledTimes(1);
+    expect(updateStatus).toHaveBeenCalledWith('agent_session_paused', 'completed');
+  });
+});

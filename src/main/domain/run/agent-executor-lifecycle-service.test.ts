@@ -1,0 +1,392 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import {
+  UnsupportedExecutorLifecycleControlRequestError,
+  formatExecutorLifecycleControlError,
+} from '../../../shared/agent-executor-lifecycle.js';
+import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
+import { DryRunAgentExecutorLifecycleAdapter } from './agent-executor.js';
+import { AgentExecutorLifecycleMonitor } from './agent-executor-lifecycle-monitor.js';
+import { AgentExecutorLifecycleService } from './agent-executor-lifecycle-service.js';
+import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
+
+function buildCapabilities() {
+  return {
+    structuredToolCalls: false,
+    textOnlyPlanning: true,
+    streaming: false,
+    fileContext: true,
+    taskMutationTools: false,
+    longRunningSessions: true,
+  };
+}
+
+function buildRunStepRepositoryMock() {
+  let stepCount = 1;
+
+  return {
+    create: vi.fn().mockImplementation(async (input: {
+      runId: string;
+      kind: RunStepKind;
+      status?: RunStepStatus;
+      title: string;
+    }) => ({
+      id: `run_step_${stepCount++}`,
+      ...input,
+    })),
+    update: vi.fn(),
+  };
+}
+
+function buildService() {
+  const runStepRepository = buildRunStepRepositoryMock();
+  const statusUpdater = {
+    updateStatus: vi.fn().mockImplementation(async (id: string, status: string) => ({
+      id,
+      runId: 'run_1',
+      mode: 'agent',
+      status,
+      capabilities: buildCapabilities(),
+      metadata: null,
+      createdAt: '2026-04-29T00:00:00.000Z',
+      updatedAt: '2026-04-29T00:01:00.000Z',
+    })),
+  };
+  const service = new AgentExecutorLifecycleService(
+    new AgentExecutorLifecycleMonitor(
+      new DryRunAgentExecutorLifecycleAdapter(),
+      new AgentSessionEventRecorder(runStepRepository as never),
+    ),
+    statusUpdater as never,
+  );
+
+  return {
+    runStepRepository,
+    service,
+    statusUpdater,
+  };
+}
+
+describe('AgentExecutorLifecycleService', () => {
+  it('observes and plans lifecycle events without applying session status updates', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const planned = await service.observeAndPlan({
+      handle,
+      signal: {
+        type: 'cancelled',
+        reason: 'Operator cancelled the dry-run executor.',
+      },
+    });
+
+    expect(planned).toMatchObject({
+      projectedStatus: 'cancelled',
+      terminalEventRecorded: true,
+      settlementPlan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'cancelled',
+      },
+      settlementDiagnostic: {
+        action: 'update_session_status',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: 'cancelled',
+        summary: [
+          'Executor lifecycle settlement',
+          'session=agent_session_1',
+          'status=cancelled',
+          'terminalEvent=yes',
+          'action=update_session_status',
+          'autoReplay=no',
+        ].join(' / '),
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      title: 'Agent session 已取消',
+      error: 'Operator cancelled the dry-run executor.',
+    }));
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('plans heartbeat observations as no-status-change diagnostics', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const planned = await service.observeAndPlan({
+      handle,
+      signal: {
+        type: 'heartbeat',
+        summary: 'Dry-run executor is still alive.',
+      },
+    });
+
+    expect(planned).toMatchObject({
+      projectedStatus: null,
+      terminalEventRecorded: false,
+      settlementPlan: {
+        action: 'no_status_change',
+        sessionId: 'agent_session_1',
+      },
+      settlementDiagnostic: {
+        action: 'no_status_change',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: null,
+        summary: [
+          'Executor lifecycle settlement',
+          'session=agent_session_1',
+          'action=no_status_change',
+          'reason=no_projected_status',
+          'autoReplay=no',
+        ].join(' / '),
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'running',
+      title: 'Agent session 心跳',
+      output: 'Dry-run executor is still alive.',
+    }));
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+
+    await expect(service.applySettlementPlan(planned.settlementPlan)).resolves.toEqual({
+      action: 'no_status_change',
+      applied: false,
+      autoReplay: false,
+      sessionId: 'agent_session_1',
+      status: null,
+      summary: [
+        'Executor lifecycle settlement',
+        'session=agent_session_1',
+        'action=no_status_change',
+        'reason=no_projected_status',
+        'autoReplay=no',
+        'applied=no',
+      ].join(' / '),
+      terminalEventRecorded: false,
+      terminalSessionStatus: null,
+    });
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('applies a planned settlement only when explicitly requested', async () => {
+    const { service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+    const planned = await service.observeAndPlan({
+      handle,
+      signal: {
+        type: 'cancelled',
+        reason: 'Operator cancelled the dry-run executor.',
+      },
+    });
+
+    await expect(service.applySettlementPlan(planned.settlementPlan)).resolves.toMatchObject({
+      action: 'update_session_status',
+      applied: true,
+      autoReplay: false,
+      session: {
+        id: 'agent_session_1',
+        status: 'cancelled',
+      },
+      sessionId: 'agent_session_1',
+      status: 'cancelled',
+      summary: expect.stringContaining('applied=yes'),
+    });
+    expect(statusUpdater.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
+  });
+
+  it('plans settle results without applying session status updates', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const planned = await service.settleAndPlan({
+      handle,
+      result: {
+        status: 'failed',
+        failureKind: 'executor',
+        message: 'Dry-run executor failed.',
+      },
+    });
+
+    expect(planned).toMatchObject({
+      projectedStatus: 'failed',
+      terminalEventRecorded: true,
+      settlementPlan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'failed',
+      },
+      settlementDiagnostic: {
+        action: 'update_session_status',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: 'failed',
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      title: 'Agent session 执行失败',
+      error: 'Dry-run executor failed.',
+    }));
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+
+    await expect(service.applySettlementPlan(planned.settlementPlan)).resolves.toMatchObject({
+      action: 'update_session_status',
+      applied: true,
+      autoReplay: false,
+      session: {
+        id: 'agent_session_1',
+        status: 'failed',
+      },
+      sessionId: 'agent_session_1',
+      status: 'failed',
+      summary: expect.stringContaining('applied=yes'),
+    });
+    expect(statusUpdater.updateStatus).toHaveBeenCalledWith('agent_session_1', 'failed');
+  });
+
+  it('plans typed lifecycle control requests without applying session status updates', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const planned = await service.controlAndPlan({
+      handle,
+      request: {
+        type: 'cancel',
+        reason: 'Operator cancelled dry-run control.',
+      },
+    });
+
+    expect(planned).toMatchObject({
+      projectedStatus: 'cancelled',
+      terminalEventRecorded: true,
+      settlementPlan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'cancelled',
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      title: 'Agent session 已取消',
+      error: 'Operator cancelled dry-run control.',
+    }));
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('propagates unsupported control requests without recording or updating status', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+      controlSupport: {
+        interrupt: false,
+      },
+    });
+
+    let thrown: unknown;
+    try {
+      await service.controlAndPlan({
+        handle,
+        request: {
+          type: 'interrupt',
+          reason: 'Operator attempted unsupported interrupt.',
+        },
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(UnsupportedExecutorLifecycleControlRequestError);
+    expect(thrown).toMatchObject({
+      code: 'unsupported_executor_lifecycle_control_request',
+      requestType: 'interrupt',
+      message: 'Executor lifecycle control request interrupt is not supported by this handle.',
+    });
+    expect(formatExecutorLifecycleControlError(thrown)).toBe(
+      'code=unsupported_executor_lifecycle_control_request / request=interrupt / message=Executor lifecycle control request interrupt is not supported by this handle.',
+    );
+    await expect(service.controlAndPlan({
+      handle,
+      request: {
+        type: 'interrupt',
+        reason: 'Operator attempted unsupported interrupt.',
+      },
+    })).rejects.toThrow(
+      'Executor lifecycle control request interrupt is not supported by this handle.',
+    );
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('rejects heartbeat controls when a handle advertises no lifecycle controls', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+      controlSupport: {
+        heartbeat: false,
+        interrupt: false,
+        cancel: false,
+      },
+    });
+
+    await expect(service.controlAndPlan({
+      handle,
+      request: {
+        type: 'heartbeat',
+        summary: 'Operator attempted unsupported heartbeat.',
+      },
+    })).rejects.toThrow(
+      'Executor lifecycle control request heartbeat is not supported by this handle.',
+    );
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
+});

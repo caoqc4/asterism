@@ -1,0 +1,364 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  buildTaskMemoryGuidanceStateForTaskFiles,
+  detectTaskMemoryGuidanceTargets,
+  evaluateTaskMemoryGuidanceState,
+  selectBlockingTaskMemoryGuidance,
+} from './task-memory-guidance-state.js';
+
+describe('task memory guidance state', () => {
+  it('detects Task.md and Task Record guidance targets', () => {
+    expect(detectTaskMemoryGuidanceTargets([
+      '- Task.md update recommended: next_step',
+      '- Task Record may be useful: context_archive',
+    ].join('\n'))).toEqual(['task_md', 'task_record']);
+  });
+
+  it('detects product task-record terms used by closeout and context refresh flows', () => {
+    expect(detectTaskMemoryGuidanceTargets([
+      '请写入阶段收尾记录，保留质量检查结论。',
+      '需要生成交接记录后再刷新上下文。',
+      '会话刷新记录已准备好。',
+    ].join('\n'))).toEqual(['task_record']);
+  });
+
+  it('returns none when no guidance signal exists', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [],
+    })).toMatchObject({
+      outcome: 'none',
+      pendingTargets: [],
+    });
+  });
+
+  it('marks latest guidance as pending until corresponding memory is written', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md update recommended: next_step',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_md'],
+    });
+  });
+
+  it('prefers structured guidance targets over human-readable output text', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        input: JSON.stringify({ targets: ['task_record'] }),
+        output: '- 请检查 Task.md 但不把它作为本次必写目标',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      targets: ['task_record'],
+    });
+  });
+
+  it('ignores generic completed run evidence that only mentions memory surfaces', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [
+        {
+          status: 'completed',
+          title: 'agent cli run accepted',
+          output: [
+            'runtime=codex',
+            '已包含 Task.md 主恢复文件。',
+            '没有相关 Task Records；仅在任务含糊、长期运行、刚刷新或明确引用历史时必需。',
+          ].join('\n'),
+          createdAt: '2026-05-15T01:00:00.000Z',
+        },
+        {
+          status: 'completed',
+          title: 'Agent CLI 目标契约',
+          output: [
+            'Goal: inspect packaged smoke behavior.',
+            'Evidence should remain in Task.md or Task Record after user confirmation.',
+          ].join('\n'),
+          createdAt: '2026-05-15T01:01:00.000Z',
+        },
+      ],
+    })).toMatchObject({
+      outcome: 'none',
+      pendingTargets: [],
+    });
+  });
+
+  it('still accepts structured guidance targets from explicit proposal steps', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        input: JSON.stringify({
+          targets: ['task_record'],
+          suggestedContentByTarget: {
+            task_record: '## Agent CLI run\nKeep this reviewed result as task memory.',
+          },
+        }),
+        output: 'Verifier decision: accept_for_review',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      suggestedContentByTarget: {
+        task_record: '## Agent CLI run\nKeep this reviewed result as task memory.',
+      },
+    });
+  });
+
+  it('keeps structured reference paths with the pending target', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        input: JSON.stringify({
+          targets: ['task_md'],
+          items: [{
+            target: 'task_md',
+            reason: 'important_file',
+            referencePath: 'Artifacts/release-note.md',
+          }],
+        }),
+        output: '- Task.md: important_file / reference=Artifacts/release-note.md',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_md'],
+      referencePathsByTarget: {
+        task_md: ['Artifacts/release-note.md'],
+      },
+    });
+  });
+
+  it('keeps structured suggested content with the pending target', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        input: JSON.stringify({
+          targets: ['task_record'],
+          suggestedContentByTarget: {
+            task_record: '## Summary\nCodex found the next verification step.',
+          },
+        }),
+        output: '- Task Record may be useful: agent_cli_summary',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      suggestedContentByTarget: {
+        task_record: '## Summary\nCodex found the next verification step.',
+      },
+      taskRecordReasonsByTarget: {
+        task_record: 'durable_state_change',
+      },
+    });
+  });
+
+  it('preserves task-record worthiness reasons from guidance output', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task Record may be useful: external_signal',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      taskRecordReasonsByTarget: {
+        task_record: 'external_signal',
+      },
+    });
+  });
+
+  it('recovers reference paths from human-readable guidance output', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md: important_file / reference=artifact_1',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_md'],
+      referencePathsByTarget: {
+        task_md: ['artifact_1'],
+      },
+    });
+  });
+
+  it('treats guidance as satisfied when matching write happens after the guidance', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task Record may be useful: context_archive',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+      memoryWrites: [{
+        status: 'completed',
+        target: 'task_record',
+        path: 'Task Records/context-refresh.md',
+        createdAt: '2026-05-15T01:02:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'satisfied',
+      pendingTargets: [],
+    });
+  });
+
+  it('does not satisfy newer guidance with an older memory write', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md update recommended: blocker',
+        createdAt: '2026-05-15T01:05:00.000Z',
+      }],
+      memoryWrites: [{
+        status: 'completed',
+        target: 'task_md',
+        path: 'Task.md',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_md'],
+    });
+  });
+
+  it('keeps older target-specific guidance pending when a newer guidance mentions a different target', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [
+        {
+          status: 'completed',
+          title: '任务记忆建议',
+          output: '- Task Record may be useful: external_signal',
+          createdAt: '2026-05-15T01:00:00.000Z',
+        },
+        {
+          status: 'completed',
+          title: '任务记忆建议',
+          output: '- Task.md update recommended: next_step',
+          createdAt: '2026-05-15T01:05:00.000Z',
+        },
+      ],
+      memoryWrites: [{
+        status: 'completed',
+        target: 'task_md',
+        path: 'Task.md',
+        createdAt: '2026-05-15T01:06:00.000Z',
+      }],
+    })).toMatchObject({
+      latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      targets: ['task_record', 'task_md'],
+    });
+  });
+
+  it('ignores failed or skipped guidance signals', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'failed',
+        title: '任务记忆建议',
+        output: '- Task.md update recommended: next_step',
+      }],
+    })).toMatchObject({
+      outcome: 'none',
+    });
+  });
+
+  it('selects the newest pending guidance across run states', () => {
+    expect(selectBlockingTaskMemoryGuidance([
+      {
+        latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_md'],
+        reason: '旧建议待处理',
+        targets: ['task_md'],
+      },
+      {
+        latestGuidanceAt: '2026-05-15T01:03:00.000Z',
+        outcome: 'satisfied',
+        pendingTargets: [],
+        reason: '最新任务记忆建议已有对应的 Task.md 或 Task Record 写入。',
+        targets: ['task_record'],
+      },
+      {
+        latestGuidanceAt: '2026-05-15T01:02:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_record'],
+        reason: '新建议待处理',
+        targets: ['task_record'],
+      },
+    ])).toMatchObject({
+      latestGuidanceAt: '2026-05-15T01:02:00.000Z',
+      reason: '新建议待处理',
+    });
+  });
+
+  it('builds memory guidance state from task files', () => {
+    expect(buildTaskMemoryGuidanceStateForTaskFiles({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md update recommended: next_step\n- Task Record may be useful: context_archive',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+      taskFiles: [
+        {
+          name: 'Task.md',
+          path: 'Task.md',
+          updatedAt: '2026-05-15T01:01:00.000Z',
+        },
+        {
+          name: '阶段收尾记录.md',
+          path: 'Task Records/阶段收尾记录.md',
+          updatedAt: '2026-05-15T01:02:00.000Z',
+        },
+        {
+          name: 'AI 产出.md',
+          path: 'AI Outputs/AI 产出.md',
+          updatedAt: '2026-05-15T01:02:00.000Z',
+        },
+      ],
+    })).toMatchObject({
+      outcome: 'satisfied',
+      pendingTargets: [],
+      targets: ['task_md', 'task_record'],
+    });
+  });
+
+  it('normalizes task memory file paths before matching writes', () => {
+    expect(buildTaskMemoryGuidanceStateForTaskFiles({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task Record may be useful: context_archive',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+      taskFiles: [{
+        name: 'context-refresh.md',
+        path: ' Task Records\\context-refresh.md ',
+        updatedAt: '2026-05-15T01:01:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'satisfied',
+      pendingTargets: [],
+      targets: ['task_record'],
+    });
+  });
+});

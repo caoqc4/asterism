@@ -1,0 +1,649 @@
+export type RuntimeLifecycleCoverageStatus =
+  | 'implemented'
+  | 'partial'
+  | 'missing';
+
+export type RuntimeLifecycleCoveragePriority =
+  | 'p0'
+  | 'p1'
+  | 'p2';
+
+export type RuntimeLifecycleCoverageItem = {
+  phase: string;
+  status: RuntimeLifecycleCoverageStatus;
+  priority: RuntimeLifecycleCoveragePriority;
+  scope: 'product_runtime' | 'agent_runtime' | 'ui_runtime' | 'data_runtime';
+  coveredBy: string[];
+  outOfAgentPrinciplesScope: string[];
+  gaps: string[];
+  nextImplementation: string[];
+};
+
+export type RuntimeLifecycleNextActionTiming =
+  | 'current_candidate'
+  | 'preservation_constraint'
+  | 'deferred_surface';
+
+export type RuntimeLifecycleNextAction = {
+  phase: string;
+  priority: RuntimeLifecycleCoveragePriority;
+  scope: RuntimeLifecycleCoverageItem['scope'];
+  timing: RuntimeLifecycleNextActionTiming;
+  action: string;
+};
+
+export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
+  {
+    phase: 'task_intake_and_capture',
+    status: 'partial',
+    priority: 'p0',
+    scope: 'product_runtime',
+    coveredBy: [
+      'RightPanel can capture a global discussion into a pending task.',
+      'TasksPage explicit task creation passes through the shared task_capture pre-step guard before persistence.',
+      'Project decomposition creates draft child tasks before real subtasks.',
+      'runtime-action-evaluator includes task_capture.',
+      'runtime-intake-evaluator routes candidate input to task, Task Record, task file, Decision, Work Habit, or discussion before capture.',
+      'runtime-task-capture-evaluator blocks duplicate open-task captures and generic title-only task candidates before persistence.',
+      'runtime-task-capture-evaluator also blocks generic phase-template task titles, generic phase-template child titles, and child titles that only repeat the parent.',
+      'TasksPage explicit task creation and RightPanel conversation capture pass task candidates through the shared capture evaluator.',
+      'RightPanel conversation capture persists the inferred taskType/taskFacets, and task.typeReview is registered as a proposal boundary before any confirmed task metadata write.',
+      'TasksPage explicit task creation passes the same summary used by the capture evaluator into TaskService.create.',
+      'TaskService.create enforces the same task-capture evaluator at the service boundary before repository persistence.',
+      'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',
+      'runtime-task-capture-evaluator blocks near-duplicate compact titles in the same parent scope when word order changes but the title identity is effectively the same.',
+      'Task title identity now adds a conservative action-and-object signature, so generic modifiers such as "一个/微信/任务" do not hide duplicate task captures or child drafts.',
+      'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task capture remains global-only, and project child creation uses the subtask draft evaluator.',
+      'Runtime surface routing preserves explicit Decision kind, scope, and sourceType even when a title contains approval, external-write, or completion keywords.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Product-level intake must decide whether the user is creating work, browsing existing work, asking for status, or discussing direction.',
+      'The UI must distinguish capture, draft, confirm, and enter-task states.',
+    ],
+    gaps: [
+      'Current retained creation entry points are covered by intake, closeout, service-boundary capture checks, or subtask draft gates; future creation entry points must declare which gate owns them before writing tasks.',
+      'Service-level guards now block duplicate and near-duplicate open-task captures, generic title-only candidates, generic phase-template titles, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains intentionally conservative and should not use embeddings until needed.',
+    ],
+    nextImplementation: [
+      'Route future creation entry points through shared intake checks, closeout gating, or the stricter child-task evaluator according to context.',
+    ],
+  },
+  {
+    phase: 'context_entry_and_binding',
+    status: 'partial',
+    priority: 'p0',
+    scope: 'ui_runtime',
+    coveredBy: [
+      'RightPanel tracks active task context and selected task context.',
+      'RuntimeContextSnapshot exists and is rendered from the active task plus selected file state.',
+      'runtime-action-evaluator handles context_switch and context_clear.',
+      'RuntimeHandoff evaluates task switch, refresh, leave-context, and global conversation transitions.',
+      'RightPanel separates protected refresh, leave task context, and new conversation.',
+      'RightPanel confirmed and dismissed task context switches now persist panel.* timeline events for audit projection.',
+      'RightPanel task-session transitions now share one reducer for active task, pending switch, input, refresh prompts, captured-task confirmation, phase closeout, and task-file proposals.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Product runtime must synchronize selected task, active panel task, selected file, and input context.',
+      'The UI must prevent double-selected navigation state and stale prompt context.',
+    ],
+    gaps: [
+      'Selected file remains parent-owned; if cross-surface context bugs return, promote selected task and selected file into a parent-level runtime context store.',
+    ],
+    nextImplementation: [
+      'Keep future context entry points on the RightPanel reducer or a parent-level runtime context store instead of adding isolated component state.',
+    ],
+  },
+  {
+    phase: 'context_assembly',
+    status: 'partial',
+    priority: 'p0',
+    scope: 'agent_runtime',
+    coveredBy: [
+      'buildAgentWorkingContext assembles task state and structured context, including source metadata needed for freshness evaluation.',
+      'buildRuntimeContextManifest projects task state, selected files, Decisions, sources, artifacts, task files, timeline, and work habits.',
+      'RunService and project decomposition pass structured task type/project labels into the shared confirmed work-habit selector before model-facing execution or planning.',
+      'buildRuntimeContextAssemblyPolicy evaluates required read-order inputs such as product principles, task state, and Task.md.',
+      'RuntimeCapabilitySnapshot summarizes model, workspace checks, feature flags, and tool scaffold state, and RuntimeContextManifest can include it as a capability context item.',
+      'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',
+      'RunService run_start passes RuntimeCapabilitySnapshot for model execution checks, CodeAgentRunService passes it for model/workspace capability checks, and AgentCliRunService carries the selected execution-runtime boundary into runtime context.',
+      'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentCliRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
+      'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentCliRunService block run_start when prior task-memory guidance is still pending.',
+      'Runtime end-to-end scenario tests verify that run start is blocked without recovery context and a next step, then allowed once Task.md and next-step context exist.',
+      'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can attach inclusion decisions and reasons to source context items.',
+      'SourceMaterialQualityEvaluation classifies traceability, credibility, duplication, and sensitivity; RuntimeContextManifest combines it with freshness before including source context content.',
+      'SourceContext records and creation inputs can now carry explicit credibility, duplicate, and sensitive-data signals, and Agent source_context.create can pass those signals into runtime context assembly.',
+      'ConnectorSourceIngestionPlan normalizes future connector evidence into SourceContext input with connector trace, capturedAt, duplicate, sensitivity, credibility, and source-quality decisions before persistence.',
+      'AgentWorkingContext retains source uri metadata so source-quality traceability checks can use original source locations when available.',
+      'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can attach selected-file relevance reasons.',
+      'RuntimeContextAssemblyGate distinguishes provider-visible task execution from hidden non-model runtime entries.',
+      'RunOrchestrator blocks model execution when runtime context assembly is missing required inputs.',
+      'CodeAgentRunService blocks model-producer execution when required task recovery context is missing and passes selected source-context metadata into RuntimeContextManifest before execution.',
+      'RuntimeContextManifest tests verify AgentWorkingContext source metadata for duplicate, sensitive, and low-credibility sources is preserved in provider-visible context assembly.',
+      'Task-bound Decisions are attached to task detail, carried into AgentWorkingContext, and included in RuntimeContextManifest retrieval so pending judgments remain visible to execution memory.',
+      'OperatorStartedRunService records that browser evidence and local QA entries do not require provider-visible context assembly only when providerCall=no and modelExposure=hidden.',
+      'Code Agent has provider-visible context manifest logic.',
+      'TaskMemoryRetrieval defines a deterministic local search index and execution-memory read order before any semantic search UI or embedding work.',
+      'TaskMemoryRetrieval ranks current task state and Task.md ahead of pending Decisions, blockers, dependencies, Task Records, source contexts, artifacts, task files, Work Habits, and process templates.',
+      'Process template apply/remove events retain binding action and note context so task-bound method changes remain auditable.',
+      'TaskMemoryRetrieval keeps active blockers and dependencies high in the read order while demoting resolved blockers and dependencies to historical recovery signals.',
+      'TaskMemoryRetrieval attaches include/caution/exclude decisions and reasons, excluding archived, stale, or duplicate sources by default and surfacing selected files with caution when they are otherwise weak.',
+      'TaskMemoryRetrieval applies SourceFreshnessEvaluation and SourceMaterialQualityEvaluation together so retrieval read order cannot treat stale source materials as current evidence.',
+      'RuntimeContextManifest now consumes TaskMemoryRetrieval and emits a compact memory_retrieval line for provider-visible step context.',
+      'RuntimeContextManifest retrieval tests cover received completion handoff Task Records, so next-task execution context can recover why it was entered after a completed predecessor.',
+      'Agent CLI accepted run evidence now persists the formatted RuntimeContextManifest, including memory_retrieval rows for received handoff Task Records that are also sent to the CLI prompt.',
+      'Code Agent model-producer runs persist a retained runtime context manifest and pass it into the provider prompt, so future Agent API execution inherits the same task memory retrieval and received handoff evidence as Agent CLI.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Runtime must explain why context was included or excluded, not only what Agent should read.',
+      'Runtime must handle UI visibility, model visibility, and durable context separately.',
+    ],
+    gaps: [
+      'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but any new provider-visible entrypoint must still prove it passes full context metadata.',
+      'RuntimeContextManifest consumes TaskMemoryRetrieval for retained context assembly paths; new provider-visible entry points must keep using this manifest instead of rebuilding read-order lists.',
+      'Explicit source quality signals exist for retained source contexts and a connector ingestion plan exists; local inbox and Gmail call that plan before persistence, and future connector services must keep using it.',
+    ],
+    nextImplementation: [
+      'Require any future provider-visible execution entry point to pass full source and selected-file metadata into RuntimeContextManifest before model/provider execution.',
+      'Require any future connector ingestion service to use ConnectorSourceIngestionPlan before creating SourceContext records.',
+    ],
+  },
+  {
+    phase: 'priority_and_attention',
+    status: 'partial',
+    priority: 'p1',
+    scope: 'product_runtime',
+    coveredBy: [
+      'Brief and Tasks use shared priority recommendation ranking for priority lists.',
+      'Brief is documented as an attention summary rather than complete project management.',
+      'PriorityAttentionProjection now centralizes shared ordering plus optional display limits, so Tasks can consume the full ordered queue while Brief consumes the same order as a capped summary.',
+      'BriefAttentionBoundary consumes PriorityAttentionProjection and adds Brief-specific inclusion lanes, explanation reasons, and explicit display-limit metadata without adding a second sorter.',
+      'HomeBriefData now carries the BriefAttentionBoundary summary next to recommendedActions, so retained Brief consumers can read attention lanes without changing the current layout.',
+      'BriefFocusProjection turns recommended actions into the capped Brief task-card list with shared de-duplication, parent/child filtering, and display-limit behavior before the page renders it.',
+      'BriefFocusProjection carries rank, source action id, attention lane, and attention reason into visible focus cards so Brief can explain why an item appears without adding another sorter.',
+      'PriorityRoute now folds the same shared attention ranking into focusTaskId, lane, reason, recommendedMovement, and escalationRequired evidence for future Pilot/Brief coordination without starting execution.',
+      'BriefExecutor consumes HomeBriefData.briefFocusTasks and briefAttention so scheduled or fallback briefs preserve the visible focus list, attention-summary boundary, and display-limit explanation.',
+      'BriefExecutor does not expose the full recommendedActions compatibility queue to generated or fallback briefs; hidden queue items must pass through BriefFocusProjection or BriefAttentionBoundary first.',
+      'BriefProcessTemplateSelector uses the same HomeBriefData.briefFocusTasks when selecting method templates for generated briefs.',
+      'Brief process-template candidates are built from visible Brief focus tasks instead of every active task.',
+      'Brief, Decision, and Run process-template selectors share selection normalization, so skipped or invalid model selections never retain selected templates.',
+      'BriefPage now displays the Brief attention display count and per-card inclusion basis while keeping Tasks as the full priority queue owner.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Brief and priority queue design are product attention mechanics, not Agent execution rules.',
+      'Sorting must reconcile actionable priority, blockers, waiting state, dates, and recent intent.',
+    ],
+    gaps: [
+      'Priority ranking has shared projection and route outputs with display-limit metadata and per-card inclusion basis; deeper ranking-score traces remain intentionally outside the Brief UI for now.',
+      'BriefPage retains only a compatibility fallback for older HomeBriefData payloads; new payloads provide briefFocusTasks from shared/domain projection.',
+      'Brief vs Tasks ordering and display-limit behavior has shared coverage tests; broader end-to-end page projection tests can still be added when UI work resumes.',
+    ],
+    nextImplementation: [
+      'Keep attention projection data-only unless UI work is explicitly requested.',
+    ],
+  },
+  {
+    phase: 'execution_start_and_step_loop',
+    status: 'partial',
+    priority: 'p0',
+    scope: 'agent_runtime',
+    coveredBy: [
+      'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentCliRunService pass through run_start evaluation.',
+      'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentCliRunService now pass run_start through pre_step verification before creating/executing work.',
+      'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentCliRunService run subtask_start target-readiness checks before creating ordinary, Code Agent, operator-started, or Agent CLI runs.',
+      'AgentCliRunService records context.readiness.evaluate before native CLI execution, classifying the next movement as execute, research, plan, ask, or pause and injecting the verdict into the native context bridge.',
+      'CodeAgentRunService records context.readiness.evaluate immediately after creating the run and before model-producer/API-like execution, so Code Agent retained compatibility runs expose the same readiness verdict as Agent CLI and retained RunService.',
+      'RunService paused-run continuation validates resume checkpoint eligibility before rechecking target-task readiness with subtask_start.',
+      'TaskService guards direct transitions into running with the same subtask_start target-readiness check.',
+      'Runs and run steps store plan, model, tool, checkpoint, failure, and final events.',
+      'AgentToolRegistry gates risky commands and writes.',
+      'runtime-verification has first-pass pre_step and post_step modes for action permission, pending decisions, required context, and durable-change recovery notes.',
+      'Run verification persistence now writes step verifications through post_step verification.',
+      'runtime-step-effect-evaluator infers durable step changes and recovery-note presence before post_step verification.',
+      'runtime-step-effect-evaluator flags native CLI workspace_write candidates so post_step requires promotion evidence instead of treating raw command output as enough recovery evidence.',
+      'Run acceptance verification is registered as a non-executing verification_harness entrypoint: it consumes terminal evidence and Run Goal Contract through post_step, and future API verifier subagents may only augment that boundary rather than become a second execution runtime.',
+      'API verifier shadow readiness is modeled as a non-executing projection: persisted lightweight and ai_verifier run-level records can be projected into representative shadow samples, and assist-mode promotion remains blocked until the local readiness thresholds pass.',
+      'RunService checks completed Run output artifact writes with post_step durable-change verification before persisting generated output.',
+      'Sandbox patch review and browser evidence persisters check artifact writes with post_step durable-change verification before persisting generated evidence artifacts.',
+      'RightPanel phase closeout now passes through pre_step before saving and post_step before quality-check handoff.',
+      'RightPanel task file proposal confirmation now passes through pre_step and post_step verification.',
+      'Native CLI task_file.propose Write Intent reuses the existing RightPanel task-file proposal confirmation and task_file.create writeback apply plan.',
+      'TaskService transition and transitionIfAllowed guard task_state_transition at the service boundary.',
+      'TaskService completion transitions require task_completion memory coverage, including passed or overridden completion-check evidence.',
+      'Task completion coverage ignores Run and completion-check evidence older than the latest completion-criteria update.',
+      'TaskService completion-check records pass task_mutation before appending durable completion-check timeline evidence.',
+      'Runtime end-to-end scenario tests verify that task completion remains blocked without durable completion evidence and passes after a recorded completion check.',
+      'TaskService task metadata updates are registered as their own durable-write entrypoint instead of being folded into file/artifact writes.',
+      'TaskService direct and guarded waiting transitions require a waiting reason before writing waiting_external state.',
+      'TaskService task updates, blockers, completion criteria, and dependencies guard structured task-state writes with task_mutation at the service boundary.',
+      'TaskService source-context archive/update and process-template removal keep their own durable-write boundaries while reading the owning task and guarding task_mutation before repository writes.',
+      'RuntimeEntrypointCoverage separates structured task-state resource writes from task file/source/artifact writes, so blocker, completion-criteria, and dependency mutations no longer sit under file/artifact entrypoints.',
+      'Tasks and Brief task state transitions now use shared renderer runtime guards backed by pre_step verification.',
+      'Tasks special mutation paths for Task.md sync, risk updates, project moves, and project parent updates now use shared mutation guards.',
+      'Tasks file actions for create, rename, move, delete, source key toggles, source archive, and artifact creation now use durable panel action guards.',
+      'Taskplane-owned /goal is registered as a durable harness entrypoint that writes task nextStep, completion criteria, and panel.task_goal_* events through task_mutation/pre_step boundaries without invoking Agent CLI or future Agent API execution.',
+      'Runtime-native goal audit is registered as a non-executing runtime_audit entrypoint, and future passthrough remains blocked until the native goal forwarding readiness gate proves command shape, progress/control evidence, memory boundary, Taskplane source-of-truth boundary, and packaged fake-runtime smoke.',
+      'Main IPC task-file and manual-artifact write boundaries guard task_mutation before repository writes.',
+      'Tasks file content saves for Task.md/Task Records, task files, sources, and artifacts use durable panel action guards plus post-step completion checks, separate from structured task-state writes.',
+      'Tasks project decomposition draft generation is registered as provider-visible planning and guarded by existing-child and subtask-draft checks before durable creation is possible.',
+      'Tasks project decomposition confirmation now guards child task creation, child planning transitions, dependency creation, parent updates, task records, and completion criteria writes, while using subtask_draft rather than subtask_start because confirming child tasks does not start execution.',
+      'TaskService completion criteria creation and updates now reject empty, generic, or duplicate open completion criteria before persistence.',
+      'TaskService dependency creation and updates now reject self-dependencies before persistence.',
+      'TaskService blocker creation and updates now reject untitled blockers before persistence.',
+      'AgentToolRegistry task/source/artifact durable tools now use pre_step and post_step runtime verification.',
+      'RightPanel session refresh, phase closeout, and Task.md reference writes now guard their internal source/task-record persistence.',
+      'RightPanel task capture, captured-task confirmation, and captured-task abandonment now use runtime verification guards.',
+      'RightPanel does not expose task capture inside an active task context, and follow-up task proposals remain behind the shared closeout evaluator for future task-context creation entry points.',
+      'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
+      'TasksPage project membership changes and completion handoffs now persist panel.* timeline events for task-to-task replay.',
+      'RuntimeEventRecord replay grouping separates completion checks into quality_gate groups, so phase closeout and verification records do not collapse into generic task-state changes.',
+      'TaskService recordTimelineEvent now guards panel.* task dynamic writes with task_mutation before appending timeline events.',
+      'RuntimeEntrypointCoverage keeps retained execution, planning, assistance, resume, capability-probe, context-transition, task-capture, task-metadata, ordinary task-transition, running/completion transition, completion-check records, project-decomposition, decision-draft, decision-write, decision-action, agent-tool, product-configuration, preference-memory, method-library, and durable-write entrypoints explicit with required runtime gates.',
+      'RuntimeEntrypointCoverage registers future Agent API execution as a deferred provider_visible_execution contract with the same gate set as Agent CLI and no IPC channel yet, so it cannot be treated as auxiliary provider assistance or bypass the harness when implemented.',
+      'RuntimeEntrypointCoverage registers automation readiness as diagnostic-only runtime-context evaluation without runtime_action, pre_step, or post_step execution gates.',
+      'Retained RunService now records context.readiness.evaluate before the API Runtime / Agent API-like provider-visible execution path resolves runtime config.',
+      'Retained CodeAgentRunService now records context.readiness.evaluate before model-producer/API-like execution, including early blocked model-producer requests.',
+      'RuntimeEntrypointCoverage also defines kind-level gate baselines so future entrypoints cannot register below their class minimum without a failing regression test.',
+      'RuntimeEntrypointCoverage requires simplicity_check across every retained entrypoint and kind baseline, so new execution or durable-write surfaces must declare the smallest-state-change boundary before they are considered covered.',
+      'RuntimeEntrypointCoverage tests map retained IPC handlers to registered entrypoint channel claims or explicit read-only exemptions, so new IPC surfaces cannot silently bypass classification.',
+      'RuntimeEntrypointCoverage is intentionally a regression registry; new runtime entrypoints must be added to the registry and covered by the baseline tests rather than discovered dynamically.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Runtime must decide whether execution is panel-lightweight, Run-backed, Code Agent, operator-started browser QA, or future scheduled/event execution.',
+    ],
+    gaps: [
+      'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the smallest matching pre_step, post_step, and subtask_start gates.',
+      'Agent API execution can remain deferred, but task goals, decomposition, context assembly, verification, memory routing, completion, and handoff must stay owned by Taskplane harness entrypoints.',
+      'Future Agent API execution is represented only as a deferred entrypoint contract; implementing it still requires a real service/IPC path that satisfies the provider_visible_execution baseline, context_readiness gate, and existing runtime harness.',
+      'Future API verifier subagent work must first persist inspectable shadow verifier evidence and pass local readiness thresholds before it can affect assist-mode or user-visible acceptance decisions.',
+      'Future runtime-native goal passthrough must satisfy the native goal forwarding readiness gate before opening any execution entrypoint; first-version runtime-native goal requests stay audit-only.',
+      'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained task-dynamics surfaces must reuse the same projection.',
+      'Task dynamics replay grouping now has explicit handoff, project structure, execution recovery, decision, quality gate, durable record, source context, task state, and general groups.',
+      'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',
+    ],
+    nextImplementation: [
+      'Require future task-dynamic surfaces to consume RuntimeEventRecord and groupRuntimeEventsForReplay rather than raw timeline-only data.',
+      'Keep any future retained API-like run services outside context_readiness coverage until their service boundary records context.readiness.evaluate.',
+      'Keep legacy WorkbenchPage retired; new runtime behavior must land in retained TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',
+    ],
+  },
+  {
+    phase: 'information_routing_and_memory',
+    status: 'partial',
+    priority: 'p0',
+    scope: 'data_runtime',
+    coveredBy: [
+      'runtime-surface-routing classifies files, source materials, AI output, artifacts, decisions, work habits, and run steps.',
+      'MemorySurfacePolicy maps each runtime surface to a stable memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
+      'MemorySurfacePolicy keeps AI output on a generated-output write policy instead of reusing the source-material capture policy.',
+      'MemorySurfaceWriteCoverage registers retained write entrypoints for structured task state, Task.md, Task Records, task files, source contexts, AI output, artifacts, run steps, Decisions, and Work Habit proposals.',
+      'MemorySurfaceWriteCoverage binds retained memory-write IPC channels for task files, source contexts, External Access source-ingestion commits, artifacts, Decisions, and Work Habits to the same surface coverage matrix.',
+      'MemorySurfaceWriteCoverage marks structured task-file, source-context, artifact, and Decision writes with canonical_write_validation so future write surfaces cannot claim coverage while bypassing canonical field checks.',
+      'Task file, source context, artifact, Decision, and Work Habit creation paths use shared normalization.',
+      'Tasks file projections keep ordinary task files separate from artifacts while preserving Task.md, Task Records, AI output, source material, and artifact classes.',
+      'Tasks source-context file projections use shared source-context routing before deciding whether a source appears as Task Record, AI output, or source material.',
+      'Source-context routing preserves explicit sourceRole before applying task-record-like title or note heuristics.',
+      'SourceContextMemoryMetadata normalizes source role, credibility, duplicate, and sensitive-data signals before source-context creation or update reaches persistence.',
+      'ConnectorSourceIngestionPlan preserves connector identity, external id, capturedAt, and source-quality review decisions before future connector evidence can become task memory.',
+      'Memory-surface regression tests cover AI output vs source material, artifact vs ordinary file, Task Record vs source capture, and reserved Task.md / Task Records paths.',
+      'Memory-surface write coverage tests require each retained write entrypoint to declare surfaces, write policies, guards, the simplicity boundary, and retained IPC channels where applicable.',
+      'TaskRecordWorthinessEvaluation centralizes when handoff, closeout, correction, option rationale, failure review, context archive, external signal, or durable state changes deserve Task Records.',
+      'RightPanel context-refresh and phase-closeout Task Record writes now pass through TaskRecordWorthinessEvaluation before creating files.',
+      'TasksPage completion handoff and project decomposition self-check Task Records now pass through TaskRecordWorthinessEvaluation before creating files.',
+      'TaskMdUpdateNeedEvaluation centralizes when Task.md should be updated for recovery fields and important file references.',
+      'TaskMdUpdateNeedEvaluation can consume structured durable task fields, so task memory recommendations do not depend only on language-pattern inference.',
+      'RightPanel Task.md important-file reference writes now pass through TaskMdUpdateNeedEvaluation before creating or updating Task.md.',
+      'TasksPage direct Task.md saves now pass through TaskMdUpdateNeedEvaluation before persisting the primary recovery file.',
+      'TasksPage ordinary task-file creation blocks reserved Task.md and Task Records paths so task memory surfaces keep using their dedicated evaluators.',
+      'TaskRepository update timeline records include changed durable task fields so replay projection can distinguish summary, next-step, risk, and hierarchy changes.',
+      'TasksPage manual Task Record creation now passes through TaskRecordWorthinessEvaluation and normalizes nested prompts back under Task Records before creating files.',
+      'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations, while preserving legacy guidance messages.',
+      'RuntimeRecoveryGuidance accepts structured durable task fields, and AgentToolRegistry durable tools pass those fields into task-memory guidance.',
+      'AgentToolRegistry durable tool results now expose structured recoveryGuidanceItems plus legacy recoveryGuidance messages from RuntimeRecoveryGuidance without silently mutating Task.md.',
+      'Run output, sandbox patch review, and browser evidence artifact writes share the same structured Task.md guidance Run Step helper, preserving artifact references without automatically editing Task.md.',
+      'AgentToolRegistry source-context writes use TaskRecordWorthinessEvaluation before recommending Task Record guidance, so raw source capture does not automatically become a task record.',
+      'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
+      'TaskMemoryGuidanceState distinguishes persisted task-memory guidance from completed Task.md or Task Record writes, so automatic context clearing can treat unresolved guidance as pending memory work.',
+      'TaskMemoryGuidanceState tracks pending Task.md and Task Record guidance per target, so newer guidance for one memory surface does not hide unresolved guidance for another.',
+      'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to human-readable guidance text.',
+      'TaskMemoryGuidanceState keeps structured reference paths from task-memory guidance so output references do not collapse into generic pending-memory notes.',
+      'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without performing automatic writes.',
+      'TaskMemoryWriteProposal preserves existing Task.md content on update proposals and appends only the smallest missing memory note.',
+      'TaskMemoryWriteProposal turns structured Task.md reference paths into concrete Important Files entries before falling back to generic pending-memory notes.',
+      'TaskMemoryWriteProposal routes pending Task Record guidance through TaskRecordWorthinessEvaluation, so generic pending-memory notes do not become durable Task Records.',
+      'TaskMemoryWriteApplyPlan turns a confirmed TaskMemoryWriteProposal into a create/update TaskFile input, normalizes memory paths, and blocks target/path mismatches or unsafe updates without an existing file id.',
+      'RunDetailRecord carries taskMemoryWriteProposals next to taskMemoryGuidance so runtime detail reads can reuse the same missing-memory write plan.',
+      'RightPanel can surface pending RunDetail taskMemoryWriteProposals through the existing task-file proposal confirmation card, convert them into Taskplane writeback plans, and apply them through main-side dispatch after user confirmation.',
+      'TasksPage Task Dynamics can surface the same RunDetail taskMemoryWriteProposals in the run-detail writeback approval queue and apply them through main-side writeback dispatch after operator confirmation.',
+      'Run start pre-step verification consumes pending TaskMemoryGuidanceState, so ordinary runs, Code Agent runs, operator-started runs, and Agent CLI runs cannot bypass unresolved task-memory writes.',
+      'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
+      'AutoContextClearReadiness wraps TaskMemoryCoverageEvaluation into safe_to_clear, needs_memory_write, needs_user_decision, keep_context, and not_applicable outcomes without introducing a hard message-count rule.',
+      'Runtime end-to-end scenario tests verify that pending user Decisions block run start, task switch, and automatic context refresh rather than being hidden by memory coverage.',
+      'RuntimeHandoff task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness before leaving the previous task context.',
+      'RightPanel automatic context mode now consumes RuntimeHandoff and AutoContextClearReadiness after session-refresh triggers, so automatic clearing runs only after successful memory preservation and safe readiness.',
+      'CrossTaskLearningBoundary classifies candidate learning text into task records, Work Habit proposals, process-template proposals, or discussion-only before durable cross-task memory is allowed.',
+      'CrossTaskLearningBoundary keeps task-specific, batch-specific, and phase-specific corrections task-bound and requires confirmation for Work Habit and process-template proposals.',
+      'WorkHabitService consumes CrossTaskLearningBoundary before creating Work Habit proposals, manual Work Habits, Work Habit rule edits, legacy imports, or SOP-template habit records, so task-specific corrections do not become cross-task memory.',
+      'Work Habit selection returns applicability reasons for runtime prompts, so selected habits remain explainable by project, task type, task title, or global scope.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
+    ],
+    gaps: [
+      'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance, TaskRepository update timeline changed-field metadata, and structured durable-field reasons; remaining retained durable state changes outside durable tools should pass changed fields and reference metadata through TasksPage, RightPanel, Runs, or Decisions.',
+      'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance, preserved as structured reference metadata, and can be persisted through the reusable confirmed-write plan; automatic persistence remains intentionally disabled.',
+      'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
+      'MemorySurfaceWriteCoverage is an explicit regression registry; future durable write paths must add their surface, write policy, guard coverage, and retained IPC channel when applicable instead of relying on path or title inference.',
+      'SourceContextMemoryMetadata covers retained source-context creation and update paths; connector ingestion now has a shared planning contract, confirmed service bridge, IPC boundary, idempotency check, External Access review panel, and local-inbox packaged write smoke.',
+      'WorkHabitService consumes CrossTaskLearningBoundary for retained proposal/manual/update/SOP paths, and runtime prompt callers consume shared Work Habit applicability matches; future learning writers should use the same service boundary.',
+    ],
+    nextImplementation: [
+      'Require future durable information write paths and IPC channels to be registered in MemorySurfaceWriteCoverage before treating the write surface as retained behavior.',
+      'Keep future connector source ingestion on ConnectorSourceIngestionPlan plus source-context write guards rather than writing SourceContext records directly.',
+      'Keep future TasksPage task-memory proposal confirmation controls on TaskMemoryWriteApplyPlan instead of rebuilding write inputs locally.',
+      'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
+      'Keep any future background scheduler or non-panel clearing entry point wired to AutoContextClearReadiness instead of adding a second clearing rule.',
+      'Keep cross-task learning tests ensuring task-specific corrections do not become global rules.',
+    ],
+  },
+  {
+    phase: 'decision_and_confirmation',
+    status: 'partial',
+    priority: 'p0',
+    scope: 'product_runtime',
+    coveredBy: [
+      'Decision model supports scope, kind, context, options, recommendation, sourceType, and sourceId.',
+      'Checkpointed risky tools create Decisions and resume only after approval.',
+      'Decision actions pass through runtime-action-evaluator at the service boundary and in the Decisions page.',
+      'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for verification consumers.',
+      'decision-effect-evaluator groups related decision effects by task first and source when no task is bound, so multiple related decisions can be audited together without UI-specific logic.',
+      'Approved checkpoint Decisions recheck target-task readiness with subtask_start before resuming tool, browser, or patch-promotion execution.',
+      'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
+      'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
+      'DecisionJudgmentProjection now prefers explicit Decision context impact, reversibility, and recommendation reason before falling back to generic judgment labels.',
+      'DecisionJudgmentProjection standardizes sourceTarget for task, run, agent checkpoint, tool, external access, workspace, system, manual, and global decisions so judgment-center consumers do not guess source routing from labels.',
+      'DecisionJudgmentProjection exposes source kind, source action, and approval boundary labels, and Decisions page expanded cards show the judgment object plus approval boundary instead of relying on raw titles.',
+      'DecisionService.listJudgments exposes the judgment-center projection from the domain boundary so the renderer does not have to rebuild pending-decision semantics from raw decisions and tasks.',
+      'Decisions page action results now summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
+      'DecisionJudgmentProjection now attaches grouped pending-decision context by task/source, and the Decisions page shows same-source pending counts and effect detail inside the judgment card.',
+      'Decisions page keeps failed action attempts visible with retry feedback and disables duplicate actions while a decision action is pending.',
+      'Decisions page search now includes source labels, source kind, boundary, recommendation, and context text so judgment-center filtering follows the actual decision context.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'The Decisions page must behave like a judgment center, not only a list of task statuses.',
+      'Approvals must explain effect after approval, rejection, defer, or cancel.',
+    ],
+    gaps: [
+      'Decisions page now shows grouped pending-decision context; richer batch handling can still be added later if a real multi-approve workflow appears.',
+      'Run and checkpoint source targets are now explicit in data; richer navigation can consume routeHint later without changing the judgment semantics.',
+    ],
+    nextImplementation: [
+      'Keep grouped Decisions read-only until there is a clear user need for batch approve/defer/cancel.',
+    ],
+  },
+  {
+    phase: 'verification_and_closeout',
+    status: 'partial',
+    priority: 'p0',
+    scope: 'agent_runtime',
+    coveredBy: [
+      'runtime-verification covers run, run_step, pre_step, post_step, subtask_start, task_closeout, project, and context_clear.',
+      'Task completion modal, project completion checks, RightPanel phase closeout, and Run verification persistence consume runtime-verification.',
+      'Project detail surfaces display project verification next to the child task structure.',
+      'Project verification includes artifact/source evidence counts and Decision effect summaries.',
+      'TaskService project completion transitions consume project verification before persisting completed state.',
+      'RightPanel phase closeout also checks TaskMemoryCoverageEvaluation after writing the phase record and before refreshing or handing off.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Runtime must verify not only Agent completion, but user-triggered state changes, project progress, and UI context transitions.',
+    ],
+    gaps: [
+      'Project verification is wired into completion, structure views, and TaskService project completion; future project-level state transitions must consume the same verification before adding new readiness paths.',
+      'Pre-step verification covers task-bound durable writes, while post-step verification covers Run, generated artifact, panel durable action, and tool durable-write paths that have durable-change recovery context; future execution surfaces must opt in rather than adding direct writes.',
+    ],
+    nextImplementation: [
+      'Keep verification gates as a required boundary for any future execution service or panel durable action, and keep direct task-bound writes behind task_mutation plus pre_step.',
+    ],
+  },
+  {
+    phase: 'pause_resume_and_handoff',
+    status: 'partial',
+    priority: 'p0',
+    scope: 'product_runtime',
+    coveredBy: [
+      'Context clearing requires specific handoff signals.',
+      'Run resume passes through runtime action evaluation and pending TaskMemoryGuidanceState checks before checkpoint execution.',
+      'RuntimeHandoff resume_run also blocks pending Decisions, active blockers, and active short-term reasoning before restoring checkpoint execution.',
+      'Approved Decision checkpoint resume passes through pending TaskMemoryGuidanceState checks before checkpoint execution.',
+      'Task-bound Decision actions preflight task memory annotation before changing Decision status, so decision effects do not bypass task memory writes.',
+      'RightPanel phase closeout is registered as a phase_closeout_handoff boundary: it writes Task Records, records lightweight completion-check evidence, consumes RuntimeHandoff, and only uses subtask_start when it is about to enter an existing child or successor.',
+      'Phase closeout requires TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState checks to pass before chat refresh or next-task handoff.',
+      'Phase closeout keeps unresolved blocker, dependency, user-confirmation, and follow-up-confirmation outcomes from clearing task chat even after a phase record is written.',
+      'Task closeout evaluation can hand off to existing successors when no child task is available, and new follow-up proposals require evidence plus confirmation instead of automatic creation.',
+      'runtime-handoff now provides a shared RuntimeHandoff and RuntimeResumePlan evaluator for context refresh, task switching, phase closeout, and run resume planning.',
+      'RuntimeHandoff context refresh, leave-context, and global-conversation paths consume AutoContextClearReadiness before clearing task chat.',
+      'Task switch handoff consumes TaskMemoryCoverageEvaluation before leaving the previous task context.',
+      'RuntimeResumePlan can include a subtask_start gate when phase closeout hands off to a child or successor task and target context is provided.',
+      'Runtime end-to-end scenario tests now verify that project phase closeout hands off to an existing child, pending task-memory guidance blocks handoff, and new follow-up tasks are not auto-created during closeout.',
+      'Runtime end-to-end scenario tests verify that task switching is blocked until recoverable current-task discussion has been archived.',
+      'Runtime end-to-end scenario tests verify that pending Decisions block run start, task switching, and automatic context refresh until the user judgment is resolved.',
+      'TasksPage completion handoff is registered as the task_to_task_handoff entry boundary: it relies on task_completion coverage for the completed task, checks the next child through subtask_start, then writes completion/received handoff records and timeline replay events before opening the next task context.',
+      'TasksPage completion handoff now writes durable handoff records on both the completed task and the next task, so the next task can recover why it was entered without relying on the transient panel prompt.',
+      'RuntimeHandoffPreview now turns handoff plus archive snapshot data into reusable context-refresh preview text instead of leaving the archive preview assembled only in RightPanel.',
+      'RightPanel context refresh/global conversation reset/leave-task-context are registered as context.refreshOrLeave, while cross-task panel switching is registered as context.taskSwitch; both consume RuntimeHandoff and pending TaskMemoryGuidanceState without claiming task completion or subtask_start.',
+      'RunService paused-run continuation now consumes RuntimeHandoff and RuntimeResumePlan before checkpoint resume execution.',
+      'SubagentHandoffEvaluation now models subagent scope, inherited-principles, confirmation-boundary, and handoff-completeness checks before future subagent results can be integrated.',
+      'runtime-event-record now projects persisted timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into a shared RuntimeEventRecord audit stream.',
+      'Task-dynamics/audit projection is modeled by RuntimeEventRecord; Tasks task dynamics consumes it and retained Run-side views should follow it.',
+      'RuntimeEventRecord now has replay-oriented grouping for handoff, project structure changes, execution recovery, Decisions, durable records, source context, and task state changes.',
+      'RunDetailRecord now carries optional runtimeEvents and runtimeReplayGroups from RunService.getDetail without requiring UI layout changes.',
+      'Tasks task dynamics now consumes replay grouping as a compact key-context layer before the flat event timeline.',
+      'Tasks task dynamics loads selected Run details and feeds Run steps into RuntimeEventRecord, so step-level execution records appear in the same task-dynamics projection.',
+      'RightPanel context refresh, context switch confirmation/dismissal, phase closeout, and task file proposal writes now persist panel.* timeline events for RuntimeEventRecord audit projection.',
+      'RuntimeEventRecord preserves relatedTaskId for task-to-task completion handoff, received completion handoff, and accepted context-switch events, and replay groups retain relatedTaskIds for task A to task B recovery.',
+      'RuntimeHandoff is shared across RightPanel protected refresh, phase closeout, task switch flows, RunService checkpoint resume, and RuntimeEventRecord projection.',
+      'Successor-task handoff outside parent-child hierarchy has closeout and replay metadata.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Runtime must distinguish pause, refresh, leave context, switch task, resume paused run, and start new global conversation.',
+    ],
+    gaps: [
+      'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
+      'Follow-up proposal gating exists in the shared closeout evaluator; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
+      'Replay grouping is consumed by Tasks task dynamics; future Run-side audit surfaces should reuse that layer only when they are explicitly reintroduced.',
+    ],
+    nextImplementation: [
+      'Keep future task-context follow-up creation entry points wired into the shared closeout evaluator.',
+    ],
+  },
+  {
+    phase: 'project_and_hierarchy_runtime',
+    status: 'partial',
+    priority: 'p1',
+    scope: 'data_runtime',
+    coveredBy: [
+      'Task data model now has taskType, taskFacets, parentTaskId, and childTaskIds.',
+      'Task hierarchy helpers keep parent/child views and priority recommendations from duplicating children into top-level lists.',
+      'TaskService.create and TaskService.update keep child parentTaskId and parent childTaskIds in sync at the service boundary, including parent-side child list updates.',
+      'TaskService blocks child creation, child moves, and parent child-list writes unless the parent is an open project task, while preventing hierarchy cycles.',
+      'TaskHierarchyConsistencyEvaluation can diagnose historical hierarchy mismatches before a repair flow mutates old records, and TaskService exposes the diagnostics through IPC.',
+      'TaskHierarchyRepairPlan can turn diagnostics into non-mutating safe repair actions or manual-review items before any confirmed maintenance writer exists.',
+      'TaskService.applySafeHierarchyRepairs applies only revalidated safe TaskHierarchyRepairPlan actions through the service/IPC boundary and leaves manual-review items untouched.',
+      'TaskHierarchyManualReviewPolicy explains conflicting parentage, missing records, self references, and duplicate references before any human-confirmed resolution is applied.',
+      'TaskService.applyHierarchyManualResolution accepts explicit manual hierarchy resolutions for unique parentage, missing references, self references, and duplicate child references.',
+      'Decisions page surfaces TaskHierarchyManualReviewPolicy items and safe hierarchy repairs as judgment-center maintenance actions instead of adding another Tasks page workflow.',
+      'TaskService safe hierarchy repairs and manual hierarchy resolutions pass task structure writes through task_mutation guards before repository updates.',
+      'RuntimeEntrypointCoverage registers task hierarchy maintenance as an explicit durable-write entrypoint while leaving read-only diagnostics exempt.',
+      'Renderer task hierarchy projection now treats persisted taskType, taskFacets, parentTaskId, and childTaskIds as authoritative and uses local task attributes only for genuinely missing legacy fields.',
+      'Legacy title-pattern phase follow-up inference no longer runs when a task explicitly has no parent, and TasksPage no longer mutates local hierarchy attributes during list loading.',
+      'Brief focus projection, RightPanel closeout checks, and task completion modal checks now use the same persisted-field hierarchy authority instead of reading local task attributes directly.',
+      'TasksPage project moves, project decomposition, workspace selection context, completion handoff, Brief projection, RightPanel closeout, and task completion checks no longer write or consume renderer-local parent/child hierarchy attributes for active workflows.',
+      'Renderer task attributes now keep parentTaskId and childTaskIds optional, stop writing empty local hierarchy fields by default, and clear legacy local hierarchy fields once persisted task records provide hierarchy authority.',
+      'CanonicalDataContract documents authoritative fields, write/read authority, legacy fallback conditions, and repair routes for task hierarchy, task files, sources, artifacts, Decisions, blockers, dependencies, run events, task dynamics, Work Habits, process templates, and process-template bindings.',
+      'CanonicalDataContract keeps hierarchy and source-context legacy fallbacks read-only and only allowed when canonical fields are missing, while artifact classification has no folder-name fallback.',
+      'CanonicalDataDiagnostics can mechanically report missing canonical fields, stale legacy fallback fields, hierarchy backlink mismatches, orphan task references, blocker/dependency orphan links, blocker source-context orphan links, and missing task-scoped Decision bindings without mutating records.',
+      'CanonicalDataDiagnostics routes hierarchy self-references and duplicate child links to manual review instead of attempting silent auto-repair.',
+      'CanonicalDataWriteValidation checks write-boundary fields separately from full canonical records, and retained task-file, source-context, artifact, Decision, Work Habit, process-template, and process-template-binding create/update/apply paths now reject unknown or read-only legacy fields before repository persistence.',
+      'Process template library writes normalize title, summary, content, kind, and tags, and reject blank required values or invalid template kinds before repository persistence.',
+      'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
+      'runtime-subtask-evaluator blocks near-duplicate child drafts and existing child titles when compact titles only change word order.',
+      'runtime-subtask-evaluator uses shared task title identity, so generic modifiers cannot create another child draft with the same action and object as an existing child.',
+      'Project decomposition generation and confirmation both consult runtime-subtask-evaluator, so existing children block another decomposition round before a new draft appears.',
+      'Project decomposition generation now detects existing children from the full task list, including children linked only by parentTaskId.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Runtime must keep directory views, priority lists, detail pages, and project progress consistent.',
+    ],
+    gaps: [
+      'Renderer-local hierarchy attributes remain as a read-only legacy missing-field fallback only for records that still lack persisted hierarchy fields.',
+      'CanonicalDataContract now has read-only mechanical diagnostics and write-boundary validation for retained task-file, source-context, artifact, Decision, Work Habit, process-template, and process-template-binding writes; future repository and service writes should consume it where write-time validation is useful.',
+      'Project progress and child ordering are data-authoritative for retained workflows; deleting the compatibility fallback should wait until old missing-field records are no longer supported.',
+      'Future child-task creation paths must keep using TaskService capture checks and stricter project child-draft evaluation when they create project children.',
+    ],
+    nextImplementation: [
+      'Keep the compatibility fallback covered until a later schema/support window removes old missing-field records.',
+      'Use CanonicalDataDiagnostics and CanonicalDataWriteValidation as the checklist for future migration diagnostics and repository write validation.',
+      'Keep hierarchy repair actions in Decisions unless a stronger task-structure maintenance workflow appears.',
+    ],
+  },
+  {
+    phase: 'task_dynamics_and_audit',
+    status: 'partial',
+    priority: 'p1',
+    scope: 'data_runtime',
+    coveredBy: [
+      'Task dynamic records, run steps, completion checks, Decisions, and Task Records all exist as durable audit surfaces.',
+      'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into one audit stream.',
+      'RuntimeEventRecord is the shared task dynamics/audit projection; Tasks task dynamics consumes it, and Run-side surfaces should follow it.',
+      'Run detail exposes runtime events and replay groups that include the run, run steps, task timeline events, and Task Records for the same task.',
+      'RuntimeEventRecord formats completion-criteria, dependency, blocker, and source-context timeline payloads into readable task dynamics.',
+      'groupRuntimeEventsForReplay creates shared replay-oriented stories, and Tasks task dynamics renders those groups before the flat timeline.',
+      'Tasks task dynamics renders replay groups with source labels, time spans, related-task counts, and representative event titles before the flat event timeline.',
+      'Tasks task dynamics loads selected Run details and projects Run steps into the same visible task-dynamics stream as task timeline, Task Records, and Decisions.',
+      'Task A to task B handoff replay is covered by relatedTaskId/relatedTaskIds projection tests, including received-handoff events on the destination task.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Runtime must decide what belongs in timeline vs run step vs Task Record, and how users audit changes later.',
+    ],
+    gaps: [
+      'RuntimeEventRecord covers timeline, run, run step, task record, decision, resume projection, RightPanel events, and core TasksPage file/source/artifact/project/handoff events; Tasks task dynamics consumes it and Run detail exposes task-bound projection data without requiring a standalone Run Detail page.',
+      'Replay grouping is rendered in Tasks task dynamics; if future retained Run-side surfaces return, they should reuse this grouped replay layer rather than copy full Run details into Task Records.',
+    ],
+    nextImplementation: [
+      'Keep Run detail as structured execution data and reuse grouped replay only when a future Run-side audit surface is explicitly needed.',
+    ],
+  },
+  {
+    phase: 'capabilities_and_external_access',
+    status: 'partial',
+    priority: 'p1',
+    scope: 'product_runtime',
+    coveredBy: [
+      'External access, MCP, skills, model, settings, and work habits are separate navigation capabilities.',
+      'Risky local command/write tools use confirmation checkpoints.',
+      'RuntimeCapabilitySnapshot captures model availability, workspace verification checks, feature flags, tool scaffold exposure, and capability-registry row counts for runtime consumers.',
+      'RuntimeCapabilitySnapshot preserves tool scaffold family summaries and registry count summaries so capability consumers can distinguish reserved, hidden, policy-gated, blocked, and model-visible capability state without exposing optional catalogue item names.',
+      'RuntimeCapabilitySnapshot also carries sandbox backend probe and producer readiness so sandbox availability is not inferred from feature flags alone.',
+      'CapabilityRegistry projects runtime capability snapshots into stable capability entries with status, visibility, access type, approval requirement, and runtime gate.',
+      'CapabilityRegistry uses tool scaffold summaries for Skills, MCP, and browser/operator reserved status, so they are structured hidden/unconfigured rows rather than generic deferred capability rows.',
+      'AiConfigStatus now carries CapabilityRegistry so Model, Settings, RightPanel, and future capability pages can consume the same structured capability data.',
+      'Runtime pre-step verification uses CapabilityRegistry checks for model execution and workspace verification readiness instead of reading ad hoc snapshot fields directly.',
+      'pre_step verification blocks model-required or workspace-verification-required execution when the caller omits RuntimeCapabilitySnapshot.',
+      'RunService and CodeAgentRunService provide RuntimeCapabilitySnapshot before model or workspace-sensitive execution.',
+      'RuntimeEntrypointCoverage registers AI runtime configuration writes, Work Habit preference memory writes, and process-template library writes as product-level durable entrypoints instead of task mutations.',
+      'RuntimeEntrypointCoverage registers sandbox backend probing as a read-only capability-probe entrypoint that returns readiness without starting execution or mutating task state.',
+      'ConfigurationSafetyReport projects AiConfigStatus and CapabilityRegistry into configured, missing, disabled, approval-required, and manual-probe safety states without exposing secret values.',
+      'ConfigurationSafetyReport distinguishes feature-flag-disabled surfaces from product-policy-disabled optional surfaces such as disconnected External Access, Skills, MCP, and browser/operator.',
+      'ConfigurationSafetyReport redacts secret-looking token, API key, credential, bearer, and common camel-case secret values from safety reasons before they can reach renderer or model-facing summaries.',
+      'ConfigurationSafetyReport keeps provider spend, sandbox, browser, and external-service probes manual-only or explicitly opted in rather than startup side effects.',
+      'AiConfigService attaches ConfigurationSafetyReport to AiConfigStatus, so retained settings/capability service consumers can read the shared safety projection without a separate UI path.',
+      'AiConfigService feeds External Access, Skills, and MCP product-surface status into CapabilityRegistry, so default optional capability surfaces are structured disabled capabilities instead of unconnected deferred rows.',
+      'CapabilityRegistry treats pending or errored External Access connectors as unconfigured setup states instead of disabled feature-flag states.',
+      'ExternalAccessStatusService provides a read-only connector status boundary, and AiConfigService feeds that status into CapabilityRegistry and ConfigurationSafetyReport.',
+      'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
+      'LocalInboxConnectorAdapter is the first concrete local read-only connector adapter: it is opt-in by environment variable, reads only supported local inbox files, and still produces ConnectorSourceIngestionPlan previews instead of direct SourceContext writes.',
+      'GmailConnectorAdapter is the first concrete network read-only connector slice: it is opt-in by access-token environment variable, does not probe Gmail during status reads, and only reads message metadata/snippets during task-bound source-ingestion planning.',
+      'Gmail OAuth now has a guarded product entrypoint: refresh tokens are stored in keychain, access tokens are refreshed on demand, authorization URLs use PKCE/state, loopback callbacks validate state, disconnect revokes and clears local credentials, IPC requires explicit confirmation, and External Access exposes minimal connect/disconnect controls without changing task-management UI.',
+      'ExternalAccessSourceIngestionService bridges ConnectorSourceIngestionPlan previews into confirmed TaskService.createSourceContext writes, validates plan task ownership, skips existing batch ids, and is exposed through preview/commit IPC plus the External Access source-review panel.',
+      'accept:external-access:gmail-oauth-local covers the mocked local Gmail OAuth control chain across service, loopback, factory, IPC, preload, and External Access UI without real Google credentials.',
+      'The packaged local-inbox smoke creates a task, previews local inbox evidence in External Access, confirms the source-review dialog, and verifies the source-context memory write path without live providers.',
+      'Settings and Model consume ConfigurationSafetyReport as read-only configuration safety boundaries with secret exposure, manual-probe, approval-required, and blocked capability states.',
+      'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
+      'Default Gmail, the first Brainstorming Skill, and Playwright MCP catalogue entries share product-surface definitions, and External Access, Skills, and MCP pages consume the same CapabilityRegistry and ConfigurationSafetyReport rows as read-only safety strips.',
+      'External Access, Skills, and MCP keep catalogue counts separate from connected, ready, and exposed-tool counts, so built-in optional previews do not imply authorization, service readiness, or model-visible exposure.',
+      'Runtime context formatting includes capability count summaries but does not emit hidden optional catalogue ids or reserved Skill/MCP/Browser scaffold descriptors as model-visible tools.',
+      'Provider-native tool calls are rechecked against AgentToolExposureMatrix at execution-plan time, so schema-hidden or channel-hidden tools cannot execute even if a provider payload includes them.',
+    ],
+    outOfAgentPrinciplesScope: [
+      'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',
+    ],
+    gaps: [
+      'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
+      'External Access now has a structured connector status service, adapter contract, opt-in local inbox adapter, opt-in Gmail adapter, Gmail OAuth service/IPC/UI token/session/disconnect plumbing, confirmed source-ingestion service/UI, local packaged source-write smoke, and mocked local OAuth acceptance; live OAuth smoke coverage and production Google verification remain future work.',
+      'Sandbox coding capability remains hidden until both the feature flag and backend readiness support the capability.',
+      'ConfigurationSafetyReport is exposed through AiConfigStatus and consumed by Settings, Model, External Access, Skills, and MCP; retained capability pages can reuse the same safety projection.',
+    ],
+    nextImplementation: [
+      'Connect future External Access provider adapters to ExternalAccessStatusService, and connect richer Skills, MCP, and browser/operator pages or services to the existing CapabilityRegistry product-surface status input.',
+      'Defer explicitly opted-in live Gmail OAuth smoke coverage until real Google OAuth credentials are available for local validation.',
+      'Keep ConfigurationSafetyReport on AiConfigStatus when future settings or capability pages render safety state.',
+      'Require RuntimeCapabilitySnapshot from any future entry point where model, external access, workspace checks, or tool exposure changes execution permission.',
+    ],
+  },
+];
+
+export function summarizeRuntimeLifecycleCoverage(): Record<RuntimeLifecycleCoverageStatus, number> {
+  return RUNTIME_LIFECYCLE_COVERAGE.reduce<Record<RuntimeLifecycleCoverageStatus, number>>((summary, item) => {
+    summary[item.status] += 1;
+    return summary;
+  }, {
+    implemented: 0,
+    partial: 0,
+    missing: 0,
+  });
+}
+
+export function classifyRuntimeLifecycleNextAction(action: string): RuntimeLifecycleNextActionTiming {
+  const normalized = action.trim();
+  if (
+    /UI work|External Access|connector .*service|connector source ingestion|connector ingestion service|Run-side|subagent|deferred|later|until|when .*resumes|if .*return|not active/i.test(normalized)
+  ) {
+    return 'deferred_surface';
+  }
+  if (
+    /future|^Keep\b|^Require\b|^Route any new\b|new .*must|must .*future/i.test(normalized)
+  ) {
+    return 'preservation_constraint';
+  }
+  return 'current_candidate';
+}
+
+export function listRuntimeLifecycleNextActions(
+  coverage: RuntimeLifecycleCoverageItem[] = RUNTIME_LIFECYCLE_COVERAGE,
+): RuntimeLifecycleNextAction[] {
+  return coverage.flatMap((item) =>
+    item.nextImplementation.map((action) => ({
+      phase: item.phase,
+      priority: item.priority,
+      scope: item.scope,
+      timing: classifyRuntimeLifecycleNextAction(action),
+      action,
+    })),
+  ).sort((left, right) => {
+    const priorityOrder: Record<RuntimeLifecycleCoveragePriority, number> = {
+      p0: 0,
+      p1: 1,
+      p2: 2,
+    };
+    const timingOrder: Record<RuntimeLifecycleNextActionTiming, number> = {
+      current_candidate: 0,
+      preservation_constraint: 1,
+      deferred_surface: 2,
+    };
+    return (
+      priorityOrder[left.priority] - priorityOrder[right.priority]
+      || timingOrder[left.timing] - timingOrder[right.timing]
+      || left.phase.localeCompare(right.phase)
+      || left.action.localeCompare(right.action)
+    );
+  });
+}

@@ -1,0 +1,1590 @@
+import type { RuntimeEntrypointGate } from './runtime-entrypoint-coverage.js';
+import type { TaskplaneWriteIntent } from './taskplane-write-intent.js';
+
+export type ProductFeatureAuditPriority = 'p0' | 'p1' | 'p2';
+
+export type ProductFeatureAuditStatus = 'covered' | 'partial' | 'deferred';
+
+export type ProductFeatureMutationBoundary =
+  | 'read'
+  | 'execute'
+  | 'propose'
+  | 'persist'
+  | 'clear'
+  | 'configure';
+
+export type ProductFeatureMovement =
+  | 'ask'
+  | 'research'
+  | 'shape'
+  | 'decompose'
+  | 'execute'
+  | 'verify'
+  | 'persist'
+  | 'handoff'
+  | 'pause';
+
+export type ProductRuntimeRuleSkillId =
+  | 'goalpilot.task_router'
+  | 'agent.execution_rules'
+  | 'agent.output_contract'
+  | 'task.memory_rules'
+  | 'native.runtime_orchestration'
+  | 'decision.writeback_orchestration';
+
+export type ProductFeatureWriteIntentKind =
+  | TaskplaneWriteIntent['type']
+  | 'task_file.propose'
+  | 'artifact.propose'
+  | 'work_habit.propose'
+  | 'none';
+
+export type ProductFeatureRuntimeClosure = 'supported' | 'partial' | 'not_applicable' | 'missing';
+
+export type ProductFeatureImpactAuditItem = {
+  id: string;
+  label: string;
+  priority: ProductFeatureAuditPriority;
+  status: ProductFeatureAuditStatus;
+  boundaries: ProductFeatureMutationBoundary[];
+  movements: ProductFeatureMovement[];
+  ruleSkills: ProductRuntimeRuleSkillId[];
+  writeIntents: ProductFeatureWriteIntentKind[];
+  gates: RuntimeEntrypointGate[];
+  cliOnlyClosure: ProductFeatureRuntimeClosure;
+  futureApiClosure: ProductFeatureRuntimeClosure;
+  evidence: string[];
+  gaps: string[];
+  nextActions: string[];
+};
+
+export type ProductFeatureImpactAuditIssue = {
+  featureId: string;
+  issue: string;
+};
+
+export type BusinessLineFirstAuditStatus = 'ready' | 'recoverable' | 'blocked';
+
+export type BusinessLineFirstAuditCheck = {
+  id: string;
+  label: string;
+  status: BusinessLineFirstAuditStatus;
+  evidence: string[];
+  gaps: string[];
+  nextActions: string[];
+};
+
+export type BusinessLineFirstRuleLayerDocId =
+  | 'agents_adapter'
+  | 'goalpilot'
+  | 'memory_spec'
+  | 'handoff_policy'
+  | 'priority_routing'
+  | 'runtime_orchestration';
+
+export type BusinessLineFirstRuleLayerDocInput = Partial<Record<BusinessLineFirstRuleLayerDocId, string>>;
+
+export type BusinessLineFirstRuleLayerAuditCheck = {
+  id: string;
+  label: string;
+  docId: BusinessLineFirstRuleLayerDocId;
+  requiredFragments: string[];
+  forbiddenOwnershipPatterns?: RegExp[];
+};
+
+export type BusinessLineFirstImplementationSourceId =
+  | 'app_ui'
+  | 'business_line_service'
+  | 'run_service'
+  | 'writeback_apply_plan'
+  | 'writeback_dispatch_service'
+  | 'writeback_proposal';
+
+export type BusinessLineFirstImplementationSourceInput = Partial<Record<BusinessLineFirstImplementationSourceId, string>>;
+
+export type BusinessLineFirstImplementationAuditCheck = {
+  id: string;
+  label: string;
+  sourceId: BusinessLineFirstImplementationSourceId;
+  requiredFragments: string[];
+  forbiddenPatterns?: RegExp[];
+  allowsLegacyTaskRecovery?: boolean;
+};
+
+export type RuntimeArchitectureCloseoutSourceId =
+  | 'product_feature_audit'
+  | 'product_feature_audit_test'
+  | 'goalpilot'
+  | 'runtime_orchestration'
+  | 'capability_mapping'
+  | 'pilot_decision'
+  | 'decision_writeback'
+  | 'task_memory'
+  | 'context_transition'
+  | 'rc_test_plan';
+
+export type RuntimeArchitectureCloseoutSourceInput = Partial<Record<RuntimeArchitectureCloseoutSourceId, string>>;
+
+export type RuntimeArchitectureCloseoutAuditCheck = {
+  id: string;
+  label: string;
+  sourceId: RuntimeArchitectureCloseoutSourceId;
+  requiredFragments: string[];
+  forbiddenPatterns?: RegExp[];
+};
+
+const DEFERRED_COMPLETION_SIGNALS = [
+  /\b(?:deferred|diagnostic-only|unimplemented|not yet|pending until)\b/i,
+  /future (?:agent api|api|provider-visible|scheduled|background|execution|workspace-write)/i,
+];
+
+const REQUIRED_BUSINESS_LINE_FIRST_CHECK_IDS = [
+  'primary_language',
+  'canonical_ownership',
+  'learning_loop_smoke',
+  'risky_learning_decision_gate',
+  'historical_task_recovery',
+  'external_signal_projection',
+] as const;
+
+const REQUIRED_BUSINESS_LINE_FIRST_RULE_LAYER_CHECK_IDS = [
+  'agents_business_line_owner',
+  'goalpilot_business_advancement',
+  'memory_business_surfaces',
+  'handoff_v2_terms',
+  'priority_business_attention',
+  'scheduler_business_line_loops',
+  'legacy_task_recovery_documented',
+] as const;
+
+const REQUIRED_BUSINESS_LINE_FIRST_IMPLEMENTATION_CHECK_IDS = [
+  'durable_business_writes_resolve_owner',
+  'run_service_business_line_scope',
+  'writeback_proposal_preserves_business_line_id',
+  'writeback_apply_plan_preserves_business_line_id',
+  'writeback_dispatch_enforces_business_line_owner',
+  'primary_ui_routes_business_first',
+  'legacy_tasks_explorer_labeled',
+] as const;
+
+const REQUIRED_RUNTIME_ARCHITECTURE_CLOSEOUT_CHECK_IDS = [
+  'cli_first_business_line_loop',
+  'agent_api_future_deferred',
+  'matrix_future_below_pilot',
+  'capability_surfaces_do_not_own_business_memory',
+  'pilot_bounded_backend_neutral',
+  'scheduler_business_line_carrier',
+  'handoff_typed_recovery',
+  'review_learning_typed_artifacts',
+  'writeback_product_controlled',
+  'business_memory_rc_manual_chain',
+  'tests_guard_architecture_drift',
+] as const;
+
+const TASK_FIRST_OWNERSHIP_DRIFT_PATTERNS = [
+  /\bTask\s+is\s+the\s+durable\s+product\s+object\b/i,
+  /\bTasks?\s+(?:are|is|remain|stays?|becomes?|acts?\s+as)\s+the\s+(?:durable|default|primary|canonical)\s+(?:product\s+)?(?:owner|object|model)\b/i,
+  /\bTask\.md\s+(?:is|remain|stays?|becomes?|acts?\s+as)\s+the\s+(?:whole|primary|default|canonical)\s+business\s+memory\b/i,
+  /\btask\s+queue\s+(?:is|becomes?|acts?\s+as)\s+the\s+(?:durable|default|primary)\s+product\s+(?:model|owner)\b/i,
+];
+
+const BUSINESS_MEMORY_OWNER_DRIFT_PATTERNS = [
+  /\b(?:MCP|skills?|External Access|external access)\s+(?:owns?|owning|owned)\s+(?:durable\s+)?business memory\b/i,
+  /\bbusiness memory\s+(?:is|are|becomes?|stays?|remains?)\s+owned by\s+(?:MCP|skills?|External Access|external access)\b/i,
+];
+
+const DURABLE_STATE_OWNER_DRIFT_PATTERNS = [
+  /\b(?:Pilot|Scheduler|scheduler|matrix runtime|matrix runtimes|wanman_matrix|Wanman)\s+(?:owns?|owning|owned)\s+durable state\b/i,
+  /\bit\s+owns\s+durable state\b/i,
+  /\bdurable state\s+(?:is|are|becomes?|stays?|remains?)\s+owned by\s+(?:Pilot|Scheduler|scheduler|matrix runtime|matrix runtimes|wanman_matrix|Wanman)\b/i,
+];
+
+const RAW_TRANSCRIPT_PRODUCT_TRUTH_DRIFT_PATTERNS = [
+  /\braw transcripts?\s+(?:is|are|becomes?|stays?|remains?)\s+(?:product truth|durable memory|the recovery artifact)\b/i,
+  /\braw transcripts?\s+as\s+product truth\b/i,
+  /\btranscript dumps?\s+(?:is|are|becomes?|stays?|remains?)\s+(?:product truth|durable memory|the recovery artifact)\b/i,
+];
+
+const TEST_EXPECTATION_TASK_FIRST_DRIFT_PATTERNS = [
+  /\.(?:toContain|toMatch)\(\s*['"`][^'"`]*(?:Task is the durable product object|Tasks are the durable product owner|task-first product ownership)/i,
+];
+
+export const BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT: BusinessLineFirstRuleLayerAuditCheck[] = [
+  {
+    id: 'agents_business_line_owner',
+    label: 'AGENTS adapter names business-line durable ownership',
+    docId: 'agents_adapter',
+    requiredFragments: [
+      'owns durable business-line state',
+      'business memory, records',
+      'Tasks remain execution units and Next Action carriers',
+    ],
+  },
+  {
+    id: 'goalpilot_business_advancement',
+    label: 'GoalPilot is business advancement oriented',
+    docId: 'goalpilot',
+    requiredFragments: [
+      'GoalPilot Business Advancement Framework',
+      'business-line advancement',
+      'A Business Line is the durable product object',
+      'A Task is the execution unit and Next Action carrier',
+    ],
+  },
+  {
+    id: 'memory_business_surfaces',
+    label: 'Memory spec includes business records, context, and learning surfaces',
+    docId: 'memory_spec',
+    requiredFragments: [
+      'BusinessLineContextPack',
+      'Business Records',
+      'Reviews',
+      'Skills/SOP Revisions',
+      'Tasks remain execution units and Next Action',
+    ],
+  },
+  {
+    id: 'handoff_v2_terms',
+    label: 'Handoff V2 terms exist',
+    docId: 'handoff_policy',
+    requiredFragments: [
+      'ephemeral_session_handoff',
+      'durable_business_handoff',
+      'next_action_handoff',
+      'runtime_or_subagent_handoff',
+    ],
+  },
+  {
+    id: 'priority_business_attention',
+    label: 'Priority routing is business-line attention oriented',
+    docId: 'priority_routing',
+    requiredFragments: [
+      'business-line attention',
+      'The primary ranking object is the Business Line',
+      'The executable target is a Next Action',
+      'legacy task recovery compatibility input',
+    ],
+  },
+  {
+    id: 'scheduler_business_line_loops',
+    label: 'Scheduler and orchestration define business-line loops',
+    docId: 'runtime_orchestration',
+    requiredFragments: [
+      'business-line loop is the product-level scheduler object',
+      'A sensor is read-only loop observation',
+      'An automation is a bounded loop action',
+      'scheduled/event carriers',
+    ],
+  },
+  {
+    id: 'legacy_task_recovery_documented',
+    label: 'Legacy task recovery remains documented',
+    docId: 'goalpilot',
+    requiredFragments: [
+      'Legacy task recovery remains supported',
+      'legacy task recovery',
+      'recover business line before durable writes when possible',
+    ],
+  },
+];
+
+export const BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT: BusinessLineFirstImplementationAuditCheck[] = [
+  {
+    id: 'durable_business_writes_resolve_owner',
+    label: 'Durable business writes resolve business-line owner before persistence',
+    sourceId: 'business_line_service',
+    requiredFragments: [
+      'async createBusinessLineRecord',
+      'explicitBusinessLineId: input.businessLineId',
+      'Business line write requires a resolved business line owner.',
+      'businessLineId: ownership.businessLineId',
+      'async createBusinessLineNextAction',
+      'businessLineId: businessLine.id',
+      'async proposeBusinessLineSopRevision',
+      'businessLineId: ownership.businessLineId',
+    ],
+  },
+  {
+    id: 'run_service_business_line_scope',
+    label: 'RunService preserves business-line scope and context pack',
+    sourceId: 'run_service',
+    requiredFragments: [
+      'explicitBusinessLineId: run.businessLineId ?? null',
+      'let businessLineId = explicitBusinessLineId || task.businessLineId || null',
+      'runScopeRequiresBusinessLine(runScope.kind) && !runScope.businessLineId',
+      'Business line scope requires an owner',
+      'appendBusinessLineContextPackToPrompt',
+      'attachRunScope(created, runScope)',
+    ],
+  },
+  {
+    id: 'writeback_proposal_preserves_business_line_id',
+    label: 'Writeback proposal preserves businessLineId in business-line-native proposals',
+    sourceId: 'writeback_proposal',
+    requiredFragments: [
+      'const businessLineId = intent.businessLineId ?? fallbackBusinessLineId ?? null',
+      'businessLineId,',
+      'intent: { ...intent, businessLineId }',
+      'business_record.create',
+      'business_review.record',
+      'business_next_action.create',
+      'business_sop_revision.propose',
+      'business_handoff.record',
+    ],
+  },
+  {
+    id: 'writeback_apply_plan_preserves_business_line_id',
+    label: 'Writeback apply plan carries businessLineId into inputs and timeline',
+    sourceId: 'writeback_apply_plan',
+    requiredFragments: [
+      'const businessLineId = params.proposal.businessLineId ?? null',
+      'businessLineId,',
+      'const basePayload = {',
+      'payload: basePayload',
+      'business_record.create',
+      'business_review.record',
+      'business_next_action.create',
+      'business_sop_revision.propose',
+      'business_handoff.record',
+    ],
+  },
+  {
+    id: 'writeback_dispatch_enforces_business_line_owner',
+    label: 'Main-side writeback dispatch enforces business-line ownership',
+    sourceId: 'writeback_dispatch_service',
+    requiredFragments: [
+      'const explicitBusinessLineId = getPlanBusinessLineId(params.plan)',
+      'const businessLineNative = isBusinessLineNativePlan(params.plan)',
+      'this.businessLineOwnershipResolver.resolveOwnership',
+      "allowOneOff: !businessLineNative && !explicitBusinessLineId",
+      'ownership.status === \'mismatch\'',
+      'Write Intent 已暂停：业务线写入缺少可解析的业务线归属。',
+      'taskFileId: params.plan.input.id',
+    ],
+  },
+  {
+    id: 'primary_ui_routes_business_first',
+    label: 'Primary Work navigation stays business-line-first',
+    sourceId: 'app_ui',
+    requiredFragments: [
+      '<div className="nav-zone-label">Work</div>',
+      'label="Today"',
+      'label="Business"',
+      'label="Chat"',
+      'label="Decisions"',
+      'tasks: \'Legacy Tasks\'',
+      'label="Legacy Tasks"',
+    ],
+    forbiddenPatterns: [
+      /label="Tasks"\s+active=\{route === 'tasks'\}/,
+      /<NavItem[^>]+label="Tasks"[^>]+onClick=\{\(\) => onNavigate\('tasks'\)\}/,
+    ],
+  },
+  {
+    id: 'legacy_tasks_explorer_labeled',
+    label: 'Legacy task recovery remains legal only when explicitly labeled',
+    sourceId: 'app_ui',
+    requiredFragments: [
+      'tasks: \'Legacy Tasks\'',
+      '<NavItem icon={<IconTasks />} label="Legacy Tasks" active={route === \'tasks\'} onClick={() => onNavigate(\'tasks\')} />',
+    ],
+    allowsLegacyTaskRecovery: true,
+  },
+];
+
+export const RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT: RuntimeArchitectureCloseoutAuditCheck[] = [
+  {
+    id: 'cli_first_business_line_loop',
+    label: 'CLI-first execution is the first-release product loop',
+    sourceId: 'product_feature_audit',
+    requiredFragments: [
+      'CLI-first business-line runtime smoke now proves Business Line -> Next Action -> selected Codex CLI native adapter contract',
+      'business-line Write Intent approval',
+      'confirmation-gated Business Record/Next Action/SOP proposal writeback',
+      'future Next Action and SOP source evidence',
+    ],
+  },
+  {
+    id: 'agent_api_future_deferred',
+    label: 'Agent API remains same-level, partial, and gated',
+    sourceId: 'product_feature_audit',
+    requiredFragments: [
+      'Agent API Runtime capability summaries now expose a deferred contract layer',
+      'runtimeLevel=same_level_future',
+      'configuredProviderIsExecutionReady=no',
+      'providerToolProbeTaskExecutionReadiness=not_evaluated',
+      'providerToolProbePromotesExecutionRun=no',
+      'providerToolProbeSeparateExecutionChain=execution_run_promotion',
+      'executionReady=no',
+      'rightPanelExecutionEvidenceChain=execution_run_promotion',
+      'decompositionEvidenceChain=decomposition_promotion',
+      'schedulerEvidenceChain=runtime_scheduler',
+      'patchApplyEvidenceChain=sandbox_patch_promotion',
+      'globalAgentApiPromotionAllowed=false',
+    ],
+  },
+  {
+    id: 'matrix_future_below_pilot',
+    label: 'Matrix runtime remains future-only below Pilot',
+    sourceId: 'product_feature_audit',
+    requiredFragments: [
+      'Wanman matrix runtime is reserved as a future executor backend below Pilot',
+      'runtimeExecutable=no',
+      'productCoordinator=false',
+      'productionInvocationAllowed=false',
+      'writeBoundary=write_intent_only',
+    ],
+    forbiddenPatterns: DURABLE_STATE_OWNER_DRIFT_PATTERNS,
+  },
+  {
+    id: 'capability_surfaces_do_not_own_business_memory',
+    label: 'MCP, skills, and external access stay scoped capabilities',
+    sourceId: 'runtime_orchestration',
+    requiredFragments: [
+      'MCP tools, skills, external access, hooks, browser/computer-use, and local',
+      'SOPs/skills remain business memory',
+      'records whether a surface is context-only, read-only, runtime-native gated, or blocked',
+    ],
+  },
+  {
+    id: 'pilot_bounded_backend_neutral',
+    label: 'Pilot is bounded, backend-neutral product coordination',
+    sourceId: 'pilot_decision',
+    requiredFragments: [
+      "Pilot is Taskplane's product-side decision posture",
+      'does not own durable state',
+      'does not replace executor runtimes',
+      'Taskplane remains the business-line and mission control layer',
+    ],
+    forbiddenPatterns: DURABLE_STATE_OWNER_DRIFT_PATTERNS,
+  },
+  {
+    id: 'scheduler_business_line_carrier',
+    label: 'Scheduler remains a business-line loop carrier',
+    sourceId: 'runtime_orchestration',
+    requiredFragments: [
+      'business-line loop is the product-level scheduler object',
+      'Scheduled, event-triggered, and routine tasks are execution carriers',
+      'not the durable scheduler owner',
+      'schedulerProductOwner=false',
+      'loopCarrier=business_line_next_action',
+      'mutationGate=standing_approval_or_decision',
+      'Standing Approval',
+    ],
+    forbiddenPatterns: DURABLE_STATE_OWNER_DRIFT_PATTERNS,
+  },
+  {
+    id: 'handoff_typed_recovery',
+    label: 'Handoff is typed recovery, not transcript dumping',
+    sourceId: 'context_transition',
+    requiredFragments: [
+      'Handoff is a boundary, not a transcript dump',
+      'typed `handoff_recovery_artifact`',
+      'gated writeback target',
+      'rawTranscriptIncluded=false',
+    ],
+    forbiddenPatterns: RAW_TRANSCRIPT_PRODUCT_TRUTH_DRIFT_PATTERNS,
+  },
+  {
+    id: 'review_learning_typed_artifacts',
+    label: 'Review and learning produce typed artifacts',
+    sourceId: 'task_memory',
+    requiredFragments: [
+      'Review Minimum Shape',
+      'Learning Candidate',
+      'SOP Revision Minimum Shape',
+      'Provenance: review id, run id, source record, user correction, or Decision',
+      'Post-Action Review And Learning',
+    ],
+    forbiddenPatterns: RAW_TRANSCRIPT_PRODUCT_TRUTH_DRIFT_PATTERNS,
+  },
+  {
+    id: 'writeback_product_controlled',
+    label: 'Writeback stays product-controlled',
+    sourceId: 'decision_writeback',
+    requiredFragments: [
+      'No backend may bypass Taskplane write gates',
+      'Write Intent is a proposal',
+      'Persistence happens only after validation',
+      'Business-line Write Intent must carry or resolve a business-line owner',
+    ],
+  },
+  {
+    id: 'business_memory_rc_manual_chain',
+    label: 'RC manual plan covers business-memory context recovery and review',
+    sourceId: 'rc_test_plan',
+    requiredFragments: [
+      'Business-Memory Closeout Path',
+      'Business-line discussion',
+      'Next Action execution',
+      'Context preservation/reset',
+      'Rehydration',
+      'Continue goal',
+      'Artifact/writeback review',
+      'Business Record / Review / SOP proposal',
+      'Agent API remains deferred/gated and must not satisfy CLI-first readiness',
+    ],
+  },
+  {
+    id: 'tests_guard_architecture_drift',
+    label: 'Tests guard task-first and deferred-runtime drift',
+    sourceId: 'product_feature_audit_test',
+    requiredFragments: [
+      'allows provisional GoalPilot naming while blocking task-first durable ownership drift',
+      'does not let deferred contracts count as covered product completion',
+      'keeps business-line architecture readiness distinct from future API deferred paths',
+      'records Agent API execution pilot-decision readiness chips',
+    ],
+    forbiddenPatterns: TEST_EXPECTATION_TASK_FIRST_DRIFT_PATTERNS,
+  },
+];
+
+function isClosedRuntimeClosure(closure: ProductFeatureRuntimeClosure): boolean {
+  return closure === 'supported' || closure === 'not_applicable';
+}
+
+function includesNormalizedFragment(content: string, fragment: string): boolean {
+  const normalize = (value: string) => value.replace(/\s+/g, ' ').trim();
+  return normalize(content).includes(normalize(fragment));
+}
+
+export const BUSINESS_LINE_FIRST_PRODUCT_AUDIT: BusinessLineFirstAuditCheck[] = [
+  {
+    id: 'primary_language',
+    label: 'Primary product language and work navigation',
+    status: 'ready',
+    evidence: [
+      'Work navigation exposes Today, Business, Chat, and Decisions as primary routes while historical task recovery is labeled Legacy Tasks.',
+      'Business workspace uses Overview, Records, Next Actions, Learning, Skills/SOPs, and Settings as business-line surfaces.',
+      'Today renders business-line suggestions with why now, source, risk, effort, confidence, and business-line target metadata.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'canonical_ownership',
+    label: 'Canonical business-line ownership',
+    status: 'ready',
+    evidence: [
+      'Business lines can own action tasks directly through businessLineId without relying on legacy_task_id.',
+      'Repository resolvers map runs, source context, artifacts, task files, and Decisions back to the owning business line.',
+      'Canonical action membership is persisted on task ownership and remains visible after display-window business records are paged out.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'learning_loop_smoke',
+    label: 'Business-line learning loop smoke',
+    status: 'ready',
+    evidence: [
+      'Smoke coverage creates a business line, receives a Today progress suggestion, records execution evidence on the next action, completes that action, records a post-action review, creates the next action, accepts a safe SOP revision, and verifies the next Today suggestion changes to the reviewed action with SOP source evidence.',
+      'CLI-first business-line runtime smoke now proves Business Line -> Next Action -> selected Codex CLI native adapter contract -> run evidence -> business-line Write Intent approval -> confirmation-gated Business Record/Next Action/SOP proposal writeback -> post-run review -> future Next Action and SOP source evidence.',
+      'Review memory is canonicalized through BusinessLineReview projection so the same post-action review is not double-counted as native business records.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'risky_learning_decision_gate',
+    label: 'Risky learning Decision gate',
+    status: 'ready',
+    evidence: [
+      'Risky canonical business-line SOP revisions create business-line scoped policy_change Decisions.',
+      'Accepting a risky SOP revision is blocked until the linked Decision is approved.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'historical_task_recovery',
+    label: 'Historical task data recovery',
+    status: 'recoverable',
+    evidence: [
+      'Legacy project and routine tasks are adapted into business lines through legacy_task_id.',
+      'Legacy child tasks under old projects resolve business-line ownership through their parent task.',
+      'The hidden Tasks compatibility route remains reachable through the Legacy Tasks nav item for historical task, run, file, and artifact recovery.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+  {
+    id: 'external_signal_projection',
+    label: 'External access and automation projection',
+    status: 'ready',
+    evidence: [
+      'Scheduled/event tasks project into business-line Automations & Sensors instead of a separate per-business runtime matrix.',
+      'External Access previews create reviewable business record candidates and confirmed records stay out of future context unless reviewed or confirmed.',
+      'External source ingestion rejects mismatched businessLineId targets that do not match the selected task ownership.',
+    ],
+    gaps: [],
+    nextActions: [],
+  },
+];
+
+export const PRODUCT_FEATURE_IMPACT_AUDIT: ProductFeatureImpactAuditItem[] = [
+  {
+    id: 'right_panel_agent_run',
+    label: 'Right-panel chat, run start, progress, and completion',
+    priority: 'p0',
+    status: 'partial',
+    boundaries: ['execute', 'propose', 'persist'],
+    movements: ['shape', 'execute', 'verify', 'persist', 'handoff'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'agent.output_contract',
+      'task.memory_rules',
+      'decision.writeback_orchestration',
+      'native.runtime_orchestration',
+    ],
+    writeIntents: [
+      'task_record.create',
+      'task_file.propose',
+      'artifact.propose',
+      'source_context.create',
+      'decision.create',
+      'subtask.propose',
+      'task.update_next_step',
+      'task.mark_blocked',
+      'task.complete.propose',
+    ],
+    gates: [
+      'runtime_action',
+      'runtime_context_assembly',
+      'context_readiness',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'subtask_start',
+      'pre_step',
+      'post_step',
+      'operator_confirmation',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'partial',
+    evidence: [
+      'Agent CLI runs return runtime evidence and compact progress projection.',
+      'Agent CLI runs record context.readiness.evaluate before native CLI execution and pass the verdict into the context bridge.',
+      'Agent CLI runs record a Native CLI adapter contract step covering selected CLI runtime, business-line or one-off scope, Next Action carrier, context manifest, allowed file/tool/MCP surface, run evidence, Write Intent proposal boundary, post-run review, and compact/handoff policy.',
+      'Right-panel completed Agent CLI summaries now surface Native CLI adapter contract evidence for selected CLI runtime, businessLineId, Next Action carrier, context pack, run evidence, Write Intent marker, and post-run review without starting Agent API execution.',
+      'Taskplane extracts Write Intent from runtime output before product writes.',
+      'Shared writeback proposal builder normalizes runtime Write Intent into reusable product proposal surfaces.',
+      'Shared writeback apply plans map confirmed proposals to service inputs and timeline evidence.',
+      'Shared writeback dispatch applies plans through injected ports, so renderer and future service runtimes can share the same write boundary.',
+      'Main-side writeback dispatch now asks shared TaskAdvancementOrchestrator for a persistence movement before applying validated Write Intent through service ports.',
+      'Main-side writeback dispatch adapter wires shared dispatch to TaskService, DecisionService, TaskFileRepository, and ArtifactRepository ports.',
+      'Right-panel source, structured, subtask, task-record, and task-memory confirmations invoke main-side writeback IPC when available, with renderer-port dispatch kept as a compatibility fallback.',
+      'Right-panel proposals can confirm task records, task files, task artifacts, source contexts, decisions, next-step updates, blockers, completion proposals, and subtask drafts.',
+      'Task Dynamics now builds a Run-detail writeback approval queue from the same shared proposal builder and dispatches confirmed non-subtask Write Intent or task-memory proposals through main-side writeback IPC outside the right panel.',
+      'Native CLI artifact.propose Write Intent can now carry kind=patch, validate diff-like content, and save confirmed patch evidence through the main-side ArtifactRepository createPatchFromRun port.',
+      'Confirmed run-backed patch artifacts can be normalized into imported_patch_artifact sandbox draft sources and previewed through the existing sandbox patch review planner before any workspace promotion Decision.',
+      'Completed native runs and child-task advancement messages summarize Taskplane web research capture and native CLI capability-tagged web/search events.',
+      'Right-panel progress and completion summaries include the Taskplane web research query when Source Context is captured, so operators can connect saved sources back to the triggering research request.',
+      'Right-panel completed-run summaries also surface persisted source_context_ids or the Source Context batch id for captured web research, so saved sources are traceable from the chat summary back to durable evidence.',
+      'Pre-run web research trigger conditions ignore bare runtime names and generic current-task wording, so selecting Codex CLI or Claude Code does not itself request external research.',
+      'Pre-run web research trigger conditions now recognize fresh external requests such as latest/current pricing, current API status, and recent release changes without treating current-task wording as research.',
+      'The non-live Agent CLI web research bridge smoke exercises fresh/current trigger detection, mocked OpenAI web_search output, Source Context persistence, the preparation Run step, and renderer progress mapping without calling external networks.',
+      'Context readiness now requires non-low-credibility fresh Source Context evidence for latest/current external requests, rejects stale, future-dated, or low-credibility source evidence, and still honors explicit no-research opt-outs before self_research routing.',
+      'Codex JSONL command_execution items are projected as shell_command run steps, so right-panel progress can show local command activity instead of only raw terminal output.',
+      'Agent CLI stdout JSONL lines are now projected into Run steps while the native process is still running, with completion-time transcript parsing kept as a fallback.',
+      'Right-panel Agent CLI progress now distinguishes native workspace_write capability events as no-direct-write reviewable write candidates that require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review/promotion evidence instead of presenting them as ordinary workspace activity.',
+      'Completed native run chat summaries now mention local command or workspace activity as well as web research activity, while workspace_write steps are prioritized as no-direct-write reviewable write candidates instead of ordinary local activity even when web activity is also present.',
+      'Right-panel task chat now runs through shared PilotDecision and TaskAdvancementOrchestrator before Agent CLI launch, preserving operation mode, backendPlan, message priority, user-owned approval boundaries, and executor routing.',
+      'Pilot backend plans now record backendChoiceEvidence=recorded and durableStateMutationAllowed=no in run-step and Agent API readiness evidence, so DecisionBackend choice stays auditable routing evidence instead of durable state mutation.',
+      'Agent CLI run records preserve the trimmed Pilot decision snapshot as a Pilot 决策辅助计划 step for phase-2 auditability.',
+      'Agent API chat invocations preserve the same trimmed Pilot decision snapshot in invocation provenance.',
+      'Right-panel task chat now routes explicit selected Agent API execution requests such as "开始执行当前任务" and task-bound progress intents such as "继续完善当前任务" through Taskplane RunService triggerRun, preserving Pilot decision prompt shaping, task-bound Run evidence, post-run Write Intent proposal extraction, and normal API assistant behavior for ordinary task discussion or phase closeout handoff messages.',
+      'Right-panel Agent API execution triggerRun requests now carry requestSurface=right_panel_agent_execution for explicit execution and requestSurface=right_panel_task_progress_intent for task-bound progress intents, while RunService records the request surface in runtimeAction evidence before promotion readiness can satisfy the runtime_action gate.',
+      'Agent API execution promotion readiness now keeps generic requestSurface=ipc_run_trigger outside the ready request-surface evidence chain, so direct IPC/service starts can still run but cannot be promoted as the future automatic Agent API executor route without an operator-facing execution surface such as right_panel_agent_execution, right_panel_task_progress_intent, or readiness_smoke_operator_request.',
+      'Right-panel Agent API execution requests and progress intents now pass the bounded Pilot decision snapshot into RunService and persist it in the Agent API execution promotion readiness step input and readiness summary, including pilotDecisionEvidenceChain, pilotDecisionExecutor, pilotDecisionMovement, pilotDecisionOperationMode, pilotDecisionBackend, pilotDecisionMessagePriority, and pilotDecisionPriorityLane, so run evidence can tie the operator-facing request to the product control-layer decision instead of relying only on prompt text.',
+      'Right-panel completed Agent API execution summaries now surface Agent API execution promotion readiness Run-step evidence, including missing requirement lists from slash-separated readiness summaries, so operators can see why an execution remains partial without opening Run detail.',
+      'Right-panel completed Agent API execution summaries now also surface noWorkspaceWriteRequired=yes readiness as an operator-visible no-workspace-write completion signal, so no-write API runs can explain why reviewed patch apply was not needed without implying hidden workspace mutation.',
+      'Right-panel completed Agent API execution summaries prefer post-run promotion readiness over earlier pre-run readiness when both Run steps exist, so final execution evidence is not masked by the initial readiness gate.',
+      'Right-panel completed Agent API execution summaries now surface writeIntentDeclaredActionEvidenceChain, so operators can see whether promotion readiness is blocked by missing runtime-declared Write Intent evidence without opening Run detail.',
+      'Right-panel completed Agent API execution summaries now also surface reviewedPatchApplyBoundary, patchPromotionStatus, terminalRunStatus, and terminalEvidenceSummary when terminalEvidenceSummaryChain is ready, so operators can see the post-run evidence and workspace boundary without opening Run detail.',
+      'Retained API Runtime / Agent API-like RunService runs now record context.readiness.evaluate before provider-visible execution resolves runtime config.',
+      'Code Agent model-producer / future Agent API compatibility runs now record context.readiness.evaluate before model-producer execution, including blocked early exits.',
+      'Code Agent model-producer live and preview smokes default to skipReason=opt_in_required with provider=not-called, docker=not-started, and workspace=unchanged; explicitly enabled runs with incomplete provider config report skipReason=config_missing without provider, Docker, or workspace effects.',
+      'Shared AI Runtime invocation contract now includes an explicit skipped execution_run shape for deferred Agent API task execution, with promotionReady=no, promotionRequirements=0/11, requiredGates=0/9, promotionMissingRequirements=..., executionRunMissingRequirements=..., and missingGates=... summary evidence; Agent API capability diagnostics also label execution_run as deferred so API Runtime can be represented without silently starting provider-visible work.',
+      'Deferred Agent API execution_run invocations now carry the future provider-visible execution required gates, including runtime context assembly, context_readiness, task-memory guidance, subtask_start, and post_step, as structured metadata rather than text-only rationale.',
+      'Deferred Agent API execution_run invocations now also carry structured promotion requirements for selected-runtime contract, target-task identity, provider-visible preflight, runtime context manifest, context readiness, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, post-step verification, and Run evidence persistence.',
+      'evaluateAgentApiExecutionPromotionReadiness now keeps Agent API execution promotion closed until every structured requirement and future provider-visible execution gate has matching service evidence.',
+      'evaluateAgentApiExecutionPromotionReadinessFromEvidence now derives Agent API execution promotion readiness from structured service evidence for selected-runtime contract, target-task identity, provider-visible preflight, context manifest, context readiness step, task-memory guidance, Run Goal Contract, Write Intent extraction, reviewed-patch apply boundary, post-step verification, Run evidence persistence, and runtime gates, requires persisted post-run Run evidence task identity to match targetTaskId before target_task_identity and run_evidence_persistence can stay ready, requires run_evidence_persistence to carry a terminal run status and reviewable terminalEvidenceSummary before terminal evidence can stay ready, requires selected_runtime_contract to carry same-run, target-task, selected-provider, and product-control-layer Pilot executor decision evidence instead of only mode/layer/phase, requires provider_visible_preflight configured provider identity to match the selected runtime provider plus same-run and target-task identity evidence and explicit no-startup-probe evidence instead of only providerConfigured=true, requires runtime_context_manifest to carry the target task identity through contextManifestTaskId or a matching task=... manifest summary before context assembly can stay ready, requires context_readiness_step to carry target-task identity evidence instead of only ready/status step ids, requires task_memory_coverage to carry target-task memory coverage evidence instead of a naked gate boolean, requires simplicity_check to carry the target-task smallest movement evidence, requires runtime_action to carry run_start/run service evidence tied to the selected run and target task, treats task_memory_guidance as ready when there is no pending guidance or when completed guidance exists, while still requiring target-task identity evidence instead of only ready/count flags, requires run_goal_contract to carry persisted same-run and target-task identity evidence instead of only objective text and condition counts, requires write_intent_extraction to either include exactly one explicitly declared artifact.propose and exactly one explicitly declared task_file.propose with persisted same-run and target-task identity evidence, explicitly declared source_context.create as a source-memory proposal, or explicit noWriteIntentRequired evidence with an explicitly declared empty action list and no supported write actions, with duplicate, missing-declaration, or non-proposal write actions still blocked before future API execution can satisfy the reviewable writeback boundary, requires reviewed_patch_apply_boundary to carry applied patch promotion status, applied durable source-context writeback status, or explicit noWorkspaceWriteRequired/not_required evidence for true no-patch/no-write runs, with each boundary tied to same-run and target-task identity evidence, requires post_step_verification to carry same-run and target-task identity evidence, requires subtask_start to carry target-task readiness evidence instead of a naked gate boolean, ties simplicity_check, runtime_action, runtime_context_assembly, context_readiness, task_memory_coverage, task_memory_guidance, pre_step, subtask_start, and post_step gates to their matching service-evidence chains instead of accepting naked booleans, and now appends targetTask, runEvidenceTask, targetTaskEvidenceChain, runEvidenceTaskEvidenceChain, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerPreflightStatus, providerConfigured, configuredProvider, providerStartupProbe, providerPreflightRun, providerPreflightRunEvidenceChain, providerPreflightTask, providerPreflightTaskEvidenceChain, pilotDecisionEvidenceChain, pilotDecisionExecutor, pilotDecisionMovement, pilotDecisionOperationMode, pilotDecisionBackend, pilotDecisionMessagePriority, pilotDecisionPriorityLane, runId, writeIntentRun, writeIntentRunEvidenceChain, writeIntentTask, writeIntentTaskEvidenceChain, writeIntentExtraction, writeIntentSupportedActionCount, writeIntentActions, writeIntentDeclaredActionCount, declaredWriteIntentActions, writeIntentDeclaredActionEvidenceChain, writeIntentMode, noWriteIntentRequired, writeIntentActionIdentityChain, writeIntentActionBoundary, contextStep, contextStepTask, contextStepTaskEvidenceChain, contextManifest, contextManifestTask, contextManifestEvidenceChain, contextReadinessGateEvidenceChain, runtimeContextAssemblyGateEvidenceChain, simplicityCheck, simplicityCheckTask, simplicityCheckSmallestMovement, simplicityCheckGateEvidenceChain, runtimeAction, runtimeActionStatus, runtimeActionSurface, runtimeActionRun, runtimeActionRunIdentityChain, runtimeActionTask, runtimeActionGateEvidenceChain, taskMemoryGuidance, taskMemoryGuidanceCount, taskMemoryGuidanceTask, taskMemoryGuidanceTaskEvidenceChain, taskMemoryCoverage, taskMemoryCoverageTask, taskMemoryCoverageEvidenceChain, taskMemoryCoverageGateEvidenceChain, runGoalConditions, taskMemoryGuidanceGateEvidenceChain, runGoalRun, runGoalRunEvidenceChain, runGoalTask, runGoalTaskEvidenceChain, preStepGateEvidenceChain, subtaskStart, subtaskStartTask, subtaskStartEvidenceChain, subtaskStartGateEvidenceChain, reviewedPatchApplyBoundary, reviewedPatchExplicitApply, noWorkspaceWriteRequired, patchPromotionPreflight, patchPromotionStatus, patchPromotionRun, patchPromotionRunEvidenceChain, patchPromotionTask, patchPromotionTaskEvidenceChain, postStepRun, postStepRunEvidenceChain, postStepTask, postStepTaskEvidenceChain, postStepVerifier, postStepGateEvidenceChain, terminalRunStatus, terminalRunStatusEvidenceChain, terminalEvidence, terminalEvidenceSummary, terminalEvidenceSummaryChain, runtimeMode, and invocationLayer identity chips so future promotion no longer depends on hand-filled requirement arrays or opaque counts.',
+      'Agent API execution promotion readiness now keeps runtime_action missing unless runtimeActionRequestSurfaceEvidenceChain=ready, so a future API run cannot satisfy the execution gate with only run_start/run/task ids and no product request-surface identity.',
+      'Agent API execution promotion readiness now keeps scheduled_event_agent_trigger outside the ready request-surface evidence chain, so future API-backed scheduled/event execution cannot satisfy runtime_action until scheduled approval, run-limit, terminal-evidence, and workspace-boundary gates are explicitly promoted.',
+      'Agent API execution promotion readiness now also surfaces configuredProviderEvidenceChain beside providerConfigured and selectedRuntimeProviderEvidenceChain, and selected-runtime provider identity now requires providerConfigured=true plus a matching configured provider before selectedRuntimeProviderEvidenceChain can become ready; provider-visible preflight still requires same-run and target-task identity plus no-startup-probe evidence.',
+      'evaluateAgentApiExecutionPromotionReadinessForInvocation now keeps Agent API execution promotion closed for invocation-declared requirement/gate arrays, including completed invocation metadata, so future promotion depends on evaluateAgentApiExecutionPromotionReadinessFromEvidence service chains instead of runtime self-reporting.',
+      'Retained API Runtime / Agent API-like RunService runs now persist an Agent API execution promotion readiness Run step from real service evidence before provider-visible execution, recording selected-runtime contract, target-task identity, provider-visible preflight run/task identity, context manifest, context readiness, simplicity_check, runtime_action, pre-step, and subtask-start gates while keeping missing Write Intent extraction, reviewed-patch apply boundary, post-step verification, and terminal Run evidence explicit.',
+      'Completed retained API Runtime / Agent API-like RunService runs now persist a post-run Agent API execution promotion readiness Run step after terminal verification, adding post-step verification and terminal Run evidence persistence to the same service-evidence evaluator while keeping Write Intent extraction and reviewed-patch apply boundary closed unless real proposals and reviewed patch evidence exist.',
+      'Failed retained API Runtime / Agent API-like RunService runs now also persist a post-run Agent API execution promotion readiness Run step after terminal verification, treating failureReason as reviewable terminal evidence when output is absent while still requiring terminalRunStatus=failed and target-task identity.',
+      'RunService now records terminalEvidenceSummary in post-run Agent API execution promotion evidence as output_chars or failure_reason_chars, and run_evidence_persistence remains missing when terminal evidence is marked present without that reviewable evidence summary.',
+      'Post-run Agent API execution promotion readiness now reads same-run sandbox patch promotion records through SandboxPatchPromotionRepository.listForRun and satisfies the reviewed-patch apply boundary only when real applied promotion evidence exists and belongs to the same run and target task; blocked and pending patch promotion evidence remains visible as patchPromotionStatus but missing for reviewedPatchApplyBoundary until explicit apply completes successfully.',
+      'Post-run Agent API execution promotion readiness now has regression coverage proving parsed TASKPLANE_WRITE_INTENTS artifact.propose plus task_file.propose output and same-run patch promotion evidence satisfy Write Intent extraction and reviewed-patch apply requirements without hand-filled readiness.',
+      'Post-run Agent API execution promotion readiness now also derives no-write completion evidence from real RunService output when the completed run has reviewable terminal evidence, no parsed structured Write Intent actions, and no same-run sandbox patch promotions: writeIntentMode=no_write_intents_required, noWriteIntentRequired=yes, noWorkspaceWriteRequired=yes, and patchPromotionStatus=not_required can satisfy the writeback and workspace boundary without requiring a fake patch.',
+      'Post-run Agent API execution promotion readiness now treats source_context.create as a reviewable durable Write Intent: source-context-only runs can satisfy write_intent_extraction with writeIntentActionIdentityChain=ready, but reviewed_patch_apply_boundary remains missing until product-side durableWritebackBoundary evidence proves the same run and target task were actually persisted as Source Context.',
+      'Post-run Agent API execution promotion readiness now compares declared Write Intent action types against validated supported actions before satisfying write_intent_extraction or no-write promotion evidence, so malformed source_context.create payloads, duplicate actions, or unsupported declarations such as workspace.apply cannot be reclassified as no-write or source-context-only safe promotion evidence.',
+      'Agent API execution promotion readiness now requires explicit declaredActions evidence before write_intent_extraction can pass: supportedActions alone no longer proves runtime-declared Write Intent identity, and no-write promotion requires declaredActions=[] plus noWriteIntentRequired=yes.',
+      'Agent API execution promotion readiness now binds reviewedPatchApplyBoundary to the Write Intent mode: artifact.propose plus task_file.propose must satisfy an applied reviewed-patch boundary, source_context.create-only must satisfy durable_writeback evidence, and explicit no-write runs may satisfy noWorkspaceWriteRequired; mismatched patch/no-write/durable-writeback evidence leaves reviewed_patch_apply_boundary missing with reviewedPatchBoundaryMode=no_workspace_write_mismatch, durable_writeback_mismatch, or patch_apply_mismatch.',
+      'TaskplaneWriteback source_context.create apply plans now carry confirmationSurface evidence, dispatchTaskplaneWritebackApplyPlan returns durableWritebackBoundary when product-side source context persistence completes, and Agent API execution promotion can satisfy durable_writeback only when that applied boundary matches the same run and target task.',
+      'deriveAgentApiDurableWritebackBoundaryFromTaskEvidence can recover source_context.create durableWritebackBoundary from persisted Source Context run/task identity plus panel.source_updated confirmationSurface timeline evidence, so source-context promotion evidence survives page reloads and no longer depends only on the transient dispatch return value.',
+      'RunService post-run Agent API execution promotion readiness now refreshes TaskDetail and passes recovered source_context.create durableWritebackBoundary evidence from persisted Source Context plus panel.source_updated confirmationSurface into evaluateAgentApiExecutionPromotionReadinessFromEvidence, so source-context-only runs can reach reviewedPatchBoundaryMode=durable_writeback and requirements=11/11 from real service evidence after product-side confirmation.',
+      'RunService Agent API execution promotion evidence now derives a default Run Goal Contract completion condition from run instructions, next step, or task summary when the task has no explicit completion criteria, so runGoalConditions=1 can be backed by a concrete run objective instead of leaving run_goal_contract missing on otherwise reviewable runs.',
+      'Agent API capability registry diagnostics now derive deferred execution_run promotion requirements and missing lists through evaluateAgentApiExecutionPromotionReadinessFromEvidence, keeping settings and safety reports aligned with service-evidence readiness instead of a separate hand-filled list.',
+      'Agent API capability registry diagnostics now derive deferred execution_run key gates from the future provider-visible execution contract, so settings and safety reports expose context, task-memory, subtask-start, and post-step boundaries without parsing invocation text.',
+      'The Agent API promotion readiness smoke now runs the shared deferred execution_run invocation, evaluateAgentApiExecutionPromotionReadiness, and evaluateAgentApiExecutionPromotionReadinessFromEvidence paths as a read-only build-gated harness, proving deferred=0/11 requirements and 0/9 gates, partial=5/11 requirements and 3/9 gates, service-evidence=3/11 requirements and 7/9 gates with providerConfigured=ready, configuredProvider=openai, selectedRuntimeProvider=openai, selectedRuntimeProviderEvidenceChain=ready, providerStartupProbe=not_called, pilotDecisionEvidenceChain=ready, pilotDecisionExecutor=agent_api, pilotDecisionMovement=execute, pilotDecisionOperationMode=product_control_layer, simplicityCheckGateEvidenceChain=ready, runtimeActionGateEvidenceChain=ready, taskMemoryGuidance=ready, taskMemoryGuidanceCount=0, taskMemoryCoverageGateEvidenceChain=ready, runGoalConditions=1, preStepGateEvidenceChain=missing, subtaskStartGateEvidenceChain=ready, targetTaskEvidenceChain=missing, selectedRuntimeRunEvidenceChain=missing, providerPreflightRunEvidenceChain=missing, providerPreflightTaskEvidenceChain=ready, and writeIntentDeclaredActionEvidenceChain=missing evidence until persisted same-run Run evidence exists, postRunNoWriteback=9/11 requirements and 9/9 gates with terminalEvidenceSummary=output_chars=42 and terminal Run evidence plus post-step evidence but write_intent_extraction and reviewed_patch_apply_boundary still missing, patchProposalReady=11/11 requirements and 9/9 gates when artifact.propose plus task_file.propose declared Write Intents are tied to same-run applied patch promotion evidence with reviewedPatchApplyBoundary=ready, reviewedPatchExplicitApply=yes, patchPromotionPreflight=ready, patchPromotionStatus=applied, patchPromotionRunEvidenceChain=ready, and patchPromotionTaskEvidenceChain=ready, noWriteRequired=11/11 requirements and 9/9 gates when noWriteIntentRequired=yes, declaredActions=[] evidence, writeIntentMode=no_write_intents_required, noWorkspaceWriteRequired=yes, and patchPromotionStatus=not_required are tied to same-run target-task evidence, sourceContextOnly=10/11 requirements with durableWritebackStatus=missing so source_context.create remains a durable writeback proposal until product-side confirmation evidence exists, sourceContextApplied=11/11 requirements with durableWritebackStatus=applied and durableWritebackConfirmationSurface=readiness_smoke_operator_confirmation after dispatchTaskplaneWritebackApplyPlan returns product-side source context persistence evidence, sourceContextRecovered=11/11 requirements from persisted Source Context plus panel.source_updated timeline confirmation evidence, and synthetic-ready=11/11 requirements and 9/9 gates without provider calls or workspace writes.',
+      'The Agent API promotion readiness smoke now also proves runtimeActionRequestSurface=readiness_smoke_operator_request and runtimeActionRequestSurfaceEvidenceChain=ready in service evidence, keeping the request-surface gate visible without provider calls or workspace writes.',
+      'The opt-in Agent API execution preflight smoke verifies provider-visible text-call readiness through the shared provider mapping while defaulting to skipReason=opt_in_required, provider=not-called, executionRun=deferred, promotionReady=no, promotionRequirements=0/11, requiredGates=0/9, promotionMissingRequirements=..., executionRunMissingRequirements=..., executionRunMissingGates=..., missingGates=..., and workspace=unchanged; enabled runs with incomplete provider config report skipReason=config_missing without calling the provider.',
+      'Local Agent API execution preflight evidence on 2026-05-26 passed with fal-openrouter / google/gemini-2.5-flash, provider=called, phrase=matched, workspace=unchanged, and status=passed.',
+      'Run Goal Contract and Agent CLI context bridge now carry selected-runtime capability declarations into the native CLI prompt before execution.',
+      'Run verification and memory proposals remain product-controlled.',
+      'Post-step verification now treats native CLI capability=workspace_write steps as workspace write candidates that require reviewable promotion evidence instead of accepting ordinary command output as sufficient recovery evidence.',
+      'Approved patch-promotion Decisions can call SandboxPatchPromotionApplyService when the sandbox patch promotion apply feature flag is enabled; the service preflights reviewed patch evidence, writes only matching workspace files, records applied/blocked promotion state, and updates run evidence.',
+      'Run detail now includes sandbox patch promotion records, and the task file workspace projects applied, blocked, approved-but-unapplied, and missing-apply-record status next to reviewed patch artifacts.',
+      'Decisions approval results now explain that approving a reviewed patch records the approval while real workspace writes still require the apply flag and a passing promotion preflight.',
+      'Tasks file workspace exposes explicit notice and file context-menu apply-to-workspace actions for approved reviewed-patch promotions when enableSandboxPatchPromotionApply is enabled; the action confirms with the operator, calls main-side promotion apply IPC, records run evidence, and refreshes task/run state.',
+      'Local agent acceptance includes a reviewed patch promotion apply smoke covering default approval no-write, feature-flagged apply success, and workspace-drift blocked recovery evidence.',
+      'The packaged task-files smoke now seeds approved reviewed-patch promotions, enables the apply flag in a temporary workspace, drives both applied and blocked Tasks UI apply actions, and verifies workspace file content plus applied/blocked run evidence.',
+    ],
+    gaps: [
+      'General Agent API task execution promotion remains partial: explicit right-panel execution requests and task-bound progress intents can enter RunService, but broader automatic Agent API executor routing still must prove every selected-runtime contract, target-task identity, writeback, verification, and reviewed-patch boundary before replacing the deferred invocation everywhere; selected-runtime contract and reviewed-patch apply already own the operator-facing workspace mutation boundary.',
+    ],
+    nextActions: [
+      'Continue promoting Agent API execution by expanding from right-panel execution/progress intents only after the read-only promotion readiness smoke, evaluateAgentApiExecutionPromotionReadiness, and evaluateAgentApiExecutionPromotionReadinessFromEvidence all report ready from real service evidence for every requirement and gate.',
+    ],
+  },
+  {
+    id: 'task_creation_and_project_decomposition',
+    label: 'Task creation, project decomposition, and child task confirmation',
+    priority: 'p0',
+    status: 'partial',
+    boundaries: ['propose', 'persist'],
+    movements: ['shape', 'decompose', 'persist'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'agent.output_contract',
+      'decision.writeback_orchestration',
+    ],
+    writeIntents: ['subtask.propose'],
+    gates: [
+      'runtime_action',
+      'runtime_context_assembly',
+      'task_memory_guidance',
+      'subtask_draft',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'operator_confirmation',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'partial',
+    evidence: [
+      'Project decomposition produces draft child tasks before durable subtasks.',
+      'Project decomposition uses shared TaskAdvancementOrchestrator movement routing before requesting a reversible subtask draft.',
+      'Selected native Agent CLI decomposition runs through the right-panel task-bound Agent CLI path, parses subtask.propose Write Intent from CLI output, and surfaces a confirmation card.',
+      'Subtask draft validation blocks underspecified or tiny proposals before confirmation.',
+      'Subtask draft confirmation is represented as a subtask.create_many writeback apply plan and dispatched through the main-side task service adapter.',
+      'Subtask create-many writeback timeline evidence now records that decomposition output was draft-only before operator confirmation.',
+      'The retained Agent API decomposition confirmation path now builds an agent_api_decomposition subtask.create_many apply plan instead of writing child tasks directly from the renderer.',
+      'The subtask create-many apply plan readiness smoke now runs buildSubtaskCreateManyWritebackApplyPlan and dispatchTaskplaneWritebackApplyPlan as a read-only build-gated harness with stale-build detection, proving both agent_cli_decomposition and agent_api_decomposition sources produce subtask.create_many plans with parentTaskId, subtaskCount, panel.project_decomposed timeline evidence, confirmationBoundary=operator_confirmed_subtask_create_many, confirmationSurface=readiness_smoke_operator_confirmation, and draftOnlyBeforeConfirmation=true, proving the Agent API apply plan can complete through mocked injected ports with apiDispatchStatus=completed, apiDispatchAction=subtask.create_many, apiDispatchCreatedTaskCount=1, apiDispatchTimelineType=panel.project_decomposed, apiDispatchTimelineChildTaskIds=mock_child_1, apiDispatchTimelineRecordPath=Task Records/mock-project-decomposition.md, and apiDispatchTimelineConfirmationSurface=readiness_smoke_operator_confirmation, and proving missingConfirmationDispatchStatus=blocked plus missingConfirmationCreateSubtasksCalled=no when the apply plan lacks the operator confirmation boundary, without provider calls, real writeback dispatch, durable subtask creation, or workspace writes.',
+      'evaluateAgentApiDecompositionPromotionReadiness now keeps future Agent API decomposition promotion closed unless the draft has a selected-runtime contract, parent-task identity, a reversible proposal card, an agent_api_decomposition subtask.create_many apply plan, an operator-confirmed create-many boundary with an explicit operator-facing confirmation surface, and draft-only timeline evidence.',
+      'evaluateAgentApiDecompositionPromotionReadinessFromEvidence now derives Agent API decomposition promotion readiness from structured service evidence for selected-runtime contract, parent-task identity, reversible proposal card, subtask.create_many apply plan, agent_api_decomposition source, operator confirmation boundary, operator confirmation surface evidence, and draft-only timeline evidence, keeps selected-runtime contract missing unless the service selectedRuntimeContract matches the apply-plan timeline runtimeContract and carries the same evidenceRunId, parentTaskId, and provider identity as the apply plan, keeps configured provider evidence separate from selected-runtime provider identity and blocks selected-runtime promotion when provided configuredProvider evidence is stitched from another provider, keeps parent-task identity missing when the service parentTaskId is absent or does not match the apply-plan parentTaskId, keeps agent_api_decomposition_source missing when apply-plan input source and timeline source diverge, keeps operator_confirmation_boundary missing when confirmationSurface is absent or unknown, keeps draft_only_timeline_evidence missing when apply-plan evidenceRunId and timeline evidenceRunId diverge or when both run identities are absent, keeps the subtask.create_many apply-plan requirement missing unless the apply plan has at least one concrete subtask title, and keeps the reversible proposal card missing when its proposalId, evidenceRunId, parentTaskId, subtask count, subtask title identity, subtask rationale identity, subtask dependency identity, or subtask-title uniqueness does not match the same apply-plan evidence chain, now also requiring subtask-title completeness so blank titles cannot be filtered out of identity evidence, near-duplicate subtask titles cannot satisfy duplicate-free promotion readiness, and proposal cards from another decomposition run cannot be stitched into the current create-many apply plan.',
+      'Agent API decomposition promotion readiness now returns satisfied and missing requirement lists plus promotionReady, requirements=x/7, promotionRequirements=x/7, missingRequirements=..., promotionMissingRequirements=..., proposalId, expectedProposalId, proposalIdEvidenceChain, proposalEvidenceRunId, proposalEvidenceRunChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalRationales, applyPlanRationales, proposalRationaleEvidenceChain, applyPlanRationaleEvidenceChain, proposalDependencies, applyPlanDependencies, proposalDependencyEvidenceChain, applyPlanDependencyEvidenceChain, proposalSubtaskUniqueChain, proposalSubtaskIdentityChain, proposalSubtaskTitleEvidenceChain, applyPlanSubtaskTitleEvidenceChain, parentTask, applyPlanParentTask, parentTaskEvidenceChain, subtaskCount, evidenceRunId, timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain, confirmationBoundary, confirmationSurface, confirmationSurfaceEvidenceChain, draftOnlyBeforeConfirmation, runtimeMode, invocationLayer, selectedRuntimeEvidenceRunId, selectedRuntimeEvidenceRunChain, selectedRuntimeParentTask, selectedRuntimeParentTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerConfigured, configuredProvider, configuredProviderEvidenceChain, timelineRuntimeMode, timelineInvocationLayer, timelineInvocationPhase, timelineRuntimeEvidenceRunId, timelineRuntimeParentTask, timelineRuntimeProvider, and selectedRuntimeEvidenceChain summary evidence, matching the execution promotion readiness style without opening the deferred path.',
+      'Subtask create-many apply plans now preserve explicit decomposition timeline runtimeContract evidence without inferring evidenceRunId or parentTaskId from apply-plan inputs; Agent API decomposition draft generation passes those identities at the callsite, and evaluateAgentApiDecompositionPromotionReadinessFromEvidence keeps selected_runtime_contract missing when timeline runtime identity fields are absent or stitched from another run/task.',
+      'Agent API decomposition promotion readiness now keeps applyPlanSubtaskTitleEvidenceChain and proposalSubtaskTitleEvidenceChain missing for empty create-many apply plans in both generic and service-evidence evaluators, so a zero-subtask draft cannot report title evidence as ready while subtask_create_many_apply_plan is blocked.',
+      'Agent API decomposition promotion readiness now includes proposal/apply-plan summary, acceptance-criteria, rationale, and dependency evidence chains in the reversible proposal card identity check, so a child-task draft cannot be promoted when only titles match but the operator-visible summary, acceptance criteria, rationale, or dependency diverges from the subtask.create_many apply plan.',
+      'Agent API capability registry diagnostics now derive decomposition promotion requirements and missing lists through evaluateAgentApiDecompositionPromotionReadinessFromEvidence, so capability, settings, and safety-report surfaces share the same evidence-based promotion contract as decomposition smoke coverage.',
+      'Tasks project decomposition confirmation now calls evaluateAgentApiDecompositionPromotionReadinessFromEvidence with the decomposition_draft invocation, reversible proposal card, draft evidenceRunId, agent_api_decomposition subtask.create_many apply plan, operator confirmation boundary, and draft-only timeline evidence before dispatching TaskplaneWritebackApplyPlan.',
+      'Right-panel Agent API decomposition requests now call the task-bound ai:decomposeProject adapter instead of ordinary task chat, surface the same reversible subtask draft card, and confirm through subtask.create_many TaskplaneWritebackApplyPlan with agent_api_decomposition source plus runtimeContract evidence.',
+      'Right-panel Agent API decomposition confirmation now re-evaluates evaluateAgentApiDecompositionPromotionReadinessFromEvidence from the final reversible proposal card, selected-runtime contract, and subtask.create_many apply plan before dispatch, so missing runtime identity evidence blocks apply even when the draft response claims readiness.',
+      'Right-panel and Tasks project Agent API decomposition confirmations now carry the draft evidenceRunId back into the final reversible proposal card during the pre-dispatch promotion-readiness recheck, so proposalEvidenceRunChain remains same-run from draft generation through operator-confirmed child creation.',
+      'Agent API project decomposition confirmation now persists the selected runtime contract into the subtask.create_many panel.project_decomposed timeline payload, including evidenceRunId and parentTaskId, so durable decomposition evidence carries invocationLayer=api_runtime, phase=decomposition_draft, runtimeMode=api, and runtime label after operator confirmation.',
+      'Agent API project decomposition invocation and Tasks project confirmation now preserve selectedRuntimeProvider identity in the runtime contract, using provider identity returned by ai:decomposeProject or its promotionReadiness evidence, so selectedRuntimeProviderEvidenceChain is not lost between draft generation and operator-confirmed subtask.create_many apply.',
+      'Agent API project decomposition drafts now return a task-scoped, response-hashed evidenceRunId plus promotionReadiness with promotionReady, requirement counts, missing requirements, selected runtime contract, proposal-card, and agent_api_decomposition apply-plan evidence before the operator confirms child creation.',
+      'ai:decomposeProject now passes the selected Agent API provider configuration into evaluateAgentApiDecompositionPromotionReadinessFromEvidence, so generated decomposition drafts prove providerConfigured=ready, configuredProvider, and configuredProviderEvidenceChain=ready from service-side config evidence instead of relying only on selected-runtime/timeline provider identity.',
+      'Agent API project decomposition draft readiness now carries the same task-scoped evidenceRunId into the reversible proposal card, so proposalEvidenceRunId and proposalEvidenceRunChain are ready from the first draft response instead of becoming recoverable only during confirmation.',
+      'Agent API project decomposition draft generation and renderer confirmation now pass the task-scoped evidenceRunId and parentTaskId into selectedRuntimeContract before evaluating promotion readiness, so selectedRuntimeEvidenceRunChain, selectedRuntimeParentTaskEvidenceChain, and selectedRuntimeProviderEvidenceChain can become ready from real draft evidence instead of only mode/layer/phase metadata.',
+      'Tasks project decomposition draft readiness now projects selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, and timelineRuntimeProvider evidence chips before confirmation, matching the right-panel decomposition identity surface.',
+      'Tasks project decomposition draft readiness now also projects selectedRuntimeEvidenceRunId, selectedRuntimeEvidenceRunChain, selectedRuntimeParentTask, selectedRuntimeParentTaskEvidenceChain, providerConfigured, configuredProvider, configuredProviderEvidenceChain, timelineRuntimeEvidenceRunId, and timelineRuntimeParentTask chips before confirmation, so the Tasks project action exposes the same selected-runtime/run/task/provider identity chain as the right-panel decomposition draft.',
+      'Tasks project decomposition draft readiness now also projects proposalSubtaskTitleEvidenceChain, applyPlanSubtaskTitleEvidenceChain, and proposalSubtaskUniqueChain evidence chips before confirmation, so blank, duplicated, near-duplicated, or apply-plan-mismatched child titles are visible before durable child creation.',
+      'Right-panel AI decomposition draft readiness now projects promotionReadiness identity chips for proposalId, expectedProposalId, proposalIdEvidenceChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalSubtaskTitleEvidenceChain, applyPlanSubtaskTitleEvidenceChain, proposalSubtaskSummaryEvidenceChain, applyPlanSubtaskSummaryEvidenceChain, proposalAcceptanceCriteriaEvidenceChain, applyPlanAcceptanceCriteriaEvidenceChain, proposalRationaleEvidenceChain, applyPlanRationaleEvidenceChain, proposalDependencies, applyPlanDependencies, proposalDependencyEvidenceChain, applyPlanDependencyEvidenceChain, proposalSubtaskUniqueChain, proposalSubtaskIdentityChain, parentTask, applyPlanParentTask, parentTaskEvidenceChain, subtaskCount, evidenceRunId, timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain, confirmationBoundary, confirmationSurface, confirmationSurfaceEvidenceChain, draftOnlyBeforeConfirmation, runtimeMode, invocationLayer, selectedRuntimeEvidenceRunId, selectedRuntimeEvidenceRunChain, selectedRuntimeParentTask, selectedRuntimeParentTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerConfigured, configuredProvider, configuredProviderEvidenceChain, timelineRuntimeMode, timelineInvocationLayer, timelineInvocationPhase, timelineRuntimeEvidenceRunId, timelineRuntimeParentTask, timelineRuntimeProvider, and selectedRuntimeEvidenceChain, so the operator can inspect the reversible proposal boundary, proposal-id chain, subtask-count chain, subtask-title uniqueness, subtask-title identity chain, subtask summary/acceptance/rationale identity chains, subtask dependency identity chain, parent-task evidence chain, selected-runtime evidence chain, configured-provider evidence chain, source chain, evidence-run chain, and confirmation-surface chain before creating child tasks.',
+      'The Agent API decomposition promotion readiness smoke now runs evaluateAgentApiDecompositionPromotionReadiness and evaluateAgentApiDecompositionPromotionReadinessFromEvidence as a read-only build-gated harness, proving blocked=0/7 requirements, partial=6/7 requirements with agent_api_decomposition_source missing, service-evidence=6/7 requirements with proposalId, expectedProposalId, proposalIdEvidenceChain, proposalParentTask, proposalTaskEvidenceChain, proposalSubtaskCount, applyPlanSubtaskCount, proposalSubtaskEvidenceChain, proposalSubtaskTitles, applyPlanSubtaskTitles, proposalRationales, applyPlanRationales, proposalRationaleEvidenceChain, applyPlanRationaleEvidenceChain, proposalDependencies, applyPlanDependencies, proposalDependencyEvidenceChain, applyPlanDependencyEvidenceChain, proposalSubtaskUniqueChain, proposalSubtaskIdentityChain, parentTask, applyPlanParentTask, parentTaskEvidenceChain, subtaskCount, evidenceRunId, timelineEvidenceRunId, sourceEvidenceChain, evidenceRunIdChain, confirmationBoundary, confirmationSurface, confirmationSurfaceEvidenceChain, draftOnlyBeforeConfirmation, runtimeMode, invocationLayer, selectedRuntimeEvidenceRunId, selectedRuntimeEvidenceRunChain, selectedRuntimeParentTask, selectedRuntimeParentTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerConfigured, configuredProvider, configuredProviderEvidenceChain, timelineRuntimeMode, timelineInvocationLayer, timelineInvocationPhase, timelineRuntimeEvidenceRunId, timelineRuntimeParentTask, timelineRuntimeProvider, and selectedRuntimeEvidenceChain identity evidence plus agent_api_decomposition_source missing, service-evidence-ready=7/7 requirements with agent_api_decomposition source, sourceEvidenceChain, evidenceRunIdChain, confirmationSurfaceEvidenceChain, and selectedRuntimeEvidenceChain ready from the same reversible proposal/apply-plan evidence, and synthetic-ready=7/7 requirements without provider calls, subtask creation, or workspace writes.',
+      'Agent API task execution has a shared deferred execution_run invocation shape, so future API execution can join the same invocation contract before durable child creation or run execution is promoted.',
+      'The main-side subtask apply path promotes the parent to a project, creates planned child tasks, stores child and parent completion criteria, stores matched dependencies, records the project timeline with childTaskIds and recordPath evidence, and writes an AI 项目拆解自检 task record when review context exists.',
+    ],
+    gaps: [
+      'Agent API decomposition generation is now available from the right-panel explicit decomposition request and Tasks project action, but broader promotion remains partial until every task-bound decomposition route proves selected-runtime contract, parent-task identity, reversible proposal card, apply-plan evidence, and operator confirmation from real service evidence.',
+    ],
+    nextActions: [
+      'Continue promoting Agent API decomposition by keeping right-panel and Tasks confirmation on TaskplaneWritebackApplyPlan, then require the read-only subtask create-many apply plan readiness smoke, the read-only decomposition promotion readiness smoke, evaluateAgentApiDecompositionPromotionReadiness, and evaluateAgentApiDecompositionPromotionReadinessFromEvidence to pass from real reversible proposal and apply-plan evidence before expanding any remaining decomposition route.',
+    ],
+  },
+  {
+    id: 'subtask_start_and_task_switch',
+    label: 'Subtask start, task switch, and handoff',
+    priority: 'p0',
+    status: 'covered',
+    boundaries: ['execute', 'persist', 'clear'],
+    movements: ['handoff', 'execute', 'persist'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'task.memory_rules',
+      'agent.output_contract',
+      'decision.writeback_orchestration',
+    ],
+    writeIntents: ['task_record.create', 'task.update_next_step'],
+    gates: [
+      'runtime_handoff',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'subtask_start',
+      'task_completion',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'panel_event_allowlist',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'supported',
+    evidence: [
+      'SubtaskStartEvaluation covers target boundary, blockers, decisions, handoff, context cleanliness, and context sufficiency.',
+      'RuntimeHandoff is shared across task switch and context refresh flows.',
+      'ContextTransitionEvaluation now carries a typed handoff_recovery_artifact for task switch and handoff movements, including objective, current state, decisions, constraints, evidence, exclusions, blockers, next step, and writeback target without copying raw transcripts.',
+    ],
+    gaps: [
+      'Future explicit task-enter actions must keep using SubtaskStartEvaluation before execution.',
+    ],
+    nextActions: [
+      'Keep task-enter paths registered in RuntimeEntrypointCoverage with subtask_start.',
+    ],
+  },
+  {
+    id: 'task_memory_and_context_clear',
+    label: 'Task.md, Task Records, Source Context, and context clearing',
+    priority: 'p0',
+    status: 'covered',
+    boundaries: ['persist', 'clear'],
+    movements: ['persist', 'handoff', 'pause'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'task.memory_rules',
+      'agent.output_contract',
+      'decision.writeback_orchestration',
+    ],
+    writeIntents: ['task_record.create', 'source_context.create', 'task_file.propose'],
+    gates: [
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'runtime_handoff',
+      'runtime_action',
+      'task_mutation',
+      'operator_confirmation',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'supported',
+    evidence: [
+      'TaskMemoryCoverageEvaluation and AutoContextClearReadiness block unsafe context clearing.',
+      'ContextPreservationEvaluation builds a digest-only HandoffRecoveryArtifact for ephemeral session, durable business, Next Action, and runtime/subagent handoff types; writeback targets remain gated through Taskplane memory, Run step, or temporary proof surfaces.',
+      'SourceContext creation carries source-quality metadata before persistence.',
+      'Manual task-session refresh now asks shared TaskAdvancementOrchestrator for a context-refresh handoff movement before existing memory and clearing gates run.',
+      'TaskMemoryWriteProposal now routes Task Record proposals through TaskRecordWorthinessEvaluation and suppresses generic pending-memory guidance before durable Task Records are proposed.',
+      'Task Dynamics now surfaces run-detail task-memory proposals through the same TaskMemoryWriteApplyPlan-backed approval queue and main-side writeback IPC outside the right panel.',
+      'MemorySurfaceWriteCoverage registers retained task-memory proposal confirmation entrypoints for RightPanel and Task Dynamics, requiring TaskMemoryWriteApplyPlan, TaskMdUpdateNeedEvaluation, TaskRecordWorthinessEvaluation, pre-step, post-step, and simplicity guards.',
+      'MemorySurfaceWriteCoverage binds retained task-memory write IPC channels to the same surface coverage matrix, so covered memory-write paths declare their surfaces, policies, guards, and service boundary before they count as retained behavior.',
+    ],
+    gaps: [
+      'Future retained task-memory confirmation surfaces must be added to MemorySurfaceWriteCoverage before they count as covered behavior.',
+    ],
+    nextActions: [
+      'Keep future task-memory proposal surfaces registered in MemorySurfaceWriteCoverage and routed through TaskMemoryWriteApplyPlan plus main-side writeback dispatch.',
+    ],
+  },
+  {
+    id: 'decisions_checkpoints_completion',
+    label: 'Decisions, checkpoints, blockers, and completion',
+    priority: 'p0',
+    status: 'partial',
+    boundaries: ['propose', 'persist'],
+    movements: ['pause', 'verify', 'persist', 'handoff'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'agent.output_contract',
+      'task.memory_rules',
+      'decision.writeback_orchestration',
+    ],
+    writeIntents: ['decision.create', 'task.mark_blocked', 'task.complete.propose', 'task.update_next_step'],
+    gates: [
+      'decision_draft_boundary',
+      'decision_write_boundary',
+      'decision_action',
+      'checkpoint_eligibility',
+      'task_completion',
+      'pre_step',
+      'post_step',
+      'operator_confirmation',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'partial',
+    evidence: [
+      'Decision services and checkpoint recovery are registered as runtime entrypoints.',
+      'Native CLI Write Intent can surface user-confirmed Decision, blocker, next-step, and completion proposal cards.',
+      'Shared writeback dispatch applies high-risk plans through injected service ports.',
+      'Main-side writeback dispatch adapter routes confirmed plans through task, decision, and task-file services.',
+      'Right-panel confirmation calls the main-side writeback adapter before emitting task, decision, and brief refresh events.',
+      'Task Dynamics can approve Run-detail structured Write Intent through the same TaskplaneWritebackApprovalItem queue and main-side writeback adapter.',
+      'DecisionService.draft is registered as a task-bound decision_draft entrypoint: API-runtime drafts run only when API Runtime is selected, selected Agent CLI modes stay product_harness/skipped, and Decision persistence remains behind decision.create.',
+      'Approved checkpoint Decision resume is limited to open tool_permission, browser-controlled, or patch-promotion checkpoints, rechecks target-task readiness and pending task-memory guidance, and cannot turn ordinary Decision approval into arbitrary tool execution.',
+      'Decision actions in DecisionService and DecisionsPage pass through decision_action, task-memory guidance, pre-step, and post-step gates before approve, defer, or cancel effects are recorded.',
+      'RuntimeEntrypointCoverage now registers future scheduler/background Decisions as proposal-only decision_draft work that cannot persist Decisions or invoke writeback without operator confirmation or standing approval.',
+      'planSchedulerDecisionProposal now models the scheduler/background Decision proposal boundary as approval-item-only: it requires target-task identity, a valid Decision payload, the Task Dynamics writeback approval queue, plus concrete operator confirmation, completed local recovery evidence with matching target-task identity, or active target-scoped Standing Approval, records evidenceSourceType, evidenceRunId, and evidenceSourceIdentityChain for run-sourced versus stable system-sourced proposals, while keeping decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false.',
+      'planSchedulerDecisionProposalFromEvidence now derives scheduler/background Decision proposal readiness from structured service evidence for approval-queue connectivity, target-task identity, valid Decision payload, concrete operator confirmation, completed local recovery evidence with explicit recovered-run identity plus matching recovered-run task identity, target-scoped Standing Approval, and explicit proposal evidence source identity while still keeping Decision persistence, writeback dispatch, and scheduler triggers closed.',
+      'Scheduler/background Decision proposal readiness now requires the approval queue surface to be Task Dynamics specifically; generic connected, unknown, or right-panel approval surfaces remain blocked so background proposal work cannot bypass the Task Dynamics approval-item queue.',
+      'Scheduler/background Decision proposal plans now return satisfied and missing requirement lists plus proposalReady, requirements=x/4, proposalRequirements=x/4, proposalSatisfiedRequirements=..., approvalQueueSurface, decisionPayload, decisionPayloadIdentityChain, decisionTitle, decisionTitleKey, decisionRationale, decisionOptions, decisionOptionKeys, decisionOptionIdentity, decisionProposedOutcome, decisionProposedOutcomeKey, decisionProposedOutcomeMatchesOption, authorizationCount, authorizationEvidenceChain, localRecoveryRunId, localRecoveryTask, localRecoveryCompleted, localRecoveryTaskMatched, operatorId, standingApprovalPolicyId, standingApprovalScopeTask, standingApprovalActive, standingApprovalScopeMatched, missingRequirements=..., and proposalMissingRequirements=... summary evidence without opening Decision persistence, writeback dispatch, or scheduler triggers.',
+      'Scheduler/background Decision proposal system-source identity now requires the complete duplicate-free Decision payload identity chain, so a target task plus title alone cannot make evidenceSourceIdentityChain ready when options or proposed outcome evidence is missing or mismatched.',
+      'CapabilityRegistry now includes scheduler/background Decision proposal readiness in the runtime.scheduler summary through planSchedulerDecisionProposalFromEvidence, so ConfigurationSafetyReport surfaces the approval queue, target-task, authorization source, standing-approval policy identity, no-persistence, no-writeback, and no-trigger boundary in settings diagnostics.',
+      'Settings configuration safety rows now render runtime.scheduler evidence chips for proposalReady, proposalRequirements, proposalSatisfiedRequirements, proposalMissingRequirements, missingRequirements, approvalQueueSurface, decisionPayload, decisionTitle, decisionTitleKey, decisionRationale, decisionOptions, decisionOptionKeys, decisionOptionIdentity, decisionProposedOutcome, decisionProposedOutcomeKey, decisionProposedOutcomeMatchesOption, authorizationCount, authorization, authorizationEvidenceChain, operatorId, localRecoveryRunId, localRecoveryTask, localRecoveryCompleted, localRecoveryTaskMatched, standingApprovalPolicyId, standingApprovalScopeTask, standingApprovalActive, standingApprovalScopeMatched, decisionPersistenceAllowed, writebackDispatchAllowed, schedulerTriggerAllowed, triggerPlanReady, runtimeStartAllowed, runtimeStartReady, runtimeStartRequirements, runtimeStartSatisfiedRequirements, runtimeStartMissingRequirements, schedulerTriggerServiceConnected, and selectedRuntimeIdentity, so operators can inspect scheduler Decision proposal payload gaps, normalized title/option/outcome identity, authorization evidence, local-recovery identity, closed persistence/writeback/trigger gates, and scheduled/event runtime-start state without parsing the full diagnostic summary.',
+      'The scheduler Decision proposal readiness smoke now runs planSchedulerDecisionProposal, planSchedulerDecisionProposalFromEvidence, and the TaskplaneWritebackApprovalItem conversion as a read-only build-gated harness, proving blocked=0/4 requirements, operator-confirmed=4/4 requirements with operatorId, decisionPayload=ready, decisionPayloadIdentityChain=ready, decisionTitleKey=confirm_scheduler_action, decisionOptionKeys=approve,hold, decisionProposedOutcomeKey=approve, evidenceSourceType=run, evidenceRunId, evidenceSourceIdentityChain=ready, authorizationCount=1, and authorizationEvidenceChain=ready evidence, local-recovery=4/4 requirements with decisionPayload=ready, decisionPayloadIdentityChain=ready, decisionTitleKey=confirm_scheduler_action, decisionOptionKeys=approve,hold, decisionProposedOutcomeKey=approve, evidenceSourceType=run, evidenceRunId derived from recovered run identity, authorizationCount=1, authorizationEvidenceChain=ready, localRecoveryRunId, localRecoveryTask, and localRecoveryTaskMatched=yes evidence, standing-approval=4/4 requirements with evidenceSourceType=system, evidenceSourceIdentityChain=ready, authorizationCount=1, authorizationEvidenceChain=ready, standingApprovalPolicyId, standingApprovalScopeTask, and standingApprovalScopeMatched=yes evidence, scope-mismatch=3/4 requirements with authorizationCount=0 and authorizationEvidenceChain=missing, service-evidence=3/4 requirements with approvalQueueSurface=task_dynamics plus decisionPayload=ready, decisionPayloadIdentityChain=ready, decisionTitleKey=confirm_scheduler_action, decisionOptionKeys=approve,hold, decisionProposedOutcomeKey=approve, evidenceSourceType=run, evidenceRunId, authorizationCount=0, and authorizationEvidenceChain=missing when Standing Approval scope does not match the target task, service-evidence-ready=4/4 requirements with run evidence source identity and operator_confirmation authorization from structured service evidence, and approvalItemDecisionCreateReady=yes with approvalItemKind=scheduler_decision, approvalPlanAction=decision.create, approvalPlanSourceId=run_scheduler_service_ready_smoke, approvalPlanTask=task_scheduler_decision_service_ready_smoke, approvalPlanOptionCount=2, approvalPlanRecommended=Approve, approvalPlanConfirmationBoundary=task_dynamics_scheduler_decision_confirmed, approvalPlanConfirmationSurface=task_dynamics_scheduler_decision_approval_queue, and approvalPlanDraftOnlyBeforeConfirmation=yes while keeping direct decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false without provider calls, direct Decision persistence, direct writeback dispatch, scheduler triggers, or workspace writes.',
+      'Task Dynamics now accepts panel.scheduler_decision_proposed timeline events as scheduler/background Decision proposal sources, rechecks planSchedulerDecisionProposalFromEvidence with approvalQueueSurface=task_dynamics, target-task identity, and operator confirmation, explicit recovered-run identity plus task-matched completed local recovery evidence, or target-scoped Standing Approval, then converts only ready proposals into the existing TaskplaneWritebackApprovalItem queue and decision.create apply plan after operator confirmation.',
+      'Task Dynamics scheduler Decision proposal consumption now reuses shared decision_payload readiness before approval queue creation, requiring explicit payload targetTaskId plus timeline event taskId to both match the current task, SchedulerService proposalReadinessSummary evidence with proposalReady=yes, approvalQueueSurface=task_dynamics, and matching targetTask, normalized nonblank title, rationale, duplicate-free option labels, and a proposed outcome that canonicalizes to one of the options, so hand-shaped, malformed, cross-task, missing-target, or legacy panel.scheduler_decision_proposed events cannot bypass the SchedulerService producer validation.',
+      'Task Dynamics scheduler Decision proposal consumption now requires producer proposalReadinessSummary evidenceSourceType, evidenceRunId, and evidenceSourceIdentityChain to match the timeline payload before creating an approval item, and passes payload evidenceRunId back into planSchedulerDecisionProposalFromEvidence, so run-backed scheduler Decision proposals cannot be silently reclassified as system-sourced approval work.',
+      'Task Dynamics scheduler Decision proposal consumption now parses producer proposalReadinessSummary evidence chips as exact slash-separated key/value fields, so targetTask and evidenceRunId prefix collisions such as task_1 versus task_10 or run_1 versus run_10 cannot enter the approval queue.',
+      'Task Dynamics scheduler Decision proposal consumption now also requires proposalReadinessSummary to preserve decisionPersistenceAllowed=false, writebackDispatchAllowed=false, and schedulerTriggerAllowed=false before creating an approval item, so scheduler/background proposals cannot enter the confirmation queue unless producer evidence explicitly keeps direct Decision persistence, direct writeback, and runtime triggering closed.',
+      'Task Dynamics scheduler Decision approval items now use evidenceRunId plus normalized title as the approval identity, so repeated panel.scheduler_decision_proposed timeline events for the same run evidence collapse into one operator confirmation card instead of duplicating approval queue work.',
+      'Task Dynamics scheduler Decision approval plans now preserve evidence source semantics: proposals with evidenceRunId remain sourceType=run, while no-Run scheduler proposals such as run-limit or scheduler sweep policy reviews become sourceType=system instead of pretending to be Run-backed Decisions.',
+      'Task Dynamics system-sourced scheduler Decision approval items now use target task plus normalized title as their approval identity when evidenceRunId is absent, so repeated no-Run policy-review timeline events also collapse into one operator confirmation card.',
+      'Task Dynamics system-sourced scheduler Decision approval plans now use that same stable target-task-plus-title identity as the durable Decision sourceId, so a no-Run scheduler proposal already persisted as a Decision suppresses later duplicate timeline proposals after refresh.',
+      'SchedulerService.proposeSchedulerDecision now provides the non-panel producer entrypoint for scheduler/background Decision proposals: it reuses planSchedulerDecisionProposalFromEvidence, passes evidenceRunId into the shared readiness summary when run evidence exists, requires Task Dynamics timeline evidence, target-task identity, concrete operator confirmation, explicit recovered-run identity plus task-matched completed local recovery evidence, or target-scoped Standing Approval, records panel.scheduler_decision_proposed only when ready, and keeps durable Decision creation behind the Task Dynamics approval queue.',
+      'SchedulerService.proposeSchedulerDecision now also requires a concrete title, rationale, at least one nonblank duplicate-free option list, and a nonblank proposed outcome that matches one of the options before recording panel.scheduler_decision_proposed; title, rationale, options, and proposed outcome are whitespace-normalized for identity and timeline evidence, so scheduler/background Decision proposals entering Task Dynamics remain actionable proposal cards instead of narrative-only events, repeated choices, whitespace/case-equivalent duplicate choices, or recommendations for unavailable actions.',
+      'SchedulerService same-day scheduler Decision proposal dedupe now trusts only target-scoped proposal history whose timeline event taskId and payload targetTaskId both match the candidate task, and normalizes proposal titles before matching, so whitespace-varied duplicate history still suppresses same-day duplicate recovery proposals while stale title-only or cross-task proposal records cannot suppress a fresh evidence-backed proposal.',
+      'Scheduled/event Agent failed terminal runs now route a deduplicated failure-review policy through SchedulerService.proposeSchedulerDecision, recording at most one target-scoped panel.scheduler_decision_proposed recovery Decision proposal per task per UTC day with run failure evidence, Standing Approval authorization, and failureDecisionProposals summary evidence while still requiring Task Dynamics confirmation before durable Decision creation.',
+      'Scheduled/event Agent failed terminal runs without reviewable output or failureReason now make the missing terminal failure evidence explicit in the recovery Decision proposal options and rationale, so operators can choose to record missing failure evidence instead of seeing only a generic failed-run recovery card.',
+      'Scheduled/event Agent daily run-limit blocks now route a deduplicated run-limit review policy through SchedulerService.proposeSchedulerDecision, recording one target-scoped panel.scheduler_decision_proposed limit Decision proposal per task per UTC day with run-limit sweep evidence and runLimitDecisionProposals summary evidence while preserving the no-start, approval-required boundary.',
+      'Operator-started scheduled/event Agent triggers now reuse scheduler runtime-start blocked review policies for daily Standing Approval run-limit caps, automation-readiness gaps, and missing/invalid run-limit accounting evidence, recording target-scoped approval-required Decision proposals instead of returning silent blocked runs.',
+      'Operator-started scheduled/event Agent triggers now also route disconnected trigger-service blocks through SchedulerService.proposeSchedulerDecision when Task Dynamics timeline evidence is connected, recording a deduplicated Standing Approval authorized triggerServiceDecisionProposal for the target task instead of returning a silent no-start block.',
+      'Scheduled/event Agent invalid run-limit accounting evidence now routes a deduplicated run-count evidence review policy through SchedulerService.proposeSchedulerDecision when a target task has Standing Approval but runtimeStartMissingRequirements includes run_limit_count because the persisted count is missing or invalid, recording runLimitAccountingDecisionProposals summary evidence without starting a Run.',
+      'Scheduled/event Agent automation-readiness blocks now route a deduplicated readiness-review policy through SchedulerService.proposeSchedulerDecision when a target task has Standing Approval but missing automation readiness evidence, recording readinessDecisionProposals summary evidence while preserving the no-start, approval-required boundary.',
+      'Scheduled/event Agent trigger-port sweep failures now route a deduplicated sweep-failure review policy through SchedulerService.proposeSchedulerDecision when the failed sweep has target-task identity, trigger-plan evidence, and Standing Approval authorization, recording sweepFailureDecisionProposals summary evidence without a Run record or durable Decision write.',
+      'Scheduled/event Agent task-source sweep failures now explicitly record taskSourceFailureDecisionProposals=not_required_no_target_task when no target-task identity or trigger-plan evidence exists, preserving the no-generic-Decision boundary instead of creating an unowned scheduler Decision.',
+      'Scheduled/event Agent background sweeps with Task Source and Task Dynamics timeline connected but the Run trigger service disconnected now read target-scoped candidates, preserve checked task evidence, route deduplicated trigger-service-disconnected Decision proposals through SchedulerService.proposeSchedulerDecision, and keep triggerRunEvidenceStatus=not_started without starting a runtime.',
+      'Scheduled/event Agent timeline evidence write failures after a Run starts now route a deduplicated timeline-failure review policy through SchedulerService.proposeSchedulerDecision with the started Run id, target-task identity, trigger-plan evidence, Standing Approval authorization, and timelineFailureDecisionProposals summary evidence while preserving pending terminal Run evidence for recovery; operator-started timeline failures return blocked recovery evidence instead of throwing to IPC.',
+      'Scheduled/event Agent Run target-task mismatches now block target timeline evidence and route a deduplicated run-identity review policy through SchedulerService.proposeSchedulerDecision with the started Run id, expected target task, returned run task, Standing Approval authorization, and runIdentityDecisionProposals summary evidence before any durable Decision creation; operator-started runs return blocked recovery evidence instead of throwing to IPC.',
+      'Scheduled/event Agent completed runs without reviewable output or failureReason now route a deduplicated terminal-evidence review policy through SchedulerService.proposeSchedulerDecision with the completed Run id, target-task identity, Standing Approval authorization, and terminalEvidenceDecisionProposals summary evidence, while failed terminal runs continue to use the existing failure-review policy to avoid duplicate recovery Decisions.',
+      'Scheduled/event Agent completed runs with output text but missing outputSource provenance now also keep terminalRunEvidenceStatus=pending and route the same deduplicated terminal-evidence review policy through SchedulerService.proposeSchedulerDecision, so automation does not silently treat unowned terminal output as review-ready evidence.',
+      'Scheduled/event Agent duplicate task-source candidates now skip duplicate runtime starts in the same sweep and route a deduplicated duplicate-candidate review policy through SchedulerService.proposeSchedulerDecision with target-task identity, Standing Approval authorization, duplicateCandidateTaskIds, and duplicateCandidateDecisionProposals summary evidence; each proposal rationale receives only the duplicate IDs for its own target task even when multiple tasks duplicate in the same sweep.',
+      'Scheduled/event Agent sweep summaries now also include task-id evidence for failed-run, missing-terminal-evidence, run-limit, run-limit accounting, readiness, duplicate-candidate, sweep-failure, run-identity, and timeline-failure scheduler Decision proposals, so multi-task background coordination remains traceable without opening each timeline event.',
+      'Scheduler stale-run recovery now routes each recovered run through SchedulerService.proposeSchedulerDecision with local_recovery authorization only when the recovered run task matches the target task and Task Dynamics timeline evidence is connected, recording staleRunRecoveryDecisionProposals summary evidence while still marking the stale run failed locally and keeping durable Decision creation behind approval.',
+      'Operator-started scheduled/event Agent trigger-port failures now return blocked recovery evidence instead of throwing to IPC, route a Standing Approval authorized sweep-failure Decision proposal through SchedulerService.proposeSchedulerDecision, preserve triggerRunEvidenceStatus=not_started, and keep durable Decision creation behind Task Dynamics approval.',
+      'Future scheduler/background Decision drafts also remain without IPC or scheduler triggers until that same operator-confirmation or standing-approval model exists.',
+      'Completion verification is separate from model output.',
+      'Right-panel phase closeout now asks shared TaskAdvancementOrchestrator for a local verification movement before memory, closeout, and handoff gates run.',
+      'Task completion modal now asks shared TaskAdvancementOrchestrator for a local completion-check verification movement before passed, waiting, or override-completed outcomes are recorded.',
+      'Tasks detail project verification now asks shared TaskAdvancementOrchestrator for a selected-task verification movement before rendering local project readiness evidence.',
+    ],
+    gaps: [
+      'Future background scheduler decisions now have a SchedulerService proposal producer, Task Dynamics approval queue path, deduplicated failed-run recovery policy, deduplicated daily run-limit review policy, deduplicated run-limit accounting evidence review policy, deduplicated automation-readiness review policy, deduplicated trigger-service-disconnected review policy, deduplicated sweep-failure trigger review policy, no-target task-source failure policy, deduplicated timeline-failure review policy, deduplicated run-identity review policy, terminal-evidence review policy, duplicate-candidate review policy, and stale-run recovery policy; future scheduler/background Decision drafts still remain without direct IPC persistence or scheduler-trigger promotion until the same operator-confirmation or standing-approval model is promoted.',
+    ],
+    nextActions: [
+      'Promote future scheduler/background Decision drafts only through SchedulerService.proposeSchedulerDecision and Task Dynamics confirmation when real run/sweep evidence, target-task identity, deduplication, and operator-confirmation or standing-approval authorization are present; keep durable Decision creation behind the Task Dynamics TaskplaneWritebackApprovalItem confirmation and main-side writeback dispatch boundary.',
+    ],
+  },
+  {
+    id: 'task_files_artifacts_local_writes',
+    label: 'Task files, artifacts, local writes, and sandbox promotion',
+    priority: 'p0',
+    status: 'partial',
+    boundaries: ['propose', 'persist', 'execute'],
+    movements: ['execute', 'verify', 'persist'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'agent.output_contract',
+      'decision.writeback_orchestration',
+      'native.runtime_orchestration',
+    ],
+    writeIntents: ['task_file.propose', 'artifact.propose'],
+    gates: [
+      'runtime_action',
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'operator_confirmation',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'partial',
+    evidence: [
+      'Sandboxed coding and patch promotion keep local writes behind review or confirmation boundaries.',
+      'Native CLI task_file.propose Write Intent is parsed into the existing confirmed task-file proposal surface and main-side writeback apply plan.',
+      'Native CLI artifact.propose Write Intent is parsed into a confirmed task artifact proposal and saved through the main-side ArtifactRepository port as run-backed evidence.',
+      'Native CLI artifact.propose kind=patch is validated as reviewable diff evidence and routed to ArtifactRepository.createPatchFromRun after confirmation.',
+      'Run-backed patch artifacts can now feed SandboxPatchReviewPlanningService as imported_patch_artifact sources, keeping workspace promotion behind sandbox review and Decision approval.',
+      'Tasks file workspace now surfaces a confirmed patch artifact sandbox-review preview action through main-side IPC, returning changed files, checks, idempotency, and an explicit no-workspace-write guarantee.',
+      'Tasks file workspace can run sandbox review from a confirmed patch artifact, creating a new audit Run, reviewed patch artifact, promotion checkpoint, and pending Decision without writing workspace files.',
+      'Tasks file workspace projects patch-promotion checkpoint and Decision status next to reviewed patch artifacts, including the disabled-by-default workspace apply boundary.',
+      'SandboxPatchPromotionApplyService can apply approved patch-promotion checkpoints when enableSandboxPatchPromotionApply is true, with preflight divergence checks, idempotency handling, and applied/blocked promotion records.',
+      'Run detail carries sandboxPatchPromotions so Tasks file workspace can distinguish pending, approved-but-unapplied, missing-apply-record, applied, and blocked reviewed-patch promotions.',
+      'Decisions approval feedback now calls out the apply flag plus promotion preflight boundary after a reviewed-patch approval, so operators are not led to assume approval always wrote workspace files.',
+      'Tasks file workspace refreshes the selected task Run detail when a Decision changes, so reviewed-patch promotion notices can move from waiting approval to approved/no-write without a manual page refresh.',
+      'Tasks file workspace can explicitly apply approved reviewed-patch promotions when enableSandboxPatchPromotionApply is true; the action stays behind operator confirmation, main-side IPC, promotion preflight, and applied/blocked run evidence.',
+      'When enableSandboxPatchPromotionApply is false, approved-but-unapplied reviewed-patch notices now explicitly state that the approval is still no-write, the apply flag is closed, Run evidence must be re-reviewed, and no apply-to-workspace action is available.',
+      'Approved-but-unapplied reviewed-patch notices show a disabled apply-to-workspace action when the apply flag is closed, making the default no-write boundary visible without exposing a mutation path.',
+      'ConfigurationSafetyReport now describes sandbox patch promotion apply as an explicit operator action that still requires reviewed patch evidence, operator confirmation, and promotion preflight, and says disabled apply keeps apply-to-workspace actions hidden.',
+      'Local agent acceptance now runs the reviewed patch promotion apply smoke against built main-process modules, covering default no-write approval, feature-flagged apply success, and blocked workspace-drift recovery evidence without Docker or provider calls; the smoke top-level summary now surfaces enabledPromotionRequirements=8/8, enabledSelectedRuntimeContract=ready, enabledTargetTaskEvidenceChain=ready, enabledOperatorApplyEvidenceChain=ready, enabledSameRunEvidenceChain=ready, enabledPostApplyRunEvidence=ready, enabledPostApplyFilesMatched=yes, enabledPromotionMissingRequirements=none, and blockedPostApplyRunEvidence=missing from durable apply audit summaries so future runtime patch promotion evidence is visible without opening the database.',
+      'Packaged task-files smoke now covers the explicit reviewed-patch apply UI path against a temporary workspace, including applied promotion state, touched-file run evidence, blocked workspace-drift state, and no-write recovery evidence.',
+      'Blocked promotion notices now explicitly say that the workspace was not written and point operators back to Run evidence before re-reviewing or regenerating the patch.',
+      'Applied promotion notices now point operators back to Run evidence to review touched files and post-apply verification results.',
+      'Sandbox patch promotion views now preserve durable promotion auditSummary and flag routingEvidenceRecorded when the apply audit contains Runtime patch promotion routing readiness, so applied and blocked notices can surface that workspace apply evidence is backed by routing diagnostics instead of only a status label.',
+      'Tasks file workspace apply guidance now states that only reviewed patch files passing promotion preflight are written, drift blocks apply, and Run evidence must be reviewed after completion.',
+      'Sandbox patch promotion readiness now returns satisfied and missing requirement lists plus requirements=x/12 and missingRequirements=... summary evidence before any workspace apply service can run.',
+      'The sandbox patch promotion readiness smoke now runs evaluateSandboxPatchPromotionReadiness as a read-only build-gated harness with stale-build detection, proving review-only checkpoints stay missing_apply_metadata at 10/12 requirements, complete safe apply metadata reaches ready at 12/12 requirements with deduplicated expected files, unsafe expected files stay blocked, and resolved checkpoints stay already_resolved without provider calls, workspace apply, or workspace writes.',
+      'Native CLI workspace_write capability steps now require patch artifact, ready task_file Write Intent, ready patch artifact Write Intent, or patch-review promotion evidence during post-step verification.',
+      'Terminal Run verification now carries same-run artifacts and checkpoints into post-step self-checks when repository evidence is available, so run-backed patch artifacts and patch-promotion checkpoints can satisfy workspace_write promotion evidence instead of being invisible to terminal verification.',
+      'evaluateRuntimePatchPromotionRoutingReadiness now keeps future API/runtime-generated patch promotion blocked unless the path includes a selected-runtime contract, target-task identity, same-run patch artifact, promotion Decision, promotion preflight, explicit operator apply, and post-apply Run evidence.',
+      'evaluateRuntimePatchPromotionRoutingReadinessFromEvidence now derives runtime patch promotion routing readiness from structured service evidence for selected-runtime contract, target-task identity, patch artifact, promotion Decision, promotion preflight, artifact evidence chain, checkpoint evidence chain, explicit operator apply, same-run evidence chain, and post-apply Run evidence.',
+      'Runtime patch promotion routing now treats target-task identity as an evidence chain: targetTaskId, patchArtifact.taskId, promotionDecision.taskId, promotionPreflight.taskId, and postApplyRunEvidence.taskId must all match before future runtime patch promotion can be ready; promotion preflight must carry the same run id and target task before promotion_preflight can be ready, and post-apply Run evidence itself must carry the same run id and target task before post_apply_run_evidence can be ready.',
+      'Runtime patch promotion routing now also treats the promotion Decision checkpoint and promotion preflight checkpoint as one checkpointEvidenceChain, so future runtime patch promotion cannot stitch an approved Decision to a different preflight result.',
+      'Runtime patch promotion routing now also treats the patch artifact, promotion Decision artifact, and promotion preflight artifact as one artifactEvidenceChain, so future runtime patch promotion cannot stitch an approved Decision or ready preflight to a different patch artifact.',
+      'Runtime patch promotion routing now requires the approved promotion Decision artifact to match the reviewed patch artifact, and also requires the Decision run id and target task to match before promotion_decision can be ready, so a Decision for a different artifact, run, or task cannot appear as a satisfied promotion Decision while other routing gates block.',
+      'Runtime patch promotion routing now treats explicit operator apply as an operatorApplyEvidenceChain: operator confirmation must carry the same target task, same run, and same checkpoint as the reviewed patch artifact, promotion Decision, and promotion preflight before explicit_operator_apply can be ready.',
+      'Runtime patch promotion routing now keeps service_explicit_apply outside the ready operatorApplySurfaceEvidenceChain, so service-internal apply calls can record evidence but cannot prove the future API/runtime workspace mutation route without an operator-facing surface such as ipc_explicit_apply or decision_checkpoint_resume.',
+      'Runtime patch promotion routing now also keeps same_run_evidence_chain missing when explicit operator apply is absent or diverges from the reviewed patch artifact, promotion Decision, promotion preflight, and post-apply Run evidence.',
+      'Runtime patch promotion routing now treats expected patch files and post-apply touched files as one touchedFileEvidenceChain and exposes postApplyFilesMatched=yes/no, so future runtime patch promotion cannot satisfy post_apply_run_evidence with a nonempty but mismatched file list and operators can see the post-apply file-set match directly.',
+      'Runtime patch promotion routing now also treats expected patch files and post-apply touched files as one filePathSafetyChain, so future runtime patch promotion cannot satisfy patch artifact or post-apply evidence with unsafe workspace paths, including Windows drive absolute paths, current-directory path aliases, and blank path entries, even when the file sets match.',
+      'Runtime patch promotion routing now requires expected file evidence to be safe and duplicate-free before patchArtifact can be ready, also requires patch artifact target-task identity for patchArtifact readiness, requires expected and touched file evidence to be duplicate-free, safe, and nonblank before touchedFileEvidenceChain can be ready, and SandboxPatchPromotionApplyService blocks duplicate patch file entries before writing workspace files while also blocking unsafe Windows-drive/current-directory path aliases.',
+      'SandboxPatchPromotionApplyService now also blocks unsafe or duplicate expected-file promotion metadata and malformed reviewed patch diffs before writing workspace files, recording blocked promotion evidence plus runtime patch promotion routing readiness instead of throwing out of the operator-facing apply path.',
+      'Runtime patch promotion routing and SandboxPatchPromotionApplyService now normalize workspace-relative path separators before duplicate checks, touched-file matching, and workspace writes, so equivalent slash/backslash paths and repeated-separator aliases cannot satisfy duplicate-free evidence as separate files, cannot write a separate alias-named file on POSIX, and can still match safely when the file identity is genuinely the same.',
+      'SandboxPatchPromotionApplyService now blocks symlink-backed workspace patch targets before reading or writing files, so reviewed patch promotion cannot follow a workspace symlink outside the configured workspace root while still recording blocked routing evidence instead of post-apply evidence.',
+      'Runtime patch promotion routing now requires selectedRuntimeContract to carry the same run id and target task id as the reviewed patch artifact, and requires API runtime contracts to carry selectedRuntimeProvider identity plus providerConfigured=true and matching configuredProvider evidence before selected_runtime_contract can be ready, so future API/runtime patch promotion cannot be promoted from mode/layer/phase metadata alone, selected-provider-only evidence, missing provider configuration, or stitched configured-provider evidence.',
+      'Runtime patch promotion routing now also includes the selectedRuntimeContract in sameRunEvidenceChain, so same-run evidence remains missing when selected-runtime run identity, target-task identity, API provider identity, or configured-provider evidence is absent or diverges, even if patch artifact, Decision, preflight, explicit apply, and post-apply evidence are otherwise complete.',
+      'Runtime patch promotion routing tests now explicitly prove selectedRuntimeContract stays missing when the selected runtime run id, target task identity, API provider identity, or configured provider identity diverges or is absent from the reviewed patch evidence chain, even if every patch artifact, Decision, preflight, explicit apply, and post-apply evidence record is otherwise complete.',
+      'Runtime patch promotion readiness now returns satisfied and missing requirement lists plus promotionReady, requirements=x/8, promotionRequirements=x/8, promotionSatisfiedRequirements=..., missingRequirements=..., promotionMissingRequirements=..., selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerConfigured, configuredProvider, configuredProviderEvidenceChain, targetTaskEvidenceChain, decisionArtifactEvidenceChain, artifactEvidenceChain, checkpointEvidenceChain, operatorId, operatorApplySurface, operatorApplySurfaceEvidenceChain, patchRunId, decisionRunId, preflightRunId, postApplyRunId, sameRunId, expectedFileCount, expectedFiles, expectedFileEvidenceChain, touchedFileCount, touchedFiles, postApplyFilesMatched, filePathSafetyChain, and touchedFileEvidenceChain summary evidence, matching the Agent API promotion readiness style without opening direct workspace writes.',
+      'ConfigurationSafetyReport now exposes runtime patch promotion routing readiness as the sandbox.patch_promotion diagnostic summary, so settings and safety-report surfaces show the selected-runtime, target-task, same-run artifact, Decision, preflight, explicit apply, and post-apply evidence gaps before any future runtime patch route can be promoted.',
+      'Settings configuration safety rows now render sandbox.patch_promotion evidence chips for promotionReady, promotionRequirements, promotionSatisfiedRequirements, promotionMissingRequirements, missingRequirements, selectedRuntimeContract, selectedRuntimeRun, selectedRuntimeRunEvidenceChain, selectedRuntimeTask, selectedRuntimeTaskEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerConfigured, configuredProvider, configuredProviderEvidenceChain, targetTaskIdentity, targetTaskEvidenceChain, checkpointEvidenceChain, sameRunEvidenceChain, explicitOperatorApply, postApplyRunEvidence, operatorId, operatorApplySurface, operatorApplySurfaceEvidenceChain, operatorApplyTask, operatorApplyRun, operatorApplyCheckpoint, operatorApplyEvidenceChain, patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain, promotionDecisionId, promotionCheckpointId, preflightCheckpointId, patchArtifactTask, promotionDecisionTask, promotionPreflightTask, postApplyTask, patchRunId, decisionRunId, preflightRunId, postApplyRunId, sameRunId, expectedFileCount, expectedFiles, expectedFileEvidenceChain, touchedFileCount, touchedFiles, postApplyFilesMatched, filePathSafetyChain, and touchedFileEvidenceChain so operators can review patch promotion routing gaps and identity without parsing the full diagnostic summary.',
+      'The runtime patch promotion routing readiness smoke now runs evaluateRuntimePatchPromotionRoutingReadiness and evaluateRuntimePatchPromotionRoutingReadinessFromEvidence as a read-only build-gated harness with stale-build detection, proving blocked=2/8 requirements, same-run-blocked=7/8 requirements with same_run_evidence_chain missing, service-evidence=2/8 requirements with selectedRuntimeRunEvidenceChain=missing, selectedRuntimeTaskEvidenceChain=missing, selectedRuntimeProvider=openai, selectedRuntimeProviderEvidenceChain=ready, providerConfigured=ready, configuredProvider=openai, configuredProviderEvidenceChain=ready, patchArtifactId, decisionArtifactId, preflightArtifactId, decisionArtifactEvidenceChain, artifactEvidenceChain, promotionDecisionId, patchArtifactTask, promotionDecisionTask, promotionPreflightTask, targetTaskEvidenceChain, checkpointEvidenceChain, operatorApplySurface=missing, operatorApplySurfaceEvidenceChain=missing, patchRunId, decisionRunId, preflightRunId, sameRunId, expectedFileCount, expectedFiles, expectedFileEvidenceChain, touchedFileCount, postApplyFilesMatched=no, filePathSafetyChain, and touchedFileEvidenceChain identity evidence plus selected_runtime_contract, target_task_identity, explicit_operator_apply, same_run_evidence_chain, and post_apply_run_evidence missing, selected-runtime-mismatch=6/8 requirements with selected_runtime_contract and same_run_evidence_chain missing when selectedRuntimeRun=run_other, selectedRuntimeRunEvidenceChain=missing, sameRunEvidenceChain=missing, and sameRunId=missing even though the reviewed patch/apply evidence is otherwise complete, service-evidence-ready=8/8 requirements with selectedRuntimeContract, targetTaskEvidenceChain, operatorApplyEvidenceChain, operatorApplySurfaceEvidenceChain, sameRunId, and postApplyFilesMatched ready from the same explicit-operator apply evidence, and synthetic-ready=8/8 requirements without provider calls, workspace apply, or workspace writes.',
+      'Runtime patch promotion routing readiness summaries now also keep directRuntimeWorkspaceWrite=blocked and workspaceMutationPath=explicit_operator_apply_only visible for blocked, service-evidence, and synthetic-ready cases, so future API/runtime patch promotion cannot look complete merely because a runtime claims it wrote files directly.',
+      'SandboxPatchPromotionApplyService now appends evaluateRuntimePatchPromotionRoutingReadinessFromEvidence output to applied and already-applied audit summaries after explicit operator apply, so real workspace apply evidence records target-task identity across patch artifact, promotion Decision, preflight, and post-apply evidence; same-run patch artifact; approved promotion Decision; ready preflight; explicit operator apply with same task/run/checkpoint evidence; same-run evidence chain; post-apply Run evidence; and the remaining selected-runtime-contract gap only when first-party run-step evidence is unavailable.',
+      'SandboxPatchPromotionApplyService now also records expectedFileCount, touchedFileCount, and filesMatched in applied and already-applied audit summaries, so operator-facing workspace apply evidence can show that touched files match the reviewed patch file set without parsing the full routing diagnostic.',
+      'SandboxPatchPromotionApplyService now resolves selectedRuntimeContract and providerConfiguration from first-party completed same-run RunStep evidence before writing apply audit summaries: Agent CLI runtime=codex/claude steps become selected_runtime execution_run evidence only when the step belongs to the promotion run, Agent API promotion readiness steps become api_runtime execution_run evidence only when the step belongs to the promotion run, selectedRuntimeRun and selectedRuntimeTask match the promotion run/task, selectedRuntimeProviderEvidenceChain is ready with a concrete provider, providerConfigured=ready, configuredProvider matches selectedRuntimeProvider, and configuredProviderEvidenceChain=ready; both resolvers are wired through bootstrap instead of accepting renderer-supplied runtime/provider identity.',
+      'DecisionService and IPC now pass explicit operator apply surface evidence into SandboxPatchPromotionApplyService when an approved patch-promotion Decision triggers workspace apply or the operator uses the explicit IPC apply action, so Decision-driven apply and explicit IPC apply both satisfy the operatorApplyEvidenceChain and operatorApplySurfaceEvidenceChain instead of leaving explicit_operator_apply missing or relying on a bare confirmed boolean.',
+      'SandboxPatchPromotionApplyService now blocks before promotion preflight when explicit operator confirmation or operator identity is missing, so direct service callers, future API routes, and non-IPC entrypoints cannot write workspace files or mutate promotion records by relying on downstream evidence summaries alone.',
+      'SandboxPatchPromotionApplyService now blocks after promotion preflight but before any markApplied call or workspace write when runtime patch promotion routing evidence is incomplete, so missing selected-runtime evidence leaves selectedRuntimeContract=missing, sameRunEvidenceChain=missing, and promotionMissingRequirements=selected_runtime_contract,same_run_evidence_chain instead of allowing a 6/8 or 7/8 apply to touch the workspace.',
+      'SandboxPatchPromotionApplyService now also appends runtime patch promotion routing readiness when preflight reports an already_applied promotion before re-entering the file-application path, keeping idempotent apply responses aligned with applied audit evidence.',
+      'SandboxPatchPromotionApplyService now proves already-applied patch-promotion responses can reach promotionRequirements=8/8 when first-party same-run selected-runtime evidence is available, including selectedRuntimeContract=ready, targetTaskEvidenceChain=ready, operatorApplyEvidenceChain=ready, operatorApplySurfaceEvidenceChain=ready, postApplyFilesMatched=yes, and promotionMissingRequirements=none.',
+      'SandboxPatchPromotionApplyService now appends runtime patch promotion routing readiness when ready preflight reaches invalid reviewed-patch artifact JSON, so malformed artifact content records selected-runtime, preflight, explicit-operator, and missing post-apply evidence before blocking without workspace writes.',
+      'SandboxPatchPromotionApplyService now appends runtime patch promotion routing readiness when a ready preflight is blocked by workspace drift or validation failure, so blocked apply evidence preserves the reviewed patch artifact, approved Decision, ready preflight, explicit operator apply, and missing post-apply evidence without writing workspace files.',
+      'SandboxPatchPromotionApplyService now also marks durable promotion records blocked and appends runtime patch promotion routing readiness when promotion preflight itself fails before workspace validation, so artifact/checkpoint metadata divergence leaves selected-runtime and explicit-operator evidence plus missing target-task, preflight, same-run, and post-apply evidence instead of returning an unrecorded operator-facing block.',
+    ],
+    gaps: [
+      'Future API/runtime-generated patch promotion still needs to prove the selected-runtime contract, target-task identity, and reuse the reviewed-patch apply workflow and same-run evidence chain; direct workspace-write runtime modes remain intentionally separate from the common run path.',
+    ],
+    nextActions: [
+      'Keep explicit apply as the product-controlled mutation path and require the read-only sandbox patch promotion readiness smoke, the read-only runtime patch promotion routing smoke, evaluateRuntimePatchPromotionRoutingReadiness, and evaluateRuntimePatchPromotionRoutingReadinessFromEvidence before routing future runtime writes into selected-runtime, target-task, same-run patch artifacts, promotion Decisions, promotion preflight, explicit apply, and post-apply Run evidence.',
+    ],
+  },
+  {
+    id: 'capabilities_external_skills_mcp',
+    label: 'External Access, Skills, MCP, browser tools, and runtime capability gates',
+    priority: 'p0',
+    status: 'partial',
+    boundaries: ['configure', 'execute', 'persist'],
+    movements: ['research', 'execute', 'persist'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'agent.output_contract',
+      'decision.writeback_orchestration',
+      'native.runtime_orchestration',
+    ],
+    writeIntents: ['source_context.create', 'none'],
+    gates: [
+      'capability_probe_boundary',
+      'runtime_context_assembly',
+      'runtime_action',
+      'product_config_boundary',
+      'operator_confirmation',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'partial',
+    evidence: [
+      'CapabilityRegistry keeps optional tools hidden until runtime gates expose model-visible tools.',
+      'RuntimeContextManifest now carries a per-action CapabilityScopedAllowance manifest for MCP tools, skills, external access, hooks, browser/computer-use, and local file scope, keeping global capability configuration global while recording context-only, read-only, runtime-native-gated, or blocked allowance for each run.',
+      'CapabilityScopedAllowance keeps business-line SOP/skills as business memory and records perBusinessLineMatrix=no, so business-specific process guidance stays in BusinessLineContextPack/context manifests instead of becoming a per-business-line runtime/MCP/provider matrix.',
+      'Wanman matrix runtime is reserved as a future executor backend below Pilot with matrixRuntime=wanman_matrix, runtimeRole=future_runtime_backend_below_pilot, runtimeExecutable=no, productCoordinator=false, productionInvocationAllowed=false, scoped business-line mission, required context manifest, scoped tool/file/MCP surface, evidence return, writeBoundary=write_intent_only, productWriteGate=required, directBusinessRecord=false, directDecision=false, directSop=false, and directCompletion=false.',
+      'Skills page separates product runtime rules from optional user skills.',
+      'Agent CLI runtime status now carries adapter-level native capability declarations for structured events, runtime-dependent web/search, workspace read/write boundaries, hooks, subagents, and product-controlled memory/clear/compact.',
+      'Agent CLI status probes parse lightweight provider help output for structured-event, hook-event, and native agent/subagent signals when the installed CLI exposes them.',
+      'Agent CLI status probes now combine top-level and execution help output to detect native web/search activation, resume support, compact/clear context affordances, plan/read-only affordances, Claude hook events, Claude agents, and native memory-loading signals.',
+      'Agent CLI status probes also inspect the configured workspace for native guidance and lifecycle assets such as AGENTS.md, CLAUDE.md, .claude/settings hooks, and .claude/agents without executing the runtime.',
+      'Claude workspace hook metadata probes now require non-empty configured hook commands or hook entries, so empty .claude/settings hook placeholders no longer count as hook readiness.',
+      'Claude workspace subagent metadata probes now require usable .claude/agents/*.md files with headings or metadata, so placeholder directories, empty files, or placeholder-only files no longer count as subagent readiness.',
+      'Agent CLI workspace metadata probes now read explicit web/search declarations from .codex/config.* and .claude/settings*.json without executing the runtime, and Claude subagent readiness now requires usable agent markdown with a heading or metadata rather than placeholder-only files.',
+      'Agent CLI package metadata probes now read explicit provider-owned package.json capability/tool declarations when the executable resolves inside a Codex/OpenAI or Claude/Anthropic package, while ignoring arbitrary wrapper packages.',
+      'Agent CLI status now auth-gates native web/search capability promotion, so help/workspace/package metadata cannot make an installed-but-not-logged-in runtime appear search-ready.',
+      'CapabilityRegistry now summarizes detected Agent CLI native web/search readiness counts, distinguishing runtime-dependent search support from unverified installed runtimes.',
+      'CapabilityRegistry now carries selected Agent CLI native web/search readiness separately from aggregate runtime counts, and downgrades selected native search to unverified when the selected runtime still needs login.',
+      'AI Runtime settings now reuse CapabilitySafetyStrip for agent_cli.runtimes, showing shared runtime status, safe-read-only probe policy, and execution boundary before native CLI launch.',
+      'AI Runtime settings also reuse CapabilitySafetyStrip for agent_api.runtime, showing provider-backed phase availability, non-startup probe policy, and deferred execution_run boundary.',
+      'Agent API Runtime capability summaries now expose a deferred contract layer with runtimeLevel=same_level_future, configuredProviderIsExecutionReady=no, providerToolProbeIsTaskExecutionReady=not_declared|no, readOnlyProposalCapable=partial, executionReady=no, promotionScope=per_movement_per_entrypoint, rightPanelExecutionEvidenceChain=execution_run_promotion, decompositionEvidenceChain=decomposition_promotion, schedulerEvidenceChain=runtime_scheduler, patchApplyEvidenceChain=sandbox_patch_promotion, and globalAgentApiPromotionAllowed=false, so configured providers, provider tool/search probes, right-panel execution, decomposition, scheduler, and patch apply cannot collapse into one global Agent API readiness flag.',
+      'Agent API Runtime capability summaries now expose executionRunPromotionReady=no, executionRunPromotionRequirements=0/11, executionRunGateRequirements=0/9, executionRunPromotionSatisfiedRequirements=none, executionRunMissingRequirements=..., executionRunPromotionMissingRequirements=..., executionRunPromotionSatisfiedGates=none, executionRunPromotionMissingGates=..., executionRunMissingGates=..., decompositionPromotionReady=no, decompositionPromotionRequirements=0/7, decompositionPromotionSatisfiedRequirements=none, decompositionMissingRequirements=..., decompositionPromotionMissingRequirements=..., providerToolReadiness=not_declared, providerToolStatus=blocked|not_declared|declared, providerToolProbeScope=provider_tool_search_declaration, providerToolProbeTaskExecutionReadiness=not_evaluated, providerToolProbePromotesExecutionRun=no, providerToolProbeSeparateExecutionChain=execution_run_promotion, selectedApiRuntime, providerConfigured, configuredProvider, configuredProviderEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerOwnedMetadata, providerMetadataMatchesSelected, explicitToolDeclaration, explicitToolDeclarationPackage, explicitToolDeclarationPackageMatchesMetadata, declaredWebSearchToolCount, declaredWebSearchTools, trustedWebSearchToolCount, trustedWebSearchTools, and startupProbe=never, so provider tool/search readiness is not implied by provider configuration, generic unknown-provider metadata, mismatched configured-provider identity evidence, mismatched selected-runtime provider identity, mismatched provider metadata, mismatched declaration package identity, unrelated function tools, runtime-probe-only tools, or startup calls and cannot promote execution_run without the separate execution_run_promotion chain.',
+      'AI Runtime settings now render Agent API execution_run readiness chips from the shared capability summary, making promotion ready state, promotion count, gate requirement count, missing requirement count, missing requirement list, promotion satisfied requirement list, promotion missing requirement list, promotion satisfied gate list, promotion missing gate list, key gate count, key gate list, missing gate count, and missing gate list visible without parsing the diagnostic text.',
+      'AI Runtime settings now render Agent API decomposition readiness chips from the shared capability summary, making promotion ready state, promotion count, missing requirement count, missing requirement list, promotion satisfied requirement list, and promotion missing requirement list visible without parsing the diagnostic text.',
+      'AI Runtime settings now render Agent API provider tool readiness, providerToolStatus, providerToolProbeScope, providerToolProbeTaskExecutionReadiness, providerToolProbePromotesExecutionRun, providerToolProbeSeparateExecutionChain, providerToolRequirements, providerToolMissingRequirements, providerNativeSessionReady, providerNativeSessionRequirements, providerNativeSessionMissingRequirements, providerNativeFlag, providerNativeSelectedProvider, providerNativePayloadProvider, providerNativePayloadProviderMatchesSelected, providerNativePlanProvider, providerNativePlanProviderMatchesSelected, providerNativeProviderCallIdCount, providerNativeProviderCallIdIdentity, providerNativeProviderWebSearchCallCount, selectedApiRuntime, providerConfigured, configuredProvider, configuredProviderEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, startupProbe, providerOwnedMetadata, providerMetadataMatchesSelected, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, explicitToolDeclarationPackage, explicitToolDeclarationPackageMatchesMetadata, declaredToolCount, declaredWebSearchToolCount, declaredWebSearchTools, trustedWebSearchToolCount, trustedWebSearchTools, untrustedWebSearchToolCount, and untrustedWebSearchTools chips from the shared capability summary, so providerToolReadiness=not_declared, providerToolStatus=blocked|not_declared, and providerNativeSessionReady=no are visible without implying provider-native web/search/tool support.',
+      'evaluateAgentApiProviderToolReadinessFromEvidence now derives Agent API provider tool readiness from structured service evidence for selected API Runtime, selected-runtime provider identity, configured provider identity, provider configuration, no-startup-probe policy, matching provider-owned metadata, and exact provider-owned web/search/browse tool declarations whose package identity matches the same provider-owned metadata, and now requires nonempty selected-runtime provider identity to match configured provider identity before satisfying selected_api_runtime, requires providerConfigured=true to carry a configuredProvider identity before satisfying provider_configured, requires unknown-provider metadata to identify the configured provider by exact owner, package scope, package basename, or package basename prefix rather than a loose substring match, requiring known OpenAI/Anthropic provider metadata to use provider package scope, exact package basename, or owner-only metadata with no contradictory package instead of third-party package-name prefixes or third-party packages that merely claim a known-provider owner, requiring provider-owned web/search tool declarations to be exact names including OpenAI Responses web_search_preview legacy tool declarations, web-prefixed declarations, or colon/dot/slash provider-namespaced web_search/web_fetch declarations whose namespace matches the configured provider rather than arbitrary tool names that merely contain web/search/browse/browser words, and now reports untrustedWebSearchToolCount/untrustedWebSearchTools when raw web/search names are present but not trusted because metadata, source, or package identity is not aligned, so provider configuration alone, anonymous provider configuration, missing or mismatched selected-runtime provider identity, generic unknown-provider metadata, mismatched provider metadata, known-provider third-party prefix package names, known-provider owner metadata from third-party package identities, loose provider-name substring package matches, mismatched tool-declaration package identity, colon, dot, or slash provider-namespace mismatches, unrelated provider-owned function tools, generic bare search tools, generic file_search/database_search declarations, task_browser/vendor:browse-style helper declarations, and web_search_cache-style helper declarations stay providerToolReadiness=not_declared.',
+      'CapabilityRegistry now derives Agent API Runtime providerToolReadiness, providerToolStatus, providerToolRequirements, and providerToolMissingRequirements through evaluateAgentApiProviderToolReadinessFromEvidence plus selected-runtime provider identity and no-start local provider package metadata for @ai-sdk/openai and @ai-sdk/anthropic instead of hard-coded provider tool/search readiness strings, and keeps selected Agent API Runtime disabled when provider identity is missing even if a generic configured flag is true.',
+      'Agent API provider tool readiness summaries now expose selectedApiRuntime, providerConfigured, configuredProvider, configuredProviderEvidenceChain, selectedRuntimeProvider, selectedRuntimeProviderEvidenceChain, providerOwnedMetadata, providerMetadataMatchesSelected, providerMetadataOwner, providerMetadataPackage, explicitToolDeclaration, explicitToolDeclarationSource, explicitToolDeclarationPackage, explicitToolDeclarationPackageMatchesMetadata, declaredToolCount, declaredWebSearchToolCount, declaredWebSearchTools, trustedWebSearchToolCount, trustedWebSearchTools, untrustedWebSearchToolCount, and untrustedWebSearchTools after trimming plus case-insensitive and separator-normalized deduplication, so settings and smokes can distinguish runtime selection, configured provider identity evidence, selected/configured provider identity, provider configuration, matching provider-owned package declarations, matching tool-declaration package identity, raw web/search-specific declarations, trusted provider-owned web/search declarations, and raw-but-untrusted declarations from runtime-probe-only tool discovery without overstating duplicate tool evidence or colon/dot/slash provider namespace aliases.',
+      'The Agent API provider tool readiness smoke now reads the shared Agent API Runtime capability row and evaluateAgentApiProviderToolReadinessFromEvidence as a read-only build-gated harness, proving providerToolReadiness=not_declared, providerToolStatus=not_declared, providerToolRequirements=4/5, providerToolMissingRequirements=explicit_tool_declaration, configuredProvider=openai, configuredProviderEvidenceChain=ready, selectedRuntimeProvider=openai, selectedRuntimeProviderEvidenceChain=ready, providerNativeProviderCallIdIdentity=duplicate_or_missing, providerMetadataMatchesSelected=yes, providerMetadataPackage=@ai-sdk/openai, explicitToolDeclarationPackage=@ai-sdk/openai, explicitToolDeclarationPackageMatchesMetadata=yes, declaredWebSearchToolCount=0, declaredWebSearchTools=none, trustedWebSearchToolCount=0, trustedWebSearchTools=none, untrustedWebSearchToolCount=0, untrustedWebSearchTools=none, service-evidence=4/5 requirements with explicit_tool_declaration missing, generic-helper service evidence remains genericHelperProviderToolStatus=not_declared with genericHelperDeclaredWebSearchToolCount=0, genericHelperTrustedWebSearchToolCount=0, and genericHelperUntrustedWebSearchToolCount=0 for browser.search/search.web_fetch/task_browser/vendor:browse/web_search_cache-style helpers, legacy OpenAI web_search_preview service evidence reaches legacyPreviewProviderToolStatus=declared with legacyPreviewDeclaredWebSearchTools=web_search_preview while web_search_cache remains excluded, startupProbe=never, executionRun=deferred, runtimeExecutable=no, provider=not-called, network=not-called, and workspace=unchanged even when API Runtime is selected and provider configuration is present.',
+      'Provider-native agent session gates now require both provider-native payload provider identity and normalized plan provider identity to match the selected runtime provider, plus nonempty duplicate-free providerCallIds, provider web/search call tool names from provider_payload evidence, and matching trusted provider-owned web/search declarations before normalized provider web/search tool calls can execute, so a provider payload, normalized plan, runtime projection, or hand-shaped proposal without provider-owned web/search tool-call identity and declaration evidence cannot cross the provider-native session boundary.',
+      'CapabilityRegistry now also projects provider-native session readiness from static selected-runtime evidence, exposing providerNativeSessionReady=no, providerNativeSessionRequirements=2/7, providerNativeSessionMissingRequirements=provider_payload_identity,normalized_plan_identity,provider_call_ids,provider_web_search_calls,provider_web_search_declaration, providerNativeFlag=enabled, providerNativeSelectedProvider=openai, providerNativePayloadProvider=missing, providerNativePlanProvider=missing, providerNativeProviderCallIdCount=0, providerNativeProviderCallIdIdentity=duplicate_or_missing, providerNativeProviderWebSearchCallCount=0, and trusted/untrusted provider web-search declaration evidence in the read-only Agent API provider tool readiness smoke, plus providerNativeReadySessionReady=yes and providerNativeReadySessionRequirements=7/7 only when payload provider identity, normalized plan provider identity, providerCallSource=provider_payload, duplicate-free providerCallIds, provider web/search call tool names, and trusted provider-owned web/search declarations all match the selected runtime provider from structured non-executing evidence, so enabling provider-native tool calls does not imply a live provider-native web/search session without payload-owned providerCallIds and provider-owned web/search tool-name declaration evidence while the ready shape remains testable without provider calls.',
+      'AI Runtime settings surfaces those declarations as per-runtime capability chips before execution, including visible native search, hook, and subagent readiness labels plus memory, compact, clear, and write boundaries.',
+      'Probed native compact/clear signals are promoted into adapter capability support while context reset still requires Taskplane preservation gates and persistent-session ownership before a runtime-native reset strategy can be selected.',
+      'Run Goal Contract and Agent CLI context bridge pass selected-runtime capability declarations into native CLI prompts.',
+      'Runtime-native goal audit runs now attach the shared native goal forwarding readiness summary, nativeGoalReady, requirements=x/8, missingEvidence=..., and closed boundary notes without executing the CLI.',
+      'Native goal forwarding readiness now requires the selected adapter to declare native goal capability before any future explicit passthrough candidate can be ready.',
+      'Right-panel runtime-native goal requests now show the native goal forwarding readiness summary and missing evidence in the operator response and panel timeline payload.',
+      'Native-goal discovery default output now reports taskplaneGoalLoop=available, nativeGoalForwarding=audit-only, passthrough=closed, status=skip, skipReason=opt_in_required, and continueWith=taskplane_goal_loop, so a closed runtime-native goal path is not confused with blocked Taskplane task advancement.',
+      'The native goal forwarding readiness smoke now runs the shared readiness gate as a read-only build-gated harness, proving unsupported adapter evidence stays audit_only with nativeGoalReady=no, requirements=3/8, and adapter capability missing, reported native-goal capability still stays audit_only with nativeGoalReady=no, requirements=4/8, command shape, progress evidence, control boundary, and packaged smoke missing, and only synthetic complete evidence becomes ready_to_open_passthrough with nativeGoalReady=yes and requirements=8/8 without CLI calls, provider calls, or workspace writes.',
+      'Provider-native and Gmail connector preflights now report skipReason=config_missing when configuration is incomplete, before any provider, Gmail, task-memory, or workspace effect is allowed.',
+      'Native CLI provider events are projected into runtime-neutral capability progress states for web search, workspace reads/writes, command execution, MCP, and hooks.',
+      'Native CLI capability-tagged web/search events and Taskplane web research bridge results are summarized in run progress or completion output.',
+      'Agent CLI web research preparation fallback copy now uses the selected runtime native web/search readiness, so skipped bridge steps distinguish verified/runtime-dependent native search from unverified native search instead of implying a hidden fallback.',
+      'Fresh external research wording such as latest/current pricing or recent release changes is now covered by the pre-run web research trigger while local current-task wording remains excluded.',
+      'Agent CLI web research preparation now records the Source Context batch id and persisted source_context_ids in the Run step output, and renderer progress surfaces those evidence ids when research is captured.',
+      'Agent CLI web research preparation now also records attempted_sources, failed_sources, and the Source Context batch id when web research succeeds but source persistence fails, and renderer progress surfaces the attempted/failed counts, so unsaved research evidence remains structured and auditable instead of only appearing inside fallback prose.',
+      'A default-skipped manual Agent CLI native web/search smoke now provides an opt-in live evidence path for exact runtime search behavior while reporting cli=not-called, network=not-called, and workspace=unchanged by default.',
+      'Codex CLI 0.125.0 passed the opt-in native web/search smoke on 2026-05-27 with auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed; the smoke records that --search is a top-level Codex option before exec.',
+    ],
+    gaps: [
+      'Future API and optional non-Codex provider compatibility still need deeper provider-specific readiness checks for exact native web/search behavior beyond auth-gated no-start help-output, workspace-metadata, provider-owned package metadata checks, Agent API no-start provider tool/search non-declaration, and the now-recorded Codex opt-in live smoke evidence; this no longer blocks the Codex-verified CLI-first capability path.',
+    ],
+    nextActions: [
+      'Keep adding static readiness probes only when providers expose stable non-executing metadata; use evaluateAgentApiProviderToolReadinessFromEvidence and the read-only Agent API provider tool readiness smoke to prevent provider configuration from implying native tool/search support, and record non-Codex provider live smoke opportunistically when local account support is available, not as a CLI-first blocker.',
+      'Keep native goal passthrough closed until the read-only native goal forwarding readiness smoke and adapter evidence both prove command shape, progress/control evidence, and packaged smoke.',
+    ],
+  },
+  {
+    id: 'work_habits_settings_scheduled',
+    label: 'Work Habits, settings, scheduled/routine/event-triggered work',
+    priority: 'p1',
+    status: 'partial',
+    boundaries: ['configure', 'persist', 'execute'],
+    movements: ['shape', 'execute', 'persist'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'task.memory_rules',
+      'decision.writeback_orchestration',
+    ],
+    writeIntents: ['work_habit.propose', 'task_record.create'],
+    gates: [
+      'preference_boundary',
+      'product_config_boundary',
+      'method_library_boundary',
+      'runtime_context_assembly',
+      'operator_confirmation',
+      'post_step',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'partial',
+    evidence: [
+      'Work habits are selected as applicable context and stay behind confirmation flows.',
+      'Scheduled briefs use product-harness fallback when provider execution is unavailable.',
+      'RuntimeEntrypointCoverage now classifies scheduler stale-run recovery as scheduler_maintenance behind the scheduler feature flag, with post-step Run evidence and no Agent CLI/API startup.',
+      'RuntimeEntrypointCoverage now registers automation readiness as a diagnostic-only entrypoint with runtime-context assembly but no runtime_action/pre_step/post_step execution gates.',
+      'RuntimeEntrypointCoverage now registers scheduled/event/routine Agent execution as a separate gated provider-visible execution contract with scheduler configuration, confirmation, standing approval, context readiness, task-memory, subtask_start, post-step gates, and explicit operator IPC before any background scheduler trigger can exist.',
+      'AgentAutomationReadiness now keeps scheduled, event-triggered, and routine tasks diagnostic-only for automatic starts until a separate scheduled/event execution entrypoint exists, even when procedure, inputs, runtime, risk, and completion criteria are ready.',
+      'AgentAutomationReadiness now returns satisfied and missing requirement lists plus automationReady, requirements=x/9, missingRequirements=..., and automationMissingRequirements=... summary evidence; default scheduled/event diagnostics show scheduled_event_entrypoint missing, while connected trigger-service plans can satisfy it before runtime-start gates proceed.',
+      'Read-only orchestration diagnostics now expose the automatic-start boundary, distinguishing manual/operator-started readiness from scheduled/event tasks that require a separate execution entrypoint.',
+      'AgentAutomationReadiness now projects an autonomy ladder level and next authorized-action level, so ready tasks surface L1 proposal capability and the standing-approval requirement for future L2 limited autonomous action instead of flattening all automation into disabled.',
+      'RuntimeEntrypointCoverage now models standing_approval as an explicit deferred gate for scheduled/event autonomous execution and scheduler/background Decision drafts.',
+      'AgentStandingApprovalPolicy and evaluateStandingApprovalForAutomation now provide a narrow shared policy surface for L2 limited autonomous action, checking active status, expiry, task scope, lane, runtime, risk ceiling, daily run limit, visible reason, and existing automation readiness before any future scheduler trigger can use it; the evaluation now returns satisfied and missing requirement lists plus standingApprovalReady, requirements=x/13, missingRequirements=..., and standingApprovalMissingRequirements=... summary evidence.',
+      'buildStandingApprovalConfirmationDraft now creates a confirmation-only L2 authorization draft with policy, evaluation, scope summary, and explicit schedulerTriggerAllowed=false / workspaceWriteAllowed=false boundaries; it only tolerates the known scheduled/event entrypoint blocker and blocks other automation readiness gaps.',
+      'TasksPage Task Dynamics now exposes the Standing Approval draft for scheduled/event/routine tasks as an operator card, making the L2 authorization shape visible while keeping scheduler triggers and workspace writes unavailable.',
+      'Standing Approval Task Dynamics cards now surface readiness evidence chips for standingApprovalReady, schedulerTriggerAllowed=false, and workspaceWriteAllowed=false, so operators can see the authorization boundary without parsing the detail string.',
+      'TasksPage can now confirm the Standing Approval draft into a panel.standing_approval_confirmed Task Dynamics event through the existing TaskService timeline mutation guard, while still leaving schedulerTriggerAllowed=false and workspaceWriteAllowed=false.',
+      'Work Habits now explain the boundary between learned execution context and L2 autonomous authorization: confirmed habits can enter applicable task context, while scheduled/event/routine autonomous starts require the Tasks Standing Approval card and Work Habits do not directly start scheduler jobs or write the workspace.',
+      'Settings confirmation threshold now clarifies that lower-confirmation behavior does not bypass Standing Approval, workspace writes, external connectors, paid actions, or release/deploy hard confirmations; it only adjusts interruption frequency for low-risk conversation and suggestions.',
+      'planScheduledEventAgentTrigger now acts as the shared scheduled/event trigger planner: it consumes confirmed Standing Approval Task Dynamics records, re-checks runtime readiness, task readiness, policy expiry/scope/risk, task automation class, and returns runtimeStartAllowed=true only when a dedicated trigger service is connected and daily run-limit count evidence is present.',
+      'planScheduledEventAgentTriggerFromEvidence now derives scheduled/event trigger readiness from structured service evidence for the selected task, confirmed Standing Approval timeline record, scheduler trigger service connection, and daily run-limit accounting before runtimeStartAllowed can become true.',
+      'planScheduledEventAgentTriggerFromEvidence now ignores service-provided Standing Approval records unless schedulerTriggerAllowed=false and workspaceWriteAllowed=false are both explicit before synthesizing timeline planning evidence, so unsafe future API-backed scheduled starts cannot promote from a widened write or scheduler boundary.',
+      'Scheduled/event trigger plans now expose runtimeStartSatisfiedRequirements=... and runtimeStartMissingRequirements=... plus runtimeStartReady and runtimeStartRequirements=x/4 summary evidence for trigger_plan_ready, scheduler_trigger_service, selected_runtime_identity, and run_limit_count.',
+      'Scheduled/event trigger plans now also record scheduler_loop Agent Capability Gateway evidence with schedulerLoopSelectedScheme, schedulerLoopExecutionRuntime, schedulerLoopFallback, schedulerLoopCliFirstSupported, and schedulerLoopApiDeferred; selected Agent API scheduler paths remain deferred and cannot silently start the compatibility trigger port, while selected CLI readiness preserves CLI-first scheduler-loop evidence.',
+      'Scheduled/event trigger plans now record business-line loop boundary evidence with schedulerProductOwner=false, loopCarrier=business_line_next_action, and mutationGate=standing_approval_or_decision, so scheduler/sensor/automation paths remain carriers for business-line Next Action execution rather than separate product owners.',
+      'CapabilityRegistry now includes scheduled/event trigger runtime-start readiness in the runtime.scheduler summary through planScheduledEventAgentTriggerFromEvidence, so ConfigurationSafetyReport shows trigger-plan, scheduler-trigger-service, and run-limit-count gaps before scheduler automation can start a run.',
+      'The scheduled/event trigger readiness smoke now runs planScheduledEventAgentTrigger and planScheduledEventAgentTriggerFromEvidence as a read-only build-gated harness with stale-build detection, proving no-service plans stay runtimeStartAllowed=false with runtimeStartRequirements=2/4, connected trigger service without run-limit counting stays blocked, service-evidence=2/4 runtime-start requirements with run_limit_count missing, daily-cap-reached plans stay blocked by run-limit evidence, and only trigger-plan-ready + scheduler-trigger-service + selected-runtime-identity + run-limit-count evidence reaches runtimeStartRequirements=4/4 without provider calls, Docker, or workspace writes.',
+      'SchedulerService.diagnoseScheduledEventAgentTriggers and triggerScheduledEventAgentRun now build scheduled/event trigger plans through planScheduledEventAgentTriggerFromEvidence, so no-start diagnostics and real trigger attempts share the same service-evidence contract for AI status, target task, scheduler trigger service connection, and daily run-limit accounting.',
+      'Scheduled/event trigger planning now accepts explicit daily run-limit accounting input and blocks ready plans when Standing Approval maxRunsPerDay has been reached, while still keeping runtimeStartAllowed=false.',
+      'RunRepository.countCreatedSinceByTask now gives SchedulerService a real no-start daily run-count source for scheduled/event diagnostics, so run-limit blocking can be based on persisted same-day Run records instead of caller-supplied test data.',
+      'Scheduled/event trigger plans now carry the trigger Run evidence contract for context readiness, target-task identity, task-memory coverage, task-memory guidance, subtask_start, run-limit count, and post-step evidence.',
+      'SchedulerService.triggerScheduledEventAgentRun now provides a narrow main-side trigger-service connection: it requires an injected Code Agent trigger port, reuses Standing Approval and persisted same-day run-limit checks, starts only ready plans with schedulerTriggerServiceConnected=true after scheduler_loop gateway evidence allows the selected runtime boundary, and emits a bounded model-producer Code Agent run request with operatorConfirmed=true, default test/lint checks filtered by workspace availability, target task id, task-memory guidance including first open completion criterion and first source title, automation readiness evidence including scheduledEventEntrypoint=available, scheduler_loop gateway summary evidence, Standing Approval policy id and scope, runtime-start requirement evidence, run-limit evidence, post-step terminal-evidence guidance, and explicit workspaceWriteAllowed=false proposal-only boundary.',
+      'Task Dynamics now exposes a confirmed Standing Approval "启动一次" operator action backed by scheduler:triggerScheduledEventAgentRun IPC, so scheduled/event tasks can start one bounded Agent run without enabling a background scheduler job.',
+      'The Standing Approval "启动一次" operator feedback now includes the required trigger evidence items, run-limit usage, and proposal-mode write boundary immediately after a run starts, matching the deeper Task Dynamics timeline evidence without requiring the operator to open event detail first.',
+      'SchedulerService.triggerScheduledEventAgentRun now returns terminalRunEvidenceStatus and triggerRunEvidenceStatus for the single-run operator action, so Task Dynamics can distinguish started-but-pending terminal Run evidence from completed/failed terminal evidence and show whether trigger evidence is waiting for terminal review.',
+      'Scheduled/event Agent terminal trigger evidence now requires a terminal run status plus reviewable output or failureReason before terminalRunEvidenceStatus becomes present, so completed/failed runs without inspectable evidence remain pending_terminal_run_evidence instead of being treated as ready for terminal review.',
+      'SchedulerService.triggerScheduledEventAgentRun now records panel.scheduled_event_agent_triggered timeline evidence after a run starts, preserving run id, run status/outputSource/failureReason, terminalRunEvidenceStatus, triggerRunEvidenceStatus, target task id, Standing Approval policy id, automation readiness summary plus satisfied/missing requirements, run-limit state, runtime-start satisfied/missing requirements, schedulerTriggerServiceConnected, runtimeStartAllowed, workspaceWriteAllowed=false, and required trigger evidence in Task Dynamics.',
+      'Scheduled/event Agent trigger evidence now preserves triggerKind=manual|cron in both the bounded Code Agent run request and panel.scheduled_event_agent_triggered timeline payload, so live soak can distinguish operator-started runs from background scheduler starts without adding a second automation path.',
+      'The Standing Approval operator action feedback now surfaces run.failureReason when the scheduled/event Agent run reaches a failed terminal state, so the operator can see failure evidence immediately without opening the timeline detail.',
+      'SchedulerService.triggerScheduledEventAgentRun now blocks even operator-confirmed scheduled/event starts when the Task Dynamics timeline evidence port is not connected, keeping L2 Agent action evidence mandatory before any Code Agent run can start.',
+      'scheduler:triggerScheduledEventAgentRun now emits run.changed, task.changed, and brief.changed after a started scheduled/event Agent run, and also refreshes run plus target/returned task surfaces when a blocked operator-started run preserves recovery evidence such as a run-identity mismatch.',
+      'RuntimeEventRecord now formats panel.scheduled_event_agent_triggered payloads into readable Task Dynamics detail with run id, target task id, trigger plan summary, run status, failure reason when present, terminal Run evidence status, trigger evidence status, required trigger evidence items, automation-readiness gate status, runtime-start gate status, localized trigger kind labels for 自动巡检 and 手动启动, Standing Approval policy id, run-limit usage, and workspace proposal-mode write boundary.',
+      'SchedulerService.runScheduledEventAgentTriggerSweep wires the same trigger service into a 15-minute background scheduler job only when the Code Agent trigger port, Task Dynamics timeline port, and scheduled/event task-source port are all connected; SchedulerStatus now exposes scheduledEventAgentSweepJobConnected before first run evidence plus lastScheduledEventAgentSweepSummary for completed and skipped sweeps, and the sweep reuses persisted run-limit counts and the shared planner before starting any run.',
+      'SchedulerService tests now drive the registered */15 scheduled/event Agent cron callback and prove it starts the same bounded Code Agent run path with triggerKind=cron, operatorConfirmed=true, target task identity, timeline evidence, and workspaceWriteAllowed=false.',
+      'SchedulerService tests now exercise consecutive */15 scheduled/event Agent cron ticks against persisted same-day run counts, proving the second tick is blocked with started=0, blocked=1, triggerRunEvidenceStatus=not_started, and no second Code Agent trigger when the Standing Approval daily cap is reached.',
+      'SchedulerService.runScheduledEventAgentTriggerSweep now converts task-source, planning, trigger-port, and timeline failures into a persisted sweep_failed summary with checked task evidence, sanitized error evidence, and a released in-flight guard, so background cron failures remain operator-visible and recoverable instead of becoming unhandled scheduler promises; timeline-recording failures after a run starts also preserve startedRunIds, terminalRunEvidenceMissingRunIds, triggerRunEvidenceRequired, and triggerRunEvidenceStatus=pending_terminal_run_evidence without counting the started run as blocked.',
+      'SchedulerService tests now prove task-source failures before candidate loading persist sweep_failed with checked=0, checkedTaskIds=none, no Code Agent trigger, no timeline evidence, and recovery on the next sweep after the in-flight guard is released.',
+      'SchedulerService.runScheduledEventAgentTriggerSweep now publishes a sweep result listener after completed, skipped, and failed sweep summaries, and bootstrap wires it to brief.changed so automatic-sweep health chips refresh even when no Agent run starts.',
+      'The scheduled/event Agent sweep smoke now proves sweepListenerEvidence=passed, disconnectedSweepListenerEvidence=passed, inFlightSweepListenerEvidence=passed, failedSweepListenerEvidence=passed, and timelineFailedDecisionProposalEvidence=recorded, so the Brief refresh listener path and timeline-failure Decision proposal path have acceptance coverage for completed, ports_not_connected, in_flight, and sweep_failed outcomes.',
+      'Overlapping scheduled/event Agent sweeps now return skipReason=in_flight with triggerRunEvidenceStatus=not_started and do not start a second Code Agent run while the first sweep is still resolving candidates.',
+      'Blocked scheduled/event Agent sweeps now expose missingPorts=run_port,timeline_port,task_source_port summary evidence instead of hiding automatic-start blockers behind a generic skipped status.',
+      'SchedulerService.runScheduledEventAgentTriggerSweep now deduplicates scheduled/event task candidates before runtime start, keeps raw checkedTaskIds as sweep evidence, and routes duplicate task-source evidence to a scheduler Decision proposal instead of spending Standing Approval capacity on repeated candidates.',
+      'Scheduled/event Agent sweep results now expose skipReason, checkedTaskIds, startedRunIds, blockedReasons, blockedTaskSummaries, runFailureReasons, automationMissingRequirements, automationSatisfiedRequirements, runtimeStartMissingRequirements, terminalRunEvidenceMissingRunIds, triggerRunEvidenceRequired, and triggerRunEvidenceStatus at the top level, so background automation summaries preserve completed/skipped cause, which tasks were evaluated, which run started, terminal failure reasons, which task was blocked by which reason, which automation-readiness requirements are satisfied or missing, which runtime-start requirements remain missing, which started runs still lack terminal Run evidence, which trigger evidence is required, and whether trigger evidence is still waiting for terminal review without parsing nested summaries.',
+      'Brief now surfaces schedulerStatus.lastScheduledEventAgentSweepAt, lastScheduledEventAgentSweepSummary, and scheduledEventAgentSweepJobConnected as automatic-sweep status chips when the scheduler is enabled, so scheduled/event automation health is visible from the operator home surface instead of only service logs or acceptance output; skipped ports_not_connected and in_flight sweeps also update lastScheduledEventAgentSweepAt so no-run outcomes still carry time evidence.',
+      'Brief automatic-sweep chips now derive the visible label from lastScheduledEventAgentSweepSummary before the timestamp, so completed sweeps show 已运行, waiting_for_first_tick stays 已接线, ports_not_connected shows 未接线, in_flight shows 运行中, and sweep_failed shows 异常 instead of treating every timestamped skipped sweep as a completed run.',
+      'Brief ports_not_connected automatic-sweep chips now include a missing port count parsed from missingPorts, so operators can see the recovery scope without opening the tooltip.',
+      'Brief automatic-sweep chips now parse automationMissingRequirements and show 准备缺 N only when automation readiness is missing, keeping satisfied readiness quiet while making blocked background automation actionable from the home surface.',
+      'Brief completed automatic-sweep chips now show 限额 when blockedReasons reports the scheduled/event daily run limit, so normal L2 protection is visible without opening the tooltip.',
+      'Brief automatic-sweep chips now parse terminalRunEvidenceMissingRunIds and show 终态缺 N only when started runs still lack terminal Run evidence, so pending post-step review is visible without opening the tooltip.',
+      'Brief completed automatic-sweep chips now include checked, started, blocked, run-failure count, and trigger Run evidence labels parsed from lastScheduledEventAgentSweepSummary, so operators can see the last sweep scope, whether it started work or hit blocked tasks, whether terminal runs failed, and whether trigger evidence is waiting for terminal Run evidence or ready for review without opening the tooltip.',
+      'Brief failed automatic-sweep chips now parse startedRunIds and triggerRunEvidenceStatus, so timeline-failure sweeps that already started a run show 启动 N and 证据待终态 instead of only 异常 and checked count.',
+      'SchedulerService.runScheduledEventAgentTriggerSweep now records completed sweep time from the triggering now value, matching skipped sweep time evidence and keeping scheduler status deterministic for cron/manual trigger review.',
+      'The scheduled/event Agent sweep smoke now proves missingTimelineEvidenceGate=blocked, missingTimelineStatus=blocked, missingTimelineTriggerRunEvidenceStatus=not_started, and missingTimelineTriggerCalls=0 when an operator-confirmed trigger has a Code Agent trigger port but no Task Dynamics timeline evidence port.',
+      'The scheduled/event Agent sweep smoke now proves durableRunLimitCountEvidence=passed with runLimitCountSince=2026-05-26T00:00:00.000Z and checked task ids, so acceptance coverage verifies the sweep reads persisted same-day Run counts through the UTC day window before applying Standing Approval limits.',
+      'A manual scheduled/event Agent background live preflight now reports backgroundLiveRun=deferred, requiredEvidence=scheduler_job_connected,standing_approval,context_readiness,task_memory_guidance,subtask_start,task_source_port,code_agent_trigger_port,timeline_evidence,durable_run_limit_counting,terminal_run_evidence,post_step_gates, and provider=not-called/workspace=unchanged by default; when scheduler, sandbox Code Agent, model producer, provider config, API key, and workspace root gates are configured it reports status=ready and backgroundLiveRun=ready_to_attempt without calling the provider, giving operators a repeatable gate check before live background-triggered execution.',
+      'A manual scheduled/event Agent background live smoke is now packaged behind TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_BACKGROUND_LIVE_SMOKE=true; by default it reports status=skip, backgroundLiveRun=not-started, provider=not-called, docker=not-started, and workspace=unchanged, and when explicitly enabled it reuses SchedulerService.runScheduledEventAgentTriggerSweep("cron") with a scheduled/routine fixture, durable run-limit counting, Task Dynamics timeline evidence, and the Code Agent model-producer trigger port for one provider-backed background sweep.',
+      'Opt-in scheduled/event Agent background live smoke passed locally on 2026-05-27 with fal-openrouter / google/gemini-2.5-flash: status=passed, backgroundLiveRun=attempted, sweepStatus=completed, triggerRunEvidenceStatus=ready_for_terminal_review, startedRunIds=run_scheduled_event_background_live_smoke, timelineEvents=1, runLimitCountSince=2026-05-27T00:00:00.000Z, provider=called, stagedFiles=.taskplane/scheduled-event-agent-background-live-smoke.md, docker=not-started, and workspace=unchanged.',
+      'A manual scheduled/event Agent packaged background soak is now packaged behind TASKPLANE_RUN_SCHEDULED_EVENT_AGENT_PACKAGED_BACKGROUND_SOAK=true; by default it reports status=skip, packagedApp=not-launched, backgroundLiveRun=not-started, provider=not-called, docker=not-started, and workspace=unchanged, and when explicitly enabled it checks macOS, the packaged app executable, provider gates, API runtime mode, and workspace root before launching the persistent app boundary.',
+      'The scheduled/event Agent packaged background soak harness now launches the packaged app with isolated userData and workspace roots, seeds a scheduled/routine task with completion criteria, source context, SOP binding, and Standing Approval timeline evidence, triggers scheduler:triggerScheduledEventAgentRun through the preload IPC, waits for terminal persisted Run evidence, verifies context-readiness, accepted Code Agent check evidence, provider-visible context, trigger timeline evidence, post-step Decision/artifact evidence, and confirms the workspace fixture remains unchanged.',
+      'Opt-in scheduled/event Agent packaged background soak passed locally on 2026-05-27 after npm run dist:mac:dir with fal-openrouter / google/gemini-2.5-flash and Docker Desktop: status=passed, packagedApp=launched, backgroundLiveRun=attempted, triggerStatus=started, triggerRunEvidenceStatus=ready_for_terminal_review, terminalRunEvidenceStatus=present, runStatus=completed, runSteps=15, timelineEvents=6, decisions=1, artifacts=1, provider=called, docker=attempted_by_packaged_code_agent, and workspace=unchanged.',
+      'The scheduled/event Agent sweep smoke now exercises the built main SchedulerService sweep path without provider calls or Docker, proving checked=2 duplicate candidates, checkedTaskIdsEvidence=passed, started=1, blocked=1 by duplicate candidate skip before runtime start, duplicateCandidateDecision=proposed, skipReason=none, startedRunIds evidence, blockedReasons evidence, blockedTaskSummaryEvidence=passed, runFailureReasons evidence, automationMissingRequirements evidence, automationSatisfiedRequirements evidence, runtimeStartRequirements=passed, terminalRunEvidenceMissingRunIds evidence, triggerRunEvidenceRequired evidence, triggerRunEvidenceStatus=pending_terminal_run_evidence, manualSweepSummary evidence, terminalSweepSummary evidence, cronSweepSummary evidence, disconnectedSkipReason=ports_not_connected, disconnectedTriggerRunEvidenceStatus=not_started, triggerServiceDisconnectedDecisionProposalEvidence=recorded, triggerServiceDisconnectedNoTriggerEvidence=passed, inFlightSkipReason=in_flight, inFlightTriggerRunEvidenceStatus=not_started, failedSkipReason=sweep_failed, failedTriggerRunEvidenceStatus=not_started, failedSweepSummaryEvidence=recorded, failedSweepRecoveryEvidence=passed, timelineFailedStartedRunEvidence=recorded, timelineFailedNotBlockedEvidence=passed, timelineFailedTriggerRunEvidence=recorded, timelineFailedSweepSummaryEvidence=recorded, timelineFailedDecisionProposalEvidence=recorded, runIdentityFailedStartedRunEvidence=recorded, runIdentityFailedDecisionProposalEvidence=recorded, sourceFailedSkipReason=sweep_failed, sourceFailedTriggerRunEvidenceStatus=not_started, sourceFailedSweepSummaryEvidence=recorded, sourceFailedSweepRecoveryEvidence=passed, readinessBlockedDecisionProposalEvidence=recorded, readinessBlockedNoTriggerEvidence=passed, runLimitAccountingDecisionProposalEvidence=recorded, invalidRunLimitNoTriggerEvidence=passed, cronSoakRunLimitEvidence=passed, cronSoakAutomationReadinessEvidence=passed, cronSoakNoSecondTriggerEvidence=passed, completedSweepTimeEvidence=recorded, skippedSweepTimeEvidence=recorded, boundedRunTargetTask=passed, boundedRunTaskMemoryGuidance=passed, boundedRunAutomationReadiness=passed, boundedRunFirstCriterion=passed, boundedRunFirstSource=passed, boundedRunPostStepGuidance=passed, boundedRunWorkspaceWriteBoundary=passed, boundedRunStandingApprovalScope=passed, terminalTriggerRunEvidenceStatus=ready_for_terminal_review, cronTriggerRunEvidenceStatus=ready_for_terminal_review, manualTriggerKind=manual, terminalTriggerKind=manual, cronTriggerKind=cron, startupSweepJobConnected=yes, triggerRunEvidence=passed, sweepAutomationReadinessEvidence=passed, terminalTriggerRunEvidence=passed, cronTriggerRunEvidence=passed, cronRunFailureReasonEvidence=passed, failedRunDecisionDedupeEvidence=passed, triggerKindEvidence=passed, boundedRunTargetTaskEvidence=passed, boundedRunTaskMemoryEvidence=passed, boundedRunAutomationReadinessEvidence=passed, boundedRunFirstCriterionEvidence=passed, boundedRunFirstSourceEvidence=passed, boundedRunPostStepEvidence=passed, boundedRunWorkspaceBoundaryEvidence=passed, boundedRunStandingApprovalScopeEvidence=passed, runLimitEvidence=passed, targetTaskId timeline evidence, timelineEvidence=recorded, terminalTimelineEvidence=recorded, cronTimelineEvidence=recorded, timelineWorkspaceBoundary=recorded, terminalTimelineWorkspaceBoundary=recorded, cronTimelineWorkspaceBoundary=recorded, startupSweepJobEvidence=recorded, sweepSummaryEvidence=recorded, disconnectedSweepSummaryEvidence=recorded, inFlightSweepSummaryEvidence=recorded, runStatusEvidence=recorded, terminalRunStatusEvidence=recorded, cronRunStatusEvidence=recorded, workspace=unchanged, provider=not-called, and docker=not-started.',
+      'Local scheduled/event Agent sweep acceptance on 2026-05-28 passed through npm run accept:scheduled-event-agent-sweep-smoke with status=completed, checked=2, started=1, blocked=1, duplicateCandidateDecision=proposed, triggerRunEvidenceStatus=pending_terminal_run_evidence, terminalTriggerRunEvidenceStatus=ready_for_terminal_review, cronTriggerRunEvidenceStatus=ready_for_terminal_review, cronRunFailureReasonEvidence=passed, failedRunDecisionDedupeEvidence=passed, durableRunLimitCountEvidence=passed, cronSoakRunLimitEvidence=passed, cronSoakNoSecondTriggerEvidence=passed, startupSweepJobConnected=yes, sweepSummaryEvidence=recorded, sweepListenerEvidence=passed, disconnectedSweepSummaryEvidence=recorded, disconnectedSweepListenerEvidence=passed, inFlightSweepSummaryEvidence=recorded, inFlightSweepListenerEvidence=passed, failedSweepSummaryEvidence=recorded, failedSweepListenerEvidence=passed, failedSweepRecoveryEvidence=passed, timelineFailedStartedRunEvidence=recorded, timelineFailedNotBlockedEvidence=passed, timelineFailedTriggerRunEvidence=recorded, timelineFailedSweepSummaryEvidence=recorded, timelineFailedDecisionProposalEvidence=recorded, runIdentityFailedStartedRunEvidence=recorded, runIdentityFailedDecisionProposalEvidence=recorded, sourceFailedSweepSummaryEvidence=recorded, sourceFailedSweepRecoveryEvidence=passed, readinessBlockedDecisionProposalEvidence=recorded, readinessBlockedNoTriggerEvidence=passed, runLimitAccountingDecisionProposalEvidence=recorded, invalidRunLimitNoTriggerEvidence=passed, skippedSweepTimeEvidence=recorded, triggerKindEvidence=passed, boundedRunTargetTaskEvidence=passed, boundedRunTaskMemoryEvidence=passed, boundedRunFirstCriterionEvidence=passed, boundedRunFirstSourceEvidence=passed, boundedRunPostStepEvidence=passed, boundedRunWorkspaceBoundaryEvidence=passed, boundedRunStandingApprovalScopeEvidence=passed, timelineWorkspaceBoundary=recorded, terminalTimelineWorkspaceBoundary=recorded, cronTimelineWorkspaceBoundary=recorded, startupSweepJobEvidence=recorded, terminalRunEvidenceMissingRunIds=run_scheduled_event_sweep_smoke, workspace=unchanged, provider=not-called, and docker=not-started.',
+    ],
+    gaps: [
+      'Future API-provider scheduled/event execution and broader habit automation remain partial; the CLI-first packaged scheduled/event Agent path is now supported with persistent-app soak evidence.',
+    ],
+    nextActions: [
+      'Keep scheduled/event execution on the supported CLI-first packaged path; promote any future API-backed scheduled execution only after planScheduledEventAgentTriggerFromEvidence, the read-only scheduled/event trigger readiness smoke, selected-runtime evidence, standing-approval, run-limit, terminal-evidence, and workspace-boundary gates all pass.',
+    ],
+  },
+  {
+    id: 'smoke_tests_runtime_readiness_recovery',
+    label: 'Smoke tests, packaged runtime, native CLI readiness, and recovery flows',
+    priority: 'p1',
+    status: 'partial',
+    boundaries: ['execute', 'read'],
+    movements: ['verify'],
+    ruleSkills: [
+      'goalpilot.task_router',
+      'agent.execution_rules',
+      'native.runtime_orchestration',
+      'decision.writeback_orchestration',
+    ],
+    writeIntents: ['none'],
+    gates: [
+      'capability_probe_boundary',
+      'runtime_action',
+      'pre_step',
+      'post_step',
+    ],
+    cliOnlyClosure: 'supported',
+    futureApiClosure: 'partial',
+    evidence: [
+      'Codex CLI packaged smoke verifies account readiness, run completion, output capture, and fixture safety.',
+      'The packaged Agent CLI live smoke harness now supports a default-skipped Claude Code mode through TASKPLANE_AGENT_CLI_TASK_LIVE_RUNTIME=claude, preserving the same isolated app data, temporary workspace, terminal-output, and no-workspace-change checks for future account-ready validation.',
+      'Default-skipped packaged Agent CLI live smoke output now states accountReadiness=not-checked and manualEvidence=not-recorded, so skipped Codex/Claude runs cannot be mistaken for account-ready acceptance evidence.',
+      'The local CLI-first business-line runtime smoke runs inside BusinessLineService coverage without live provider calls, proving selected Codex CLI adapter contract evidence, read-only Native CLI boundary, terminal Run evidence, business-line-native Write Intents, confirmation-gated writeback, post-run review, future Next Action, and SOP proposal source evidence.',
+      'The non-live smoke:agent-cli-web-research bridge smoke locks fresh/current trigger detection, mocked OpenAI web_search output, Source Context persistence, preparation Run progress, and renderer progress mapping without external network or provider calls.',
+      'The manual Agent CLI native web/search smoke is default-skipped and reports skipReason=opt_in_required, cli=not-called, network=not-called, and workspace=unchanged unless explicitly enabled for one live native search request.',
+      'The Codex native web/search smoke passed locally on 2026-05-27 with codex-cli 0.125.0, auth=ready, workspace=unchanged, phrase=matched, network=called, and status=passed.',
+      'Scheduler stale-run recovery now records lastRunSweepSummary with checked count, recovered count, recoveredRunIds, recovery failureReason, and agentRuntimeStarted=no, and Brief surfaces that recovery summary as a run-recovery status chip with the full summary in the title, so startup and maintenance recovery evidence is operator-visible beyond a timestamp without starting Agent CLI/API runtimes.',
+      'Claude Code 2.1.144 stream-json execution now uses --verbose in smoke harnesses; a 2026-05-26 focused probe reached provider execution and returned 401 authentication_failed while preserving workspace safety.',
+      'Claude live smoke is tracked as optional secondary adapter compatibility evidence; it must not block Codex CLI, Agent API, scheduled/event, or writeback acceptance progress.',
+    ],
+    gaps: [
+      'Optional Claude real-account execution smoke has a manual opt-in packaged harness, but a passing run remains pending until account readiness is available; this is not a mainline product-completion blocker while Codex CLI live evidence exists.',
+    ],
+    nextActions: [
+      'Continue non-Claude runtime and recovery coverage first; run Claude packaged live smoke only opportunistically when local account credentials are available.',
+    ],
+  },
+];
+
+export function findProductFeatureImpactAuditIssues(
+  items: ProductFeatureImpactAuditItem[] = PRODUCT_FEATURE_IMPACT_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const item of items) {
+    if (ids.has(item.id)) {
+      issues.push({ featureId: item.id, issue: 'Duplicate audit item id.' });
+    }
+    ids.add(item.id);
+
+    if (!item.ruleSkills.includes('goalpilot.task_router')) {
+      issues.push({ featureId: item.id, issue: 'Feature audit item must include the GoalPilot router.' });
+    }
+
+    const hasWriteIntent = item.writeIntents.some((intent) => intent !== 'none');
+    const crossesWriteBoundary = item.boundaries.some((boundary) => (
+      boundary === 'execute' ||
+      boundary === 'propose' ||
+      boundary === 'persist' ||
+      boundary === 'clear' ||
+      boundary === 'configure'
+    ));
+
+    if (hasWriteIntent && !item.ruleSkills.includes('decision.writeback_orchestration')) {
+      issues.push({
+        featureId: item.id,
+        issue: 'Feature audit item with Write Intent must include decision writeback orchestration.',
+      });
+    }
+
+    if (crossesWriteBoundary && item.gates.length === 0) {
+      issues.push({ featureId: item.id, issue: 'Feature audit item crossing a boundary must declare gates.' });
+    }
+
+    if (item.priority === 'p0' && item.cliOnlyClosure === 'missing') {
+      issues.push({ featureId: item.id, issue: 'P0 feature audit item must not miss CLI-only closure.' });
+    }
+
+    if (item.status !== 'covered' && item.gaps.length === 0) {
+      issues.push({ featureId: item.id, issue: 'Uncovered feature audit item must declare current gaps.' });
+    }
+
+    if (item.priority === 'p0' && item.nextActions.length === 0) {
+      issues.push({ featureId: item.id, issue: 'P0 feature audit item must declare next actions.' });
+    }
+
+    if (item.status !== 'covered' && item.priority !== 'p0' && item.nextActions.length === 0) {
+      issues.push({ featureId: item.id, issue: 'Uncovered feature audit item must declare next actions.' });
+    }
+
+    if (
+      item.status === 'covered' &&
+      item.evidence.some((evidence) => (
+        DEFERRED_COMPLETION_SIGNALS.some((signal) => signal.test(evidence))
+      ))
+    ) {
+      issues.push({
+        featureId: item.id,
+        issue: 'Covered feature audit item must not use deferred or future-only evidence as completion proof.',
+      });
+    }
+
+    if (
+      item.status === 'covered' &&
+      (!isClosedRuntimeClosure(item.cliOnlyClosure) || !isClosedRuntimeClosure(item.futureApiClosure))
+    ) {
+      issues.push({
+        featureId: item.id,
+        issue: 'Covered feature audit item must not have partial or missing runtime closure.',
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function findBusinessLineFirstProductAuditIssues(
+  checks: BusinessLineFirstAuditCheck[] = BUSINESS_LINE_FIRST_PRODUCT_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const check of checks) {
+    if (ids.has(check.id)) {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Duplicate business-line-first audit check id.' });
+    }
+    ids.add(check.id);
+
+    if (check.status === 'blocked') {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Business-line-first readiness check is blocked.' });
+    }
+
+    if (check.evidence.length === 0) {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Business-line-first readiness check must cite evidence.' });
+    }
+
+    if (check.status !== 'ready' && check.status !== 'recoverable') {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Business-line-first readiness check must be ready or recoverable for Goal 10.' });
+    }
+
+    if (check.gaps.length > 0 && check.nextActions.length === 0) {
+      issues.push({ featureId: `business_line_first:${check.id}`, issue: 'Business-line-first readiness gap must declare next actions.' });
+    }
+  }
+
+  for (const requiredId of REQUIRED_BUSINESS_LINE_FIRST_CHECK_IDS) {
+    if (!ids.has(requiredId)) {
+      issues.push({
+        featureId: `business_line_first:${requiredId}`,
+        issue: 'Missing required business-line-first readiness check.',
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function findBusinessLineFirstRuleLayerAuditIssues(
+  docs: BusinessLineFirstRuleLayerDocInput,
+  checks: BusinessLineFirstRuleLayerAuditCheck[] = BUSINESS_LINE_FIRST_RULE_LAYER_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const check of checks) {
+    if (ids.has(check.id)) {
+      issues.push({ featureId: `business_line_first_rule:${check.id}`, issue: 'Duplicate business-line-first rule-layer audit check id.' });
+    }
+    ids.add(check.id);
+
+    const content = docs[check.docId] ?? '';
+    if (!content.trim()) {
+      issues.push({
+        featureId: `business_line_first_rule:${check.id}`,
+        issue: `Missing rule-layer document content for ${check.docId}.`,
+      });
+      continue;
+    }
+
+    for (const fragment of check.requiredFragments) {
+      if (!includesNormalizedFragment(content, fragment)) {
+        issues.push({
+          featureId: `business_line_first_rule:${check.id}`,
+          issue: `Missing required rule-layer evidence: ${fragment}`,
+        });
+      }
+    }
+
+    for (const pattern of [...TASK_FIRST_OWNERSHIP_DRIFT_PATTERNS, ...(check.forbiddenOwnershipPatterns ?? [])]) {
+      if (pattern.test(content)) {
+        issues.push({
+          featureId: `business_line_first_rule:${check.id}`,
+          issue: 'Rule-layer language makes Task the durable product owner or default product model.',
+        });
+      }
+    }
+  }
+
+  for (const requiredId of REQUIRED_BUSINESS_LINE_FIRST_RULE_LAYER_CHECK_IDS) {
+    if (!ids.has(requiredId)) {
+      issues.push({
+        featureId: `business_line_first_rule:${requiredId}`,
+        issue: 'Missing required business-line-first rule-layer audit check.',
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function findBusinessLineFirstImplementationAuditIssues(
+  sources: BusinessLineFirstImplementationSourceInput,
+  checks: BusinessLineFirstImplementationAuditCheck[] = BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const check of checks) {
+    if (ids.has(check.id)) {
+      issues.push({ featureId: `business_line_first_implementation:${check.id}`, issue: 'Duplicate business-line-first implementation audit check id.' });
+    }
+    ids.add(check.id);
+
+    const content = sources[check.sourceId] ?? '';
+    if (!content.trim()) {
+      issues.push({
+        featureId: `business_line_first_implementation:${check.id}`,
+        issue: `Missing implementation source content for ${check.sourceId}.`,
+      });
+      continue;
+    }
+
+    for (const fragment of check.requiredFragments) {
+      if (!includesNormalizedFragment(content, fragment)) {
+        issues.push({
+          featureId: `business_line_first_implementation:${check.id}`,
+          issue: `Missing required implementation evidence: ${fragment}`,
+        });
+      }
+    }
+
+    for (const pattern of check.forbiddenPatterns ?? []) {
+      if (pattern.test(content)) {
+        issues.push({
+          featureId: `business_line_first_implementation:${check.id}`,
+          issue: 'Implementation re-promotes Tasks as a primary durable Work owner.',
+        });
+      }
+    }
+  }
+
+  for (const requiredId of REQUIRED_BUSINESS_LINE_FIRST_IMPLEMENTATION_CHECK_IDS) {
+    if (!ids.has(requiredId)) {
+      issues.push({
+        featureId: `business_line_first_implementation:${requiredId}`,
+        issue: 'Missing required business-line-first implementation audit check.',
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function findRuntimeArchitectureCloseoutAuditIssues(
+  sources: RuntimeArchitectureCloseoutSourceInput,
+  checks: RuntimeArchitectureCloseoutAuditCheck[] = RUNTIME_ARCHITECTURE_CLOSEOUT_AUDIT,
+): ProductFeatureImpactAuditIssue[] {
+  const issues: ProductFeatureImpactAuditIssue[] = [];
+  const ids = new Set<string>();
+
+  for (const check of checks) {
+    if (ids.has(check.id)) {
+      issues.push({ featureId: `runtime_architecture_closeout:${check.id}`, issue: 'Duplicate runtime architecture closeout audit check id.' });
+    }
+    ids.add(check.id);
+
+    const content = sources[check.sourceId] ?? '';
+    if (!content.trim()) {
+      issues.push({
+        featureId: `runtime_architecture_closeout:${check.id}`,
+        issue: `Missing runtime architecture closeout source content for ${check.sourceId}.`,
+      });
+      continue;
+    }
+
+    for (const fragment of check.requiredFragments) {
+      if (!includesNormalizedFragment(content, fragment)) {
+        issues.push({
+          featureId: `runtime_architecture_closeout:${check.id}`,
+          issue: `Missing required runtime architecture closeout evidence: ${fragment}`,
+        });
+      }
+    }
+
+    for (const pattern of [
+      ...BUSINESS_MEMORY_OWNER_DRIFT_PATTERNS,
+      ...(check.forbiddenPatterns ?? []),
+    ]) {
+      if (pattern.test(content)) {
+        issues.push({
+          featureId: `runtime_architecture_closeout:${check.id}`,
+          issue: 'Runtime architecture closeout source reassigns product memory, durable state, or ownership outside Taskplane gates.',
+        });
+      }
+    }
+  }
+
+  for (const requiredId of REQUIRED_RUNTIME_ARCHITECTURE_CLOSEOUT_CHECK_IDS) {
+    if (!ids.has(requiredId)) {
+      issues.push({
+        featureId: `runtime_architecture_closeout:${requiredId}`,
+        issue: 'Missing required runtime architecture closeout audit check.',
+      });
+    }
+  }
+
+  return issues;
+}

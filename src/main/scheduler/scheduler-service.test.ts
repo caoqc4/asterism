@@ -1,0 +1,4645 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { HomeBriefData } from '../../shared/types/brief.js';
+import type { BriefProcessTemplateCandidate } from '../../shared/types/brief.js';
+import type { RunRecord } from '../../shared/types/run.js';
+import type { TaskDetail } from '../../shared/types/task.js';
+
+const scheduledJobs: Array<{
+  expression: string;
+  callback: () => void;
+  stop: ReturnType<typeof vi.fn>;
+  destroy: ReturnType<typeof vi.fn>;
+}> = [];
+
+async function waitForAsyncSideEffect(assertion: () => void): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      assertion();
+      return;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+  if (lastError) throw lastError;
+}
+
+vi.mock('node-cron', () => ({
+  default: {
+    schedule: vi.fn((expression: string, callback: () => void) => {
+      const job = {
+        expression,
+        callback,
+        stop: vi.fn(),
+        destroy: vi.fn(),
+      };
+      scheduledJobs.push(job);
+      return job;
+    }),
+  },
+}));
+
+function buildHomeData(): HomeBriefData {
+  return {
+    activeTaskCount: 2,
+    pendingDecisionCount: 1,
+    completedTaskCount: 3,
+    recentRunCount: 4,
+    waitingTaskCount: 1,
+    blockerTaskCount: 0,
+    escalationTaskCount: 0,
+    highRiskTaskCount: 1,
+    missingNextStepTaskCount: 1,
+    recentTasks: [],
+    waitingTasks: [],
+    blockerTasks: [],
+    escalationTasks: [],
+    highRiskTasks: [],
+    missingNextStepTasks: [],
+    pendingDecisions: [],
+    recommendedActions: [],
+    recentArtifacts: [],
+    recentSourceContexts: [],
+    recentTaskResumes: [],
+    recentActivity: [],
+    recentBriefSnapshots: [],
+    processTemplateCandidates: [],
+    schedulerStatus: {
+      enabled: true,
+      running: false,
+      lastBriefAt: null,
+      lastRunSweepAt: null,
+      lastRunSweepSummary: null,
+      lastScheduledEventAgentSweepAt: null,
+      lastScheduledEventAgentSweepSummary: null,
+      scheduledEventAgentSweepJobConnected: false,
+    },
+  };
+}
+
+function buildBriefTemplateCandidate(
+  partial: Partial<BriefProcessTemplateCandidate> = {},
+): BriefProcessTemplateCandidate {
+  return {
+    id: partial.id ?? 'process_template_1',
+    title: partial.title ?? 'Risk review skill',
+    summary: partial.summary ?? 'Prioritize risk and blockers',
+    content: partial.content ?? '1. Review risks\n2. Highlight blockers',
+    kind: partial.kind ?? 'skill',
+    tags: partial.tags ?? ['risk'],
+    taskIds: partial.taskIds ?? ['task_1'],
+    taskTitles: partial.taskTitles ?? ['Task 1'],
+    notes: partial.notes ?? ['Use for risky work'],
+  };
+}
+
+function buildRunRecord(): RunRecord {
+  return {
+    id: 'run_1',
+    taskId: 'task_1',
+    type: 'draft',
+    status: 'running',
+    instructions: null,
+    output: null,
+    outputSource: null,
+    failureReason: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildAutomationTaskDetail(partial: Partial<TaskDetail> = {}): TaskDetail {
+  return {
+    activeBlocker: null,
+    activeDependency: null,
+    activeWaitingItem: null,
+    artifacts: [],
+    availableProcessTemplates: [],
+    businessLineId: 'bl_automation',
+    childTaskIds: [],
+    completionCriteria: [{
+      id: 'criterion_1',
+      taskId: 'task_auto',
+      text: 'Review the generated update.',
+      verificationResponsibility: null,
+      verificationResponsibilityLabel: null,
+      status: 'open',
+      createdAt: '2026-05-26T00:00:00.000Z',
+      updatedAt: '2026-05-26T00:00:00.000Z',
+      satisfiedAt: null,
+    }],
+    createdAt: '2026-05-26T00:00:00.000Z',
+    decisions: [],
+    id: 'task_auto',
+    nextStep: 'Prepare the weekly update.',
+    parentTaskId: null,
+    processTemplates: [{
+      id: 'process_1',
+      bindingId: 'binding_1',
+      taskId: 'task_auto',
+      title: 'Weekly update SOP',
+      summary: null,
+      content: 'Prepare a bounded update for review.',
+      kind: 'sop',
+      tags: [],
+      status: 'active',
+      bindingStatus: 'active',
+      bindingNote: null,
+      boundAt: '2026-05-26T00:00:00.000Z',
+      bindingUpdatedAt: '2026-05-26T00:00:00.000Z',
+      createdAt: '2026-05-26T00:00:00.000Z',
+      updatedAt: '2026-05-26T00:00:00.000Z',
+      archivedAt: null,
+      removedAt: null,
+    }],
+    resumeCard: {
+      summary: 'Routine task.',
+      currentState: 'planned',
+      latestChange: {
+        summary: 'Ready.',
+        action: { label: null, targetType: null, targetId: null },
+      },
+      completionStatus: {
+        total: 1,
+        satisfied: 0,
+        open: 1,
+        summary: '1 open criterion',
+      },
+      currentBlocker: {
+        blockerId: null,
+        title: 'No blocker',
+        detail: null,
+      },
+      keySource: {
+        sourceContextId: null,
+        title: 'Task summary',
+        detail: 'Use task summary.',
+        priorityReason: null,
+      },
+      currentMethod: {
+        templateId: 'process_1',
+        title: 'Weekly update SOP',
+        detail: null,
+        selectionReason: null,
+      },
+      nextSuggestedMove: 'Prepare the weekly update.',
+    },
+    riskLevel: 'low',
+    riskNote: null,
+    sourceContexts: [],
+    state: 'planned',
+    summary: 'Known weekly update task.',
+    taskFacets: ['scheduled'],
+    taskFiles: [],
+    taskType: 'routine',
+    timeline: [],
+    title: 'Weekly update',
+    updatedAt: '2026-05-26T00:00:00.000Z',
+    waitingReason: null,
+    ...partial,
+  };
+}
+
+function buildReadyAutomationAiConfigService() {
+  return {
+    getStatus: vi.fn().mockResolvedValue({
+      featureFlags: {
+        enableScheduler: true,
+        enableSandboxCodingAgent: true,
+      },
+      sandboxBackendStatus: {
+        readiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Sandbox ready.',
+        },
+        producerBackendReadiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Producer ready.',
+        },
+        probe: {
+          backendId: 'local-container',
+          environmentPolicy: 'empty',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          status: 'available',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        summary: 'Sandbox ready.',
+      },
+      toolScaffoldSummaries: [],
+      workspaceRoot: '/tmp/workspace',
+    }),
+    resolveRuntimeConfig: vi.fn(),
+  };
+}
+
+function buildStandingApprovalTimeline(
+  partial: { maxRunsPerDay?: number; expiresAt?: string; taskId?: string } = {},
+) {
+  const taskId = partial.taskId ?? 'task_auto';
+  return {
+    id: 'timeline_approval',
+    taskId,
+    type: 'panel.standing_approval_confirmed',
+    payload: JSON.stringify({
+      policy: {
+        id: `standing_approval:${taskId}:coding:local_sandbox`,
+        allowedAutonomyLevel: 'L2_limited_authorized_action',
+        allowedLanes: ['coding'],
+        allowedRuntimeIds: ['local_sandbox'],
+        createdAt: '2026-05-26T10:00:00.000Z',
+        expiresAt: partial.expiresAt ?? '2026-12-31T10:00:00.000Z',
+        maxRunsPerDay: partial.maxRunsPerDay ?? 3,
+        reason: 'Allow bounded weekly update preparation.',
+        riskCeiling: 'low',
+        status: 'active',
+        taskFacets: ['scheduled'],
+        taskId,
+        taskTypes: ['routine'],
+      },
+      schedulerTriggerAllowed: false,
+      workspaceWriteAllowed: false,
+    }),
+    createdAt: '2026-05-26T10:05:00.000Z',
+  };
+}
+
+function buildSourceContext(partial: Partial<TaskDetail['sourceContexts'][number]> = {}): TaskDetail['sourceContexts'][number] {
+  return {
+    archivedAt: null,
+    capturedAt: '2026-05-26T00:00:00.000Z',
+    content: 'Use the weekly metrics source.',
+    createdAt: '2026-05-26T00:00:00.000Z',
+    credibility: 'verified',
+    id: 'source_context_1',
+    isKey: true,
+    kind: 'doc',
+    note: null,
+    sourceRole: 'stable_reference',
+    status: 'active',
+    taskId: 'task_auto',
+    title: 'Weekly metrics source',
+    updatedAt: '2026-05-26T00:00:00.000Z',
+    uri: null,
+    ...partial,
+  };
+}
+
+describe('SchedulerService', () => {
+  beforeEach(() => {
+    scheduledJobs.length = 0;
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('does not start jobs when the scheduler feature flag is disabled', async () => {
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: false,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+    );
+
+    await service.start();
+
+    expect(service.getStatus()).toEqual({
+      enabled: false,
+      running: false,
+      lastBriefAt: null,
+      lastRunSweepAt: null,
+      lastRunSweepSummary: null,
+      lastScheduledEventAgentSweepAt: null,
+      lastScheduledEventAgentSweepSummary: null,
+      scheduledEventAgentSweepJobConnected: false,
+    });
+    expect(scheduledJobs).toHaveLength(0);
+  });
+
+  it('records authorized scheduler Decision proposals as Task Dynamics timeline evidence', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      evidenceRunId: 'run_scheduler_decision_1',
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      options: ['继续巡检', '暂停巡检'],
+      proposedOutcome: '继续巡检',
+      rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('proposed');
+    expect(result.summary).toContain('proposalReady=yes');
+    expect(result.summary).toContain('evidenceSourceType=run');
+    expect(result.summary).toContain('evidenceRunId=run_scheduler_decision_1');
+    expect(result.summary).toContain('evidenceSourceIdentityChain=ready');
+    expect(result.summary).toContain('timelineEvent=panel.scheduler_decision_proposed');
+    expect(result.summary).toContain('durableDecisionCreation=approval_required');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        approvalQueueSurface: 'task_dynamics',
+        authorization: 'operator_confirmation',
+        evidenceRunId: 'run_scheduler_decision_1',
+        operatorConfirmed: true,
+        operatorId: 'operator_1',
+        proposedOutcome: '继续巡检',
+        rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+        targetTaskId: 'task_auto',
+        title: '确认自动巡检策略',
+      }),
+    });
+  });
+
+  it('blocks scheduler Decision proposals without target-scoped authorization', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      rationale: '需要确认下一步。',
+      standingApprovalActive: true,
+      standingApprovalPolicyId: 'policy_1',
+      standingApprovalScopeTaskId: 'task_other',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('authorization=missing');
+    expect(result.summary).toContain('schedulerDecisionProposal=blocked');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('blocks scheduler Decision proposals without concrete options and proposed outcome', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      options: ['  '],
+      proposedOutcome: ' ',
+      rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('proposalReady=no');
+    expect(result.summary).toContain('decisionPayload=missing');
+    expect(result.summary).toContain('proposalMissingRequirements=decision_payload');
+    expect(result.summary).toContain('options=missing');
+    expect(result.summary).toContain('proposedOutcome=missing');
+    expect(result.summary).toContain('schedulerDecisionProposal=blocked');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('blocks scheduler Decision proposals when the proposed outcome is not one of the options', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      options: ['继续巡检', '暂停巡检'],
+      proposedOutcome: '直接创建 Decision',
+      rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('proposalReady=no');
+    expect(result.summary).toContain('decisionPayload=missing');
+    expect(result.summary).toContain('proposalMissingRequirements=decision_payload');
+    expect(result.summary).toContain('options=2');
+    expect(result.summary).toContain('proposedOutcome=present');
+    expect(result.summary).toContain('proposedOutcomeMatchesOption=no');
+    expect(result.summary).toContain('schedulerDecisionProposal=blocked');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('blocks scheduler Decision proposals with duplicate options', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      options: ['继续巡检', '暂停巡检', '继续巡检'],
+      proposedOutcome: '继续巡检',
+      rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('proposalReady=no');
+    expect(result.summary).toContain('decisionPayload=missing');
+    expect(result.summary).toContain('proposalMissingRequirements=decision_payload');
+    expect(result.summary).toContain('options=3');
+    expect(result.summary).toContain('optionIdentity=duplicate_or_missing');
+    expect(result.summary).toContain('proposedOutcomeMatchesOption=yes');
+    expect(result.summary).toContain('schedulerDecisionProposal=blocked');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('blocks scheduler Decision proposals with whitespace/case-equivalent duplicate options', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      options: ['Retry Sweep', ' retry   sweep '],
+      proposedOutcome: 'Retry Sweep',
+      rationale: '后台巡检已经产生可审查证据，需要确认下一步。',
+      targetTaskId: 'task_auto',
+      title: '确认自动巡检策略',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('proposalReady=no');
+    expect(result.summary).toContain('decisionPayload=missing');
+    expect(result.summary).toContain('proposalMissingRequirements=decision_payload');
+    expect(result.summary).toContain('options=2');
+    expect(result.summary).toContain('optionIdentity=duplicate_or_missing');
+    expect(result.summary).toContain('proposedOutcomeMatchesOption=yes');
+    expect(result.summary).toContain('schedulerDecisionProposal=blocked');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('normalizes scheduler Decision proposed outcome before option matching and timeline evidence', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      operatorConfirmed: true,
+      operatorId: 'operator_1',
+      options: ['Retry Sweep', 'Pause Automation'],
+      proposedOutcome: ' retry   sweep ',
+      rationale: '  后台巡检已经产生可审查证据，   需要确认下一步。 ',
+      targetTaskId: 'task_auto',
+      title: ' 确认自动巡检策略 ',
+    });
+
+    expect(result.status).toBe('proposed');
+    expect(result.summary).toContain('schedulerDecisionProposal=recorded');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        options: ['Retry Sweep', 'Pause Automation'],
+        proposedOutcome: 'Retry Sweep',
+        rationale: '后台巡检已经产生可审查证据， 需要确认下一步。',
+        targetTaskId: 'task_auto',
+        title: '确认自动巡检策略',
+      }),
+    });
+  });
+
+  it('blocks local-recovery scheduler Decision proposals without recovered-run task identity', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      localRecoveryCompleted: true,
+      localRecoveryRunId: 'run_recovered_without_task',
+      rationale: '本地恢复证据缺少 recovered run task identity。',
+      targetTaskId: 'task_auto',
+      title: '确认自动恢复后的下一步',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('authorization=missing');
+    expect(result.summary).toContain('localRecoveryRunId=run_recovered_without_task');
+    expect(result.summary).toContain('localRecoveryTask=missing');
+    expect(result.summary).toContain('localRecoveryTaskMatched=no');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('blocks local-recovery scheduler Decision proposals without explicit recovered-run identity', async () => {
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn(),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.proposeSchedulerDecision({
+      evidenceRunId: 'run_recovered_fallback_only',
+      localRecoveryCompleted: true,
+      localRecoveryTaskId: 'task_auto',
+      rationale: '本地恢复证据缺少显式 recovered run identity。',
+      targetTaskId: 'task_auto',
+      title: '确认自动恢复后的下一步',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.summary).toContain('authorization=missing');
+    expect(result.summary).toContain('localRecoveryRunId=missing');
+    expect(result.summary).toContain('localRecoveryTask=task_auto');
+    expect(result.summary).toContain('localRecoveryTaskMatched=yes');
+    expect(result.summary).toContain('localRecoveryCompleted=no');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('runs startup recovery and schedules jobs when enabled', async () => {
+    const homeData = {
+      ...buildHomeData(),
+      processTemplateCandidates: [buildBriefTemplateCandidate()],
+    };
+    const runRepository = {
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([buildRunRecord()]),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        status: 'failed',
+        output: 'Run 超过恢复窗口，已由本地 scheduler 标记为 failed。',
+        outputSource: 'system',
+        failureReason: 'Run exceeded the scheduler recovery window.',
+      }),
+    };
+    const briefSnapshotRepository = {
+      create: vi.fn().mockResolvedValue(undefined),
+    };
+    const homeBriefService = {
+      getHomeData: vi.fn().mockResolvedValue(homeData),
+    };
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: { enableScheduler: true },
+      }),
+    };
+    const briefExecutor = {
+      execute: vi.fn().mockResolvedValue('AI brief'),
+    };
+    const briefProcessTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: true,
+        selectedTemplates: [buildBriefTemplateCandidate()],
+        reason: '当前局势风险突出，适合参考风险审阅模板。',
+      }),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      homeBriefService as never,
+      briefSnapshotRepository as never,
+      runRepository as never,
+      aiConfigService as never,
+      briefExecutor as never,
+      briefProcessTemplateSelector as never,
+    );
+
+    await service.start();
+
+    expect(runRepository.listIncompleteOlderThan).toHaveBeenCalledTimes(1);
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'failed',
+      'Run 超过恢复窗口，已由本地 scheduler 标记为 failed。',
+      'system',
+      'Run exceeded the scheduler recovery window.',
+    );
+    expect(homeBriefService.getHomeData).toHaveBeenCalledTimes(1);
+    expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalledTimes(1);
+    expect(briefProcessTemplateSelector.select).toHaveBeenCalledTimes(1);
+    expect(briefExecutor.execute).toHaveBeenCalledTimes(1);
+    expect(briefExecutor.execute).toHaveBeenCalledWith(
+      homeData,
+      'startup',
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: { enableScheduler: true },
+      },
+      {
+        selectedTemplates: [buildBriefTemplateCandidate()],
+      },
+    );
+    expect(briefSnapshotRepository.create).toHaveBeenCalledWith(
+      'startup',
+      'AI brief',
+      'ai',
+      null,
+    );
+    expect(service.getStatus().running).toBe(true);
+    expect(service.getStatus().lastBriefAt).not.toBeNull();
+    expect(service.getStatus().lastRunSweepAt).not.toBeNull();
+    expect(service.getStatus().lastRunSweepSummary).toBe(
+      'schedulerStaleRunRecovery=completed / checked=1 / recovered=1 / recoveredRunIds=run_1 / staleRunRecoveryDecisionProposals=run_1:skipped_no_timeline / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no',
+    );
+    expect(scheduledJobs).toHaveLength(2);
+
+    service.stop();
+
+    for (const job of scheduledJobs) {
+      expect(job.stop).toHaveBeenCalledTimes(1);
+      expect(job.destroy).toHaveBeenCalledTimes(1);
+    }
+    expect(service.getStatus().running).toBe(false);
+  });
+
+  it('wires a background scheduled/event Agent sweep only when trigger, timeline, and task-source ports are connected', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_cron_1',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const sweepListener = vi.fn();
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+      sweepListener,
+    );
+
+    await service.start();
+
+    expect(scheduledJobs.map((job) => job.expression)).toEqual([
+      '0 * * * *',
+      '*/5 * * * *',
+      '*/15 * * * *',
+    ]);
+    expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
+      status: 'completed',
+      skipReason: 'none',
+      checkedTaskCount: 1,
+      startedRunCount: 1,
+      blockedTaskCount: 0,
+      startedRunIds: ['run_scheduled_cron_1'],
+      blockedReasons: [],
+      automationMissingRequirements: [],
+      automationSatisfiedRequirements: expect.arrayContaining([
+        'procedure',
+        'inputs',
+        'runtime',
+        'scheduled_event_entrypoint',
+      ]),
+      runtimeStartMissingRequirements: [],
+      terminalRunEvidenceMissingRunIds: ['run_scheduled_cron_1'],
+      triggerRunEvidenceRequired: [
+        'context_readiness',
+        'target_task_identity',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'business_line_loop',
+        'run_limit_count',
+        'post_step',
+      ],
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
+    expect(sweepResult.summary).toContain('blockedReasons=none');
+    expect(sweepResult.summary).toContain('automationMissingRequirements=none');
+    expect(sweepResult.summary).toContain('automationSatisfiedRequirements=');
+    expect(sweepResult.summary).toContain('scheduled_event_entrypoint');
+    expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=none');
+    expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
+    expect(sweepResult.summary).toContain('triggerRunEvidenceRequired=context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,business_line_loop,run_limit_count,post_step');
+    expect(sweepResult.summary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
+    expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(1);
+    expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
+      ['task_auto'],
+      '2026-05-26T00:00:00.000Z',
+    );
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      patchIntent: expect.stringContaining('Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.'),
+      requestedChecks: ['test', 'lint'],
+      operatorConfirmed: true,
+      useModelProducer: true,
+    });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Target task: task_auto.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Trigger kind: cron.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Task memory guidance: process=Weekly update SOP; openCriteria=1; firstCriterion=Review the generated update.; sourceContexts=1; firstSource=Weekly metrics source');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Automation readiness: Automation readiness / state=eligible / automationReady=yes / requirements=9/9');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('scheduledEventEntrypoint=available');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Standing Approval scope: autonomy=L2_limited_authorized_action; riskCeiling=low; maxRunsPerDay=3; reason=Allow bounded weekly update preparation.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Post-step evidence: return terminal run output for Taskplane review.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Workspace write boundary: workspaceWriteAllowed=false; proposals only.');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_cron_1',
+        runFailureReason: null,
+        runOutputSource: null,
+        runStatus: 'running',
+        runtimeStartAllowed: true,
+        triggerKind: 'cron',
+        triggeredAt: '2026-05-26T11:00:00.000Z',
+        workspaceWriteAllowed: false,
+        automationReadinessSummary: expect.stringContaining('automationReady=yes'),
+        automationSatisfiedRequirements: expect.arrayContaining(['scheduled_event_entrypoint']),
+        automationMissingRequirements: [],
+        runLimit: {
+          maxRunsPerDay: 3,
+          runsStartedToday: 0,
+        },
+      }),
+    });
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
+    expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
+    expect(sweepListener).toHaveBeenCalledWith(sweepResult);
+  });
+
+  it('blocks the background scheduled/event sweep when timeline evidence cannot be recorded', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2 })],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_scheduled_cron_1',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const sweepListener = vi.fn();
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      null,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task, task]),
+      },
+      sweepListener,
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
+      status: 'skipped',
+      skipReason: 'ports_not_connected',
+      checkedTaskCount: 0,
+      startedRunCount: 0,
+      blockedTaskCount: 0,
+      startedRunIds: [],
+      blockedReasons: ['ports_not_connected'],
+      runtimeStartMissingRequirements: ['scheduler_trigger_service'],
+      terminalRunEvidenceMissingRunIds: [],
+      triggerRunEvidenceRequired: [],
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(sweepResult.summary).toContain('reason=ports_not_connected');
+    expect(sweepResult.summary).toContain('missingPorts=timeline_port');
+    expect(sweepResult.summary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('reason=ports_not_connected');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(sweepListener).toHaveBeenCalledWith(sweepResult);
+  });
+
+  it('runs the scheduled/event Agent sweep through the registered cron callback', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: 'Model failed safely.',
+        id: 'run_scheduled_callback_1',
+        status: 'failed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    await service.start();
+    const cronSweepJob = scheduledJobs.find((job) => job.expression === '*/15 * * * *');
+    expect(cronSweepJob).toBeTruthy();
+
+    cronSweepJob?.callback();
+
+    await waitForAsyncSideEffect(() => {
+      expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+      expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0]).toMatchObject({
+      operatorConfirmed: true,
+      taskId: 'task_auto',
+      useModelProducer: true,
+    });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Trigger kind: cron.');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_callback_1',
+        runFailureReason: 'Model failed safely.',
+        runStatus: 'failed',
+        targetTaskId: 'task_auto',
+        triggerKind: 'cron',
+        workspaceWriteAllowed: false,
+      }),
+    }));
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_scheduled_callback_1',
+        proposedOutcome: '暂停自动巡检并等待人工处理',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 失败后的下一步',
+      }),
+    }));
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('scheduledEventAgentSweep=cron');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runFailureReasons=run_scheduled_callback_1: Model failed safely.');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('failureDecisionProposals=proposed');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('failureDecisionProposalTasks=task_auto');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('terminalEvidenceDecisionProposalTasks=none');
+    expect(service.getStatus().scheduledEventAgentSweepJobConnected).toBe(true);
+  });
+
+  it('does not duplicate same-day failed-run Decision proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_failed_run_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '  确认定时/事件   Agent 失败后的下一步  ',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: 'Model failed safely again.',
+        id: 'run_scheduled_callback_2',
+        status: 'failed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('failureDecisionProposals=skipped_existing');
+    expect(sweepResult.summary).toContain('failureDecisionProposalTasks=task_auto');
+    expect(sweepResult.runFailureReasons).toEqual(['run_scheduled_callback_2: Model failed safely again.']);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_callback_2',
+        runStatus: 'failed',
+        triggerKind: 'cron',
+      }),
+    }));
+  });
+
+  it('makes failed-run Decision proposals explicit when terminal failure evidence is missing', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: null,
+        id: 'run_scheduled_failed_without_evidence',
+        output: null,
+        outputSource: null,
+        status: 'failed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('failureDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('failureDecisionProposalTasks=task_auto');
+    expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_failed_without_evidence');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        evidenceRunId: 'run_scheduled_failed_without_evidence',
+        options: expect.arrayContaining(['补录失败原因或终态输出证据']),
+        rationale: expect.stringContaining('Terminal failure evidence is incomplete'),
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 失败后的下一步',
+      }),
+    }));
+  });
+
+  it('records task evidence for terminal-evidence Decision proposals in sweep summaries', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: null,
+        id: 'run_scheduled_empty_terminal_sweep',
+        output: null,
+        outputSource: null,
+        status: 'completed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:05:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('terminalEvidenceDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('terminalEvidenceDecisionProposalTasks=task_auto');
+    expect(sweepResult.summary).toContain('failureDecisionProposalTasks=none');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        evidenceRunId: 'run_scheduled_empty_terminal_sweep',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 终态证据缺失后的下一步',
+      }),
+    }));
+  });
+
+  it('does not let title-only scheduler Decision proposal history suppress target-scoped proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_failed_run_decision_without_target',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            title: '确认定时/事件 Agent 失败后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        failureReason: 'Model failed safely with stale title-only history.',
+        id: 'run_scheduled_callback_target_scoped',
+        status: 'failed',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('failureDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('failureDecisionProposalTasks=task_auto');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        evidenceRunId: 'run_scheduled_callback_target_scoped',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 失败后的下一步',
+      }),
+    }));
+  });
+
+  it('blocks a second cron sweep when persisted same-day run count reaches the standing approval limit', async () => {
+    let persistedRunCount = 0;
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 1 })],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockImplementation(async () => ({ task_auto: persistedRunCount })),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockImplementation(async () => {
+        persistedRunCount = 1;
+        return {
+          ...buildRunRecord(),
+          id: 'run_scheduled_callback_1',
+          taskId: 'task_auto',
+          type: 'agent',
+        } satisfies RunRecord;
+      }),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    await service.start();
+    const cronSweepJob = scheduledJobs.find((job) => job.expression === '*/15 * * * *');
+    expect(cronSweepJob).toBeTruthy();
+
+    cronSweepJob?.callback();
+    await waitForAsyncSideEffect(() => {
+      expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+      expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    });
+
+    cronSweepJob?.callback();
+    await waitForAsyncSideEffect(() => {
+      expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(2);
+      expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledTimes(2);
+    });
+
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('status=completed');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('started=0');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blocked=1');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('blockedReasons=Scheduled/event trigger daily run limit reached: 1/1.');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runLimitDecisionProposals=proposed');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('runLimitDecisionProposalTasks=task_auto');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('automationMissingRequirements=none');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '等待下一次运行窗口',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate daily run-limit Decision proposals already recorded today', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline({ maxRunsPerDay: 1 }),
+        {
+          id: 'timeline_run_limit_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('runLimitDecisionProposals=skipped_existing');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('proposes a scheduler Decision when run-limit accounting evidence is invalid', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: -1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T10:15:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
+      status: 'completed',
+      checkedTaskCount: 1,
+      startedRunCount: 0,
+      blockedTaskCount: 1,
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(sweepResult.runtimeStartMissingRequirements).toContain('run_limit_count');
+    expect(sweepResult.summary).toContain('runLimitAccountingDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('runLimitAccountingDecisionProposalTasks=task_auto');
+    expect(sweepResult.summary).toContain('runLimitDecisionProposals=none');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动巡检并修复运行计数证据',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 运行计数证据异常后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate same-day run-limit accounting Decision proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_run_limit_accounting_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent 运行计数证据异常后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: -1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      {
+        triggerCodeAgentRun: vi.fn(),
+      },
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T10:45:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('runLimitAccountingDecisionProposals=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('proposes a scheduler Decision when an authorized scheduled/event task is blocked by automation readiness', async () => {
+    const task = buildAutomationTaskDetail({
+      nextStep: '',
+      sourceContexts: [],
+      summary: '',
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T10:30:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
+      status: 'completed',
+      checkedTaskCount: 1,
+      startedRunCount: 0,
+      blockedTaskCount: 1,
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(sweepResult.automationMissingRequirements).toContain('inputs');
+    expect(sweepResult.summary).toContain('readinessDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('readinessDecisionProposalTasks=task_auto');
+    expect(sweepResult.summary).toContain('automationMissingRequirements=inputs');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '补齐任务上下文后下次 sweep 再运行',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent readiness 阻塞后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate same-day scheduled/event readiness blocked Decision proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      nextStep: '',
+      sourceContexts: [],
+      summary: '',
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_readiness_blocked_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent readiness 阻塞后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      {
+        triggerCodeAgentRun: vi.fn(),
+      },
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T10:30:00.000Z'),
+    );
+
+    expect(sweepResult.summary).toContain('readinessDecisionProposals=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('skips duplicate scheduled/event candidates before a second runtime start', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2 })],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_scheduled_cron_1',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task, task]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
+      status: 'completed',
+      skipReason: 'none',
+      checkedTaskCount: 2,
+      checkedTaskIds: ['task_auto', 'task_auto'],
+      startedRunCount: 1,
+      blockedTaskCount: 1,
+      startedRunIds: ['run_scheduled_cron_1'],
+      blockedTaskSummaries: ['task_auto: duplicate scheduled/event candidate skipped before runtime start'],
+      runtimeStartMissingRequirements: [],
+      terminalRunEvidenceMissingRunIds: ['run_scheduled_cron_1'],
+      triggerRunEvidenceRequired: [
+        'context_readiness',
+        'target_task_identity',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'business_line_loop',
+        'run_limit_count',
+        'post_step',
+      ],
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(sweepResult.summary).toContain('checkedTaskIds=task_auto,task_auto');
+    expect(sweepResult.blockedReasons).toContain('Duplicate scheduled/event candidate skipped for task task_auto.');
+    expect(sweepResult.summary).toContain('startedRunIds=run_scheduled_cron_1');
+    expect(sweepResult.summary).toContain('blockedReasons=Duplicate scheduled/event candidate skipped for task task_auto.');
+    expect(sweepResult.summary).toContain('blockedTaskSummaries=task_auto: duplicate scheduled/event candidate skipped before runtime start');
+    expect(sweepResult.summary).toContain('runtimeStartMissingRequirements=none');
+    expect(sweepResult.summary).toContain('duplicateCandidateTaskIds=task_auto');
+    expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposals=proposed');
+    expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposalTasks=task_auto');
+    expect(sweepResult.summary).toContain('runLimitDecisionProposals=none');
+    expect(sweepResult.summary).toContain('terminalRunEvidenceMissingRunIds=run_scheduled_cron_1');
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '修复任务来源去重后下次 sweep 再运行',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 候选任务重复后的下一步',
+      }),
+    }));
+  });
+
+  it('keeps duplicate scheduled/event candidate Decision evidence scoped to each target task', async () => {
+    const taskA = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2 })],
+    });
+    const taskB = buildAutomationTaskDetail({
+      id: 'task_beta',
+      nextStep: 'Prepare the beta weekly update.',
+      summary: 'Known beta weekly update task.',
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 2, taskId: 'task_beta' })],
+      title: 'Beta weekly update',
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1, task_beta: 1 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockImplementation(async (input: { taskId: string }) => ({
+        ...buildRunRecord(),
+        id: `run_${input.taskId}`,
+        taskId: input.taskId,
+        type: 'agent',
+      } satisfies RunRecord)),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([taskA, taskB, taskA, taskB]),
+      },
+    );
+
+    const sweepResult = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:30:00.000Z'),
+    );
+
+    expect(sweepResult).toMatchObject({
+      checkedTaskIds: ['task_auto', 'task_beta', 'task_auto', 'task_beta'],
+      startedRunCount: 2,
+      blockedTaskCount: 2,
+      startedRunIds: ['run_task_auto', 'run_task_beta'],
+    });
+    expect(sweepResult.summary).toContain('duplicateCandidateTaskIds=task_auto,task_beta');
+    expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposals=proposed,proposed');
+    expect(sweepResult.summary).toContain('duplicateCandidateDecisionProposalTasks=task_auto,task_beta');
+    const proposalPayloads = timelinePort.recordTimelineEvent.mock.calls
+      .map((call) => call[0])
+      .filter((event) => event.type === 'panel.scheduler_decision_proposed')
+      .map((event) => event.payload);
+    expect(proposalPayloads).toHaveLength(2);
+    expect(proposalPayloads).toContainEqual(expect.objectContaining({
+      rationale: expect.stringContaining('Duplicate task ids: task_auto.'),
+      targetTaskId: 'task_auto',
+    }));
+    expect(proposalPayloads).toContainEqual(expect.objectContaining({
+      rationale: expect.stringContaining('Duplicate task ids: task_beta.'),
+      targetTaskId: 'task_beta',
+    }));
+    const taskAutoProposal = proposalPayloads.find((payload) => payload?.targetTaskId === 'task_auto');
+    const taskBetaProposal = proposalPayloads.find((payload) => payload?.targetTaskId === 'task_beta');
+    expect(taskAutoProposal?.rationale).not.toContain('task_beta');
+    expect(taskBetaProposal?.rationale).not.toContain('task_auto');
+  });
+
+  it('skips overlapping scheduled/event sweeps while one sweep is in flight', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    let releaseCandidates: (() => void) | null = null;
+    const candidatesReady = new Promise<void>((resolve) => {
+      releaseCandidates = resolve;
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_scheduled_in_flight_1',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockImplementation(async () => {
+        await candidatesReady;
+        return [task];
+      }),
+    };
+    const sweepListener = vi.fn();
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+      sweepListener,
+    );
+
+    const firstSweep = service.runScheduledEventAgentTriggerSweep('cron');
+    await waitForAsyncSideEffect(() => {
+      expect(taskSourcePort.listScheduledEventAgentTriggerCandidates).toHaveBeenCalledTimes(1);
+    });
+
+    const overlappingSweep = await service.runScheduledEventAgentTriggerSweep('cron');
+    expect(overlappingSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'in_flight',
+      checkedTaskCount: 0,
+      startedRunCount: 0,
+      blockedReasons: ['in_flight'],
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(overlappingSweep.summary).toContain('reason=in_flight');
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).not.toBeNull();
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toContain('reason=in_flight');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(sweepListener).toHaveBeenCalledWith(overlappingSweep);
+
+    releaseCandidates?.();
+    const completedFirstSweep = await firstSweep;
+    expect(completedFirstSweep.status).toBe('completed');
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('records a failed scheduled/event sweep and releases the in-flight guard', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockRejectedValueOnce(new Error('Trigger port failed / safely')),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const sweepListener = vi.fn();
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+      sweepListener,
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(failedSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'sweep_failed',
+      checkedTaskCount: 1,
+      checkedTaskIds: ['task_auto'],
+      startedRunCount: 0,
+      blockedTaskCount: 1,
+      startedRunIds: [],
+      runFailureReasons: [],
+      runtimeStartMissingRequirements: ['trigger_plan_ready'],
+      terminalRunEvidenceMissingRunIds: [],
+      triggerRunEvidenceRequired: [
+        'context_readiness',
+        'target_task_identity',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'business_line_loop',
+        'run_limit_count',
+        'post_step',
+      ],
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(failedSweep.blockedReasons).toEqual(['sweep_failed: Trigger port failed - safely']);
+    expect(failedSweep.blockedTaskSummaries).toEqual(['task_auto: sweep_failed: Trigger port failed - safely']);
+    expect(failedSweep.summary).toContain('reason=sweep_failed');
+    expect(failedSweep.summary).toContain('checkedTaskIds=task_auto');
+    expect(failedSweep.summary).toContain('error=Trigger port failed - safely');
+    expect(failedSweep.summary).toContain('sweepFailureDecisionProposals=proposed');
+    expect(failedSweep.summary).toContain('sweepFailureDecisionProposalTasks=task_auto');
+    expect(failedSweep.summary).toContain('runIdentityDecisionProposalTasks=none');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposalTasks=none');
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:00:00.000Z');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动触发并人工复核调度器',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent sweep 异常后的下一步',
+      }),
+    }));
+    expect(sweepListener).toHaveBeenCalledWith(failedSweep);
+
+    triggerPort.triggerCodeAgentRun.mockResolvedValueOnce({
+      ...buildRunRecord(),
+      id: 'run_after_failed_sweep',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord);
+    const recoveredSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:15:00.000Z'),
+    );
+
+    expect(recoveredSweep.status).toBe('completed');
+    expect(recoveredSweep.startedRunIds).toEqual(['run_after_failed_sweep']);
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not duplicate same-day scheduled/event sweep failure Decision proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_sweep_failure_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent sweep 异常后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockRejectedValueOnce(new Error('Trigger port failed / safely')),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:00:00.000Z'),
+    );
+
+    expect(failedSweep.summary).toContain('sweepFailureDecisionProposals=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('preserves started run evidence when timeline recording fails during a scheduled/event sweep', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_timeline_failure_sweep',
+        taskId: 'task_auto',
+        type: 'agent',
+        status: 'running',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockRejectedValueOnce(new Error('Timeline write failed / safely')),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T12:00:00.000Z'),
+    );
+
+    expect(failedSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'sweep_failed',
+      checkedTaskCount: 1,
+      checkedTaskIds: ['task_auto'],
+      startedRunCount: 1,
+      blockedTaskCount: 0,
+      startedRunIds: ['run_timeline_failure_sweep'],
+      blockedTaskSummaries: [],
+      runFailureReasons: [],
+      terminalRunEvidenceMissingRunIds: ['run_timeline_failure_sweep'],
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(failedSweep.triggerRunEvidenceRequired).toEqual([
+      'context_readiness',
+      'target_task_identity',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'subtask_start',
+      'business_line_loop',
+      'run_limit_count',
+      'post_step',
+    ]);
+    expect(failedSweep.summary).toContain('reason=sweep_failed');
+    expect(failedSweep.summary).toContain('startedRunIds=run_timeline_failure_sweep');
+    expect(failedSweep.summary).toContain('terminalRunEvidenceMissingRunIds=run_timeline_failure_sweep');
+    expect(failedSweep.summary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
+    expect(failedSweep.summary).toContain('error=Timeline evidence failed: Timeline write failed - safely');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=proposed');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposalTasks=task_auto');
+    expect(failedSweep.summary).toContain('runIdentityDecisionProposalTasks=none');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_timeline_failure_sweep',
+        proposedOutcome: '暂停自动触发并修复 timeline 证据写入',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent timeline 证据写入失败后的下一步',
+      }),
+    }));
+  });
+
+  it('proposes a scheduler Decision when a scheduled/event run returns the wrong target task', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_wrong_task_sweep',
+        taskId: 'task_other',
+        type: 'agent',
+        status: 'running',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T12:30:00.000Z'),
+    );
+
+    expect(failedSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'sweep_failed',
+      checkedTaskCount: 1,
+      checkedTaskIds: ['task_auto'],
+      startedRunCount: 1,
+      blockedTaskCount: 0,
+      startedRunIds: ['run_wrong_task_sweep'],
+      blockedTaskSummaries: [],
+      terminalRunEvidenceMissingRunIds: ['run_wrong_task_sweep'],
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(failedSweep.summary).toContain('error=Run target task mismatch: expected task_auto but received task_other.');
+    expect(failedSweep.summary).toContain('runIdentityDecisionProposals=proposed');
+    expect(failedSweep.summary).toContain('runIdentityDecisionProposalTasks=task_auto');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=not_required');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposalTasks=none');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_wrong_task_sweep',
+        proposedOutcome: '暂停自动触发并人工复核运行归属',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent Run 目标任务不一致后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate same-day scheduled/event timeline failure Decision proposals', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_timeline_failure_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent timeline 证据写入失败后的下一步',
+          }),
+          createdAt: '2026-05-26T09:00:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_timeline_failure_dedupe',
+        taskId: 'task_auto',
+        type: 'agent',
+        status: 'running',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockRejectedValueOnce(new Error('Timeline write failed / safely')),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      {
+        listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+      },
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T12:00:00.000Z'),
+    );
+
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('records a failed scheduled/event sweep when the task source fails before any run starts', async () => {
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    let taskSourceShouldThrow = true;
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue({
+        ...buildRunRecord(),
+        id: 'run_after_task_source_failure',
+        taskId: 'task_auto',
+        type: 'agent',
+      } satisfies RunRecord),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockImplementation(async () => {
+        if (taskSourceShouldThrow) {
+          throw new Error('Task source failed / safely');
+        }
+        return [task];
+      }),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn().mockResolvedValue(undefined),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const failedSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:30:00.000Z'),
+    );
+
+    expect(failedSweep).toMatchObject({
+      status: 'skipped',
+      skipReason: 'sweep_failed',
+      checkedTaskCount: 0,
+      checkedTaskIds: [],
+      startedRunCount: 0,
+      blockedTaskCount: 0,
+      startedRunIds: [],
+      blockedReasons: ['sweep_failed: Task source failed - safely'],
+      blockedTaskSummaries: [],
+      runtimeStartMissingRequirements: ['trigger_plan_ready'],
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(failedSweep.summary).toContain('checked=0');
+    expect(failedSweep.summary).toContain('checkedTaskIds=none');
+    expect(failedSweep.summary).toContain('error=Task source failed - safely');
+    expect(failedSweep.summary).toContain('sweepFailureDecisionProposals=not_required');
+    expect(failedSweep.summary).toContain('taskSourceFailureDecisionProposals=not_required_no_target_task');
+    expect(failedSweep.summary).toContain('timelineFailureDecisionProposals=not_required');
+    expect(service.getStatus().lastScheduledEventAgentSweepAt).toBe('2026-05-26T11:30:00.000Z');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(failedSweep.summary);
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+
+    taskSourceShouldThrow = false;
+    const recoveredSweep = await service.runScheduledEventAgentTriggerSweep(
+      'cron',
+      new Date('2026-05-26T11:45:00.000Z'),
+    );
+
+    expect(recoveredSweep.status).toBe('completed');
+    expect(recoveredSweep.startedRunIds).toEqual(['run_after_task_source_failure']);
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not mark runs failed when repository stale recovery returns no eligible runs', async () => {
+    const runRepository = {
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      {
+        resolveRuntimeConfig: vi.fn().mockRejectedValue(new Error('skip AI brief')),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+    );
+
+    await service.start();
+
+    expect(runRepository.listIncompleteOlderThan).toHaveBeenCalledTimes(1);
+    expect(runRepository.updateResult).not.toHaveBeenCalled();
+    expect(service.getStatus().lastRunSweepAt).not.toBeNull();
+    expect(service.getStatus().lastRunSweepSummary).toBe(
+      'schedulerStaleRunRecovery=completed / checked=0 / recovered=0 / recoveredRunIds=none / staleRunRecoveryDecisionProposals=none / failureReason=Run exceeded the scheduler recovery window. / agentRuntimeStarted=no',
+    );
+  });
+
+  it('proposes a Task Dynamics Decision after local stale-run recovery', async () => {
+    const staleRun = {
+      ...buildRunRecord(),
+      id: 'run_stale_recovered',
+      taskId: 'task_stale_recovered',
+    };
+    const runRepository = {
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([staleRun]),
+      updateResult: vi.fn().mockResolvedValue({
+        ...staleRun,
+        status: 'failed',
+        output: 'Run 超过恢复窗口，已由本地 scheduler 标记为 failed。',
+        outputSource: 'system',
+        failureReason: 'Run exceeded the scheduler recovery window.',
+      }),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      {
+        resolveRuntimeConfig: vi.fn().mockRejectedValue(new Error('skip AI brief')),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    await service.start();
+
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_stale_recovered',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'local_recovery',
+        evidenceRunId: 'run_stale_recovered',
+        localRecoveryCompleted: true,
+        localRecoveryRunId: 'run_stale_recovered',
+        localRecoveryTaskId: 'task_stale_recovered',
+        proposedOutcome: '复核失败证据后手动重跑',
+        targetTaskId: 'task_stale_recovered',
+        title: '确认 stale run 自动恢复后的下一步',
+      }),
+    }));
+    expect(service.getStatus().lastRunSweepSummary).toContain('staleRunRecoveryDecisionProposals=run_stale_recovered:proposed');
+    expect(service.getStatus().lastRunSweepSummary).toContain('agentRuntimeStarted=no');
+  });
+
+  it('falls back to a local brief when AI brief generation fails', async () => {
+    const briefSnapshotRepository = {
+      create: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      briefSnapshotRepository as never,
+      {
+        listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn().mockRejectedValue(new Error('AI API Key is not configured in system Keychain.')),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+    );
+
+    await service.start();
+
+    expect(briefSnapshotRepository.create).toHaveBeenCalledTimes(1);
+    expect(briefSnapshotRepository.create).toHaveBeenCalledWith(
+      'startup',
+      expect.stringContaining('Taskplane Brief (startup)'),
+      'fallback',
+      'AI API Key is not configured in system Keychain.',
+    );
+  });
+
+  it('keeps scheduled brief local when Agent CLI is the selected runtime', async () => {
+    const briefSnapshotRepository = {
+      create: vi.fn().mockResolvedValue(undefined),
+    };
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({ runtimeMode: 'claude' }),
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const briefExecutor = {
+      execute: vi.fn(),
+    };
+    const briefProcessTemplateSelector = {
+      select: vi.fn(),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      briefSnapshotRepository as never,
+      {
+        listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+        updateResult: vi.fn(),
+      } as never,
+      aiConfigService as never,
+      briefExecutor as never,
+      briefProcessTemplateSelector as never,
+    );
+
+    await service.start();
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(briefProcessTemplateSelector.select).not.toHaveBeenCalled();
+    expect(briefExecutor.execute).not.toHaveBeenCalled();
+    expect(briefSnapshotRepository.create).toHaveBeenCalledWith(
+      'startup',
+      expect.stringContaining('Taskplane Brief (startup)'),
+      'fallback',
+      '当前选择的是 Claude Code，Scheduled Brief API adapter 不会切换到 Agent API Runtime。',
+    );
+  });
+
+  it('diagnoses scheduled/event agent triggers without starting native runtimes', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail();
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({
+        featureFlags: {
+          enableScheduler: true,
+          enableSandboxCodingAgent: true,
+        },
+        sandboxBackendStatus: {
+          readiness: {
+            blockedReasons: [],
+            ready: true,
+            summary: 'Sandbox ready.',
+          },
+          producerBackendReadiness: {
+            blockedReasons: [],
+            ready: true,
+            summary: 'Producer ready.',
+          },
+          probe: {
+            backendId: 'local-container',
+            environmentPolicy: 'empty',
+            isolation: 'container',
+            kind: 'local_container',
+            networkMode: 'disabled',
+            status: 'available',
+            supportsOutputLimits: true,
+            supportsPatchArtifacts: true,
+            supportsStagedWrites: true,
+            supportsStructuredCommands: true,
+            supportsTargetedCommands: true,
+            supportsWorkspaceMount: true,
+          },
+          summary: 'Sandbox ready.',
+        },
+        toolScaffoldSummaries: [],
+        workspaceRoot: '/tmp/workspace',
+      }),
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const policy = {
+      id: 'standing_approval:task_auto:coding:local_sandbox',
+      allowedAutonomyLevel: 'L2_limited_authorized_action',
+      allowedLanes: ['coding'],
+      allowedRuntimeIds: ['local_sandbox'],
+      createdAt: '2026-05-26T10:00:00.000Z',
+      expiresAt: '2026-05-27T10:00:00.000Z',
+      maxRunsPerDay: 3,
+      reason: 'Allow bounded weekly update preparation.',
+      riskCeiling: 'low',
+      status: 'active',
+      taskFacets: ['scheduled'],
+      taskId: 'task_auto',
+      taskTypes: ['routine'],
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+    );
+
+    const diagnostics = await service.diagnoseScheduledEventAgentTriggers([
+      {
+        ...task,
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: task.id,
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:05:00.000Z',
+        }],
+      },
+    ], now, { task_auto: 1 });
+
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({
+      status: 'ready',
+      triggerPlanReady: true,
+      runtimeStartAllowed: false,
+      schedulerTriggerServiceConnected: false,
+      triggerRunEvidenceRequired: expect.arrayContaining([
+        'context_readiness',
+        'target_task_identity',
+        'task_memory_coverage',
+        'task_memory_guidance',
+        'subtask_start',
+        'run_limit_count',
+        'post_step',
+      ]),
+      policy: {
+        id: 'standing_approval:task_auto:coding:local_sandbox',
+      },
+      runLimit: {
+        maxRunsPerDay: 3,
+        runsStartedToday: 1,
+      },
+    });
+    expect(diagnostics[0]?.summary).toContain('runLimit=1/3');
+    expect(aiConfigService.getStatus).toHaveBeenCalledTimes(1);
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(scheduledJobs).toHaveLength(0);
+  });
+
+  it('loads scheduler diagnostic run-limit counts from the run repository when not provided', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail();
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 3 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({
+        featureFlags: {
+          enableScheduler: true,
+          enableSandboxCodingAgent: true,
+        },
+        sandboxBackendStatus: {
+          readiness: {
+            blockedReasons: [],
+            ready: true,
+            summary: 'Sandbox ready.',
+          },
+          producerBackendReadiness: {
+            blockedReasons: [],
+            ready: true,
+            summary: 'Producer ready.',
+          },
+          probe: {
+            backendId: 'local-container',
+            environmentPolicy: 'empty',
+            isolation: 'container',
+            kind: 'local_container',
+            networkMode: 'disabled',
+            status: 'available',
+            supportsOutputLimits: true,
+            supportsPatchArtifacts: true,
+            supportsStagedWrites: true,
+            supportsStructuredCommands: true,
+            supportsTargetedCommands: true,
+            supportsWorkspaceMount: true,
+          },
+          summary: 'Sandbox ready.',
+        },
+        toolScaffoldSummaries: [],
+        workspaceRoot: '/tmp/workspace',
+      }),
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const policy = {
+      id: 'standing_approval:task_auto:coding:local_sandbox',
+      allowedAutonomyLevel: 'L2_limited_authorized_action',
+      allowedLanes: ['coding'],
+      allowedRuntimeIds: ['local_sandbox'],
+      createdAt: '2026-05-26T10:00:00.000Z',
+      expiresAt: '2026-05-27T10:00:00.000Z',
+      maxRunsPerDay: 3,
+      reason: 'Allow bounded weekly update preparation.',
+      riskCeiling: 'low',
+      status: 'active',
+      taskFacets: ['scheduled'],
+      taskId: 'task_auto',
+      taskTypes: ['routine'],
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+    );
+
+    const diagnostics = await service.diagnoseScheduledEventAgentTriggers([
+      {
+        ...task,
+        timeline: [{
+          id: 'timeline_approval',
+          taskId: task.id,
+          type: 'panel.standing_approval_confirmed',
+          payload: JSON.stringify({
+            policy,
+            schedulerTriggerAllowed: false,
+            workspaceWriteAllowed: false,
+          }),
+          createdAt: '2026-05-26T10:05:00.000Z',
+        }],
+      },
+    ], now);
+
+    expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
+      ['task_auto'],
+      '2026-05-26T00:00:00.000Z',
+    );
+    expect(diagnostics[0]).toMatchObject({
+      status: 'blocked',
+      runLimit: {
+        maxRunsPerDay: 3,
+        runsStartedToday: 3,
+      },
+      blockedReasons: expect.arrayContaining([
+        'Scheduled/event trigger daily run limit reached: 3/3.',
+      ]),
+    });
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(scheduledJobs).toHaveLength(0);
+  });
+
+  it('blocks scheduled/event agent trigger starts when the trigger service port is not connected', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.status).toBe('blocked');
+    expect(result.run).toBeNull();
+    expect(result.terminalRunEvidenceStatus).toBe('not_started');
+    expect(result.triggerRunEvidenceStatus).toBe('not_started');
+    expect(result.plan).toMatchObject({
+      status: 'ready',
+      triggerPlanReady: true,
+      runtimeStartAllowed: false,
+      schedulerTriggerServiceConnected: false,
+    });
+    expect(result.summary).toContain('Scheduled event Agent trigger service is not connected');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(result.summary).toContain('triggerServiceDecisionProposal=proposed');
+    expect(result.summary).toContain('durableDecisionCreation=approval_required');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动触发并修复触发服务',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 触发服务未连接后的下一步',
+      }),
+    }));
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+  });
+
+  it('does not duplicate same-day trigger-service disconnected Decision proposals', async () => {
+    const now = new Date('2026-05-26T11:02:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_trigger_service_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent 触发服务未连接后的下一步',
+          }),
+          createdAt: '2026-05-26T10:30:00.000Z',
+        },
+      ],
+    });
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      {
+        countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+        listIncompleteOlderThan: vi.fn(),
+        updateResult: vi.fn(),
+      } as never,
+      buildReadyAutomationAiConfigService() as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.summary).toContain('triggerServiceDecisionProposal=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('blocks scheduled/event agent trigger starts when timeline evidence service is not connected', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      null,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.status).toBe('blocked');
+    expect(result.run).toBeNull();
+    expect(result.terminalRunEvidenceStatus).toBe('not_started');
+    expect(result.triggerRunEvidenceStatus).toBe('not_started');
+    expect(result.plan).toMatchObject({
+      status: 'ready',
+      triggerPlanReady: true,
+      runtimeStartAllowed: true,
+      schedulerTriggerServiceConnected: true,
+    });
+    expect(result.summary).toContain('Scheduled event Agent timeline evidence service is not connected');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+  });
+
+  it('proposes scheduler Decisions during background sweeps when only the trigger service port is disconnected', async () => {
+    const now = new Date('2026-05-26T11:05:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const taskSourcePort = {
+      listScheduledEventAgentTriggerCandidates: vi.fn().mockResolvedValue([task]),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      buildReadyAutomationAiConfigService() as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      null,
+      timelinePort,
+      taskSourcePort,
+    );
+
+    const result = await service.runScheduledEventAgentTriggerSweep('cron', now);
+
+    expect(result).toMatchObject({
+      status: 'skipped',
+      skipReason: 'ports_not_connected',
+      checkedTaskCount: 1,
+      checkedTaskIds: ['task_auto'],
+      startedRunCount: 0,
+      blockedTaskCount: 1,
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(result.runtimeStartMissingRequirements).toContain('scheduler_trigger_service');
+    expect(result.summary).toContain('missingPorts=run_port');
+    expect(result.summary).toContain('triggerServiceDecisionProposals=proposed');
+    expect(result.summary).toContain('triggerServiceDecisionProposalTasks=task_auto');
+    expect(result.summary).toContain('checkedTaskIds=task_auto');
+    expect(service.getStatus().lastScheduledEventAgentSweepSummary).toBe(result.summary);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动触发并修复触发服务',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 触发服务未连接后的下一步',
+      }),
+    }));
+  });
+
+  it('proposes a scheduler Decision when an operator-started scheduled/event trigger hits the daily run limit', async () => {
+    const now = new Date('2026-05-26T11:05:00.000Z');
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline({ maxRunsPerDay: 1 })],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: null,
+      terminalRunEvidenceStatus: 'not_started',
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(result.plan.blockedReasons).toContain('Scheduled/event trigger daily run limit reached: 1/1.');
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('runLimitDecisionProposal=proposed');
+    expect(result.summary).toContain('durableDecisionCreation=approval_required');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '等待下一次运行窗口',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 达到每日运行上限后的下一步',
+      }),
+    }));
+  });
+
+  it('proposes a scheduler Decision when an operator-started scheduled/event trigger is blocked by automation readiness', async () => {
+    const now = new Date('2026-05-26T11:06:00.000Z');
+    const task = buildAutomationTaskDetail({
+      nextStep: null,
+      sourceContexts: [],
+      summary: null,
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: null,
+      terminalRunEvidenceStatus: 'not_started',
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(result.plan.readiness.missingRequirements).toContain('inputs');
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('readinessDecisionProposal=proposed');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '补齐任务上下文后下次 sweep 再运行',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent readiness 阻塞后的下一步',
+      }),
+    }));
+  });
+
+  it('proposes a scheduler Decision when an operator-started scheduled/event trigger lacks run-limit accounting evidence', async () => {
+    const now = new Date('2026-05-26T11:07:00.000Z');
+    const task = buildAutomationTaskDetail({
+      sourceContexts: [buildSourceContext()],
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({}),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn(),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: null,
+      terminalRunEvidenceStatus: 'not_started',
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(result.plan.runtimeStartMissingRequirements).toContain('run_limit_count');
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('runLimitAccountingDecisionProposal=proposed');
+    expect(triggerPort.triggerCodeAgentRun).not.toHaveBeenCalled();
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动巡检并修复运行计数证据',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 运行计数证据异常后的下一步',
+      }),
+    }));
+  });
+
+  it('starts a bounded Code Agent run when scheduled/event trigger gates and standing approval pass', async () => {
+    const now = new Date('2026-05-26T11:00:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_1',
+      output: 'Code Agent preview completed.',
+      outputSource: 'system',
+      status: 'completed',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(runRepository.countCreatedSinceByTask).toHaveBeenCalledWith(
+      ['task_auto'],
+      '2026-05-26T00:00:00.000Z',
+    );
+    expect(triggerPort.triggerCodeAgentRun).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      patchIntent: expect.stringContaining('Scheduled/event Agent trigger under confirmed Taskplane Standing Approval.'),
+      requestedChecks: ['test', 'lint'],
+      operatorConfirmed: true,
+      useModelProducer: true,
+    });
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Next step: Prepare the weekly update.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Target task: task_auto.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Task memory guidance: process=Weekly update SOP; openCriteria=1; firstCriterion=Review the generated update.; sourceContexts=0; firstSource=none');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Standing Approval policy: standing_approval:task_auto:coding:local_sandbox.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Standing Approval scope: autonomy=L2_limited_authorized_action; riskCeiling=low; maxRunsPerDay=3; reason=Allow bounded weekly update preparation.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Scheduler loop runtime gateway: Scheduler loop runtime gateway');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('schedulerLoopApiDeferred=false');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Runtime start requirements: trigger_plan_ready,scheduler_trigger_service,selected_runtime_identity,run_limit_count.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('context_readiness,target_task_identity,task_memory_coverage,task_memory_guidance,subtask_start,business_line_loop,run_limit_count,post_step');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Run limit: 1/3.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Post-step evidence: return terminal run output for Taskplane review.');
+    expect(triggerPort.triggerCodeAgentRun.mock.calls[0]?.[0].patchIntent).toContain('Workspace write boundary: workspaceWriteAllowed=false; proposals only.');
+    expect(result).toMatchObject({
+      status: 'started',
+      run: {
+        id: 'run_scheduled_1',
+        taskId: 'task_auto',
+      },
+      plan: {
+        status: 'ready',
+        runtimeStartAllowed: true,
+        schedulerTriggerServiceConnected: true,
+        runLimit: {
+          maxRunsPerDay: 3,
+          runsStartedToday: 1,
+        },
+      },
+    });
+    expect(result.summary).toContain('trigger=started');
+    expect(result.summary).toContain('runId=run_scheduled_1');
+    expect(result.summary).toContain('terminalRunEvidence=present');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=ready_for_terminal_review');
+    expect(result.summary).toContain('timelineEvidence=recorded');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_1',
+        runFailureReason: null,
+        runOutputSource: 'system',
+        runStatus: 'completed',
+        terminalRunEvidenceStatus: 'present',
+        triggerRunEvidenceStatus: 'ready_for_terminal_review',
+        targetTaskId: 'task_auto',
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        runtimeStartMissingRequirements: [],
+        runtimeStartSatisfiedRequirements: expect.arrayContaining([
+          'trigger_plan_ready',
+          'scheduler_trigger_service',
+          'run_limit_count',
+        ]),
+        schedulerTriggerServiceConnected: true,
+        runtimeStartAllowed: true,
+        triggeredAt: '2026-05-26T11:00:00.000Z',
+        workspaceWriteAllowed: false,
+        runLimit: {
+          maxRunsPerDay: 3,
+          runsStartedToday: 1,
+        },
+        triggerRunEvidenceRequired: expect.arrayContaining([
+          'context_readiness',
+          'target_task_identity',
+          'task_memory_coverage',
+          'task_memory_guidance',
+          'subtask_start',
+          'run_limit_count',
+          'post_step',
+        ]),
+      }),
+    });
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(scheduledJobs).toHaveLength(0);
+  });
+
+  it('keeps terminal trigger evidence pending when a completed scheduled/event run has no reviewable output', async () => {
+    const now = new Date('2026-05-26T11:15:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      failureReason: null,
+      id: 'run_scheduled_empty_terminal',
+      output: null,
+      outputSource: null,
+      status: 'completed',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'started',
+      run: {
+        id: 'run_scheduled_empty_terminal',
+        taskId: 'task_auto',
+      },
+      terminalRunEvidenceStatus: 'pending',
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(result.summary).toContain('terminalRunEvidence=pending');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=pending_terminal_run_evidence');
+    expect(result.summary).toContain('terminalEvidenceDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_empty_terminal',
+        runStatus: 'completed',
+        terminalRunEvidenceStatus: 'pending',
+        triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+      }),
+    }));
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_scheduled_empty_terminal',
+        proposedOutcome: '人工复核 Run 并补录终态证据',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 终态证据缺失后的下一步',
+      }),
+    }));
+  });
+
+  it('keeps terminal trigger evidence pending when completed output has no source provenance', async () => {
+    const now = new Date('2026-05-26T11:18:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      failureReason: null,
+      id: 'run_scheduled_output_without_source',
+      output: 'Completed but provenance is missing.',
+      outputSource: null,
+      status: 'completed',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'started',
+      run: {
+        id: 'run_scheduled_output_without_source',
+        taskId: 'task_auto',
+      },
+      terminalRunEvidenceStatus: 'pending',
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(result.summary).toContain('terminalRunEvidence=pending');
+    expect(result.summary).toContain('terminalEvidenceDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+      payload: expect.objectContaining({
+        runId: 'run_scheduled_output_without_source',
+        runOutputSource: null,
+        terminalRunEvidenceStatus: 'pending',
+        triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+      }),
+    }));
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        evidenceRunId: 'run_scheduled_output_without_source',
+        rationale: expect.stringContaining('outputSource provenance'),
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent 终态证据缺失后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate same-day terminal-evidence Decision proposals', async () => {
+    const now = new Date('2026-05-26T11:20:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_terminal_evidence_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent 终态证据缺失后的下一步',
+          }),
+          createdAt: '2026-05-26T10:45:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      failureReason: null,
+      id: 'run_scheduled_empty_terminal_repeat',
+      output: null,
+      outputSource: null,
+      status: 'completed',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.summary).toContain('terminalEvidenceDecisionProposal=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'panel.scheduled_event_agent_triggered',
+    }));
+  });
+
+  it('returns recovery evidence when an operator-started scheduled/event trigger port fails', async () => {
+    const now = new Date('2026-05-26T11:25:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockRejectedValue(new Error('trigger service timeout')),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: null,
+      terminalRunEvidenceStatus: 'not_started',
+      triggerRunEvidenceStatus: 'not_started',
+    });
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('triggerRunEvidenceStatus=not_started');
+    expect(result.summary).toContain('reason=trigger service timeout');
+    expect(result.summary).toContain('sweepFailureDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        proposedOutcome: '暂停自动触发并人工复核调度器',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent sweep 异常后的下一步',
+      }),
+    }));
+  });
+
+  it('returns recovery evidence when operator-started scheduled/event timeline evidence fails', async () => {
+    const now = new Date('2026-05-26T11:27:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 0 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_timeline_failed_manual',
+      output: null,
+      outputSource: null,
+      status: 'running',
+      taskId: 'task_auto',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn()
+        .mockRejectedValueOnce(new Error('timeline database unavailable'))
+        .mockResolvedValueOnce(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: {
+        id: 'run_scheduled_timeline_failed_manual',
+        taskId: 'task_auto',
+      },
+      terminalRunEvidenceStatus: 'pending',
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('runId=run_scheduled_timeline_failed_manual');
+    expect(result.summary).toContain('reason=Timeline evidence failed: timeline database unavailable');
+    expect(result.summary).toContain('timelineFailureDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(2);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduled_event_agent_triggered',
+    }));
+    expect(timelinePort.recordTimelineEvent).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_scheduled_timeline_failed_manual',
+        proposedOutcome: '暂停自动触发并修复 timeline 证据写入',
+        standingApprovalActive: true,
+        standingApprovalPolicyId: 'standing_approval:task_auto:coding:local_sandbox',
+        standingApprovalScopeTaskId: 'task_auto',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent timeline 证据写入失败后的下一步',
+      }),
+    }));
+  });
+
+  it('returns recovery evidence instead of throwing when an operator-started scheduled/event run has the wrong target task', async () => {
+    const now = new Date('2026-05-26T11:30:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [buildStandingApprovalTimeline()],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_wrong_target_1',
+      output: null,
+      outputSource: null,
+      status: 'running',
+      taskId: 'task_other',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      run: {
+        id: 'run_scheduled_wrong_target_1',
+        taskId: 'task_other',
+      },
+      terminalRunEvidenceStatus: 'pending',
+      triggerRunEvidenceStatus: 'pending_terminal_run_evidence',
+    });
+    expect(result.summary).toContain('trigger=blocked');
+    expect(result.summary).toContain('runId=run_scheduled_wrong_target_1');
+    expect(result.summary).toContain('Run target task mismatch: expected task_auto but received task_other.');
+    expect(result.summary).toContain('runIdentityDecisionProposal=proposed');
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledTimes(1);
+    expect(timelinePort.recordTimelineEvent).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_auto',
+      type: 'panel.scheduler_decision_proposed',
+      payload: expect.objectContaining({
+        authorization: 'standing_approval',
+        evidenceRunId: 'run_scheduled_wrong_target_1',
+        proposedOutcome: '暂停自动触发并人工复核运行归属',
+        targetTaskId: 'task_auto',
+        title: '确认定时/事件 Agent Run 目标任务不一致后的下一步',
+      }),
+    }));
+  });
+
+  it('does not duplicate same-day run-identity Decision proposals', async () => {
+    const now = new Date('2026-05-26T11:45:00.000Z');
+    const task = buildAutomationTaskDetail({
+      timeline: [
+        buildStandingApprovalTimeline(),
+        {
+          id: 'timeline_run_identity_decision',
+          taskId: 'task_auto',
+          type: 'panel.scheduler_decision_proposed',
+          payload: JSON.stringify({
+            targetTaskId: 'task_auto',
+            title: '确认定时/事件 Agent Run 目标任务不一致后的下一步',
+          }),
+          createdAt: '2026-05-26T10:30:00.000Z',
+        },
+      ],
+    });
+    const runRepository = {
+      countCreatedSinceByTask: vi.fn().mockResolvedValue({ task_auto: 1 }),
+      listIncompleteOlderThan: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const aiConfigService = buildReadyAutomationAiConfigService();
+    const run = {
+      ...buildRunRecord(),
+      id: 'run_scheduled_wrong_target_repeat',
+      output: null,
+      outputSource: null,
+      status: 'running',
+      taskId: 'task_other',
+      type: 'agent',
+    } satisfies RunRecord;
+    const triggerPort = {
+      triggerCodeAgentRun: vi.fn().mockResolvedValue(run),
+    };
+    const timelinePort = {
+      recordTimelineEvent: vi.fn().mockResolvedValue(undefined),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn(),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      aiConfigService as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+      triggerPort,
+      timelinePort,
+    );
+
+    const result = await service.triggerScheduledEventAgentRun(task, now);
+
+    expect(result.summary).toContain('runIdentityDecisionProposal=skipped_existing');
+    expect(timelinePort.recordTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('falls back to plain brief generation when brief template selection fails', async () => {
+    const homeData = {
+      ...buildHomeData(),
+      processTemplateCandidates: [buildBriefTemplateCandidate()],
+    };
+    const briefSnapshotRepository = {
+      create: vi.fn().mockResolvedValue(undefined),
+    };
+    const briefExecutor = {
+      execute: vi.fn().mockResolvedValue('AI brief without templates'),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(homeData),
+      } as never,
+      briefSnapshotRepository as never,
+      {
+        listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn().mockResolvedValue({
+          provider: 'anthropic',
+          model: 'claude-3-5-sonnet-latest',
+          apiKey: 'secret',
+          featureFlags: { enableScheduler: true },
+        }),
+      } as never,
+      briefExecutor as never,
+      {
+        select: vi.fn().mockRejectedValue(new Error('Selector exploded')),
+      } as never,
+    );
+
+    await service.start();
+
+    expect(briefExecutor.execute).toHaveBeenCalledWith(
+      homeData,
+      'startup',
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: { enableScheduler: true },
+      },
+      {
+        selectedTemplates: [],
+      },
+    );
+    expect(briefSnapshotRepository.create).toHaveBeenCalledWith(
+      'startup',
+      'AI brief without templates',
+      'ai',
+      null,
+    );
+  });
+});
