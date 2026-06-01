@@ -15,6 +15,103 @@ describe('auto context clear readiness', () => {
     });
   });
 
+  it('uses business owner coverage instead of treating business-line chat as global', () => {
+    expect(evaluateAutoContextClearReadiness({
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      hasTaskContext: false,
+      chatMessageCount: 1,
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasNextSafeAction: true,
+      hasSpecificHandoffSignal: true,
+    })).toMatchObject({
+      outcome: 'needs_memory_write',
+      shouldAsk: true,
+      businessMemoryCoverage: {
+        ownerSummary: 'business_line:business_1',
+        requiredWrites: ['business_record'],
+        status: 'needs_memory_write',
+      },
+      contextTransition: {
+        handoffType: 'durable_business_handoff',
+      },
+    });
+  });
+
+  it('allows business owner clear after business memory coverage passes', () => {
+    expect(evaluateAutoContextClearReadiness({
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      hasTaskContext: false,
+      chatMessageCount: 1,
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasNextSafeAction: true,
+      hasRelevantBusinessRecord: true,
+      hasSpecificHandoffSignal: true,
+    })).toMatchObject({
+      outcome: 'safe_to_clear',
+      shouldAutoClear: true,
+      businessMemoryCoverage: {
+        canClearContext: true,
+        status: 'pass',
+      },
+    });
+  });
+
+  it('does not let next-action owners bypass task-memory gates when task context flag is false', () => {
+    expect(evaluateAutoContextClearReadiness({
+      owner: {
+        actionId: 'action_1',
+        businessLineId: 'business_1',
+        kind: 'next_action',
+        taskId: 'task_1',
+      },
+      hasTaskContext: false,
+      chatMessageCount: 3,
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasCurrentNextAction: true,
+      hasNextSafeAction: true,
+      hasRelevantBusinessRecord: true,
+      hasSpecificHandoffSignal: false,
+    })).toMatchObject({
+      outcome: 'keep_context',
+      taskMemoryCoverage: {
+        outcome: 'needs_user_clarification',
+      },
+      businessMemoryCoverage: {
+        ownerSummary: 'next_action:business_1:action=action_1:task=task_1',
+        status: 'needs_user_clarification',
+        taskMemoryCoverage: {
+          outcome: 'needs_user_clarification',
+        },
+      },
+    });
+  });
+
+  it('does not let legacy-task owners bypass task-memory gates when task context flag is false', () => {
+    expect(evaluateAutoContextClearReadiness({
+      owner: { kind: 'legacy_task', taskId: 'task_1' },
+      hasTaskContext: false,
+      chatMessageCount: 3,
+      hasSpecificHandoffSignal: true,
+      memoryWriteCompleted: false,
+    })).toMatchObject({
+      outcome: 'needs_memory_write',
+      shouldAsk: true,
+      taskMemoryCoverage: {
+        outcome: 'needs_memory_write',
+      },
+      businessMemoryCoverage: {
+        ownerSummary: 'legacy_task:task_1',
+        status: 'needs_memory_write',
+        taskMemoryCoverage: {
+          outcome: 'needs_memory_write',
+        },
+      },
+    });
+  });
+
   it('does not clear low-signal task chat just because message count is high', () => {
     expect(evaluateAutoContextClearReadiness({
       hasTaskContext: true,

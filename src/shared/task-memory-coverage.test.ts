@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { evaluateBusinessMemoryCoverage } from './business-memory-coverage.js';
+import { contextOwnerFromTaskContext, formatContextOwnerForSummary } from './context-owner.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from './task-memory-coverage.js';
 
 describe('task memory coverage', () => {
@@ -434,6 +436,183 @@ describe('task memory coverage', () => {
       outcome: 'blocked',
       canProceed: false,
       missing: ['存在待处理的用户判断或授权。'],
+    });
+  });
+});
+
+describe('business memory coverage', () => {
+  it('normalizes global, business-line, next-action, and legacy-task owners', () => {
+    expect(contextOwnerFromTaskContext({})).toEqual({ kind: 'global' });
+    expect(contextOwnerFromTaskContext({ businessLineId: 'business_1' })).toEqual({
+      businessLineId: 'business_1',
+      kind: 'business_line',
+    });
+    expect(contextOwnerFromTaskContext({ businessLineId: 'business_1', taskId: 'task_1' })).toEqual({
+      actionId: 'task_1',
+      businessLineId: 'business_1',
+      kind: 'next_action',
+      taskId: 'task_1',
+    });
+    expect(contextOwnerFromTaskContext({ taskId: 'task_1' })).toEqual({
+      kind: 'legacy_task',
+      taskId: 'task_1',
+    });
+  });
+
+  it('passes business-line coverage when durable business memory can recover the transition', () => {
+    expect(evaluateBusinessMemoryCoverage({
+      action: 'context_clear',
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      chatMessageCount: 1,
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasNextSafeAction: true,
+      hasRelevantBusinessRecord: true,
+      hasSpecificHandoffSignal: true,
+    })).toMatchObject({
+      canClearContext: true,
+      ownerSummary: 'business_line:business_1',
+      preservationProofReady: true,
+      status: 'pass',
+    });
+  });
+
+  it('answers compact and reset readiness with action-specific flags', () => {
+    const covered = {
+      owner: { kind: 'business_line' as const, businessLineId: 'business_1' },
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasNextSafeAction: true,
+      hasRelevantBusinessRecord: true,
+    };
+
+    expect(evaluateBusinessMemoryCoverage({
+      ...covered,
+      action: 'context_compact',
+    })).toMatchObject({
+      canCompact: true,
+      canReset: false,
+      status: 'pass',
+    });
+    expect(evaluateBusinessMemoryCoverage({
+      ...covered,
+      action: 'context_reset',
+    })).toMatchObject({
+      canCompact: false,
+      canReset: true,
+      status: 'pass',
+    });
+  });
+
+  it('requires a Business Record when business-line chat has an uncovered recovery signal', () => {
+    expect(evaluateBusinessMemoryCoverage({
+      action: 'context_clear',
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      chatMessageCount: 1,
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasNextSafeAction: true,
+      hasRelevantBusinessRecord: false,
+      hasSpecificHandoffSignal: true,
+    })).toMatchObject({
+      canClearContext: false,
+      preservationProofReady: false,
+      requiredWrites: ['business_record'],
+      status: 'needs_memory_write',
+    });
+  });
+
+  it('keeps low-signal business-line chat out of durable write requirements', () => {
+    expect(evaluateBusinessMemoryCoverage({
+      action: 'context_clear',
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      chatMessageCount: 3,
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasNextSafeAction: true,
+      hasRelevantBusinessRecord: false,
+      hasSpecificHandoffSignal: false,
+    })).toMatchObject({
+      missing: ['Active business-line discussion has no specific recoverable signal yet.'],
+      preservationProofReady: false,
+      requiredWrites: [],
+      status: 'needs_user_clarification',
+    });
+  });
+
+  it('blocks business coverage when a Decision is pending', () => {
+    expect(evaluateBusinessMemoryCoverage({
+      action: 'context_reset',
+      owner: { kind: 'business_line', businessLineId: 'business_1' },
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasNextSafeAction: true,
+      hasOpenDecision: true,
+      hasRelevantBusinessRecord: true,
+    })).toMatchObject({
+      canReset: false,
+      missing: ['A pending Decision must be resolved before context transition.'],
+      requiredWrites: ['decision'],
+      status: 'blocked',
+    });
+  });
+
+  it('covers a Next Action carrier with business memory plus execution carrier state', () => {
+    const result = evaluateBusinessMemoryCoverage({
+      action: 'handoff',
+      owner: {
+        actionId: 'action_1',
+        businessLineId: 'business_1',
+        kind: 'next_action',
+        taskId: 'task_1',
+      },
+      hasBusinessLineState: true,
+      hasBusinessLineContextPack: true,
+      hasCurrentNextAction: true,
+      hasNextSafeAction: true,
+      hasRelevantReview: true,
+    });
+
+    expect(result).toMatchObject({
+      canHandoff: true,
+      ownerSummary: 'next_action:business_1:action=action_1:task=task_1',
+      preservationProofReady: true,
+      status: 'pass',
+    });
+    expect(formatContextOwnerForSummary(result.owner)).toBe(result.ownerSummary);
+  });
+
+  it('delegates legacy task coverage to existing task-memory gates', () => {
+    expect(evaluateBusinessMemoryCoverage({
+      action: 'run_start',
+      owner: { kind: 'legacy_task', taskId: 'task_1' },
+      taskMemoryCoverage: {
+        action: 'run_start',
+        hasTaskContext: true,
+        hasTaskMd: false,
+        hasNextStep: false,
+      },
+    })).toMatchObject({
+      missing: [
+        '缺少 Task.md、相关 Task Record 或等价恢复摘要。',
+        '缺少明确下一步。',
+      ],
+      status: 'needs_user_clarification',
+      taskMemoryCoverage: {
+        outcome: 'needs_user_clarification',
+      },
+    });
+  });
+
+  it('treats global owner coverage as not applicable', () => {
+    expect(evaluateBusinessMemoryCoverage({
+      action: 'context_clear',
+      owner: { kind: 'global' },
+      chatMessageCount: 3,
+    })).toMatchObject({
+      canProceed: true,
+      ownerSummary: 'global',
+      status: 'not_applicable',
     });
   });
 });
