@@ -11,6 +11,7 @@ Public developer documentation for asterism.
 - [Testing](TESTING.md)
 - [Releases](RELEASES.md)
 - [Open source strategy](OPEN_SOURCE_STRATEGY.md)
+- [Documentation scope](DOCUMENTATION_SCOPE.md)
 
 ## Runtime Specs
 
@@ -45,3 +46,5 @@ contributors, and security reviewers.
 
 Raw product notes, manual validation logs, local machine records, and exploratory
 design journals are intentionally kept out of the public documentation surface.
+Use [Documentation scope](DOCUMENTATION_SCOPE.md) before promoting internal
+notes into public docs.

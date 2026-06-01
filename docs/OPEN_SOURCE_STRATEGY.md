@@ -56,3 +56,5 @@ Before making the repository public, complete at least this checklist:
 - Confirm GitHub About metadata, topics, license detection, and README wording.
 - Confirm that public docs do not promise unavailable screenshots, releases,
   hosted services, support channels, or compatibility guarantees.
+- Confirm future public docs follow
+  [Documentation scope](DOCUMENTATION_SCOPE.md).
