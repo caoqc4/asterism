@@ -81,13 +81,17 @@ export type ProjectDecompositionResult = {
   promotionReadiness?: ProjectDecompositionPromotionReadinessSummary;
 };
 
-import type { TaskplaneWritebackApplyPlan } from '../taskplane-writeback-apply-plan.js';
+import type {
+  TaskplaneBusinessLineRecordCreateInput,
+  TaskplaneWritebackApplyPlan,
+} from '../taskplane-writeback-apply-plan.js';
 import type { TaskplaneWritebackDispatchResult } from '../taskplane-writeback-dispatch.js';
 import type { AgentScheduledEventTriggerPlan } from '../agent-orchestration.js';
 import type { HomeBriefData } from './brief.js';
 import type {
   AcceptBusinessLineSkillRevisionInput,
   BusinessLineListItem,
+  BusinessLineRecord,
   BusinessLineWorkspace,
   CreateBusinessLineInput,
   DisableBusinessLineSkillRevisionInput,
@@ -384,6 +388,7 @@ export type ElectronApi = {
   getHomeBrief: () => Promise<HomeBriefData>;
   listBusinessLines?: () => Promise<BusinessLineListItem[]>;
   createBusinessLine?: (input: CreateBusinessLineInput) => Promise<BusinessLineWorkspace>;
+  createBusinessLineRecord?: (input: TaskplaneBusinessLineRecordCreateInput) => Promise<BusinessLineRecord>;
   getBusinessLineWorkspace?: (businessLineId: string) => Promise<BusinessLineWorkspace | null>;
   recordBusinessLineReview?: (input: RecordBusinessLineReviewInput) => Promise<BusinessLineWorkspace>;
   acceptBusinessLineSkillRevision?: (

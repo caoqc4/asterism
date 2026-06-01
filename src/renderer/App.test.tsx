@@ -1109,6 +1109,18 @@ function createMockApi() {
         kind: input.kind ?? 'general',
       }),
     })),
+    createBusinessLineRecord: vi.fn().mockImplementation(async (input) => ({
+      id: 'business_line_record_context_refresh',
+      type: input.type,
+      businessLineId: input.businessLineId ?? 'business_line_created',
+      source: input.source,
+      summary: input.summary,
+      confidence: input.confidence ?? 75,
+      linkedActionId: input.linkedActionId ?? input.sourceActionId ?? null,
+      linkedDecisionId: input.linkedDecisionId ?? null,
+      shouldAffectFutureContext: input.shouldAffectFutureContext ?? true,
+      createdAt: now,
+    } satisfies BusinessLineRecord)),
     getBusinessLineWorkspace: vi.fn().mockResolvedValue(null),
     recordBusinessLineReview: vi.fn(),
     acceptBusinessLineSkillRevision: vi.fn(),
@@ -3228,7 +3240,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/AI 执行任务时可用的产品级规则/)).toBeTruthy();
     expect(screen.getByText(/产品级规则是内置运行约束/)).toBeTruthy();
     expect(screen.getByText('产品级规则')).toBeTruthy();
-    expect(screen.getByText('GoalPilot Task Router')).toBeTruthy();
+    expect(screen.getByText('GoalPilot Business Advancement Router')).toBeTruthy();
     expect(screen.getByText('Agent Operating Principles')).toBeTruthy();
     expect(screen.getByText('Decision Writeback Orchestration')).toBeTruthy();
     expect(screen.getByText(/真实工具暴露必须接入 Skills 服务/)).toBeTruthy();
@@ -5305,6 +5317,123 @@ describe('App redesign v1', () => {
       content: expect.stringContaining('Playwright'),
     }));
     expect(screen.queryByRole('button', { name: '整理并刷新' })).toBeNull();
+  });
+
+  it('refreshes business-line chat into a Business Record without requiring a task id', async () => {
+    const user = userEvent.setup();
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    homeBrief.businessLineSuggestions = [{
+      id: 'business-line-progress:business_line_refresh_only',
+      type: 'progress',
+      businessLineId: 'business_line_refresh_only',
+      businessLineTitle: 'Refresh-only product',
+      whyNow: 'Business-line discussion needs durable recovery memory.',
+      expectedImpact: 'Keep future business-line context aligned.',
+      effort: { level: 'low', note: null },
+      confidence: 80,
+      nextStep: 'Preserve the business-line handoff.',
+      sourceRecords: ['business record: prior context'],
+      sourceRecordIds: ['business_line_record_prior'],
+      risk: { level: 'low', note: null },
+      requiresDecision: false,
+      taskId: null,
+    }];
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+    vi.mocked(harness.api.chatWithAI!).mockResolvedValue({
+      text: '已按业务线上下文记录这次判断。',
+    });
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+    expect(await screen.findByText('Context: Business Line / Refresh-only product')).toBeTruthy();
+    const input = await screen.findByPlaceholderText(/关于「Refresh-only product」/);
+    await user.clear(input);
+    for (const prompt of [
+      '目标是保留 onboarding 增长判断。',
+      '不对，改成先验证激活来源。',
+      '改成下一步保存业务线证据。',
+    ]) {
+      await user.type(input, prompt);
+      await user.click(screen.getByRole('button', { name: '发送' }));
+      await waitFor(() => {
+        expect(harness.api.chatWithAI).toHaveBeenCalled();
+      });
+    }
+
+    expect(await screen.findByText('Preservation target: Business Record')).toBeTruthy();
+    expect(screen.getByText(/Recovery/)).toBeTruthy();
+    expect(screen.getByText(/Excluded: Raw transcript/)).toBeTruthy();
+    expect(screen.getByText(/Business memory: needs_memory_write/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '整理并刷新' }));
+
+    await waitFor(() => {
+      expect(harness.api.createBusinessLineRecord).toHaveBeenCalledWith(expect.objectContaining({
+        businessLineId: 'business_line_refresh_only',
+        shouldAffectFutureContext: true,
+        source: 'panel.context_refresh',
+        summary: expect.stringContaining('改成下一步保存业务线证据'),
+        type: 'review',
+      }));
+    });
+    expect(harness.api.createTaskFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      path: expect.stringContaining('Task Records/'),
+    }));
+    expect(await screen.findByText(/已整理并刷新/)).toBeTruthy();
+  });
+
+  it('keeps business-line Next Action refresh on Task Records for execution recovery', async () => {
+    const user = userEvent.setup();
+    const homeBrief = buildBriefData(harness.tasks, harness.decisions);
+    homeBrief.businessLineSuggestions = [{
+      id: 'business-line-progress:business_line_next_action_refresh:task_risk',
+      type: 'progress',
+      businessLineId: 'business_line_next_action_refresh',
+      businessLineTitle: 'Next Action refresh product',
+      whyNow: 'The active next action needs execution recovery.',
+      expectedImpact: 'Recover implementation state after refresh.',
+      effort: { level: 'medium', note: null },
+      confidence: 82,
+      nextStep: 'Continue the verification task.',
+      sourceRecords: ['review: execution state'],
+      sourceRecordIds: ['business_line_review_execution'],
+      risk: { level: 'medium', note: null },
+      requiresDecision: false,
+      taskId: 'task_risk',
+    }];
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce(homeBrief);
+    vi.mocked(harness.api.chatWithAI!).mockResolvedValue({
+      text: '收到，我会按执行恢复上下文推进。',
+    });
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+    expect(await screen.findByText(/Context: Business Line \/ Next Action refresh product \/ Next Action/)).toBeTruthy();
+    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+    await user.clear(input);
+    for (const prompt of [
+      '这轮先保留 Playwright 作为动态页面候选',
+      '不对，先把 Playwright 放到验证方案里',
+      '改成先确认 Playwright 是否真的需要',
+    ]) {
+      await user.type(input, prompt);
+      await user.click(screen.getByRole('button', { name: '发送' }));
+      await waitFor(() => {
+        expect(harness.api.chatWithAI).toHaveBeenCalled();
+      });
+    }
+
+    expect(await screen.findByText('Preservation target: Task Record')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '整理并刷新' }));
+    await waitFor(() => {
+      expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+        path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-context-refresh-handoff\.md$/),
+        content: expect.stringContaining('Playwright'),
+      }));
+    });
+    expect(harness.api.createBusinessLineRecord).not.toHaveBeenCalledWith(expect.objectContaining({
+      businessLineId: 'business_line_next_action_refresh',
+    }));
   });
 
   it('blocks right-panel session refresh while latest task memory guidance is pending', async () => {

@@ -20,6 +20,7 @@ import type {
   RejectBusinessLineSkillRevisionInput,
   RollbackBusinessLineSkillRevisionInput,
 } from '../../shared/types/business-line.js';
+import type { TaskplaneBusinessLineRecordCreateInput } from '../../shared/taskplane-writeback-apply-plan.js';
 import type {
   CreateCompletionCriteriaInput,
   UpdateCompletionCriteriaInput,
@@ -842,6 +843,13 @@ export function registerIpcHandlers(): void {
     emitAppEvent('businessLine.changed', created.id);
     emitAppEvent('brief.changed');
     return getServices().businessLineService.getWorkspace(created.id);
+  });
+
+  ipcMain.handle('businessLine:createRecord', async (_event, input: TaskplaneBusinessLineRecordCreateInput) => {
+    const record = await getServices().businessLineService.createBusinessLineRecord(input);
+    emitAppEvent('businessLine.changed', record.businessLineId);
+    emitAppEvent('brief.changed');
+    return record;
   });
 
   ipcMain.handle('businessLine:getWorkspace', async (_event, businessLineId: string) => {

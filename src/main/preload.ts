@@ -73,6 +73,7 @@ const api: ElectronApi = {
   getHomeBrief: () => ipcRenderer.invoke('brief:getHomeData'),
   listBusinessLines: () => ipcRenderer.invoke('businessLine:list'),
   createBusinessLine: (input) => ipcRenderer.invoke('businessLine:create', input),
+  createBusinessLineRecord: (input) => ipcRenderer.invoke('businessLine:createRecord', input),
   getBusinessLineWorkspace: (businessLineId) => ipcRenderer.invoke('businessLine:getWorkspace', businessLineId),
   recordBusinessLineReview: (input) => ipcRenderer.invoke('businessLine:recordReview', input),
   acceptBusinessLineSkillRevision: (input) => ipcRenderer.invoke('businessLine:acceptSkillRevision', input),

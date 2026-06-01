@@ -51,7 +51,14 @@ import {
   buildContextPreservationRecordContent,
   evaluateContextPreservation,
   type ContextPreservationMessage,
+  type ContextPreservationSurface,
 } from '@shared/context-preservation';
+import { evaluateAutoContextClearReadiness } from '@shared/auto-context-clear-readiness';
+import {
+  evaluateBusinessMemoryCoverage,
+  type BusinessMemoryCoverageEvaluation,
+} from '@shared/business-memory-coverage';
+import type { ContextOwner } from '@shared/context-owner';
 import type { PanelRuntimeTimelineEventType } from '@shared/runtime-panel-events';
 import {
   evaluateTaskRecordWorthiness,
@@ -81,6 +88,7 @@ import {
   formatSubtaskDraftSummary,
   type TaskplaneSubtaskCreateManyInput,
   type TaskplaneSubtaskCreateManyResult,
+  type TaskplaneBusinessLineRecordCreateInput,
 } from '@shared/taskplane-writeback-apply-plan';
 import { dispatchTaskplaneWritebackApplyPlan } from '@shared/taskplane-writeback-dispatch';
 import {
@@ -222,6 +230,14 @@ interface PendingCtxSwitch {
   taskTitle: string;
 }
 
+type ContextRefreshPreview = {
+  businessMemoryCoverage: BusinessMemoryCoverageEvaluation | null;
+  exclusions: string[];
+  preservationTarget: string;
+  recoveryReadiness: string;
+  suggestion: { reason: string } | null;
+};
+
 interface TaskFileWriteProposal {
   businessLineId?: string | null;
   evidenceRunId?: string | null;
@@ -347,11 +363,20 @@ function makeWelcomeMessage(taskTitle: string): Message {
   };
 }
 
-function makeTaskSessionRefreshedMessage(taskTitle: string): Message {
+function makeContextRefreshWelcomeMessage(contextTitle: string): Message {
+  return {
+    id: 'm0',
+    role: 'assistant',
+    text: `已重新装配上下文：**${contextTitle}**。\n\n我会从 Taskplane 的业务线、任务记忆、记录、来源和执行证据继续承接。`,
+    ts: now(),
+  };
+}
+
+function makeTaskSessionRefreshedMessage(taskTitle: string, target = 'Task Record'): Message {
   return {
     id: nextId(),
     role: 'assistant',
-    text: `已整理并刷新「${taskTitle}」的任务会话。关键恢复信息已写入任务记录，当前聊天会从这份任务记忆继续承接。`,
+    text: `已整理并刷新「${taskTitle}」的会话。关键恢复信息已写入 ${target}，当前聊天会从这份结构化记忆继续承接。`,
     ts: now(),
   };
 }
@@ -476,6 +501,7 @@ function estimatePanelTranscriptUsage(
 function shouldSuggestSessionRefresh(
   messages: Message[],
   compressionThreshold: number = CONTEXT_COMPRESSION_THRESHOLD.default,
+  owner?: ContextOwner,
 ): { reason: string } | null {
   const userMessages = messages
     .filter((message) => message.role === 'user')
@@ -486,12 +512,12 @@ function shouldSuggestSessionRefresh(
   const counts = new Map<string, number>();
   for (const message of userMessages) {
     const next = (counts.get(message) ?? 0) + 1;
-    if (userMessages.length >= 3 && next >= 3 && hasPreservableContextSignals(messages)) {
+    if (userMessages.length >= 3 && next >= 3 && hasPreservableContextSignals(messages, owner)) {
       return { reason: '触发原因：同一个问题已重复出现 3 次。' };
     }
     counts.set(message, next);
   }
-  if (transcriptUsage.percent >= compressionThreshold && hasPreservableContextSignals(messages)) {
+  if (transcriptUsage.percent >= compressionThreshold && hasPreservableContextSignals(messages, owner)) {
     return {
       reason: `触发原因：估算上下文占用约 ${transcriptUsage.percent}%（约 ${transcriptUsage.tokens} tokens），达到 ${compressionThreshold}% 阈值。`,
     };
@@ -500,7 +526,7 @@ function shouldSuggestSessionRefresh(
   const recentCorrectionCount = userMessages
     .slice(-4)
     .filter((message) => looksLikeUserCorrection(message)).length;
-  if (userMessages.length >= 3 && recentCorrectionCount >= 2 && hasPreservableContextSignals(messages)) {
+  if (userMessages.length >= 3 && recentCorrectionCount >= 2 && hasPreservableContextSignals(messages, owner)) {
     return { reason: '触发原因：最近多次出现改口或纠正，建议刷新任务会话。' };
   }
 
@@ -511,50 +537,197 @@ function shouldSuggestSessionRefresh(
     userMessages.length >= 3
     && recentAssistantMessages.length >= 3
     && recentAssistantMessages.every((message) => looksGenericAssistantReply(message.text))
-    && hasPreservableContextSignals(messages)
+    && hasPreservableContextSignals(messages, owner)
   ) {
     return { reason: '触发原因：最近 3 次回复都偏泛化，建议刷新任务会话。' };
   }
   return null;
 }
 
-function hasPreservableContextSignals(messages: Message[]): boolean {
+function hasPreservableContextSignals(messages: Message[], owner: ContextOwner | undefined): boolean {
   const preservationMessages = buildContextPreservationMessages(messages);
   return evaluateContextPreservation({
-    hasTaskContext: true,
+    executionRecoveryNeeded: ownerRequiresExecutionRecovery(owner),
+    hasBusinessLineContext: owner?.kind === 'business_line' || owner?.kind === 'next_action',
+    hasTaskContext: owner?.kind === 'next_action' || owner?.kind === 'legacy_task',
+    owner,
     chatMessageCount: preservationMessages.filter((message) => message.role === 'user').length,
     messages: preservationMessages,
   }).hasValuableSignals;
 }
 
-async function preserveSessionRefreshMemory(params: {
-  taskId: string;
-  taskTitle: string;
+function ownerRequiresExecutionRecovery(owner: ContextOwner | null | undefined): boolean {
+  return owner?.kind === 'next_action' || owner?.kind === 'legacy_task';
+}
+
+function ownerHasBusinessMemory(owner: ContextOwner): boolean {
+  return owner.kind === 'business_line' || owner.kind === 'next_action';
+}
+
+function contextOwnerForPanel(params: {
+  businessLineId: string | null;
+  taskId: string | null;
+}): ContextOwner {
+  if (params.businessLineId && params.taskId) {
+    return {
+      actionId: params.taskId,
+      businessLineId: params.businessLineId,
+      kind: 'next_action',
+      taskId: params.taskId,
+    };
+  }
+  if (params.businessLineId) return { businessLineId: params.businessLineId, kind: 'business_line' };
+  if (params.taskId) return { kind: 'legacy_task', taskId: params.taskId };
+  return { kind: 'global' };
+}
+
+function contextOwnerLabel(params: {
+  businessLineTitle: string | null;
+  owner: ContextOwner;
+  taskTitle: string | null;
+}): string {
+  switch (params.owner.kind) {
+    case 'business_line':
+      return params.businessLineTitle ?? params.owner.businessLineId;
+    case 'next_action':
+      return params.taskTitle
+        ? `${params.businessLineTitle ?? params.owner.businessLineId} / ${params.taskTitle}`
+        : params.businessLineTitle ?? params.owner.businessLineId;
+    case 'legacy_task':
+      return params.taskTitle ?? params.owner.taskId;
+    case 'global':
+      return 'Global';
+  }
+}
+
+function formatPreservationSurface(surface: ContextPreservationSurface): string {
+  switch (surface) {
+    case 'artifact_reference': return 'Artifact reference';
+    case 'business_record': return 'Business Record';
+    case 'decision': return 'Decision';
+    case 'discard': return 'Discard';
+    case 'run_step': return 'Run Step';
+    case 'source_context': return 'Source Context';
+    case 'task_md': return 'Task.md';
+    case 'task_record': return 'Task Record';
+    case 'temporary_file': return 'Temporary proof';
+  }
+}
+
+function formatRecoveryReadiness(recovery: {
+  canRecoverConstraints: boolean;
+  canRecoverEvidence: boolean;
+  canRecoverGoal: boolean;
+  canRecoverNextStep: boolean;
+  canRecoverState: boolean;
+}): string {
+  const ready = [
+    recovery.canRecoverGoal ? 'goal' : null,
+    recovery.canRecoverState ? 'state' : null,
+    recovery.canRecoverNextStep ? 'next step' : null,
+    recovery.canRecoverConstraints ? 'constraints' : null,
+    recovery.canRecoverEvidence ? 'evidence' : null,
+  ].filter(Boolean);
+  return ready.length === 5
+    ? 'Recovery ready: goal / state / next step / constraints / evidence'
+    : `Recovery pending: ${ready.length ? ready.join(' / ') : 'no durable recovery anchors yet'}`;
+}
+
+function buildContextRefreshPreview(params: {
+  businessLineTitle: string | null;
+  compressionThreshold: number;
   messages: Message[];
+  owner: ContextOwner;
+  taskTitle: string | null;
+}): ContextRefreshPreview | null {
+  if (params.owner.kind === 'global') return null;
+  const suggestion = shouldSuggestSessionRefresh(params.messages, params.compressionThreshold, params.owner);
+  if (!suggestion) return null;
+  const preservationMessages = buildContextPreservationMessages(params.messages);
+  const userMessageCount = preservationMessages.filter((message) => message.role === 'user').length;
+  const hasSpecificSignal = hasSpecificHandoffSignal(preservationMessages
+    .filter((message) => message.role === 'user')
+    .map((message) => message.text));
+  const preservation = evaluateContextPreservation({
+    chatMessageCount: userMessageCount,
+    executionRecoveryNeeded: ownerRequiresExecutionRecovery(params.owner),
+    hasBusinessLineContext: ownerHasBusinessMemory(params.owner),
+    hasSpecificHandoffSignal: hasSpecificSignal,
+    hasTaskContext: ownerRequiresExecutionRecovery(params.owner),
+    messages: preservationMessages,
+    owner: params.owner,
+  });
+  const businessMemoryCoverage = evaluateBusinessMemoryCoverage({
+    action: 'context_clear',
+    chatMessageCount: userMessageCount,
+    hasBusinessLineContextPack: ownerHasBusinessMemory(params.owner) ? true : undefined,
+    hasBusinessLineState: ownerHasBusinessMemory(params.owner) ? true : undefined,
+    hasCurrentNextAction: params.owner.kind === 'next_action' ? true : undefined,
+    hasNextSafeAction: preservation.recoveryCheck.canRecoverNextStep,
+    hasRelevantBusinessRecord: false,
+    hasSpecificHandoffSignal: hasSpecificSignal || preservation.hasValuableSignals,
+    memoryWriteCompleted: false,
+    owner: params.owner,
+  });
+  const target = preservation.handoffArtifact?.writebackTarget.surface
+    ?? preservation.requiredWriteIntents[0]?.targetSurface
+    ?? 'temporary_file';
+  return {
+    businessMemoryCoverage,
+    exclusions: preservation.handoffArtifact?.exclusions ?? [
+      'Raw transcript, duplicate chat, hidden prompts, and unrelated context are excluded.',
+    ],
+    preservationTarget: formatPreservationSurface(target),
+    recoveryReadiness: formatRecoveryReadiness(preservation.recoveryCheck),
+    suggestion,
+  };
+}
+
+async function preserveSessionRefreshMemory(params: {
+  contextTitle: string;
+  messages: Message[];
+  owner: ContextOwner;
+  taskId: string | null;
 }): Promise<boolean> {
   const preservationMessages = buildContextPreservationMessages(params.messages);
   const userMessages = preservationMessages.filter((message) => message.role === 'user');
   const heuristicSignal = hasSpecificHandoffSignal(userMessages.map((message) => message.text));
   const planningEvaluation = evaluateContextPreservation({
-    hasTaskContext: true,
     chatMessageCount: userMessages.length,
+    executionRecoveryNeeded: ownerRequiresExecutionRecovery(params.owner),
+    hasBusinessLineContext: ownerHasBusinessMemory(params.owner),
     hasSpecificHandoffSignal: heuristicSignal,
+    hasTaskContext: ownerRequiresExecutionRecovery(params.owner),
     memoryWriteCompleted: false,
     messages: preservationMessages,
+    owner: params.owner,
   });
   if (userMessages.length === 0 || !planningEvaluation.hasValuableSignals) return false;
 
   const archivedEvaluation = evaluateContextPreservation({
-    hasTaskContext: true,
     chatMessageCount: userMessages.length,
+    executionRecoveryNeeded: ownerRequiresExecutionRecovery(params.owner),
+    hasBusinessLineContext: ownerHasBusinessMemory(params.owner),
     hasSpecificHandoffSignal: heuristicSignal,
+    hasTaskContext: ownerRequiresExecutionRecovery(params.owner),
     memoryWriteCompleted: true,
     messages: preservationMessages,
+    owner: params.owner,
   });
   const content = buildContextPreservationRecordContent({
     evaluation: archivedEvaluation,
-    taskTitle: params.taskTitle,
+    taskTitle: params.contextTitle,
   });
+
+  if (params.owner.kind === 'business_line') {
+    return writeBusinessLineRefreshRecord({
+      businessLineId: params.owner.businessLineId,
+      content,
+      evaluation: archivedEvaluation,
+    });
+  }
+
+  if (!params.taskId) return false;
 
   const canWriteSource = guardDurablePanelAction({ taskId: params.taskId, confirmed: true }).allowed;
   const sourceWritten = canWriteSource && window.api?.createSourceContext
@@ -590,6 +763,31 @@ async function preserveSessionRefreshMemory(params: {
     });
   }
   return sourceWritten || fileWritten;
+}
+
+async function writeBusinessLineRefreshRecord(params: {
+  businessLineId: string;
+  content: string;
+  evaluation: ReturnType<typeof evaluateContextPreservation>;
+}): Promise<boolean> {
+  if (!window.api?.createBusinessLineRecord) return false;
+  const input: TaskplaneBusinessLineRecordCreateInput = {
+    businessLineId: params.businessLineId,
+    confidence: 75,
+    shouldAffectFutureContext: true,
+    source: 'panel.context_refresh',
+    summary: params.content,
+    type: 'review',
+  };
+  return window.api.createBusinessLineRecord(input)
+    .then(() => {
+      verifyDurablePanelActionCompleted({
+        title: '保存业务线会话刷新记录',
+        output: `已保存业务线会话刷新记录：${params.evaluation.valuableSignals.length} 条恢复信号。`,
+      });
+      return true;
+    })
+    .catch(() => false);
 }
 
 function buildContextPreservationMessages(messages: Message[]): ContextPreservationMessage[] {
@@ -2146,22 +2344,33 @@ export function RightPanel({
   }
 
   async function archiveTaskConversationIfNeeded() {
+    const owner = contextOwnerForPanel({
+      businessLineId: activeBusinessLineId,
+      taskId: activeTaskId,
+    });
     const taskName = title ?? (activeTaskId ? titleCache[activeTaskId] ?? activeTaskId : null);
+    const contextTitle = contextOwnerLabel({
+      businessLineTitle: activeBusinessLineTitle,
+      owner,
+      taskTitle: taskName,
+    });
     const userMessages = messages
       .filter((message) => message.role === 'user')
       .map((message) => message.text.trim())
       .filter(Boolean);
     const hasSpecificSignal = hasSpecificHandoffSignal(userMessages);
     let archived = false;
-    if (activeTaskId && userMessages.length > 0) {
+    if (owner.kind !== 'global' && userMessages.length > 0) {
       archived = await preserveSessionRefreshMemory({
-        taskId: activeTaskId,
-        taskTitle: taskName ?? activeTaskId,
+        contextTitle,
         messages,
+        owner,
+        taskId: activeTaskId,
       });
     }
     return {
-      taskName,
+      contextTitle,
+      owner,
       archived,
       hasSpecificSignal,
       userMessageCount: userMessages.length,
@@ -2189,11 +2398,11 @@ export function RightPanel({
     return selectBlockingTaskMemoryGuidance(details.map((detail) => detail?.taskMemoryGuidance));
   }
 
-  function clearTaskSessionAfterArchive(taskName: string | null) {
-    setMessages(taskName
+  function clearTaskSessionAfterArchive(contextTitle: string | null, target: string) {
+    setMessages(contextTitle
       ? [
-          makeWelcomeMessage(taskName),
-          makeTaskSessionRefreshedMessage(taskName),
+          makeContextRefreshWelcomeMessage(contextTitle),
+          makeTaskSessionRefreshedMessage(contextTitle, target),
         ]
       : []);
     setHistoryOpen(false);
@@ -2205,9 +2414,9 @@ export function RightPanel({
   }
 
   function handleMissingRefreshArchive(reason?: string | null) {
-    if (activeTaskId) {
+    if (activeTaskId || activeBusinessLineId) {
       appendSysMsg([
-        '这次刷新前的保全信息还不够具体，暂不刷新当前任务会话。',
+        '这次刷新前的保全信息还不够具体，暂不刷新当前会话。',
         reason && reason !== '任务会话缺少可恢复信号，暂不应刷新。' ? reason : null,
         '请先补充已确认结论、候选方案、未解决问题或下一步动作。',
       ].filter(Boolean).join(' '));
@@ -2227,13 +2436,32 @@ export function RightPanel({
       return;
     }
     const {
-      taskName,
+      contextTitle,
+      owner,
       archived,
       hasSpecificSignal,
       userMessageCount,
       recentFocus,
     } = await archiveTaskConversationIfNeeded();
     const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(activeTaskId);
+    const readiness = evaluateAutoContextClearReadiness({
+      owner,
+      hasTaskContext: ownerRequiresExecutionRecovery(owner),
+      chatMessageCount: userMessageCount,
+      hasBusinessLineContextPack: ownerHasBusinessMemory(owner) ? true : undefined,
+      hasBusinessLineState: ownerHasBusinessMemory(owner) ? true : undefined,
+      hasCurrentNextAction: owner.kind === 'next_action' ? true : undefined,
+      hasNextSafeAction: archived || hasSpecificSignal,
+      hasRelevantBusinessRecord: owner.kind === 'business_line' ? archived : undefined,
+      hasSpecificHandoffSignal: hasSpecificSignal,
+      memoryWriteCompleted: archived,
+      messages: buildContextPreservationMessages(messages),
+      taskMemoryGuidance,
+    });
+    if (!readiness.shouldAutoClear) {
+      handleMissingRefreshArchive(readiness.reason);
+      return;
+    }
     const handoff = evaluateRuntimeHandoff({
       intent: 'context_refresh',
       fromTaskId: activeTaskId,
@@ -2242,10 +2470,6 @@ export function RightPanel({
       archived,
       taskMemoryGuidance,
     });
-    if (!handoff.canProceed) {
-      handleMissingRefreshArchive(handoff.reason);
-      return;
-    }
     const preview = buildRuntimeHandoffPreview(handoff, {
       archived,
       messageCount: userMessageCount,
@@ -2255,7 +2479,8 @@ export function RightPanel({
       handleMissingRefreshArchive(preview.detail);
       return;
     }
-    clearTaskSessionAfterArchive(taskName);
+    const target = readiness.contextTransition.recoveryArtifact?.writebackTarget.surface ?? 'task_record';
+    clearTaskSessionAfterArchive(contextTitle, formatPreservationSurface(target));
   }
 
   async function startNewConversation() {
@@ -3888,9 +4113,6 @@ export function RightPanel({
       })
     : null;
   const hasSpecificConversationSignal = hasSpecificHandoffSignal(userMessageTexts);
-  const sessionRefreshSuggestion = activeTaskId && !sessionRefreshDismissed
-    ? shouldSuggestSessionRefresh(messages, compressionThreshold)
-    : null;
   const canCaptureGlobalConversation = Boolean(
     evaluateRuntimeAction({
       action: 'task_capture',
@@ -4010,6 +4232,20 @@ export function RightPanel({
     ? `Writeback: Legacy Task / ${title ?? activeTaskId}`
     : 'Writeback: Global / capture proposal';
   const hasSessionActivity = Boolean(activeBusinessLineId || activeTaskId || messages.length > 0 || input.trim());
+  const activeContextOwner = contextOwnerForPanel({
+    businessLineId: activeBusinessLineId,
+    taskId: activeTaskId,
+  });
+  const sessionRefreshPreview = !sessionRefreshDismissed
+    ? buildContextRefreshPreview({
+        businessLineTitle: activeBusinessLineTitle,
+        compressionThreshold,
+        messages,
+        owner: activeContextOwner,
+        taskTitle: title ?? (activeTaskId ? titleCache[activeTaskId] ?? activeTaskId : null),
+      })
+    : null;
+  const sessionRefreshSuggestion = sessionRefreshPreview?.suggestion ?? null;
   const pendingMemoryGuidanceLookupKey = activeTaskId
     && sessionRefreshSuggestion
     && !taskFileProposal
@@ -4137,9 +4373,27 @@ export function RightPanel({
         {sessionRefreshSuggestion && (
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
-              这个任务的讨论已经有点长了。可以先保全关键结论并刷新当前会话；不会跳过保全证明。
+              当前讨论已经有点长了。可以先保全关键结论并刷新当前会话；不会跳过保全证明。
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
+            {sessionRefreshPreview && (
+              <>
+                <div className="panel-refresh-reason">
+                  Preservation target: {sessionRefreshPreview.preservationTarget}
+                </div>
+                <div className="panel-refresh-reason">
+                  {sessionRefreshPreview.recoveryReadiness}
+                </div>
+                <div className="panel-refresh-reason">
+                  Excluded: {sessionRefreshPreview.exclusions.join(' / ')}
+                </div>
+                {sessionRefreshPreview.businessMemoryCoverage && (
+                  <div className="panel-refresh-reason">
+                    Business memory: {sessionRefreshPreview.businessMemoryCoverage.status}
+                  </div>
+                )}
+              </>
+            )}
             <div className="panel-refresh-actions">
               <button className="btn sm primary" onClick={() => void refreshTaskSessionWithPreservation()}>整理并刷新</button>
               <button className="btn sm ghost" onClick={() => patchSession({ sessionRefreshDismissed: true })}>继续当前会话</button>

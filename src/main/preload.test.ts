@@ -84,6 +84,7 @@ function getExposedApi() {
     createDecision: (input: unknown) => Promise<unknown>;
     actOnDecision: (input: unknown) => Promise<unknown>;
     getHomeBrief: () => Promise<unknown>;
+    createBusinessLineRecord?: (input: unknown) => Promise<unknown>;
     listRuns: () => Promise<unknown>;
     getRunDetail: (runId: string) => Promise<unknown>;
     triggerRun: (input: unknown) => Promise<unknown>;
@@ -148,6 +149,12 @@ describe('preload bridge', () => {
       criteriaTotal: 2,
       criteriaSatisfied: 1,
       criteriaOpen: 1,
+    };
+    const createBusinessLineRecordInput = {
+      businessLineId: 'business_line_1',
+      source: 'panel.context_refresh',
+      summary: 'Business refresh digest',
+      type: 'review',
     };
     const updateWorkHabitInput = { id: 'habit_1', status: 'confirmed' };
     const importLegacyWorkHabitsInput = { habits: [{ id: 'habit_1', rule: 'Run checks first' }] };
@@ -358,6 +365,7 @@ describe('preload bridge', () => {
     await api.createDecision(createDecisionInput);
     await api.actOnDecision(decisionActionInput);
     await api.getHomeBrief();
+    await api.createBusinessLineRecord?.(createBusinessLineRecordInput);
     await api.listRuns();
     await api.getRunDetail('run_1');
     await api.triggerRun(createRunInput);
@@ -439,6 +447,7 @@ describe('preload bridge', () => {
       ['decision:create', createDecisionInput],
       ['decision:act', decisionActionInput],
       ['brief:getHomeData'],
+      ['businessLine:createRecord', createBusinessLineRecordInput],
       ['run:list'],
       ['run:getDetail', 'run_1'],
       ['run:trigger', createRunInput],
