@@ -238,7 +238,7 @@ or:
 
 ```bash
 npm run dist:mac:dir
-open release/mac-arm64/Taskplane.app
+open release/mac-arm64/Asterism.app
 ```
 
 If the app path differs, find it with:

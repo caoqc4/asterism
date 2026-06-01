@@ -35,17 +35,17 @@ const AGENT_CLI_CAPABILITY_MODE_OPTIONS: Array<{
   mode: AgentCliCapabilityMode;
 }> = [
   {
-    description: '尊重官方 CLI 的原生搜索、浏览、来源和文档能力；Taskplane 做上下文和记录。',
+    description: '尊重官方 CLI 的原生搜索、浏览、来源和文档能力；asterism 做上下文和记录。',
     label: '原生优先',
     mode: 'native',
   },
   {
-    description: '先由 Taskplane 做 OpenAI 联网调研并落来源，再交给官方 CLI 继续判断。',
+    description: '先由 asterism 做 OpenAI 联网调研并落来源，再交给官方 CLI 继续判断。',
     label: '审计增强',
     mode: 'audit_enhanced',
   },
   {
-    description: '只使用 Taskplane 已注入上下文，不允许实时联网或外部工具。',
+    description: '只使用 asterism 已注入上下文，不允许实时联网或外部工具。',
     label: '受限模式',
     mode: 'restricted',
   },
@@ -624,8 +624,8 @@ export function ModelPage() {
       <div className="model-page-head">
         <div>
           <h2 className="model-page-title">AI Runtime</h2>
-          <p className="model-page-subtitle">选择 Taskplane 调用 AI 的默认 Runtime。</p>
-          <p className="model-page-boundary">Agent CLI 和 Agent API 是同级 AI 调用层；任务拆解、推进、验收、记忆等环节由 Taskplane harness 编排，再按所选 Runtime 调用。</p>
+          <p className="model-page-subtitle">选择 asterism 调用 AI 的默认 Runtime。</p>
+          <p className="model-page-boundary">Agent CLI 和 Agent API 是同级 AI 调用层；任务拆解、推进、验收、记忆等环节由 asterism harness 编排，再按所选 Runtime 调用。</p>
         </div>
       </div>
 
@@ -747,7 +747,7 @@ function AgentCliRuntimeSection({
       <div className="agent-cli-head">
         <div>
           <div className="model-section-kicker">运行方式</div>
-          <p className="model-section-copy">选择 Taskplane 各 AI 阶段的默认调用层；当前优先打通 Codex / Claude CLI，Agent API 后续补齐同一套 harness 流程。</p>
+          <p className="model-section-copy">选择 asterism 各 AI 阶段的默认调用层；当前优先打通 Codex / Claude CLI，Agent API 后续补齐同一套 harness 流程。</p>
         </div>
         <div className="agent-cli-head-actions">
           <div className={`agent-cli-primary-state${hasReadyRuntime ? ' ready' : ''}`}>
@@ -1090,7 +1090,7 @@ function AgentCliRuntimeSection({
       <div className="agent-cli-capability-mode">
         <div>
           <div className="model-section-kicker">Agent CLI 能力模式</div>
-          <p className="model-section-copy">默认尊重 Codex / Claude 官方 CLI 的原生能力；Taskplane 只负责上下文、记录和验收。</p>
+          <p className="model-section-copy">默认尊重 Codex / Claude 官方 CLI 的原生能力；asterism 只负责上下文、记录和验收。</p>
         </div>
         <div className="settings-segmented" role="group" aria-label="Agent CLI capability mode">
           {AGENT_CLI_CAPABILITY_MODE_OPTIONS.map((option) => (

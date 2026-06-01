@@ -561,11 +561,12 @@ describe('local smoke script default boundaries', () => {
       });
 
       expect(defaultResult.status).toBe(0);
-      expect(defaultResult.output).toContain('Taskplane real-use paths');
+      expect(defaultResult.output).toContain('Asterism real-use paths');
+      expect(defaultResult.output).toContain('defaultUserDataCompatibility=legacy Taskplane directory');
       expect(defaultResult.output).toContain('userDataOverride=<none>');
       expect(defaultResult.output).toContain('configPath=');
       expect(defaultResult.output).toContain('databasePath=');
-      expect(defaultResult.output).toContain('Suggested macOS backup command while Taskplane is closed:');
+      expect(defaultResult.output).toContain('Suggested macOS backup command while Asterism is closed:');
       expect(defaultResult.output).toContain('API keys live in the OS keychain, not in config.json.');
 
       expect(overrideResult.status).toBe(0);

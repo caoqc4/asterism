@@ -6,7 +6,9 @@ import Database from 'better-sqlite3';
 import { _electron as electron } from 'playwright';
 
 const root = process.cwd();
-const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const productName = packageJson.productName;
+const executablePath = path.join(root, 'release/mac-arm64', `${productName}.app`, 'Contents/MacOS', productName);
 const userDataPath = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-run-decision-recovery-smoke-'));
 const smokePath = path.join(userDataPath, 'run-decision-recovery-smoke.log');
 const dbPath = path.join(userDataPath, 'taskplane.db');

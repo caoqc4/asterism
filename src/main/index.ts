@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { applyUserDataPathOverride, getPackagedRendererIndexPath } from './bootstrap/runtime-paths.js';
+import { applyCompatibleUserDataPath, getPackagedRendererIndexPath } from './bootstrap/runtime-paths.js';
 import { initServices } from './bootstrap/services.js';
 import { registerIpcHandlers } from './ipc/handlers.js';
 import { closeDatabase } from './db/client.js';
@@ -22,8 +22,8 @@ function appendRuntimeSmokeEvent(event: string): void {
 }
 
 appendRuntimeSmokeEvent('main:start');
-applyUserDataPathOverride(app);
-appendRuntimeSmokeEvent('main:userDataReady');
+const userDataPathApplication = applyCompatibleUserDataPath(app);
+appendRuntimeSmokeEvent(`main:userDataReady:${userDataPathApplication.source}:${userDataPathApplication.path}`);
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({

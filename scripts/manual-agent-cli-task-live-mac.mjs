@@ -25,7 +25,9 @@ const RUNTIME = {
 }[RUNTIME_ID];
 const EXPECTED_PHRASE = 'TASKPLANE_AGENT_CLI_TASK_LIVE_OK';
 const root = process.cwd();
-const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const productName = packageJson.productName;
+const executablePath = path.join(root, 'release/mac-arm64', `${productName}.app`, 'Contents/MacOS', productName);
 const timeoutMs = Number(process.env.TASKPLANE_AGENT_CLI_TASK_LIVE_TIMEOUT_MS ?? 180_000);
 const pollMs = 500;
 const taskId = 'task_agent_cli_task_live_smoke';

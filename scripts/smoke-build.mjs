@@ -49,7 +49,7 @@ if (rendererIndexOutput.includes('src="/assets/') || rendererIndexOutput.include
   process.exit(1);
 }
 
-if (!mainOutput.includes('getPackagedRendererIndexPath') || !mainOutput.includes('applyUserDataPathOverride')) {
+if (!mainOutput.includes('getPackagedRendererIndexPath') || !mainOutput.includes('applyCompatibleUserDataPath')) {
   console.error('Electron main output does not apply runtime path helpers.');
   process.exit(1);
 }

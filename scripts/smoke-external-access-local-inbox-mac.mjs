@@ -5,7 +5,9 @@ import process from 'node:process';
 import { _electron as electron } from 'playwright';
 
 const root = process.cwd();
-const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const productName = packageJson.productName;
+const executablePath = path.join(root, 'release/mac-arm64', `${productName}.app`, 'Contents/MacOS', productName);
 const userDataPath = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-external-access-local-inbox-smoke-'));
 const inboxPath = path.join(userDataPath, 'external-inbox');
 const smokePath = path.join(userDataPath, 'external-access-local-inbox-smoke.log');

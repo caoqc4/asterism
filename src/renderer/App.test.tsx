@@ -1204,7 +1204,7 @@ function createMockApi() {
     }),
     cancelAgentCliRun: vi.fn().mockResolvedValue({
       cancelled: true,
-      reason: 'Operator cancelled the Codex CLI run from Taskplane.',
+      reason: 'Operator cancelled the Codex CLI run from asterism.',
       runId: 'run_agent_cli_created',
       summary: 'Agent CLI cancellation requested for run_agent_cli_created.',
     }),
@@ -1513,12 +1513,12 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('button', { name: /Today/ })).toBeTruthy();
     expect(screen.getByText('Work')).toBeTruthy();
     expect(screen.getByText('Capabilities')).toBeTruthy();
-    expect(screen.getByText(/业务线 Agent · 学习闭环/)).toBeTruthy();
+    expect(screen.getByText('asterism')).toBeTruthy();
     expect(screen.getByTitle(/搜索、提问或捕获任务想法/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Business/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Chat' })).toBeTruthy();
-    expect(within(screen.getByRole('navigation')).queryByRole('button', { name: /Tasks/ })).toBeNull();
-    expect(screen.getByRole('button', { name: /Legacy Tasks Explorer/ })).toBeTruthy();
+    expect(within(screen.getByRole('navigation')).getByRole('button', { name: 'Legacy Tasks' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Legacy Tasks Explorer/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
     expect(screen.getByText(/与业务线 Next Actions 共用/)).toBeTruthy();
@@ -1531,11 +1531,11 @@ describe('App redesign v1', () => {
     expect(screen.getByText('仅手动')).toBeTruthy();
     expect(screen.getByText('先质检，再确认')).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: /Legacy Tasks Explorer/ }));
+    await user.click(screen.getByRole('button', { name: 'Legacy Tasks' }));
     expect(await screen.findByText('Legacy Tasks', { selector: '.current' })).toBeTruthy();
   });
 
-  it('opens full Chat with context and writeback target, and keeps sidebar recovery controls', async () => {
+  it('opens full Chat with context and writeback target, and keeps fixed sidebar navigation', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -1543,16 +1543,12 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('Context: Global')).toBeTruthy();
     expect(screen.getByText('Writeback: Global / capture proposal')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Focus chat' })).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: 'Compact sidebar' }));
+    expect(screen.queryByRole('button', { name: 'Compact sidebar' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Focus sidebar' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Expand sidebar' })).toBeNull();
     expect(screen.getByRole('button', { name: 'External Access' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'AI Runtime' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: 'Expand sidebar' }));
-    await user.click(screen.getByRole('button', { name: 'Focus sidebar' }));
     expect(screen.getByRole('button', { name: 'Chat' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeTruthy();
   });
 
   it('keeps the active right-panel session when moving into full Chat', async () => {
@@ -2607,7 +2603,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();
     expect(screen.getByText(/Agent CLI 和 Agent API 是同级 AI 调用层/)).toBeTruthy();
     expect(screen.getByText('1/2 已登录')).toBeTruthy();
-    expect(screen.getByText(/选择 Taskplane 各 AI 阶段的默认调用层/)).toBeTruthy();
+    expect(screen.getByText(/选择 asterism 各 AI 阶段的默认调用层/)).toBeTruthy();
     expect(screen.getByText('运行时状态')).toBeTruthy();
     expect(screen.getByText('需登录')).toBeTruthy();
     expect(screen.getByText('执行边界')).toBeTruthy();
@@ -3710,7 +3706,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '取消运行' }));
     expect(harness.api.cancelAgentCliRun).toHaveBeenCalledWith({
       operatorConfirmed: true,
-      reason: 'Operator cancelled the Codex CLI run from Taskplane.',
+      reason: 'Operator cancelled the Codex CLI run from asterism.',
       runId: 'run_agent_cli_created',
     });
     expect(await screen.findByText(/已发送取消请求/)).toBeTruthy();
@@ -4185,7 +4181,7 @@ describe('App redesign v1', () => {
         expect.objectContaining({ content: '/goal 完成运行时边界收口并通过验收' }),
       ]),
     }));
-    expect(await screen.findByText(/已设置 Taskplane Task Goal/)).toBeTruthy();
+    expect(await screen.findByText(/已设置 Task Goal/)).toBeTruthy();
     expect(screen.getByText(/不会把 `\/goal` 透传给 Codex CLI 或 Claude Code/)).toBeTruthy();
     expect(screen.getAllByText(/完成运行时边界收口并通过验收/).length).toBeGreaterThan(0);
 
@@ -4201,7 +4197,7 @@ describe('App redesign v1', () => {
         source: '/goal pause',
       },
     });
-    expect(await screen.findByText(/已暂停 Taskplane Task Goal/)).toBeTruthy();
+    expect(await screen.findByText(/已暂停 Task Goal/)).toBeTruthy();
     expect(screen.queryByText('Task Goal · 已暂停')).toBeNull();
 
     await user.clear(screen.getByPlaceholderText(/关于「董事会材料修订」/));
@@ -4216,7 +4212,7 @@ describe('App redesign v1', () => {
         source: '/goal resume',
       },
     });
-    expect(await screen.findByText(/已恢复 Taskplane Task Goal/)).toBeTruthy();
+    expect(await screen.findByText(/已恢复 Task Goal/)).toBeTruthy();
 
     await user.clear(screen.getByPlaceholderText(/关于「董事会材料修订」/));
     await user.type(screen.getByPlaceholderText(/关于「董事会材料修订」/), '/goal clear');
@@ -4238,7 +4234,7 @@ describe('App redesign v1', () => {
         source: '/goal clear',
       },
     });
-    expect(await screen.findByText(/已清除 Taskplane Task Goal/)).toBeTruthy();
+    expect(await screen.findByText(/已清除 Task Goal/)).toBeTruthy();
   });
 
   it('creates completion criteria from product-owned /goal drafts', async () => {
@@ -4271,13 +4267,13 @@ describe('App redesign v1', () => {
       taskId: 'task_risk',
       text: 'Run Goal Contract 包含目标',
       verificationResponsibility: 'shared',
-      verificationResponsibilityLabel: 'Taskplane verifier',
+      verificationResponsibilityLabel: 'product verifier',
     });
     expect(harness.api.createCompletionCriteria).toHaveBeenCalledWith({
       taskId: 'task_risk',
       text: '任务记忆提案出现',
       verificationResponsibility: 'shared',
-      verificationResponsibilityLabel: 'Taskplane verifier',
+      verificationResponsibilityLabel: 'product verifier',
     });
     expect(harness.api.recordTaskTimelineEvent).toHaveBeenCalledWith({
       taskId: 'task_risk',

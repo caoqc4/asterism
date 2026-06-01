@@ -23,4 +23,13 @@ describe('database client', () => {
 
     expect(fs.existsSync(path.join(tempRoot, 'taskplane.db'))).toBe(true);
   });
+
+  it('uses the configured legacy Taskplane userData path for the default database file', () => {
+    const legacyUserDataPath = path.join(tempRoot, 'Taskplane');
+    setDatabaseUserDataPathForTests(legacyUserDataPath);
+
+    initDatabase();
+
+    expect(fs.existsSync(path.join(legacyUserDataPath, 'taskplane.db'))).toBe(true);
+  });
 });

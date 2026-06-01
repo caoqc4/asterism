@@ -36,7 +36,7 @@ npm run dist:mac:dir
 This produces:
 
 ```text
-release/mac-arm64/Taskplane.app
+release/mac-arm64/Asterism.app
 ```
 
 Then run:

@@ -2,18 +2,20 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const productName = 'Taskplane';
+const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
+const productName = packageJson.productName ?? 'Asterism';
+const legacyUserDataDirName = 'Taskplane';
 
 function defaultUserDataPath() {
   if (process.platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', productName);
+    return path.join(os.homedir(), 'Library', 'Application Support', legacyUserDataDirName);
   }
 
   if (process.platform === 'win32') {
-    return path.join(process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming'), productName);
+    return path.join(process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming'), legacyUserDataDirName);
   }
 
-  return path.join(process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), '.config'), productName);
+  return path.join(process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), '.config'), legacyUserDataDirName);
 }
 
 function fileStatus(filePath) {
@@ -35,11 +37,12 @@ const configPath = path.join(userDataPath, 'config.json');
 const dbPath = path.join(userDataPath, 'taskplane.db');
 const walPath = `${dbPath}-wal`;
 const shmPath = `${dbPath}-shm`;
-const backupRoot = path.join(os.homedir(), 'Taskplane Backups');
-const backupPath = path.join(backupRoot, `Taskplane-user-data-${new Date().toISOString().slice(0, 10)}`);
+const backupRoot = path.join(os.homedir(), `${productName} Backups`);
+const backupPath = path.join(backupRoot, `${productName}-legacy-user-data-${new Date().toISOString().slice(0, 10)}`);
 
-console.log('Taskplane real-use paths');
+console.log(`${productName} real-use paths`);
 console.log(`platform=${process.platform}`);
+console.log(`defaultUserDataCompatibility=legacy ${legacyUserDataDirName} directory`);
 console.log(`userDataOverride=${envOverride ? envOverride : '<none>'}`);
 console.log(`userDataPath=${userDataPath}`);
 console.log(`configPath=${configPath} (${fileStatus(configPath)})`);
@@ -53,9 +56,9 @@ if (envOverride) {
   console.log('');
 }
 
-console.log('Suggested macOS backup command while Taskplane is closed:');
+console.log(`Suggested macOS backup command while ${productName} is closed:`);
 console.log(`mkdir -p ${shellQuote(backupRoot)} && ditto ${shellQuote(userDataPath)} ${shellQuote(backupPath)}`);
 console.log('');
 console.log('Notes:');
-console.log('- Close Taskplane before copying taskplane.db, taskplane.db-wal, or taskplane.db-shm.');
+console.log(`- Close ${productName} before copying taskplane.db, taskplane.db-wal, or taskplane.db-shm.`);
 console.log('- API keys live in the OS keychain, not in config.json.');

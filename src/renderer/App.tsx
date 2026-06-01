@@ -11,9 +11,9 @@ import { ModelPage } from './pages/ModelPage';
 import { McpPage } from './pages/McpPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { RightPanel } from './components/RightPanel';
-import goalPilotLogo from './assets/brand/goalpilot-logo-ui.png';
+import asterismLogo from './assets/brand/asterism-logo-ui.png';
 
-const PRODUCT_BRAND_NAME = 'GoalPilot';
+const PRODUCT_BRAND_NAME = 'asterism';
 
 const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Today',
@@ -28,8 +28,6 @@ const ROUTE_LABELS: Record<AppRoute, string> = {
   connections: 'External Access',
   settings: 'Settings',
 };
-
-type SidebarMode = 'expanded' | 'compact' | 'focus';
 
 export function App() {
   const [route, setRouteState] = useState<AppRoute>(getRouteFromHash);
@@ -52,7 +50,6 @@ export function App() {
   });
   const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
   const [businessFocusId, setBusinessFocusId] = useState<string | null>(null);
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>('expanded');
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
   const refreshAiRuntimeAvailability = useCallback(() => {
@@ -189,8 +186,8 @@ export function App() {
   const shouldMountPanel = isChatRoute || panelOpen || panelSuspended;
 
   return (
-    <div className={`app sidebar-${sidebarMode}${showDockedPanel ? ' panel-open' : ''}${isChatRoute ? ' chat-route' : ''}`}>
-      <Sidebar route={route} mode={sidebarMode} onModeChange={setSidebarMode} onNavigate={navigate} />
+    <div className={`app${showDockedPanel ? ' panel-open' : ''}${isChatRoute ? ' chat-route' : ''}`}>
+      <Sidebar route={route} onNavigate={navigate} />
       <div className="main">
         <Topbar
           route={route}
@@ -303,40 +300,16 @@ function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
 /* ─── Sidebar ─── */
 
 interface SidebarProps {
-  mode: SidebarMode;
   route: AppRoute;
-  onModeChange: (mode: SidebarMode) => void;
   onNavigate: (r: AppRoute) => void;
 }
 
-function Sidebar({ mode, route, onModeChange, onNavigate }: SidebarProps) {
+function Sidebar({ route, onNavigate }: SidebarProps) {
   return (
-    <aside className={`sidebar ${mode}`}>
-      <div className="sidebar-traffic">
-        <div className="tl-dot" />
-        <div className="tl-dot" />
-        <div className="tl-dot" />
-      </div>
+    <aside className="sidebar">
       <div className="sidebar-brand">
-        <img className="brand-logo" src={goalPilotLogo} alt="" aria-hidden="true" />
+        <img className="brand-logo" src={asterismLogo} alt="" aria-hidden="true" />
         <span className="brand-name">{PRODUCT_BRAND_NAME}</span>
-        <div className="sidebar-mode-actions">
-          {mode !== 'expanded' && (
-            <button className="icon-btn sidebar-mode-btn" onClick={() => onModeChange('expanded')} title="Expand sidebar" aria-label="Expand sidebar">
-              <IconSidebarExpand />
-            </button>
-          )}
-          {mode === 'expanded' && (
-            <>
-              <button className="icon-btn sidebar-mode-btn" onClick={() => onModeChange('compact')} title="Compact sidebar" aria-label="Compact sidebar">
-                <IconSidebarCompact />
-              </button>
-              <button className="icon-btn sidebar-mode-btn" onClick={() => onModeChange('focus')} title="Focus sidebar" aria-label="Focus sidebar">
-                <IconSidebarFocus />
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
       <nav className="nav">
@@ -354,23 +327,8 @@ function Sidebar({ mode, route, onModeChange, onNavigate }: SidebarProps) {
         <NavItem icon={<IconModel />} label="AI Runtime" active={route === 'model'} onClick={() => onNavigate('model')} />
         <NavItem icon={<IconContext />} label="Work Habits" active={route === 'work-habits'} onClick={() => onNavigate('work-habits')} />
         <NavItem icon={<IconSettings />} label="Settings" active={route === 'settings'} onClick={() => onNavigate('settings')} />
+        <NavItem icon={<IconTasks />} label="Legacy Tasks" active={route === 'tasks'} onClick={() => onNavigate('tasks')} />
       </nav>
-
-      <div className="sidebar-footer">
-        <div className="avatar">G</div>
-        <div className="footer-meta">
-          <strong>{PRODUCT_BRAND_NAME}</strong>
-          业务线 Agent · 学习闭环
-        </div>
-        <button
-          className="sidebar-recovery-link"
-          onClick={() => onNavigate('tasks')}
-          title="Open legacy Tasks explorer recovery route"
-          aria-label="Legacy Tasks Explorer"
-        >
-          Legacy Tasks Explorer
-        </button>
-      </div>
     </aside>
   );
 }
@@ -490,33 +448,6 @@ function IconContext() {
   return (
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 4h10M2 7h7M2 10h5" />
-    </svg>
-  );
-}
-
-function IconSidebarCompact() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="10" height="10" rx="1.5" />
-      <path d="M5 2v10" />
-    </svg>
-  );
-}
-
-function IconSidebarFocus() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 3h3M3 11h3M8 3h3M8 11h3" />
-      <path d="M5.5 5.5h3v3h-3z" />
-    </svg>
-  );
-}
-
-function IconSidebarExpand() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="10" height="10" rx="1.5" />
-      <path d="M5 2v10M7 5l2 2-2 2" />
     </svg>
   );
 }

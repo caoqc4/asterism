@@ -234,7 +234,7 @@ function formatPilotDecisionLaunchNotice(decision: PilotDecision, runtimeLabel: 
 
   return [
     `Pilot 有界判断中：${runtimeLabel} 会先判断推进路线，再执行下一步。`,
-    '写入、拆任务、记忆和完成状态仍需 Taskplane gate 或用户确认。',
+    '写入、拆任务、记忆和完成状态仍需 asterism gate 或用户确认。',
   ].join('\n');
 }
 
@@ -393,7 +393,7 @@ function makeContextRefreshWelcomeMessage(contextTitle: string): Message {
   return {
     id: 'm0',
     role: 'assistant',
-    text: `已重新装配上下文：**${contextTitle}**。\n\n我会从 Taskplane 的业务线、任务记忆、记录、来源和执行证据继续承接。`,
+    text: `已重新装配上下文：**${contextTitle}**。\n\n我会从 asterism 的业务线、任务记忆、记录、来源和执行证据继续承接。`,
     ts: now(),
   };
 }
@@ -3573,7 +3573,7 @@ export function RightPanel({
       if (slashCommand.kind !== 'none') {
         replyText = await handleAgentRuntimeSlashCommand(slashCommand);
       } else if (!aiRuntimeStatusLoaded) {
-        replyText = 'AI Runtime 状态仍在加载中，请稍后再发送。Taskplane 不会在未确认所选 Runtime 前调用 AI。';
+        replyText = 'AI Runtime 状态仍在加载中，请稍后再发送。asterism 不会在未确认所选 Runtime 前调用 AI。';
       } else if (activeTaskId && pilotDecision.messagePriority === 'escalate') {
         replyText = formatPilotEscalationMessage(pilotDecision);
       } else if (advancement.route === 'local_rule' && advancement.movement === 'ask') {
@@ -3683,13 +3683,13 @@ export function RightPanel({
         replyText = [
           '当前是全局助手会话。',
           '请先进入具体任务后再发起任务 Agent run。',
-          'Taskplane 不会在未说明的情况下切换到另一条 AI Runtime。',
+          'asterism 不会在未说明的情况下切换到另一条 AI Runtime。',
         ].join('\n\n');
       } else if (activeAgentCliRuntimeMode && activeTaskId && !shouldUseAgentCliRuntime) {
         replyText = [
           '当前任务运行方式不可用，任务 Agent run 未启动。',
           '请到 AI Runtime 页完成安装、登录或重新检测后再试。',
-          'Taskplane 不会在未说明的情况下切换到另一条 AI Runtime。',
+          'asterism 不会在未说明的情况下切换到另一条 AI Runtime。',
         ].join('\n\n');
       } else if (
         isAgentApiRuntimeMode
@@ -3867,7 +3867,7 @@ export function RightPanel({
       if (command.kind === 'product_status') {
         return '当前是全局助手会话。Agent runtime 命令需要先进入具体任务；全局消息会继续作为普通助手问答处理。';
       }
-      return '这里是全局助手会话。`/goal` 是任务级控制命令，请先进入一个任务后再设置 Taskplane Task Goal。';
+      return '这里是全局助手会话。`/goal` 是任务级控制命令，请先进入一个任务后再设置 Task Goal。';
     }
 
     if (command.kind === 'product_goal_set') {
@@ -3893,7 +3893,7 @@ export function RightPanel({
             taskId: activeTaskId,
             text: condition,
             verificationResponsibility: 'shared',
-            verificationResponsibilityLabel: 'Taskplane verifier',
+            verificationResponsibilityLabel: 'product verifier',
           }).catch(() => null);
           if (created) {
             existingOpenCriteria.add(created.text.trim().toLowerCase());
@@ -3923,7 +3923,7 @@ export function RightPanel({
         }
         : prev);
       return [
-        '已设置 Taskplane Task Goal。',
+        '已设置 Task Goal。',
         '',
         `目标：${goalDraft.objective}`,
         ...(goalDraft.completionConditions.length
@@ -3933,13 +3933,13 @@ export function RightPanel({
           ]
           : []),
         '',
-        '这次不会把 `/goal` 透传给 Codex CLI 或 Claude Code。下一次任务 Agent run 会把这个目标写入 Run Goal Contract，再由 Taskplane 做验收和任务记忆提案。',
+        '这次不会把 `/goal` 透传给 Codex CLI 或 Claude Code。下一次任务 Agent run 会把这个目标写入 Run Goal Contract，再由 asterism 做验收和任务记忆提案。',
       ].join('\n');
     }
 
     if (command.kind === 'product_goal_status') {
       return [
-        'Taskplane Task Goal',
+        'Task Goal',
         '',
         currentGoal ? `当前目标：${currentGoal}` : '当前还没有明确 Task Goal。可以用 `/goal <可验收的目标>` 设置。',
         `目标状态：${goalLifecycle.status === 'paused' ? '已暂停' : goalLifecycle.status === 'cleared' ? '已清除' : currentGoal ? '推进中' : '未设置'}`,
@@ -3951,7 +3951,7 @@ export function RightPanel({
         shouldUseAgentCliRuntime
           ? `执行边界：${sandboxBoundaryLabel}`
           : runtimeMode === 'api'
-            ? '执行边界：Agent API Runtime 普通任务讨论走 API assistant；明确执行请求会通过 Taskplane RunService 记录 evidence。'
+            ? '执行边界：Agent API Runtime 普通任务讨论走 API assistant；明确执行请求会通过 asterism RunService 记录 evidence。'
             : '执行边界：所选 Agent CLI 未就绪或当前阶段未接入；不会隐式切换到其他 AI Runtime。',
       ].join('\n');
     }
@@ -3971,7 +3971,7 @@ export function RightPanel({
           source: '/goal pause',
         });
         return [
-          '已暂停 Taskplane Task Goal。',
+          '已暂停 Task Goal。',
           '',
           `目标：${currentGoal}`,
           '',
@@ -3988,7 +3988,7 @@ export function RightPanel({
         source: '/goal resume',
       });
       return [
-        '已恢复 Taskplane Task Goal。',
+        '已恢复 Task Goal。',
         '',
         `目标：${currentGoal}`,
         '',
@@ -4023,7 +4023,7 @@ export function RightPanel({
         ? { ...prev, nextStep: updated.nextStep ?? null }
         : prev);
       return [
-        '已清除 Taskplane Task Goal。',
+        '已清除 Task Goal。',
         '',
         `原目标：${currentGoal}`,
         '',
@@ -4069,7 +4069,7 @@ export function RightPanel({
           }).catch(() => null)
         : null;
       const nativeGoalStatusLine = nativeGoalDecision.supportsNativeGoalMode
-        ? `${runtimeLabel} native goal mode 已被 adapter 识别，但 Taskplane 透传入口尚未开放。`
+        ? `${runtimeLabel} native goal mode 已被 adapter 识别，但 asterism 透传入口尚未开放。`
         : nativeGoalDecision.policy === 'runtime_requires_update'
           ? `${runtimeLabel} native goal mode 需要更新 CLI 后才可用。`
           : nativeGoalDecision.policy === 'native_goal_unverified'
@@ -4078,7 +4078,7 @@ export function RightPanel({
       return [
         nativeGoalStatusLine,
         '',
-        'Taskplane 已识别这是显式 runtime-native goal 请求，但本版本不会直接透传到底层 CLI，避免目标状态落在 Taskplane 会话之外。',
+        'asterism 已识别这是显式 runtime-native goal 请求，但本版本不会直接透传到底层 CLI，避免目标状态落在 asterism 会话之外。',
         auditRun ? `审计 Run: ${auditRun.id}` : null,
         `Readiness: ${nativeGoalReadiness.summary}`,
         nativeGoalReadiness.missingEvidence.length
@@ -4089,7 +4089,7 @@ export function RightPanel({
           : 'Adapter capability: unavailable',
         command.objective ? `请求目标：${command.objective}` : null,
         '',
-        '当前可用路径：用 `/goal <目标>` 设置 Taskplane Task Goal，然后发送普通任务消息启动任务 Agent run。',
+        '当前可用路径：用 `/goal <目标>` 设置 Task Goal，然后发送普通任务消息启动任务 Agent run。',
       ].filter((line): line is string => line !== null).join('\n');
     }
 
@@ -4103,7 +4103,7 @@ export function RightPanel({
 
     if (command.kind === 'product_status') {
       return [
-        'Taskplane Runtime Status',
+        'Runtime Status',
         '',
         `上下文：${runtimeChipLabel}`,
         currentGoal ? `Task Goal：${currentGoal}` : 'Task Goal：未设置',
@@ -4139,7 +4139,7 @@ export function RightPanel({
     try {
       const result = await window.api.cancelAgentCliRun({
         operatorConfirmed: true,
-        reason: `Operator cancelled the ${activeAgentCliRun.runtimeLabel} run from Taskplane.`,
+        reason: `Operator cancelled the ${activeAgentCliRun.runtimeLabel} run from asterism.`,
         runId: activeAgentCliRun.runId,
       });
       if (!result.cancelled) {

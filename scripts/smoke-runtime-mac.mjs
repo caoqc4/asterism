@@ -6,7 +6,9 @@ import process from 'node:process';
 import Database from 'better-sqlite3';
 
 const root = process.cwd();
-const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const productName = packageJson.productName;
+const executablePath = path.join(root, 'release/mac-arm64', `${productName}.app`, 'Contents/MacOS', productName);
 const userDataPath = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-runtime-smoke-'));
 const smokePath = path.join(userDataPath, 'runtime-smoke.log');
 const timeoutMs = 20_000;

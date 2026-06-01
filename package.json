@@ -1,10 +1,10 @@
 {
-  "name": "taskplane",
-  "productName": "Taskplane",
+  "name": "asterism",
+  "productName": "Asterism",
   "version": "0.1.0",
   "private": true,
   "description": "A local-first desktop app for tasks, decisions, runs, and briefs.",
-  "author": "Taskplane contributors",
+  "author": "asterism contributors",
   "license": "MIT",
   "type": "module",
   "main": "dist-electron/main/bootstrap.cjs",
@@ -133,7 +133,7 @@
   },
   "build": {
     "appId": "com.taskplane.app",
-    "productName": "Taskplane",
+    "productName": "Asterism",
     "directories": {
       "buildResources": "build-resources",
       "output": "release"

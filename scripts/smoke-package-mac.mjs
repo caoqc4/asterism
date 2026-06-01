@@ -5,13 +5,15 @@ import process from 'node:process';
 import * as asar from '@electron/asar';
 
 const root = process.cwd();
-const appPath = path.join(root, 'release/mac-arm64/Taskplane.app');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const productName = packageJson.productName;
+const appRelativePath = `release/mac-arm64/${productName}.app`;
+const appPath = path.join(root, appRelativePath);
 const contentsPath = path.join(appPath, 'Contents');
 const resourcesPath = path.join(contentsPath, 'Resources');
 const infoPlistPath = path.join(contentsPath, 'Info.plist');
-const executablePath = path.join(contentsPath, 'MacOS/Taskplane');
+const executablePath = path.join(contentsPath, 'MacOS', productName);
 const appAsarPath = path.join(resourcesPath, 'app.asar');
-const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
 function fail(message) {
   console.error(message);
@@ -40,14 +42,14 @@ function readInfoPlist() {
   return JSON.parse(output);
 }
 
-assertExists('release/mac-arm64/Taskplane.app');
-assertExists('release/mac-arm64/Taskplane.app/Contents/Info.plist');
-assertExists('release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
-assertExists('release/mac-arm64/Taskplane.app/Contents/Resources/app.asar');
-assertExists('release/mac-arm64/Taskplane.app/Contents/Resources/icon.icns');
-assertExists('release/mac-arm64/Taskplane.app/Contents/Resources/app.asar.unpacked/node_modules/better-sqlite3');
-assertExists('release/mac-arm64/Taskplane.app/Contents/Resources/app.asar.unpacked/node_modules/keytar');
-assertExists('release/mac-arm64/Taskplane.app/Contents/_CodeSignature/CodeResources');
+assertExists(appRelativePath);
+assertExists(`${appRelativePath}/Contents/Info.plist`);
+assertExists(`${appRelativePath}/Contents/MacOS/${productName}`);
+assertExists(`${appRelativePath}/Contents/Resources/app.asar`);
+assertExists(`${appRelativePath}/Contents/Resources/icon.icns`);
+assertExists(`${appRelativePath}/Contents/Resources/app.asar.unpacked/node_modules/better-sqlite3`);
+assertExists(`${appRelativePath}/Contents/Resources/app.asar.unpacked/node_modules/keytar`);
+assertExists(`${appRelativePath}/Contents/_CodeSignature/CodeResources`);
 
 const executableStat = fs.statSync(executablePath);
 

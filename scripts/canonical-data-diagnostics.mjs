@@ -5,7 +5,8 @@ import process from 'node:process';
 import Database from 'better-sqlite3';
 
 const root = process.cwd();
-const defaultDbPath = path.join(os.homedir(), 'Library/Application Support/Taskplane/taskplane.db');
+const legacyUserDataDirName = 'Taskplane';
+const defaultDbPath = path.join(os.homedir(), 'Library/Application Support', legacyUserDataDirName, 'taskplane.db');
 const userDataDbPath = process.env.TASKPLANE_USER_DATA_DIR
   ? path.join(process.env.TASKPLANE_USER_DATA_DIR, 'taskplane.db')
   : null;
@@ -31,10 +32,10 @@ if (!fs.existsSync(evaluatorPath)) {
 
 if (!dbPath || !fs.existsSync(dbPath)) {
   if (allowMissing) {
-    console.log(`canonicalDataDiagnostics skipped: missing Taskplane database ${dbPath}`);
+    console.log(`canonicalDataDiagnostics skipped: missing legacy ${legacyUserDataDirName} database ${dbPath}`);
     process.exit(0);
   }
-  fail(`Missing Taskplane database: ${dbPath}`);
+  fail(`Missing legacy ${legacyUserDataDirName} database: ${dbPath}`);
 }
 
 const { evaluateCanonicalDataDiagnostics } = await import(`file://${evaluatorPath}`);

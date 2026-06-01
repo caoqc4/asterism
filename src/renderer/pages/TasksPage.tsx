@@ -875,7 +875,7 @@ function buildNextTaskPrompt(completedTask: Task, nextTask: Task, parentTask: Ta
     parentTask ? `它属于项目「${parentTask.title}」。` : null,
     `现在请切换到下一项任务「${nextTask.title}」。`,
     '',
-    '请先按 Taskplane Agent Operating Principles 读取并重建这个任务的上下文，然后简要说明：',
+    '请先按当前 Agent Operating Principles 读取并重建这个任务的上下文，然后简要说明：',
     '1. 为什么这是下一步；',
     '2. 当前任务的第一步应该是什么；',
     '3. 是否需要补充完成标准、任务文件或用户确认。',
@@ -2240,7 +2240,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   async function applySandboxPatchPromotion(view: SandboxPatchPromotionView | null, file: VirtualTaskFile | null) {
     if (!view || !file?.artifactId || !window.api?.applySandboxPatchPromotion) return;
     if (!guardDurablePanelAction({ taskId: file.taskId, confirmed: true }).allowed) return;
-    const confirmed = window.confirm('确认将这份 reviewed patch 应用到工作区？Taskplane 只会写入 reviewed patch 中通过 promotion preflight 的匹配文件；如果工作区内容已漂移，apply 会阻塞并记录 Run 证据。');
+    const confirmed = window.confirm('确认将这份 reviewed patch 应用到工作区？asterism 只会写入 reviewed patch 中通过 promotion preflight 的匹配文件；如果工作区内容已漂移，apply 会阻塞并记录 Run 证据。');
     if (!confirmed) return;
 
     setApplyingPatchPromotionCheckpointId(view.checkpointId);

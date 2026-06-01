@@ -79,7 +79,7 @@ export function ConnectionsPage() {
 
   async function connectGmail() {
     if (gmailBusy || !window.api?.connectGmailOAuth) return;
-    const confirmed = window.confirm('将打开浏览器授权 Gmail。授权后 Taskplane 只会在任务需要时读取邮件元数据，并在入库前要求确认。是否继续？');
+    const confirmed = window.confirm('将打开浏览器授权 Gmail。授权后 asterism 只会在任务需要时读取邮件元数据，并在入库前要求确认。是否继续？');
     if (!confirmed) return;
     setGmailBusy(true);
     setActionMessage(null);

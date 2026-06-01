@@ -64,7 +64,7 @@ function deriveAgentCliProgressFromStep(step: Pick<RunStepRecord, 'kind' | 'outp
     if (preparationStatus === 'captured') {
       return {
         detail: compactWebResearchPreparationDetail(output, preparationStatus),
-        label: '正在整理 Taskplane 联网调研来源。',
+        label: '正在整理 asterism 联网调研来源。',
         state: 'researching',
       };
     }

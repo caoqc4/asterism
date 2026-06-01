@@ -308,7 +308,7 @@ function BusinessLineCreationPanel({ existingLines, onCancel, onCreated }: {
         </label>
         <label>
           What is this business line?
-          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="GoalPilot onboarding web app" />
+          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="asterism onboarding web app" />
         </label>
         <label>
           What outcome would make it better?
