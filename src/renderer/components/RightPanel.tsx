@@ -10,7 +10,7 @@ import {
   type AgentCliRuntimeId,
 } from '@shared/agent-cli-runtime-status';
 import type { AiRuntimeMode } from '@shared/types/settings';
-import type { RunRecord, RunStepRecord } from '@shared/types/run';
+import type { RunDetailRecord, RunRecord, RunStepRecord } from '@shared/types/run';
 import type {
   BusinessLinePostRunReviewOptions,
   BusinessLineReviewRecordSuggestion,
@@ -168,6 +168,26 @@ function syncBusinessLineReviewRecordSuggestions(
   }
   return suggestions;
 }
+
+function formatPanelReviewItem(value: string | null | undefined, fallback: string): string {
+  const normalized = value?.trim();
+  if (!normalized) return fallback;
+  return normalized.length > 44 ? `${normalized.slice(0, 41)}...` : normalized;
+}
+
+function latestRunEvidenceSummary(detail: RunDetailRecord): string {
+  const verificationCounts = (detail.verifications ?? []).reduce((acc, verification) => {
+    acc[verification.tone] = (acc[verification.tone] ?? 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const verifier = [
+    verificationCounts.fail ? `fail ${verificationCounts.fail}` : null,
+    verificationCounts.warn ? `warn ${verificationCounts.warn}` : null,
+    verificationCounts.pass ? `pass ${verificationCounts.pass}` : null,
+  ].filter(Boolean).join(' / ') || 'verifier pending';
+  const latestStep = detail.steps?.at(-1)?.title;
+  return `${detail.status} · ${verifier}${latestStep ? ` · ${formatPanelReviewItem(latestStep, 'step')}` : ''}`;
+}
 const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
   claude: 'Claude Code',
   codex: 'Codex CLI',
@@ -255,6 +275,12 @@ type SourceContextWriteProposal = TaskplaneSourceContextWritebackProposal;
 type ArtifactWriteProposal = TaskplaneArtifactWritebackProposal;
 
 type StructuredWritebackProposal = TaskplaneStructuredWritebackProposal;
+
+type PanelReviewSurfaceSection = {
+  detail: string;
+  items: string[];
+  title: string;
+};
 
 interface TaskDecompositionDraft {
   invocation?: ProjectDecompositionInvocationSummary | null;
@@ -1892,6 +1918,7 @@ export function RightPanel({
   const [aiRuntimeStatusLoaded, setAiRuntimeStatusLoaded] = useState(false);
   const [activeAgentCliRun, setActiveAgentCliRun] = useState<ActiveAgentCliRunState | null>(null);
   const [activeTaskDetail, setActiveTaskDetail] = useState<TaskDetail | null>(null);
+  const [reviewRunDetails, setReviewRunDetails] = useState<RunDetailRecord[]>([]);
   const [agentCliAvailability, setAgentCliAvailability] = useState<Record<AgentCliRuntimeId, boolean>>({
     claude: false,
     codex: false,
@@ -1941,6 +1968,30 @@ export function RightPanel({
   const activeBusinessLineTitle = businessLineTitleHint ?? (activeBusinessLineId ? activeBusinessLineId : null);
   const activeTaskIdRef = useRef(activeTaskId);
   const activeAgentCliRunRef = useRef(activeAgentCliRun);
+  const reviewRunDetailsRequestRef = useRef(0);
+  const loadReviewRunDetails = useCallback(async (taskId: string | null = activeTaskIdRef.current) => {
+    const requestId = reviewRunDetailsRequestRef.current + 1;
+    reviewRunDetailsRequestRef.current = requestId;
+    if (!taskId || !window.api?.listRuns || !window.api?.getRunDetail) {
+      setReviewRunDetails([]);
+      return;
+    }
+    try {
+      const runs = await window.api.listRuns();
+      const taskRuns = runs
+        .filter((run) => run.taskId === taskId)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, 2);
+      const details = await Promise.all(taskRuns.map((run) =>
+        window.api!.getRunDetail(run.id).catch(() => null)));
+      if (reviewRunDetailsRequestRef.current !== requestId || activeTaskIdRef.current !== taskId) return;
+      setReviewRunDetails(details.filter((detail): detail is RunDetailRecord => Boolean(detail)));
+    } catch {
+      if (reviewRunDetailsRequestRef.current === requestId && activeTaskIdRef.current === taskId) {
+        setReviewRunDetails([]);
+      }
+    }
+  }, []);
   const refreshAiRuntimeStatus = useCallback(() => {
     const request = window.api?.getAiConfigStatus();
     if (!request) {
@@ -2106,10 +2157,17 @@ export function RightPanel({
   }, [activeTaskId]);
 
   useEffect(() => {
+    void loadReviewRunDetails(activeTaskId);
+  }, [activeTaskId, loadReviewRunDetails]);
+
+  useEffect(() => {
     if (!window.api?.subscribeToEvents) return undefined;
     return window.api.subscribeToEvents((event) => {
       if (event.type === 'settings.changed' || event.type === 'run.changed') {
         refreshAiRuntimeStatus();
+      }
+      if (event.type === 'run.changed') {
+        void loadReviewRunDetails();
       }
       const current = activeAgentCliRunRef.current;
       if (event.type !== 'run.changed' || !current || event.entityId !== current.runId) return;
@@ -4246,6 +4304,58 @@ export function RightPanel({
       })
     : null;
   const sessionRefreshSuggestion = sessionRefreshPreview?.suggestion ?? null;
+  const generatedArtifactItems = (activeTaskDetail?.artifacts ?? [])
+    .slice(0, 2)
+    .map((artifact) => `${artifact.kind}: ${formatPanelReviewItem(artifact.title, artifact.id)}`);
+  const generatedFileItems = (activeTaskDetail?.taskFiles ?? [])
+    .filter((file) => !isTaskMdPath(file.path) && !isTaskRecordPath(file.path))
+    .slice(0, 2)
+    .map((file) => `file: ${formatPanelReviewItem(file.path, file.name)}`);
+  const writebackReviewItems = [
+    taskFileProposal ? taskFileProposal.surfaceLabel : null,
+    artifactProposal ? 'Artifact' : null,
+    sourceContextProposal ? 'Source Context' : null,
+    structuredWritebackProposal ? structuredWritebackProposal.intent.type : null,
+    businessLineRunReview ? 'Business Record' : null,
+    businessLineRunReview ? 'Review' : null,
+    businessLineRunReview?.skillUpdateSuggestions.length ? 'SOP' : null,
+  ].filter((item): item is string => Boolean(item));
+  const panelReviewSections: PanelReviewSurfaceSection[] = [
+    generatedArtifactItems.length > 0 || generatedFileItems.length > 0
+      ? {
+          detail: `${generatedArtifactItems.length} artifacts / ${generatedFileItems.length} files`,
+          items: [...generatedArtifactItems, ...generatedFileItems].slice(0, 4),
+          title: 'Generated',
+        }
+      : null,
+    writebackReviewItems.length > 0
+      ? {
+          detail: 'requires confirmation',
+          items: writebackReviewItems,
+          title: 'Writeback',
+        }
+      : null,
+    sessionRefreshPreview
+      ? {
+          detail: sessionRefreshPreview.recoveryReadiness,
+          items: [
+            sessionRefreshPreview.preservationTarget,
+            ...(sessionRefreshPreview.businessMemoryCoverage
+              ? [`Business memory ${sessionRefreshPreview.businessMemoryCoverage.status}`]
+              : []),
+          ],
+          title: 'Preservation',
+        }
+      : null,
+    reviewRunDetails.length > 0
+      ? {
+          detail: `${reviewRunDetails.length} recent run${reviewRunDetails.length > 1 ? 's' : ''}`,
+          items: reviewRunDetails.map((detail) =>
+            `${formatPanelReviewItem(detail.id, 'run')}: ${latestRunEvidenceSummary(detail)}`),
+          title: 'Evidence',
+        }
+      : null,
+  ].filter((section): section is PanelReviewSurfaceSection => Boolean(section));
   const pendingMemoryGuidanceLookupKey = activeTaskId
     && sessionRefreshSuggestion
     && !taskFileProposal
@@ -4367,6 +4477,24 @@ export function RightPanel({
               <button className="btn sm primary" onClick={confirmSwitch}>切换到此任务</button>
               <button className="btn sm ghost" onClick={() => void dismissSwitch()}>保持全局</button>
             </div>
+          </div>
+        )}
+
+        {panelReviewSections.length > 0 && (
+          <div className="panel-review-surface" aria-label="Side panel review surface">
+            {panelReviewSections.map((section) => (
+              <div className="panel-review-surface-section" key={section.title}>
+                <div className="panel-review-surface-head">
+                  <strong>{section.title}</strong>
+                  <span>{section.detail}</span>
+                </div>
+                <div className="panel-review-surface-items">
+                  {section.items.map((item) => (
+                    <span className="tag muted-tag" key={`${section.title}:${item}`}>{item}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

@@ -608,6 +608,47 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   gap: 6px;
 }
+.panel-review-surface {
+  display: grid;
+  gap: 6px;
+  margin: 2px 8px 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-soft);
+}
+.panel-review-surface-section {
+  display: grid;
+  gap: 5px;
+}
+.panel-review-surface-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+.panel-review-surface-head strong {
+  color: var(--ink-2);
+  font-size: 11.5px;
+}
+.panel-review-surface-head span {
+  color: var(--ink-4);
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-review-surface-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.panel-review-surface-items .tag {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
 .panel-file-proposal {
   margin: 2px 8px 8px;
   padding: 9px 10px;

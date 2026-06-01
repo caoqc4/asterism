@@ -2194,6 +2194,11 @@ describe('App redesign v1', () => {
     });
     expect(await screen.findByText('业务线执行复盘提案')).toBeTruthy();
     expect(screen.getByText(/Review target: Business Line \/ Execution product \/ Run\/Review \/ run_business_line_execution \/ Next Action \/ Run launch evidence check/)).toBeTruthy();
+    const reviewSurface = screen.getByLabelText('Side panel review surface');
+    expect(within(reviewSurface).getByText('Writeback')).toBeTruthy();
+    expect(within(reviewSurface).getByText('Business Record')).toBeTruthy();
+    expect(within(reviewSurface).getByText('Review')).toBeTruthy();
+    expect(within(reviewSurface).getByText('SOP')).toBeTruthy();
     expect(screen.getByText('Business record')).toBeTruthy();
     expect(screen.getByText('Next action')).toBeTruthy();
     await user.clear(screen.getByLabelText('业务线复盘结果'));
@@ -5361,7 +5366,7 @@ describe('App redesign v1', () => {
     }
 
     expect(await screen.findByText('Preservation target: Business Record')).toBeTruthy();
-    expect(screen.getByText(/Recovery/)).toBeTruthy();
+    expect(screen.getAllByText(/Recovery/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Excluded: Raw transcript/)).toBeTruthy();
     expect(screen.getByText(/Business memory: needs_memory_write/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '整理并刷新' }));
