@@ -631,7 +631,7 @@ function contextOwnerLabel(params: {
 function formatPreservationSurface(surface: ContextPreservationSurface): string {
   switch (surface) {
     case 'artifact_reference': return 'Artifact reference';
-    case 'business_record': return 'Business Record';
+    case 'business_record': return '业务记录（Business Record）';
     case 'decision': return 'Decision';
     case 'discard': return 'Discard';
     case 'run_step': return 'Run Step';
@@ -1069,7 +1069,7 @@ function taskFileProposalTitle(proposal: TaskFileWriteProposal): string {
 }
 
 function taskFileProposalStatusCopy(proposal: TaskFileWriteProposal): string {
-  if (proposal.intentSource === 'write_intent') return '来自 Agent 结构化意图，确认后写入';
+  if (proposal.intentSource === 'write_intent') return 'Agent 提供了待确认写入建议；确认后才写入';
   if (!proposal.taskMemoryProposal) return '新建文件，不覆盖现有文件';
   if (isDecompositionMemoryProposal(proposal)) return '确认后保存记录，不会直接创建子任务';
   return proposal.taskMemoryProposal.operation === 'update'
@@ -1081,6 +1081,24 @@ function taskFileProposalConfirmLabel(proposal: TaskFileWriteProposal): string {
   if (proposal.intentSource === 'write_intent' && proposal.surface === 'task_record') return '确认写入记录';
   if (!proposal.taskMemoryProposal) return '确认写入文件';
   return isDecompositionMemoryProposal(proposal) ? '保存拆解记录' : '确认补写记忆';
+}
+
+function formatWritebackEvidenceLabel(value: string): string {
+  return value === 'TASKPLANE_WRITE_INTENTS'
+    ? '待确认写入建议（TASKPLANE_WRITE_INTENTS）'
+    : value;
+}
+
+function businessLineWritebackOptionLabel(option: { label: string; type: string }): string {
+  switch (option.type) {
+    case 'business_record': return '业务记录';
+    case 'next_action': return '后续 Next Action';
+    case 'proposed_sop_revision': return '可复用流程建议';
+    case 'source_context': return '来源上下文';
+    case 'artifact': return '任务产物';
+    case 'decision': return 'Decision';
+    default: return option.label;
+  }
 }
 
 function isAgentApiExecutionIntent(text: string): boolean {
@@ -1150,7 +1168,7 @@ function summarizeAgentCliActivityForChat(steps: RunStepRecord[] | undefined): s
       carrier ? `carrier=${truncateAgentCliChatLine(carrier, 48)}` : null,
       contextPack ? `contextPack=${contextPack}` : null,
       runEvidence ? `runEvidence=${truncateAgentCliChatLine(runEvidence, 48)}` : null,
-      writeIntent ? `Write Intent=${writeIntent}` : null,
+      writeIntent ? `写入建议=${formatWritebackEvidenceLabel(writeIntent)}` : null,
       postRunReview ? `postRunReview=${postRunReview}` : null,
     ].filter((part): part is string => Boolean(part)).join('；') + '。');
   }
@@ -3941,7 +3959,7 @@ export function RightPanel({
           ]
           : []),
         '',
-        '这次不会把 `/goal` 透传给 Codex CLI 或 Claude Code。下一次任务 Agent run 会把这个目标写入 Run Goal Contract，再由 asterism 做验收和任务记忆提案。',
+        '这次不会把 `/goal` 透传给 Codex CLI 或 Claude Code。下一次任务 Agent run 会把这个目标作为本次运行目标（Run Goal Contract），再由 asterism 做验收和任务记忆提案。',
       ].join('\n');
     }
 
@@ -3983,7 +4001,7 @@ export function RightPanel({
           '',
           `目标：${currentGoal}`,
           '',
-          '暂停期间不会把该目标投影为下一次 Run Goal Contract 的 objective；普通任务消息仍可作为一次性请求执行。',
+          '暂停期间不会把该目标投影为下一次本次运行目标（Run Goal Contract）；普通任务消息仍可作为一次性请求执行。',
         ].join('\n');
       }
       if (goalLifecycle.status !== 'paused') return `Task Goal 当前没有暂停。\n\n目标：${currentGoal}`;
@@ -4000,7 +4018,7 @@ export function RightPanel({
         '',
         `目标：${currentGoal}`,
         '',
-        '下一次任务 Agent run 会重新把该目标写入 Run Goal Contract。',
+        '下一次任务 Agent run 会重新把该目标作为本次运行目标（Run Goal Contract）。',
       ].join('\n');
     }
 
@@ -4295,11 +4313,11 @@ export function RightPanel({
     : 'Context: Global';
   const writebackTargetLabel = activeBusinessLineId
     ? activeTaskId
-      ? `Writeback: Business Line / ${activeBusinessLineTitle ?? activeBusinessLineId} / Next Action / ${title ?? activeTaskId}`
-      : `Writeback: Business Line / ${activeBusinessLineTitle ?? activeBusinessLineId}`
+      ? `写入建议目标：Business Line / ${activeBusinessLineTitle ?? activeBusinessLineId} / Next Action / ${title ?? activeTaskId}`
+      : `写入建议目标：Business Line / ${activeBusinessLineTitle ?? activeBusinessLineId}`
     : activeTaskId
-    ? `Writeback: Legacy Task / ${title ?? activeTaskId}`
-    : 'Writeback: Global / capture proposal';
+    ? `写入建议目标：Legacy Task / ${title ?? activeTaskId}`
+    : '写入建议目标：Global / capture proposal';
   const hasSessionActivity = Boolean(activeBusinessLineId || activeTaskId || messages.length > 0 || input.trim());
   const activeContextOwner = contextOwnerForPanel({
     businessLineId: activeBusinessLineId,
@@ -4324,12 +4342,12 @@ export function RightPanel({
     .map((file) => `file: ${formatPanelReviewItem(file.path, file.name)}`);
   const writebackReviewItems = [
     taskFileProposal ? taskFileProposal.surfaceLabel : null,
-    artifactProposal ? 'Artifact' : null,
-    sourceContextProposal ? 'Source Context' : null,
-    structuredWritebackProposal ? structuredWritebackProposal.intent.type : null,
-    businessLineRunReview ? 'Business Record' : null,
-    businessLineRunReview ? 'Review' : null,
-    businessLineRunReview?.skillUpdateSuggestions.length ? 'SOP' : null,
+    artifactProposal ? '任务产物' : null,
+    sourceContextProposal ? '来源上下文' : null,
+    structuredWritebackProposal ? '写入建议' : null,
+    businessLineRunReview ? '业务记录' : null,
+    businessLineRunReview ? '复盘' : null,
+    businessLineRunReview?.skillUpdateSuggestions.length ? '可复用流程建议' : null,
   ].filter((item): item is string => Boolean(item));
   const panelReviewSections: PanelReviewSurfaceSection[] = [
     generatedArtifactItems.length > 0 || generatedFileItems.length > 0
@@ -4341,9 +4359,9 @@ export function RightPanel({
       : null,
     writebackReviewItems.length > 0
       ? {
-          detail: 'requires confirmation',
+          detail: '需你确认后才保存',
           items: writebackReviewItems,
-          title: 'Writeback',
+          title: '待确认写入建议',
         }
       : null,
     sessionRefreshPreview
@@ -4595,7 +4613,7 @@ export function RightPanel({
             <div className="panel-refresh-reason">
               {businessLineRunReview.writebackOptions.map((option) => (
                 <span className={`tag${option.ready ? ' success' : ' muted-tag'}`} key={option.type}>
-                  {option.label}
+                  {businessLineWritebackOptionLabel(option)}
                 </span>
               ))}
             </div>
@@ -4648,8 +4666,8 @@ export function RightPanel({
                     }
                   : current
               ))}
-              aria-label="业务线 SOP revision"
-              placeholder="Optional SOP revision"
+              aria-label="业务线可复用流程建议"
+              placeholder="Optional reusable workflow suggestion"
             />
             <div className="panel-refresh-actions">
               <button className="btn sm ghost" onClick={() => setBusinessLineRunReview(null)}>
@@ -4728,7 +4746,7 @@ export function RightPanel({
           <div className="panel-file-proposal">
             <div className="panel-file-proposal-head">
               <strong>任务产物写入提案</strong>
-              <span>来自 Agent 结构化意图，确认后保存</span>
+              <span>Agent 提供了待确认写入建议；确认后才保存</span>
             </div>
             <input
               className="panel-file-proposal-path"
@@ -4766,7 +4784,7 @@ export function RightPanel({
           <div className="panel-file-proposal">
             <div className="panel-file-proposal-head">
               <strong>来源上下文写入提案</strong>
-              <span>来自 Agent 结构化意图，确认后保存</span>
+              <span>Agent 提供了待确认写入建议；确认后才保存</span>
             </div>
             <div className="panel-refresh-reason">
               {sourceContextProposal.title}
@@ -4798,8 +4816,8 @@ export function RightPanel({
         {structuredWritebackProposal && (
           <div className="panel-file-proposal">
             <div className="panel-file-proposal-head">
-              <strong>结构化写回提案</strong>
-              <span>来自 Agent 结构化意图，确认后执行</span>
+              <strong>待确认写入建议</strong>
+              <span>Agent 建议了可写入的更改；确认后才执行</span>
             </div>
             <div className="panel-refresh-reason">
               {structuredWritebackProposal.title}
@@ -4819,7 +4837,7 @@ export function RightPanel({
                 onClick={() => void confirmStructuredWriteback()}
                 disabled={savingStructuredWritebackProposal}
               >
-                {savingStructuredWritebackProposal ? '处理中…' : '确认执行'}
+                {savingStructuredWritebackProposal ? '处理中…' : '确认写入'}
               </button>
             </div>
           </div>

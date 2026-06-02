@@ -1633,7 +1633,7 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Chat' }));
     expect(await screen.findByText('Context: Global')).toBeTruthy();
-    expect(screen.getByText('Writeback: Global / capture proposal')).toBeTruthy();
+    expect(screen.getByText('写入建议目标：Global / capture proposal')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Focus chat' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Compact sidebar' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Focus sidebar' })).toBeNull();
@@ -1656,7 +1656,7 @@ describe('App redesign v1', () => {
     const chatInput = await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/) as HTMLTextAreaElement;
     expect(chatInput.value).toBe('Preserve this pending writeback');
     expect(document.querySelectorAll('.right-panel').length).toBe(1);
-    expect(screen.getByText('Writeback: Global / capture proposal')).toBeTruthy();
+    expect(screen.getByText('写入建议目标：Global / capture proposal')).toBeTruthy();
   });
 
   it('renders Brief attention count and inclusion reasons from shared projection data', async () => {
@@ -2283,12 +2283,12 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('业务线执行复盘提案')).toBeTruthy();
     expect(screen.getByText(/Review target: Business Line \/ Execution product \/ Run\/Review \/ run_business_line_execution \/ Next Action \/ Run launch evidence check/)).toBeTruthy();
     const reviewSurface = screen.getByLabelText('Side panel review surface');
-    expect(within(reviewSurface).getByText('Writeback')).toBeTruthy();
-    expect(within(reviewSurface).getByText('Business Record')).toBeTruthy();
-    expect(within(reviewSurface).getByText('Review')).toBeTruthy();
-    expect(within(reviewSurface).getByText('SOP')).toBeTruthy();
-    expect(screen.getByText('Business record')).toBeTruthy();
-    expect(screen.getByText('Next action')).toBeTruthy();
+    expect(within(reviewSurface).getByText('待确认写入建议')).toBeTruthy();
+    expect(within(reviewSurface).getByText('业务记录')).toBeTruthy();
+    expect(within(reviewSurface).getByText('复盘')).toBeTruthy();
+    expect(within(reviewSurface).getByText('可复用流程建议')).toBeTruthy();
+    expect(screen.getAllByText('业务记录').length).toBeGreaterThan(0);
+    expect(screen.getByText('后续 Next Action')).toBeTruthy();
     await user.clear(screen.getByLabelText('业务线复盘结果'));
     await user.type(screen.getByLabelText('业务线复盘结果'), 'Edited business result for future context.');
 
@@ -2407,7 +2407,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/carrier=next_action_task:task_cli_business_line_action/)).toBeTruthy();
     expect(screen.getByText(/contextPack=included/)).toBeTruthy();
     expect(screen.getByText(/runEvidence=run_steps_when_available\+run_output/)).toBeTruthy();
-    expect(screen.getByText(/Write Intent=TASKPLANE_WRITE_INTENTS/)).toBeTruthy();
+    expect(screen.getByText(/写入建议=待确认写入建议（TASKPLANE_WRITE_INTENTS）/)).toBeTruthy();
     expect(screen.getByText(/postRunReview=agent_runtime_verification/)).toBeTruthy();
   });
 
@@ -4802,7 +4802,7 @@ describe('App redesign v1', () => {
     harness.emit('run.changed', 'run_agent_cli_created');
 
     expect(await screen.findByText('任务记录写入提案')).toBeTruthy();
-    expect(screen.getByText(/来自 Agent 结构化意图/)).toBeTruthy();
+    expect(screen.getByText(/Agent 提供了待确认写入建议/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '确认写入记录' }));
     await waitFor(() => {
       expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
@@ -4977,9 +4977,9 @@ describe('App redesign v1', () => {
     });
     harness.emit('run.changed', 'run_agent_cli_created');
 
-    expect(await screen.findByText('结构化写回提案')).toBeTruthy();
+    expect(await screen.findAllByText('待确认写入建议')).not.toHaveLength(0);
     expect(screen.getByText('决策提案：确认首版范围')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '确认执行' }));
+    await user.click(screen.getByRole('button', { name: '确认写入' }));
     await waitFor(() => {
       expect(harness.api.createDecision).toHaveBeenCalledWith(expect.objectContaining({
         kind: 'direction_choice',
@@ -5457,7 +5457,7 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText('Preservation target: Business Record')).toBeTruthy();
+    expect(await screen.findByText('Preservation target: 业务记录（Business Record）')).toBeTruthy();
     expect(screen.getAllByText(/Recovery/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Excluded: Raw transcript/)).toBeTruthy();
     expect(screen.getByText(/Business memory: needs_memory_write/)).toBeTruthy();
