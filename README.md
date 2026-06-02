@@ -14,8 +14,6 @@ local control layer with explicit gates for higher-risk agent actions.
 - Treat agent output as evidence and proposals, not silent product mutations.
 - Start locally from source today; no hosted service or signed binary required.
 
-![asterism Business workbench screenshot](docs/assets/asterism-business-workbench.png)
-
 ## Source-only Alpha
 
 asterism is currently distributed as source code only. No official

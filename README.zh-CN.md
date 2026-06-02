@@ -12,8 +12,6 @@ asterism 让严肃工作不再散落在一次性聊天里。Business、任务、
 - 把 Agent 输出视为证据和待确认建议，而不是静默写入产品状态。
 - 今天即可从源码本地运行；不依赖 hosted service 或官方签名包。
 
-![asterism Business workbench screenshot](docs/assets/asterism-business-workbench.png)
-
 ## Source-only Alpha（仅源码分发）
 
 asterism 目前只以源码形式分发。项目还没有提供官方签名/公证的二进制安装包，也没有 auto-update channel。
