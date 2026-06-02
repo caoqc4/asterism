@@ -19,6 +19,8 @@ local control layer with explicit gates for higher-risk agent actions.
 asterism is currently distributed as source code only. No official
 signed/notarized binaries or auto-update channel are provided yet.
 
+Current alpha status: [Public alpha readiness](docs/PUBLIC_ALPHA_READINESS.md).
+
 Quick local path:
 
 ```bash
@@ -74,6 +76,7 @@ production release or a stable end-user distribution.
 
 The repository may contain product planning material and internal architecture
 notes while the public surface is being prepared. See
+[Public alpha readiness](docs/PUBLIC_ALPHA_READINESS.md) and
 [Open source strategy](docs/OPEN_SOURCE_STRATEGY.md) for the current release
 posture.
 
@@ -196,6 +199,7 @@ the default local verification path.
 - [Safety model](docs/SAFETY_MODEL.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Development](docs/DEVELOPMENT.md)
+- [Public alpha readiness](docs/PUBLIC_ALPHA_READINESS.md)
 - [Testing](docs/TESTING.md)
 - [Releases](docs/RELEASES.md)
 - [Open source strategy](docs/OPEN_SOURCE_STRATEGY.md)

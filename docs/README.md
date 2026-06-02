@@ -8,6 +8,7 @@ Public developer documentation for asterism.
 - [Safety model](SAFETY_MODEL.md)
 - [Configuration](CONFIGURATION.md)
 - [Development](DEVELOPMENT.md)
+- [Public alpha readiness](PUBLIC_ALPHA_READINESS.md)
 - [Testing](TESTING.md)
 - [Releases](RELEASES.md)
 - [Open source strategy](OPEN_SOURCE_STRATEGY.md)

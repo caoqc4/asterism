@@ -7,6 +7,7 @@ Thanks for contributing to asterism.
 - Read [README.md](README.md)
 - Read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 - Read [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
+- Read [docs/PUBLIC_ALPHA_READINESS.md](docs/PUBLIC_ALPHA_READINESS.md)
 
 ## Project Principles
 

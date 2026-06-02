@@ -12,6 +12,8 @@ The release workflow currently focuses on local macOS packaging first:
 
 asterism is currently source-only alpha software. The project does not provide
 official signed/notarized binaries or an auto-update channel yet.
+See [Public alpha readiness](PUBLIC_ALPHA_READINESS.md) for the current
+ready/partial/deferred status and expected warnings.
 
 ## Standard Verification
 

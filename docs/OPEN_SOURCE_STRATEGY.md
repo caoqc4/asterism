@@ -53,6 +53,9 @@ Before making the repository public, complete at least this checklist:
   contributions.
 - Confirm that the English and Chinese README entry points clearly state
   source-only alpha distribution and no official signed binaries yet.
+- Confirm [Public alpha readiness](PUBLIC_ALPHA_READINESS.md) reflects the
+  current ready/partial/deferred status before pointing new public users to the
+  repository.
 - Confirm GitHub About metadata, topics, license detection, and README wording.
 - Confirm that public docs do not promise unavailable screenshots, releases,
   hosted services, support channels, or compatibility guarantees.
