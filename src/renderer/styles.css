@@ -462,6 +462,32 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.45;
   margin-bottom: 7px;
 }
+.business-review-writeback-preview {
+  margin: 7px 0;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-sunk);
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.business-review-writeback-preview strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink-2);
+  font-size: 11.5px;
+}
+.business-review-writeback-preview ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding-left: 16px;
+}
+.business-review-writeback-preview span {
+  display: block;
+  color: var(--ink-4);
+}
 .panel-refresh-actions {
   display: flex;
   gap: 6px;

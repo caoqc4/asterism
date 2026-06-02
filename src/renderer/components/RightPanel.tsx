@@ -169,6 +169,21 @@ function syncBusinessLineReviewRecordSuggestions(
   return suggestions;
 }
 
+function previewBusinessLineReviewRecords(review: BusinessLinePostRunReviewOptions): string {
+  const count = syncBusinessLineReviewRecordSuggestions(review).filter((suggestion) => suggestion.summary.trim()).length;
+  return count > 1 ? `确认后会写入：业务记录、复盘（${count} 条记录建议）` : '确认后会写入：业务记录、复盘';
+}
+
+function previewBusinessLineReviewItem(value: string, fallback: string): string {
+  const normalized = value.trim();
+  if (!normalized) return fallback;
+  return normalized.length > 72 ? `${normalized.slice(0, 69)}...` : normalized;
+}
+
+function businessLineRunReviewOverflow(count: number): string | null {
+  return count > 1 ? `另有 ${count - 1} 条建议会一起提交。` : null;
+}
+
 function formatPanelReviewItem(value: string | null | undefined, fallback: string): string {
   const normalized = value?.trim();
   if (!normalized) return fallback;
@@ -4793,6 +4808,30 @@ export function RightPanel({
             </div>
             <div className="panel-refresh-reason">
               绿色标签表示本次 run 已识别到对应写回选项，不会随业务线复盘自动保存。
+            </div>
+            <div className="business-review-writeback-preview" aria-label="业务线复盘确认后写入预览">
+              <strong>确认后会发生</strong>
+              <ul>
+                <li>{previewBusinessLineReviewRecords(businessLineRunReview)}</li>
+                {businessLineRunReview.nextActionSuggestions.length > 0 && (
+                  <li>
+                    确认后会创建 Next Action：
+                    {previewBusinessLineReviewItem(businessLineRunReview.nextActionSuggestions[0] ?? '', '未命名后续行动')}
+                    {businessLineRunReviewOverflow(businessLineRunReview.nextActionSuggestions.length) ? (
+                      <span>{businessLineRunReviewOverflow(businessLineRunReview.nextActionSuggestions.length)}</span>
+                    ) : null}
+                  </li>
+                )}
+                {businessLineRunReview.skillUpdateSuggestions.length > 0 && (
+                  <li>
+                    确认后会提议可复用流程建议：
+                    {previewBusinessLineReviewItem(businessLineRunReview.skillUpdateSuggestions[0] ?? '', '未命名流程建议')}
+                    {businessLineRunReviewOverflow(businessLineRunReview.skillUpdateSuggestions.length) ? (
+                      <span>{businessLineRunReviewOverflow(businessLineRunReview.skillUpdateSuggestions.length)}</span>
+                    ) : null}
+                  </li>
+                )}
+              </ul>
             </div>
             <textarea
               className="panel-file-proposal-content"

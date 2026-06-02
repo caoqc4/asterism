@@ -2293,6 +2293,11 @@ describe('App redesign v1', () => {
     expect(within(reviewSurface).getByText('可复用流程建议')).toBeTruthy();
     expect(screen.getAllByText('业务记录').length).toBeGreaterThan(0);
     expect(screen.getByText('后续 Next Action')).toBeTruthy();
+    const writebackPreview = screen.getByLabelText('业务线复盘确认后写入预览');
+    expect(within(writebackPreview).getByText('确认后会发生')).toBeTruthy();
+    expect(within(writebackPreview).getByText(/确认后会写入：业务记录、复盘/)).toBeTruthy();
+    expect(within(writebackPreview).getByText(/确认后会创建 Next Action：Follow up on launch evidence\./)).toBeTruthy();
+    expect(within(writebackPreview).getByText(/确认后会提议可复用流程建议：Review launch evidence before ranking this business line\./)).toBeTruthy();
     await user.clear(screen.getByLabelText('业务线复盘结果'));
     await user.type(screen.getByLabelText('业务线复盘结果'), 'Edited business result for future context.');
 
@@ -2388,6 +2393,82 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/Review target: Business Line \/ Review Recovery product \/ Run\/Review \/ run_business_line_review_recovery/)).toBeTruthy();
     expect(screen.getByText(/确认后只写入业务线复盘/)).toBeTruthy();
     expect(screen.getByDisplayValue('Recovered review result from completed run.')).toBeTruthy();
+  });
+
+  it('does not preview a created Next Action when business-line review has no next action suggestion', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_review_no_next_action',
+      title: 'Review without next action product',
+    });
+    const nextAction = buildTask({
+      id: 'task_business_line_review_no_next_action',
+      title: 'Review without next action',
+      businessLineId: line.id,
+      nextStep: 'Check review side effects.',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [nextAction],
+    });
+    harness.tasks.unshift(nextAction);
+    harness.details[nextAction.id] = buildTaskDetail(nextAction);
+    const reviewRun = buildRun({
+      id: 'run_business_line_review_no_next_action',
+      businessLineId: line.id,
+      output: 'Review result without a follow-up action.',
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: nextAction.id,
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    });
+    harness.runs.unshift(reviewRun);
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getRunDetail).mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      if (!run) return null;
+      if (run.id !== reviewRun.id) return buildRunDetail(run);
+      return buildRunDetail(run, {
+        businessLinePostRunReview: {
+          businessLineId: line.id,
+          sourceActionId: nextAction.id,
+          sourceRunId: reviewRun.id,
+          resultSummary: 'Review result without a follow-up action.',
+          evidenceItems: [`Run ${reviewRun.id} completed.`],
+          recordSuggestions: [{
+            type: 'result',
+            source: `run:${reviewRun.id}`,
+            summary: 'Review result without a follow-up action.',
+            confidence: 75,
+            shouldAffectFutureContext: true,
+          }],
+          nextActionSuggestions: [],
+          skillUpdateSuggestions: ['Keep review side effects explicit before confirmation.'],
+          confidence: 75,
+          requiresDecision: false,
+          writebackOptions: [
+            { type: 'business_record', label: 'Business record', ready: true, evidence: [`run:${reviewRun.id}`] },
+            { type: 'proposed_sop_revision', label: 'Proposed SOP revision', ready: true, evidence: ['Keep review side effects explicit before confirmation.'] },
+          ],
+        },
+      });
+    });
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /^Next Actions$/ }));
+    const action = Array.from(document.querySelectorAll('.business-action'))
+      .find((element) => element.textContent?.includes('Review without next action')) as HTMLElement;
+    expect(action).toBeTruthy();
+    await user.click(within(action).getByRole('button', { name: '协作' }));
+
+    expect(await screen.findByText('业务线执行复盘提案')).toBeTruthy();
+    const writebackPreview = screen.getByLabelText('业务线复盘确认后写入预览');
+    expect(within(writebackPreview).getByText(/确认后会写入：业务记录、复盘/)).toBeTruthy();
+    expect(within(writebackPreview).queryByText(/确认后会创建 Next Action/)).toBeNull();
+    expect(within(writebackPreview).getByText(/确认后会提议可复用流程建议：Keep review side effects explicit before confirmation\./)).toBeTruthy();
   });
 
   it('does not recover confirmed business-line review proposals after reload', async () => {
