@@ -77,6 +77,7 @@
     "accept:product-surfaces:mac": "npm run smoke:external-access:mac && npm run smoke:external-access-connected:mac && npm run smoke:external-access-local-inbox:mac && npm run smoke:decisions-center:mac && npm run smoke:task-files:mac",
     "real-use:paths": "node scripts/real-use-paths.mjs",
     "verify": "npm run test && npm run lint && npm run build",
+    "verify:alpha": "npm audit --omit=dev && npm run lint && npm test -- src/shared/product-feature-impact-audit.test.ts && npm run audit:product-progress && npm run build && git diff --check",
     "smoke:build": "npm run build && node scripts/smoke-build.mjs",
     "smoke:package:mac": "node scripts/smoke-package-mac.mjs",
     "smoke:runtime:mac": "node scripts/smoke-runtime-mac.mjs",

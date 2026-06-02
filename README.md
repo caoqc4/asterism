@@ -26,6 +26,15 @@ npm run rebuild:electron
 npm run dev
 ```
 
+For a fresh public-alpha checkout, the shortest path is:
+
+1. install dependencies with `npm install` or `npm ci`;
+2. rebuild native modules for Electron with `npm run rebuild:electron`;
+3. start the desktop shell with `npm run dev`.
+
+If you later run Node/Vitest verification in the same checkout, switch native
+modules back with `npm run rebuild:node` first.
+
 To create a local unpacked macOS app for your own machine:
 
 ```bash
@@ -156,8 +165,15 @@ installation or an optional Provider/API configuration from the AI Runtime page.
 npm run lint
 npm run test
 npm run build
+npm run verify:alpha
 npm run verify
 ```
+
+`npm run verify:alpha` is the source-only alpha quick check for public
+contributors. It runs production dependency audit, type-checking, the public
+product audit test, product-progress audit, production build, and whitespace
+diff checks. Run `npm run rebuild:node` before Node/Vitest commands if you just
+rebuilt native modules for Electron.
 
 `npm run verify` runs tests, type-checking, and the production build.
 

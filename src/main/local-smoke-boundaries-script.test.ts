@@ -145,6 +145,23 @@ describe('local smoke script default boundaries', () => {
     expect(missingScripts).toEqual([]);
   });
 
+  it('keeps public alpha verification lightweight and local-first', () => {
+    const scripts = readPackageScripts();
+    const verifyAlpha = scripts['verify:alpha'] ?? '';
+
+    expect(verifyAlpha).toContain('npm audit --omit=dev');
+    expect(verifyAlpha).toContain('npm run lint');
+    expect(verifyAlpha).toContain('npm test -- src/shared/product-feature-impact-audit.test.ts');
+    expect(verifyAlpha).toContain('npm run audit:product-progress');
+    expect(verifyAlpha).toContain('npm run build');
+    expect(verifyAlpha).toContain('git diff --check');
+    expect(verifyAlpha).not.toContain('dist:mac');
+    expect(verifyAlpha).not.toContain('smoke:release:mac');
+    expect(verifyAlpha).not.toContain('accept:packaged');
+    expect(verifyAlpha).not.toContain('manual:agent-cli');
+    expect(verifyAlpha).not.toContain('TASKPLANE_RUN_');
+  });
+
   it('keeps package script file references pointing to existing files', () => {
     const scripts = readPackageScripts();
     const fileReferencePattern = /(?:^|\s)((?:\.\/)?(?:src|scripts|node_modules|tsconfig|vitest\.[\w.-]+)[^\s"'`|&;]*\.(?:tsx|ts|json|cjs|js|mjs))/g;

@@ -62,12 +62,52 @@ modules back to the local Node ABI:
 npm run rebuild:node
 ```
 
+## Source-only Alpha Contributor Path
+
+For a fresh public checkout:
+
+```bash
+npm install
+npm run rebuild:electron
+npm run dev
+```
+
+`npm ci` is also supported when you want an install that exactly follows
+`package-lock.json`.
+
+Use this quick verification path for docs, UI copy, public-alpha onboarding, and
+small renderer or shared-contract changes:
+
+```bash
+npm run rebuild:node
+npm run verify:alpha
+```
+
+`verify:alpha` runs production dependency audit, type-checking, the public
+product audit test, product-progress audit, production build, and `git diff
+--check`. It does not build a packaged app, call providers, require a real Agent
+CLI account, write to an external workspace, sign, notarize, upload, or enable
+GitHub Actions.
+
+Use the full local gate when changing runtime orchestration, domain services,
+IPC contracts, native modules, or broad product behavior:
+
+```bash
+npm run rebuild:node
+npm run verify
+```
+
+The production build may print Vite's large chunk warning. That warning is
+expected in the current alpha and should be recorded, not treated as a failed
+verification, unless the build exits non-zero.
+
 ## Common Commands
 
 ```bash
 npm run lint
 npm run test
 npm run build
+npm run verify:alpha
 npm run verify
 ```
 
@@ -89,6 +129,11 @@ npm run smoke:release:mac
 `npm run smoke:release:mac` builds the unpacked macOS app and runs package,
 runtime, and packaged Timeline UI smoke checks.
 
+Run packaged smoke checks only when the change affects Electron packaging,
+native ABI behavior, packaged renderer routing, app startup, or macOS runtime
+recovery. These checks are macOS-specific and use isolated `userData`
+directories; they do not imply an official signed or notarized binary.
+
 Targeted packaged recovery/config checks:
 
 ```bash
@@ -102,6 +147,45 @@ npm run accept:release:mac-preflight
 ```
 
 This preflight does not sign, notarize, upload, or contact Apple services.
+
+## Agent CLI Path
+
+Agent execution in the public alpha is CLI-first. Use the AI Runtime page to
+connect an already logged-in Codex CLI or Claude Code installation. CLI
+authentication stays in the official CLI; asterism only detects readiness and
+starts opted-in task-bound runs.
+
+The packaged Agent CLI task smoke is safe by default because it uses a fake
+Codex executable and an isolated temporary workspace:
+
+```bash
+npm run smoke:agent-cli-task:mac
+```
+
+Real local CLI validation is manual and opt-in:
+
+```bash
+TASKPLANE_RUN_AGENT_CLI_TASK_LIVE_SMOKE=true npm run manual:agent-cli-task-live:mac
+```
+
+The default manual command skips without calling the CLI unless the opt-in
+environment variable is set. Agent API task execution remains deferred; provider
+configuration is optional and does not make task execution ready by itself.
+
+## Common Failures
+
+- Native ABI mismatch after switching between `npm run dev` and Vitest: run
+  `npm run rebuild:electron` before the desktop app, and `npm run rebuild:node`
+  before Node/Vitest verification.
+- macOS unsigned app warning: local `dist:mac:dir` output is unsigned/ad-hoc and
+  not notarized. There is no official signed binary or auto-update channel yet.
+- Missing Codex CLI / Claude Code login: log in with the official CLI first,
+  then re-detect from the AI Runtime page.
+- Vite chunk warning during `npm run build`: currently expected for alpha; keep
+  it visible in reports, but do not treat it as failure unless the command
+  exits non-zero.
+- Agent API execution confusion: provider/API config is optional and the full
+  task execution path is still deferred.
 
 ## Runtime Boundaries
 
@@ -143,5 +227,6 @@ Main-process rules:
 3. Expose the capability through preload and IPC.
 4. Wire the renderer page to the contract.
 5. Add focused tests for the changed surface.
-6. Run `npm run verify`.
+6. Run `npm run verify:alpha` for small public-alpha changes, or `npm run verify`
+   for broader runtime/product changes.
 7. Add package smoke checks when package/build entrypoints change.

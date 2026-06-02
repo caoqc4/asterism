@@ -21,6 +21,15 @@ npm run rebuild:electron
 npm run dev
 ```
 
+对一个新的 public-alpha checkout，最短路径是：
+
+1. 用 `npm install` 或 `npm ci` 安装依赖；
+2. 用 `npm run rebuild:electron` 把 native modules 切到 Electron ABI；
+3. 用 `npm run dev` 启动桌面 shell。
+
+如果之后要在同一个 checkout 里跑 Node/Vitest 验证，请先用
+`npm run rebuild:node` 切回 Node ABI。
+
 如果想在自己的机器上生成一个本地 unpacked macOS app：
 
 ```bash
@@ -127,8 +136,14 @@ npm run dev
 npm run lint
 npm run test
 npm run build
+npm run verify:alpha
 npm run verify
 ```
+
+`npm run verify:alpha` 是 source-only alpha 面向公开贡献者的快速检查。
+它会运行 production dependency audit、类型检查、公开产品审计测试、产品进度审计、
+production build 和 whitespace diff 检查。如果刚跑过 Electron native rebuild，
+请先运行 `npm run rebuild:node` 再执行 Node/Vitest 命令。
 
 `npm run verify` 会运行测试、类型检查和 production build。
 
