@@ -295,6 +295,9 @@ function BusinessLineCreationPanel({ existingLines, onCancel, onCreated }: {
         <div>
           <div className="page-kicker">Create Business Line</div>
           <h3>新建业务线</h3>
+          <p className="business-create-helper">
+            Business 是长期工作线，不是一次性 task。先给它一个目标和一个 Next Action；Agent 输出会先成为待确认建议，确认后才保存。
+          </p>
         </div>
         <button className="btn sm" onClick={onCancel}>取消</button>
       </div>
@@ -307,23 +310,23 @@ function BusinessLineCreationPanel({ existingLines, onCancel, onCreated }: {
           </select>
         </label>
         <label>
-          What is this business line?
-          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="asterism onboarding web app" />
+          Business name
+          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="asterism public alpha polish" />
         </label>
         <label>
-          What outcome would make it better?
-          <textarea value={desiredOutcome} onChange={(event) => setDesiredOutcome(event.target.value)} placeholder="Activation improves from trial to first completed workflow." />
+          Goal for this long-running business
+          <textarea value={desiredOutcome} onChange={(event) => setDesiredOutcome(event.target.value)} placeholder="持续改善公开 alpha 首日体验" />
         </label>
         <label>
-          What information must be recorded continuously?
-          <textarea value={continuousInformation} onChange={(event) => setContinuousInformation(event.target.value)} placeholder="Customer signals, experiments, releases, metrics, risks." />
+          Long-term records / review notes
+          <textarea value={continuousInformation} onChange={(event) => setContinuousInformation(event.target.value)} placeholder="用户停顿点、验证结果、复盘记录、已确认决策" />
         </label>
         <label>
-          What work can AI do, and what needs confirmation?
-          <textarea value={aiWorkAndConfirmation} onChange={(event) => setAiWorkAndConfirmation(event.target.value)} placeholder="AI drafts specs and summaries; publishing/deploy/pricing needs approval." />
+          AI help and save boundary
+          <textarea value={aiWorkAndConfirmation} onChange={(event) => setAiWorkAndConfirmation(event.target.value)} placeholder="AI 可以整理证据和建议下一步；写入 Business / Task / workspace 前必须确认" />
         </label>
         <label>
-          Is this based on an existing business line's structure or experience?
+          Reuse another business line?
           <select value={sourceBusinessLineId} onChange={(event) => setSourceBusinessLineId(event.target.value)}>
             <option value="">No existing business line</option>
             {existingLines.map((line) => (
@@ -349,23 +352,23 @@ function BusinessLineCreationPanel({ existingLines, onCancel, onCreated }: {
       <div className="business-create-generated">
         <label>
           Initial structure
-          <textarea value={initialStructure} onChange={(event) => setInitialStructure(event.target.value)} placeholder="One structure item per line" />
+          <textarea value={initialStructure} onChange={(event) => setInitialStructure(event.target.value)} placeholder="例如：README -> first launch -> Business -> Agent run" />
         </label>
         <label>
           Initial records
-          <textarea value={initialRecords} onChange={(event) => setInitialRecords(event.target.value)} placeholder="One initial record per line" />
+          <textarea value={initialRecords} onChange={(event) => setInitialRecords(event.target.value)} placeholder="例如：首日用户容易卡在 Runtime 配置" />
         </label>
         <label>
           Review prompts
-          <textarea value={reviewPrompts} onChange={(event) => setReviewPrompts(event.target.value)} placeholder="One review prompt per line" />
+          <textarea value={reviewPrompts} onChange={(event) => setReviewPrompts(event.target.value)} placeholder="例如：这次结果是否改变下一步？" />
         </label>
         <label>
           Proposed SOPs
-          <textarea value={proposedSops} onChange={(event) => setProposedSops(event.target.value)} placeholder="One proposed SOP per line" />
+          <textarea value={proposedSops} onChange={(event) => setProposedSops(event.target.value)} placeholder="例如：每次 alpha dogfood 后先确认写入建议" />
         </label>
         <label>
           Initial Next Actions
-          <textarea value={initialNextActions} onChange={(event) => setInitialNextActions(event.target.value)} placeholder="One initial next action per line" />
+          <textarea value={initialNextActions} onChange={(event) => setInitialNextActions(event.target.value)} placeholder="检查 README 到首次 Business run 的体验" />
         </label>
       </div>
     </section>

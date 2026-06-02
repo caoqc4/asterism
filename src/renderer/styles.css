@@ -6664,6 +6664,13 @@ a { color: inherit; text-decoration: none; }
 .business-create-head {
   margin-bottom: 12px;
 }
+.business-create-helper {
+  max-width: 620px;
+  margin: 4px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
 .business-create-grid,
 .business-create-generated {
   display: grid;

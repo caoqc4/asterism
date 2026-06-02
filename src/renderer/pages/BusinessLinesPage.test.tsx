@@ -110,6 +110,28 @@ describe('BusinessLinesPage', () => {
     vi.clearAllMocks();
   });
 
+  it('shows first-run creation copy and examples for Business and Next Action setup', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <BusinessLinesPage
+        onOpenBusinessLinePanel={openBusinessLinePanel}
+        onOpenTask={vi.fn()}
+      />,
+    );
+
+    await user.click(await screen.findByRole('button', { name: '新建' }));
+
+    expect(screen.getByText(/Business 是长期工作线，不是一次性 task/)).toBeTruthy();
+    expect(screen.getByText(/Agent 输出会先成为待确认建议/)).toBeTruthy();
+    expect(screen.getByLabelText('Business name')).toBeTruthy();
+    expect(screen.getByLabelText('Goal for this long-running business')).toBeTruthy();
+    expect(screen.getByLabelText('Long-term records / review notes')).toBeTruthy();
+    expect(screen.getByLabelText('AI help and save boundary')).toBeTruthy();
+    expect(screen.getByPlaceholderText('asterism public alpha polish')).toBeTruthy();
+    expect(screen.getByPlaceholderText('检查 README 到首次 Business run 的体验')).toBeTruthy();
+  });
+
   it('passes business owner and executable Next Action from the overview suggestion into RightPanel', async () => {
     const user = userEvent.setup();
 

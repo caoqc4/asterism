@@ -1789,17 +1789,21 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: '新建' }));
-    await user.type(screen.getByLabelText('What is this business line?'), 'Activation web product');
+    expect(screen.getByText(/Business 是长期工作线，不是一次性 task/)).toBeTruthy();
+    expect(screen.getByText(/确认后才保存/)).toBeTruthy();
+    expect(screen.getByPlaceholderText('asterism public alpha polish')).toBeTruthy();
+    expect(screen.getByPlaceholderText('检查 README 到首次 Business run 的体验')).toBeTruthy();
+    await user.type(screen.getByLabelText('Business name'), 'Activation web product');
     await user.type(
-      screen.getByLabelText('What outcome would make it better?'),
+      screen.getByLabelText('Goal for this long-running business'),
       'Trial users reach first completed workflow faster.',
     );
     await user.type(
-      screen.getByLabelText('What information must be recorded continuously?'),
+      screen.getByLabelText('Long-term records / review notes'),
       'Customer signals, experiments, releases, and activation metrics.',
     );
     await user.type(
-      screen.getByLabelText('What work can AI do, and what needs confirmation?'),
+      screen.getByLabelText('AI help and save boundary'),
       'AI drafts specs and release notes; publish, deploy, and pricing require approval.',
     );
     await user.click(screen.getByRole('button', { name: '生成初始结构' }));
@@ -1849,9 +1853,9 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: '新建' }));
-    await user.type(screen.getByLabelText('What is this business line?'), 'Target product loop');
+    await user.type(screen.getByLabelText('Business name'), 'Target product loop');
     await user.selectOptions(
-      screen.getByLabelText("Is this based on an existing business line's structure or experience?"),
+      screen.getByLabelText('Reuse another business line?'),
       sourceLine.id,
     );
 
