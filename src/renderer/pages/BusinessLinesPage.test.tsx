@@ -120,7 +120,9 @@ describe('BusinessLinesPage', () => {
       />,
     );
 
-    await user.click(await screen.findByRole('button', { name: '执行' }));
+    const runButton = await screen.findByRole('button', { name: '执行' });
+    expect(runButton.getAttribute('title')).toBe('启动当前 Next Action 的 Agent run');
+    await user.click(runButton);
 
     expect(openBusinessLinePanel).toHaveBeenCalledWith(
       workspace.businessLine.id,
@@ -128,6 +130,36 @@ describe('BusinessLinesPage', () => {
       expect.stringContaining('可能的待确认写入建议（TASKPLANE_WRITE_INTENTS）'),
       'task_business_next_action',
       'Check launch evidence.',
+      true,
+    );
+  });
+
+  it('opens the overview collaboration panel without auto-starting a run', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <BusinessLinesPage
+        onOpenBusinessLinePanel={openBusinessLinePanel}
+        onOpenTask={vi.fn()}
+      />,
+    );
+
+    const collaborationButton = await screen.findByRole('button', { name: '协作' });
+    expect(collaborationButton.getAttribute('title')).toBe('打开协作面板，不会自动启动 run');
+    await user.click(collaborationButton);
+
+    expect(openBusinessLinePanel).toHaveBeenCalledWith(
+      workspace.businessLine.id,
+      workspace.businessLine.title,
+      expect.stringContaining('请推进这个业务线 Next Action'),
+      'task_business_next_action',
+    );
+    expect(openBusinessLinePanel).not.toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
       true,
     );
   });
@@ -143,7 +175,9 @@ describe('BusinessLinesPage', () => {
     );
 
     await user.click(await screen.findByRole('button', { name: 'Next Actions' }));
-    await user.click(screen.getByRole('button', { name: '执行' }));
+    const runButton = screen.getByRole('button', { name: '执行' });
+    expect(runButton.getAttribute('title')).toBe('启动当前 Next Action 的 Agent run');
+    await user.click(runButton);
 
     expect(openBusinessLinePanel).toHaveBeenCalledWith(
       workspace.businessLine.id,
@@ -151,6 +185,38 @@ describe('BusinessLinesPage', () => {
       expect.stringContaining('可能的待确认写入建议（TASKPLANE_WRITE_INTENTS）'),
       'task_business_next_action',
       'Run launch evidence check',
+      true,
+    );
+  });
+
+  it('opens a Business Next Action collaboration panel without auto-starting a run', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <BusinessLinesPage
+        onOpenBusinessLinePanel={openBusinessLinePanel}
+        onOpenTask={vi.fn()}
+      />,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Next Actions' }));
+    const collaborationButton = screen.getByRole('button', { name: '协作' });
+    expect(collaborationButton.getAttribute('title')).toBe('打开协作面板，不会自动启动 run');
+    await user.click(collaborationButton);
+
+    expect(openBusinessLinePanel).toHaveBeenCalledWith(
+      workspace.businessLine.id,
+      workspace.businessLine.title,
+      undefined,
+      'task_business_next_action',
+      'Run launch evidence check',
+    );
+    expect(openBusinessLinePanel).not.toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
       true,
     );
   });

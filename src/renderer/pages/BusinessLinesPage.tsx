@@ -412,6 +412,7 @@ function OverviewTab({ workspace, onOpenBusinessLinePanel }: {
               {suggestion.taskId && (
                 <button
                   className="btn sm primary"
+                  title="启动当前 Next Action 的 Agent run"
                   onClick={() => onOpenBusinessLinePanel(
                     workspace.businessLine.id,
                     workspace.businessLine.title,
@@ -426,6 +427,7 @@ function OverviewTab({ workspace, onOpenBusinessLinePanel }: {
               )}
               <button
                 className="btn sm"
+                title="打开协作面板，不会自动启动 run"
                 onClick={() => onOpenBusinessLinePanel(
                   workspace.businessLine.id,
                   workspace.businessLine.title,
@@ -433,7 +435,7 @@ function OverviewTab({ workspace, onOpenBusinessLinePanel }: {
                   suggestion.taskId,
                 )}
               >
-                AI 协助
+                协作
               </button>
             </div>
           </div>
@@ -537,6 +539,7 @@ function NextActionsTab({ workspace, onOpenBusinessLinePanel, onOpenTask }: {
               <button className="btn sm" onClick={() => onOpenTask(task.id)}>详情</button>
               <button
                 className="btn sm primary"
+                title="启动当前 Next Action 的 Agent run"
                 onClick={() => onOpenBusinessLinePanel(
                   workspace.businessLine.id,
                   workspace.businessLine.title,
@@ -550,6 +553,7 @@ function NextActionsTab({ workspace, onOpenBusinessLinePanel, onOpenTask }: {
               </button>
               <button
                 className="btn sm"
+                title="打开协作面板，不会自动启动 run"
                 onClick={() => onOpenBusinessLinePanel(
                   workspace.businessLine.id,
                   workspace.businessLine.title,
@@ -558,7 +562,7 @@ function NextActionsTab({ workspace, onOpenBusinessLinePanel, onOpenTask }: {
                   task.title,
                 )}
               >
-                AI 协助
+                协作
               </button>
             </div>
           </div>

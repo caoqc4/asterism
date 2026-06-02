@@ -441,6 +441,7 @@ export function BriefPage({ onOpenTask, onOpenBusinessLine, onOpenDecision, onOp
                   </button>
                   <button
                     className="btn sm primary"
+                    title="打开协作面板，不会自动启动 run"
                     onClick={() => onOpenBusinessLinePanel(
                       suggestion.businessLineId,
                       suggestion.businessLineTitle,
@@ -448,7 +449,7 @@ export function BriefPage({ onOpenTask, onOpenBusinessLine, onOpenDecision, onOp
                       suggestion.taskId,
                     )}
                   >
-                    AI 协助
+                    协作
                   </button>
                 </div>
               </div>

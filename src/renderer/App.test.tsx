@@ -2110,7 +2110,7 @@ describe('App redesign v1', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+    await user.click(await screen.findByRole('button', { name: '协作' }));
 
     expect(await screen.findByText(/Context: Business Line \/ GoalPilot product \/ Next Action/)).toBeTruthy();
     const input = screen.getByRole('textbox');
@@ -2168,7 +2168,7 @@ describe('App redesign v1', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+    await user.click(await screen.findByRole('button', { name: '协作' }));
     expect(await screen.findByText(/Context: Business Line \/ GoalPilot product \/ Next Action/)).toBeTruthy();
     const input = screen.getByRole('textbox');
     await user.clear(input);
@@ -2378,7 +2378,7 @@ describe('App redesign v1', () => {
     const action = Array.from(document.querySelectorAll('.business-action'))
       .find((element) => element.textContent?.includes('Recover review proposal')) as HTMLElement;
     expect(action).toBeTruthy();
-    await user.click(within(action).getByRole('button', { name: 'AI 协助' }));
+    await user.click(within(action).getByRole('button', { name: '协作' }));
 
     expect(await screen.findByText('业务线执行复盘提案')).toBeTruthy();
     expect(screen.getByText(/Review target: Business Line \/ Review Recovery product \/ Run\/Review \/ run_business_line_review_recovery/)).toBeTruthy();
@@ -2489,7 +2489,7 @@ describe('App redesign v1', () => {
     const action = Array.from(document.querySelectorAll('.business-action'))
       .find((element) => element.textContent?.includes('Review confirmed proposal')) as HTMLElement;
     expect(action).toBeTruthy();
-    await user.click(within(action).getByRole('button', { name: 'AI 协助' }));
+    await user.click(within(action).getByRole('button', { name: '协作' }));
     expect(await screen.findByText(/Evidence/)).toBeTruthy();
 
     await waitFor(() => {
@@ -5821,7 +5821,7 @@ describe('App redesign v1', () => {
     });
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+    await user.click(await screen.findByRole('button', { name: '协作' }));
     expect(await screen.findByText('Context: Business Line / Refresh-only product')).toBeTruthy();
     const input = await screen.findByPlaceholderText(/关于「Refresh-only product」/);
     await user.clear(input);
@@ -5883,7 +5883,7 @@ describe('App redesign v1', () => {
     });
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+    await user.click(await screen.findByRole('button', { name: '协作' }));
     expect(await screen.findByText(/Context: Business Line \/ Next Action refresh product \/ Next Action/)).toBeTruthy();
     const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
     await user.clear(input);
