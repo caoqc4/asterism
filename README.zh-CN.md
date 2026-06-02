@@ -2,18 +2,23 @@
 
 [English](README.md) | 简体中文
 
-**Local-first AI workbench to record decisions, execute tasks, and improve your work system.**<br>
+**Record, execute, and compound your business with a local-first AI desktop app.**<br>
 **记录决策，推进执行，让你的事业系统持续升级。**
 
-asterism 是一个 local-first 的 AI 桌面工作台，用来记录决策、推进任务，并随着时间持续升级你的事业系统。它把严肃工作的原因、内容、证据和后续动作留在工作本身，而不是散落在一次性对话里。
+asterism 让严肃工作不再散落在一次性聊天里。Business、任务、决策、运行记录、复盘、来源上下文和产物都属于本地控制层；更高风险的 Agent 动作需要明确闸门，而不是默认自动执行。
 
-在 asterism 里，决策、任务、运行记录、复盘、来源上下文和产物都属于本地控制层；更高风险的 Agent 动作需要明确闸门，而不是默认自动执行。
+- 把原因、内容、证据和下一步留在工作本身。
+- 从 Business -> Next Action -> Agent run -> Review 推进，不丢上下文。
+- 把 Agent 输出视为证据和待确认建议，而不是静默写入产品状态。
+- 今天即可从源码本地运行；不依赖 hosted service 或官方签名包。
+
+![asterism Business workbench screenshot](docs/assets/asterism-business-workbench.png)
 
 ## Source-only Alpha（仅源码分发）
 
 asterism 目前只以源码形式分发。项目还没有提供官方签名/公证的二进制安装包，也没有 auto-update channel。
 
-如果想试用，请 clone 仓库后运行：
+本地快速路径：
 
 ```bash
 npm install
@@ -21,11 +26,8 @@ npm run rebuild:electron
 npm run dev
 ```
 
-对一个新的 public-alpha checkout，最短路径是：
-
-1. 用 `npm install` 或 `npm ci` 安装依赖；
-2. 用 `npm run rebuild:electron` 把 native modules 切到 Electron ABI；
-3. 用 `npm run dev` 启动桌面 shell。
+如果想严格按照 `package-lock.json` 做干净安装，可以用 `npm ci` 替代
+`npm install`。
 
 如果之后要在同一个 checkout 里跑 Node/Vitest 验证，请先用
 `npm run rebuild:node` 切回 Node ABI。

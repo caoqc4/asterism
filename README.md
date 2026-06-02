@@ -2,23 +2,26 @@
 
 English | [简体中文](README.zh-CN.md)
 
-**Local-first AI workbench to record decisions, execute tasks, and improve your work system.**<br>
+**Record, execute, and compound your business with a local-first AI desktop app.**<br>
 **记录决策，推进执行，让你的事业系统持续升级。**
 
-asterism is a local-first AI desktop workbench for recording decisions,
-executing tasks, and improving your work system over time. It keeps the why,
-what, evidence, and follow-up of serious work attached to the work itself.
+asterism keeps serious work from dissolving into one-off chats. It gives
+business lines, tasks, decisions, runs, reviews, source context, and artifacts a
+local control layer with explicit gates for higher-risk agent actions.
 
-Instead of leaving important context in one-off chats, asterism gives decisions,
-tasks, runs, reviews, source context, and artifacts a local control layer with
-explicit gates for higher-risk agent actions.
+- Keep the why, what, evidence, and next action attached to the work itself.
+- Move from Business -> Next Action -> Agent run -> Review without losing context.
+- Treat agent output as evidence and proposals, not silent product mutations.
+- Start locally from source today; no hosted service or signed binary required.
+
+![asterism Business workbench screenshot](docs/assets/asterism-business-workbench.png)
 
 ## Source-only Alpha
 
 asterism is currently distributed as source code only. No official
 signed/notarized binaries or auto-update channel are provided yet.
 
-To try it, clone the repository and run:
+Quick local path:
 
 ```bash
 npm install
@@ -26,11 +29,8 @@ npm run rebuild:electron
 npm run dev
 ```
 
-For a fresh public-alpha checkout, the shortest path is:
-
-1. install dependencies with `npm install` or `npm ci`;
-2. rebuild native modules for Electron with `npm run rebuild:electron`;
-3. start the desktop shell with `npm run dev`.
+Use `npm ci` instead of `npm install` when you want a clean install that exactly
+follows `package-lock.json`.
 
 If you later run Node/Vitest verification in the same checkout, switch native
 modules back with `npm run rebuild:node` first.
