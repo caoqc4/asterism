@@ -213,6 +213,15 @@ function failedRunRecoveryReason(detail: RunDetailRecord): string {
     || '失败原因已保存在 run evidence 中。';
   return reason.length > 120 ? `${reason.slice(0, 117)}...` : reason;
 }
+
+function isOperatorCancelledRun(detail: RunDetailRecord): boolean {
+  const evidence = [
+    detail.failureReason,
+    detail.output,
+    ...(detail.steps ?? []).flatMap((step) => [step.error, step.output, step.title]),
+  ].filter((value): value is string => Boolean(value?.trim())).join('\n');
+  return /operator\s+cancelled|operator\s+canceled|用户.*取消|手动.*取消/i.test(evidence);
+}
 const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
   claude: 'Claude Code',
   codex: 'Codex CLI',
@@ -4548,7 +4557,10 @@ export function RightPanel({
     businessLineRunReview ? '复盘' : null,
     businessLineRunReview?.skillUpdateSuggestions.length ? '可复用流程建议' : null,
   ].filter((item): item is string => Boolean(item));
-  const latestFailedRunDetail = activeTaskId && reviewRunDetails[0]?.status === 'failed' && reviewRunDetails[0].type === 'agent'
+  const latestFailedRunDetail = activeTaskId
+    && reviewRunDetails[0]?.status === 'failed'
+    && reviewRunDetails[0].type === 'agent'
+    && !isOperatorCancelledRun(reviewRunDetails[0])
     ? reviewRunDetails[0]
     : null;
   const latestFailedRunReason = latestFailedRunDetail ? failedRunRecoveryReason(latestFailedRunDetail) : null;

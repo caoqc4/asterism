@@ -2523,6 +2523,67 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('does not show retry-oriented failed recovery notice for operator-cancelled Agent runs', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_cancelled_recovery',
+      title: 'Cancelled Recovery product',
+    });
+    const nextAction = buildTask({
+      id: 'task_business_line_cancelled_recovery',
+      title: 'Review cancelled run path',
+      businessLineId: line.id,
+      nextStep: 'Review cancellation evidence.',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [nextAction],
+    });
+    harness.tasks.unshift(nextAction);
+    harness.details[nextAction.id] = buildTaskDetail(nextAction);
+    harness.runs.unshift(buildRun({
+      id: 'run_business_line_cancelled_recovery',
+      businessLineId: line.id,
+      failureReason: 'Operator cancelled the Codex CLI run from asterism.',
+      status: 'failed',
+      taskId: nextAction.id,
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    }));
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getRunDetail).mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      return run ? buildRunDetail(run, {
+        steps: [
+          buildRunStep({
+            id: 'step_operator_cancelled',
+            runId: run.id,
+            index: 1,
+            kind: 'final',
+            status: 'failed',
+            title: 'codex cli failed',
+            error: 'Operator cancelled the Codex CLI run from asterism.',
+          }),
+        ],
+      }) : null;
+    });
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /^Next Actions$/ }));
+    const action = Array.from(document.querySelectorAll('.business-action'))
+      .find((element) => element.textContent?.includes('Review cancelled run path')) as HTMLElement;
+    expect(action).toBeTruthy();
+    await user.click(within(action).getByRole('button', { name: '协作' }));
+
+    expect(await screen.findByText('Evidence')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Failed Agent run recovery')).toBeNull();
+    });
+    expect(screen.queryByText('准备重试')).toBeNull();
+  });
+
   it('keeps failed run recovery conservative when AI Runtime is not ready', async () => {
     const user = userEvent.setup();
     const line = buildBusinessLineListItem({
