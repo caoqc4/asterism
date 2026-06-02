@@ -203,6 +203,16 @@ function latestRunEvidenceSummary(detail: RunDetailRecord): string {
   const latestStep = detail.steps?.at(-1)?.title;
   return `${detail.status} · ${verifier}${latestStep ? ` · ${formatPanelReviewItem(latestStep, 'step')}` : ''}`;
 }
+
+function failedRunRecoveryReason(detail: RunDetailRecord): string {
+  const failedStep = [...(detail.steps ?? [])].reverse().find((step) => step.status === 'failed');
+  const reason = detail.failureReason?.trim()
+    || failedStep?.error?.trim()
+    || failedStep?.output?.trim()
+    || detail.output?.trim()
+    || '失败原因已保存在 run evidence 中。';
+  return reason.length > 120 ? `${reason.slice(0, 117)}...` : reason;
+}
 const AGENT_CLI_PANEL_RUNTIME_LABELS: Record<AgentCliRuntimeId, string> = {
   claude: 'Claude Code',
   codex: 'Codex CLI',
@@ -4538,6 +4548,31 @@ export function RightPanel({
     businessLineRunReview ? '复盘' : null,
     businessLineRunReview?.skillUpdateSuggestions.length ? '可复用流程建议' : null,
   ].filter((item): item is string => Boolean(item));
+  const latestFailedRunDetail = activeTaskId && reviewRunDetails[0]?.status === 'failed' && reviewRunDetails[0].type === 'agent'
+    ? reviewRunDetails[0]
+    : null;
+  const latestFailedRunReason = latestFailedRunDetail ? failedRunRecoveryReason(latestFailedRunDetail) : null;
+  const failedRunRuntimeGateCopy = shouldUseAgentCliRuntime || isAgentApiRuntimeMode
+    ? '重新执行仍会走当前 AI Runtime 和确认边界。'
+    : 'AI Runtime 未就绪时，先用协作复核失败原因；重新执行仍需要 Runtime gate。';
+  function focusPanelInput() {
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+      autoResize();
+    });
+  }
+  function prepareFailedRunRetryPrompt() {
+    if (!latestFailedRunDetail || !activeTaskId) return;
+    const taskName = title ?? titleCache[activeTaskId] ?? activeTaskId;
+    setSessionInput([
+      `请基于上次 Agent run 失败原因，帮我准备安全重试计划。`,
+      `Next Action：${taskName}`,
+      `上次 run：${latestFailedRunDetail.id}`,
+      `失败原因：${latestFailedRunReason ?? '见 run evidence'}`,
+      '请先复核失败原因和可调整的上下文；不要写入 workspace，不要自动重跑。',
+    ].join('\n'));
+    focusPanelInput();
+  }
   const panelReviewSections: PanelReviewSurfaceSection[] = [
     generatedArtifactItems.length > 0 || generatedFileItems.length > 0
       ? {
@@ -4713,6 +4748,33 @@ export function RightPanel({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {latestFailedRunDetail && (
+          <div className="panel-failed-run-recovery" aria-label="Failed Agent run recovery">
+            <div className="panel-failed-run-recovery-head">
+              <strong>上次 Agent run 未完成</strong>
+              <span>Run / {latestFailedRunDetail.id}</span>
+            </div>
+            <p>
+              Evidence 已保留；未确认的写入不会自动保存，asterism 没有自动写入 workspace。
+              建议先协作复核失败原因，再决定是否重新执行。
+            </p>
+            {latestFailedRunReason && (
+              <div className="panel-agent-run-detail">
+                失败原因：{latestFailedRunReason}
+              </div>
+            )}
+            <div className="panel-agent-run-detail">{failedRunRuntimeGateCopy}</div>
+            <div className="panel-refresh-actions">
+              <button className="btn sm primary" onClick={prepareFailedRunRetryPrompt}>
+                准备重试
+              </button>
+              <button className="btn sm ghost" onClick={focusPanelInput}>
+                继续协作
+              </button>
+            </div>
           </div>
         )}
 

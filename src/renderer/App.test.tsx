@@ -2395,6 +2395,178 @@ describe('App redesign v1', () => {
     expect(screen.getByDisplayValue('Recovered review result from completed run.')).toBeTruthy();
   });
 
+  it('shows failed Agent run recovery notice for a Business Next Action without starting a run', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_failed_recovery',
+      title: 'Failed Recovery product',
+    });
+    const nextAction = buildTask({
+      id: 'task_business_line_failed_recovery',
+      title: 'Recover failed run path',
+      businessLineId: line.id,
+      nextStep: 'Inspect failed run evidence before retry.',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [nextAction],
+    });
+    const failedRun = buildRun({
+      id: 'run_business_line_failed_recovery',
+      businessLineId: line.id,
+      failureReason: 'Agent CLI execution timed out after 120000ms.',
+      output: 'Timed out while running a read-only command.',
+      outputSource: 'system',
+      status: 'failed',
+      taskId: nextAction.id,
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    });
+    harness.tasks.unshift(nextAction);
+    harness.details[nextAction.id] = buildTaskDetail(nextAction);
+    harness.runs.unshift(failedRun);
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getRunDetail).mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      return run ? buildRunDetail(run, {
+        steps: [
+          buildRunStep({
+            id: 'step_failed_timeout',
+            runId: run.id,
+            index: 1,
+            kind: 'final',
+            status: 'failed',
+            title: 'codex cli failed',
+            error: 'Agent CLI execution timed out after 120000ms.',
+          }),
+        ],
+      }) : null;
+    });
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /^Next Actions$/ }));
+    const action = Array.from(document.querySelectorAll('.business-action'))
+      .find((element) => element.textContent?.includes('Recover failed run path')) as HTMLElement;
+    expect(action).toBeTruthy();
+    await user.click(within(action).getByRole('button', { name: '协作' }));
+
+    const notice = await screen.findByLabelText('Failed Agent run recovery');
+    expect(within(notice).getByText('上次 Agent run 未完成')).toBeTruthy();
+    expect(within(notice).getByText(/Evidence 已保留；未确认的写入不会自动保存/)).toBeTruthy();
+    expect(within(notice).getByText(/asterism 没有自动写入 workspace/)).toBeTruthy();
+    expect(within(notice).getByText(/Agent CLI execution timed out after 120000ms/)).toBeTruthy();
+
+    await user.click(within(notice).getByRole('button', { name: '准备重试' }));
+
+    expect(screen.getByDisplayValue(/请基于上次 Agent run 失败原因/)).toBeTruthy();
+    expect(screen.getByDisplayValue(/上次 run：run_business_line_failed_recovery/)).toBeTruthy();
+    expect(harness.api.triggerAgentCliRun).not.toHaveBeenCalled();
+    expect(harness.api.triggerRun).not.toHaveBeenCalled();
+  });
+
+  it('does not show failed run recovery notice when the latest task-bound run completed', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_completed_recovery',
+      title: 'Completed Recovery product',
+    });
+    const nextAction = buildTask({
+      id: 'task_business_line_completed_recovery',
+      title: 'Skip completed recovery',
+      businessLineId: line.id,
+      nextStep: 'Review completed evidence.',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [nextAction],
+    });
+    harness.tasks.unshift(nextAction);
+    harness.details[nextAction.id] = buildTaskDetail(nextAction);
+    harness.runs.unshift(
+      buildRun({
+        id: 'run_business_line_completed_recovery',
+        businessLineId: line.id,
+        status: 'completed',
+        taskId: nextAction.id,
+        updatedAt: '2026-01-01T00:20:00.000Z',
+      }),
+      buildRun({
+        id: 'run_business_line_older_failed_recovery',
+        businessLineId: line.id,
+        failureReason: 'Older timeout.',
+        status: 'failed',
+        taskId: nextAction.id,
+        updatedAt: '2026-01-01T00:10:00.000Z',
+      }),
+    );
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getRunDetail).mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      return run ? buildRunDetail(run) : null;
+    });
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /^Next Actions$/ }));
+    const action = Array.from(document.querySelectorAll('.business-action'))
+      .find((element) => element.textContent?.includes('Skip completed recovery')) as HTMLElement;
+    expect(action).toBeTruthy();
+    await user.click(within(action).getByRole('button', { name: '协作' }));
+
+    expect(await screen.findByText('Evidence')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Failed Agent run recovery')).toBeNull();
+    });
+  });
+
+  it('keeps failed run recovery conservative when AI Runtime is not ready', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_failed_no_runtime',
+      title: 'Failed No Runtime product',
+    });
+    const nextAction = buildTask({
+      id: 'task_business_line_failed_no_runtime',
+      title: 'Recover without runtime',
+      businessLineId: line.id,
+      nextStep: 'Review failed evidence locally.',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [nextAction],
+    });
+    harness.tasks.unshift(nextAction);
+    harness.details[nextAction.id] = buildTaskDetail(nextAction);
+    harness.runs.unshift(buildRun({
+      id: 'run_business_line_failed_no_runtime',
+      businessLineId: line.id,
+      failureReason: 'Agent CLI execution timed out after 120000ms.',
+      status: 'failed',
+      taskId: nextAction.id,
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    }));
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildNoRuntimeAiStatus());
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /^Next Actions$/ }));
+    const action = Array.from(document.querySelectorAll('.business-action'))
+      .find((element) => element.textContent?.includes('Recover without runtime')) as HTMLElement;
+    expect(action).toBeTruthy();
+    await user.click(within(action).getByRole('button', { name: '协作' }));
+
+    const notice = await screen.findByLabelText('Failed Agent run recovery');
+    expect(within(notice).getByText(/AI Runtime 未就绪时，先用协作复核失败原因/)).toBeTruthy();
+    expect(within(notice).getByText(/重新执行仍需要 Runtime gate/)).toBeTruthy();
+  });
+
   it('does not preview a created Next Action when business-line review has no next action suggestion', async () => {
     const user = userEvent.setup();
     const line = buildBusinessLineListItem({
