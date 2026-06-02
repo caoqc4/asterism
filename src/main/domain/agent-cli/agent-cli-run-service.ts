@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import path from 'node:path';
 
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeContextAssemblyGate } from '../../../shared/runtime-context-assembly-gate.js';
@@ -396,6 +397,10 @@ export class AgentCliRunService {
     if (!fs.existsSync(workspaceRoot) || !fs.statSync(workspaceRoot).isDirectory()) {
       throw new Error(`Agent CLI workspace root is not a readable directory: ${workspaceRoot}`);
     }
+    const contextualBoundaryLines = buildAgentCliContextualBoundaryLines({
+      webResearchPreparation: webResearchPreparation.preparation,
+      workspaceRoot,
+    });
     const run = await this.runRepository.create({
       ...(businessLineId ? { businessLineId } : {}),
       taskId: task.id,
@@ -418,6 +423,7 @@ export class AgentCliRunService {
       capabilityMode,
       contract: runContract,
       businessLineWorkspace,
+      contextualBoundaryLines,
       manifest: contextManifest,
       readinessSummary: formatRuntimeContextReadinessForStep(contextReadiness),
       task,
@@ -1084,6 +1090,7 @@ function buildAgentCliContextBridge(params: {
   businessLineWorkspace: BusinessLineWorkspace | null;
   capabilityMode: AgentCliCapabilityMode;
   contract: RunGoalContract;
+  contextualBoundaryLines: string[];
   manifest: RuntimeContextManifest;
   readinessSummary: string;
   task: TaskDetail;
@@ -1138,6 +1145,9 @@ function buildAgentCliContextBridge(params: {
     '',
     'Capability bridge policy:',
     ...buildAgentCliCapabilityBridgePolicy(params.capabilityMode),
+    params.contextualBoundaryLines.length ? '' : null,
+    params.contextualBoundaryLines.length ? 'Contextual execution boundaries:' : null,
+    ...params.contextualBoundaryLines,
   ].filter((line): line is string => line !== null).join('\n');
 }
 
@@ -1159,6 +1169,31 @@ function buildAgentCliCapabilityBridgePolicy(mode: AgentCliCapabilityMode): stri
     '- Taskplane-managed External Access, Skills, and MCP entries are context-only unless Taskplane exposes explicit tools in this run.',
     '- Native mode: do not downgrade the selected official CLI. Use Codex CLI or Claude Code built-in search, browse, source, and documentation capabilities when the selected CLI exposes them.',
     '- Workspace writes remain outside this Taskplane run unless the user explicitly chooses a write-capable flow.',
+  ];
+}
+
+function buildAgentCliContextualBoundaryLines(params: {
+  webResearchPreparation: AgentCliWebResearchPreparation;
+  workspaceRoot: string;
+}): string[] {
+  return [
+    ...buildAgentCliWorkspaceBoundaryLines(params.workspaceRoot),
+    ...buildAgentCliResearchBoundaryLines(params.webResearchPreparation),
+  ];
+}
+
+function buildAgentCliWorkspaceBoundaryLines(workspaceRoot: string): string[] {
+  const gitMarker = path.join(workspaceRoot, '.git');
+  if (fs.existsSync(gitMarker)) return [];
+  return [
+    '- Workspace shape: plain folder; do not run git commands unless the task explicitly asks for repository inspection.',
+  ];
+}
+
+function buildAgentCliResearchBoundaryLines(preparation: AgentCliWebResearchPreparation): string[] {
+  if (preparation.status !== 'not_needed') return [];
+  return [
+    '- Research boundary: Taskplane did not identify a need for fresh external facts; do not browse or perform web research unless the task explicitly asks for current external facts.',
   ];
 }
 

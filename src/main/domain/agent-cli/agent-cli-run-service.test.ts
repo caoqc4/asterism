@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
@@ -1227,6 +1231,71 @@ describe('AgentCliRunService', () => {
     expect(executor).toHaveBeenCalledWith(expect.objectContaining({
       input: expect.not.stringContaining('Confirmed source previews:'),
     }));
+  });
+
+  it('tightens readonly guidance for plain workspaces when external research is not needed', async () => {
+    const plainWorkspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'asterism-agent-cli-plain-'));
+    try {
+      const executor = vi.fn().mockResolvedValue({
+        exitCode: 0,
+        failureReason: null,
+        status: 'completed',
+        stderr: '',
+        stdout: 'Checked without git or web research.',
+        summary: 'Agent CLI execution completed.',
+      });
+      const service = new AgentCliRunService(
+        buildTaskService(),
+        { getStatus: vi.fn().mockResolvedValue(buildAiStatus({ workspaceRoot: plainWorkspaceRoot })) },
+        buildRunRepository(),
+        buildRunStepRepository(),
+        executor,
+      );
+
+      await service.trigger({
+        operatorConfirmed: true,
+        prompt: 'Review the next implementation step.',
+        taskId: 'task_1',
+      });
+
+      const input = vi.mocked(executor).mock.calls[0]?.[0].input ?? '';
+      expect(input).toContain('Contextual execution boundaries:');
+      expect(input).toContain('Workspace shape: plain folder');
+      expect(input).toContain('do not run git commands unless the task explicitly asks for repository inspection');
+      expect(input).toContain('Taskplane did not identify a need for fresh external facts');
+      expect(input).toContain('do not browse or perform web research unless the task explicitly asks for current external facts');
+    } finally {
+      fs.rmSync(plainWorkspaceRoot, { force: true, recursive: true });
+    }
+  });
+
+  it('keeps git and web available when the workspace is a repo and the task asks for current research', async () => {
+    const executor = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      failureReason: null,
+      status: 'completed',
+      stderr: '',
+      stdout: 'Reviewed current docs.',
+      summary: 'Agent CLI execution completed.',
+    });
+    const service = new AgentCliRunService(
+      buildTaskService(),
+      { getStatus: vi.fn().mockResolvedValue(buildAiStatus()) },
+      buildRunRepository(),
+      buildRunStepRepository(),
+      executor,
+    );
+
+    await service.trigger({
+      operatorConfirmed: true,
+      prompt: 'Check the current official docs before drafting the plan.',
+      taskId: 'task_1',
+    });
+
+    const input = vi.mocked(executor).mock.calls[0]?.[0].input ?? '';
+    expect(input).toContain('Use Codex CLI\'s native read-only capabilities');
+    expect(input).not.toContain('Workspace shape: plain folder');
+    expect(input).not.toContain('do not browse or perform web research unless the task explicitly asks for current external facts');
   });
 
   it('uses decomposition instructions only for explicit decomposition requests', async () => {
