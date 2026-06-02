@@ -120,13 +120,15 @@ describe('BusinessLinesPage', () => {
       />,
     );
 
-    await user.click(await screen.findByRole('button', { name: 'AI 协助' }));
+    await user.click(await screen.findByRole('button', { name: '执行' }));
 
     expect(openBusinessLinePanel).toHaveBeenCalledWith(
       workspace.businessLine.id,
       workspace.businessLine.title,
-      expect.stringContaining('业务线：Execution product'),
+      expect.stringContaining('可能的待确认写入建议（TASKPLANE_WRITE_INTENTS）'),
       'task_business_next_action',
+      'Check launch evidence.',
+      true,
     );
   });
 
@@ -146,7 +148,7 @@ describe('BusinessLinesPage', () => {
     expect(openBusinessLinePanel).toHaveBeenCalledWith(
       workspace.businessLine.id,
       workspace.businessLine.title,
-      expect.stringContaining('Next Action：Run launch evidence check'),
+      expect.stringContaining('可能的待确认写入建议（TASKPLANE_WRITE_INTENTS）'),
       'task_business_next_action',
       'Run launch evidence check',
       true,

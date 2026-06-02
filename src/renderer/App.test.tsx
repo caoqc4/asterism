@@ -2310,6 +2310,50 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('uses friendly write intent wording when executing the overview business suggestion', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_suggestion_execution',
+      title: 'Suggestion execution product',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [buildTask({
+        id: 'task_business_line_suggestion_action',
+        title: 'Review suggestion launch evidence',
+        businessLineId: line.id,
+        nextStep: 'Review suggestion launch evidence.',
+      })],
+    });
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'api' }));
+    vi.mocked(harness.api.triggerRun).mockImplementationOnce(async (input) => buildRun({
+      id: 'run_business_line_suggestion_execution',
+      businessLineId: input.businessLineId ?? null,
+      output: 'Suggestion execution returned reviewable evidence.',
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: input.taskId,
+      type: input.type,
+    }));
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    expect(await screen.findByText('Current Suggestion')).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: '执行' }));
+
+    await waitFor(() => {
+      expect(harness.api.triggerRun).toHaveBeenCalledWith(expect.objectContaining({
+        businessLineId: line.id,
+        instructions: expect.stringContaining('可能的待确认写入建议（TASKPLANE_WRITE_INTENTS）'),
+        requestSurface: 'right_panel_agent_execution',
+        taskId: 'task_business_line_suggestion_action',
+      }));
+    });
+  });
+
   it('surfaces CLI-first harness evidence for a business-line Next Action run', async () => {
     const user = userEvent.setup();
     const line = buildBusinessLineListItem({

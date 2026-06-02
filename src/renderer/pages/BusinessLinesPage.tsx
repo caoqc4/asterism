@@ -415,7 +415,7 @@ function OverviewTab({ workspace, onOpenBusinessLinePanel }: {
                   onClick={() => onOpenBusinessLinePanel(
                     workspace.businessLine.id,
                     workspace.businessLine.title,
-                    `开始执行当前 Next Action。\n\n业务线：${workspace.businessLine.title}\n为什么现在：${suggestion.whyNow}\n下一步：${suggestion.nextStep}\n\n完成后请返回可复盘的结果、证据和可能的 TASKPLANE_WRITE_INTENTS。`,
+                    `开始执行当前 Next Action。\n\n业务线：${workspace.businessLine.title}\n为什么现在：${suggestion.whyNow}\n下一步：${suggestion.nextStep}\n\n完成后请返回可复盘的结果、证据和可能的待确认写入建议（TASKPLANE_WRITE_INTENTS）。`,
                     suggestion.taskId,
                     suggestion.nextStep,
                     true,
@@ -540,7 +540,7 @@ function NextActionsTab({ workspace, onOpenBusinessLinePanel, onOpenTask }: {
                 onClick={() => onOpenBusinessLinePanel(
                   workspace.businessLine.id,
                   workspace.businessLine.title,
-                  `开始执行当前 Next Action。\n\n业务线：${workspace.businessLine.title}\nNext Action：${task.title}\n下一步：${task.nextStep ?? task.summary ?? task.title}\n\n完成后请返回可复盘的结果、证据和可能的 TASKPLANE_WRITE_INTENTS。`,
+                  `开始执行当前 Next Action。\n\n业务线：${workspace.businessLine.title}\nNext Action：${task.title}\n下一步：${task.nextStep ?? task.summary ?? task.title}\n\n完成后请返回可复盘的结果、证据和可能的待确认写入建议（TASKPLANE_WRITE_INTENTS）。`,
                   task.id,
                   task.title,
                   true,
