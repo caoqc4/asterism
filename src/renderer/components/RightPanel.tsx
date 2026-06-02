@@ -1600,6 +1600,84 @@ function parseAgentCliStructuredWritebackIntent(params: {
   }).structured;
 }
 
+function structuredWritebackProposalKey(proposal: StructuredWritebackProposal): string {
+  return `structured:${proposal.evidenceRunId}:${proposal.intent.type}`;
+}
+
+function businessLineRunReviewProposalKey(review: BusinessLinePostRunReviewOptions): string {
+  return `business_review:${review.sourceRunId}`;
+}
+
+function parseTimelinePayload(payload: unknown): Record<string, unknown> {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    return payload as Record<string, unknown>;
+  }
+  if (typeof payload !== 'string') return {};
+  try {
+    const parsed = JSON.parse(payload);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function taskTimelineHasProposalEvent(
+  task: TaskDetail | null,
+  predicate: (payload: Record<string, unknown>, type: string) => boolean,
+): boolean {
+  return Boolean(task?.timeline?.some((event) => {
+    const payload = parseTimelinePayload(event.payload);
+    return predicate(payload, event.type);
+  }));
+}
+
+function taskTimelineHasDismissedProposal(task: TaskDetail | null, proposalKey: string): boolean {
+  return taskTimelineHasProposalEvent(task, (payload, type) => (
+    type === 'panel.writeback_proposal_dismissed'
+    && payload.proposalKey === proposalKey
+  ));
+}
+
+function isStructuredWritebackProposalAlreadyApplied(
+  proposal: StructuredWritebackProposal,
+  task: TaskDetail | null,
+): boolean {
+  if (!task) return false;
+  if (proposal.intent.type === 'task.update_next_step') {
+    const nextStep = proposal.intent.nextStep;
+    return task.nextStep?.trim() === nextStep.trim()
+      || taskTimelineHasProposalEvent(task, (payload, type) => (
+        type === 'panel.task_goal_updated'
+        && payload.evidenceRunId === proposal.evidenceRunId
+        && payload.source === 'taskplane_write_intent'
+        && payload.nextStep === nextStep
+      ));
+  }
+  if (proposal.intent.type === 'task.mark_blocked') {
+    return task.activeBlocker?.title === proposal.intent.reason
+      || taskTimelineHasProposalEvent(task, (payload, type) => (
+        type === 'blocker.created'
+        && payload.evidenceRunId === proposal.evidenceRunId
+      ));
+  }
+  if (proposal.intent.type === 'task.complete.propose') {
+    return taskTimelineHasProposalEvent(task, (payload, type) => (
+      type === 'decision.created'
+      && payload.sourceId === proposal.evidenceRunId
+    ));
+  }
+  return taskTimelineHasProposalEvent(task, (payload, type) => (
+    type === 'decision.created'
+    && payload.sourceId === proposal.evidenceRunId
+  ));
+}
+
+function taskLineHasBusinessReviewDismissal(task: TaskDetail | null, review: BusinessLinePostRunReviewOptions): boolean {
+  return taskTimelineHasDismissedProposal(task, businessLineRunReviewProposalKey(review));
+}
+
 function isChildTaskAdvancementText(value: string): boolean {
   const normalized = value.replace(/\s+/g, ' ').trim();
   return /推进子任务|正在推进子任务|当前子任务|确认这个子任务|current child task|advance.{0,16}child task/i.test(normalized);
@@ -2179,6 +2257,77 @@ export function RightPanel({
   useEffect(() => {
     void loadReviewRunDetails(activeTaskId);
   }, [activeTaskId, loadReviewRunDetails]);
+
+  useEffect(() => {
+    if (!activeTaskId || !activeTaskDetail || activeTaskDetail.id !== activeTaskId || reviewRunDetails.length === 0) return undefined;
+    let cancelled = false;
+
+    const recoverPendingProposals = async () => {
+      if (!structuredWritebackProposal) {
+        for (const detail of reviewRunDetails) {
+          if (detail.status !== 'completed') continue;
+          const output = detail.output?.trim();
+          if (!output) continue;
+          const proposal = parseAgentCliStructuredWritebackIntent({
+            businessLineId: detail.businessLineId ?? activeBusinessLineId,
+            output,
+            runId: detail.id,
+            taskId: activeTaskId,
+          });
+          if (!proposal) continue;
+          if (taskTimelineHasDismissedProposal(activeTaskDetail, structuredWritebackProposalKey(proposal))) continue;
+          if (isStructuredWritebackProposalAlreadyApplied(proposal, activeTaskDetail)) continue;
+          if (!cancelled) updateStructuredWritebackProposal((existing) => existing ?? proposal);
+          break;
+        }
+      }
+
+      if (!businessLineRunReview && activeBusinessLineId) {
+        for (const detail of reviewRunDetails) {
+          if (detail.status !== 'completed') continue;
+          const output = detail.output?.trim();
+          const reviewRecoverableFromOutput = Boolean(output && (
+            /TASKPLANE_WRITE_INTENTS/.test(output)
+            || /business_(?:record|review|next_action|sop_revision|handoff)\./.test(output)
+          ));
+          if (!detail.businessLinePostRunReview && !reviewRecoverableFromOutput) continue;
+          const review = detail.businessLinePostRunReview ?? buildBusinessLinePostRunReviewOptions({
+            output: output ?? 'Run completed.',
+            run: {
+              ...detail,
+              businessLineId: detail.businessLineId ?? activeBusinessLineId,
+              taskId: activeTaskId,
+            },
+            taskTitle: titleCache[activeTaskId] ?? activeTaskDetail.title,
+          });
+          if (!review) continue;
+          if (taskLineHasBusinessReviewDismissal(activeTaskDetail, review)) continue;
+          const workspace = await window.api?.getBusinessLineWorkspace?.(review.businessLineId).catch(() => null);
+          if (cancelled) return;
+          const alreadySaved = Boolean(workspace?.records.some((record) => (
+            record.source === `run:${review.sourceRunId}`
+            || record.source === `review:${review.sourceRunId}`
+          )));
+          if (alreadySaved) continue;
+          setBusinessLineRunReview((existing) => existing ?? review);
+          break;
+        }
+      }
+    };
+
+    void recoverPendingProposals();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeBusinessLineId,
+    activeTaskDetail,
+    activeTaskId,
+    businessLineRunReview,
+    reviewRunDetails,
+    structuredWritebackProposal,
+    titleCache,
+  ]);
 
   useEffect(() => {
     if (!window.api?.subscribeToEvents) return undefined;
@@ -3249,6 +3398,31 @@ export function RightPanel({
     } finally {
       setSavingStructuredWritebackProposal(false);
     }
+  }
+
+  async function dismissStructuredWritebackProposal() {
+    const proposal = structuredWritebackProposal;
+    updateStructuredWritebackProposal(null);
+    if (!activeTaskId || !proposal) return;
+    await recordPanelTimelineEvent(activeTaskId, 'panel.writeback_proposal_dismissed', {
+      evidenceRunId: proposal.evidenceRunId,
+      proposalKey: structuredWritebackProposalKey(proposal),
+      proposalType: 'structured',
+      writeIntentType: proposal.intent.type,
+    });
+  }
+
+  async function dismissBusinessLineRunReview() {
+    const review = businessLineRunReview;
+    setBusinessLineRunReview(null);
+    if (!activeTaskId || !review) return;
+    await recordPanelTimelineEvent(activeTaskId, 'panel.writeback_proposal_dismissed', {
+      businessLineId: review.businessLineId,
+      evidenceRunId: review.sourceRunId,
+      proposalKey: businessLineRunReviewProposalKey(review),
+      proposalType: 'business_review',
+      sourceRunId: review.sourceRunId,
+    });
   }
 
   async function confirmBusinessLineRunReview() {
@@ -4670,7 +4844,7 @@ export function RightPanel({
               placeholder="Optional reusable workflow suggestion"
             />
             <div className="panel-refresh-actions">
-              <button className="btn sm ghost" onClick={() => setBusinessLineRunReview(null)}>
+              <button className="btn sm ghost" onClick={() => void dismissBusinessLineRunReview()}>
                 放弃
               </button>
               <button
@@ -4829,7 +5003,7 @@ export function RightPanel({
               aria-label="结构化写回说明"
             />
             <div className="panel-refresh-actions">
-              <button className="btn sm ghost" onClick={() => updateStructuredWritebackProposal(null)}>
+              <button className="btn sm ghost" onClick={() => void dismissStructuredWritebackProposal()}>
                 放弃
               </button>
               <button

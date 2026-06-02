@@ -2310,6 +2310,193 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('recovers pending business-line review proposals from completed run evidence after reload', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_review_recovery',
+      title: 'Review Recovery product',
+    });
+    const nextAction = buildTask({
+      id: 'task_business_line_review_recovery',
+      title: 'Recover review proposal',
+      businessLineId: line.id,
+      nextStep: 'Check review proposal recovery.',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [nextAction],
+    });
+    harness.tasks.unshift(nextAction);
+    harness.details[nextAction.id] = buildTaskDetail(nextAction);
+    const reviewRun = buildRun({
+      id: 'run_business_line_review_recovery',
+      businessLineId: line.id,
+      output: 'Recovered review result from completed run.',
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: nextAction.id,
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    });
+    harness.runs.unshift(reviewRun);
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getRunDetail).mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      if (!run) return null;
+      if (run.id !== reviewRun.id) return buildRunDetail(run);
+      return buildRunDetail(run, {
+        businessLinePostRunReview: {
+          businessLineId: line.id,
+          sourceActionId: nextAction.id,
+          sourceRunId: reviewRun.id,
+          resultSummary: 'Recovered review result from completed run.',
+          evidenceItems: [`Run ${reviewRun.id} completed for task ${nextAction.id}.`],
+          recordSuggestions: [{
+            type: 'result',
+            source: `run:${reviewRun.id}`,
+            summary: 'Recovered review result from completed run.',
+            confidence: 75,
+            shouldAffectFutureContext: true,
+          }],
+          nextActionSuggestions: ['Follow up recovered review.'],
+          skillUpdateSuggestions: ['Recover review proposals before clearing panel state.'],
+          confidence: 75,
+          requiresDecision: false,
+          writebackOptions: [
+            { type: 'business_record', label: 'Business record', ready: true, evidence: [`run:${reviewRun.id}`] },
+            { type: 'next_action', label: 'Next action', ready: true, evidence: ['Follow up recovered review.'] },
+            { type: 'proposed_sop_revision', label: 'Proposed SOP revision', ready: true, evidence: ['Recover review proposals before clearing panel state.'] },
+          ],
+        },
+      });
+    });
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /^Next Actions$/ }));
+    const action = Array.from(document.querySelectorAll('.business-action'))
+      .find((element) => element.textContent?.includes('Recover review proposal')) as HTMLElement;
+    expect(action).toBeTruthy();
+    await user.click(within(action).getByRole('button', { name: 'AI 协助' }));
+
+    expect(await screen.findByText('业务线执行复盘提案')).toBeTruthy();
+    expect(screen.getByText(/Review target: Business Line \/ Review Recovery product \/ Run\/Review \/ run_business_line_review_recovery/)).toBeTruthy();
+    expect(screen.getByText(/确认后只写入业务线复盘/)).toBeTruthy();
+    expect(screen.getByDisplayValue('Recovered review result from completed run.')).toBeTruthy();
+  });
+
+  it('does not recover confirmed business-line review proposals after reload', async () => {
+    const user = userEvent.setup();
+    const line = buildBusinessLineListItem({
+      id: 'business_line_review_confirmed',
+      title: 'Confirmed Review product',
+      nextActionCount: 2,
+    });
+    const originalAction = buildTask({
+      id: 'task_business_line_review_confirmed',
+      title: 'Review confirmed proposal',
+      businessLineId: line.id,
+      nextStep: 'Check confirmed review recovery.',
+    });
+    const createdAction = buildTask({
+      id: 'task_business_line_review_followup',
+      title: 'Follow up saved review.',
+      businessLineId: line.id,
+      nextStep: 'Follow up saved review.',
+    });
+    const reviewRun = buildRun({
+      id: 'run_business_line_review_confirmed',
+      businessLineId: line.id,
+      output: 'Confirmed review result.',
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: originalAction.id,
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    });
+    const workspace = buildBusinessLineWorkspace({
+      businessLine: line,
+      nextActions: [createdAction, originalAction],
+      records: [{
+        id: 'business_line_record_confirmed_review',
+        type: 'result',
+        businessLineId: line.id,
+        source: `run:${reviewRun.id}`,
+        summary: 'Confirmed review result.',
+        confidence: 75,
+        linkedActionId: originalAction.id,
+        linkedDecisionId: null,
+        shouldAffectFutureContext: true,
+        createdAt: now,
+      }],
+      learning: {
+        reviews: [{
+          id: 'business_line_review_confirmed',
+          businessLineId: line.id,
+          sourceActionId: originalAction.id,
+          resultSummary: 'Confirmed review result.',
+          evidenceItems: [`Run ${reviewRun.id} completed.`],
+          hypothesisChange: null,
+          skillUpdateSuggestions: [],
+          nextActionSuggestions: ['Follow up saved review.'],
+          confidence: 75,
+          requiresDecision: false,
+          createdAt: now,
+        }],
+        skillRevisions: [],
+        acceptedSkills: [],
+      },
+    });
+    harness.tasks.unshift(createdAction, originalAction);
+    harness.details[createdAction.id] = buildTaskDetail(createdAction);
+    harness.details[originalAction.id] = buildTaskDetail(originalAction);
+    harness.runs.unshift(reviewRun);
+    vi.mocked(harness.api.listBusinessLines!).mockResolvedValue([line]);
+    vi.mocked(harness.api.getBusinessLineWorkspace!).mockResolvedValue(workspace);
+    vi.mocked(harness.api.getRunDetail).mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      if (!run) return null;
+      return buildRunDetail(run, {
+        businessLinePostRunReview: {
+          businessLineId: line.id,
+          sourceActionId: originalAction.id,
+          sourceRunId: reviewRun.id,
+          resultSummary: 'Confirmed review result.',
+          evidenceItems: [`Run ${reviewRun.id} completed.`],
+          recordSuggestions: [{
+            type: 'result',
+            source: `run:${reviewRun.id}`,
+            summary: 'Confirmed review result.',
+            confidence: 75,
+            shouldAffectFutureContext: true,
+          }],
+          nextActionSuggestions: ['Follow up saved review.'],
+          skillUpdateSuggestions: [],
+          confidence: 75,
+          requiresDecision: false,
+          writebackOptions: [
+            { type: 'business_record', label: 'Business record', ready: true, evidence: [`run:${reviewRun.id}`] },
+          ],
+        },
+      });
+    });
+    window.location.hash = 'business';
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /^Next Actions$/ }));
+    expect((await screen.findAllByText('Follow up saved review.')).length).toBeGreaterThan(0);
+    const action = Array.from(document.querySelectorAll('.business-action'))
+      .find((element) => element.textContent?.includes('Review confirmed proposal')) as HTMLElement;
+    expect(action).toBeTruthy();
+    await user.click(within(action).getByRole('button', { name: 'AI 协助' }));
+    expect(await screen.findByText(/Evidence/)).toBeTruthy();
+
+    await waitFor(() => {
+      expect(screen.queryByText('业务线执行复盘提案')).toBeNull();
+    });
+  });
+
   it('uses friendly write intent wording when executing the overview business suggestion', async () => {
     const user = userEvent.setup();
     const line = buildBusinessLineListItem({
@@ -5034,6 +5221,155 @@ describe('App redesign v1', () => {
       }));
     });
     expect(await screen.findByText(/已确认并创建 Decision：确认首版范围/)).toBeTruthy();
+  });
+
+  it('recovers pending structured writeback proposals from completed run evidence after reload', async () => {
+    const user = userEvent.setup();
+    harness.runs.unshift(buildRun({
+      id: 'run_recover_structured_writeback',
+      output: [
+        '建议更新下一步。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'task.update_next_step',
+            nextStep: '复核恢复后的写入建议。',
+            reason: 'run evidence indicates the next safe step changed.',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: 'task_risk',
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    }));
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({ runtimeMode: 'codex' }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+
+    expect((await screen.findAllByText('待确认写入建议')).length).toBeGreaterThan(0);
+    expect(screen.getByText('下一步提案：复核恢复后的写入建议。')).toBeTruthy();
+    expect(screen.getByText(/确认后才执行/)).toBeTruthy();
+    expect(harness.api.updateTask).not.toHaveBeenCalledWith(expect.objectContaining({
+      nextStep: '复核恢复后的写入建议。',
+    }));
+  });
+
+  it('does not recover confirmed structured writeback proposals after reload', async () => {
+    const user = userEvent.setup();
+    harness.tasks[0]!.nextStep = '复核恢复后的写入建议。';
+    harness.details.task_risk = {
+      ...harness.details.task_risk,
+      nextStep: '复核恢复后的写入建议。',
+    };
+    harness.runs.unshift(buildRun({
+      id: 'run_confirmed_structured_writeback',
+      output: [
+        '建议更新下一步。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'task.update_next_step',
+            nextStep: '复核恢复后的写入建议。',
+            reason: 'run evidence indicates the next safe step changed.',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: 'task_risk',
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/Evidence/)).toBeTruthy();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '确认写入' })).toBeNull();
+    });
+    expect(screen.queryByText('下一步提案：复核恢复后的写入建议。')).toBeNull();
+  });
+
+  it('does not recover dismissed structured writeback proposals after reload', async () => {
+    const user = userEvent.setup();
+    harness.details.task_risk.timeline.unshift({
+      id: 'event_dismissed_structured_writeback',
+      taskId: 'task_risk',
+      type: 'panel.writeback_proposal_dismissed',
+      payload: JSON.stringify({
+        evidenceRunId: 'run_dismissed_structured_writeback',
+        proposalKey: 'structured:run_dismissed_structured_writeback:task.update_next_step',
+        proposalType: 'structured',
+        writeIntentType: 'task.update_next_step',
+      }),
+      createdAt: now,
+    });
+    harness.runs.unshift(buildRun({
+      id: 'run_dismissed_structured_writeback',
+      output: [
+        '建议更新下一步。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'task.update_next_step',
+            nextStep: '复核被放弃的写入建议。',
+            reason: 'operator dismissed this proposal before reload.',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: 'task_risk',
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/Evidence/)).toBeTruthy();
+
+    await waitFor(() => {
+      expect(screen.queryByText('下一步提案：复核被放弃的写入建议。')).toBeNull();
+    });
+  });
+
+  it('keeps malformed write intent evidence as evidence-only after reload', async () => {
+    const user = userEvent.setup();
+    harness.runs.unshift(buildRun({
+      id: 'run_malformed_writeback_recovery',
+      output: [
+        '这里有 evidence，但没有安全可恢复的写入建议。',
+        '```json',
+        JSON.stringify({
+          type: 'TASKPLANE_WRITE_INTENTS',
+          intents: [{
+            type: 'task.update_next_step',
+            reason: 'missing required nextStep should block recovery.',
+          }],
+        }),
+        '```',
+      ].join('\n'),
+      outputSource: 'ai',
+      status: 'completed',
+      taskId: 'task_risk',
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    }));
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    expect(await screen.findByText(/Evidence/)).toBeTruthy();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '确认写入' })).toBeNull();
+    });
+    expect(screen.queryByText('待确认写入建议')).toBeNull();
   });
 
   it('summarizes Agent CLI web research activity after completed native runs', async () => {
