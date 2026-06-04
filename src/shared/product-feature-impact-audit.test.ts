@@ -81,7 +81,7 @@ describe('product feature impact audit', () => {
     expect(canonicalOwnership?.status).toBe('ready');
     expect(canonicalOwnership?.evidence.join(' ')).toContain('without relying on legacy_task_id');
     expect(historicalRecovery?.status).toBe('recoverable');
-    expect(historicalRecovery?.evidence.join(' ')).toContain('Legacy Tasks nav item');
+    expect(historicalRecovery?.evidence.join(' ')).toContain('retired from primary navigation');
     expect(learningLoop?.evidence.join(' ')).toContain('creates a business line');
     expect(learningLoop?.evidence.join(' ')).toContain('next Today suggestion changes');
   });
@@ -314,15 +314,15 @@ describe('product feature impact audit', () => {
 
     expect(findBusinessLineFirstImplementationAuditIssues({
       ...sources,
-      app_ui: sources.app_ui?.replaceAll('Legacy Tasks', 'Tasks'),
+      app_ui: `${sources.app_ui ?? ''}\n<NavItem icon={<IconTasks />} label="Legacy Tasks" active={route === 'tasks'} onClick={() => onNavigate('tasks')} />`,
     })).toEqual(expect.arrayContaining([
       {
         featureId: 'business_line_first_implementation:primary_ui_routes_business_first',
-        issue: 'Missing required implementation evidence: tasks: \'Legacy Tasks\'',
+        issue: 'Implementation re-promotes Tasks as a primary durable Work owner.',
       },
       {
-        featureId: 'business_line_first_implementation:legacy_tasks_explorer_labeled',
-        issue: 'Missing required implementation evidence: tasks: \'Legacy Tasks\'',
+        featureId: 'business_line_first_implementation:legacy_tasks_shell_retired',
+        issue: 'Implementation re-promotes Tasks as a primary durable Work owner.',
       },
     ]));
   });

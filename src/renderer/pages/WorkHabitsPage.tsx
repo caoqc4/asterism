@@ -123,7 +123,7 @@ export function WorkHabitsPage() {
       <div className="context-page-head">
         <h2 className="context-page-title">Work Habits</h2>
         <p className="context-page-subtitle">跨业务线和 Next Actions 的工作习惯与 AI 行为偏好 — 确认后才会影响后续执行</p>
-        <p className="context-page-boundary">业务线 Records、Next Actions 与 Skills/SOPs 是主工作面；Legacy Tasks Explorer 仅用于历史任务、文件和产物恢复。</p>
+        <p className="context-page-boundary">业务线 Records、Next Actions 与 Skills/SOPs 是主工作面；历史任务数据仅作为恢复来源保留在后台。</p>
       </div>
 
       <section className="ctx-section">

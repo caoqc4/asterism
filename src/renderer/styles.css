@@ -111,29 +111,9 @@ a { color: inherit; text-decoration: none; }
   -webkit-app-region: drag;
 }
 
-.sidebar-brand {
-  padding: 18px 16px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  -webkit-app-region: no-drag;
-}
-.brand-logo {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-.brand-name {
-  font-weight: 600;
-  font-size: 13.5px;
-  letter-spacing: 0;
-}
-
 .nav {
   -webkit-app-region: no-drag;
-  padding: 4px 8px;
+  padding: 12px 8px 4px;
   display: flex;
   flex-direction: column;
   gap: 1px;

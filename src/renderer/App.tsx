@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
 import { BriefPage } from './pages/BriefPage';
 import { BusinessLinesPage } from './pages/BusinessLinesPage';
-import { TasksPage, type TaskWorkspaceSelectionContext } from './pages/TasksPage';
+import type { TaskWorkspaceSelectionContext } from './pages/TasksPage';
 import { DecisionsPage } from './pages/DecisionsPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { WorkHabitsPage } from './pages/WorkHabitsPage';
@@ -11,15 +11,11 @@ import { ModelPage } from './pages/ModelPage';
 import { McpPage } from './pages/McpPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { RightPanel } from './components/RightPanel';
-import asterismLogo from './assets/brand/asterism-logo-ui.png';
-
-const PRODUCT_BRAND_NAME = 'asterism';
 
 const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Today',
   business: 'Business',
   chat: 'Chat',
-  tasks: 'Legacy Tasks',
   decisions: 'Decisions',
   'work-habits': 'Work Habits',
   skills: 'Skills',
@@ -48,7 +44,6 @@ export function App() {
     childTaskIds: [],
     selectedFile: null,
   });
-  const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
   const [businessFocusId, setBusinessFocusId] = useState<string | null>(null);
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
@@ -66,7 +61,6 @@ export function App() {
   const navigate = useCallback((r: AppRoute) => {
     setRouteState(r);
     setRoute(r);
-    setTaskFocusId(null);
     setBusinessFocusId(null);
     if (route === 'chat' && r !== 'chat') {
       setPanelOpen(false);
@@ -75,15 +69,19 @@ export function App() {
     if (r === 'chat') {
       setPanelSuspended(false);
     }
-    if (r !== 'tasks') {
-      setWorkspaceSelection({ taskId: null, taskTitle: null, parentTaskId: null, childTaskIds: [], selectedFile: null });
-    }
+    setWorkspaceSelection({ taskId: null, taskTitle: null, parentTaskId: null, childTaskIds: [], selectedFile: null });
   }, [route]);
 
   const openTaskInTasks = useCallback((taskId: string) => {
-    setRouteState('tasks');
-    setRoute('tasks');
-    setTaskFocusId(taskId);
+    setPanelTaskId(taskId);
+    setPanelTaskTitle(null);
+    setPanelBusinessLineId(null);
+    setPanelBusinessLineTitle(null);
+    setPanelDraftPrompt(null);
+    setPanelAutoSendDraftPrompt(false);
+    setPanelSelectedFile(null);
+    setPanelOpen(true);
+    setPanelSuspended(false);
   }, []);
 
   const openBusinessLine = useCallback((businessLineId: string) => {
@@ -166,21 +164,6 @@ export function App() {
     });
   }, [refreshAiRuntimeAvailability]);
 
-  useEffect(() => {
-    if (route !== 'tasks' || !panelOpen || panelSuspended) return;
-    setPanelSelectedFile(
-      !panelTaskId || workspaceSelection.taskId === panelTaskId
-        ? workspaceSelection.selectedFile
-        : null,
-    );
-    if (!workspaceSelection.taskId || workspaceSelection.taskId === panelTaskId) return;
-    if (panelTaskId && workspaceSelection.childTaskIds.includes(panelTaskId)) return;
-    setPanelTaskId(workspaceSelection.taskId);
-    setPanelTaskTitle(workspaceSelection.taskTitle);
-    setPanelDraftPrompt(null);
-    setPanelAutoSendDraftPrompt(false);
-  }, [panelOpen, panelSuspended, panelTaskId, route, workspaceSelection]);
-
   const isChatRoute = route === 'chat';
   const showDockedPanel = !isChatRoute && panelOpen;
   const shouldMountPanel = isChatRoute || panelOpen || panelSuspended;
@@ -222,14 +205,6 @@ export function App() {
               onOpenBusinessLinePanel={openPanelForBusinessLine}
               onOpenTask={openTaskInTasks}
               focusBusinessLineId={businessFocusId}
-            />
-          )}
-          {route === 'tasks' && (
-            <TasksPage
-              onOpenPanel={openPanelForTask}
-              onOpenDecision={() => navigate('decisions')}
-              onSelectionContextChange={setWorkspaceSelection}
-              focusTaskId={taskFocusId}
             />
           )}
           {route === 'decisions' && (
@@ -285,7 +260,7 @@ function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
     <div className="setup-banner">
       <span className="setup-banner-icon">⚠</span>
       <span className="setup-banner-text">
-        AI Runtime 尚未配置；本地记录、Today、Business、Tasks 可继续使用。要执行 Agent run，请前往 AI Runtime 连接 Agent CLI 或配置 Provider。
+        AI Runtime 尚未配置；本地记录、Today、Business、Decisions 可继续使用。要执行 Agent run，请前往 AI Runtime 连接 Agent CLI 或配置 Provider。
       </span>
       <button className="btn sm primary" onClick={onGoToModel}>
         前往 AI Runtime →
@@ -307,11 +282,6 @@ interface SidebarProps {
 function Sidebar({ route, onNavigate }: SidebarProps) {
   return (
     <aside className="sidebar">
-      <div className="sidebar-brand">
-        <img className="brand-logo" src={asterismLogo} alt="" aria-hidden="true" />
-        <span className="brand-name">{PRODUCT_BRAND_NAME}</span>
-      </div>
-
       <nav className="nav">
         <div className="nav-zone-label">Work</div>
         <NavItem icon={<IconBrief />} label="Today" active={route === 'brief'} onClick={() => onNavigate('brief')} />
@@ -327,7 +297,6 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
         <NavItem icon={<IconModel />} label="AI Runtime" active={route === 'model'} onClick={() => onNavigate('model')} />
         <NavItem icon={<IconContext />} label="Work Habits" active={route === 'work-habits'} onClick={() => onNavigate('work-habits')} />
         <NavItem icon={<IconSettings />} label="Settings" active={route === 'settings'} onClick={() => onNavigate('settings')} />
-        <NavItem icon={<IconTasks />} label="Legacy Tasks" active={route === 'tasks'} onClick={() => onNavigate('tasks')} />
       </nav>
     </aside>
   );
@@ -403,15 +372,6 @@ function IconBrief() {
       <rect x="1.5" y="2" width="11" height="10" rx="1.5" />
       <line x1="4" y1="5.5" x2="10" y2="5.5" />
       <line x1="4" y1="8" x2="8" y2="8" />
-    </svg>
-  );
-}
-
-function IconTasks() {
-  return (
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1.5" y="1.5" width="11" height="11" rx="2" />
-      <polyline points="4,7 6,9 10,5" />
     </svg>
   );
 }

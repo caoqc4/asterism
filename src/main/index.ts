@@ -31,12 +31,18 @@ function createMainWindow(): void {
     height: 840,
     minWidth: 1024,
     minHeight: 720,
+    title: '',
     backgroundColor: '#f4f1e8',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
     },
+  });
+
+  mainWindow.on('page-title-updated', (event) => {
+    event.preventDefault();
+    mainWindow?.setTitle('');
   });
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;

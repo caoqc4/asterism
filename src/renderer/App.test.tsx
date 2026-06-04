@@ -1411,6 +1411,15 @@ describe('App redesign v1', () => {
     vi.clearAllMocks();
   });
 
+  it('keeps the shell chrome free of repeated product branding', () => {
+    render(<App />);
+
+    expect(document.querySelector('.sidebar-brand')).toBeNull();
+    expect(document.querySelector('.brand-logo')).toBeNull();
+    expect(screen.queryByText('asterism')).toBeNull();
+    expect(screen.getByText('Work')).toBeTruthy();
+  });
+
   it('projects decomposition promotion parent-chain evidence chips', () => {
     const chips = projectDecompositionPromotionEvidenceChips({
       ready: true,
@@ -1560,12 +1569,11 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('button', { name: /Today/ })).toBeTruthy();
     expect(screen.getByText('Work')).toBeTruthy();
     expect(screen.getByText('Capabilities')).toBeTruthy();
-    expect(screen.getByText('asterism')).toBeTruthy();
+    expect(screen.queryByText('asterism')).toBeNull();
     expect(screen.getByTitle(/搜索、提问或捕获任务想法/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Business/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Chat' })).toBeTruthy();
-    expect(within(screen.getByRole('navigation')).getByRole('button', { name: 'Legacy Tasks' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Legacy Tasks Explorer/ })).toBeNull();
+    expect(within(screen.getByRole('navigation')).queryByRole('button', { name: 'Legacy Tasks' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
     expect(screen.getByText(/与业务线 Next Actions 共用/)).toBeTruthy();
@@ -1578,17 +1586,16 @@ describe('App redesign v1', () => {
     expect(screen.getByText('仅手动')).toBeTruthy();
     expect(screen.getByText('先质检，再确认')).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Legacy Tasks' }));
-    expect(await screen.findByText('Legacy Tasks', { selector: '.current' })).toBeTruthy();
+    expect(screen.getByText('External Access', { selector: '.current' })).toBeTruthy();
   });
 
-  it('shows source-only AI Runtime guidance without blocking local Today Business or Tasks', async () => {
+  it('shows source-only AI Runtime guidance without blocking local Today Business or Decisions', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildNoRuntimeAiStatus());
 
     render(<App />);
 
-    expect(await screen.findByText(/AI Runtime 尚未配置；本地记录、Today、Business、Tasks 可继续使用/)).toBeTruthy();
+    expect(await screen.findByText(/AI Runtime 尚未配置；本地记录、Today、Business、Decisions 可继续使用/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /前往 AI Runtime/ })).toBeTruthy();
     expect(await screen.findByRole('button', { name: /Today/ })).toBeTruthy();
 
@@ -1596,9 +1603,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('业务线')).toBeTruthy();
     expect(screen.getByText(/顶层 project \/ routine task 会自动适配成业务线/)).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Legacy Tasks' }));
-    expect(await screen.findByText('Legacy Tasks', { selector: '.current' })).toBeTruthy();
-    expect(screen.getAllByText('董事会材料修订').length).toBeGreaterThan(0);
+    expect(within(screen.getByRole('navigation')).queryByRole('button', { name: 'Legacy Tasks' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: /前往 AI Runtime/ }));
     expect(await screen.findByRole('heading', { name: 'AI Runtime' })).toBeTruthy();

@@ -5,10 +5,14 @@ import { describe, expect, it } from 'vitest';
 import { getRouteFromHash, setRoute } from './router';
 
 describe('renderer router', () => {
-  it('keeps the retired Context route folded into Tasks', () => {
+  it('folds retired task-shell routes back into Today', () => {
     window.location.hash = '#/context';
 
-    expect(getRouteFromHash()).toBe('tasks');
+    expect(getRouteFromHash()).toBe('brief');
+
+    window.location.hash = '#/tasks';
+
+    expect(getRouteFromHash()).toBe('brief');
   });
 
   it('writes retained routes to the hash', () => {

@@ -164,7 +164,7 @@ const REQUIRED_BUSINESS_LINE_FIRST_IMPLEMENTATION_CHECK_IDS = [
   'writeback_apply_plan_preserves_business_line_id',
   'writeback_dispatch_enforces_business_line_owner',
   'primary_ui_routes_business_first',
-  'legacy_tasks_explorer_labeled',
+  'legacy_tasks_shell_retired',
 ] as const;
 
 const REQUIRED_RUNTIME_ARCHITECTURE_CLOSEOUT_CHECK_IDS = [
@@ -372,21 +372,24 @@ export const BUSINESS_LINE_FIRST_IMPLEMENTATION_AUDIT: BusinessLineFirstImplemen
       'label="Business"',
       'label="Chat"',
       'label="Decisions"',
-      'tasks: \'Legacy Tasks\'',
-      'label="Legacy Tasks"',
     ],
     forbiddenPatterns: [
       /label="Tasks"\s+active=\{route === 'tasks'\}/,
       /<NavItem[^>]+label="Tasks"[^>]+onClick=\{\(\) => onNavigate\('tasks'\)\}/,
+      /label="Legacy Tasks"/,
     ],
   },
   {
-    id: 'legacy_tasks_explorer_labeled',
-    label: 'Legacy task recovery remains legal only when explicitly labeled',
+    id: 'legacy_tasks_shell_retired',
+    label: 'Legacy task shell is retired from primary navigation',
     sourceId: 'app_ui',
     requiredFragments: [
-      'tasks: \'Legacy Tasks\'',
-      '<NavItem icon={<IconTasks />} label="Legacy Tasks" active={route === \'tasks\'} onClick={() => onNavigate(\'tasks\')} />',
+      'onOpenTask={openTaskInTasks}',
+      'setPanelTaskId(taskId)',
+    ],
+    forbiddenPatterns: [
+      /label="Legacy Tasks"/,
+      /route === 'tasks'/,
     ],
     allowsLegacyTaskRecovery: true,
   },
@@ -554,7 +557,7 @@ export const BUSINESS_LINE_FIRST_PRODUCT_AUDIT: BusinessLineFirstAuditCheck[] = 
     label: 'Primary product language and work navigation',
     status: 'ready',
     evidence: [
-      'Work navigation exposes Today, Business, Chat, and Decisions as primary routes while historical task recovery is labeled Legacy Tasks.',
+      'Work navigation exposes Today, Business, Chat, and Decisions as primary routes while the historical task shell is retired from primary navigation.',
       'Business workspace uses Overview, Records, Next Actions, Learning, Skills/SOPs, and Settings as business-line surfaces.',
       'Today renders business-line suggestions with why now, source, risk, effort, confidence, and business-line target metadata.',
     ],
@@ -603,7 +606,7 @@ export const BUSINESS_LINE_FIRST_PRODUCT_AUDIT: BusinessLineFirstAuditCheck[] = 
     evidence: [
       'Legacy project and routine tasks are adapted into business lines through legacy_task_id.',
       'Legacy child tasks under old projects resolve business-line ownership through their parent task.',
-      'The hidden Tasks compatibility route remains reachable through the Legacy Tasks nav item for historical task, run, file, and artifact recovery.',
+      'The Tasks compatibility shell is retired from primary navigation; historical task data remains recoverable through business-line ownership and task context surfaces.',
     ],
     gaps: [],
     nextActions: [],
