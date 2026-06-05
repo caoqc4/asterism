@@ -105,9 +105,9 @@ run it against a sensitive workspace.
 
 ## Release Posture
 
-The repository is public and licensed under MIT. The current distribution model
-is source-only alpha. Users run from source or build a local unpacked app for
-their own machine.
+The repository is public and licensed under Apache License 2.0. The current
+distribution model is source-only alpha. Users run from source or build a local
+unpacked app for their own machine.
 
 Do not treat generated `dmg`, `zip`, or unpacked app artifacts as official
 release binaries until signing, notarization, release policy, and support

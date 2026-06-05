@@ -6,23 +6,25 @@ support, and commercial surfaces become clearer.
 
 ## Current License
 
-asterism is currently licensed under the MIT License.
+asterism is currently licensed under the Apache License, Version 2.0.
 
-## Why MIT for Now
+## Why Apache 2.0
 
-MIT keeps the project easy to inspect, fork, modify, and reuse while the core
-architecture is still changing. It also matches the current goal: make the
-local-first desktop workbench understandable and useful to outside developers
-without adding a heavier contribution or patent framework before the public
-surface is stable.
+Apache 2.0 keeps the project permissive while adding an explicit patent grant
+and a clearer contribution default. That fits a local-first desktop workbench
+that may grow into deeper runtime integrations, external connectors, hosted
+surfaces, or organizational adoption.
 
-## Why Not Apache 2.0 Yet
+The repository should keep the standard Apache 2.0 `LICENSE` text and a top-level
+`NOTICE` file in source and binary distributions. Project metadata should use
+the SPDX identifier `Apache-2.0`.
 
-Apache 2.0 may be a better fit later if the project needs an explicit patent
-grant, larger organizational adoption, or a more formal contribution model. For
-now, switching licenses would add process before there is a clear practical
-need. The current strategy is to keep MIT and revisit the license if the risk
-profile changes.
+## Third-party Notices
+
+The project license does not change third-party dependency licenses. Before
+official binary distribution, generate or review third-party license notices for
+packaged dependencies and make sure the release artifact preserves required
+license and attribution material.
 
 ## Why Not Open-core Yet
 

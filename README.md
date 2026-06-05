@@ -214,7 +214,7 @@ the default local verification path.
 
 ## License
 
-asterism is released under the [MIT License](LICENSE).
+asterism is released under the [Apache License 2.0](LICENSE).
 
 ## Contributing and Security
 
